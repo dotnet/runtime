@@ -2531,23 +2531,32 @@ TailCall:
 //                     that is used for field handle selectors.
 //
 // Arguments:
-//    fieldHnd   - handle of the field in question
-//    pFieldType - [out] parameter for the field's type
-//    pStructHnd - optional [out] parameter for the struct handle,
-//                 populated if the field is of a struct type
+//    fieldHnd    - handle of the field in question
+//    pFieldType  - [out] parameter for the field's type
+//    pStructSize - optional [out] parameter for the size of the struct,
+//                  populated if the field in question is of a struct type,
+//                  otherwise set to zero
 //
 // Return Value:
 //    Value number corresponding to the given field handle.
 //
-ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE  fieldHnd,
-                                           var_types*            pFieldType,
-                                           CORINFO_CLASS_HANDLE* pStructHnd)
+ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, size_t* pStructSize)
 {
-    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
-    ValueNum             fldHndVN  = VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
+    CORINFO_CLASS_HANDLE structHnd  = NO_CLASS_HANDLE;
+    ValueNum             fldHndVN   = VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
+    var_types            fieldType  = m_pComp->eeGetFieldType(fieldHnd, &structHnd);
+    size_t               structSize = 0;
 
-    CorInfoType fieldCit  = m_pComp->info.compCompHnd->getFieldType(fieldHnd, &structHnd);
-    var_types   fieldType = JITtype2varType(fieldCit);
+    if (fieldType == TYP_STRUCT)
+    {
+        structSize = m_pComp->info.compCompHnd->getClassSize(structHnd);
+
+        // We have to normalize here since there is no CorInfoType for vectors...
+        if (m_pComp->structSizeMightRepresentSIMDType(structSize))
+        {
+            fieldType = m_pComp->impNormStructType(structHnd);
+        }
+    }
 
 #ifdef DEBUG
     if (m_pComp->verbose)
@@ -2555,17 +2564,17 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE  fieldHnd,
         const char* modName;
         const char* fldName = m_pComp->eeGetFieldName(fieldHnd, &modName);
         printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s", fldName, fldHndVN, varTypeName(fieldType));
-        if (varTypeIsStruct(fieldType))
+        if (structSize != 0)
         {
-            printf(", size = %u", m_pComp->info.compCompHnd->getClassSize(structHnd));
+            printf(", size = %u", structSize);
         }
         printf("\n");
     }
 #endif
 
-    if (pStructHnd != nullptr)
+    if (pStructSize != nullptr)
     {
-        *pStructHnd = structHnd;
+        *pStructSize = structSize;
     }
     *pFieldType = fieldType;
 
@@ -3890,22 +3899,10 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
         assert(field != FieldSeqStore::NotAField());
 
         JITDUMP("  VNApplySelectors:\n");
-        var_types            fieldType;
-        CORINFO_CLASS_HANDLE structHnd;
-        CORINFO_FIELD_HANDLE fldHnd   = field->GetFieldHandle();
-        ValueNum             fldHndVN = VNForFieldSelector(fldHnd, &fieldType, &structHnd);
+        var_types fieldType;
+        size_t    structSize;
+        ValueNum  fldHndVN = VNForFieldSelector(field->GetFieldHandle(), &fieldType, &structSize);
 
-        size_t structSize = 0;
-        if (varTypeIsStruct(fieldType))
-        {
-            structSize = m_pComp->info.compCompHnd->getClassSize(structHnd);
-            // We do not normalize the type field accesses during importation unless they
-            // are used in a call, return or assignment.
-            if ((fieldType == TYP_STRUCT) && m_pComp->structSizeMightRepresentSIMDType(structSize))
-            {
-                fieldType = m_pComp->impNormStructType(structHnd);
-            }
-        }
         if (wbFinalStructSize != nullptr)
         {
             *wbFinalStructSize = structSize;
@@ -9020,10 +9017,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     else if (fldSeq2 != nullptr)
                     {
-                        // Get the first (instance or static) field from field seq.  GcHeap[field] will yield the "field
-                        // map".
-                        CLANG_FORMAT_COMMENT_ANCHOR;
-
+                        if (fldSeq2->IsFirstElemFieldSeq())
+                        {
+                            fldSeq2 = fldSeq2->m_next;
+                            assert(fldSeq2 != nullptr);
+                        }
 #ifdef DEBUG
                         CORINFO_CLASS_HANDLE fldCls = info.compCompHnd->getFieldClass(fldSeq2->m_fieldHnd);
                         if (obj != nullptr)
@@ -9035,42 +9033,38 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         }
 #endif // DEBUG
 
-                        // Get a field sequence for just the first field in the sequence
-                        //
-                        FieldSeqNode* firstFieldOnly = GetFieldSeqStore()->CreateSingleton(fldSeq2->m_fieldHnd);
-                        size_t        structSize     = 0;
-                        ValueNum      fldMapVN =
-                            vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], firstFieldOnly, &structSize);
+                        // The size of the ultimate value we will select, if it is of a struct type.
+                        size_t structSize = 0;
 
-                        // The final field in the sequence will need to match the 'indType'
-                        var_types indType = tree->TypeGet();
+                        // Get the selector for the first field.
+                        var_types firstFieldType;
+                        ValueNum  firstFieldSelectorVN =
+                            vnStore->VNForFieldSelector(fldSeq2->GetFieldHandle(), &firstFieldType, &structSize);
 
-                        // The type of the field is "struct" if there are more fields in the sequence,
-                        // otherwise it is the type returned from VNApplySelectors above.
-                        var_types firstFieldType = vnStore->TypeOfVN(fldMapVN);
+                        ValueNum fldMapVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fgCurMemoryVN[GcHeap],
+                                                                    firstFieldSelectorVN);
 
-                        ValueNum valAtAddr = fldMapVN;
+                        ValueNum firstFieldValueSelectorVN;
                         if (obj != nullptr)
                         {
-                            // construct the ValueNumber for 'fldMap at obj'
-                            ValueNum objNormVal = vnStore->VNLiberalNormalValue(obj->gtVNPair);
-                            valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, objNormVal);
+                            firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                         }
-                        else if (staticOffset != nullptr)
+                        else
                         {
-                            // construct the ValueNumber for 'fldMap at staticOffset'
-                            ValueNum offsetNormVal = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
-                            valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, offsetNormVal);
+                            assert(staticOffset != nullptr);
+                            firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                         }
 
-                        // Now get rid of any remaining struct field dereferences.
-                        if (fldSeq2->m_next)
-                        {
-                            valAtAddr = vnStore->VNApplySelectors(VNK_Liberal, valAtAddr, fldSeq2->m_next, &structSize);
-                        }
-                        valAtAddr = vnStore->VNApplySelectorsTypeCheck(valAtAddr, indType, structSize);
+                        // Construct the value number for fldMap[obj/offset].
+                        ValueNum firstFieldValueVN =
+                            vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, firstFieldValueSelectorVN);
 
-                        tree->gtVNPair.SetLiberal(valAtAddr);
+                        // Finally, account for the rest of the fields in the sequence.
+                        ValueNum valueVN =
+                            vnStore->VNApplySelectors(VNK_Liberal, firstFieldValueVN, fldSeq2->m_next, &structSize);
+
+                        valueVN = vnStore->VNApplySelectorsTypeCheck(valueVN, tree->TypeGet(), structSize);
+                        tree->gtVNPair.SetLiberal(valueVN);
 
                         // The conservative value is a new, unique VN.
                         tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
