@@ -13026,20 +13026,31 @@ DONE_MORPHING_CHILDREN:
                 tree          = op1;
                 GenTree* addr = commaNode->AsOp()->gtOp2;
                 // TODO-1stClassStructs: we often create a struct IND without a handle, fix it.
-                op1 = gtNewIndir(typ, addr);
+                GenTreeIndir* indir  = gtNewIndir(typ, addr);
                 // This is very conservative
-                op1->gtFlags |= treeFlags & ~GTF_ALL_EFFECT & ~GTF_IND_NONFAULTING;
-                op1->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+                indir->gtFlags |= treeFlags & ~GTF_ALL_EFFECT & ~GTF_IND_NONFAULTING;
+                indir->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+
+                if ((tree->gtFlags & GTF_GLOB_REF) != 0)
+                {
+                    if ((addr->gtFlags & GTF_GLOB_REF) == 0)
+                    {
+                        if (!addr->IsLocalAddrExpr())
+                        {
+                            indir->gtFlags |= GTF_GLOB_REF;
+                        }
+                    }
+                }
 
                 if (wasArrIndex)
                 {
-                    GetArrayInfoMap()->Set(op1, arrInfo);
+                    GetArrayInfoMap()->Set(indir, arrInfo);
                 }
 #ifdef DEBUG
-                op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+                indir->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
-                commaNode->AsOp()->gtOp2 = op1;
-                commaNode->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
+                commaNode->AsOp()->gtOp2 = indir;
+                commaNode->gtFlags |= (indir->gtFlags & GTF_ALL_EFFECT);
                 return tree;
             }
 

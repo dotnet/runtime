@@ -16816,6 +16816,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 else
                 {
                     op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
+                    op2->gtFlags |= GTF_GLOB_REF;
                 }
 
                 op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);

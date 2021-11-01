@@ -6921,6 +6921,7 @@ GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CL
     else
     {
         src = gtNewOperNode(GT_IND, lhs->TypeGet(), srcAddr);
+        src->gtFlags |= GTF_GLOB_REF;
     }
 
     GenTree* result = gtNewBlkOpNode(lhs, src, isVolatile, true);
