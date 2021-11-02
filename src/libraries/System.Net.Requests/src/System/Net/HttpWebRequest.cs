@@ -1207,14 +1207,16 @@ namespace System.Net
 
         private void AddCacheControlHeaders(HttpRequestMessage request)
         {
-            if (CachePolicy != null)
+            RequestCachePolicy? policy = GetApplicableCachePolicy();
+
+            if (policy != null)
             {
                 if (request.Headers.CacheControl == null)
                 {
                     request.Headers.CacheControl = new CacheControlHeaderValue();
                 }
 
-                if (CachePolicy is HttpRequestCachePolicy httpRequestCachePolicy)
+                if (policy is HttpRequestCachePolicy httpRequestCachePolicy)
                 {
                     switch (httpRequestCachePolicy.Level)
                     {
@@ -1257,7 +1259,7 @@ namespace System.Net
                 }
                 else
                 {
-                    switch (CachePolicy.Level)
+                    switch (policy.Level)
                     {
                         case RequestCacheLevel.NoCacheNoStore:
                             request.Headers.CacheControl.NoCache = true;
@@ -1275,6 +1277,27 @@ namespace System.Net
                 }
             }
         }
+
+        private RequestCachePolicy? GetApplicableCachePolicy()
+        {
+            if (IsCachePolicySet(CachePolicy))
+            {
+                return CachePolicy;
+            }
+            else if (IsCachePolicySet(DefaultCachePolicy))
+            {
+                return DefaultCachePolicy;
+            }
+            else if (IsCachePolicySet(WebRequest.DefaultCachePolicy))
+            {
+                return WebRequest.DefaultCachePolicy;
+            }
+
+            return null;
+        }
+
+        private static bool IsCachePolicySet(RequestCachePolicy? policy) => policy != null
+                        && policy.Level != RequestCacheLevel.BypassCache;
 
         public override IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
         {

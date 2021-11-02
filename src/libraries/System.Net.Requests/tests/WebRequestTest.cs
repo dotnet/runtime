@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Net.Cache;
+using System.Net.Test.Common;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -184,6 +188,36 @@ namespace System.Net.Tests
             Assert.True(success);
             success = WebRequest.RegisterPrefix("stb:", new FakeRequestFactory());
             Assert.False(success);
+        }
+
+        [Theory]
+        [InlineData(RequestCacheLevel.NoCacheNoStore, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
+        [InlineData(RequestCacheLevel.Reload, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
+        [InlineData(RequestCacheLevel.CacheOnly, new string[] { "Cache-Control: only-if-cached" })]
+        public async Task SendGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
+            RequestCacheLevel requestCacheLevel, string[] expectedHeaders)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                WebRequest.DefaultCachePolicy = new RequestCachePolicy(requestCacheLevel);
+                WebRequest request = WebRequest.Create(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+
+                    foreach (string header in expectedHeaders)
+                    {
+                        Assert.Contains(header, headers);
+                    }
+                });
+
+                using (var response = (HttpWebResponse)await getResponse)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            });
         }
 
         private class FakeRequest : WebRequest
