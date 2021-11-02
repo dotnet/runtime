@@ -290,7 +290,7 @@ FCIMPL0(INT32, ThreadPoolNative::GetThreadCount)
 FCIMPLEND
 
 /*****************************************************************************************************/
-INT64 QCALLTYPE ThreadPoolNative::GetCompletedWorkItemCount()
+extern "C" INT64 QCALLTYPE ThreadPool_GetCompletedWorkItemCount()
 {
     QCALL_CONTRACT;
 
@@ -592,7 +592,7 @@ VOID QueueUserWorkItemManagedCallback(PVOID pArg)
 }
 
 
-BOOL QCALLTYPE ThreadPoolNative::RequestWorkerThread()
+extern "C" BOOL QCALLTYPE ThreadPool_RequestWorkerThread()
 {
     QCALL_CONTRACT;
 
@@ -621,7 +621,7 @@ BOOL QCALLTYPE ThreadPoolNative::RequestWorkerThread()
     return res;
 }
 
-BOOL QCALLTYPE ThreadPoolNative::PerformGateActivities(INT32 cpuUtilization)
+extern "C" BOOL QCALLTYPE ThreadPool_PerformGateActivities(INT32 cpuUtilization)
 {
     QCALL_CONTRACT;
 
@@ -710,20 +710,6 @@ FCIMPL1(void, ThreadPoolNative::CorWaitHandleCleanupNative, LPVOID WaitHandle)
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-/********************************************************************************************************************/
-
-void QCALLTYPE ThreadPoolNative::ExecuteUnmanagedThreadPoolWorkItem(LPTHREAD_START_ROUTINE callback, LPVOID state)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
-    callback(state);
-
-    END_QCALL;
-}
 
 /********************************************************************************************************************/
 
@@ -936,7 +922,7 @@ VOID WINAPI AppDomainTimerCallback(PVOID callbackState, BOOLEAN timerOrWaitFired
     ManagedThreadBase::ThreadPool(AppDomainTimerCallback_Worker, pTimerInfoContext);
 }
 
-HANDLE QCALLTYPE AppDomainTimerNative::CreateAppDomainTimer(INT32 dueTime, INT32 timerId)
+extern "C" HANDLE QCALLTYPE AppDomainTimer_Create(INT32 dueTime, INT32 timerId)
 {
     QCALL_CONTRACT;
 
@@ -976,7 +962,7 @@ HANDLE QCALLTYPE AppDomainTimerNative::CreateAppDomainTimer(INT32 dueTime, INT32
     return hTimer;
 }
 
-BOOL QCALLTYPE AppDomainTimerNative::DeleteAppDomainTimer(HANDLE hTimer)
+extern "C" BOOL QCALLTYPE AppDomainTimer_Delete(HANDLE hTimer)
 {
     QCALL_CONTRACT;
 
@@ -998,7 +984,7 @@ BOOL QCALLTYPE AppDomainTimerNative::DeleteAppDomainTimer(HANDLE hTimer)
 }
 
 
-BOOL QCALLTYPE AppDomainTimerNative::ChangeAppDomainTimer(HANDLE hTimer, INT32 dueTime)
+extern "C" BOOL QCALLTYPE AppDomainTimer_Change(HANDLE hTimer, INT32 dueTime)
 {
     QCALL_CONTRACT;
 
