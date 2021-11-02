@@ -146,10 +146,13 @@ NativeImage *NativeImage::Open(
     BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(fullPath, /*pathIsBundleRelative */ true);
     if (bundleFileLocation.IsValid())
     {
-        // No need to use cache for this PE image. It is transient.
-        // We only need it to obtain the native image, which AppDomain will keep.
+        // No need to use cache for this PE image.
+        // Composite r2r PE image is not a part of anyone's identity.
+        // We only need it to obtain the native image, which will be cached at AppDomain level.
         PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, bundleFileLocation);
         PEImageLayout* mapped = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_MAPPED);
+        // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
+        // thus the layout needs an AddRef, or it will be gone together with pImage.
         mapped->AddRef();
         peLoadedImage = mapped;
     }
