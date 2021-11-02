@@ -83,19 +83,19 @@ sealed class PlatformSpecificTest : ITestInfo
         }
         if (platform.HasFlag(Xunit.TestPlatforms.iOS))
         {
-            platformCheckConditions.Add("global::System.OperatingSystem.IsIOS()");
+            platformCheckConditions.Add("(global::System.OperatingSystem.IsIOS() && !global::System.OperatingSystem.IsMacCatalyst())");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.tvOS))
         {
-            platformCheckConditions.Add("global::System.OperatingSystem.IsAndroid()");
+            platformCheckConditions.Add("global::System.OperatingSystem.IsTVOS()");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.MacCatalyst))
         {
-            platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""maccatalyst"")");
+            platformCheckConditions.Add("global::System.OperatingSystem.IsMacCatalyst()");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.Browser))
         {
-            platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""browser"")");
+            platformCheckConditions.Add("global::System.OperatingSystem.IsBrowser()");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.FreeBSD))
         {
