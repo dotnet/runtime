@@ -166,7 +166,6 @@ jobs:
           artifactFileName: 'MauiAndroidApp.tar.gz'
           artifactName: 'MauiAndroidApp'
           displayName: 'Maui Android App'
-
     # Download iOSMono tests and MauiiOS/MacCatalyst
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
