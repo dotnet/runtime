@@ -600,7 +600,7 @@ extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::Module
 // GetType
 // Given a class name, this method will look for that class
 //  with in the module.
-extern "C" void QCALLTYPE ModuleBuilder_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
+extern "C" void QCALLTYPE RuntimeModule_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
 {
     CONTRACTL
     {
@@ -645,7 +645,7 @@ extern "C" void QCALLTYPE ModuleBuilder_GetType(QCall::ModuleHandle pModule, LPC
 
 // GetName
 // This routine will return the name of the module as a String
-extern "C" void QCALLTYPE ModuleBuilder_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -680,7 +680,7 @@ static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pw
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-extern "C" void QCALLTYPE ModuleBuilder_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
