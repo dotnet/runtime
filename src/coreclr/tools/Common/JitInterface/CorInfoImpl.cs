@@ -692,6 +692,7 @@ namespace Internal.JitInterface
                     sig->sigInst.classInst = GetJitInstantiation(owningTypeInst);
                 }
 
+                sig->sigInst.methodnstCount = (uint)method.Instantiation.Length;
                 if (method.Instantiation.Length != 0)
                 {
                     sig->sigInst.methInst = GetJitInstantiation(method.Instantiation);
