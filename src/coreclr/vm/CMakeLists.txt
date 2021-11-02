@@ -935,9 +935,11 @@ list(APPEND VM_SOURCES_DAC
 # gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
 # treat it in a special way when statically linking with both VM and JIT
 if(CLR_CMAKE_TARGET_ARCH_I386)
-    list(APPEND VM_SOURCES_DAC
-        gcdecode.cpp
-    )
+    if(CLR_CMAKE_TARGET_WIN32)
+        list(APPEND VM_SOURCES_DAC
+            gcdecode.cpp
+        )
+    endif()
     list(APPEND VM_SOURCES_WKS_SPECIAL
         gcdecode.cpp
     )
@@ -952,7 +954,6 @@ add_library_clr(cee_dac ${VM_SOURCES_DAC})
 add_dependencies(cee_dac eventing_headers)
 set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(cee_dac PRIVATE [["common.h"]])
-target_compile_definitions(cee_dac PUBLIC CORECLR_EMBEDDED)
 
 add_subdirectory(wks)
 
