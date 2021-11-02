@@ -7795,8 +7795,8 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
 
                             // Construct the "field map" VN. It represents memory state of the first field
                             // of all objects on the heap. This is our primary map.
-                            ValueNum fldMapVN = vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, fgCurMemoryVN[GcHeap],
-                                                                        firstFieldSelectorVN);
+                            ValueNum fldMapVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType,
+                                                                        fgCurMemoryVN[GcHeap], firstFieldSelectorVN);
 
                             ValueNum firstFieldValueSelectorVN = ValueNumStore::NoVN;
                             if (obj != nullptr)
