@@ -4,8 +4,15 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
-  <Target Name="TestMessage" AfterTargets="Build" >
+
+  <Target Name="TestMessage"  AfterTargets="ResolveTargetingPackAssets" >
     <Message Text="TargetingpacksTargetsImported: $(TargetingpacksTargetsImported)" Importance="High" />
     <Message Text="NetCoreAppCurrent: $(NetCoreAppCurrent)" Importance="High" />
+
+    <Message Text="TargetFrameworkVersion: $(TargetFrameworkVersion)" Importance="High" />
+    <Message Text="NetCoreAppCurrentVersion: $(NetCoreAppCurrentVersion)" Importance="High" />
+    
+    <Message Text="DisableImplicitFrameworkReferences: $(DisableImplicitFrameworkReferences)" Importance="High" />
+    <Message Text="TargetFrameworkIdentifier: $(TargetFrameworkIdentifier)" Importance="High" />
   </Target>
 </Project>

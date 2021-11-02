@@ -6,7 +6,12 @@ namespace LiveBuildTest
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Console.WriteLine("--------");
+            if (args.Length > 0)
+            {
+                Console.WriteLine(args[0]);
+            }
+            Console.WriteLine(typeof(string).Assembly.Location);
         }
     }
 }
