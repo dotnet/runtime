@@ -16,7 +16,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[MemberData (nameof (TestCaseUtils.GetTestData), parameters: nameof (RequiresCapability))]
 		public void RequiresCapability (string m)
 		{
-			RunTest (nameof (RequiresCapability), m, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
+			RunTest (nameof (RequiresCapability), m, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer, MSBuildPropertyOptionNames.EnableSingleFileAnalyzer));
 		}
 
 		[Theory]
