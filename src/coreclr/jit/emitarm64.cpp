@@ -13617,7 +13617,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         GenTree* a = mul->gtGetOp1();
         GenTree* b = mul->gtGetOp2();
 
-        assert(varTypeIsIntegral(mul));
+        assert(varTypeIsIntegral(mul) && !mul->gtOverflow());
 
         bool msub = false;
         if (a->OperIs(GT_NEG) && a->isContained())
