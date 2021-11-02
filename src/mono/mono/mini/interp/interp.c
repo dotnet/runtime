@@ -666,11 +666,24 @@ get_target_imethod (GSList *list, InterpMethod *imethod)
 	return NULL;
 }
 
+static inline MonoVTableEEData*
+get_vtable_ee_data (MonoVTable *vtable)
+{
+	MonoVTableEEData *ee_data = (MonoVTableEEData*)vtable->ee_data;
+
+	if (G_UNLIKELY (!ee_data)) {
+		ee_data = m_class_alloc0 (vtable->klass, sizeof (MonoVTableEEData));
+		mono_memory_barrier ();
+		vtable->ee_data = ee_data;
+	}
+	return ee_data;
+}
+
 static gpointer*
 get_method_table (MonoVTable *vtable, int offset)
 {
 	if (offset >= 0)
-		return vtable->interp_vtable;
+		return get_vtable_ee_data (vtable)->interp_vtable;
 	else
 		return (gpointer*)vtable;
 }
@@ -682,7 +695,7 @@ alloc_method_table (MonoVTable *vtable, int offset)
 
 	if (offset >= 0) {
 		table = (gpointer*)m_class_alloc0 (vtable->klass, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
-		vtable->interp_vtable = table;
+		get_vtable_ee_data (vtable)->interp_vtable = table;
 	} else {
 		table = (gpointer*)vtable;
 	}
