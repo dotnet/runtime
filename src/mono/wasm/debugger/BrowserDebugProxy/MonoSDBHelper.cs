@@ -1327,6 +1327,32 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
+        internal async Task<IEnumerable<string>> GetCAttrsFromMethod(SessionId sessionId, int typeId, CancellationToken token)
+        {
+            var customAttributeNames = new List<string>();
+            var invokeParams = new MemoryStream();
+            var invokeParamsWriter = new MonoBinaryWriter(invokeParams);
+            var commandParams = new MemoryStream();
+            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            commandParamsWriter.Write(typeId);
+            commandParamsWriter.Write(0);
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdMethod>(sessionId, CmdMethod.GetCattrs, commandParams, token);
+            var count = retDebuggerCmdReader.ReadInt32();
+            if (count == 0)
+                return customAttributeNames;
+            for (int i = 0; i < count; i++)
+            {
+                var methodId = retDebuggerCmdReader.ReadInt32();
+                commandParams = new MemoryStream();
+                commandParamsWriter = new MonoBinaryWriter(commandParams);
+                commandParamsWriter.Write(methodId);
+                var retDebuggerCmdReader2 = await SendDebuggerAgentCommand<CmdMethod>(sessionId, CmdMethod.GetDeclaringType, commandParams, token);
+                var customAttributeTypeId = retDebuggerCmdReader2.ReadInt32();
+                customAttributeNames.Add(await GetTypeName(sessionId, customAttributeTypeId, token));
+            }
+            return customAttributeNames;
+        }
+
         public async Task<int> GetAssemblyFromType(SessionId sessionId, int type_id, CancellationToken token)
         {
             var commandParams = new MemoryStream();
@@ -1340,6 +1366,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             retDebuggerCmdReader.ReadString();
 
             return retDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<bool> GetDebuggerHiddenAttribute(SessionId sessionId, int type_id, CancellationToken token)
+        {
+            string expr = "";
+            try
+            {
+
+                var customMethodAttributes = await GetCAttrsFromMethod(sessionId, type_id, token);
+                if (customMethodAttributes.Any(a => a == "System.Diagnostics.DebuggerHiddenAttribute"))
+                {
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                logger.LogDebug($"Could not evaluate DebuggerHiddenAttribute - {expr}");
+            }
+            return false;
         }
 
         public async Task<string> GetValueFromDebuggerDisplayAttribute(SessionId sessionId, int objectId, int typeId, CancellationToken token)
