@@ -837,6 +837,15 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
+        // Bail if RHS has an embedded assignment. We could handle this
+        // if we generalized the interference check we run below.
+        //
+        if ((prevTreeRHS->gtFlags & GTF_ASG) != 0)
+        {
+            JITDUMP(" -- prev tree RHS has embedded assignment\n");
+            break;
+        }
+
         // If the VN of RHS is the VN of the current tree, or is "related", consider foward sub.
         //
         // Todo: generalize to allow when normal VN of RHS == normal VN of tree, and RHS except set contains tree except
@@ -969,7 +978,11 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     //
     substituteTree->gtFlags |= (GTF_DONT_CSE | GTF_RELOP_JMP_USED);
 
-    gtReplaceTree(stmt, tree, substituteTree);
+    // Swap in the new tree.
+    //
+    GenTree** const treeUse = &(jumpTree->AsOp()->gtOp1);
+    jumpTree->ReplaceOperand(treeUse, substituteTree);
+    fgSetStmtSeq(stmt);
     gtUpdateStmtSideEffects(stmt);
 
     DEBUG_DESTROY_NODE(tree);
