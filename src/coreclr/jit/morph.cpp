@@ -12401,13 +12401,11 @@ DONE_MORPHING_CHILDREN:
                         op1 = op2;
                         op2 = op1Child;
                     }
-
                     // a + -b = > a - b
                     // ADD(a, (NEG(b)) => SUB(a, b)
-
-                    if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                    else if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
                     {
-                        // a is non cosntant because it was already canonicalized to have
+                        // a is non constant because it was already canonicalized to have
                         // variable on the left and constant on the right.
 
                         // tree: ADD
