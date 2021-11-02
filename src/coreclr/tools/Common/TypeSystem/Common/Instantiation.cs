@@ -137,7 +137,7 @@ namespace Internal.TypeSystem
             int hashcode = 1;
             foreach (var t in _genericParameters)
             {
-                hashcode = (hashcode << 3) ^ t.GetHashCode();
+                hashcode = BitOperations.RotateLeft(hashcode, 3) ^ t.GetHashCode();
             }
             return hashcode;
         }
