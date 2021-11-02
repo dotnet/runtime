@@ -673,6 +673,8 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method);
 	}
 
+	del->method = info->method;
+
 	/* Cache the target method address in MonoDelegateTrampInfo */
 	ftndesc = (MonoFtnDesc*)info->method_ptr;
 
@@ -705,7 +707,7 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 		ERROR_DECL (error);
 		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (info->invoke, del);
 		gpointer arg = NULL;
-		gpointer addr = mini_llvmonly_load_method_delegate (invoke_impl, FALSE, FALSE, &arg, error);
+		gpointer addr = mini_llvmonly_load_method (invoke_impl, FALSE, FALSE, &arg, error);
 		mono_error_assert_ok (error);
 		ftndesc = mini_llvmonly_create_ftndesc (invoke_impl, addr, arg);
 		if (subtype == WRAPPER_SUBTYPE_NONE) {
