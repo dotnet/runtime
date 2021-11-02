@@ -8,6 +8,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using System.UnitTesting;
 using Xunit;
 
@@ -2987,5 +2988,107 @@ namespace System.ComponentModel.Composition
             [Import]
             public object Import { get; set; }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task ThreadSafe_CompositionContainer_Calling_Compose_And_GetExport()
+        {
+            var catalog = new AssemblyCatalog(typeof(Export1).Assembly);
+
+            for (int i = 0; i < 100; i++)
+            {
+                var container = new CompositionContainer(catalog, CompositionOptions.IsThreadSafe);
+
+                var task = Task.Run(() =>
+                {
+                    var export1 = container.GetExport<Export1>();
+                    var export2 = container.GetExport<Export2>();
+                    var export3 = container.GetExport<Export3>();
+                    var export4 = container.GetExport<Export4>();
+                    var export5 = container.GetExport<Export5>();
+                    var export6 = container.GetExport<Export6>();
+                    var export7 = container.GetExport<Export7>();
+                    var export8 = container.GetExport<Export8>();
+                    var export9 = container.GetExport<Export9>();
+                    var export10 = container.GetExport<Export10>();
+                    var export11 = container.GetExport<Export11>();
+                });
+
+                var batch = new CompositionBatch(partsToAdd: new[]
+                {
+                    AttributedModelServices.CreatePart(new Export12())
+                }, partsToRemove: Enumerable.Empty<ComposablePart>());
+                container.Compose(batch);
+
+                var batch2 = new CompositionBatch(partsToRemove: new[]
+                {
+                    AttributedModelServices.CreatePart(new Export12())
+                }, partsToAdd: Enumerable.Empty<ComposablePart>());
+                container.Compose(batch);
+
+                Exception exception = await Record.ExceptionAsync(() => task);
+                Assert.Null(exception);
+            }
+        }
+
+        [Export]
+        public sealed class Export1 { }
+
+        [Export]
+        public sealed class Export2 { }
+
+        [Export]
+        public sealed class Export3 { }
+
+        [Export]
+        public sealed class Export4 { }
+
+        [Export]
+        public sealed class Export5 { }
+
+        [Export]
+        public sealed class Export6
+        {
+            [Import]
+            public Export1? Dependency { get; set; }
+        }
+
+        [Export]
+        public sealed class Export7
+        {
+            [Import]
+            public Export1? Dependency { get; set; }
+        }
+
+        [Export]
+        public sealed class Export8
+        {
+            [Import]
+            public Export2? Dependency { get; set; }
+        }
+
+        [Export]
+        public sealed class Export9
+        {
+            [Import]
+            public Export3? Dependency { get; set; }
+        }
+
+        [Export]
+        public sealed class Export10
+        {
+            [Import]
+            public Export4? Dependency { get; set; }
+        }
+
+        [Export]
+        public sealed class Export11
+        {
+            [Import]
+            public Export5? Dependency { get; set; }
+        }
+
+        [Export]
+        [PartNotDiscoverable]
+        public sealed class Export12 { }
     }
 }
