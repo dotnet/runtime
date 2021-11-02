@@ -38,7 +38,7 @@ class COMDynamicWrite
 
 // This function will create the class's metadata definition
 
-extern "C" INT32 QCALLTYPE COMDynamicWrite_DefineType(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineType(QCall::ModuleHandle pModule,
                             LPCWSTR wszFullName,
                             INT32 tkParent,
                             INT32 attributes,
@@ -46,7 +46,7 @@ extern "C" INT32 QCALLTYPE COMDynamicWrite_DefineType(QCall::ModuleHandle pModul
                             INT32 * pInterfaceTokens);
 
 
-extern "C" INT32 QCALLTYPE COMDynamicWrite_DefineGenericParam(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineGenericParam(QCall::ModuleHandle pModule,
                                     LPCWSTR wszFullName,
                                     INT32 tkParent,
                                     INT32 attributes,
@@ -55,22 +55,22 @@ extern "C" INT32 QCALLTYPE COMDynamicWrite_DefineGenericParam(QCall::ModuleHandl
 
 // This function will reset the parent class in metadata
 
-extern "C" void QCALLTYPE COMDynamicWrite_SetParentType(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkParent);
+extern "C" void QCALLTYPE TypeBuilder_SetParentType(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkParent);
 
 // This function will add another interface impl
 
-extern "C" void QCALLTYPE COMDynamicWrite_AddInterfaceImpl(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkInterface);
+extern "C" void QCALLTYPE TypeBuilder_AddInterfaceImpl(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkInterface);
 
 // This function will create a method within the class
 
-extern "C" INT32 QCALLTYPE COMDynamicWrite_DefineMethod(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attributes);
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethod(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attributes);
 
 
-extern "C" INT32 QCALLTYPE COMDynamicWrite_DefineMethodSpec(QCall::ModuleHandle pModule, INT32 tkParent, LPCBYTE pSignature, INT32 sigLength);
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethodSpec(QCall::ModuleHandle pModule, INT32 tkParent, LPCBYTE pSignature, INT32 sigLength);
 
 // This function will create a method within the class
 
-extern "C" void QCALLTYPE COMDynamicWrite_SetMethodIL(QCall::ModuleHandle pModule,
+extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
                             INT32 tk,
                             BOOL fIsInitLocal,
                             LPCBYTE pBody,
@@ -84,54 +84,54 @@ extern "C" void QCALLTYPE COMDynamicWrite_SetMethodIL(QCall::ModuleHandle pModul
                             INT32 numTokenFixups);
 
 
-extern "C" void QCALLTYPE COMDynamicWrite_TermCreateClass(QCall::ModuleHandle pModule, INT32 tk, QCall::ObjectHandleOnStack retType);
+extern "C" void QCALLTYPE TypeBuilder_TermCreateClass(QCall::ModuleHandle pModule, INT32 tk, QCall::ObjectHandleOnStack retType);
 
 
-extern "C" mdFieldDef QCALLTYPE COMDynamicWrite_DefineField(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attr);
+extern "C" mdFieldDef QCALLTYPE TypeBuilder_DefineField(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attr);
 
 
-extern "C" void QCALLTYPE COMDynamicWrite_SetPInvokeData(QCall::ModuleHandle pModule, LPCWSTR wszDllName, LPCWSTR wszFunctionName, INT32 token, INT32 linkFlags);
+extern "C" void QCALLTYPE TypeBuilder_SetPInvokeData(QCall::ModuleHandle pModule, LPCWSTR wszDllName, LPCWSTR wszFunctionName, INT32 token, INT32 linkFlags);
 
 
-extern "C" INT32 QCALLTYPE COMDynamicWrite_DefineProperty(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, LPCBYTE pSignature, INT32 sigLength);
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineProperty(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, LPCBYTE pSignature, INT32 sigLength);
 
 
-extern "C" INT32 QCALLTYPE COMDynamicWrite_DefineEvent(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, INT32 tkEventType);
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineEvent(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, INT32 tkEventType);
 
 // functions to set Setter, Getter, Reset, TestDefault, and other methods
 
-extern "C" void QCALLTYPE COMDynamicWrite_DefineMethodSemantics(QCall::ModuleHandle pModule, INT32 tkAssociation, INT32 attr, INT32 tkMethod);
+extern "C" void QCALLTYPE TypeBuilder_DefineMethodSemantics(QCall::ModuleHandle pModule, INT32 tkAssociation, INT32 attr, INT32 tkMethod);
 
 // functions to set method's implementation flag
 
-extern "C" void QCALLTYPE COMDynamicWrite_SetMethodImpl(QCall::ModuleHandle pModule, INT32 tkMethod, INT32 attr);
+extern "C" void QCALLTYPE TypeBuilder_SetMethodImpl(QCall::ModuleHandle pModule, INT32 tkMethod, INT32 attr);
 
 // functions to create MethodImpl record
 
-extern "C" void QCALLTYPE COMDynamicWrite_DefineMethodImpl(QCall::ModuleHandle pModule, UINT32 tkType, UINT32 tkBody, UINT32 tkDecl);
+extern "C" void QCALLTYPE TypeBuilder_DefineMethodImpl(QCall::ModuleHandle pModule, UINT32 tkType, UINT32 tkBody, UINT32 tkDecl);
 
 // GetTokenFromSig's argument
 
-extern "C" INT32 QCALLTYPE COMDynamicWrite_GetTokenFromSig(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength);
+extern "C" INT32 QCALLTYPE TypeBuilder_GetTokenFromSig(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength);
 
 // Set Field offset
 
-extern "C" void QCALLTYPE COMDynamicWrite_SetFieldLayoutOffset(QCall::ModuleHandle pModule, INT32 tkField, INT32 iOffset);
+extern "C" void QCALLTYPE TypeBuilder_SetFieldLayoutOffset(QCall::ModuleHandle pModule, INT32 tkField, INT32 iOffset);
 
 // Set classlayout info
 
-extern "C" void QCALLTYPE COMDynamicWrite_SetClassLayout(QCall::ModuleHandle pModule, INT32 tk, INT32 iPackSize, UINT32 iTotalSize);
+extern "C" void QCALLTYPE TypeBuilder_SetClassLayout(QCall::ModuleHandle pModule, INT32 tk, INT32 iPackSize, UINT32 iTotalSize);
 
 // Set a custom attribute
 
-extern "C" void QCALLTYPE COMDynamicWrite_DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob);
+extern "C" void QCALLTYPE TypeBuilder_DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob);
 
 // functions to set ParamInfo
 
-extern "C" INT32 QCALLTYPE COMDynamicWrite_SetParamInfo(QCall::ModuleHandle pModule, UINT32 tkMethod, UINT32 iSequence, UINT32 iAttributes, LPCWSTR wszParamName);
+extern "C" INT32 QCALLTYPE TypeBuilder_SetParamInfo(QCall::ModuleHandle pModule, UINT32 tkMethod, UINT32 iSequence, UINT32 iAttributes, LPCWSTR wszParamName);
 
 // functions to set default value
 
-extern "C" void QCALLTYPE COMDynamicWrite_SetConstantValue(QCall::ModuleHandle pModule, UINT32 tk, DWORD valueType, LPVOID pValue);
+extern "C" void QCALLTYPE TypeBuilder_SetConstantValue(QCall::ModuleHandle pModule, UINT32 tk, DWORD valueType, LPVOID pValue);
 
 #endif  // _COMDYNAMIC_H_

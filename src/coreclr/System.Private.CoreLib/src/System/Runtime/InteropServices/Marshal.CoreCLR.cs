@@ -250,7 +250,7 @@ namespace System.Runtime.InteropServices
             return (IntPtr)(-1);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMModule_GetHINSTANCE")]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHINSTANCE")]
         private static extern IntPtr GetHINSTANCE(QCallModule m);
 
 #endif // TARGET_WINDOWS

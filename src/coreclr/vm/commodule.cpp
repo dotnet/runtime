@@ -21,7 +21,7 @@
 // wszFullName is escaped (TYPE_NAME_RESERVED_CHAR). It should not be byref or contain enclosing type name,
 // assembly name, and generic argument list.
 //**************************************************
-extern "C" mdTypeRef QCALLTYPE COMModule_GetTypeRef(QCall::ModuleHandle pModule,
+extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                           LPCWSTR wszFullName,
                                           QCall::ModuleHandle pRefedModule,
                                           LPCWSTR wszRefedModuleFileName,
@@ -135,7 +135,7 @@ extern "C" mdTypeRef QCALLTYPE COMModule_GetTypeRef(QCall::ModuleHandle pModule,
 **           int            tkTypeSpec
 **Exceptions:
 ==============================================================================*/
-extern "C" INT32 QCALLTYPE COMModule_GetArrayMethodToken(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCall::ModuleHandle pModule,
                                                INT32 tkTypeSpec,
                                                LPCWSTR wszMethodName,
                                                LPCBYTE pSignature,
@@ -214,7 +214,7 @@ namespace
 // This function will return a MemberRef token given a MethodDef token and the module where the MethodDef/FieldDef is defined.
 //
 //******************************************************************************
-extern "C" INT32 QCALLTYPE COMModule_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token)
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token)
 {
     QCALL_CONTRACT;
 
@@ -295,7 +295,7 @@ extern "C" INT32 QCALLTYPE COMModule_GetMemberRef(QCall::ModuleHandle pModule, Q
 // Return a MemberRef token given a RuntimeMethodInfo
 //
 //******************************************************************************
-extern "C" INT32 QCALLTYPE COMModule_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * pMeth)
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * pMeth)
 {
     QCALL_CONTRACT;
 
@@ -376,7 +376,7 @@ extern "C" INT32 QCALLTYPE COMModule_GetMemberRefOfMethodInfo(QCall::ModuleHandl
 // Return a MemberRef token given a RuntimeFieldInfo
 //
 //******************************************************************************
-extern "C" mdMemberRef QCALLTYPE COMModule_GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField)
+extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField)
 {
     QCALL_CONTRACT;
 
@@ -450,7 +450,7 @@ extern "C" mdMemberRef QCALLTYPE COMModule_GetMemberRefOfFieldInfo(QCall::Module
 // Return a MemberRef token given a Signature
 //
 //******************************************************************************
-extern "C" INT32 QCALLTYPE COMModule_GetMemberRefFromSignature(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefFromSignature(QCall::ModuleHandle pModule,
                                                      INT32 tr,
                                                      LPCWSTR wszMemberName,
                                                      LPCBYTE pSignature,
@@ -482,7 +482,7 @@ extern "C" INT32 QCALLTYPE COMModule_GetMemberRefFromSignature(QCall::ModuleHand
 // This function is used to set the FieldRVA with the content data
 //
 //******************************************************************************
-extern "C" void QCALLTYPE COMModule_SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 tkField, LPCBYTE pContent, INT32 length)
+extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 tkField, LPCBYTE pContent, INT32 length)
 {
     QCALL_CONTRACT;
 
@@ -532,7 +532,7 @@ extern "C" void QCALLTYPE COMModule_SetFieldRVAContent(QCall::ModuleHandle pModu
 //  string constant or return the token of an existing constant.
 //
 //******************************************************************************
-extern "C" mdString QCALLTYPE COMModule_GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength)
+extern "C" mdString QCALLTYPE ModuleBuilder_GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength)
 {
     QCALL_CONTRACT;
 
@@ -559,7 +559,7 @@ extern "C" mdString QCALLTYPE COMModule_GetStringConstant(QCall::ModuleHandle pM
 /*=============================SetModuleName====================================
 // SetModuleName
 ==============================================================================*/
-extern "C" void QCALLTYPE COMModule_SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName)
+extern "C" void QCALLTYPE ModuleBuilder_SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName)
 {
     QCALL_CONTRACT;
 
@@ -578,7 +578,7 @@ extern "C" void QCALLTYPE COMModule_SetModuleName(QCall::ModuleHandle pModule, L
 // Return a type spec token given a byte array
 //
 //******************************************************************************
-extern "C" mdTypeSpec QCALLTYPE COMModule_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength)
+extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;
 
@@ -600,7 +600,7 @@ extern "C" mdTypeSpec QCALLTYPE COMModule_GetTokenFromTypeSpec(QCall::ModuleHand
 // GetType
 // Given a class name, this method will look for that class
 //  with in the module.
-extern "C" void QCALLTYPE COMModule_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
+extern "C" void QCALLTYPE ModuleBuilder_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
 {
     CONTRACTL
     {
@@ -645,7 +645,7 @@ extern "C" void QCALLTYPE COMModule_GetType(QCall::ModuleHandle pModule, LPCWSTR
 
 // GetName
 // This routine will return the name of the module as a String
-extern "C" void QCALLTYPE COMModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE ModuleBuilder_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -680,7 +680,7 @@ static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pw
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-extern "C" void QCALLTYPE COMModule_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE ModuleBuilder_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -711,7 +711,7 @@ extern "C" void QCALLTYPE COMModule_GetFullyQualifiedName(QCall::ModuleHandle pM
 **Arguments: refThis
 **Exceptions: None.
 ==============================================================================*/
-extern "C" HINSTANCE QCALLTYPE COMModule_GetHINSTANCE(QCall::ModuleHandle pModule)
+extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pModule)
 {
     QCALL_CONTRACT;
 
