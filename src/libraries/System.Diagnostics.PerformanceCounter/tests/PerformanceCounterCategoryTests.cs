@@ -267,6 +267,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounterCategory_InstanceExists_Static()
         {
             PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
@@ -281,7 +282,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounterCategory_InstanceExists_StaticInvalid()
         {
             Assert.Throws<ArgumentNullException>(() => PerformanceCounterCategory.InstanceExists(null, "Processor", "."));
