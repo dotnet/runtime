@@ -273,9 +273,9 @@ public class Test_DictionaryExpansion
         for (int i = 0; i < max; i++)
             Assert.AreEqual(GFunc2<object>(i).ToString(), i == 0 ? "System.Object" : $"TestType{i}`1[System.Object]");
 
-        Console.WriteLine("TEST: GFunc<Test>(i)");
+        Console.WriteLine("TEST: GFunc<Test_DictionaryExpansion>(i)");
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(GFunc<Test_DictionaryExpansion>(i).ToString(), i == 0 ? "Test" : $"TestType{i}`1[Test]");
+            Assert.AreEqual(GFunc<Test_DictionaryExpansion>(i).ToString(), i == 0 ? "Test_DictionaryExpansion" : $"TestType{i}`1[Test_DictionaryExpansion]");
     }
     
     public static int Main()
