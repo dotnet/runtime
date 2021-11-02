@@ -5,7 +5,7 @@ using System.Collections;
 using System.Linq;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests
+namespace System.Security.Cryptography.Tests
 {
     public class OidCollectionTests
     {

@@ -131,9 +131,7 @@ namespace System.Security.Cryptography
         {
             // inputCount != InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
-
-            if (_inputBuffer == null)
-                ThrowHelper.ThrowObjectDisposed();
+            ObjectDisposedException.ThrowIf(_inputBuffer == null, typeof(FromBase64Transform));
 
             if (outputBuffer == null)
                 ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
@@ -172,11 +170,7 @@ namespace System.Security.Cryptography
         {
             // inputCount != InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
-
-            if (_inputBuffer == null)
-            {
-                ThrowHelper.ThrowObjectDisposed();
-            }
+            ObjectDisposedException.ThrowIf(_inputBuffer == null, typeof(FromBase64Transform));
 
             if (inputCount == 0)
             {
@@ -394,10 +388,6 @@ namespace System.Security.Cryptography
         public static void ThrowArgumentOutOfRange(ExceptionArgument argument) => throw new ArgumentOutOfRangeException(argument.ToString(), SR.ArgumentOutOfRange_NeedNonNegNum);
         [DoesNotReturn]
         public static void ThrowInvalidOffLen() => throw new ArgumentException(SR.Argument_InvalidOffLen);
-        [DoesNotReturn]
-        public static void ThrowObjectDisposed() => throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
-        [DoesNotReturn]
-        public static void ThrowCryptographicException() => throw new CryptographicException(SR.Cryptography_SSE_InvalidDataSize);
         [DoesNotReturn]
         public static void ThrowBase64FormatException() => throw new FormatException();
 
