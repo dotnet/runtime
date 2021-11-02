@@ -1,12 +1,15 @@
 <Project>
     <PropertyGroup>
-        <RepositoryEngineeringDir>../../../../../../eng/</RepositoryEngineeringDir>
+        <PackageRid>linux-x64</PackageRid>
+        <PackageRid Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</PackageRid>
+        
+        <TargetingPacksTargetsLocation>../../../../../../eng/targetingpacks.targets</TargetingPacksTargetsLocation>
         <ProductVersion>7.0.0</ProductVersion>
         <NetCoreAppCurrent>net7.0</NetCoreAppCurrent>
         <NetCoreAppCurrentVersion>7.0</NetCoreAppCurrentVersion>
         <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
         <MicrosoftNetCoreAppRefPackDir>../../../../../../artifacts/bin/microsoft.netcore.app.ref/</MicrosoftNetCoreAppRefPackDir>
-        <MicrosoftNetCoreAppRuntimePackDir>../../../../../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/</MicrosoftNetCoreAppRuntimePackDir>
+        <MicrosoftNetCoreAppRuntimePackDir>../../../../../../artifacts/bin/microsoft.netcore.app.runtime.$(PackageRid)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
 </Project>
 

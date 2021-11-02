@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
+  <Import Project="$(TargetingPacksTargetsLocation)" />
 
   <PropertyGroup>
     <!--
