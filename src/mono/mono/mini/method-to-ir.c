@@ -5921,7 +5921,18 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 	/* Call it */
 	for (int i = 0; i < sig->param_count + sig->hasthis; ++i)
 		EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
-	ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
+
+	if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (sig)) {
+		MonoInst *wrapper_ins = emit_get_rgctx_method (cfg, -1, cfg->method, MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT);
+
+		MonoInst *call_target;
+		int addr_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, wrapper_ins->dreg, 0);
+		ins = mini_emit_extra_arg_calli (cfg, sig, iargs, ftndesc->dreg, call_target);
+	} else {
+		ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
+	}
+
 	/* Do a normal return */
 	if (cfg->ret) {
 		emit_setret (cfg, ins);
