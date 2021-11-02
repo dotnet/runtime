@@ -406,6 +406,19 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// When non-null, a custom callback used to open new connections.
+        /// </summary>
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<MultiplexedConnection>>? MultiplexedConnectCallback
+        {
+            get => _settings._multiplexedConnectCallback;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._multiplexedConnectCallback = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets a custom callback that provides access to the plaintext HTTP protocol stream.
         /// </summary>
         public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter

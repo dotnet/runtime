@@ -58,6 +58,7 @@ namespace System.Net.Http
 
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
+        internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<MultiplexedConnection>>? _multiplexedConnectCallback;
 
         // !!! NOTE !!! This is temporary and will not ship.
         internal QuicImplementationProvider? _quicImplementationProvider;

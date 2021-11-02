@@ -847,7 +847,7 @@ namespace System.Net.Http
                     Trace("Attempting new HTTP3 connection.");
                 }
 
-                QuicConnection quicConnection;
+                MultiplexedConnection quicConnection;
                 try
                 {
                     quicConnection = await ConnectHelper.ConnectQuicAsync(request, Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);

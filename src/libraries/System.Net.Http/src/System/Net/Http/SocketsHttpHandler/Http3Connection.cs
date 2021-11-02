@@ -24,7 +24,7 @@ namespace System.Net.Http
         private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
         private readonly byte[] _altUsedEncodedHeader;
-        private QuicConnection? _connection;
+        private MultiplexedConnection? _connection;
         private Task? _connectionClosedTask;
 
         // Keep a collection of requests around so we can process GOAWAY.
@@ -66,7 +66,7 @@ namespace System.Net.Http
             }
         }
 
-        public Http3Connection(HttpConnectionPool pool, HttpAuthority? origin, HttpAuthority authority, QuicConnection connection)
+        public Http3Connection(HttpConnectionPool pool, HttpAuthority? origin, HttpAuthority authority, MultiplexedConnection connection)
         {
             _pool = pool;
             _origin = origin;
@@ -122,7 +122,7 @@ namespace System.Net.Http
                     _connectionClosedTask = _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
                 }
 
-                QuicConnection connection = _connection;
+                MultiplexedConnection connection = _connection;
                 _connection = null;
 
                 _ = _connectionClosedTask.ContinueWith(closeTask =>
@@ -173,7 +173,7 @@ namespace System.Net.Http
 
                         if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
                         {
-                            quicStream = _connection.OpenBidirectionalStream();
+                            quicStream = (QuicStream)_connection.OpenBidirectionalStream();
                             requestStream = new Http3RequestStream(request, this, quicStream);
                             _activeRequests.Add(quicStream, requestStream);
                             break;
@@ -344,7 +344,7 @@ namespace System.Net.Http
         {
             try
             {
-                _clientControl = _connection!.OpenUnidirectionalStream();
+                _clientControl = (QuicStream)_connection!.OpenUnidirectionalStream();
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -378,7 +378,7 @@ namespace System.Net.Http
             {
                 while (true)
                 {
-                    ValueTask<QuicStream> streamTask;
+                    ValueTask<Stream> streamTask;
 
                     lock (SyncObj)
                     {
@@ -391,7 +391,7 @@ namespace System.Net.Http
                         streamTask = _connection!.AcceptStreamAsync(CancellationToken.None);
                     }
 
-                    QuicStream stream = await streamTask.ConfigureAwait(false);
+                    QuicStream stream = (QuicStream)await streamTask.ConfigureAwait(false);
 
                     // This process is cleaned up when _connection is disposed, and errors are observed via Abort().
                     _ = ProcessServerStreamAsync(stream);

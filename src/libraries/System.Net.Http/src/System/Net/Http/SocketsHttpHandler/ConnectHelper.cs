@@ -105,11 +105,11 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<MultiplexedConnection> ConnectQuicAsync(HttpRequestMessage request, QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
 
-            QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
+            MultiplexedConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
             try
             {
                 await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
