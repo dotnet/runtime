@@ -14,9 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
-    <!-- Exceeds VM resources in CI on compilation: https://github.com/dotnet/runtime/issues/51961 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->
@@ -272,12 +269,6 @@
 
     <!-- https://github.com/dotnet/runtime/issues/58226 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Unit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Unit.Tests.csproj" />
-
-    <!-- hhttps://github.com/dotnet/runtime/issues/60048 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Generators.Tests\System.Text.RegularExpressions.Generators.Tests.csproj" />
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->

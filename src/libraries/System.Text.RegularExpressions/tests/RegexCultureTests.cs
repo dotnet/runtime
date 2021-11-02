@@ -325,6 +325,7 @@ namespace System.Text.RegularExpressions.Tests
         public static IEnumerable<object[]> Match_In_Different_Cultures_CriticalCases_TestData() =>
             Match_In_Different_Cultures_CriticalCases_TestData_For(RegexOptions.None).Union(Match_In_Different_Cultures_CriticalCases_TestData_For(RegexOptions.Compiled));
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60899", TestPlatforms.Browser)]
         [Theory]
         [MemberData(nameof(Match_In_Different_Cultures_TestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60697", TestPlatforms.iOS | TestPlatforms.tvOS)]
