@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         // Note that this is _valid_ as an "embedded stylesheet".
         // (see XSLT spec 2.7)
         public void EmbeddedStylesheet()
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void OnlyInner()
         {
             string test = "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" version=\"1.0\">";
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Xml.Tests
             return doc;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void LoadInputAsXmlDocument()
         {
             XmlDocument doc = GetXslDoc();
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void LoadInputAsXmlNodeList()
         {
             XmlDocument doc = GetXslDoc();
@@ -233,7 +233,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void LoadInputAsStream()
         {
             XmlDocument doc = GetXslDoc();
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.False(e2.MoveNext(), label + " : nl2 has extras");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Load2()
         {
             XmlDocument doc = GetXslDoc();

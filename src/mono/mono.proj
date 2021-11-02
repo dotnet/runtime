@@ -729,31 +729,19 @@
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
   </Target>
 
-  <Target Name="InitializeGenerateRuntimeVersionFile"
-          BeforeTargets="Restore">
-    <MSBuild Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="Restore"/>
-  </Target>
+  <PropertyGroup>
+    <!-- Hardcode version paths in a global location. Condition on running OS to generate the right files for the Mono WASM cross tools. -->
+    <NativeVersionFile Condition="'$(OS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="'$(OS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <AssemblyName>.NET Runtime</AssemblyName>
+  </PropertyGroup>
 
-  <Target Name="GenerateMonoVersionFile" DependsOnTargets="InitializeGenerateRuntimeVersionFile">
-    <PropertyGroup>
-      <NativeVersionFile Condition="'$(OS)' == 'Windows_NT'">_version.h</NativeVersionFile>
-      <NativeVersionFile Condition="'$(OS)' != 'Windows_NT'">version.c</NativeVersionFile>
-    </PropertyGroup>
-
-    <MSBuild Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjDir)$(NativeVersionFile);RuntimeVersionFile=$(MonoObjDir)runtime_version.h" />
-    <MSBuild Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'"
-             Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjCrossDir)$(NativeVersionFile);RuntimeVersionFile=$(MonoObjCrossDir)runtime_version.h" />
-  </Target>
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
   <!-- The standard set of targets that need to run before the BuildMono target runs -->
   <PropertyGroup>
-    <MonoDependsOnTargets>CheckEnv;GenerateMonoVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
-    <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
+    <MonoDependsOnTargets>CheckEnv;GenerateRuntimeVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
+    <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">GenerateRuntimeVersionFile;ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
   </PropertyGroup>
 
   <!-- General targets -->

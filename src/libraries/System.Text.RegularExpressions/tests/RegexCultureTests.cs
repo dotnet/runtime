@@ -327,6 +327,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(Match_In_Different_Cultures_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60697", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Match_In_Different_Cultures(string pattern, RegexOptions options, CultureInfo culture, string input, string match_expected)
         {
             Regex r = RegexHelpers.CreateRegexInCulture(pattern, options, culture);
