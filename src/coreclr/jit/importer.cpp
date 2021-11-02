@@ -3920,6 +3920,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
+    if ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) && IsTargetAbi(CORINFO_CORERT_ABI))
+    {
+        // CreateSpan must be expanded for NativeAOT
+        mustExpand = true;
+    }
+
     GenTree* retNode = nullptr;
 
     // Under debug and minopts, only expand what is required.
