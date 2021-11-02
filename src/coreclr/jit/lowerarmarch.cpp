@@ -1573,10 +1573,21 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_ADD) &&
         !node->gtOverflow() && (node->gtGetOp1()->OperIs(GT_MUL) || node->gtGetOp2()->OperIs(GT_MUL)))
     {
-        GenTree* mul = node->gtGetOp1()->OperIs(GT_MUL) ? node->gtGetOp1() : node->gtGetOp2();
-        GenTree* a   = mul->gtGetOp1();
-        GenTree* b   = mul->gtGetOp2();
-        GenTree* c   = node->gtGetOp1() == mul ? node->gtGetOp2() : node->gtGetOp1();
+        GenTree* mul;
+        GenTree* c;
+        if (node->gtGetOp1()->OperIs(GT_MUL))
+        {
+            mul = node->gtGetOp1();
+            c   = node->gtGetOp2();
+        }
+        else
+        {
+            mul = node->gtGetOp2();
+            c   = node->gtGetOp1();
+        }
+
+        GenTree* a = mul->gtGetOp1();
+        GenTree* b = mul->gtGetOp2();
 
         if (!mul->isContained() && !mul->gtOverflow() && !a->isContained() && !b->isContained() && !c->isContained() &&
             varTypeIsIntegral(mul))

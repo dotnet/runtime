@@ -13601,10 +13601,21 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         assert(ins == INS_add);
 
-        GenTree* mul = src1->OperIs(GT_MUL) ? src1 : src2;
-        GenTree* a   = mul->gtGetOp1();
-        GenTree* b   = mul->gtGetOp2();
-        GenTree* c   = src1 == mul ? src2 : src1;
+        GenTree* mul;
+        GenTree* c;
+        if (src1->OperIs(GT_MUL))
+        {
+            mul = src1;
+            c   = src2;
+        }
+        else
+        {
+            mul = src2;
+            c   = src1;
+        }
+
+        GenTree* a = mul->gtGetOp1();
+        GenTree* b = mul->gtGetOp2();
 
         assert(varTypeIsIntegral(mul));
 
@@ -13617,7 +13628,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         if (b->OperIs(GT_NEG) && b->isContained())
         {
             b    = b->gtGetOp1();
-            msub = !msub;
+            msub = !msub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
         }
 
         emitIns_R_R_R_R(msub ? INS_msub : INS_madd, attr, dst->GetRegNum(), a->GetRegNum(), b->GetRegNum(),
