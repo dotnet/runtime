@@ -1850,16 +1850,16 @@ namespace System.Reflection.Emit
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException("type must contain a TypeBuilder as a generic argument.", nameof(type));
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException("constructor declaring type is not a generic type definition", nameof(constructor));
+                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
 
             if (constructor.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("constructor declaring type is not the generic type definition of type", nameof(type));
+                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
             ConstructorInfo res = type.GetConstructor(constructor);
             if (res == null)
@@ -1897,19 +1897,19 @@ namespace System.Reflection.Emit
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException("type must contain a TypeBuilder as a generic argument.", nameof(type));
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
-                throw new ArgumentException("method must represent a generic method definition on a generic type definition.", nameof(method));
+                throw new ArgumentException(SR.Argument_NeedGenericMethodDefinition, nameof(method));
 
             if (!method.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException("method declaring type is not a generic type definition", nameof(method));
+                throw new ArgumentException(SR.Argument_MethodNeedGenericDeclaringType, nameof(method));
 
             if (method.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("method declaring type is not the generic type definition of type", nameof(type));
+                throw new ArgumentException(SR.Argument_InvalidMethodDeclaringType, nameof(type));
 
             MethodInfo res = type.GetMethod(method);
             if (res == null)
@@ -1923,16 +1923,16 @@ namespace System.Reflection.Emit
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException("type must contain a TypeBuilder as a generic argument.", nameof(type));
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!field.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException("field declaring type is not a generic type definition", nameof(field));
+                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
 
             if (field.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("field declaring type is not the generic type definition of type", nameof(type));
+                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
             if (field is FieldOnTypeBuilderInst)
                 throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
