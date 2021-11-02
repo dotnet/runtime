@@ -59,6 +59,7 @@ namespace System.Security.Cryptography.Hashing.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task ComputeHashAsync_SupportsCancellation()
         {
             using (CancellationTokenSource cancellationSource = new CancellationTokenSource(100))
