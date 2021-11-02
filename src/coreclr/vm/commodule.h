@@ -14,8 +14,8 @@ class Module;
 class COMModule
 {
 public:
-    // Get class will return an array contain all of the classes
-    //  that are defined within this Module.
+    // GetTypes will return an array containing all of the types
+    // that are defined within this Module.
     static FCDECL1(Object*, GetTypes,  ReflectModuleBaseObject* pModuleUNSAFE);
 
     static FCDECL1(Object*,     GetMethods,             ReflectModuleBaseObject* refThisUNSAFE);
