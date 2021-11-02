@@ -3732,23 +3732,31 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     impPopStack();
 
     // Turn count and pointer value into constants.
-    GenTree* spanElemCount = gtNewIconNode(count, TYP_INT);
-    GenTree* spanPointerField = gtNewIconHandleNode((size_t)data, GTF_ICON_CONST_PTR);
+    GenTree* lengthValue = gtNewIconNode(count, TYP_INT);
+    GenTree* pointerValue = gtNewIconHandleNode((size_t)data, GTF_ICON_CONST_PTR);
 
     // Construct ReadOnlySpan<T> to return.
-    unsigned spanTTemp = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
-    lvaSetStruct(spanTTemp, sig->retTypeClass, false);
-    GenTree* addrOfSpanTTempPointer = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
-    GenTree* dereffedSpanTTempPointer = gtNewOperNode(GT_IND, TYP_BYREF, addrOfSpanTTempPointer);
-    GenTree* gtAssignedSpanTTempPointer = gtNewAssignNode(dereffedSpanTTempPointer, spanPointerField);
+    CORINFO_CLASS_HANDLE spanHnd     = sig->retTypeClass;
+    unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
+    lvaSetStruct(spanTempNum, spanHnd, false);
 
-    GenTree* addrOfSpanTTempPointer2 = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
-    GenTree* addrOfSpanTTempSize = gtNewOperNode(GT_ADD, TYP_BYREF, addrOfSpanTTempPointer2, gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL)); // HACKATHON OFFSET not set usefully here
-    GenTree* dereffedSpanTTempSize = gtNewOperNode(GT_IND, TYP_INT, addrOfSpanTTempSize);
-    GenTree* gtAssignedSpanTTempSize = gtNewAssignNode(dereffedSpanTTempSize, spanElemCount);
+    CORINFO_FIELD_HANDLE pointerFieldHnd = info.compCompHnd->getFieldInClass(spanHnd, 0);
+    CORINFO_FIELD_HANDLE lengthFieldHnd  = info.compCompHnd->getFieldInClass(spanHnd, 1);
 
-    GenTree* gtCommaAssignPointerAndGetResult = gtNewOperNode(GT_COMMA, TYP_STRUCT, gtAssignedSpanTTempPointer, impCreateLocalNode(spanTTemp DEBUGARG(0)));
-    return gtNewOperNode(GT_COMMA, TYP_STRUCT, gtAssignedSpanTTempSize, gtCommaAssignPointerAndGetResult);
+    GenTreeLclFld* pointerField = gtNewLclFldNode(spanTempNum, TYP_BYREF, 0);
+    pointerField->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(pointerFieldHnd));
+    GenTree* pointerFieldAsg = gtNewAssignNode(pointerField, pointerValue);
+
+    GenTreeLclFld* lengthField = gtNewLclFldNode(spanTempNum, TYP_INT, TARGET_POINTER_SIZE);
+    lengthField->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(lengthFieldHnd));
+    GenTree* lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
+
+    // Now append a few statements the initialize the span
+    impAppendTree(lengthFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+    impAppendTree(pointerFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+
+    // And finally create a tree that points at the span.
+    return impCreateLocalNode(spanTempNum DEBUGARG(0));
 }
 
 //------------------------------------------------------------------------

@@ -132,14 +132,6 @@ namespace Internal.TypeSystem
                 return Equals(inst);
             return false;
         }
-        public override int GetHashCode()
-        {
-            int hashcode = 1;
-            foreach (var t in _genericParameters)
-            {
-                hashcode = BitOperations.RotateLeft(hashcode, 3) ^ t.GetHashCode();
-            }
-            return hashcode;
-        }
+        public override int GetHashCode() => ComputeGenericInstanceHashCode(1);
     }
 }
