@@ -663,6 +663,9 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and '$(IsPartialFacadeAssembly)' != 'true'">
     <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
   </ItemGroup>

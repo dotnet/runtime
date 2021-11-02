@@ -3071,10 +3071,22 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return 1;
     }
 #endif // FEATURE_HW_INTRINSICS
+#ifdef TARGET_ARM64
     if (node->OperIs(GT_CAST))
     {
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
+    if (node->OperIs(GT_MUL))
+    {
+        // Can be contained for MultiplyAdd on arm64
+        return BuildBinaryUses(node->AsOp(), candidates);
+    }
+    if (node->OperIs(GT_NEG))
+    {
+        // Can be contained for MultiplyAdd on arm64
+        return BuildOperandUses(node->gtGetOp1(), candidates);
+    }
+#endif
 
     return 0;
 }

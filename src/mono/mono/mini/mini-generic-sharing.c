@@ -4017,7 +4017,6 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGSharedGenericParam *copy, key;
 	MonoType *res;
-	MonoImage *image = NULL;
 	char *name;
 
 	mm = mono_mem_manager_merge (mono_metadata_get_mem_manager_for_type (t), mono_metadata_get_mem_manager_for_type (constraint));
@@ -4027,7 +4026,6 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	key.param.gshared_constraint = constraint;
 
 	g_assert (mono_generic_param_info (par));
-	image = mono_get_image_for_generic_param(par);
 
 	/*
 	 * Need a cache to ensure the newly created gparam

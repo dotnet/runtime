@@ -28,7 +28,6 @@ let runtime_is_ready = false;
 export const runtimeHelpers: RuntimeHelpers = <any>{
     namespace: "System.Runtime.InteropServices.JavaScript",
     classname: "Runtime",
-    loaded_files: [],
     get mono_wasm_runtime_is_ready() {
         return runtime_is_ready;
     },

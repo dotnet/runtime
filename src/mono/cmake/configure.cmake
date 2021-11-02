@@ -6,6 +6,7 @@ include(CheckTypeSize)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckCCompilerFlag)
+include(CheckCSourceCompiles)
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -124,20 +125,43 @@ check_type_size("long" SIZEOF_LONG)
 check_type_size("long long" SIZEOF_LONG_LONG)
 check_type_size("size_t" SIZEOF_SIZE_T)
 
+if (HOST_LINUX OR HOST_ANDROID)
+  set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+endif()
+
+check_c_source_compiles(
+  "
+  #include <string.h>
+  int main(void)
+  {
+    char buffer[1];
+    char c = *strerror_r(0, buffer, 0);
+    return 0;
+  }
+  "
+  HAVE_GNU_STRERROR_R)
+
+check_c_source_compiles(
+  "
+  #include <sched.h>
+  int main(void)
+  {
+    CPU_COUNT((void *) 0);
+    return 0;
+  }
+  "
+  HAVE_GNU_CPU_COUNT)
+
+if (HOST_LINUX OR HOST_ANDROID)
+  set(CMAKE_REQUIRED_DEFINITIONS)
+endif()
+
 # ICONV
 set(ICONV_LIB)
 find_library(LIBICONV_FOUND iconv)
 if(NOT LIBICONV_FOUND STREQUAL "LIBICONV_FOUND-NOTFOUND")
   set(ICONV_LIB "iconv")
 endif()
-
-file(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c
-  "#include <sched.h>\n"
-  "void main () { CPU_COUNT((void *) 0); }\n"
-)
-try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c"
-    COMPILE_DEFINITIONS "-D_GNU_SOURCE")
-
 
 if(HOST_WIN32)
   # checking for this doesn't work for some reason, hardcode result

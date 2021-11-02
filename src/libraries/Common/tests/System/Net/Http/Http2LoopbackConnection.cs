@@ -976,6 +976,8 @@ namespace System.Net.Test.Common
             } while (frame.Type != FrameType.RstStream);
 
             Assert.Equal(streamId, frame.StreamId);
+            RstStreamFrame rstStreamFrame = Assert.IsType<RstStreamFrame>(frame);
+            Assert.Equal((int)ProtocolErrors.CANCEL, rstStreamFrame.ErrorCode);
         }
     }
 }
