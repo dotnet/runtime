@@ -13477,7 +13477,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 if (lsl > 0)
                 {
                     // Then load/store dataReg from/to [memBase + index*scale]
-                    emitIns_R_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum(), lsl, INS_OPTS_LSL);
+                    emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum(), INS_OPTS_LSL, lsl);
                 }
                 else // no scale
                 {

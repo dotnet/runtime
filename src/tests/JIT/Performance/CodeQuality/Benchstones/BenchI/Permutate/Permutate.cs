@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -86,19 +82,6 @@ public class Permutate
         bool result = Validate();
 
         return result;
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        Permutate P = new Permutate();
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                P.Bench();
-            }
-        }
     }
 
     private static bool TestBase()

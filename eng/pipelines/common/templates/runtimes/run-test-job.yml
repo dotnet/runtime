@@ -554,6 +554,7 @@ jobs:
           scenarios:
           - jitosr
           - jitosr_stress
+          - jitpartialcompilation
           - jitobjectstackallocation
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:

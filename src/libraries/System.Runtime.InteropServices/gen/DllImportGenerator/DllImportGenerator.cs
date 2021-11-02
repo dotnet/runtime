@@ -70,7 +70,7 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var methodsToGenerate = context.SyntaxProvider
+            var attributedMethods = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     static (node, ct) => ShouldVisitNode(node),
                     static (context, ct) =>
@@ -83,6 +83,15 @@ namespace Microsoft.Interop
                     static modelData => modelData.Symbol.IsStatic && modelData.Symbol.GetAttributes().Any(
                         static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
                 );
+
+            var methodsToGenerate = attributedMethods.Where(static data => !data.Symbol.ReturnsByRef && !data.Symbol.ReturnsByRefReadonly);
+
+            var refReturnMethods = attributedMethods.Where(static data => data.Symbol.ReturnsByRef || data.Symbol.ReturnsByRefReadonly);
+
+            context.RegisterSourceOutput(refReturnMethods, static (context, refReturnMethod) =>
+            {
+                context.ReportDiagnostic(Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, refReturnMethod.Syntax.GetLocation(), "ref return", refReturnMethod.Symbol.ToDisplayString()));
+            });
 
             IncrementalValueProvider<(Compilation compilation, bool isSupported, Version targetFrameworkVersion)> compilationAndTargetFramework = context.CompilationProvider
                 .Select(static (compilation, ct) =>
@@ -136,7 +145,7 @@ namespace Microsoft.Interop
                     (data, ct) =>
                     {
                         IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.CalculateStubInformation, data));
-                        return (data.Syntax, StubContext: CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct));
+                        return (data.Syntax, StubContext: CalculateStubInformation(data.Symbol, data.Environment, ct));
                     }
                 )
                 .WithComparer(Comparers.CalculatedContextWithSyntax)
@@ -235,6 +244,17 @@ namespace Microsoft.Interop
             return new SyntaxTokenList(strippedTokens);
         }
 
+        private static SyntaxTokenList AddToModifiers(SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
+        {
+            if (modifiers.IndexOf(modifierToAdd) >= 0)
+                return modifiers;
+
+            int idx = modifiers.IndexOf(SyntaxKind.PartialKeyword);
+            return idx >= 0
+                ? modifiers.Insert(idx, Token(modifierToAdd))
+                : modifiers.Add(Token(modifierToAdd));
+        }
+
         private static TypeDeclarationSyntax CreateTypeDeclarationWithoutTrivia(TypeDeclarationSyntax typeDeclaration)
         {
             return TypeDeclaration(
@@ -269,6 +289,9 @@ namespace Microsoft.Interop
             // Add stub function and DllImport declaration to the first (innermost) containing
             MemberDeclarationSyntax containingType = CreateTypeDeclarationWithoutTrivia(stub.StubContainingTypes.First())
                 .AddMembers(stubMethod);
+
+            // Mark containing type as unsafe such that all the generated functions will be in an unsafe context.
+            containingType = containingType.WithModifiers(AddToModifiers(containingType.Modifiers, SyntaxKind.UnsafeKeyword));
 
             // Add type to the remaining containing types (skipping the first which was handled above)
             foreach (TypeDeclarationSyntax typeDecl in stub.StubContainingTypes.Skip(1))
@@ -330,8 +353,6 @@ namespace Microsoft.Interop
             bool setLastError = false;
             bool throwOnUnmappableChar = false;
 
-            var stubDllImportData = new GeneratedDllImportData(attrData.ConstructorArguments[0].Value!.ToString());
-
             // All other data on attribute is defined as NamedArguments.
             foreach (KeyValuePair<string, TypedConstant> namedArg in attrData.NamedArguments)
             {
@@ -389,7 +410,7 @@ namespace Microsoft.Interop
             };
         }
 
-        private static IncrementalStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, StubEnvironment environment, CancellationToken ct)
+        private static IncrementalStubGenerationContext CalculateStubInformation(IMethodSymbol symbol, StubEnvironment environment, CancellationToken ct)
         {
             INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
             INamedTypeSymbol? suppressGCTransitionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute);
@@ -497,6 +518,10 @@ namespace Microsoft.Interop
                 dllImport = dllImport.AddAttributeLists(AttributeList(SeparatedList(forwardedAttributes)));
             }
 
+            dllImport = dllImport.WithLeadingTrivia(
+                Comment("//"),
+                Comment("// Local P/Invoke"),
+                Comment("//"));
             code = code.AddStatements(dllImport);
 
             return (PrintGeneratedSource(originalSyntax, dllImportStub.StubContext, code), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
@@ -505,7 +530,7 @@ namespace Microsoft.Interop
         private MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
         {
             SyntaxTokenList modifiers = StripTriviaFromModifiers(userDeclaredMethod.Modifiers);
-            modifiers = modifiers.Insert(modifiers.IndexOf(SyntaxKind.PartialKeyword), Token(SyntaxKind.ExternKeyword));
+            modifiers = AddToModifiers(modifiers, SyntaxKind.ExternKeyword);
             // Create stub function
             MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.StubContext.StubReturnType, userDeclaredMethod.Identifier)
                 .WithModifiers(modifiers)

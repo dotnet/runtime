@@ -61,32 +61,28 @@ namespace System.Text.RegularExpressions.Tests
 
             var code = new StringBuilder();
             code.AppendLine("using System.Text.RegularExpressions;");
+            code.AppendLine("public partial class C {");
 
             // Build up the code for all of the regexes
             int count = 0;
             foreach (var regex in regexes)
             {
                 Assert.True(regex.options is not null || regex.matchTimeout is null);
-                string attr = $"[RegexGenerator({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}";
+                code.Append($"    [RegexGenerator({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
                 if (regex.options is not null)
                 {
-                    attr += $", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}";
+                    code.Append($", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
                     if (regex.matchTimeout is not null)
                     {
-                        attr += string.Create(CultureInfo.InvariantCulture, $", {(int)regex.matchTimeout.Value.TotalMilliseconds}");
+                        code.Append(string.Create(CultureInfo.InvariantCulture, $", {(int)regex.matchTimeout.Value.TotalMilliseconds}"));
                     }
                 }
-                attr += ")]";
-
-                // Create the source boilerplate for the pattern
-                code.AppendLine($@"public partial class C
-                                   {{
-                                       {attr}
-                                       public static partial Regex Get{count}();
-                                   }}");
+                code.AppendLine($")] public static partial Regex Get{count}();");
 
                 count++;
             }
+
+            code.AppendLine("}");
 
             // Use a cached compilation to save a little time.  Rather than creating an entirely new workspace
             // for each test, just create a single compilation, cache it, and then replace its syntax tree

@@ -91,6 +91,10 @@ namespace System.Text.RegularExpressions.Tests
                     // for it to be a success. For a correct match, remove the last character, '3' from the pattern
                     yield return ("[^0-9]+(?>[0-9]+)3", "abc123", RegexOptions.None, 0, 6, false, string.Empty);
                     yield return ("[^0-9]+(?>[0-9]+)", "abc123", RegexOptions.None, 0, 6, true, "abc123");
+
+                    yield return (@"(?!.*a)\w*g", "bcaefg", RegexOptions.None, 0, 6, true, "efg");
+                    yield return (@"(?!.*a)\w*g", "aaaaag", RegexOptions.None, 0, 6, true, "g");
+                    yield return (@"(?!.*a)\w*g", "aaaaaa", RegexOptions.None, 0, 6, false, string.Empty);
                 }
 
                 // More nonbacktracking expressions
@@ -173,6 +177,12 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@".*c", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@"b.*", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@".*", "abc", lineOption, 2, 1, true, "c");
+                }
+
+                // Nested loops
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
                 }
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
@@ -344,7 +354,13 @@ namespace System.Text.RegularExpressions.Tests
                     yield return ("(?(cat)dog1|dog2)", "catdog1", RegexOptions.None, 0, 7, false, string.Empty);
                     yield return ("(?(cat)dog1|dog2)", "catdog2", RegexOptions.None, 0, 7, true, "dog2");
                     yield return ("(?(cat)dog1|dog2)", "catdog1dog2", RegexOptions.None, 0, 11, true, "dog2");
+                    yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
+                    yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
+                    yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
+                    yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                 }
+                yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
+                yield return (@"a\w*a|def", "aaaaa", RegexOptions.None, 0, 5, true, "aaaaa");
 
                 // No Negation
                 yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -1584,7 +1600,7 @@ namespace System.Text.RegularExpressions.Tests
                     };
 
                 // Case insensitive cases by using ?i and some non-ASCII characters like Kelvin sign and applying ?i over negated character classes
-                yield return new object[] { engine, "(?i:[a-dÕ]+k*)", RegexOptions.None, "xyxaBõc\u212AKAyy", new (int, int, string)[] { (3, 6, "aBõc\u212AK"), (9, 1, "A") } };
+                yield return new object[] { engine, "(?i:[a-d\u00D5]+k*)", RegexOptions.None, "xyxaB\u00F5c\u212AKAyy", new (int, int, string)[] { (3, 6, "aB\u00F5c\u212AK"), (9, 1, "A") } };
                 yield return new object[] { engine, "(?i:[a-d]+)", RegexOptions.None, "xyxaBcyy", new (int, int, string)[] { (3, 3, "aBc") } };
                 yield return new object[] { engine, "(?i:[\0-@B-\uFFFF]+)", RegexOptions.None, "xaAaAy", new (int, int, string)[] { (0, 6, "xaAaAy") } }; // this is the same as .+
                 yield return new object[] { engine, "(?i:[\0-ac-\uFFFF])", RegexOptions.None, "b", new (int, int, string)[] { (0, 1, "b") } };

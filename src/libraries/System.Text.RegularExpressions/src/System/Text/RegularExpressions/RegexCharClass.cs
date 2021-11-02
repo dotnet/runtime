@@ -874,6 +874,21 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Gets whether the specified string participates in case conversion.</summary>
+        /// <remarks>The string participates in case conversion if any of its characters do.</remarks>
+        public static bool ParticipatesInCaseConversion(string s)
+        {
+            foreach (char c in s)
+            {
+                if (ParticipatesInCaseConversion(c))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         private static bool CanEasilyEnumerateSetContents(string set) =>
             set.Length > SetStartIndex &&

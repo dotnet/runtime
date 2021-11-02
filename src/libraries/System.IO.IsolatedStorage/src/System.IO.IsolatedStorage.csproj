@@ -28,8 +28,8 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup>

@@ -154,14 +154,14 @@ namespace DllImportGenerator.IntegrationTests
                 null
             };
         }
-        
+
         [Fact]
         public void ByValueArrayWithElementMarshalling()
         {
             var strings = GetStringArray();
             Assert.Equal(strings.Sum(str => str?.Length ?? 0), NativeExportsNE.Arrays.SumStringLengths(strings));
         }
-        
+
         [Fact]
         public void ByValueNullArrayWithElementMarshalling()
         {
@@ -174,7 +174,7 @@ namespace DllImportGenerator.IntegrationTests
             var strings = GetStringArray();
             var expectedStrings = strings.Select(s => ReverseChars(s)).ToArray();
             NativeExportsNE.Arrays.ReverseStrings_Ref(ref strings, out _);
-            
+
             Assert.Equal((IEnumerable<string>)expectedStrings, strings);
         }
 
@@ -195,7 +195,7 @@ namespace DllImportGenerator.IntegrationTests
         {
             string[] strings = null;
             NativeExportsNE.Arrays.ReverseStrings_Ref(ref strings, out _);
-            
+
             Assert.Null(strings);
         }
 
@@ -254,6 +254,7 @@ namespace DllImportGenerator.IntegrationTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60624", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsArm64Process))]
         public void ArrayWithSimpleNonBlittableTypeMarshalling(bool result)
         {
             var boolValues = new[]
@@ -301,7 +302,7 @@ namespace DllImportGenerator.IntegrationTests
             numRowsArray.AsSpan().Fill(numRows);
 
             int[][] transposed = NativeExportsNE.Arrays.TransposeMatrix(matrix, numRowsArray, numColumns);
-            
+
             for (int i = 0; i < numRows; i++)
             {
                 for (int j = 0; j < numColumns; j++)
