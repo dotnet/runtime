@@ -7790,8 +7790,8 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                         if ((obj != nullptr) || (staticOffset != nullptr))
                         {
                             var_types firstFieldType;
-                            ValueNum  firstFieldSelectorVN = vnStore->VNForFieldSelector(fldSeq->GetFieldHandle(),
-                                                                                         &firstFieldType);
+                            ValueNum  firstFieldSelectorVN =
+                                vnStore->VNForFieldSelector(fldSeq->GetFieldHandle(), &firstFieldType);
 
                             // Construct the "field map" VN. It represents memory state of the first field
                             // of all objects on the heap. This is our primary map.
@@ -7819,30 +7819,30 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                             {
                                 // Construct the ValueNumber for fldMap[obj/offset]. This (struct)
                                 // map represents the specific field we're looking to store to.
-                                ValueNum firstFieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType,
-                                                                                     fldMapVN,
-                                                                                     firstFieldValueSelectorVN);
+                                ValueNum firstFieldValueVN =
+                                    vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN,
+                                                            firstFieldValueSelectorVN);
 
                                 // Construct the maps updating the rest of the fields in the sequence.
-                                newFirstFieldValueVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN,
-                                                                                       fldSeq->m_next, storeVal,
-                                                                                       indType);
+                                newFirstFieldValueVN =
+                                    vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN, fldSeq->m_next,
+                                                                    storeVal, indType);
                             }
 
                             // Finally, construct the new field map...
-                            ValueNum newFldMapVN = vnStore->VNForMapStore(vnStore->TypeOfVN(fldMapVN), fldMapVN,
-                                                                          firstFieldValueSelectorVN,
-                                                                          newFirstFieldValueVN);
+                            ValueNum newFldMapVN =
+                                vnStore->VNForMapStore(vnStore->TypeOfVN(fldMapVN), fldMapVN, firstFieldValueSelectorVN,
+                                                       newFirstFieldValueVN);
 
                             // ...and a new value for the heap.
-                            newHeapVN = vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap],
-                                                               firstFieldSelectorVN, newFldMapVN);
+                            newHeapVN = vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap], firstFieldSelectorVN,
+                                                               newFldMapVN);
                         }
                         else
                         {
                             // Plain static field.
-                            newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap],
-                                                                        fldSeq, storeVal, indType);
+                            newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
+                                                                        storeVal, indType);
                         }
 
                         // It is not strictly necessary to set the lhs value number,
