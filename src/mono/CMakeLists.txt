@@ -754,7 +754,6 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
-include("${CMAKE_CURRENT_SOURCE_DIR}/../../eng/native/configurepaths.cmake")
 include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   if(NOT EXISTS "${VERSION_HEADER_PATH}")

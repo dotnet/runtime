@@ -69,7 +69,7 @@
 #    define kinfo_name_member p_comm
 #elif defined(__OpenBSD__)
 // Can not figure out how to get the proc's start time on OpenBSD
-#    undef kinfo_starttime_member 
+#    undef kinfo_starttime_member
 #    define kinfo_pid_member p_pid
 #    define kinfo_name_member p_comm
 #else
@@ -81,7 +81,7 @@
 #endif
 
 #ifdef HAVE_SCHED_GETAFFINITY
-#  ifndef GLIBC_HAS_CPU_COUNT
+#  ifndef HAVE_GNU_CPU_COUNT
 static int
 CPU_COUNT(cpu_set_t *set)
 {
@@ -430,7 +430,7 @@ mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gin
 
 /*
  * /proc/pid/stat format:
- * pid (cmdname) S 
+ * pid (cmdname) S
  * 	[0] ppid pgid sid tty_nr tty_pgrp flags min_flt cmin_flt maj_flt cmaj_flt
  * 	[10] utime stime cutime cstime prio nice threads 0 start_time vsize
  * 	[20] rss rsslim start_code end_code start_stack esp eip pending blocked sigign
@@ -445,7 +445,7 @@ mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gin
 static gint64
 get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 {
-#if defined(__APPLE__) 
+#if defined(__APPLE__)
 	double process_user_time = 0, process_system_time = 0;//, process_percent = 0;
 	task_t task;
 	struct task_basic_info t_info;
@@ -479,16 +479,16 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	do {
 		ret = task_threads (task, &th_array, &th_count);
 	} while (ret == KERN_ABORTED);
-	
+
 	if (ret  != KERN_SUCCESS) {
 		if (pid != getpid ())
 			mach_port_deallocate (mach_task_self (), task);
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	}
-		
+
 	for (i = 0; i < th_count; i++) {
 		double thread_user_time, thread_system_time;//, thread_percent;
-		
+
 		struct thread_basic_info th_info;
 		mach_msg_type_number_t th_info_count = THREAD_BASIC_INFO_COUNT;
 		do {
@@ -499,13 +499,13 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 			thread_user_time = th_info.user_time.seconds + th_info.user_time.microseconds / 1e6;
 			thread_system_time = th_info.system_time.seconds + th_info.system_time.microseconds / 1e6;
 			//thread_percent = (double)th_info.cpu_usage / TH_USAGE_SCALE;
-			
+
 			process_user_time += thread_user_time;
 			process_system_time += thread_system_time;
 			//process_percent += th_percent;
 		}
 	}
-	
+
 	for (i = 0; i < th_count; i++)
 		mach_port_deallocate(task, th_array[i]);
 
@@ -514,14 +514,14 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 
 	process_user_time += t_info.user_time.seconds + t_info.user_time.microseconds / 1e6;
 	process_system_time += t_info.system_time.seconds + t_info.system_time.microseconds / 1e6;
-    
+
 	if (pos == 10 && sum == TRUE)
 		return (gint64)((process_user_time + process_system_time) * 10000000);
 	else if (pos == 10)
 		return (gint64)(process_user_time * 10000000);
 	else if (pos == 11)
 		return (gint64)(process_system_time * 10000000);
-		
+
 	return 0;
 #else
 	char buf [512];
@@ -604,7 +604,7 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 {
 #if defined(__APPLE__)
 	// ignore the multiplier
-	
+
 	gint64 ret;
 	task_t task;
 	task_vm_info_data_t t_info;
@@ -661,7 +661,7 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 
 	if (pid != getpid ())
 		mach_port_deallocate (mach_task_self (), task);
-	
+
 	return ret;
 #else
 	char buf [64];
@@ -905,7 +905,7 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 		} else {
 			continue;
 		}
-		
+
 		user_ticks = strtoull (data, &data, 10);
 		nice_ticks = strtoull (data, &data, 10);
 		system_ticks = strtoull (data, &data, 10);
