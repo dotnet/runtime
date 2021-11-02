@@ -7808,22 +7808,32 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                                 firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                             }
 
-                            // Construct the ValueNumber for fldMap[obj/offset]. This
-                            // map represents the specific field we're looking to store to.
-                            ValueNum firstFieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN,
-                                                                                 firstFieldValueSelectorVN);
+                            ValueNum newFirstFieldValueVN = ValueNumStore::NoVN;
+                            // Optimization: avoid traversting the maps for the value of the first field if
+                            // we do not need it, which is the case if the rest of the field sequence is empty.
+                            if (fldSeq->m_next == nullptr)
+                            {
+                                newFirstFieldValueVN = vnStore->VNApplySelectorsAssignTypeCoerce(storeVal, indType);
+                            }
+                            else
+                            {
+                                // Construct the ValueNumber for fldMap[obj/offset]. This (struct)
+                                // map represents the specific field we're looking to store to.
+                                ValueNum firstFieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType,
+                                                                                     fldMapVN,
+                                                                                     firstFieldValueSelectorVN);
 
-                            // Now construct the maps updating the rest of the
-                            // fields in the sequence (of which there could be none).
-                            ValueNum newFirstFieldValueVN = vnStore->VNApplySelectorsAssign(VNK_Liberal,
-                                                                                            firstFieldValueVN,
-                                                                                            fldSeq->m_next,
-                                                                                            storeVal, indType);
+                                // Construct the maps updating the rest of the fields in the sequence.
+                                newFirstFieldValueVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN,
+                                                                                       fldSeq->m_next, storeVal,
+                                                                                       indType);
+                            }
 
                             // Finally, construct the new field map...
                             ValueNum newFldMapVN = vnStore->VNForMapStore(vnStore->TypeOfVN(fldMapVN), fldMapVN,
                                                                           firstFieldValueSelectorVN,
                                                                           newFirstFieldValueVN);
+
                             // ...and a new value for the heap.
                             newHeapVN = vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap],
                                                                firstFieldSelectorVN, newFldMapVN);
