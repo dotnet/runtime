@@ -299,7 +299,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
         {
-            return targetOS.ToLower() switch
+            return targetOS.ToLowerInvariant() switch
             {
                 "windows" => Xunit.TestPlatforms.Windows,
                 "linux" => Xunit.TestPlatforms.Linux,
