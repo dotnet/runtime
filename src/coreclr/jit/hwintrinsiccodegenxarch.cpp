@@ -2127,15 +2127,15 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     regNumber op1Reg;
     regNumber op2Reg;
 
-    regNumber op1RegOld = op1->GetRegNum();
-    regNumber op2RegOld = op2->GetRegNum();
-    regNumber op3RegOld = op3->GetRegNum();
+    regNumber op1NodeReg = op1->GetRegNum();
+    regNumber op2NodeReg = op2->GetRegNum();
+    regNumber op3NodeReg = op3->GetRegNum();
 
     // For special case that targetReg equals to more than one op Regs
-    bool sameReg = false;
-    if ((op1RegOld == op2RegOld && targetReg == op1RegOld) || (op1RegOld == op3RegOld && targetReg == op1RegOld) ||
-        (op2RegOld == op3RegOld && targetReg == op1RegOld))
-        sameReg = true;
+    bool uniqueOverwrittenReg = true;
+    if ((op1NodeReg == op2NodeReg && targetReg == op1NodeReg) ||
+        (op1NodeReg == op3NodeReg && targetReg == op1NodeReg) || (op2NodeReg == op3NodeReg && targetReg == op2NodeReg))
+        uniqueOverwrittenReg = false;
 
     bool       isCommutative   = false;
     const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
@@ -2144,15 +2144,15 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     assert(!copiesUpperBits || !op1->isContained());
 
     // Intrinsics with CopyUpperBits semantics must have op1 as target
-    if ((targetReg == op1RegOld || copiesUpperBits) && !sameReg)
+    if ((targetReg == op1NodeReg || copiesUpperBits) && uniqueOverwrittenReg)
     {
+        op1Reg = op1NodeReg;
         if (op2->isContained() || op2->IsRegOptional())
         {
             // op1 = (op1 * [op2]) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
             ins    = _132form;
-            op1Reg = op1RegOld;
-            op2Reg = op3RegOld;
+            op2Reg = op3NodeReg;
             op3    = op2;
         }
         else
@@ -2160,39 +2160,38 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             assert(op3->isContained() || op3->IsRegOptional());
             // op1 = (op1 * op2) + [op3]
             // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-            op1Reg        = op1RegOld;
-            op2Reg        = op2RegOld;
+            op2Reg        = op2NodeReg;
             isCommutative = copiesUpperBits;
         }
     }
-    else if (targetReg == op3RegOld && !sameReg)
+    else if (targetReg == op3NodeReg && uniqueOverwrittenReg)
     {
         // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
         ins    = _231form;
-        op1Reg = op3RegOld;
+        op1Reg = op3NodeReg;
         if (op1->isContained() || op1->IsRegOptional())
         {
             // op3 = ([op1] * op2) + op3
-            op2Reg = op2RegOld;
+            op2Reg = op2NodeReg;
             op3    = op1;
         }
         else
         {
             assert(op2->isContained() || op2->IsRegOptional());
             // op3 = (op1 * [op2]) + op3
-            op2Reg = op1RegOld;
+            op2Reg = op1NodeReg;
             op3    = op2;
         }
     }
-    else if (targetReg == op2RegOld && !sameReg)
+    else if (targetReg == op2NodeReg && uniqueOverwrittenReg)
     {
+        op1Reg = op2NodeReg;
         if (op1->isContained() || op1->IsRegOptional())
         {
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
             ins    = _132form;
-            op1Reg = op2RegOld;
-            op2Reg = op3RegOld;
+            op2Reg = op3NodeReg;
             op3    = op1;
         }
         else
@@ -2200,14 +2199,13 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             assert(op3->isContained() || op3->IsRegOptional());
             // op2 = (op1 * op2) + [op3]
             // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-            op1Reg        = op2RegOld;
-            op2Reg        = op1RegOld;
+            op2Reg        = op1NodeReg;
             isCommutative = copiesUpperBits;
         }
     }
     else
     {
-        // For special case that targetReg not euqal to any of the op*Reg
+        // For special case where targetReg is not euqal to any of the op*Reg
         // or targetReg equals to more than one op Regs
 
         if (op1->isContained() || op1->IsRegOptional())
@@ -2215,19 +2213,19 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
             ins    = _132form;
-            op1Reg = op2RegOld;
-            op2Reg = op3RegOld;
+            op1Reg = op2NodeReg;
+            op2Reg = op3NodeReg;
             op3    = op1;
         }
         else
         {
+            op1Reg = op1NodeReg;
             if (op2->isContained() || op2->IsRegOptional())
             {
                 // op1 = (op1 * [op2]) + op3
                 // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
                 ins    = _132form;
-                op1Reg = op1RegOld;
-                op2Reg = op3RegOld;
+                op2Reg = op3NodeReg;
                 op3    = op2;
             }
             else
@@ -2235,8 +2233,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
                 assert(op3->isContained() || op3->IsRegOptional());
                 // op1 = (op1 * op2) + [op3]
                 // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-                op1Reg        = op1RegOld;
-                op2Reg        = op2RegOld;
+                op2Reg        = op2NodeReg;
                 isCommutative = copiesUpperBits;
             }
         }
