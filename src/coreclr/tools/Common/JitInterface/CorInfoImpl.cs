@@ -687,12 +687,12 @@ namespace Internal.JitInterface
                 // JIT doesn't care what the instantiation is and this is expensive.
                 Instantiation owningTypeInst = method.OwningType.Instantiation;
                 sig->sigInst.classInstCount = (uint)owningTypeInst.Length;
-                if (owningTypeInst.Length > 0)
+                if (owningTypeInst.Length != 0)
                 {
                     sig->sigInst.classInst = GetJitInstantiation(owningTypeInst);
                 }
 
-                sig->sigInst.methodnstCount = (uint)method.Instantiation.Length;
+                sig->sigInst.methodInstCount = (uint)method.Instantiation.Length;
                 if (method.Instantiation.Length != 0)
                 {
                     sig->sigInst.methInst = GetJitInstantiation(method.Instantiation);
