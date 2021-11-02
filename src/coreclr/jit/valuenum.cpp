@@ -3567,6 +3567,38 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     resultVN = VNZeroForType(typ);
                     break;
                 }
+                // (relop == 0) == !relop
+                ZeroVN = VNZeroForType(typ);
+                if (IsVNRelop(arg0VN) && (arg1VN == ZeroVN))
+                {
+                    ValueNum rev0VN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
+                    if (rev0VN != NoVN)
+                    {
+                        resultVN = rev0VN;
+                        break;
+                    }
+                }
+                else if (IsVNRelop(arg1VN) && (arg0VN == ZeroVN))
+                {
+                    ValueNum rev1VN = GetRelatedRelop(arg1VN, VN_RELATION_KIND::VRK_Reverse);
+                    if (rev1VN != NoVN)
+                    {
+                        resultVN = rev1VN;
+                        break;
+                    }
+                }
+                // (relop == 1) == relop
+                OneVN = VNOneForType(typ);
+                if (IsVNRelop(arg0VN) && (arg1VN == OneVN))
+                {
+                    resultVN = arg0VN;
+                    break;
+                }
+                else if (IsVNRelop(arg1VN) && (arg0VN == OneVN))
+                {
+                    resultVN = arg1VN;
+                    break;
+                }
                 // (x == x) == true (integer only)
                 FALLTHROUGH;
             case GT_GE:
@@ -3586,11 +3618,45 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     ((arg1VN == VNForNull()) && IsKnownNonNull(arg0VN)))
                 {
                     resultVN = VNOneForType(typ);
+                    break;
                 }
                 // (x != x) == false (integer only)
                 else if ((arg0VN == arg1VN) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
                 {
                     resultVN = VNZeroForType(typ);
+                    break;
+                }
+                // (relop != 0) == relop
+                ZeroVN = VNZeroForType(typ);
+                if (IsVNRelop(arg0VN) && (arg1VN == ZeroVN))
+                {
+                    resultVN = arg0VN;
+                    break;
+                }
+                else if (IsVNRelop(arg1VN) && (arg0VN == ZeroVN))
+                {
+                    resultVN = arg1VN;
+                    break;
+                }
+                // (relop != 1) == !relop
+                OneVN = VNOneForType(typ);
+                if (IsVNRelop(arg0VN) && (arg1VN == OneVN))
+                {
+                    ValueNum rev0VN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
+                    if (rev0VN != NoVN)
+                    {
+                        resultVN = rev0VN;
+                        break;
+                    }
+                }
+                else if (IsVNRelop(arg1VN) && (arg0VN == OneVN))
+                {
+                    ValueNum rev1VN = GetRelatedRelop(arg1VN, VN_RELATION_KIND::VRK_Reverse);
+                    if (rev1VN != NoVN)
+                    {
+                        resultVN = rev1VN;
+                        break;
+                    }
                 }
                 break;
 
@@ -4603,6 +4669,41 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 #endif
 
     return result;
+}
+
+bool ValueNumStore::IsVNRelop(ValueNum vn)
+{
+    VNFuncApp funcAttr;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    if (funcAttr.m_arity != 2)
+    {
+        return false;
+    }
+
+    const VNFunc func = funcAttr.m_func;
+
+    if (func >= VNF_Boundary)
+    {
+        switch (func)
+        {
+            case VNF_LT_UN:
+            case VNF_LE_UN:
+            case VNF_GE_UN:
+            case VNF_GT_UN:
+                return true;
+            default:
+                return false;
+        }
+    }
+    else
+    {
+        const genTreeOps op = (genTreeOps)func;
+        return GenTree::OperIsRelop(op);
+    }
 }
 
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)
@@ -6980,8 +7081,12 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                 }
 #endif // DEBUG
 
+                // Instance field maps get the placeholder TYP_REF - they do not represent "singular"
+                // values. Static field maps, on the other hand, do, and so must be given proper types.
+                var_types fldMapType = eeIsFieldStatic(fldHnd) ? eeGetFieldType(fldHnd) : TYP_REF;
+
                 newMemoryVN =
-                    vnStore->VNForMapStore(TYP_REF, newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, TYP_REF));
+                    vnStore->VNForMapStore(TYP_REF, newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, fldMapType));
             }
         }
         // Now do the array maps.

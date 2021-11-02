@@ -27,10 +27,10 @@ namespace Internal.Cryptography.Pal
             unsafe
             {
                 ushort keyUsagesAsShort = (ushort)keyUsages;
-                CRYPT_BIT_BLOB blob = new CRYPT_BIT_BLOB()
+                Interop.Crypt32.CRYPT_BIT_BLOB blob = new Interop.Crypt32.CRYPT_BIT_BLOB()
                 {
                     cbData = 2,
-                    pbData = (byte*)&keyUsagesAsShort,
+                    pbData = new IntPtr((byte*)&keyUsagesAsShort),
                     cUnusedBits = 0,
                 };
                 return Interop.crypt32.EncodeObject(CryptDecodeObjectStructType.X509_KEY_USAGE, &blob);
@@ -45,9 +45,9 @@ namespace Internal.Cryptography.Pal
                     CryptDecodeObjectStructType.X509_KEY_USAGE,
                     static delegate (void* pvDecoded, int cbDecoded)
                     {
-                        Debug.Assert(cbDecoded >= sizeof(CRYPT_BIT_BLOB));
-                        CRYPT_BIT_BLOB* pBlob = (CRYPT_BIT_BLOB*)pvDecoded;
-                        byte* pbData = pBlob->pbData;
+                        Debug.Assert(cbDecoded >= sizeof(Interop.Crypt32.CRYPT_BIT_BLOB));
+                        Interop.Crypt32.CRYPT_BIT_BLOB* pBlob = (Interop.Crypt32.CRYPT_BIT_BLOB*)pvDecoded;
+                        byte* pbData = (byte*)pBlob->pbData.ToPointer();
 
                         if (pbData != null)
                         {
@@ -99,7 +99,7 @@ namespace Internal.Cryptography.Pal
                     {
                         Debug.Assert(cbDecoded >= sizeof(CERT_BASIC_CONSTRAINTS_INFO));
                         CERT_BASIC_CONSTRAINTS_INFO* pBasicConstraints = (CERT_BASIC_CONSTRAINTS_INFO*)pvDecoded;
-                        return ((pBasicConstraints->SubjectType.pbData[0] & CERT_BASIC_CONSTRAINTS_INFO.CERT_CA_SUBJECT_FLAG) != 0,
+                        return ((Marshal.ReadByte(pBasicConstraints->SubjectType.pbData) & CERT_BASIC_CONSTRAINTS_INFO.CERT_CA_SUBJECT_FLAG) != 0,
                                 pBasicConstraints->fPathLenConstraint != 0,
                                 pBasicConstraints->dwPathLenConstraint);
                     });
@@ -173,7 +173,7 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pSubkectKeyIdentifier = subjectKeyIdentifier)
                 {
-                    CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(subjectKeyIdentifier.Length, pSubkectKeyIdentifier);
+                    Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pSubkectKeyIdentifier), (uint)subjectKeyIdentifier.Length);
                     return Interop.crypt32.EncodeObject(Oids.SubjectKeyIdentifier, &blob);
                 }
             }
@@ -187,8 +187,8 @@ namespace Internal.Cryptography.Pal
                     Oids.SubjectKeyIdentifier,
                     static delegate (void* pvDecoded, int cbDecoded)
                     {
-                        Debug.Assert(cbDecoded >= sizeof(CRYPTOAPI_BLOB));
-                        CRYPTOAPI_BLOB* pBlob = (CRYPTOAPI_BLOB*)pvDecoded;
+                        Debug.Assert(cbDecoded >= sizeof(Interop.Crypt32.DATA_BLOB));
+                        Interop.Crypt32.DATA_BLOB* pBlob = (Interop.Crypt32.DATA_BLOB*)pvDecoded;
                         return pBlob->ToByteArray();
                     });
             }
@@ -206,25 +206,25 @@ namespace Internal.Cryptography.Pal
                         byte[] encodedKeyValue = key.EncodedKeyValue.RawData;
                         fixed (byte* pEncodedKeyValue = encodedKeyValue)
                         {
-                            CERT_PUBLIC_KEY_INFO publicKeyInfo = new CERT_PUBLIC_KEY_INFO()
+                            Interop.Crypt32.CERT_PUBLIC_KEY_INFO publicKeyInfo = new Interop.Crypt32.CERT_PUBLIC_KEY_INFO()
                             {
-                                Algorithm = new CRYPT_ALGORITHM_IDENTIFIER()
+                                Algorithm = new Interop.Crypt32.CRYPT_ALGORITHM_IDENTIFIER()
                                 {
                                     pszObjId = new IntPtr(pszOidValue),
-                                    Parameters = new CRYPTOAPI_BLOB(encodedParameters.Length, pEncodedParameters),
+                                    Parameters = new Interop.Crypt32.DATA_BLOB(new IntPtr(pEncodedParameters), (uint)encodedParameters.Length),
                                 },
 
-                                PublicKey = new CRYPT_BIT_BLOB()
+                                PublicKey = new Interop.Crypt32.CRYPT_BIT_BLOB()
                                 {
                                     cbData = encodedKeyValue.Length,
-                                    pbData = pEncodedKeyValue,
+                                    pbData = new IntPtr(pEncodedKeyValue),
                                     cUnusedBits = 0,
                                 },
                             };
 
                             int cb = 20;
                             byte[] buffer = new byte[cb];
-                            if (!Interop.crypt32.CryptHashPublicKeyInfo(IntPtr.Zero, AlgId.CALG_SHA1, 0, CertEncodingType.All, ref publicKeyInfo, buffer, ref cb))
+                            if (!Interop.crypt32.CryptHashPublicKeyInfo(IntPtr.Zero, AlgId.CALG_SHA1, 0, Interop.Crypt32.CertEncodingType.All, ref publicKeyInfo, buffer, ref cb))
                                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                             if (cb < buffer.Length)
                             {

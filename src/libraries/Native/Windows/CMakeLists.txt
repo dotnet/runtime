@@ -33,6 +33,8 @@ endif()
 
 project(CoreFX)
 
+include(../../../../eng/native/configurepaths.cmake)
+
 # The following options are set by the razzle build
 add_compile_options(/d2Zi+)       # make optimized builds debugging easier
 add_compile_options(/nologo)      # Suppress Startup Banner

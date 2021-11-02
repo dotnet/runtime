@@ -368,7 +368,7 @@ partial class Test
                 usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task PreferredAttributeOrder(bool usePreprocessorDefines)

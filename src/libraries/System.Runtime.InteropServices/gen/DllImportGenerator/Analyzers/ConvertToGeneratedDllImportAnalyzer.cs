@@ -71,6 +71,16 @@ namespace Microsoft.Interop.Analyzers
             if (dllImportData == null)
                 return;
 
+            // Ignore methods already marked GeneratedDllImport
+            // This can be the case when the generator creates an extern partial function for blittable signatures.
+            foreach (AttributeData attr in method.GetAttributes())
+            {
+                if (attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                {
+                    return;
+                }
+            }
+
             // Ignore QCalls
             if (dllImportData.ModuleName == "QCall")
                 return;
