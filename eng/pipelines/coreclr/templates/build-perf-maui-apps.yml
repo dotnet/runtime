@@ -26,10 +26,11 @@ steps:
       path: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
       patterns: |
         IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-!(*.symbols).nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-!(*.symbols).nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-!(*.symbols).nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
         
       # Other artifacts to include once they are being built
-      # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
-      # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
       # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
 
   - task: CopyFiles@2
@@ -79,6 +80,20 @@ steps:
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64
         overwriteExistingFiles: true
         cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract maccatalyst-x64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract iossimulator-x64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
 
   - script: |
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
@@ -102,10 +117,36 @@ steps:
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
+  - script: |
+      chmod -R a+r .
+      ../dotnet.sh publish -bl:MauiiOS.binlog -f net6.0-ios -c Release
+      mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiiOSDefault.app
+    displayName: Build MAUI iOS
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+  - script: |
+      chmod -R a+r .
+      ../dotnet.sh publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
+      mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiTesting.app ./MauiMacCatalystDefault.app
+    displayName: Build MAUI MacCatalyst
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiAndroid binlog'
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiiOS binlog'
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiMacCatalyst binlog'
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -114,6 +155,26 @@ steps:
         includeRootFolder: true
         displayName: Maui Android App
         artifactName: MauiAndroidApp
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiiOSDefault.app
+        includeRootFolder: true
+        displayName: Maui iOS App
+        artifactName: MauiiOSDefault
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalystDefault.app
+        includeRootFolder: true
+        displayName: Maui MacCatalyst App
+        artifactName: MauiMacCatalystDefault
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -142,4 +203,3 @@ steps:
       archiveExtension:  ${{ parameters.archiveExtension }}
       archiveType:  ${{ parameters.archiveType }}
       tarCompression:  ${{ parameters.tarCompression }}
-  

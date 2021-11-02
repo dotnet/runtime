@@ -65,6 +65,7 @@ jobs:
       - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
     - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
       - ${{ 'build_iOS_arm64_release_iOSMono' }}
+      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
@@ -149,7 +150,7 @@ jobs:
       - script: "mkdir -p $(librariesDownloadDir)/bin/aot/sgen;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/obj/mono/Linux.${{ parameters.archType }}.Release/mono/* $(librariesDownloadDir)/bin/aot/sgen;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
         displayName: "Create aot directory (Linux)"
 
-    # Download AndroidMono
+    # Download AndroidMono and MauiAndroid
     - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -167,7 +168,7 @@ jobs:
           displayName: 'Maui Android App'
       
     
-    # Download iOSMono tests
+    # Download iOSMono tests and MauiiOS/MacCatalyst
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -183,6 +184,20 @@ jobs:
           artifactFileName: 'iOSSampleAppLLVM.tar.gz'
           artifactName: 'iOSSampleAppLLVM'
           displayName: 'iOS Sample App LLVM'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiiOSDefault.tar.gz'
+          artifactName: 'MauiiOSDefault'
+          displayName: 'Maui iOS App'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiMacCatalystDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiMacCatalystDefault.tar.gz'
+          artifactName: 'MauiMacCatalystDefault'
+          displayName: 'Maui MacCatalyst App'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

@@ -239,7 +239,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
 
-  # run mono iOS scenarios
+  # run mono and maui iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -495,6 +495,8 @@ jobs:
       - Android_x64
       - Android_arm
       - Android_arm64
+      - MacCatalyst_x64
+      - iOSSimulator_x64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: Maui_Packs_Mono
@@ -502,13 +504,6 @@ jobs:
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: MonoRuntimePacks
-      # Eventual platforms to add
-      # - MacCatalyst_x64
-      # - MacCatalyst_arm64
-      # - iOS_arm
-      # - iOS_arm64
-      # - OSX_x64
-      # - OSX_arm64
   
   # build maui app
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -524,9 +519,13 @@ jobs:
           - Build_Android_arm64_release_Maui_Packs_Mono
           - Build_Android_x86_release_Maui_Packs_Mono
           - Build_Android_x64_release_Maui_Packs_Mono
+          - Build_MacCatalyst_x64_release_Maui_Packs_Mono
+          - Build_iOSSimulator_x64_release_Maui_Packs_Mono
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
         isOfficialBuild: false
+        pool:
+          vmImage: 'macos-11'
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
