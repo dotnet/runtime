@@ -74,6 +74,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_ADD:
             case GT_SUB:
 #ifdef TARGET_ARM64
+                return emitter::emitIns_valid_imm_for_add(immVal, size);
             case GT_CMPXCHG:
             case GT_LOCKADD:
             case GT_XORR:
