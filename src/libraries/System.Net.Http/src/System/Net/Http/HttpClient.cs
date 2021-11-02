@@ -36,6 +36,9 @@ namespace System.Net.Http
         #endregion Fields
 
         #region Properties
+
+        public static bool DummyPropertyToTestLiveBuild { get; set; }
+
         public static IWebProxy DefaultProxy
         {
             get => LazyInitializer.EnsureInitialized(ref s_defaultProxy, () => SystemProxyInfo.Proxy);

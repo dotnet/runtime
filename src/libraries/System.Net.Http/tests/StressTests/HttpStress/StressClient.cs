@@ -32,6 +32,7 @@ namespace HttpStress
 
         public StressClient((string name, Func<RequestContext, Task> operation)[] clientOperations, Configuration configuration)
         {
+            HttpClient.DummyPropertyToTestLiveBuild = true;
             _clientOperations = clientOperations;
             _config = configuration;
             _baseAddress = new Uri(configuration.ServerUri);
