@@ -33,8 +33,7 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-      $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '7.0'))">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
 
