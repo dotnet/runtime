@@ -208,16 +208,16 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                               EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                               ICorDebugValue**               ppValue)
 {
+    INTERNAL_SYNC_API_ENTRY(pAppdomain->GetProcess()); //
+
     // We'd really hope that our callers give us a valid appdomain, but in case
     // they don't, we'll fail gracefully.
-    if ((pAppdomain != NULL) && pAppdomain->IsNeutered())
+    if (pAppdomain->IsNeutered())
     {
         STRESS_LOG1(LF_CORDB, LL_EVERYTHING, "CVBT using neutered AP, %p\n", pAppdomain);
         ThrowHR(E_INVALIDARG);
     }
 
-    INTERNAL_SYNC_API_ENTRY(pAppdomain->GetProcess());
-    
     LOG((LF_CORDB,LL_INFO100000,"CV::CreateValueByType\n"));
 
     *ppValue = NULL;
