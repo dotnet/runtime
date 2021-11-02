@@ -1,1 +1,12 @@
-<Project/>
+<Project>
+    <PropertyGroup>
+        <RepositoryEngineeringDir>../../../../../../eng/</RepositoryEngineeringDir>
+        <ProductVersion>7.0.0</ProductVersion>
+        <NetCoreAppCurrent>net7.0</NetCoreAppCurrent>
+        <NetCoreAppCurrentVersion>7.0</NetCoreAppCurrentVersion>
+        <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
+        <MicrosoftNetCoreAppRefPackDir>../../../../../../artifacts/bin/microsoft.netcore.app.ref/</MicrosoftNetCoreAppRefPackDir>
+        <MicrosoftNetCoreAppRuntimePackDir>../../../../../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/</MicrosoftNetCoreAppRuntimePackDir>
+    </PropertyGroup>
+</Project>
+

@@ -5,7 +5,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
-  <Target Name="TestMessage"  AfterTargets="ResolveTargetingPackAssets" >
+  <Target Name="TestMessage"  AfterTargets="Build" >
     <Message Text="TargetingpacksTargetsImported: $(TargetingpacksTargetsImported)" Importance="High" />
     <Message Text="NetCoreAppCurrent: $(NetCoreAppCurrent)" Importance="High" />
 
@@ -14,5 +14,12 @@
     
     <Message Text="DisableImplicitFrameworkReferences: $(DisableImplicitFrameworkReferences)" Importance="High" />
     <Message Text="TargetFrameworkIdentifier: $(TargetFrameworkIdentifier)" Importance="High" />
+
+    <Message Text="MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir)" Importance="High" />
+    <Message Text="MicrosoftNetCoreAppRuntimePackNativeDir: $(MicrosoftNetCoreAppRuntimePackNativeDir)" Importance="High" />
+    <Message Text="NetCoreAppCurrentRefPath: $(NetCoreAppCurrentRefPath)" Importance="High" />
+    <Message Text="NetCoreAppCurrentRuntimePath: $(NetCoreAppCurrentRuntimePath)" Importance="High" />
+    <Message Text="NetCoreAppCurrentTargetFrameworkMoniker: $(NetCoreAppCurrentTargetFrameworkMoniker)" Importance="High" />
+
   </Target>
 </Project>
