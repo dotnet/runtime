@@ -9,7 +9,7 @@
 // Release: Outputs 0
 using System.Runtime.CompilerServices;
 
-public class Program
+public class Runtime_61077
 {
     public static int Main()
     {
