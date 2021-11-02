@@ -299,21 +299,21 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
         {
-            return targetOS switch
+            return targetOS.ToLower() switch
             {
                 "windows" => Xunit.TestPlatforms.Windows,
-                "Linux" => Xunit.TestPlatforms.Linux,
-                "OSX" => Xunit.TestPlatforms.OSX,
+                "linux" => Xunit.TestPlatforms.Linux,
+                "osx" => Xunit.TestPlatforms.OSX,
                 "illumos" => Xunit.TestPlatforms.illumos,
-                "Solaris" => Xunit.TestPlatforms.Solaris,
-                "Android" => Xunit.TestPlatforms.Android,
-                "iOS" => Xunit.TestPlatforms.iOS,
-                "tvOS" => Xunit.TestPlatforms.tvOS,
-                "macCatalyst" => Xunit.TestPlatforms.MacCatalyst,
-                "Browser" => Xunit.TestPlatforms.Browser,
-                "FreeBSD" => Xunit.TestPlatforms.FreeBSD,
-                "NetBSD" => Xunit.TestPlatforms.NetBSD,
-                null or "" or "AnyOS" => Xunit.TestPlatforms.Any,
+                "solaris" => Xunit.TestPlatforms.Solaris,
+                "android" => Xunit.TestPlatforms.Android,
+                "ios" => Xunit.TestPlatforms.iOS,
+                "tvos" => Xunit.TestPlatforms.tvOS,
+                "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
+                "browser" => Xunit.TestPlatforms.Browser,
+                "freebsd" => Xunit.TestPlatforms.FreeBSD,
+                "netbsd" => Xunit.TestPlatforms.NetBSD,
+                null or "" or "anyos" => Xunit.TestPlatforms.Any,
                 _ => 0
             };
         }
