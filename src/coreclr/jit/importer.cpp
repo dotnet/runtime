@@ -3690,10 +3690,12 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     CORINFO_CLASS_HANDLE fieldOwnerHnd = info.compCompHnd->getFieldClass(fieldToken);
 
     CORINFO_CLASS_HANDLE fieldClsHnd;
-    var_types fieldElementType = JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
+    var_types            fieldElementType =
+        JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
     unsigned totalFieldSize;
 
-    // Most static initialization data fields are of some structure, but it is possible for them to be of various primitive types as well
+    // Most static initialization data fields are of some structure, but it is possible for them to be of various
+    // primitive types as well
     if (fieldElementType == var_types::TYP_STRUCT)
     {
         totalFieldSize = info.compCompHnd->getClassSize(fieldClsHnd);
@@ -3704,7 +3706,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     // Limit to primitive or enum type - see ArrayNative::GetSpanDataFrom()
-    CORINFO_CLASS_HANDLE targetElemHnd  = sig->sigInst.methInst[0];
+    CORINFO_CLASS_HANDLE targetElemHnd = sig->sigInst.methInst[0];
     if (info.compCompHnd->getTypeForPrimitiveValueClass(targetElemHnd) == CORINFO_TYPE_UNDEF)
     {
         return nullptr;
@@ -3732,7 +3734,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     impPopStack();
 
     // Turn count and pointer value into constants.
-    GenTree* lengthValue = gtNewIconNode(count, TYP_INT);
+    GenTree* lengthValue  = gtNewIconNode(count, TYP_INT);
     GenTree* pointerValue = gtNewIconHandleNode((size_t)data, GTF_ICON_CONST_PTR);
 
     // Construct ReadOnlySpan<T> to return.
@@ -5308,7 +5310,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
     }
 #endif // FEATURE_HW_INTRINSICS
-    else if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) && (strcmp(className, "RuntimeHelpers") == 0))
+    else if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
+             (strcmp(className, "RuntimeHelpers") == 0))
     {
         if (strcmp(methodName, "CreateSpan") == 0)
         {
