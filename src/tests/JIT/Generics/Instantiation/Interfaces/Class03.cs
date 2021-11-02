@@ -52,7 +52,7 @@ public class Gen<T> : IGenSub<T>
     }
 }
 
-public class Test
+public class Test_Class03
 {
     public static int counter = 0;
     public static bool result = true;

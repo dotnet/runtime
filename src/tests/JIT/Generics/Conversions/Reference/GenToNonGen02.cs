@@ -80,7 +80,7 @@ public class Converter<T>
     }
 }
 
-public class Test
+public class Test_GenToNonGen02
 {
     public static int counter = 0;
     public static bool result = true;

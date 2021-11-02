@@ -6,7 +6,7 @@ using TestLibrary;
 
 //Value Pass N-->M	M--->N
 //Cdecl		 -1		 678
-public class Test
+public class Test_FuncPtrAsDelegateParamManaged
 {
     //TestMethod1
     [DllImport("FuncPtrAsDelegateParamNative", CallingConvention = CallingConvention.Cdecl)]

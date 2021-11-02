@@ -5,11 +5,11 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class Test
+public class Test_GitHub_22556
 {
     int f;
 
-    Test(int f)
+    Test_GitHub_22556(int f)
     {
         this.f = f;
     }
@@ -33,7 +33,7 @@ public class Test
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int Add(Test t, int i)
+    static int Add(Test_GitHub_22556 t, int i)
     {
         // When t is null and i is 0, this should throw
         // NullReferenceException since the operands of

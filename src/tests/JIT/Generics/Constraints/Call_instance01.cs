@@ -45,7 +45,7 @@ public struct GenStruct<T> where T : IFoo
         return (t.InterfaceMethod().Equals(typeof(T)));
     }
 }
-public class Test
+public class Test_Call_instance01
 {
     public static int counter = 0;
     public static bool result = true;

@@ -133,18 +133,18 @@ public class GenClass<T> : GenBase
 
     public static void DoTest_GenClass(int max)
     {
-        DoTest_Inner<string, object, Test>(max,
+        DoTest_Inner<string, object, Test_DictionaryExpansion>(max,
             new GenClass<string>(),
             new GenClass<object>(),
-            new GenClass<Test>());
+            new GenClass<Test_DictionaryExpansion>());
     }
 
     public static void DoTest_GenDerived(int max)
     {
-        DoTest_Inner<string, object, Test>(max,
+        DoTest_Inner<string, object, Test_DictionaryExpansion>(max,
             new GenDerived<string, int>(),
             new GenDerived<object, int>(),
-            new GenDerived<Test, int>());
+            new GenDerived<Test_DictionaryExpansion, int>());
     }
 
     public static void DoTest_GenDerived2(int max)
@@ -188,7 +188,7 @@ public class GenDerived4 : GenDerived3
 {
 }
 
-public class Test
+public class Test_DictionaryExpansion
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static Type GFunc<T>(int level)
@@ -275,7 +275,7 @@ public class Test
 
         Console.WriteLine("TEST: GFunc<Test>(i)");
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(GFunc<Test>(i).ToString(), i == 0 ? "Test" : $"TestType{i}`1[Test]");
+            Assert.AreEqual(GFunc<Test_DictionaryExpansion>(i).ToString(), i == 0 ? "Test" : $"TestType{i}`1[Test]");
     }
     
     public static int Main()

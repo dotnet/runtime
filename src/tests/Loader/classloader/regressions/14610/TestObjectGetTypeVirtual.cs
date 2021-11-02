@@ -46,7 +46,7 @@ public class SecondSubObject : MySecondObject, IFoo{
   }
 }
 
-public class Test{
+public class Test_TestObjectGetTypeVirtual{
   public const int PASS = 100;
   public const int FAIL = 42;
 
