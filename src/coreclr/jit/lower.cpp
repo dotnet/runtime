@@ -5757,7 +5757,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
 #ifdef TARGET_ARM64
     // Try to recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) tree
     if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_LSH) && shift->gtGetOp1()->OperIs(GT_CAST) &&
-        shift->gtGetOp2()->IsCnsIntOrI() && !shift->isContained() && varTypeIsIntegral(shift))
+        shift->gtGetOp2()->IsCnsIntOrI() && !shift->isContained())
     {
         GenTreeIntCon* cns  = shift->gtGetOp2()->AsIntCon();
         GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
