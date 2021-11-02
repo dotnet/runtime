@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.Security.Cryptography.Primitives.Tests
+namespace System.Security.Cryptography.Tests
 {
     public static class HashAlgorithmNameTests
     {

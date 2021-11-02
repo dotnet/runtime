@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Test.IO.Streams;
 using Xunit;
 
-namespace System.Security.Cryptography.Hashing.Tests
+namespace System.Security.Cryptography.Tests
 {
     public class HashAlgorithmTest
     {
