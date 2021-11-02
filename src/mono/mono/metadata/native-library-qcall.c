@@ -1,4 +1,4 @@
-#include "common/entrypoints.h"
+#include <common/entrypoints.h>
 #include "mono/metadata/native-library.h"
 
 static Entry mono_qcalls[] = 

@@ -39,19 +39,19 @@ class COMDynamicWrite
 // This function will create the class's metadata definition
 
 extern "C" INT32 QCALLTYPE TypeBuilder_DefineType(QCall::ModuleHandle pModule,
-                            LPCWSTR wszFullName,
-                            INT32 tkParent,
-                            INT32 attributes,
-                            INT32 tkEnclosingType,
-                            INT32 * pInterfaceTokens);
+                                                  LPCWSTR wszFullName,
+                                                  INT32 tkParent,
+                                                  INT32 attributes,
+                                                  INT32 tkEnclosingType,
+                                                  INT32 * pInterfaceTokens);
 
 
 extern "C" INT32 QCALLTYPE TypeBuilder_DefineGenericParam(QCall::ModuleHandle pModule,
-                                    LPCWSTR wszFullName,
-                                    INT32 tkParent,
-                                    INT32 attributes,
-                                    INT32 position,
-                                    INT32 * pConstraintTokens);
+                                                          LPCWSTR wszFullName,
+                                                          INT32 tkParent,
+                                                          INT32 attributes,
+                                                          INT32 position,
+                                                          INT32 * pConstraintTokens);
 
 // This function will reset the parent class in metadata
 
@@ -71,17 +71,17 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethodSpec(QCall::ModuleHandle pMod
 // This function will create a method within the class
 
 extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
-                            INT32 tk,
-                            BOOL fIsInitLocal,
-                            LPCBYTE pBody,
-                            INT32 cbBody,
-                            LPCBYTE pLocalSig,
-                            INT32 sigLength,
-                            UINT16 maxStackSize,
-                            ExceptionInstance * pExceptions,
-                            INT32 numExceptions,
-                            INT32 * pTokenFixups,
-                            INT32 numTokenFixups);
+                                                  INT32 tk,
+                                                  BOOL fIsInitLocal,
+                                                  LPCBYTE pBody,
+                                                  INT32 cbBody,
+                                                  LPCBYTE pLocalSig,
+                                                  INT32 sigLength,
+                                                  UINT16 maxStackSize,
+                                                  ExceptionInstance * pExceptions,
+                                                  INT32 numExceptions,
+                                                  INT32 * pTokenFixups,
+                                                  INT32 numTokenFixups);
 
 
 extern "C" void QCALLTYPE TypeBuilder_TermCreateClass(QCall::ModuleHandle pModule, INT32 tk, QCall::ObjectHandleOnStack retType);

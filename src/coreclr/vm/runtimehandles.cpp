@@ -881,10 +881,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsByRefLike, ReflectClassBaseObject *pTy
 }
 FCIMPLEND
 
-BOOL
-QCALLTYPE
-RuntimeTypeHandle_IsVisible(
-    QCall::TypeHandle pTypeHandle)
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHandle)
 {
     CONTRACTL
     {
