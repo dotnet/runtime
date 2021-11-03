@@ -568,7 +568,7 @@ public:
         return m_nGCCount;
     }
 
-    static BOOL QCALLTYPE Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
+    static BOOL Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 
     //****************************************************************************************
     // Methods to retrieve a pointer to the COM+ string STRINGREF for a string constant.
@@ -660,6 +660,8 @@ public:
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
+
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 
 class GlobalLoaderAllocator : public LoaderAllocator
 {

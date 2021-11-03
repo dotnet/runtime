@@ -92,7 +92,7 @@ namespace System.Threading
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
         private static extern unsafe void StartInternal(ThreadHandle t, int stackSize, int priority, char* pThreadName);
 
         // Called from the runtime
@@ -119,7 +119,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SleepInternal(int millisecondsTimeout);
 
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_UninterruptibleSleep0")]
         internal static extern void UninterruptibleSleep0();
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace System.Threading
 
         public static void SpinWait(int iterations) => SpinWaitInternal(iterations);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
         private static extern Interop.BOOL YieldInternal();
 
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
@@ -157,7 +157,7 @@ namespace System.Threading
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", CharSet = CharSet.Unicode)]
         private static extern void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
@@ -219,7 +219,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void SetPriorityNative(int priority);
 
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
         private static extern ulong GetCurrentOSThreadId();
 
         /// <summary>

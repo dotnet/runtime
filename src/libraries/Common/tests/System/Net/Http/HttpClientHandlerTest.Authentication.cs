@@ -203,7 +203,7 @@ namespace System.Net.Http.Functional.Tests
         {
             yield return new object[] { "Basic realm=\"testrealm\"", true };
             yield return new object[] { "Basic ", true };
-            yield return new object[] { "Basic realm=withoutquotes", true };
+            yield return new object[] { "Basic realm=PLACEHOLDERwithoutquotes", true };
             yield return new object[] { "basic ", true };
             yield return new object[] { "bAsiC ", true };
             yield return new object[] { "basic", true };

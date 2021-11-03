@@ -5465,6 +5465,8 @@ public:
     // assignment.)
     void fgValueNumberTree(GenTree* tree);
 
+    void fgValueNumberAssignment(GenTreeOp* tree);
+
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 

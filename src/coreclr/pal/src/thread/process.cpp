@@ -2148,7 +2148,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     // All the format specifiers for the fields in the stat file are provided by 'man proc'.
     int sscanfRet = sscanf_s(scanStartPosition,
-        "%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+        "%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
          &starttime);
 
     if (sscanfRet != 1)
@@ -3139,8 +3139,7 @@ PROCBuildCreateDumpCommandLine(
     char** ppidarg,
     const char* dumpName,
     INT dumpType,
-    BOOL diag,
-    BOOL crashReport)
+    ULONG32 flags)
 {
     if (g_szCoreCLRPath == nullptr)
     {
@@ -3198,12 +3197,17 @@ PROCBuildCreateDumpCommandLine(
             break;
     }
 
-    if (diag)
+    if (flags & GenerateDumpFlagsLoggingEnabled)
     {
         argv.push_back("--diag");
     }
 
-    if (crashReport)
+    if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
+    {
+        argv.push_back("--verbose");
+    }
+
+    if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
         argv.push_back("--crashreport");
     }
@@ -3305,17 +3309,22 @@ PROCAbortInitialize()
             }
         }
 
+        ULONG32 flags = GenerateDumpFlagsNone;
         CLRConfigNoCache createDumpCfg = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
         DWORD val = 0;
-        BOOL diag = createDumpCfg.IsSet() && createDumpCfg.TryAsInteger(10, val) && val == 1;
-
+        if (createDumpCfg.IsSet() && createDumpCfg.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsLoggingEnabled;
+        }
         CLRConfigNoCache enabldReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
         val = 0;
-        BOOL crashReport = enabldReportCfg.IsSet() && enabldReportCfg.TryAsInteger(10, val) && val == 1;
-
+        if (enabldReportCfg.IsSet() && enabldReportCfg.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsCrashReportEnabled;
+        }
         char* program = nullptr;
         char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dmpNameCfg.AsString(), dumpType, diag, crashReport))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dmpNameCfg.AsString(), dumpType, flags))
         {
             return FALSE;
         }
@@ -3337,8 +3346,8 @@ Parameters:
         WithHeap = 2,
         Triage = 3,
         Full = 4
-    diag
-        true - log createdump diagnostics to console
+    flags
+        See enum
 
 Return:
     TRUE success
@@ -3348,7 +3357,7 @@ BOOL
 PAL_GenerateCoreDump(
     LPCSTR dumpName,
     INT dumpType,
-    BOOL diag)
+    ULONG32 flags)
 {
     std::vector<const char*> argvCreateDump;
 
@@ -3362,7 +3371,7 @@ PAL_GenerateCoreDump(
     }
     char* program = nullptr;
     char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpType, diag, false);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpType, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump);

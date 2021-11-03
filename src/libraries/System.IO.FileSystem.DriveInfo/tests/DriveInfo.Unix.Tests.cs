@@ -24,6 +24,7 @@ namespace System.IO.FileSystem.DriveInfoTests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60586", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestGetDrives()
         {
             var drives = DriveInfo.GetDrives();

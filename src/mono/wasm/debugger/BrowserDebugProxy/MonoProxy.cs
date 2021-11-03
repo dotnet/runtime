@@ -170,6 +170,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
                         switch (top_func) {
+                            // keep function names un-mangled via src\mono\wasm\runtime\rollup.config.js
                             case "mono_wasm_runtime_ready":
                             case "_mono_wasm_runtime_ready":
                                 {
@@ -1300,6 +1301,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 SourceLocation loc = sourceId.First();
                 req.Method = loc.CliLocation.Method;
+                if (req.Method.IsHiddenFromDebugger)
+                    continue;
+
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
                 // If we didn't successfully enable the breakpoint

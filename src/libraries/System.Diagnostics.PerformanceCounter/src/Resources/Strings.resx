@@ -180,10 +180,7 @@
     <value>Instance '{0}' does not exist in the specified Category.</value>
   </data>
   <data name="CantReadCategoryIndex" xml:space="preserve">
-    <value>Could not Read Category Index: {0}.</value>
-  </data>
-  <data name="MissingCategory" xml:space="preserve">
-    <value>Category does not exist.</value>
+    <value>Could not read Category Index '{0}'.</value>
   </data>
   <data name="CounterLayout" xml:space="preserve">
     <value>The Counter layout for the Category specified is invalid, a counter of the type:  AverageCount64, AverageTimer32, CounterMultiTimer, CounterMultiTimerInverse, CounterMultiTimer100Ns, CounterMultiTimer100NsInverse, RawFraction, or SampleFraction has to be immediately followed by any of the base counter types: AverageBase, CounterMultiBase, RawBase or SampleBase.</value>
@@ -194,17 +191,17 @@
   <data name="HelpNotAvailable" xml:space="preserve">
     <value>Help Not Available</value>
   </data>
-  <data name="MissingCategoryDetail" xml:space="preserve">
-    <value>Category {0} does not exist.</value>
+  <data name="MissingCategory" xml:space="preserve">
+    <value>Category '{0}' does not exist.</value>
   </data>
   <data name="MissingCounter" xml:space="preserve">
-    <value>Counter {0} does not exist.</value>
+    <value>Counter '{0}' does not exist.</value>
   </data>
   <data name="CantChangeCategoryRegistration" xml:space="preserve">
     <value>Cannot create or delete the Performance Category '{0}' because access is denied.</value>
   </data>
   <data name="InvalidProperty" xml:space="preserve">
-    <value>Invalid value {1} for property {0}.</value>
+    <value>Invalid value '{1}' for property '{0}'.</value>
   </data>
   <data name="CategoryNameNotSet" xml:space="preserve">
     <value>Category name property has not been set.</value>
@@ -228,7 +225,7 @@
     <value>Invalid empty or null string for counter name.</value>
   </data>
   <data name="DuplicateCounterName" xml:space="preserve">
-    <value>Cannot create Performance Category with counter name {0} because the name is a duplicate.</value>
+    <value>Cannot create Performance Category with counter name '{0}' because the name is a duplicate.</value>
   </data>
   <data name="CantDeleteCategory" xml:space="preserve">
     <value>Cannot delete Performance Category because this category is not registered or is a system category.</value>
@@ -237,7 +234,7 @@
     <value>Counter is not single instance, an instance name needs to be specified.</value>
   </data>
   <data name="MissingInstance" xml:space="preserve">
-    <value>Instance {0} does not exist in category {1}.</value>
+    <value>Instance '{0}' does not exist in category '{1}'.</value>
   </data>
   <data name="CantSetLifetimeAfterInitialized" xml:space="preserve">
     <value>The InstanceLifetime cannot be set after the instance has been initialized.  You must use the default constructor and set the CategoryName, InstanceName, CounterName, InstanceLifetime and ReadOnly properties manually before setting the RawValue.</value>
@@ -279,13 +276,13 @@
     <value>Cannot initialize security descriptor initialized.</value>
   </data>
   <data name="RegKeyMissingShort" xml:space="preserve">
-    <value>Cannot open registry key {0} on computer {1}.</value>
+    <value>Cannot open registry key '{0}' on computer '{1}'</value>
   </data>
   <data name="CantGetMappingSize" xml:space="preserve">
     <value>Cannot calculate the size of the file view.</value>
   </data>
   <data name="CantReadCategory" xml:space="preserve">
-    <value>Cannot read Category {0}.</value>
+    <value>Cannot read Category '{0}'.</value>
   </data>
   <data name="PlatformNotSupported_PerfCounters" xml:space="preserve">
     <value>Performance Counters are not supported on this platform.</value>
