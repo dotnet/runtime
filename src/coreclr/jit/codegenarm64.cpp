@@ -9564,4 +9564,42 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 }
 
+void CodeGen::genCodeForMadd(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MADD) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+
+    GenTree *a, *b, *c;
+    if (tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
+    {
+        genConsumeRegs(tree->gtGetOp1());
+        a = tree->gtGetOp1()->gtGetOp1();
+        b = tree->gtGetOp1()->gtGetOp2();
+        c = tree->gtGetOp2();
+    }
+    else
+    {
+        genConsumeRegs(tree->gtGetOp2());
+        assert(tree->gtGetOp2()->OperIs(GT_MUL) && tree->gtGetOp2()->isContained());
+        a = tree->gtGetOp2()->gtGetOp1();
+        b = tree->gtGetOp2()->gtGetOp2();
+        c = tree->gtGetOp1();
+    }
+
+    bool useMsub = false;
+    if (a->OperIs(GT_NEG) && a->isContained())
+    {
+        a       = a->gtGetOp1();
+        useMsub = true;
+    }
+    if (b->OperIs(GT_NEG) && b->isContained())
+    {
+        b       = b->gtGetOp1();
+        useMsub = !useMsub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
+    }
+
+    GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
+                                  a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
+    genProduceReg(tree);
+}
+
 #endif // TARGET_ARM64
