@@ -119,7 +119,7 @@ namespace System.Collections.Tests
         public void AsReadOnly_TurnsIDictionaryIntoReadOnlyDictionary()
         {
             IDictionary<string, string> dictionary = new Dictionary<string, string> { ["key1"] = "value1", ["key2"] = "value2" };
-            ReadOnlyDictionary<string, string> readOnlyDictionary = dicticonary.AsReadOnly();
+            ReadOnlyDictionary<string, string> readOnlyDictionary = dictionary.AsReadOnly();
             Assert.NotNull(readOnlyDictionary);
             Assert.Equal(dictionary["key1"], readOnlyDictionary["key1"]);
             Assert.Equal(dictionary["key2"], readOnlyDictionary["key2"]);

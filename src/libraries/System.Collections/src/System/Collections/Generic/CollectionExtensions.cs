@@ -62,7 +62,7 @@ namespace System.Collections.Generic
             return new ReadOnlyCollection<T>(list);
         }
 
-        public static ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary)
+        public static ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull
         {
             return new ReadOnlyDictionary<TKey, TValue>(dictionary);
         }
