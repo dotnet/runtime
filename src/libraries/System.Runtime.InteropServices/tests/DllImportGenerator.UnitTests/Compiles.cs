@@ -337,7 +337,7 @@ namespace DllImportGenerator.UnitTests
         [MemberData(nameof(CodeSnippetsToValidateFallbackForwarder))]
         public async Task ValidateSnippetsFallbackForwarder(string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
         {
-            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, targetFramework);
+            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(

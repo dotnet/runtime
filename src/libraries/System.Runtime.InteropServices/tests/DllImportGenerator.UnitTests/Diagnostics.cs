@@ -32,7 +32,7 @@ partial class Test
     public static partial void Method();
 }}
 ";
-            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, targetFramework);
+            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
@@ -57,7 +57,7 @@ partial class Test
     public static extern void Method();
 }
 ";
-            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, targetFramework);
+            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());

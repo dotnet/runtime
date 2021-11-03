@@ -83,9 +83,9 @@ namespace DllImportGenerator.UnitTests
         /// <param name="outputKind">Output type</param>
         /// <param name="allowUnsafe">Whether or not use of the unsafe keyword should be allowed</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string source, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
         {
-            return CreateCompilation(new[] { source }, outputKind, allowUnsafe, preprocessorSymbols);
+            return CreateCompilation(new[] { source }, targetFramework, outputKind, allowUnsafe, preprocessorSymbols);
         }
 
         /// <summary>
@@ -95,11 +95,12 @@ namespace DllImportGenerator.UnitTests
         /// <param name="outputKind">Output type</param>
         /// <param name="allowUnsafe">Whether or not use of the unsafe keyword should be allowed</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string[] sources, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
         {
             return CreateCompilation(
                 sources.Select(source =>
                     CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: preprocessorSymbols))).ToArray(),
+                targetFramework,
                 outputKind,
                 allowUnsafe,
                 preprocessorSymbols);
@@ -112,25 +113,7 @@ namespace DllImportGenerator.UnitTests
         /// <param name="outputKind">Output type</param>
         /// <param name="allowUnsafe">Whether or not use of the unsafe keyword should be allowed</param>
         /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
-        {
-            var (mdRefs, ancillary) = GetReferenceAssemblies();
-
-            return CSharpCompilation.Create("compilation",
-                sources,
-                (await ResolveReferenceAssemblies(mdRefs)).Add(ancillary),
-                new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe));
-        }
-
-        /// <summary>
-        /// Create a compilation given source and a target framework
-        /// </summary>
-        /// <param name="source">Source to compile</param>
-        /// <param name="targetFramework">Target framework</param>
-        /// <param name="outputKind">Output type</param>
-        /// <param name="allowUnsafe">Whether or not use of the unsafe keyword should be allowed</param>
-        /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilationWithReferenceAssemblies(string source, TestTargetFramework targetFramework, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true)
+        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
         {
             var (mdRefs, ancillary) = GetReferenceAssemblies(targetFramework);
 
@@ -141,8 +124,6 @@ namespace DllImportGenerator.UnitTests
             {
                 referenceAssemblies = referenceAssemblies.Add(ancillary);
             }
-
-            var sources = new[] { CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview)) };
 
             return CSharpCompilation.Create("compilation",
                 sources,

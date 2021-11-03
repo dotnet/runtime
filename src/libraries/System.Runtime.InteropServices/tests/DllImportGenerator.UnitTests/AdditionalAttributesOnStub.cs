@@ -102,7 +102,7 @@ struct Native
     public Native(S s) {{ }}
     public S ToManaged() {{ return default; }}
 }}";
-            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, targetFramework);
+            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
 
             Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
 
