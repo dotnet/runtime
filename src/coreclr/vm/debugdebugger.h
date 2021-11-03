@@ -171,4 +171,6 @@ private:
 
 };
 
+extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip);
+
 #endif  // __DEBUG_DEBUGGER_h__

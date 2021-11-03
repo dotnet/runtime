@@ -297,7 +297,6 @@ FCIMPL0(FC_BOOL_RET, DebugDebugger::IsLogging)
 }
 FCIMPLEND
 
-
 FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         StackFrameHelper* pStackFrameHelperUNSAFE,
         INT32 iSkip,
@@ -777,6 +776,25 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
+
+extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
+{
+    QCALL_CONTRACT;
+
+    MethodDesc* pResult = nullptr;
+
+    BEGIN_QCALL;
+
+    EECodeInfo codeInfo((PCODE)ip);
+    if (codeInfo.IsValid())
+    {
+        pResult = codeInfo.GetMethodDesc();
+    }
+
+    END_QCALL;
+
+    return pResult;
+}
 
 FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, NULL> StrongHandleHolder;

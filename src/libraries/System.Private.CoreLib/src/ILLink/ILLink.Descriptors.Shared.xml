@@ -60,6 +60,9 @@
     <type fullname="System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder`1">
       <property name="ObjectIdForDebugger" />
     </type>
+    <type fullname="System.Diagnostics.StackFrame">
+      <method name="GetMethodInfoFromNativeIP" />
+    </type>
     <type fullname="System.Threading.Tasks.Task">
       <!-- Methods is used by VS Tasks Window. -->
       <method name="GetActiveTaskFromId" />
