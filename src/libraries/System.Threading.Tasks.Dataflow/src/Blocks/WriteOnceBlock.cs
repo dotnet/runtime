@@ -78,7 +78,7 @@ namespace System.Threading.Tasks.Dataflow
             // we need to initialize the completion task's TCS now.
             if (dataflowBlockOptions.CancellationToken.CanBeCanceled)
             {
-                _lazyCompletionTaskSource = new TaskCompletionSource<VoidResult>();
+                _lazyCompletionTaskSource = new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 // If we've already had cancellation requested, do as little work as we have to
                 // in order to be done.
@@ -489,7 +489,7 @@ namespace System.Threading.Tasks.Dataflow
                 // it remains the block's completion task.
                 if (_lazyCompletionTaskSource == null)
                 {
-                    Interlocked.CompareExchange(ref _lazyCompletionTaskSource, new TaskCompletionSource<VoidResult>(), null);
+                    Interlocked.CompareExchange(ref _lazyCompletionTaskSource, new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously), null);
                 }
 
                 return _lazyCompletionTaskSource;

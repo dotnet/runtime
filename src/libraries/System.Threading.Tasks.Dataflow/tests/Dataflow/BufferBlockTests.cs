@@ -567,5 +567,22 @@ namespace System.Threading.Tasks.Dataflow.Tests
             bb.Complete();
             await Assert.ThrowsAsync<FormatException>(() => bb.Completion);
         }
+
+        [Fact]
+        public async Task SynchronousWaitForCompletionDoesNotDeadlock()
+        {
+            // XUnit sets a SynchronizationContext because of async void methods, which seems to prevent this issue from surfacing
+            // since we don't need it, there is no need to restore it afterwards
+            SynchronizationContext.SetSynchronizationContext(null);
+
+            var block1 = new BufferBlock<int>();
+            var block2 = new BufferBlock<int>();
+            block1.LinkTo(block2, new() { PropagateCompletion = true });
+            block1.Post(1);
+            block1.Complete();
+            await block1.Completion;
+            block2.TryReceiveAll(out var _);
+            Assert.True(block2.Completion.Wait(500));
+        }
     }
 }
