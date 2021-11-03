@@ -11,9 +11,9 @@ internal static partial class Interop
     //
     // Explicitly saying Sequential disables that warning/error for consumers which only
     // use Stat in debug builds.
-    [StructLayout(LayoutKind.Sequential)]
     internal static partial class Kernel32
     {
+        [StructLayout(LayoutKind.Sequential)]
         internal struct BY_HANDLE_FILE_INFORMATION
         {
             internal uint dwFileAttributes;
