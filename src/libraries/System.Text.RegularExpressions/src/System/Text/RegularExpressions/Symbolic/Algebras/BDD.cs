@@ -335,7 +335,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // k is the number of bytes needed to represent the maximal element
-            int k = m <= 0xFFFF ? 2 : (m <= 0xFFFFFF ? 3 : (m <= 0xFFFFFFFF ? 4 : (m <= 0xFFFFFFFFFF ? 5 : (m <= 0xFFFFFFFFFFFF ? 6 : (m <= 0xFFFFFFFFFFFFFF ? 7 : 8)))));
+            int k = m <= 0xFFFF ? 2 : (m <= 0xFF_FFFF ? 3 : (m <= 0xFFFF_FFFF ? 4 : (m <= 0xFF_FFFF_FFFF ? 5 : (m <= 0xFFFF_FFFF_FFFF ? 6 : (m <= 0xFF_FFFF_FFFF_FFFF ? 7 : 8)))));
 
             // the result will contain k as the first element and the number of serialized elements times k
             byte[] result = new byte[(k * serialized.Length) + 1];
