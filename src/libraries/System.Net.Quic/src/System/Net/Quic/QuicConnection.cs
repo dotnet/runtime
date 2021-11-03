@@ -117,5 +117,7 @@ namespace System.Net.Quic
         /// Gets the maximum number of unidirectional streams that can be made to the peer.
         /// </summary>
         public override int GetRemoteAvailableBidirectionalStreamCount() => _provider.GetRemoteAvailableBidirectionalStreamCount();
+
+        public override ValueTask<Stream> OpenStreamAsync(StreamType streamType, bool waitOnCapacity = false, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
 }

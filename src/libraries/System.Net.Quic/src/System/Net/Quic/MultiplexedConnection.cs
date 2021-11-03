@@ -21,5 +21,12 @@ namespace System.Net
         public virtual ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Stream OpenUnidirectionalStream() => throw new NotImplementedException();
         public virtual Stream OpenBidirectionalStream() => throw new NotImplementedException();
+
+        public virtual ValueTask<Stream> OpenStreamAsync(StreamType streamType, bool waitOnCapacity = false, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    }
+
+    public enum StreamType {
+        Unidirectional,
+        Bidirectional
     }
 }

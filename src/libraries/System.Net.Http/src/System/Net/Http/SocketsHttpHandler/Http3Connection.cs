@@ -162,6 +162,21 @@ namespace System.Net.Http
 
             try
             {
+                // Current usage
+                /*
+                quicStream = await _connection.OpenStreamAsync(StreamType.Bidirectional, waitOnCapacity: true, cancellationToken).ConfigureAwait(false);
+                */
+                // With multiple connections
+                /*foreach (var conn in connections) {
+                    // Will return immediately already completed ValueTask
+                    ValueTask<Stream> task = conn.OpenStreamAsync(StreamType.Bidirectional, waitOnCapacity: false);
+                    Debug.Assert(task.IsCompleted);
+                    if (task.IsFaulted) {
+                        continue;
+                    }
+                    stream = task.Result;
+                    break;
+                }*/
                 while (true)
                 {
                     lock (SyncObj)

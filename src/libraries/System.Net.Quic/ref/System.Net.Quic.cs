@@ -20,6 +20,13 @@ namespace System.Net
         public virtual System.Threading.Tasks.ValueTask WaitForAvailableBidirectionalStreamsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public virtual System.IO.Stream OpenUnidirectionalStream() => throw null;
         public virtual System.IO.Stream OpenBidirectionalStream() => throw null;
+
+        public virtual System.Threading.Tasks.ValueTask<System.IO.Stream> OpenStreamAsync(StreamType streamType, bool waitOnCapacity = false, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public enum StreamType {
+        Unidirectional,
+        Bidirectional
     }
 }
 namespace System.Net.Quic
