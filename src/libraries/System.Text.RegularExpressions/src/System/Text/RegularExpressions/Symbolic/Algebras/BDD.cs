@@ -79,7 +79,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private static readonly byte[] s_trueRepresentationCompact = new byte[] { 1 };
 
-
         internal BDD(int ordinal, BDD? one, BDD? zero)
         {
             One = one;
