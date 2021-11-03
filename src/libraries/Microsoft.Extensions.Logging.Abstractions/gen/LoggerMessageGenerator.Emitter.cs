@@ -156,7 +156,7 @@ namespace {lc.Namespace}
             {nestedIndentation}}}
 ");
                 _builder.Append($@"
-            {nestedIndentation}public static string Format(__{lm.Name}Struct state, global::System.Exception? ex) => state.ToString();
+            {nestedIndentation}public static readonly global::System.Func<__{lm.Name}Struct, global::System.Exception?, string> Format = (state, ex) => state.ToString();
 
             {nestedIndentation}public int Count => {lm.TemplateParameters.Count + 1};
 
