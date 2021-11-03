@@ -1,4 +1,4 @@
-name: Build Windows x64
+name: Build Classlibs Windows
 
 agent:
   type: Unity::VM
@@ -6,7 +6,7 @@ agent:
   flavor: b1.xlarge
 
 commands:
-  - .yamato/scripts/build_win.bat
+  - .yamato/scripts/build_classlibs.bat
 
 triggers:
   pull_requests:
@@ -17,4 +17,4 @@ triggers:
 artifacts: 
   win64:
     paths:
-      - incomingbuilds\win64\**
+      - incomingbuilds\**
