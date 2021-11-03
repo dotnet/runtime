@@ -2805,7 +2805,8 @@ void emitter::emitIns(instruction ins)
              ins == INS_r_movsp || ins == INS_r_stosb || ins == INS_r_stosd || ins == INS_r_stosp || ins == INS_ret ||
              ins == INS_sahf || ins == INS_stosb || ins == INS_stosd || ins == INS_stosp
              // These instructions take zero operands
-             || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence || ins == INS_pause);
+             || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence ||
+             ins == INS_pause);
 
         assert(assertCond);
     }
