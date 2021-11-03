@@ -106,26 +106,26 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (_state)
+                if (_state == 1)
                 {
-                    case 1:
-                        _enumerator = _source.GetEnumerator();
-                        _state = 2;
-                        goto case 2;
-                    case 2:
-                        Debug.Assert(_enumerator != null);
-                        while (_enumerator.MoveNext())
-                        {
-                            TSource item = _enumerator.Current;
-                            if (_predicate(item))
-                            {
-                                _current = item;
-                                return true;
-                            }
-                        }
+                    _enumerator = _source.GetEnumerator();
+                    _state = 2;
+                }
 
-                        Dispose();
-                        break;
+                if (_state == 2)
+                {
+                    Debug.Assert(_enumerator != null);
+                    while (_enumerator.MoveNext())
+                    {
+                        TSource item = _enumerator.Current;
+                        if (_predicate(item))
+                        {
+                            _current = item;
+                            return true;
+                        }
+                    }
+
+                    Dispose();
                 }
 
                 return false;
@@ -314,25 +314,25 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (_state)
+                if (_state == 1)
                 {
-                    case 1:
-                        _enumerator = _source.GetEnumerator();
-                        _state = 2;
-                        goto case 2;
-                    case 2:
-                        while (_enumerator.MoveNext())
-                        {
-                            TSource item = _enumerator.Current;
-                            if (_predicate(item))
-                            {
-                                _current = _selector(item);
-                                return true;
-                            }
-                        }
+                    _enumerator = _source.GetEnumerator();
+                    _state = 2;
+                }
 
-                        Dispose();
-                        break;
+                if (_state == 2)
+                {
+                    while (_enumerator.MoveNext())
+                    {
+                        TSource item = _enumerator.Current;
+                        if (_predicate(item))
+                        {
+                            _current = _selector(item);
+                            return true;
+                        }
+                    }
+
+                    Dispose();
                 }
 
                 return false;
@@ -380,26 +380,26 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (_state)
+                if (_state == 1)
                 {
-                    case 1:
-                        _enumerator = _source.GetEnumerator();
-                        _state = 2;
-                        goto case 2;
-                    case 2:
-                        Debug.Assert(_enumerator != null);
-                        while (_enumerator.MoveNext())
-                        {
-                            TSource item = _enumerator.Current;
-                            if (_predicate(item))
-                            {
-                                _current = _selector(item);
-                                return true;
-                            }
-                        }
+                    _enumerator = _source.GetEnumerator();
+                    _state = 2;
+                }
 
-                        Dispose();
-                        break;
+                if (_state == 2)
+                {
+                    Debug.Assert(_enumerator != null);
+                    while (_enumerator.MoveNext())
+                    {
+                        TSource item = _enumerator.Current;
+                        if (_predicate(item))
+                        {
+                            _current = _selector(item);
+                            return true;
+                        }
+                    }
+
+                    Dispose();
                 }
 
                 return false;
