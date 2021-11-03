@@ -7,10 +7,8 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using Internal.Cryptography.Pal.Native;
 using Microsoft.Win32.SafeHandles;
-using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -34,7 +32,7 @@ namespace Internal.Cryptography.Pal
 
         public string NormalizeOid(string maybeOid, OidGroup expectedGroup)
         {
-            string? oidValue = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, maybeOid, expectedGroup, fallBackToAllGroups: true).OID;
+            string? oidValue = Interop.Crypt32.FindOidInfo(Interop.Crypt32.CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, maybeOid, expectedGroup, fallBackToAllGroups: true).OID;
 
             if (oidValue == null)
             {
@@ -49,7 +47,7 @@ namespace Internal.Cryptography.Pal
         {
             fixed (byte* pThumbPrint = thumbPrint)
             {
-                DATA_BLOB blob = new DATA_BLOB(new IntPtr(pThumbPrint), (uint)thumbPrint.Length);
+                Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pThumbPrint), (uint)thumbPrint.Length);
                 FindCore<object>(CertFindType.CERT_FIND_HASH, &blob);
             }
         }
@@ -68,7 +66,7 @@ namespace Internal.Cryptography.Pal
                 subjectDistinguishedName,
                 static (subjectDistinguishedName, pCertContext) =>
                 {
-                    string actual = GetCertNameInfo(pCertContext, CertNameType.CERT_NAME_RDN_TYPE, CertNameFlags.None);
+                    string actual = GetCertNameInfo(pCertContext, Interop.Crypt32.CertNameType.CERT_NAME_RDN_TYPE, Interop.Crypt32.CertNameFlags.None);
                     return subjectDistinguishedName.Equals(actual, StringComparison.OrdinalIgnoreCase);
                 });
         }
@@ -87,7 +85,7 @@ namespace Internal.Cryptography.Pal
                 issuerDistinguishedName,
                 static (issuerDistinguishedName, pCertContext) =>
                 {
-                    string actual = GetCertNameInfo(pCertContext, CertNameType.CERT_NAME_RDN_TYPE, CertNameFlags.CERT_NAME_ISSUER_FLAG);
+                    string actual = GetCertNameInfo(pCertContext, Interop.Crypt32.CertNameType.CERT_NAME_RDN_TYPE, Interop.Crypt32.CertNameFlags.CERT_NAME_ISSUER_FLAG);
                     return issuerDistinguishedName.Equals(actual, StringComparison.OrdinalIgnoreCase);
                 });
         }
@@ -125,7 +123,7 @@ namespace Internal.Cryptography.Pal
 
         private unsafe void FindByTime(DateTime dateTime, int compareResult)
         {
-            FILETIME fileTime = FILETIME.FromDateTime(dateTime);
+            Interop.Crypt32.FILETIME fileTime = Interop.Crypt32.FILETIME.FromDateTime(dateTime);
 
             FindCore(
                 (fileTime, compareResult),
@@ -187,7 +185,7 @@ namespace Internal.Cryptography.Pal
                                     CERT_TEMPLATE_EXT* pTemplateExt = (CERT_TEMPLATE_EXT*)pvDecoded;
                                     string? actual = Marshal.PtrToStringAnsi(pTemplateExt->pszObjId);
                                     string? expectedOidValue =
-                                        Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, templateName,
+                                        Interop.Crypt32.FindOidInfo(Interop.Crypt32.CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, templateName,
                                             OidGroup.Template, fallBackToAllGroups: true).OID;
                                     if (expectedOidValue == null)
                                         expectedOidValue = templateName;
@@ -313,11 +311,11 @@ namespace Internal.Cryptography.Pal
                 static (keyIdentifier, pCertContext) =>
                 {
                     int cbData = 0;
-                    if (!CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
                         return false;
 
                     byte[] actual = new byte[cbData];
-                    if (!CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, actual, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, actual, ref cbData))
                         return false;
 
                     return keyIdentifier.ContentsEqual(actual);
@@ -338,9 +336,9 @@ namespace Internal.Cryptography.Pal
         {
             SafeCertStoreHandle findResults = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,
-                CertEncodingType.All,
+                Interop.Crypt32.CertEncodingType.All,
                 IntPtr.Zero,
-                CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG,
+                Interop.Crypt32.CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | Interop.Crypt32.CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG,
                 null);
             if (findResults.IsInvalid)
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
@@ -357,7 +355,7 @@ namespace Internal.Cryptography.Pal
                         continue;
                 }
 
-                if (!Interop.crypt32.CertAddCertificateLinkToStore(findResults, pCertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
+                if (!Interop.Crypt32.CertAddCertificateLinkToStore(findResults, pCertContext, Interop.Crypt32.CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
             }
 
@@ -399,14 +397,14 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        private static unsafe string GetCertNameInfo(SafeCertContextHandle pCertContext, CertNameType dwNameType, CertNameFlags dwNameFlags)
+        private static unsafe string GetCertNameInfo(SafeCertContextHandle pCertContext, Interop.Crypt32.CertNameType dwNameType, Interop.Crypt32.CertNameFlags dwNameFlags)
         {
-            Debug.Assert(dwNameType != CertNameType.CERT_NAME_ATTR_TYPE);
+            Debug.Assert(dwNameType != Interop.Crypt32.CertNameType.CERT_NAME_ATTR_TYPE);
             return Interop.crypt32.CertGetNameString(
                 pCertContext,
                 dwNameType,
                 dwNameFlags,
-                CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
+                Interop.Crypt32.CertNameStringType.CERT_X500_NAME_STR | Interop.Crypt32.CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
         }
     }
 }
