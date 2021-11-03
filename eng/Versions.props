@@ -1,15 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>6.0.0</ProductVersion>
+    <ProductVersion>6.0.1</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>6</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <PatchVersion>1</PatchVersion>
     <SdkBandVersion>6.0.100</SdkBandVersion>
-    <PreReleaseVersionLabel>rtm</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>
-    </PreReleaseVersionIteration>
+    <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
+    <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <!-- Set assembly version to align with major and minor version,
          as for the patches and revisions should be manually updated per assembly if it is serviced. -->
     <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
@@ -39,7 +38,7 @@
   -->
   <ItemGroup>
     <!-- Targeting packs are only patched in extreme cases. -->
-    <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
+    <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="1" />
   </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
