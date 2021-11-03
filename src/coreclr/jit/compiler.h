@@ -6144,10 +6144,10 @@ public:
 #endif
 
 public:
-    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
+    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
-    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
+    Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
+    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
 
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
