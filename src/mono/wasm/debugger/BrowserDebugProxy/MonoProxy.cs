@@ -1301,9 +1301,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 SourceLocation loc = sourceId.First();
                 req.Method = loc.CliLocation.Method;
-                if (req.Method.IsHiddenFromDebugger)
-                    continue;
-
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
                 // If we didn't successfully enable the breakpoint
