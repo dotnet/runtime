@@ -249,7 +249,11 @@ g_strerror (gint errnum)
 		size_t buff_len = sizeof (tmp_buff);
 		buff [0] = 0;
 
-#ifndef STRERROR_R_CHAR_P
+#if HAVE_GNU_STRERROR_R
+                buff = strerror_r (errnum, buff, buff_len);
+                if (!error_messages [errnum])
+                        error_messages [errnum] = g_strdup (buff);
+#else /* HAVE_GNU_STRERROR_R */
 		int r;
 		while ((r = strerror_r (errnum, buff, buff_len - 1))) {
 			if (r != ERANGE) {
@@ -261,17 +265,13 @@ g_strerror (gint errnum)
 			else
 				buff = g_realloc (buff, buff_len * 2);
 			buff_len *= 2;
-		 //Spec is not clean on whether size argument includes space for null terminator or not	
+		 //Spec is not clean on whether size argument includes space for null terminator or not
 		}
 		if (!error_messages [errnum])
 			error_messages [errnum] = g_strdup (buff);
 		if (buff != tmp_buff)
 			g_free (buff);
-#else /* STRERROR_R_CHAR_P */
-		buff = strerror_r (errnum, buff, buff_len);
-		if (!error_messages [errnum])
-			error_messages [errnum] = g_strdup (buff);
-#endif /* STRERROR_R_CHAR_P */
+#endif /* HAVE_GNU_STRERROR_R */
 
 #else /* HAVE_STRERROR_R */
 		if (!error_messages [errnum])

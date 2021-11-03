@@ -206,6 +206,97 @@ namespace Microsoft.WebAssembly.Diagnostics
             return rootObject;
         }
 
+        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, CancellationToken token)
+        {
+            try
+            {
+                JObject rootObject = null;
+                string elementAccessStrExpression = elementAccess.Expression.ToString();
+                rootObject = await Resolve(elementAccessStrExpression, token);
+                if (rootObject == null)
+                {
+                    rootObject = indexObject;
+                    indexObject = null;
+                }
+                if (rootObject != null)
+                {
+                    string elementIdxStr;
+                    int elementIdx = 0;
+                    // x[1] or x[a] or x[a.b]
+                    if (indexObject == null)
+                    {
+                        if (elementAccess.ArgumentList != null)
+                        {
+                            var commandParamsObj = new MemoryStream();
+                            var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                            foreach (var arg in elementAccess.ArgumentList.Arguments)
+                            {
+                                // e.g. x[1]
+                                if (arg.Expression is LiteralExpressionSyntax)
+                                {
+                                    var argParm = arg.Expression as LiteralExpressionSyntax;
+                                    elementIdxStr = argParm.ToString();
+                                    int.TryParse(elementIdxStr, out elementIdx);
+                                }
+
+                                // e.g. x[a] or x[a.b]
+                                if (arg.Expression is IdentifierNameSyntax)
+                                {
+                                    var argParm = arg.Expression as IdentifierNameSyntax;
+
+                                    // x[a.b]
+                                    memberAccessValues.TryGetValue(argParm.Identifier.Text, out indexObject);
+
+                                    // x[a]
+                                    if (indexObject == null)
+                                    {
+                                        indexObject = await Resolve(argParm.Identifier.Text, token);
+                                    }
+                                    elementIdxStr = indexObject["value"].ToString();
+                                    int.TryParse(elementIdxStr, out elementIdx);
+                                }
+                            }
+                        }
+                    }
+                    // e.g. x[a[0]], x[a[b[1]]] etc.
+                    else
+                    {
+                        elementIdxStr = indexObject["value"].ToString();
+                        int.TryParse(elementIdxStr, out elementIdx);
+                    }
+                    if (elementIdx >= 0)
+                    {
+                        DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                        switch (objectId.Scheme)
+                        {
+                            case "array":
+                                rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(objectId.Value), token);
+                                return (JObject)rootObject["value"][elementIdx]["value"];
+                            case "object":
+                                var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
+                                int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], "ToArray", token);
+                                var commandParamsObj = new MemoryStream();
+                                var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                                commandParamsObjWriter.WriteObj(objectId, sdbHelper);
+                                var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, elementAccess.Expression.ToString(), token);
+                                rootObject = await GetValueFromObject(toArrayRetMethod, token);
+                                DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
+                                rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(arrayObjectId.Value), token);
+                                return (JObject)rootObject["value"][elementIdx]["value"];
+                            default:
+                                throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
+                        }
+                    }
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                var e = ex;
+                throw new Exception($"Unable to evaluate method '{elementAccess}'");
+            }
+        }
+
         public async Task<JObject> Resolve(InvocationExpressionSyntax method, Dictionary<string, JObject> memberAccessValues, CancellationToken token)
         {
             var methodName = "";

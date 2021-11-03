@@ -17,7 +17,7 @@ Change description:
   For CoreRT aka NativeAOT: implement missing logic
 */
 
-public class Test
+public class Test_foreground_shutdown
 {
     public static int Main()
     {

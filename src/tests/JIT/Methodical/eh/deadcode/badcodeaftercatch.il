@@ -18,7 +18,7 @@
 .module badcodeaftercatch.exe
 
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_badcodeaftercatch
        extends [mscorlib]System.Object
 {
 
@@ -73,7 +73,7 @@
     ldloc.s    testLog
     callvirt   instance void [common]TestUtil.TestLog::StartRecording()
 
-    call       object Test::GetObj()
+    call       object Test_badcodeaftercatch::GetObj()
     call       void [System.Console]System.Console::WriteLine(object)
     
     ldloc.s    testLog

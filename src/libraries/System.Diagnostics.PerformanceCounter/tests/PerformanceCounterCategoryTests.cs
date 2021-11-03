@@ -78,6 +78,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounterCategory_CategoryType_MultiInstance()
         {
             string categoryName = nameof(PerformanceCounterCategory_CategoryType_MultiInstance) + "_Category";
@@ -266,6 +267,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounterCategory_InstanceExists_Static()
         {
             PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
@@ -289,6 +291,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounterCategory_ReadCategory()
         {
             PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));

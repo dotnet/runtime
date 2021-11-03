@@ -6,7 +6,7 @@
 
 using System;
 
-public class Test
+public class Test_VSW491668
 {
    public static int Main()
    {

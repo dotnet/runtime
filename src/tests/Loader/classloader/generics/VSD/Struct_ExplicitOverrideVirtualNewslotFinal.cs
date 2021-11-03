@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
-Test the following matrix for structs with virtual newslot final methods (explicit override):
+Test_Struct_ExplicitOverrideVirtualNewslotFinal the following matrix for structs with virtual newslot final methods (explicit override):
 
 Non-Generic virtual methods:
 						Non-generic Interface	Generic Interface
@@ -126,7 +126,7 @@ public struct C4<T> : IGen<T>
 
 
 
-public class Test
+public class Test_Struct_ExplicitOverrideVirtualNewslotFinal
 {
 
 	public static bool pass = true;

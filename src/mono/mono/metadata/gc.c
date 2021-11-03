@@ -190,7 +190,6 @@ mono_gc_run_finalize (void *obj, void *data)
 #endif
 	MonoMethod* finalizer = NULL;
 	MonoDomain *caller_domain = mono_domain_get ();
-	MonoDomain *domain;
 
 	// This function is called from the innards of the GC, so our best alternative for now is to do polling here
 	mono_threads_safepoint ();
@@ -222,8 +221,6 @@ mono_gc_run_finalize (void *obj, void *data)
 
 	if (suspend_finalizers)
 		return;
-
-	domain = o->vtable->domain;
 
 #ifndef HAVE_SGEN_GC
 	finalizers_lock ();

@@ -38,12 +38,12 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand>_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj $XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
 
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation) /p:EmccLinkOptimizationFlag='-Oz -Wl%252C-O0 -Wl%252C-lto-O0'</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) &amp;&amp; cd wasm_build/AppBundle</_AOTBuildCommand>
 
     <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
@@ -87,9 +87,15 @@
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
+    <PropertyGroup Condition="'$(IsHighAotMemoryUsageTest)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true'">
+      <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">true</DisableParallelEmccCompile>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2</EmccLinkOptimizationFlag>
+    </PropertyGroup>
+
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl%252C-O0 -Wl%252C-lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <Error Text="Item WasmAssembliesToBundle is empty. This is likely an authoring error." Condition="@(WasmAssembliesToBundle->Count()) == 0" />
@@ -111,15 +117,20 @@
     <!-- To recreate the original project on helix, we need to set the wasm properties also, same as the
          library test project. Eg. $(InvariantGlobalization) -->
     <ItemGroup>
-      <_WasmPropertyNames Include="InvariantGlobalization" />
       <_WasmPropertyNames Include="AOTMode" />
-      <_WasmPropertyNames Include="WasmDebugLevel" />
-      <_WasmPropertyNames Include="WasmBuildNative" />
-      <_WasmPropertyNames Include="_WasmDevel" />
-      <_WasmPropertyNames Include="WasmLinkIcalls" />
-      <_WasmPropertyNames Include="WasmDedup" />
-      <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
       <_WasmPropertyNames Include="AssemblyName" />
+      <_WasmPropertyNames Include="DisableParallelAot" />
+      <_WasmPropertyNames Include="DisableParallelEmccCompile" />
+      <_WasmPropertyNames Include="EmccCompileOptimizationFlag" />
+      <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
+      <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
+      <_WasmPropertyNames Include="InvariantGlobalization" />
+      <_WasmPropertyNames Include="WasmBuildNative" />
+      <_WasmPropertyNames Include="WasmDebugLevel" />
+      <_WasmPropertyNames Include="WasmDedup" />
+      <_WasmPropertyNames Include="WasmLinkIcalls" />
+      <_WasmPropertyNames Include="WasmNativeStrip" />
+      <_WasmPropertyNames Include="_WasmDevel" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
@@ -159,7 +170,7 @@
       <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
       <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
       <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />

@@ -20,6 +20,8 @@ namespace Microsoft.Interop
         {
         }
 
+        public bool IsSupported(TargetFramework target, Version version) => true;
+
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);

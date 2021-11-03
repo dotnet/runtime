@@ -16,56 +16,38 @@ namespace DllImportGenerator.UnitTests
 {
     public class Diagnostics
     {
-        public enum TargetFramework
-        {
-            Framework,
-            Core,
-            Standard,
-            Net
-        }
-
         [ConditionalTheory]
-        [InlineData(TargetFramework.Framework)]
-        [InlineData(TargetFramework.Core)]
-        [InlineData(TargetFramework.Standard)]
-        public async Task TargetFrameworkNotSupported_ReportsDiagnostic(TargetFramework targetFramework)
+        [InlineData(TestTargetFramework.Framework)]
+        [InlineData(TestTargetFramework.Core)]
+        [InlineData(TestTargetFramework.Standard)]
+        [InlineData(TestTargetFramework.Net5)]
+        public async Task TargetFrameworkNotSupported_NoDiagnostic(TestTargetFramework targetFramework)
         {
-            string source = @"
+            string source = $@"
 using System.Runtime.InteropServices;
-namespace System.Runtime.InteropServices
-{
-    // Define attribute for pre-.NET 5.0
-    sealed class GeneratedDllImportAttribute : System.Attribute
-    {
-        public GeneratedDllImportAttribute(string a) { }
-    }
-}
+{CodeSnippets.GeneratedDllImportAttributeDeclaration}
 partial class Test
-{
+{{
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial void Method();
-}
+}}
 ";
-            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, GetReferenceAssemblies(targetFramework));
+            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
-            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
-            {
-                new DiagnosticResult(GeneratorDiagnostics.TargetFrameworkNotSupported)
-                    .WithArguments("5.0")
-            };
-            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+            Assert.Empty(generatorDiags);
 
             var newCompDiags = newComp.GetDiagnostics();
             Assert.Empty(newCompDiags);
         }
 
         [ConditionalTheory]
-        [InlineData(TargetFramework.Framework)]
-        [InlineData(TargetFramework.Core)]
-        [InlineData(TargetFramework.Standard)]
-        public async Task TargetFrameworkNotSupported_NoGeneratedDllImport_NoDiagnostic(TargetFramework targetFramework)
+        [InlineData(TestTargetFramework.Framework)]
+        [InlineData(TestTargetFramework.Core)]
+        [InlineData(TestTargetFramework.Standard)]
+        [InlineData(TestTargetFramework.Net5)]
+        public async Task TargetFrameworkNotSupported_NoGeneratedDllImport_NoDiagnostic(TestTargetFramework targetFramework)
         {
             string source = @"
 using System.Runtime.InteropServices;
@@ -75,7 +57,7 @@ partial class Test
     public static extern void Method();
 }
 ";
-            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, GetReferenceAssemblies(targetFramework));
+            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
@@ -397,18 +379,6 @@ partial class Test
                 .ThenBy(d => d.Location.SourceSpan.End)
                 .ThenBy(d => d.Id)
                 .ToArray();
-        }
-
-        private static ReferenceAssemblies GetReferenceAssemblies(TargetFramework targetFramework)
-        {
-            return targetFramework switch
-            {
-                TargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
-                TargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
-                TargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
-                TargetFramework.Net => ReferenceAssemblies.Net.Net50,
-                _ => ReferenceAssemblies.Default
-            };
         }
     }
 }

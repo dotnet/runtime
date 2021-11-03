@@ -46,7 +46,7 @@ public class Outer
 	}
 }
 
-public class Test
+public class Test_NestedStruct01
 {
 	public static int counter = 0;
 	public static bool result = true;

@@ -32,7 +32,7 @@ class MyFinalizeObject
 	}
 }
 
-class Test
+class Test_pumpFromCctor
 {
 	// We can increase this number to fill up more memory.
 	const int numMfos = 10;
