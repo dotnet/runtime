@@ -289,16 +289,19 @@ namespace System.Runtime.Intrinsics
         /// <param name="other">The <see cref="Vector64{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public bool Equals(Vector64<T> other)
         {
-            for (int i = 0; i < Count; i++)
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            for (int index = 0; index < Count; index++)
             {
-                if (!((IEquatable<T>)(this.GetElement(i))).Equals(other.GetElement(i)))
+                if (!Scalar<T>.ObjectEquals(this.GetElementUnsafe(index), other.GetElementUnsafe(index)))
                 {
                     return false;
                 }
             }
-
             return true;
         }
 

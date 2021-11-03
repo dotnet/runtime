@@ -318,50 +318,20 @@ namespace System.Runtime.Intrinsics
         /// <param name="other">The <see cref="Vector256{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public bool Equals(Vector256<T> other)
         {
-            if (Avx.IsSupported)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    Vector256<float> result = Avx.Compare(this.AsSingle(), other.AsSingle(), FloatComparisonMode.OrderedEqualNonSignaling);
-                    return Avx.MoveMask(result) == 0b1111_1111; // We have one bit per element
-                }
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
 
-                if (typeof(T) == typeof(double))
+            for (int index = 0; index < Count; index++)
+            {
+                if (!Scalar<T>.ObjectEquals(this.GetElementUnsafe(index), other.GetElementUnsafe(index)))
                 {
-                    Vector256<double> result = Avx.Compare(this.AsDouble(), other.AsDouble(), FloatComparisonMode.OrderedEqualNonSignaling);
-                    return Avx.MoveMask(result) == 0b1111; // We have one bit per element
+                    return false;
                 }
             }
-
-            if (Avx2.IsSupported)
-            {
-                // Unlike float/double, there are no special values to consider
-                // for integral types and we can just do a comparison that all
-                // bytes are exactly the same.
-
-                Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
-
-                Vector256<byte> xored = Avx2.Xor(this.AsByte(), other.AsByte());
-                return Avx.TestZ(xored, xored);
-            }
-
-            return SoftwareFallback(in this, other);
-
-            static bool SoftwareFallback(in Vector256<T> vector, Vector256<T> other)
-            {
-                for (int i = 0; i < Count; i++)
-                {
-                    if (!((IEquatable<T>)(vector.GetElement(i))).Equals(other.GetElement(i)))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
+            return true;
         }
 
         /// <summary>Gets the hash code for the instance.</summary>

@@ -589,7 +589,19 @@ namespace System.Numerics
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
         [Intrinsic]
         public bool Equals(Vector<T> other)
-            => this == other;
+        {
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            for (int index = 0; index < Count; index++)
+            {
+                if (!Scalar<T>.ObjectEquals(this.GetElementUnsafe(index), other.GetElementUnsafe(index)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>

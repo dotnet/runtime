@@ -670,14 +670,20 @@ namespace System.Numerics
         /// <remarks>Two quaternions are equal if each of their corresponding components is equal.</remarks>
         public readonly bool Equals(Quaternion other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            return X.Equals(other.X)
+                && Y.Equals(other.Y)
+                && Z.Equals(other.Z)
+                && W.Equals(other.W);
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            return unchecked(X.GetHashCode() + Y.GetHashCode() + Z.GetHashCode() + W.GetHashCode());
+            return HashCode.Combine(X, Y, Z, W);
         }
 
         /// <summary>Calculates the length of the quaternion.</summary>

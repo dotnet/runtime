@@ -2191,7 +2191,13 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if the two matrices are equal; otherwise, <see langword="false" />.</returns>
         public readonly bool Equals(Matrix4x4 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            return M11.Equals(other.M11) && M22.Equals(other.M22) && M33.Equals(other.M33) && M44.Equals(other.M44) // Check diagonal element first for early out.
+                && M12.Equals(other.M12) && M13.Equals(other.M13) && M14.Equals(other.M14) && M21.Equals(other.M21)
+                && M23.Equals(other.M23) && M24.Equals(other.M24) && M31.Equals(other.M31) && M32.Equals(other.M32)
+                && M34.Equals(other.M34) && M41.Equals(other.M41) && M42.Equals(other.M42) && M43.Equals(other.M43);
         }
 
         /// <summary>Calculates the determinant of the current 4x4 matrix.</summary>

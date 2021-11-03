@@ -635,7 +635,12 @@ namespace System.Numerics
         /// <remarks>Two matrices are equal if all their corresponding elements are equal.</remarks>
         public readonly bool Equals(Matrix3x2 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            return M11.Equals(other.M11) && M22.Equals(other.M22) // Check diagonal element first for early out.
+                && M12.Equals(other.M12) && M21.Equals(other.M21)
+                && M31.Equals(other.M31) && M32.Equals(other.M32);
         }
 
         /// <summary>Calculates the determinant for this matrix.</summary>

@@ -744,7 +744,13 @@ namespace System.Numerics
         [Intrinsic]
         public readonly bool Equals(Vector4 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            return X.Equals(other.X)
+                && Y.Equals(other.Y)
+                && Z.Equals(other.Z)
+                && W.Equals(other.W);
         }
 
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
