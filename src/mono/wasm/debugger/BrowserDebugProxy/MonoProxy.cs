@@ -1153,10 +1153,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             var assembly_id = await SdbHelper.GetAssemblyId(sessionId, asm_name, token);
             var methodId = await SdbHelper.GetMethodIdByToken(sessionId, assembly_id, method_token, token);
             var breakpoint_id = await SdbHelper.SetBreakpoint(sessionId, methodId, il_offset, token);
-            var type_id = await SdbHelper.GetTypeIdFromToken(sessionId, assembly_id, method_token, token);
-            var isHidden = await SdbHelper.GetDebuggerHiddenAttribute(sessionId, type_id, token);
-            if (isHidden)
-                return bp;
 
             if (breakpoint_id > 0)
             {
@@ -1305,6 +1301,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 SourceLocation loc = sourceId.First();
                 req.Method = loc.CliLocation.Method;
+                if (req.Method.IsHiddenFromDebugger)
+                {
+                    continue;
+                }
 
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
