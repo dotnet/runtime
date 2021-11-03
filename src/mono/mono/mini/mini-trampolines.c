@@ -454,12 +454,10 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	/* IMT call */
 	if (imt_call) {
 		MonoMethod *imt_method = NULL, *impl_method = NULL;
-		MonoObject *this_arg;
 
 		g_assert (vtable_slot);
 
 		imt_method = mono_arch_find_imt_method (regs, code);
-		this_arg = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 
 		{
 			if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {

@@ -15,6 +15,7 @@ namespace System.Runtime.Caching.Configuration
         internal const string PhysicalMemoryLimitPercentage = "physicalMemoryLimitPercentage";
         internal const string PollingInterval = "pollingInterval";
         internal const string UseMemoryCacheManager = "useMemoryCacheManager";
+        internal const string ThrowOnDisposed = "throwOnDisposed";
         internal const int DefaultPollingTimeMilliseconds = 120000;
 
         internal static int GetIntValue(NameValueCollection config, string valueName, int defaultValue, bool zeroAllowed, int maxValueAllowed)

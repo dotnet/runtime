@@ -355,7 +355,7 @@ namespace System.Reflection.Emit.Tests
 	{
 	}
 
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
 	void Invoke_Private_CrossAssembly_ThrowsMethodAccessException()
 	{
 	    TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
@@ -377,7 +377,7 @@ namespace System.Reflection.Emit.Tests
 	    Assert.Throws<MethodAccessException>(() => d ());
 	}
 
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
 	void Invoke_Internal_CrossAssembly_ThrowsMethodAccessException()
 	{
 	    TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
@@ -399,7 +399,7 @@ namespace System.Reflection.Emit.Tests
 	    Assert.Throws<MethodAccessException>(() => d ());
 	}
 	
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
 	void Invoke_Private_SameAssembly_ThrowsMethodAccessException()
 	{
 	    ModuleBuilder modb = Helpers.DynamicModule();

@@ -40,8 +40,11 @@ namespace Microsoft.Extensions.Hosting
                         options.FormatterName = ConsoleFormatterNames.Systemd;
                     });
 
+                    // IsSystemdService() will never return true for android/browser/iOS/tvOS
+#pragma warning disable CA1416 // Validate platform compatibility
                     services.AddSingleton<ISystemdNotifier, SystemdNotifier>();
                     services.AddSingleton<IHostLifetime, SystemdLifetime>();
+#pragma warning restore CA1416 // Validate platform compatibility
                 });
             }
             return hostBuilder;

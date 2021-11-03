@@ -6,11 +6,14 @@
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' == 'true'">$(AppBundleRoot)runonly\$(AssemblyName)</PublishDir>
     <BundleDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PublishDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
-
+    
     <PublishingTestsRun>true</PublishingTestsRun>
-    <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
+    <BundleTestAppTargets>BundleTestAndroidApp</BundleTestAppTargets>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
@@ -33,7 +36,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments>$(Configuration)</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
@@ -51,11 +55,14 @@
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
+  <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets" 
+          Condition="'$(TargetsAppleMobile)' == 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" 
+          Condition="'$(TargetOS)' == 'Browser'" />
+
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
   </PropertyGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" Condition="'$(TargetOS)' == 'Browser'" />
 
   <UsingTask TaskName="RuntimeConfigParserTask"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
@@ -149,126 +156,16 @@
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
   </Target>
 
-  <!-- Generate a self-contained app bundle for iOS with tests. -->
-  <UsingTask Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"
-             TaskName="AppleAppBuilderTask"
-             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-
-  <UsingTask Condition="'$(RunAOTCompilation)' == 'true' and ('$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')"
-             TaskName="ILStrip"
-             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
-
-  <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" Name="BundleTestAppleApp" DependsOnTargets="GenerateRuntimeConfig">
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-    <Error Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
-           Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account, 'adhoc' to sign with an adhoc key, or '-' to skip signing all together.." />
-    <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
-
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
-
-    <PropertyGroup>
-      <Optimized>true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
-      <_MobileIntermediateOutputPath Condition="'$(RunAOTCompilation)' == 'true'">$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
-      <GenerateXcodeProject>true</GenerateXcodeProject>
-      <GenerateCMakeProject>false</GenerateCMakeProject>
-      <GenerateXcodeProject Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'">false</GenerateXcodeProject>
-      <GenerateCMakeProject Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">true</GenerateCMakeProject>
-    </PropertyGroup>
-    <PropertyGroup>
-      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
-      <AOTMode Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
-    </PropertyGroup>
-    <ItemGroup>
-      <_AotExcludeAssemblies Include="$(PublishDir)System.Runtime.WindowsRuntime.dll" />
-      <_AotExcludeAssemblies Include="@(NativeLibraries->'$(PublishDir)%(Identity)')" />
-
-      <!-- JustInterp only needs to AOT CoreLib, the other assemblies will just get added to BundleAssemblies via _BundleNonAotAssemblies -->
-      <_AotIncludeAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'JustInterp'" Include="$(PublishDir)System.Private.CoreLib.dll" />
-      <_AotIncludeAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' != 'JustInterp'" Include="$(PublishDir)*.dll" />
-
-      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="@(_AotIncludeAssemblies)" Exclude="@(_AotExcludeAssemblies)">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </AotInputAssemblies>
-      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(PublishDir)*.dll" />
-      <_BundleNonAotAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'JustInterp'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Private.CoreLib.dll" />
-    </ItemGroup>
-
-    <MakeDir Directories="$(_MobileIntermediateOutputPath)"
-             Condition="'$(RunAOTCompilation)' == 'true'"/>
-    <RemoveDir Directories="$(BundleDir)" />
-
-    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="$(AOTMode)"
-        OutputType="AsmOnly"
-        Assemblies="@(AotInputAssemblies)"
-        AotModulesTablePath="$(BundleDir)\modules.m"
-        AotModulesTableLanguage="ObjC"
-        IntermediateOutputPath="$(IntermediateOutputPath)"
-        UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MonoAotCrossDir)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
-    </MonoAOTCompiler>
-
-    <!-- <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'" Assemblies="@(BundleAssemblies)" /> -->
-
-    <ItemGroup>
-      <BundleAssemblies Include="@(_BundleNonAotAssemblies)" />
-    </ItemGroup>
-
-    <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
-         and produce an app bundle (with xcode project) -->
-    <AppleAppBuilderTask
-        TargetOS="$(TargetOS)"
-        Arch="$(TargetArchitecture)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
-        Assemblies="@(BundleAssemblies)"
-        MainLibraryFileName="$(MainLibraryFileName)"
-        ForceAOT="$(RunAOTCompilation)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        InvariantGlobalization="$(InvariantGlobalization)"
-        UseConsoleUITemplate="True"
-        GenerateXcodeProject="$(GenerateXcodeProject)"
-        GenerateCMakeProject="$(GenerateCMakeProject)"
-        BuildAppBundle="$(GenerateXcodeProject)"
-        Optimized="$(Optimized)"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(BundleDir)"
-        AppDir="$(PublishDir)">
-        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
-        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
-    </AppleAppBuilderTask>
-    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)" Condition="'$(GenerateXcodeProject)' == 'true'" />
-    <Message Importance="High" Text="App: $(AppBundlePath)" Condition="'$(GenerateXcodeProject)' == 'true'"/>
-
-    <ItemGroup Condition="'$(GenerateXcodeProject)' == 'true'">
-      <_appFiles Include="$(AppBundlePath)/../**/*" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)"
-          SkipUnchangedFiles="true"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(GenerateXcodeProject)' == 'true'" />
-
-    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
-               Directories="$(OutDir)" />
-  </Target>
-
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
   should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
   <Target Name="ConfigureTrimming" Condition="('$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true') And '$(SkipConfigureTrimming)' != 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
     <PropertyGroup>
-      <TrimMode Condition="'$(EnableAggressiveTrimming)' == 'true'">Link</TrimMode>
-      <TrimMode Condition="'$(EnableSoftTrimming)' == 'true'">CopyUsed</TrimMode>
+      <TrimMode Condition="'$(EnableAggressiveTrimming)' == 'true'">link</TrimMode>
+      <TrimMode Condition="'$(EnableSoftTrimming)' == 'true'">copyused</TrimMode>
     </PropertyGroup>
 
     <ItemGroup>
-      <!-- Mark all the assemblies for link/copyused. We will explicitly mark the non-trimmable ones -->
+      <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
       <ResolvedFileToPublish TrimMode="$(TrimMode)" />
 
       <!-- Don't trim the main assembly.
@@ -276,10 +173,18 @@
       <ResolvedFileToPublish TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
 
       <!-- TODO: find out why these assemblies aren't copied by copyused even though they're referenced -->
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.ComponentModel.EventBasedAsync'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Diagnostics.FileVersionInfo'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Drawing.Primitives'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.IO.Pipelines'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Memory'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Net.WebHeaderCollection'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Runtime.Serialization.Formatters'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.AccessControl'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
-
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
+      
       <!-- Even though we are trimming the test runner assembly, we want it to be treated
            as a root -->
       <TrimmerRootAssembly

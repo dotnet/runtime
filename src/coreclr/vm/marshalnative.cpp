@@ -45,7 +45,7 @@
 
 // Prelink
 // Does advance loading of an N/Direct library
-VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)
+extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
 
@@ -72,7 +72,7 @@ VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)
 // IsBuiltInComSupported
 // Built-in COM support is only checked from the native side to ensure the runtime
 // is in a consistent state
-BOOL QCALLTYPE MarshalNative::IsBuiltInComSupported()
+extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
 {
     QCALL_CONTRACT;
 
@@ -434,11 +434,11 @@ namespace
     }
 }
 
-MarshalNative::IsInCooperativeGCMode_fn QCALLTYPE MarshalNative::GetIsInCooperativeGCModeFunctionPointer()
+extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGCModeFunctionPointer()
 {
     QCALL_CONTRACT;
 
-    MarshalNative::IsInCooperativeGCMode_fn ret = NULL;
+    IsInCooperativeGCMode_fn ret = NULL;
 
     BEGIN_QCALL;
 
@@ -1364,7 +1364,7 @@ int MarshalNative::GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
     }
 }
 
-void QCALLTYPE MarshalNative::GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)
+extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
 

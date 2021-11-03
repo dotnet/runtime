@@ -2067,7 +2067,6 @@ mono_main (int argc, char* argv[])
 	MonoDomain *domain;
 	MonoImageOpenStatus open_status;
 	const char* aname, *mname = NULL;
-	char *config_file = NULL;
 	int i, count = 1;
 	guint32 opt, action = DO_EXEC, recompilation_times = 1;
 	MonoGraphOptions mono_graph_options = (MonoGraphOptions)0;
@@ -2218,7 +2217,7 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "error: --config requires a filename argument\n");
 				return 1;
 			}
-			config_file = argv [++i];
+			++i;
 #ifdef HOST_WIN32
 		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
 			mixed_mode = TRUE;
