@@ -34,6 +34,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         // The returned types on .NET Framework can differ when the machine is in FIPS mode.
         // So check hash algorithms via a more complicated manner.
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("MD5", typeof(MD5))]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#md5", typeof(MD5))]
         [InlineData("System.Security.Cryptography.HashAlgorithm", typeof(SHA1))]
@@ -67,6 +68,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("System.Security.Cryptography.HMAC", typeof(HMACSHA1))]
         [InlineData("System.Security.Cryptography.KeyedHashAlgorithm", typeof(HMACSHA1))]
         [InlineData("System.Security.Cryptography.HMACSHA1", typeof(HMACSHA1))]
@@ -99,6 +101,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("AES", typeof(Aes))]
 #pragma warning disable SYSLIB0022 // Rijndael types are obsolete
         [InlineData("Rijndael", typeof(Rijndael))]
@@ -124,6 +127,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("RSA", typeof(RSA))]
         [InlineData("System.Security.Cryptography.RSA", typeof(RSA))]
         [InlineData("ECDsa", typeof(ECDsa))]
@@ -137,6 +141,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("DSA", typeof(DSA))]
         [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
@@ -159,6 +164,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public static void NamedCreate_Mismatch()
         {
             Assert.Throws<InvalidCastException>(() => AsymmetricAlgorithm.Create("SHA1"));

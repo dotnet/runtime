@@ -13,14 +13,14 @@ class Gen<T>
 	{
 		// Gen<T> inst = new Gen<T>();
 		Type monitor = typeof(Gen<T>);
-		TestHelper myHelper = new TestHelper(Test.nThreads);
+		TestHelper myHelper = new TestHelper(Test_TryEnter01.nThreads);
 		// MonitorDelegateTS[] consumer = new MonitorDelegateTS[Test.nThreads];
 		// for(int i=0;i<consumer.Length;i++){
 			// consumer[i] = new MonitorDelegateTS(myHelper.ConsumerTryEnter);
 			// consumer[i].BeginInvoke(monitor,100,null,null);
 		// }
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_TryEnter01.nThreads; i++)
 		{
 			ThreadPool.QueueUserWorkItem(state =>
 			{
@@ -34,11 +34,11 @@ class Gen<T>
 			if(myHelper.Error == true)
 				break;
 		}
-		Test.Eval(!myHelper.Error);
+		Test_TryEnter01.Eval(!myHelper.Error);
 	}	
 }
 
-public class Test
+public class Test_TryEnter01
 {
 	public static int nThreads = 25;
 	public static int counter = 0;

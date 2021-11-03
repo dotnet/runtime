@@ -71,7 +71,7 @@ struct GenString : IGen<string>
 
 }
 
-public class Test
+public class Test_interface_struct02
 {
     public static int Main()
     {

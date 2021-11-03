@@ -7,8 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly Test {}
-.class Test {
+.assembly Test_b115103 {}
+.class Test_b115103 {
 .method static int32 Main() {
 .entrypoint
 .maxstack	8

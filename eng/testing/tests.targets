@@ -5,7 +5,8 @@
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">AppleHelixRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' != 'true' and '$(TargetsAppleMobile)' == 'true'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
   </PropertyGroup>
 

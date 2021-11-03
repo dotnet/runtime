@@ -20,7 +20,7 @@ class MINMAXINFO
     public POINT ptMaxTrackSize = new POINT();
 }
 
-class Test
+class Test_WPF_3226
 {
     static void WmGetMinMaxInfo(IntPtr lParam)
     {

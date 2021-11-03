@@ -9,7 +9,7 @@ struct MyValueType
     object o;
 }
 
-abstract class Test
+abstract class Test_test13394
 {
     public abstract void M(MyValueType v);
 
@@ -20,7 +20,7 @@ abstract class Test
     }
 }
 
-class Concrete : Test
+class Concrete : Test_test13394
 {
     public override void M(MyValueType v)
     {
