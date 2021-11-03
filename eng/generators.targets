@@ -18,7 +18,7 @@
     <EnabledGenerators Include="DllImportGenerator"
                        Condition="'$(EnableDllImportGenerator)' == ''
                         and '$(IsFrameworkSupportFacade)' != 'true'
-                        and '$(IsNetCoreAppSrc)' == 'true'
+                        and '$(IsSourceProject)' == 'true'
                         and '$(MSBuildProjectExtension)' == '.csproj'
                         and (
                           ('@(Reference)' != ''
