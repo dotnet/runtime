@@ -403,7 +403,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
             }
-            return $"{string.Join("_", arrayStr)}";
+            return $"{string.Join(", ", arrayStr)}";
         }
     }
 
@@ -1840,7 +1840,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 arrayType = arrayType.Insert(arrayType.LastIndexOf('[')+1, length.ToString());
             if (className.LastIndexOf('[') > 0)
                 className = className.Insert(arrayType.LastIndexOf('[')+1, new string(',', length.Rank-1));
-            return CreateJObject<string>(null, "object", arrayType, false, className.ToString(), "dotnet:array:" + objectId, null, "array");
+            return CreateJObject<string>(null, "object", arrayType, false, className.ToString(), "dotnet:array:" + objectId, null, length.Rank == 1 ? "array" : null);
         }
 
         public async Task<JObject> CreateJObjectForObject(SessionId sessionId, MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
@@ -2281,6 +2281,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return array;
         }
+
+        public async Task<JObject> GetArrayValuesProxy(SessionId sessionId, int arrayId, CancellationToken token)
+        {
+            var length = await GetArrayLength(sessionId, arrayId, token);
+            var arrayProxy = JObject.FromObject(new
+            {
+                items = await GetArrayValues(sessionId, arrayId, token),
+                dimensionsDetails = length.Bounds.ToArray()
+            });
+            return arrayProxy;
+        }
+
         public async Task<bool> EnableExceptions(SessionId sessionId, PauseOnExceptionsKind state, CancellationToken token)
         {
             if (state == PauseOnExceptionsKind.Unset)
