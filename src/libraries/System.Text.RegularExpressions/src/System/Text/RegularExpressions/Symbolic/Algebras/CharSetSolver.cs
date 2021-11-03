@@ -41,7 +41,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 //individual character BDDs are always fixed
                 BDD[] charPredTable = _charPredTable;
-                return c < charPredTable ?
+                return c < charPredTable.Length ?
                     charPredTable[c] ??= CreateBDDFromChar(c) :
                     CreateBDDFromChar(c);
             }
