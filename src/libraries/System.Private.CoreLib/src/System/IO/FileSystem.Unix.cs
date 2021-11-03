@@ -554,14 +554,8 @@ namespace System.IO
 
         public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
         {
-            if (fileHandle.Path is { } path)
-            {
-                return GetAttributes(path);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            return GetAttributes(fileHandle.Path);
         }
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
