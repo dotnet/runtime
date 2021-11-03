@@ -47,7 +47,7 @@ while [[ $# > 0 ]]; do
 done
 
 repo_root=$(git rev-parse --show-toplevel)
-docker_file="$scriptroot/libraries-sdk.linux.Dockerfile"
+docker_file="$scriptroot/libraries-sdk-daily.linux.Dockerfile"
 
 if [[ $privateaspnetcore -eq 1 ]]; then
     docker_file="$scriptroot/libraries-sdk-aspnetcore.linux.Dockerfile"
