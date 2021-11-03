@@ -846,6 +846,30 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
+        // Figure out what local is assigned here.
+        //
+        const unsigned   prevTreeLcl    = prevTreeLHS->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLcl);
+
+        // If local is not tracked, assume we can't safely reason about interference
+        // or liveness.
+        //
+        if (!prevTreeLclDsc->lvTracked)
+        {
+            JITDUMP(" -- prev tree defs untracked V%02u\n", prevTreeLcl);
+            break;
+        }
+
+        // If we've run out of room to keep track of defined locals, bail.
+        //
+        if (definedLocalsCount >= DEFINED_LOCALS_SIZE)
+        {
+            JITDUMP(" -- ran out of space for tracking kills\n");
+            break;
+        }
+
+        definedLocals[definedLocalsCount++] = prevTreeLcl;
+
         // If the VN of RHS is the VN of the current tree, or is "related", consider foward sub.
         //
         // Todo: generalize to allow when normal VN of RHS == normal VN of tree, and RHS except set contains tree except
@@ -887,31 +911,10 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         JITDUMP("  -- prev tree has %srelop with %s liberal VN\n", matchSwp || matchSwpRev ? "swapped " : "",
                 domIsSameRelop ? "the same" : "a reverse");
 
-        // If lcl is not tracked, assume we can't safely reason about interference
-        // or liveness.
-        //
-        const unsigned   prevTreeLcl    = prevTreeLHS->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLcl);
-
-        if (!prevTreeLclDsc->lvTracked)
-        {
-            JITDUMP(" -- prev tree defs untracked V%02u\n", prevTreeLcl);
-            break;
-        }
-
-        // If we've run out of room to keep track of defined locals, bail.
-        //
-        if (definedLocalsCount >= DEFINED_LOCALS_SIZE)
-        {
-            JITDUMP(" -- ran out of space for tracking kills\n");
-            break;
-        }
-
         // See if we can safely move a copy of prevTreeRHS later, to replace tree.
         // We can, if none of its lcls are killed.
         //
-        definedLocals[definedLocalsCount++] = prevTreeLcl;
-        bool interferes                     = false;
+        bool interferes = false;
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
