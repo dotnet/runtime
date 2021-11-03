@@ -1280,15 +1280,15 @@ namespace System.Net
 
         private RequestCachePolicy? GetApplicableCachePolicy()
         {
-            if (IsCachePolicySet(CachePolicy))
+            if (CachePolicy != null)
             {
                 return CachePolicy;
             }
-            else if (IsCachePolicySet(DefaultCachePolicy))
+            else if (IsDefaultCachePolicySet(DefaultCachePolicy))
             {
                 return DefaultCachePolicy;
             }
-            else if (IsCachePolicySet(WebRequest.DefaultCachePolicy))
+            else if (IsDefaultCachePolicySet(WebRequest.DefaultCachePolicy))
             {
                 return WebRequest.DefaultCachePolicy;
             }
@@ -1296,7 +1296,7 @@ namespace System.Net
             return null;
         }
 
-        private static bool IsCachePolicySet(RequestCachePolicy? policy) => policy != null
+        private static bool IsDefaultCachePolicySet(RequestCachePolicy? policy) => policy != null
                         && policy.Level != RequestCacheLevel.BypassCache;
 
         public override IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
