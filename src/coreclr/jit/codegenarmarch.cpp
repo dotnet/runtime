@@ -312,6 +312,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_SWAP:
             genCodeForSwap(treeNode->AsOp());
             break;
+
+        case GT_BFIZ:
+            genCodeForBfiz(treeNode->AsOp());
+            break;
 #endif // TARGET_ARM64
 
         case GT_JMP:
@@ -1630,30 +1634,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     {
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
         unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
-
-#ifdef TARGET_ARM64
-        // Check if we can recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) pattern
-        if (tree->gtGetOp1()->OperIs(GT_CAST) && tree->gtGetOp1()->isContained())
-        {
-            GenTreeCast* cast   = tree->gtGetOp1()->AsCast();
-            GenTree*     castOp = cast->CastOp();
-
-            unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
-                                                                  : genTypeSize(castOp) * BITS_PER_BYTE;
-            unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
-
-            assert(srcBits < dstBits);
-            assert((shiftByImm > 0) && (shiftByImm < srcBits));
-
-            const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
-            GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, dstReg, castOp->GetRegNum(),
-                                          (int)shiftByImm, (int)srcBits);
-        }
-        else
-#endif
-        {
-            GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
-        }
+        GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
     }
 
     genProduceReg(tree);

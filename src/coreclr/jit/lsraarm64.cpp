@@ -279,6 +279,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_BFIZ:
+            srcCount = BuildOperandUses(tree->gtGetOp1()->gtGetOp1());
+            BuildDef(tree);
+            break;
+
         case GT_RETURNTRAP:
             // this just turns into a compare of its child with an int
             // + a conditional call

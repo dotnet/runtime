@@ -3072,10 +3072,6 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_CAST))
-    {
-        return BuildOperandUses(node->gtGetOp1(), candidates);
-    }
     if (node->OperIs(GT_MUL))
     {
         // Can be contained for MultiplyAdd on arm64
