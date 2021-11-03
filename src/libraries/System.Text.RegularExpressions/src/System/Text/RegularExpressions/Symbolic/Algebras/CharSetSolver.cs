@@ -40,10 +40,10 @@ namespace System.Text.RegularExpressions.Symbolic
             else
             {
                 //individual character BDDs are always fixed
-                if (c < _charPredTable.Length)
-                    return _charPredTable[c] ??= CreateBDDFromChar(c);
-                else
-                    return CreateBDDFromChar(c);
+                BDD[] charPredTable = _charPredTable;
+                return c < charPredTable ?
+                    charPredTable[c] ??= CreateBDDFromChar(c) :
+                    CreateBDDFromChar(c);
             }
         }
 
