@@ -14,7 +14,7 @@
 		AvoidAssemblyLocationInSingleFile = 3000,
 		AvoidAssemblyGetFilesInSingleFile = 3001,
 		RequiresAssemblyFiles = 3002,
-		RequiresAssembyFilesAttributeMismatch = 3003
+		RequiresAssemblyFilesAttributeMismatch = 3003
 	}
 
 	public static class DiagnosticIdExtensions
