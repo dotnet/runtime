@@ -9564,21 +9564,26 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 }
 
+//-----------------------------------------------------------------------------------
+// genCodeForMadd: Emit a madd/msub (Multiply-Add) instruction
+//
+// Arguments:
+//     tree - GT_MADD tree where op1 or op2 is GT_ADD
+//
 void CodeGen::genCodeForMadd(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_MADD) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
 
     GenTree *a, *b, *c;
     if (tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
     {
-        genConsumeRegs(tree->gtGetOp1());
         a = tree->gtGetOp1()->gtGetOp1();
         b = tree->gtGetOp1()->gtGetOp2();
         c = tree->gtGetOp2();
     }
     else
     {
-        genConsumeRegs(tree->gtGetOp2());
         assert(tree->gtGetOp2()->OperIs(GT_MUL) && tree->gtGetOp2()->isContained());
         a = tree->gtGetOp2()->gtGetOp1();
         b = tree->gtGetOp2()->gtGetOp2();
