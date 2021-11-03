@@ -116,7 +116,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void AsReadOnly_TurnsIDictionaryIntoReadOnlyCollection()
+        public void AsReadOnly_TurnsIDictionaryIntoReadOnlyDictionary()
         {
             IDictionary<string, string> dictionary = new Dictionary<string, string> { ["key1"] = "value1", ["key2"] = "value2" };
             ReadOnlyDictionary<string, string> readOnlyDictionary = dicticonary.AsReadOnly();
