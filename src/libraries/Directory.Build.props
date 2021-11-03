@@ -116,7 +116,7 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
-    <UseAppBundleRootForBuildingTests Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')">true</UseAppBundleRootForBuildingTests>
+    <UseAppBundleRootForBuildingTests Condition="'$(ArchiveTests)' == 'true' and '$(BuildTestsOnHelix)' != 'true' and '$(TargetsAppleMobile)' == 'true'">true</UseAppBundleRootForBuildingTests>
     <AppBundleRoot Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'">$(ArtifactsDir)bundles\</AppBundleRoot>
 
     <NetCoreAppCurrentRefPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref', '$(NetCoreAppCurrent)'))</NetCoreAppCurrentRefPath>

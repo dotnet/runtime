@@ -363,7 +363,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(value1, value2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public static void Xml_SerializeClassThatImplementsInteface()
     {
         ClassImplementsInterface value = new ClassImplementsInterface() { ClassID = "ClassID", DisplayName = "DisplayName", Id = "Id", IsLoaded = true };

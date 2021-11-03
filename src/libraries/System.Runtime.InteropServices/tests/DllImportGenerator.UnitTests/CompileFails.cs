@@ -125,9 +125,12 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };
             yield return new object[] { CodeSnippets.MutuallyRecursiveCountElementNameOnParameter, 4, 0 };
             yield return new object[] { CodeSnippets.MutuallyRecursiveSizeParamIndexOnParameter, 4, 0 };
+
+            // Ref returns
+            yield return new object[] { CodeSnippets.RefReturn("int"), 2, 2 };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string source, int expectedGeneratorErrors, int expectedCompilerErrors)
         {
@@ -150,7 +153,7 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.MutuallyRecursiveImplicitlyBlittableStruct, 5, 2 };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(CodeSnippetsToCompile_InvalidCode))]
         public async Task ValidateSnippets_InvalidCodeGracefulFailure(string source, int expectedGeneratorErrors, int expectedCompilerErrors)
         {

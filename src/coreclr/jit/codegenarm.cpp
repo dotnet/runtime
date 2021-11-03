@@ -182,7 +182,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     {
         // TODO-CrossBitness: we wouldn't need the cast below if we had CodeGen::instGen_Set_Reg_To_Reloc_Imm.
         const int val32 = (int)imm;
-        if (arm_Valid_Imm_For_Mov(val32))
+        if (validImmForMov(val32))
         {
             GetEmitter()->emitIns_R_I(INS_mov, size, reg, val32, flags);
         }
@@ -191,7 +191,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
             const int imm_lo16 = val32 & 0xffff;
             const int imm_hi16 = (val32 >> 16) & 0xffff;
 
-            assert(arm_Valid_Imm_For_Mov(imm_lo16));
+            assert(validImmForMov(imm_lo16));
             assert(imm_hi16 != 0);
 
             GetEmitter()->emitIns_R_I(INS_movw, size, reg, imm_lo16);
@@ -238,7 +238,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             emitAttr attr = emitActualTypeSize(targetType);
 
-            if (con->IsIconHandle())
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
+            if (con->ImmedValNeedsReloc(compiler))
             {
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
@@ -1604,7 +1606,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         addr = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, (void**)&pAddr);
     }
 
-    if (!addr || !arm_Valid_Imm_For_BL((ssize_t)addr))
+    if (!addr || !validImmForBL((ssize_t)addr))
     {
         if (callTargetReg == REG_NA)
         {

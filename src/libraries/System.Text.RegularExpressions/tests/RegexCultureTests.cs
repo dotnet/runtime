@@ -190,6 +190,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_NonBacktracking()
         {
             var turkish = new CultureInfo("tr-TR");
@@ -275,16 +276,22 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "(?i:iI+)", options, invariant, "abc\u0130\u0131Ixyz", "" };
 
                 // Expected answers in the Turkish culture
-                yield return new object[] { "(?i:I)", options, turkish, "xy\u0131ab", "\u0131" };
-                yield return new object[] { "(?i:iI+)", options, turkish, "abcIIIxyz", "" };
-                yield return new object[] { "(?i:iI+)", options, turkish, "abcIi\u0130xyz", "" };
-                yield return new object[] { "(?i:iI+)", options, turkish, "abcI\u0130ixyz", "" };
-                yield return new object[] { "(?i:[^IJKLM]I)", options, turkish, "ii\u0130i\u0131ab", "i\u0131" };
+                //
+                // Android produces unexpected results for tr-TR
+                // https://github.com/dotnet/runtime/issues/60568
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { "(?i:I)", options, turkish, "xy\u0131ab", "\u0131" };
+                    yield return new object[] { "(?i:iI+)", options, turkish, "abcIIIxyz", "" };
+                    yield return new object[] { "(?i:iI+)", options, turkish, "abcIi\u0130xyz", "" };
+                    yield return new object[] { "(?i:iI+)", options, turkish, "abcI\u0130ixyz", "" };
+                    yield return new object[] { "(?i:[^IJKLM]I)", options, turkish, "ii\u0130i\u0131ab", "i\u0131" };
+                }
 
                 // None and Compiled are separated into the Match_In_Different_Cultures_CriticalCases test
                 if (options == RegexHelpers.RegexOptionNonBacktracking)
                 {
-                    foreach (var data in Match_In_Different_Cultures_CriticalCases_TestData_For(options))
+                    foreach (object[] data in Match_In_Different_Cultures_CriticalCases_TestData_For(options))
                     {
                         yield return data;
                     }
@@ -305,20 +312,27 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "(?i:[^IJKLM]I)", options, invariant, "ii\u0130i\u0131ab", "\u0130i" }; // <-- failing for None, Compiled
 
             // Expected answers in the Turkish culture
-            yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130IIxyz", "\u0130II" };           // <-- failing for None, Compiled
-            yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130\u0131Ixyz", "\u0130\u0131I" }; // <-- failing for None, Compiled
-            yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130Iixyz", "\u0130I" };            // <-- failing for None, Compiled
+            // Android produces unexpected results for tr-TR
+            // https://github.com/dotnet/runtime/issues/60568
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130IIxyz", "\u0130II" };           // <-- failing for None, Compiled
+                yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130\u0131Ixyz", "\u0130\u0131I" }; // <-- failing for None, Compiled
+                yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130Iixyz", "\u0130I" };            // <-- failing for None, Compiled
+            }
         }
 
         public static IEnumerable<object[]> Match_In_Different_Cultures_CriticalCases_TestData() =>
             Match_In_Different_Cultures_CriticalCases_TestData_For(RegexOptions.None).Union(Match_In_Different_Cultures_CriticalCases_TestData_For(RegexOptions.Compiled));
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60899", TestPlatforms.Browser)]
         [Theory]
         [MemberData(nameof(Match_In_Different_Cultures_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60697", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Match_In_Different_Cultures(string pattern, RegexOptions options, CultureInfo culture, string input, string match_expected)
         {
             Regex r = RegexHelpers.CreateRegexInCulture(pattern, options, culture);
-            var match = r.Match(input);
+            Match match = r.Match(input);
             Assert.Equal(match_expected, match.Value);
         }
 
@@ -328,7 +342,7 @@ namespace System.Text.RegularExpressions.Tests
         public void Match_In_Different_Cultures_CriticalCases(string pattern, RegexOptions options, CultureInfo culture, string input, string match_expected)
         {
             Regex r = RegexHelpers.CreateRegexInCulture(pattern, options, culture);
-            var match = r.Match(input);
+            Match match = r.Match(input);
             Assert.Equal(match_expected, match.Value);
         }
 
@@ -352,6 +366,7 @@ namespace System.Text.RegularExpressions.Tests
         /// It would need to be updated/regenerated if this test fails.
         /// </summary>
         [OuterLoop("May take several seconds due to large number of cultures tested")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(RegexOptionsExtended_MemberData))]
         public void TestIgnoreCaseRelation(RegexOptions options)
@@ -372,7 +387,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // as baseline it is assumed the the invariant culture does not change
             HashSet<char>[] inv_table = ComputeIgnoreCaseTable(CultureInfo.InvariantCulture, treatedAsCaseInsensitive);
-            CultureInfo[] cultures = System.Globalization.CultureInfo.GetCultures(System.Globalization.CultureTypes.AllCultures);
+            CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
 
             // expected difference between invariant and tr or az culture
             string tr_diff = string.Format("I:Ii/I{0},i:Ii/i{1},{1}:{1}/i{1},{0}:{0}/I{0}", Turkish_i_withoutDot, Turkish_I_withDot);
@@ -392,13 +407,12 @@ namespace System.Text.RegularExpressions.Tests
                 }
             }
 
-            foreach (var culture in testcultures)
+            foreach (CultureInfo culture in testcultures)
             {
                 HashSet<char>[] table = ComputeIgnoreCaseTable(culture, treatedAsCaseInsensitive);
                 string diff = GetDiff(inv_table, table);
                 if (culture.TwoLetterISOLanguageName == "tr" || culture.TwoLetterISOLanguageName == "az")
                 {
-
                     // tr or az alphabet
                     Assert.Equal(tr_diff, diff);
                 }

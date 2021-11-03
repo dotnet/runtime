@@ -268,7 +268,7 @@ namespace System.Reflection.Emit
                                                  assemblyAttributes);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
         private static extern void CreateDynamicAssembly(ObjectHandleOnStack name,
                                                          StackCrawlMarkHandle stackMark,
                                                          int access,

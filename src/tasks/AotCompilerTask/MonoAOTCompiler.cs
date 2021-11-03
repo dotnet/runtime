@@ -395,7 +395,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                             (args, state) => PrecompileLibraryParallel(args, state));
 
-            Log.LogMessage(MessageImportance.High, $"result: {result.IsCompleted}");
             if (result.IsCompleted)
             {
                 int numUnchanged = _totalNumAssemblies - _numCompiled;

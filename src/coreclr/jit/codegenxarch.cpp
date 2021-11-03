@@ -466,7 +466,13 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             ssize_t              cnsVal = con->IconValue();
 
             emitAttr attr = emitActualTypeSize(targetType);
-            if (con->IsIconHandle())
+            // Currently this cannot be done for all handles due to
+            // https://github.com/dotnet/runtime/issues/60712. However, it is
+            // also unclear whether we unconditionally want to use rip-relative
+            // lea instructions when not necessary. While a mov is larger, on
+            // many Intel CPUs rip-relative lea instructions have higher
+            // latency.
+            if (con->ImmedValNeedsReloc(compiler))
             {
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
@@ -3971,42 +3977,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 }
 
 //------------------------------------------------------------------------
-// genOffsetOfMDArrayLowerBound: Returns the offset from the Array object to the
-//   lower bound for the given dimension.
-//
-// Arguments:
-//    elemType  - the element type of the array
-//    rank      - the rank of the array
-//    dimension - the dimension for which the lower bound offset will be returned.
-//
-// Return Value:
-//    The offset.
-
-unsigned CodeGen::genOffsetOfMDArrayLowerBound(var_types elemType, unsigned rank, unsigned dimension)
-{
-    // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
-    return compiler->eeGetArrayDataOffset(elemType) + genTypeSize(TYP_INT) * (dimension + rank);
-}
-
-//------------------------------------------------------------------------
-// genOffsetOfMDArrayLength: Returns the offset from the Array object to the
-//   size for the given dimension.
-//
-// Arguments:
-//    elemType  - the element type of the array
-//    rank      - the rank of the array
-//    dimension - the dimension for which the lower bound offset will be returned.
-//
-// Return Value:
-//    The offset.
-
-unsigned CodeGen::genOffsetOfMDArrayDimensionSize(var_types elemType, unsigned rank, unsigned dimension)
-{
-    // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
-    return compiler->eeGetArrayDataOffset(elemType) + genTypeSize(TYP_INT) * dimension;
-}
-
-//------------------------------------------------------------------------
 // genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
 //                     producing the effective index by subtracting the lower bound.
 //
@@ -4036,9 +4006,9 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     // TODO-XArch-CQ: make this contained if it's an immediate that fits.
     inst_Mov(indexNode->TypeGet(), tgtReg, indexReg, /* canSkip */ true);
     GetEmitter()->emitIns_R_AR(INS_sub, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
-                               genOffsetOfMDArrayLowerBound(elemType, rank, dim));
+                               compiler->eeGetMDArrayLowerBoundOffset(rank, dim));
     GetEmitter()->emitIns_R_AR(INS_cmp, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
-                               genOffsetOfMDArrayDimensionSize(elemType, rank, dim));
+                               compiler->eeGetMDArrayLengthOffset(rank, dim));
     genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
 
     genProduceReg(arrIndex);
@@ -4110,7 +4080,7 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
         // Note that dim_size will never be negative.
 
         GetEmitter()->emitIns_R_AR(INS_mov, emitActualTypeSize(TYP_INT), tmpReg, arrReg,
-                                   genOffsetOfMDArrayDimensionSize(elemType, rank, dim));
+                                   compiler->eeGetMDArrayLengthOffset(rank, dim));
         inst_RV_RV(INS_imul, tmpReg, offsetReg);
 
         if (tmpReg == tgtReg)
@@ -4290,7 +4260,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         noway_assert(operandReg != REG_RCX);
 
         inst_Mov(targetType, tree->GetRegNum(), operandReg, /* canSkip */ true);
-        inst_RV_CL(ins, tree->GetRegNum(), targetType);
+        inst_RV(ins, tree->GetRegNum(), targetType);
     }
 
     genProduceReg(tree);
@@ -6113,7 +6083,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
         std::swap(op1, op2);
     }
 
-    ins     = ins_FloatCompare(op1Type);
+    ins     = (op1Type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
     cmpAttr = emitTypeSize(op1Type);
 
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
@@ -7231,7 +7201,9 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             assert(srcNode->TypeGet() == treeNode->TypeGet());
 
             genConsumeOperands(treeNode->AsOp());
-            GetEmitter()->emitInsBinary(ins_FloatSqrt(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode, srcNode);
+
+            const instruction ins = (treeNode->TypeGet() == TYP_FLOAT) ? INS_sqrtss : INS_sqrtsd;
+            GetEmitter()->emitInsBinary(ins, emitTypeSize(treeNode), treeNode, srcNode);
             break;
         }
 
