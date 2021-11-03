@@ -8,35 +8,35 @@ class Gen
 	public static void Target<U>(object p)
 	{		
 			//dummy line to avoid warnings
-			Test.Eval(typeof(U)!=p.GetType());
+			Test_thread29.Eval(typeof(U)!=p.GetType());
 			ManualResetEvent evt = (ManualResetEvent) p;
-			Interlocked.Increment(ref Test.Xcounter);
+			Interlocked.Increment(ref Test_thread29.Xcounter);
 			evt.Set();
 	}
 	public static void ThreadPoolTest<U>()
 	{
-		ManualResetEvent[] evts = new ManualResetEvent[Test.nThreads];
-		WaitHandle[] hdls = new WaitHandle[Test.nThreads];
+		ManualResetEvent[] evts = new ManualResetEvent[Test_thread29.nThreads];
+		WaitHandle[] hdls = new WaitHandle[Test_thread29.nThreads];
 
-		for (int i=0; i<Test.nThreads; i++)
+		for (int i=0; i<Test_thread29.nThreads; i++)
 		{
 			evts[i] = new ManualResetEvent(false);
 			hdls[i] = (WaitHandle) evts[i];
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread29.nThreads; i++)
 		{	
 			WaitCallback cb = new WaitCallback(Gen.Target<U>);
 			ThreadPool.QueueUserWorkItem(cb,evts[i]);
 		}
 
 		WaitHandle.WaitAll(hdls);
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread29.Eval(Test_thread29.Xcounter==Test_thread29.nThreads);
+		Test_thread29.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread29
 {
 	public static int nThreads =50;
 	public static int counter = 0;

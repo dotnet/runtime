@@ -4,7 +4,7 @@
 
 using System;
 
-class Test
+class Test_test_noalloca
 {
 #pragma warning disable 0414
     static int x = 25;

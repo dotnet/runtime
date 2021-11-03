@@ -47,7 +47,7 @@ public class GenOuter<U>
 	}
 }
 
-public class Test
+public class Test_NestedStruct02
 {
 	public static int counter = 0;
 	public static bool result = true;

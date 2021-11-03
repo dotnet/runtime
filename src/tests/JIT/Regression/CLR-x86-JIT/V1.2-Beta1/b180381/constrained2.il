@@ -10,7 +10,7 @@
 .assembly constrained
 {
 }
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_constrained2
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  M<([mscorlib]System.Object) T>(!!0 t) cil managed
@@ -33,9 +33,9 @@
     // Code size       17 (0x11)
     .maxstack  8
     IL_0000:  ldstr      "Hello"
-    IL_0005:  call       void Test::M<string>(!!0)
+    IL_0005:  call       void Test_constrained2::M<string>(!!0)
     IL_000a:  ldc.i4.3
-    IL_000b:  call       void Test::M<int32>(!!0)
+    IL_000b:  call       void Test_constrained2::M<int32>(!!0)
     IL_0010:  ldc.i4 100
     			ret
   } // end of method Test::Main

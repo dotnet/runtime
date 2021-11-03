@@ -8,15 +8,15 @@ class Gen
 	public void Target<U>(object p)
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=p.GetType());
-		if (Test.Xcounter>=Test.nThreads)
+		Test_thread03.Eval(typeof(U)!=p.GetType());
+		if (Test_thread03.Xcounter>=Test_thread03.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread03.Xcounter);	
 		}
 	}
 	
@@ -27,16 +27,16 @@ class Gen
 		Gen obj = new Gen();
 
 		TimerCallback tcb = new TimerCallback(obj.Target<U>);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread03.delay,Test_thread03.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread03.Eval(Test_thread03.Xcounter>=Test_thread03.nThreads);
+		Test_thread03.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread03
 {
 	public static int delay = 0;
 	public static int period = 2;
