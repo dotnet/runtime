@@ -287,7 +287,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
-            Uri targetUri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+            Uri targetUri = remoteServer.BasicAuthUriForCreds(Username, Password);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri uri = remoteServer.RedirectUriForDestinationUri(
@@ -480,8 +480,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Uri redirectUri = remoteServer.RedirectUriForCreds(
                     statusCode: 302,
-                    userName: Username,
-                    password: Password);
+                    Username,
+                    Password);
                 using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
@@ -499,15 +499,15 @@ namespace System.Net.Http.Functional.Tests
             {
                 Uri redirectUri = remoteServer.RedirectUriForCreds(
                     statusCode: 302,
-                    userName: Username,
-                    password: Password);
+                    Username,
+                    Password);
                 using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
                 }
 
                 // Use the same handler to perform get request, authentication should succeed after redirect.
-                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
                 using (HttpResponseMessage authResponse = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.OK, authResponse.StatusCode);
@@ -525,11 +525,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+            Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
             Uri redirectUri = remoteServer.RedirectUriForCreds(
                 statusCode: statusCode,
-                userName: Username,
-                password: Password);
+                Username,
+                Password);
             _output.WriteLine(uri.AbsoluteUri);
             _output.WriteLine(redirectUri.AbsoluteUri);
             var credentialCache = new CredentialCache();
