@@ -11,8 +11,8 @@ namespace System.Data.Common
         // Oleaut32
         //
 
-        [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = true)]
-        internal static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
+        [GeneratedDllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = true)]
+        internal static partial System.Data.OleDb.OleDbHResult GetErrorInfo(
             int dwReserved,
             [MarshalAs(UnmanagedType.Interface)] out UnsafeNativeMethods.IErrorInfo? ppIErrorInfo);
 

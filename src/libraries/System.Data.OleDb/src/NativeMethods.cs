@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.Common
 {
-    internal static class NativeMethods
+    internal static partial class NativeMethods
     {
         [Guid("0c733a1e-2a1c-11ce-ade5-00aa0044773d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport]
         internal interface ISourcesRowset
@@ -33,17 +33,17 @@ namespace System.Data.Common
                 [In] IntPtr pOtherOptions);
         }
 
-        [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        internal static extern IntPtr MapViewOfFile(IntPtr hFileMappingObject, int dwDesiredAccess, int dwFileOffsetHigh, int dwFileOffsetLow, IntPtr dwNumberOfBytesToMap);
+        [GeneratedDllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        internal static partial IntPtr MapViewOfFile(IntPtr hFileMappingObject, int dwDesiredAccess, int dwFileOffsetHigh, int dwFileOffsetLow, IntPtr dwNumberOfBytesToMap);
 
-        [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        internal static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
+        [GeneratedDllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        internal static partial bool UnmapViewOfFile(IntPtr lpBaseAddress);
 
-        [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern bool CloseHandle(IntPtr handle);
+        [GeneratedDllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial bool CloseHandle(IntPtr handle);
 
-        [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern bool AllocateAndInitializeSid(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial bool AllocateAndInitializeSid(
             IntPtr pIdentifierAuthority, // authority
             byte nSubAuthorityCount,                        // count of subauthorities
             int dwSubAuthority0,                          // subauthority 0
@@ -56,43 +56,43 @@ namespace System.Data.Common
             int dwSubAuthority7,                          // subauthority 7
             ref IntPtr pSid);                                   // SID
 
-        [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern int GetLengthSid(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial int GetLengthSid(
                     IntPtr pSid);   // SID to query
 
-        [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern bool InitializeAcl(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial bool InitializeAcl(
             IntPtr pAcl,            // ACL
             int nAclLength,     // size of ACL
             int dwAclRevision);  // revision level of ACL
 
-        [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern bool AddAccessDeniedAce(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial bool AddAccessDeniedAce(
             IntPtr pAcl,            // access control list
             int dwAceRevision,  // ACL revision level
             int AccessMask,     // access mask
             IntPtr pSid);           // security identifier
 
-        [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern bool AddAccessAllowedAce(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial bool AddAccessAllowedAce(
             IntPtr pAcl,            // access control list
             int dwAceRevision,  // ACL revision level
             uint AccessMask,     // access mask
             IntPtr pSid);           // security identifier
 
-        [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern bool InitializeSecurityDescriptor(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial bool InitializeSecurityDescriptor(
             IntPtr pSecurityDescriptor, // SD
             int dwRevision);                         // revision level
-        [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern bool SetSecurityDescriptorDacl(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial bool SetSecurityDescriptorDacl(
             IntPtr pSecurityDescriptor, // SD
             bool bDaclPresent,                        // DACL presence
             IntPtr pDacl,                               // DACL
             bool bDaclDefaulted);                       // default DACL
 
-        [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        internal static extern IntPtr FreeSid(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        internal static partial IntPtr FreeSid(
             IntPtr pSid);   // SID to free
     }
 }
