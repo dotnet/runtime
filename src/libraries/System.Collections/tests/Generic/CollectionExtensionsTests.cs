@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -103,6 +104,26 @@ namespace System.Collections.Tests
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
             Assert.False(dictionary.Remove("key", out var value));
             Assert.Equal(default(string), value);
+        }
+
+        [Fact]
+        public void AsReadOnly_TurnsIListIntoReadOnlyCollection()
+        {
+            IList<string> list = new List<string> { "A", "B" };
+            ReadOnlyCollection<string> readOnlyCollection = list.AsReadOnly();
+            Assert.NotNull(readOnlyCollection);
+            CollectionAsserts.Equal(list, readOnlyCollection);
+        }
+
+        [Fact]
+        public void AsReadOnly_TurnsIDictionaryIntoReadOnlyCollection()
+        {
+            IDictionary<string, string> dictionary = new Dictionary<string, string> { ["key1"] = "value1", ["key2"] = "value2" };
+            ReadOnlyDictionary<string, string> readOnlyDictionary = dicticonary.AsReadOnly();
+            Assert.NotNull(readOnlyDictionary);
+            Assert.Equal(dictionary["key1"], readOnlyDictionary["key1"]);
+            Assert.Equal(dictionary["key2"], readOnlyDictionary["key2"]);
+            Assert.Equal(dictionary.Count, readOnlyDictionary.Count);
         }
     }
 }

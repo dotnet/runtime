@@ -5,4 +5,5 @@ TypesMustExist : Type 'System.Collections.Generic.SortedDictionary<TKey, TValue>
 TypesMustExist : Type 'System.Collections.Generic.SortedList<TKey, TValue>.KeyList' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Collections.Generic.SortedList<TKey, TValue>.ValueList' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Collections.Generic.TreeSet<T>' does not exist in the reference but it does exist in the implementation.
-Total Issues: 6
+MembersMustExist : Member 'public System.Collections.ObjectModel.ReadOnlyCollection<T> System.Collections.Generic.CollectionExtensions.AsReadOnly<T>(System.Collections.Generic.IList<T>)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 7
