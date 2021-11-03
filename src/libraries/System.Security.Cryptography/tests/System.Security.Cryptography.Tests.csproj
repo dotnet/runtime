@@ -4,14 +4,22 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs" Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs" Link="CommonTest\System\IO\PositionValueStream.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
-    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
-    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
-    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
+             Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
+             Link="CommonTest\System\IO\PositionValueStream.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"
+             Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
+             Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"
+             Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
+             Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsnEncodedDataTests.cs" />
