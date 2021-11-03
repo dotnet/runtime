@@ -348,14 +348,11 @@ namespace Microsoft.Interop
             // documented semanatics of DllImportAttribute:
             //   - https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
             DllImportMember userDefinedValues = DllImportMember.None;
-            bool bestFitMapping = false;
-            CallingConvention callingConvention = CallingConvention.Winapi;
             CharSet charSet = CharSet.Ansi;
             string? entryPoint = null;
             bool exactSpelling = false; // VB has different and unusual default behavior here.
             bool preserveSig = true;
             bool setLastError = false;
-            bool throwOnUnmappableChar = false;
 
             // All other data on attribute is defined as NamedArguments.
             foreach (KeyValuePair<string, TypedConstant> namedArg in attrData.NamedArguments)
@@ -365,14 +362,6 @@ namespace Microsoft.Interop
                     default:
                         Debug.Fail($"An unknown member was found on {GeneratedDllImport}");
                         continue;
-                    case nameof(GeneratedDllImportData.BestFitMapping):
-                        userDefinedValues |= DllImportMember.BestFitMapping;
-                        bestFitMapping = (bool)namedArg.Value.Value!;
-                        break;
-                    case nameof(GeneratedDllImportData.CallingConvention):
-                        userDefinedValues |= DllImportMember.CallingConvention;
-                        callingConvention = (CallingConvention)namedArg.Value.Value!;
-                        break;
                     case nameof(GeneratedDllImportData.CharSet):
                         userDefinedValues |= DllImportMember.CharSet;
                         charSet = (CharSet)namedArg.Value.Value!;
@@ -393,24 +382,17 @@ namespace Microsoft.Interop
                         userDefinedValues |= DllImportMember.SetLastError;
                         setLastError = (bool)namedArg.Value.Value!;
                         break;
-                    case nameof(GeneratedDllImportData.ThrowOnUnmappableChar):
-                        userDefinedValues |= DllImportMember.ThrowOnUnmappableChar;
-                        throwOnUnmappableChar = (bool)namedArg.Value.Value!;
-                        break;
                 }
             }
 
             return new GeneratedDllImportData(attrData.ConstructorArguments[0].Value!.ToString())
             {
                 IsUserDefined = userDefinedValues,
-                BestFitMapping = bestFitMapping,
-                CallingConvention = callingConvention,
                 CharSet = charSet,
                 EntryPoint = entryPoint,
                 ExactSpelling = exactSpelling,
                 PreserveSig = preserveSig,
                 SetLastError = setLastError,
-                ThrowOnUnmappableChar = throwOnUnmappableChar
             };
         }
 
@@ -452,31 +434,16 @@ namespace Microsoft.Interop
             // Process the GeneratedDllImport attribute
             GeneratedDllImportData stubDllImportData = ProcessGeneratedDllImportAttribute(generatedDllImportAttr!);
 
-            if (stubDllImportData.IsUserDefined.HasFlag(DllImportMember.BestFitMapping))
-            {
-                generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, nameof(GeneratedDllImportData.BestFitMapping));
-            }
-
-            if (stubDllImportData.IsUserDefined.HasFlag(DllImportMember.ThrowOnUnmappableChar))
-            {
-                generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, nameof(GeneratedDllImportData.ThrowOnUnmappableChar));
-            }
-
-            if (stubDllImportData.IsUserDefined.HasFlag(DllImportMember.CallingConvention))
-            {
-                generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, nameof(GeneratedDllImportData.CallingConvention));
-            }
-
             if (lcidConversionAttr != null)
             {
                 // Using LCIDConversion with GeneratedDllImport is not supported
                 generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
-            List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
 
             // Create the stub.
             var dllImportStub = DllImportStubContext.Create(symbol, stubDllImportData, environment, generatorDiagnostics, ct);
 
+            List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
             return new IncrementalStubGenerationContext(environment, dllImportStub, additionalAttributes.ToImmutableArray(), stubDllImportData, generatorDiagnostics.Diagnostics.ToImmutableArray());
         }
 
@@ -602,18 +569,6 @@ namespace Microsoft.Interop
                     CreateStringExpressionSyntax(targetDllImportData.EntryPoint!))
             };
 
-            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.BestFitMapping))
-            {
-                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.BestFitMapping));
-                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.BestFitMapping);
-                newAttributeArgs.Add(AttributeArgument(name, null, value));
-            }
-            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.CallingConvention))
-            {
-                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CallingConvention));
-                ExpressionSyntax value = CreateEnumExpressionSyntax(targetDllImportData.CallingConvention);
-                newAttributeArgs.Add(AttributeArgument(name, null, value));
-            }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
@@ -636,12 +591,6 @@ namespace Microsoft.Interop
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.SetLastError));
                 ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.SetLastError);
-                newAttributeArgs.Add(AttributeArgument(name, null, value));
-            }
-            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.ThrowOnUnmappableChar))
-            {
-                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.ThrowOnUnmappableChar));
-                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.ThrowOnUnmappableChar);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
 
@@ -691,13 +640,10 @@ namespace Microsoft.Interop
             var targetDllImportData = new GeneratedDllImportData(dllImportData.ModuleName)
             {
                 CharSet = dllImportData.CharSet,
-                BestFitMapping = dllImportData.BestFitMapping,
-                CallingConvention = dllImportData.CallingConvention,
                 EntryPoint = dllImportData.EntryPoint,
                 ExactSpelling = dllImportData.ExactSpelling,
                 SetLastError = dllImportData.SetLastError,
                 PreserveSig = dllImportData.PreserveSig,
-                ThrowOnUnmappableChar = dllImportData.ThrowOnUnmappableChar,
                 IsUserDefined = dllImportData.IsUserDefined & membersToForward
             };
 

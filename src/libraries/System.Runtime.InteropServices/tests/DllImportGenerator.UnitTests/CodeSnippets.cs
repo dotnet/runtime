@@ -184,29 +184,9 @@ partial class Test
 ";
 
         /// <summary>
-        /// Declaration with all DllImport named arguments.
+        /// Declaration with all GeneratedDllImport named arguments.
         /// </summary>
-        public static readonly string AllDllImportNamedArguments = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [GeneratedDllImport(""DoesNotExist"",
-        BestFitMapping = false,
-        CallingConvention = CallingConvention.Cdecl,
-        CharSet = CharSet.Unicode,
-        EntryPoint = ""UserDefinedEntryPoint"",
-        ExactSpelling = true,
-        PreserveSig = false,
-        SetLastError = true,
-        ThrowOnUnmappableChar = true)]
-    public static partial void Method();
-}
-";
-
-        /// <summary>
-        /// Declaration with all supported DllImport named arguments.
-        /// </summary>
-        public static readonly string AllSupportedDllImportNamedArguments = @"
+        public static readonly string AllGeneratedDllImportNamedArguments = @"
 using System.Runtime.InteropServices;
 partial class Test
 {
