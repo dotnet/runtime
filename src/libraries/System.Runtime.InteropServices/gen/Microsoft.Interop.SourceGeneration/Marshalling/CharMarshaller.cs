@@ -96,7 +96,7 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Setup:
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.IsByRef && info.RefKind != RefKind.Out)
+                    if ((info.IsByRef && info.RefKind != RefKind.Out) || !context.SingleFrameSpansNativeContext)
                     {
                         yield return ExpressionStatement(
                             AssignmentExpression(
