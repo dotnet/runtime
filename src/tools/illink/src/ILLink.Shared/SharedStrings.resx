@@ -147,6 +147,12 @@
   <data name="RequiresUnreferencedCodeAttributeMismatchTitle" xml:space="preserve">
     <value>'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
+  <data name="RequiresAssemblyFilesAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+	<data name="RequiresAssemblyFilesAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
   <data name="BaseRequiresMismatchMessage" xml:space="preserve">
     <value>Base member '{2}' with '{0}' has a derived member '{1}' without '{0}'</value>
   </data>

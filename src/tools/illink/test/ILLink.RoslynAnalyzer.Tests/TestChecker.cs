@@ -172,7 +172,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 
-			missingDiagnosticMessage = $"Expected to find warning containing:{string.Join (" ", expectedMessages.Select (m => "'" + m + "'"))}" +
+			missingDiagnosticMessage = $"Warning '{expectedWarningCode}'. Expected to find warning containing:{string.Join (" ", expectedMessages.Select (m => "'" + m + "'"))}" +
 					$", but no such message was found.{ Environment.NewLine}";
 			return false;
 

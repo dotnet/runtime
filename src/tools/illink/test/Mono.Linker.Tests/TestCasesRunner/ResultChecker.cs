@@ -777,6 +777,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
 											actualName.Contains ("<" + expectedMember.Name + ">"))
 											return true;
+										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
+											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition))
+											return true;
 										if (methodDefinition.Name == ".ctor" &&
 											methodDefinition.DeclaringType.FullName == expectedMember.FullName)
 											return true;
