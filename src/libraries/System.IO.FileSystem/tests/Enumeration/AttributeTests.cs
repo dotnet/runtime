@@ -58,9 +58,14 @@ namespace System.IO.Tests.Enumeration
         // The test is performed using two items with different properties (file/dir, file length)
         // to check cached values from the previous entry don't leak into the non-existing entry.
         [InlineData("dir1", "dir2")]
+        [InlineData("dir1", "file2")]
+        [InlineData("dir1", "link2")]
         [InlineData("file1", "file2")]
-        [InlineData("dir1", "file1")]
-        [InlineData("file1", "dir1")]
+        [InlineData("file1", "dir2")]
+        [InlineData("file1", "link2")]
+        [InlineData("link1", "file2")]
+        [InlineData("link1", "dir2")]
+        [InlineData("link1", "link2")]
         [Theory]
         public void PropertiesWhenItemNoLongerExists(string item1, string item2)
         {
@@ -134,6 +139,11 @@ namespace System.IO.Tests.Enumeration
             static FileSystemInfo CreateItem(DirectoryInfo testDirectory, string item)
             {
                 string fullPath = Path.Combine(testDirectory.FullName, item);
+
+                // use the last char to have different lengths for different files.
+                Assert.True(item.EndsWith('1') || item.EndsWith('2'));
+                int length = (int)item[item.Length - 1];
+
                 if (item.StartsWith("dir"))
                 {
                     Directory.CreateDirectory(fullPath);
@@ -141,11 +151,15 @@ namespace System.IO.Tests.Enumeration
                     info.Refresh();
                     return info;
                 }
+                else if (item.StartsWith("link"))
+                {
+                    File.CreateSymbolicLink(fullPath, new string('_', length));
+                    var info = new FileInfo(fullPath);
+                    info.Refresh();
+                    return info;
+                }
                 else
                 {
-                    // use the last char to have different lengths for different files.
-                    Assert.True(item == "file1" || item == "file2", "File names");
-                    int length = (int)item[item.Length - 1];
                     File.WriteAllBytes(fullPath, new byte[length]);
                     var info = new FileInfo(fullPath);
                     info.Refresh();
