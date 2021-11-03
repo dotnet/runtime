@@ -23,6 +23,9 @@
 	// Use 'onCreateCommand' to run pre-build commands inside the codespace
 	"onCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/onCreateCommand.sh",
 
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/postCreateCommand.sh",
+
 	// Add the locally installed dotnet to the path to ensure that it is activated
 	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.
 	"remoteEnv": {

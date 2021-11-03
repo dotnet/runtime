@@ -9,12 +9,6 @@ dotnet/runtime runs a nightly GitHub Action to build the latest code in the repo
 
 See https://docs.github.com/codespaces/developing-in-codespaces/creating-a-codespace#creating-a-codespace for instructions on how to create a new codespace.
 
-### Workarounds
-
-There is an issue with Codespaces prebuilds that your repo will be checked out to the latest branch's HEAD. However, the binaries in the `artifacts` folder were built when the prebuild GitHub Action was run. Because of this, your build may be broken, depending on what kind of changes came into the repo that day. To fix this run the following after you create your codespace:
-
-* `git reset --hard $(cat ./artifacts/prebuild.sha)`
-
 ## Updating dotnet/runtime's Codespaces Configuration
 
 The Codespaces configuration is spread across the following places:
