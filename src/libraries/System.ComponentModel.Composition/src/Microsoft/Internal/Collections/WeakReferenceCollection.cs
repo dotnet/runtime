@@ -25,7 +25,7 @@ namespace Microsoft.Internal.Collections
                 CleanupDeadReferences();
             }
 
-            using (_lock.LockComposition())
+            using (_lock.LockStateForWrite())
             {
                 _items.Add(new WeakReference(item));
             }
@@ -37,7 +37,7 @@ namespace Microsoft.Internal.Collections
 
             if (index != -1)
             {
-                using (_lock.LockComposition())
+                using (_lock.LockStateForWrite())
                 {
                     _items.RemoveAt(index);
                 }
@@ -51,7 +51,7 @@ namespace Microsoft.Internal.Collections
 
         public void Clear()
         {
-            using (_lock.LockComposition())
+            using (_lock.LockStateForWrite())
             {
                 _items.Clear();
             }
@@ -60,21 +60,25 @@ namespace Microsoft.Internal.Collections
         // Should be executed under at least a read lock.
         private int IndexOf(T item)
         {
-            int count = _items.Count;
-            for (int i = 0; i < count; i++)
+            using (_lock.LockStateForRead())
             {
-                if (object.ReferenceEquals(_items[i].Target, item))
+                int count = _items.Count;
+                for (int i = 0; i < count; i++)
                 {
-                    return i;
+                    if (object.ReferenceEquals(_items[i].Target, item))
+                    {
+                        return i;
+                    }
                 }
             }
+
             return -1;
         }
 
         // Should be executed under a write lock
         private void CleanupDeadReferences()
         {
-            using (_lock.LockComposition())
+            using (_lock.LockStateForWrite())
             {
                 _items.RemoveAll(w => !w.IsAlive);
             }
@@ -84,7 +88,7 @@ namespace Microsoft.Internal.Collections
         {
             List<T> aliveItems = new List<T>();
 
-            using (_lock.LockComposition())
+            using (_lock.LockStateForRead())
             {
                 foreach (var weakItem in _items)
                 {
