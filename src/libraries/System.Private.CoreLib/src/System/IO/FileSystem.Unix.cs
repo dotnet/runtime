@@ -571,14 +571,8 @@ namespace System.IO
 
         public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
         {
-            if (fileHandle.Path is { } path)
-            {
-                SetAttributes(path, attributes);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            SetAttributes(fileHandle.Path, attributes);
         }
 
         public static DateTimeOffset GetCreationTime(string fullPath)
@@ -588,14 +582,8 @@ namespace System.IO
 
         public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle)
         {
-            if (fileHandle.Path is { } path)
-            {
-                return GetCreationTime(path);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            return GetCreationTime(fileHandle.Path);
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -609,14 +597,8 @@ namespace System.IO
 
         public static void SetCreationTime(SafeFileHandle fileHandle, DateTimeOffset time)
         {
-            if (fileHandle.Path is { } path)
-            {
-                SetCreationTime(path, time, false);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            SetCreationTime(fileHandle.Path, time, false);
         }
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
@@ -626,14 +608,8 @@ namespace System.IO
 
         public static DateTimeOffset GetLastAccessTime(SafeFileHandle fileHandle)
         {
-            if (fileHandle.Path is { } path)
-            {
-                return GetLastAccessTime(path);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            return GetLastAccessTime(fileHandle.Path);
         }
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -647,14 +623,8 @@ namespace System.IO
 
         public static void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
         {
-            if (fileHandle.Path is { } path)
-            {
-                SetLastAccessTime(path, time, false);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            SetLastAccessTime(fileHandle.Path, time, false);
         }
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
@@ -664,14 +634,8 @@ namespace System.IO
 
         public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle)
         {
-            if (fileHandle.Path is { } path)
-            {
-                return GetLastWriteTime(path);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            return GetLastWriteTime(fileHandle.Path);
         }
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -685,14 +649,8 @@ namespace System.IO
 
         public static void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
         {
-            if (fileHandle.Path is { } path)
-            {
-                SetLastWriteTime(path, time, false);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            SetLastWriteTime(fileHandle.Path, time, false);
         }
 
         public static string[] GetLogicalDrives()
