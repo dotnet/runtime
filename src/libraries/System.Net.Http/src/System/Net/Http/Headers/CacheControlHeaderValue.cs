@@ -28,7 +28,7 @@ namespace System.Net.Http.Headers
         private static readonly HttpHeaderParser s_nameValueListParser = GenericHeaderParser.MultipleValueNameValueParser;
 
         private bool _noCache;
-        private ObjectCollection<string>? _noCacheHeaders;
+        private TokenObjectCollection? _noCacheHeaders;
         private bool _noStore;
         private TimeSpan? _maxAge;
         private TimeSpan? _sharedMaxAge;
@@ -39,10 +39,10 @@ namespace System.Net.Http.Headers
         private bool _onlyIfCached;
         private bool _publicField;
         private bool _privateField;
-        private ObjectCollection<string>? _privateHeaders;
+        private TokenObjectCollection? _privateHeaders;
         private bool _mustRevalidate;
         private bool _proxyRevalidate;
-        private ObjectCollection<NameValueHeaderValue>? _extensions;
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _extensions;
 
         public bool NoCache
         {
@@ -524,7 +524,7 @@ namespace System.Net.Http.Headers
         }
 
         private static bool TrySetOptionalTokenList(NameValueHeaderValue nameValue, ref bool boolField,
-            ref ObjectCollection<string>? destination)
+            ref TokenObjectCollection? destination)
         {
             Debug.Assert(nameValue != null);
 
@@ -619,7 +619,7 @@ namespace System.Net.Http.Headers
             sb.Append(value);
         }
 
-        private static void AppendValues(StringBuilder sb, ObjectCollection<string> values)
+        private static void AppendValues(StringBuilder sb, TokenObjectCollection values)
         {
             bool first = true;
             foreach (string value in values)

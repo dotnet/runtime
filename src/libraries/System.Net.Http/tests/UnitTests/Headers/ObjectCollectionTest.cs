@@ -35,7 +35,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void ContainsAndRemove_UsesEqualitySemantics()
         {
-            ObjectCollection<string> c = new UnvalidatedObjectCollection<string>();
+            var c = new UnvalidatedObjectCollection<string>();
 
             string val1 = "value1";
             string val1DifferentReference = "value" + 1;

@@ -15,7 +15,7 @@ namespace System.Net.Http.Headers
     {
         private static readonly Func<NameValueHeaderValue> s_nameValueCreator = CreateNameValue;
 
-        private ObjectCollection<NameValueHeaderValue>? _parameters;
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _parameters;
 
         public ICollection<NameValueHeaderValue> Parameters =>
             _parameters ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
@@ -125,7 +125,7 @@ namespace System.Net.Http.Headers
             {
                 current++; // skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    (ObjectCollection<NameValueHeaderValue>)nameValueWithParameters.Parameters);
+                    (UnvalidatedObjectCollection<NameValueHeaderValue>)nameValueWithParameters.Parameters);
 
                 if (parameterLength == 0)
                 {
