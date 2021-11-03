@@ -642,5 +642,13 @@ namespace DebuggerTests
                 }
             );
         }
+        
+
+        [Fact]
+        public async Task DebuggerAttributeNoStopInDebuggerHidden()
+        {
+            var bp_hidden = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "HiddenMethod", 1);
+            Assert.Empty(bp_hidden.Value["locations"]);
+        }
     }
 }

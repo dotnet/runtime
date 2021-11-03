@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Diagnostics;
 public partial class Math
 { //Only append content to this class as the test suite depends on line info
     public static int IntAdd(int a, int b)
@@ -805,5 +806,21 @@ public class MyIncrementer
         }
 
         return count + 1;
+    }
+}
+
+public class DebuggerAttribute
+{
+    static int currentCount = 0;
+
+    [DebuggerHidden]
+    public static void HiddenMethod()
+    {
+        currentCount++;
+    }
+
+    public static void Run()
+    {
+        HiddenMethod();
     }
 }
