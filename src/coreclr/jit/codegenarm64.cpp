@@ -9580,19 +9580,13 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     unsigned     shiftByImm = shiftBy & (emitter::getBitWidth(size) - 1);
     GenTreeCast* cast       = tree->gtGetOp1()->AsCast();
     GenTree*     castOp     = cast->CastOp();
-    genConsumeRegs(castOp);
 
-    unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
+    genConsumeRegs(castOp);
     unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
                                                           : genTypeSize(castOp) * BITS_PER_BYTE;
-
-    assert(srcBits < dstBits);
-    assert((shiftByImm > 0) && (shiftByImm < srcBits));
-
     const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
     GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
                                   (int)shiftByImm, (int)srcBits);
-
     genProduceReg(tree);
 }
 
