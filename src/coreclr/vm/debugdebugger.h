@@ -20,19 +20,17 @@ class DebugDebugger
 {
 public:
     static FCDECL0(void, Break);
-    static BOOL QCALLTYPE Launch();
     static FCDECL0(FC_BOOL_RET, IsDebuggerAttached);
-    static void QCALLTYPE Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage);
 
     // receives a custom notification object from the target and sends it to the RS via
     // code:Debugger::SendCustomDebuggerNotification
     static FCDECL1(void, CustomNotification, Object * dataUNSAFE);
 
     static FCDECL0(FC_BOOL_RET, IsLogging);
-
-protected:
-    static BOOL IsLoggingHelper();
 };
+
+extern "C" BOOL QCALLTYPE DebugDebugger_Launch();
+extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage);
 
 
 class StackFrameHelper : public Object

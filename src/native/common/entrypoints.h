@@ -20,7 +20,7 @@ typedef struct
 #define DllImportEntry(impl) \
     {#impl, (void*)impl},
 
-static const void* ResolveDllImport(const Entry* resolutionTable, size_t tableLength, const char* name)
+static const void* minipal_resolve_dllimport(const Entry* resolutionTable, size_t tableLength, const char* name)
 {
     for (size_t i = 0; i < tableLength; i++)
     {

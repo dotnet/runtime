@@ -100,8 +100,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
     regSet.tmpInit();
 
-    instInit();
-
 #ifdef LATE_DISASM
     getDisAssembler().disInit(compiler);
 #endif

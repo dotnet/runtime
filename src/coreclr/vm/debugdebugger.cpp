@@ -156,7 +156,7 @@ FCIMPL0(void, DebugDebugger::Break)
 }
 FCIMPLEND
 
-BOOL QCALLTYPE DebugDebugger::Launch()
+extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 {
     QCALL_CONTRACT;
 
@@ -190,24 +190,26 @@ FCIMPL0(FC_BOOL_RET, DebugDebugger::IsDebuggerAttached)
 }
 FCIMPLEND
 
-
-/*static*/ BOOL DebugDebugger::IsLoggingHelper()
+namespace
 {
-    CONTRACTL
+    BOOL IsLoggingHelper()
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-#ifdef DEBUGGING_SUPPORTED
-    if (CORDebuggerAttached())
-    {
-        return (g_pDebugInterface->IsLoggingEnabled());
+    #ifdef DEBUGGING_SUPPORTED
+        if (CORDebuggerAttached())
+        {
+            return (g_pDebugInterface->IsLoggingEnabled());
+        }
+    #endif // DEBUGGING_SUPPORTED
+        return FALSE;
     }
-#endif // DEBUGGING_SUPPORTED
-    return FALSE;
 }
 
 
@@ -216,7 +218,7 @@ FCIMPLEND
 // appending a newline to anything.
 // It will also call OutputDebugString() which will send a native debug event. The message
 // string there will be a composite of the two managed string parameters and may include a newline.
-void QCALLTYPE DebugDebugger::Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
+extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
 {
     CONTRACTL
     {
@@ -1160,14 +1162,14 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
     _ASSERTE(!ThreadStore::HoldingThreadStore());
 
-    bool bRes = false; 
+    bool bRes = false;
 
 #ifdef DEBUGGING_SUPPORTED
     // Calculate the IL offset using the debugging services
     if ((this->ip != NULL) && g_pDebugInterface)
     {
         // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
-        // adjusted in certain cases when calculating the IL offset. 
+        // adjusted in certain cases when calculating the IL offset.
         //
         // The dwOffset of the stack frame points to either:
         //

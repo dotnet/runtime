@@ -13,6 +13,8 @@ namespace Microsoft.Interop
 {
     public sealed class Forwarder : IMarshallingGenerator, IAttributedReturnTypeMarshallingGenerator
     {
+        public bool IsSupported(TargetFramework target, Version version) => true;
+
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
             return info.ManagedType.Syntax;
