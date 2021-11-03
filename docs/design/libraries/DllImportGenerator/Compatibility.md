@@ -8,7 +8,7 @@ The focus of version 1 is to support `NetCoreApp`. This implies that anything no
 
 ### Fallback mechanism
 
-In the event a marshaller would generate code that has a specific TFM requirement, the generator will instead produce a normal `DllImportAttribute` declaration. This fallback mechanism enables the use of `GeneratedDllImportAttribute` in most circumstances and permits the conversion from `DllImportAttribute` to `GeneratedDllImportAttribute` to be across most code bases. There are instances where the generator will not be able to handle signatures or configuration. For example, uses of `StringBuilder` are not supported in any form and consumers should retain uses of `DllImportAttribute`. Additionally, `GeneratedDllImportAttribute` cannot represent all settings available on `DllImportAttribute`&mdash;see below for details.
+In the event a marshaller would generate code that has a specific target framework or version requirement that is not satisfied, the generator will instead produce a normal `DllImportAttribute` declaration. This fallback mechanism enables the use of `GeneratedDllImportAttribute` in most circumstances and permits the conversion from `DllImportAttribute` to `GeneratedDllImportAttribute` to be across most code bases. There are instances where the generator will not be able to handle signatures or configuration. For example, uses of `StringBuilder` are not supported in any form and consumers should retain uses of `DllImportAttribute`. Additionally, `GeneratedDllImportAttribute` cannot represent all settings available on `DllImportAttribute`&mdash;see below for details.
 
 ### Semantic changes compared to `DllImportAttribute`
 
