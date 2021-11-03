@@ -280,6 +280,7 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_BFIZ:
+            assert(tree->gtGetOp1()->OperIs(GT_CAST));
             srcCount = BuildOperandUses(tree->gtGetOp1()->gtGetOp1());
             BuildDef(tree);
             break;
