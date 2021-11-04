@@ -5754,6 +5754,16 @@ void Lowering::LowerShift(GenTreeOp* shift)
     }
     ContainCheckShiftRotate(shift);
 
+    // Fold any kind of shift by zero, e.g. LSH(X, 0) => X
+    LIR::Use use;
+    if (shift->gtGetOp2()->IsIntegralConst(0) && BlockRange().TryGetUse(shift, &use))
+    {
+        use.ReplaceWith(shift->gtGetOp1());
+        BlockRange().Remove(shift->gtGetOp2());
+        BlockRange().Remove(shift);
+        return;
+    }
+
 #ifdef TARGET_ARM64
     // Try to recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) tree
     if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_LSH) && shift->gtGetOp1()->OperIs(GT_CAST) &&
@@ -5773,7 +5783,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
             assert(!cast->CastOp()->isContained());
 
             // It has to be an upcast and CNS must be in [1..srcBits) range
-            if ((srcBits < dstBits) && ((UINT32)cns->IconValue() < srcBits))
+            if ((srcBits < dstBits) && (cns->IconValue() > 0) && (cns->IconValue() < srcBits))
             {
                 JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
                 shift->ChangeOper(GT_BFIZ);
