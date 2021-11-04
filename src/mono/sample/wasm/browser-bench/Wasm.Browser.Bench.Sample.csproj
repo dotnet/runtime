@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
-    <Compile Remove="Console.cs" />
+    <Compile Remove="Console/Console.cs" />
   </ItemGroup>
 
   <PropertyGroup>

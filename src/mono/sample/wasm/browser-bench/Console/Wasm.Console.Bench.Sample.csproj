@@ -14,7 +14,8 @@
   <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
 
   <ItemGroup>
-    <Compile Remove="Browser.cs" />
+    <Compile Include="../*.cs" />
+    <Compile Remove="../Browser.cs" />
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
   </ItemGroup>
 </Project>
