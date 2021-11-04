@@ -108,6 +108,15 @@ namespace System.Security.Cryptography.Cng.Tests
                 notSupportedFeedbackSizeInBits: 128);
         }
 
+        [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
+        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        public static void VerifyRequiresAesCngKey()
+        {
+            SymmetricCngTestHelpers.VerifyMismatchAlgorithmFails(
+                s_cngAlgorithm,
+                keyName => new TripleDESCng(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider));
+        }
+
         public static bool SupportsPersistedSymmetricKeys
         {
             get { return SymmetricCngTestHelpers.SupportsPersistedSymmetricKeys; }

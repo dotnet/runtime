@@ -348,6 +348,27 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
+        internal static void VerifyMismatchAlgorithmFails(
+            CngAlgorithm algorithm,
+            Func<string, SymmetricAlgorithm> createFromKey)
+        {
+            string keyName = Guid.NewGuid().ToString();
+
+            // We try to delete the key later which will also dispose of it, so no need
+            // to put this in a using.
+            CngKey cngKey = CngKey.Create(algorithm, keyName);
+
+            try
+            {
+                CryptographicException ce = Assert.Throws<CryptographicException>(() => createFromKey(keyName));
+                Assert.Contains($"'{algorithm.Algorithm}'", ce.Message);
+            }
+            finally
+            {
+                cngKey.Delete();
+            }
+        }
+
         private static bool? s_supportsPersistedSymmetricKeys;
         internal static bool SupportsPersistedSymmetricKeys
         {
