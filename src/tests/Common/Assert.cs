@@ -3,8 +3,6 @@
 
 // This file is used to provide some basic Assert functionality for assemblies that directly reference System.Private.CoreLib
 // and not the ref pack.
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 
 // Note: Exception messages call ToString instead of Name to avoid MissingMetadataException when just outputting basic info
 
