@@ -10,5 +10,8 @@ internal static partial class Interop
     {
         [DllImport(Libraries.OleAut32, CharSet = CharSet.Unicode)]
         internal static extern IntPtr SysAllocStringLen(IntPtr src, uint len);
+
+        [GeneratedDllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
+        internal static partial IntPtr SysAllocStringLen(string src, int len);
     }
 }

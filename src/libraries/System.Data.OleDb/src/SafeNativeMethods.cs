@@ -35,9 +35,6 @@ namespace System.Data.Common
             return actualPtr;
         }
 
-        [GeneratedDllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
-        internal static partial IntPtr SysAllocStringLen(string src, int len);  // BSTR
-
         [GeneratedDllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static partial int ReleaseSemaphore(IntPtr handle, int releaseCount, IntPtr previousCount);
 
