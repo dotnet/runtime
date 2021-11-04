@@ -43,3 +43,23 @@ Example console output:
     |                Json, small deserialize |     0.5080ms |
     |                  Json, large serialize |    95.3333ms |
     |                Json, large deserialize |   141.4737ms |
+
+### Filter jobs/measurements
+
+The `-t` option can be used to run subset of jobs/measurements like this:
+
+    make run ARGS="-t Json:non,Exceptions:Inline"
+
+### Console options
+
+    > make run ARGS=-h
+    ...
+    Simple mono wasm benchmark
+    
+    Copyright 2021 Microsoft Corporation
+    
+    Options:
+      -h, --help, -?             Show this message and exit
+      -t, --tasks=VALUE          Filter comma separated tasks and its measurements
+                                   matching, TASK[:REGEX][,TASK[:REGEX],...].
+                                   Example: -t Json:non,Exceptions:Inline
