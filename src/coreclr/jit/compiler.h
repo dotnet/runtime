@@ -7470,6 +7470,7 @@ public:
     // Redundant branch opts
     //
     PhaseStatus optRedundantBranches();
+    bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);

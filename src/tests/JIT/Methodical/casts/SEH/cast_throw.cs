@@ -6,7 +6,7 @@ using System;
 internal class BaseException : Exception { }
 internal class DerivedException : BaseException { }
 
-internal class Test
+internal class Test_cast_throw
 {
     private static int Main()
     {

@@ -17,7 +17,7 @@
 .assembly extern System.Console{}
 .assembly a {}
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_GitHub_23792
        extends [mscorlib]System.Object
 {
 
@@ -80,7 +80,7 @@
   IL_002a:  call       native int [mscorlib]System.IntPtr::op_Explicit(int32)
   IL_002f:  ldc.i4.8
   IL_0030:  call       native int [mscorlib]System.IntPtr::op_Explicit(int32)
-  IL_0035:  call       uint8& Test::Run1(uint8&,
+  IL_0035:  call       uint8& Test_GitHub_23792::Run1(uint8&,
                                         native int,
                                         native int)
   IL_003a:  stloc.2
@@ -91,7 +91,7 @@
   IL_0043:  call       native int [mscorlib]System.IntPtr::op_Explicit(int32)
   IL_0048:  ldc.i4.8
   IL_0049:  call       native int [mscorlib]System.IntPtr::op_Explicit(int32)
-  IL_004e:  call       uint8& Test::Run2(uint8&,
+  IL_004e:  call       uint8& Test_GitHub_23792::Run2(uint8&,
                                         native int,
                                         native int)
   IL_0053:  stloc.3

@@ -335,7 +335,7 @@ public struct MyClassIList2:  IList<MyClassIList>,  IList<int>
 }
 
 
-public class Test
+public class Test_Struct_ImplementMscorlibGenInterface
 {
 	public static int Main()
 	{

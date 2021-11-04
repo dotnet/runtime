@@ -7,7 +7,7 @@ using System.Security;
 using System.Runtime.InteropServices;
 using TestLibrary;
 
-public class Test
+public class Test_RefCharArrayTest
 {
     const int LEN = 10;
 

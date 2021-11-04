@@ -56,11 +56,11 @@ namespace Internal.Cryptography.Pal
                         try
                         {
                             int cbEncoded = 0;
-                            if (!Interop.crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, null, ref cbEncoded))
+                            if (!Interop.Crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, null, ref cbEncoded))
                                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             byte[] pbEncoded = new byte[cbEncoded];
-                            if (!Interop.crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, pbEncoded, ref cbEncoded))
+                            if (!Interop.Crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, pbEncoded, ref cbEncoded))
                                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             return pbEncoded;
@@ -77,14 +77,14 @@ namespace Internal.Cryptography.Pal
                         {
                             Interop.Crypt32.DATA_BLOB dataBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
 
-                            if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
+                            if (!Interop.Crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, Interop.Crypt32.PFXExportFlags.EXPORT_PRIVATE_KEYS | Interop.Crypt32.PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
                                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             byte[] pbEncoded = new byte[dataBlob.cbData];
                             fixed (byte* ppbEncoded = pbEncoded)
                             {
                                 dataBlob.pbData = new IntPtr(ppbEncoded);
-                                if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
+                                if (!Interop.Crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, Interop.Crypt32.PFXExportFlags.EXPORT_PRIVATE_KEYS | Interop.Crypt32.PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
                                     throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                             }
 

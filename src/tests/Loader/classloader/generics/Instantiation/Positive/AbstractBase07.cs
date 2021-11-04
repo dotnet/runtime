@@ -54,7 +54,7 @@ public class Gen<T> : GenSub<T>
 	}
 }
 
-public class Test
+public class Test_AbstractBase07
 {
 	public static int counter = 0;
 	public static bool result = true;
