@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
@@ -12,8 +12,8 @@
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
     <UseOpenSsl Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">true</UseOpenSsl>
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true' or '$(TargetsBrowser)' == 'true'" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true' or '$(TargetsBrowser)' == 'true'" />
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
@@ -60,7 +60,7 @@
     <Compile Include="System\Security\Cryptography\PemFields.cs" />
     <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
+  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DirectoryStringAsn.xml">
@@ -152,7 +152,7 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
+  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Reference Include="System.Formats.Asn1" />
     <Reference Include="System.Runtime.Numerics" />
   </ItemGroup>
