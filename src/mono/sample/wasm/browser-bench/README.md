@@ -11,10 +11,14 @@ Browser and console versions are available.
 
 To run the benchmark on linux/mac:
 
-    make build
-    make run
+    > make build
+    > make run
 
 can be used in the browser-bench/ and also in the browser-bench/Console/.
+
+To run the benchmark on windows:
+
+    > dotnet build /t:RunSample
 
 Example console output:
 
@@ -66,9 +70,12 @@ Multiple results can be also easily combined together in text editor to have a t
 
 ### Filter jobs/measurements
 
-The `-t` option can be used to run subset of jobs/measurements like this:
+The `-t` option can be used to run subset of jobs/measurements like this, 1st line linux/mac, 2nd line windows:
 
-    make run ARGS="-t Json:non,Exceptions:Inline"
+    > make run ARGS="-t Json:non,Exceptions:Inline"
+    > dotnet build /v:n /t:RunSample /p:Args="-t Json:non%2cExceptions:Inline"
+
+Note the escaped `,` character (`%2c`) in the dotnet property above.
 
 ### Console options
 
