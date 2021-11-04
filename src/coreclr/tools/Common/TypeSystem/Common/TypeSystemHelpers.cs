@@ -296,12 +296,6 @@ namespace Internal.TypeSystem
             }
             while (result == null && currentType != null);
 
-            // If no base type contains interface method, attempt to find default implementation
-            if (result == null)
-            {
-                _ = thisType.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodToResolve, out result);
-            }
-
             return result;
         }
 
