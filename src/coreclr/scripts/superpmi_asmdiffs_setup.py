@@ -63,6 +63,8 @@ def setup_args(args):
 def match_jit_files(full_path):
     """ Match all the JIT files that we want to copy and use.
         Note that we currently only match Windows files, and not osx cross-compile files.
+        We also don't copy the "default" clrjit.dll, since we always use the fully specified
+        JITs, e.g., clrjit_win_x86_x86.dll.
     """
     file_name = os.path.basename(full_path)
 

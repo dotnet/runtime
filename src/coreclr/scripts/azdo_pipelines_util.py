@@ -80,8 +80,6 @@ def copy_directory(src_path, dst_path, verbose_output=False, verbose_copy=False,
     """
     display_copy = verbose_output or verbose_copy
     display_skip = verbose_output or verbose_skip
-    if not os.path.exists(dst_path):
-        os.makedirs(dst_path)
     for item in os.listdir(src_path):
         src_item = os.path.join(src_path, item)
         dst_item = os.path.join(dst_path, item)
@@ -93,6 +91,8 @@ def copy_directory(src_path, dst_path, verbose_output=False, verbose_copy=False,
                     if display_copy:
                         print("> copy {0} => {1}".format(src_item, dst_item))
                     try:
+                        if not os.path.exists(dst_path):
+                            os.makedirs(dst_path)
                         shutil.copy2(src_item, dst_item)
                     except PermissionError as pe_error:
                         print('Ignoring PermissionError: {0}'.format(pe_error))

@@ -235,7 +235,7 @@ def process_git_hash_arg(coreclr_args):
             raise RuntimeError("Couldn't determine current git hash")
 
         # We've got the current hash; figure out the baseline hash.
-        command = [ "git", "merge-base", current_git_hash, "main" ]
+        command = [ "git", "merge-base", current_git_hash, "origin/main" ]
         print("Invoking: {}".format(" ".join(command)))
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         stdout_git_merge_base, _ = proc.communicate()
