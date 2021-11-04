@@ -407,7 +407,7 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         // Inline attempt.
         const char* inlineTarget  = InlGetTargetString(m_Observation);
         const char* inlineReason  = InlGetObservationString(m_Observation);
-        const char* inlineResult  = m_Success ? "SUCCESSFUL: " : "FAILED: ";
+        const char* inlineResult  = m_Success ? "INLINED: " : "FAILED: ";
         const char* devirtualized = m_Devirtualized ? " DEVIRT" : "";
         const char* guarded       = m_Guarded ? " GUARDED" : "";
         const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
@@ -1369,7 +1369,7 @@ InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineR
 
 void InlineStrategy::Dump(bool verbose)
 {
-    m_RootContext->Dump(verbose, 0);
+    m_RootContext->Dump(verbose);
 
     if (!verbose)
     {
