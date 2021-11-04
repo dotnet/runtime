@@ -15,21 +15,30 @@ namespace Microsoft.Interop
         private static readonly Forwarder s_forwarder = new Forwarder();
 
         private readonly IMarshallingGeneratorFactory _innerMarshallingGenerator;
+        private readonly IMarshallingGeneratorFactory _elementMarshallingGenerator;
 
-        public AttributedMarshallingModelGeneratorFactory(IMarshallingGeneratorFactory innerMarshallingGenerator, InteropGenerationOptions options)
+        public AttributedMarshallingModelGeneratorFactory(
+            IMarshallingGeneratorFactory innerMarshallingGenerator,
+            InteropGenerationOptions options)
         {
             Options = options;
             _innerMarshallingGenerator = innerMarshallingGenerator;
-            ElementMarshallingGeneratorFactory = this;
+            // Unless overridden, default to using this generator factory for creating generators for collection elements.
+            _elementMarshallingGenerator = this;
+        }
+
+        public AttributedMarshallingModelGeneratorFactory(
+            IMarshallingGeneratorFactory innerMarshallingGenerator,
+            IMarshallingGeneratorFactory elementMarshallingGenerator,
+            InteropGenerationOptions options)
+        {
+            Options = options;
+            _innerMarshallingGenerator = innerMarshallingGenerator;
+
+            _elementMarshallingGenerator = elementMarshallingGenerator;
         }
 
         public InteropGenerationOptions Options { get; }
-
-        /// <summary>
-        /// The <see cref="IMarshallingGeneratorFactory"/> to use for collection elements.
-        /// This property is settable to enable decorating factories to ensure that element marshalling also goes through the decorator support.
-        /// </summary>
-        public IMarshallingGeneratorFactory ElementMarshallingGeneratorFactory { get; set; }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
@@ -236,7 +245,7 @@ namespace Microsoft.Interop
             ICustomNativeTypeMarshallingStrategy marshallingStrategy)
         {
             var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
-            IMarshallingGenerator elementMarshaller = Create(
+            IMarshallingGenerator elementMarshaller = _elementMarshallingGenerator.Create(
                 elementInfo,
                 new ContiguousCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, context));
             TypeSyntax elementType = elementMarshaller.AsNativeType(elementInfo);
