@@ -18,8 +18,15 @@ public class Runtime_61045
     public static byte[] s_1;
     public static int Main()
     {
-        Test();
-        return 100;
+        try
+        {
+            Test();
+        }
+        catch (NullReferenceException)
+        {
+            return 100;
+        }
+        return 101;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
