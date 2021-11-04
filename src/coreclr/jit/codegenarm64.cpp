@@ -9575,7 +9575,9 @@ void CodeGen::genCodeForMadd(GenTreeOp* tree)
     assert(tree->OperIs(GT_MADD) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
     genConsumeOperands(tree);
 
-    GenTree *a, *b, *c;
+    GenTree* a;
+    GenTree* b;
+    GenTree* c;
     if (tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
     {
         a = tree->gtGetOp1()->gtGetOp1();
