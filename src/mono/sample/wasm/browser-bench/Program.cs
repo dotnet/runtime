@@ -172,7 +172,7 @@ namespace Sample
                 }
                 sb.Append($"| {key.Replace('_', ' '),38} | {time,10:F4}{unit} |{formatter.NewLine}".Replace(" ", formatter.NonBreakingSpace));
             }
-            sb.Append("{formatter.CodeEnd}");
+            sb.Append($"{formatter.CodeEnd}");
 
             resultsReturned = true;
 
