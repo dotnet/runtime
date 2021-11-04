@@ -356,9 +356,9 @@ namespace System.Security.Cryptography
             const int MaxDataLength = 1_585_834_053;
 
             if (labelLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.ArgumentOutOfRange_NeedPositiveNumber);
+                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.ArgumentOutOfRange_NeedPosNum);
             if (dataLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.ArgumentOutOfRange_NeedPositiveNumber);
+                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.ArgumentOutOfRange_NeedPosNum);
             if (labelLength > MaxLabelSize)
                 throw new ArgumentOutOfRangeException(nameof(labelLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
             if (dataLength > MaxDataLength)

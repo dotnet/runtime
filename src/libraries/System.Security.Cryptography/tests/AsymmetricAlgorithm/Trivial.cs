@@ -4,7 +4,7 @@
 using System.Linq;
 using Xunit;
 
-namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
+namespace System.Security.Cryptography.Tests.Asymmetric
 {
     public static class TrivialTests
     {
