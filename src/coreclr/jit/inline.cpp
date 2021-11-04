@@ -356,13 +356,14 @@ InlineContext::InlineContext(InlineStrategy* strategy)
 //
 // Arguments:
 //    indent   - indentation level for this node
+//    verbose  - more verbose output if true
 
-void InlineContext::Dump(unsigned indent)
+void InlineContext::Dump(bool verbose, unsigned indent)
 {
     // Handle fact that siblings are in reverse order.
     if (m_Sibling != nullptr)
     {
-        m_Sibling->Dump(indent);
+        m_Sibling->Dump(verbose, indent);
     }
 
     // We may not know callee name in some of the failing cases
@@ -386,16 +387,13 @@ void InlineContext::Dump(unsigned indent)
 
     mdMethodDef calleeToken = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
 
-    // Add more information when verbose mode or NgenDump/JitDump are set
-    bool verboseMode = (compiler->verbose) || (JitConfig.JitPrintInlinedMethodsVerbose() > 0);
-
     // Dump this node
     if (m_Parent == nullptr)
     {
         // Root method
         InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
 
-        if (verboseMode)
+        if (verbose)
         {
             printf("\nInlines into %08X [via %s] %s:\n", calleeToken, policy->GetName(), calleeName);
         }
@@ -414,7 +412,7 @@ void InlineContext::Dump(unsigned indent)
         const char* guarded       = m_Guarded ? " GUARDED" : "";
         const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
-        if (verboseMode)
+        if (verbose)
         {
             if (m_Offset == BAD_IL_OFFSET)
             {
@@ -439,7 +437,7 @@ void InlineContext::Dump(unsigned indent)
     // Recurse to first child
     if (m_Child != nullptr)
     {
-        m_Child->Dump(indent + 2);
+        m_Child->Dump(verbose, indent + 2);
     }
 }
 
@@ -1367,13 +1365,13 @@ InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineR
 // Dump: dump description of inline behavior
 //
 // Arguments:
-//   showBudget - also dump final budget values
+//   verbose - print more details such as final budget values and IL offsets
 
-void InlineStrategy::Dump(bool showBudget)
+void InlineStrategy::Dump(bool verbose)
 {
-    m_RootContext->Dump();
+    m_RootContext->Dump(verbose, 0);
 
-    if (!showBudget)
+    if (!verbose)
     {
         return;
     }
