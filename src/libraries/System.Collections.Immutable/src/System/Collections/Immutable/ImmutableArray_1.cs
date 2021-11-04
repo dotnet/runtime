@@ -365,6 +365,36 @@ namespace System.Collections.Immutable
             return new ImmutableArray<T>(tmp);
         }
 
+        public ImmutableArray<T> InsertRange(int index, T[] items)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+            Requires.Range(index >= 0 && index <= self.Length, nameof(index));
+            Requires.NotNull(items, nameof(items));
+
+            if (items.Length == 0)
+            {
+                return self;
+            }
+            if (self.Length == 0)
+            {
+                return new ImmutableArray<T>(items);
+            }
+
+            var tmp = new T[self.Length + items.Length];
+            if (index != 0)
+            {
+                Array.Copy(self.array!, tmp, index);
+            }
+            Array.Copy(items, 0, tmp, index, items.Length);
+            if (index != self.Length)
+            {
+                Array.Copy(self.array!, index, tmp, index + items.Length, self.Length - index);
+            }
+
+            return new ImmutableArray<T>(tmp);
+        }
+
         /// <summary>
         /// Inserts the specified values at the specified index.
         /// </summary>
@@ -374,33 +404,8 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> InsertRange(int index, ImmutableArray<T> items)
         {
             var self = this;
-            self.ThrowNullRefIfNotInitialized();
             items.ThrowNullRefIfNotInitialized();
-            Requires.Range(index >= 0 && index <= self.Length, nameof(index));
-
-            if (self.IsEmpty)
-            {
-                return items;
-            }
-            else if (items.IsEmpty)
-            {
-                return self;
-            }
-
-            T[] tmp = new T[self.Length + items.Length];
-
-            if (index != 0)
-            {
-                Array.Copy(self.array!, tmp, index);
-            }
-            if (index != self.Length)
-            {
-                Array.Copy(self.array!, index, tmp, index + items.Length, self.Length - index);
-            }
-
-            Array.Copy(items.array!, 0, tmp, index, items.Length);
-
-            return new ImmutableArray<T>(tmp);
+            return self.InsertRange(index, items.array!);
         }
 
         /// <summary>
@@ -436,6 +441,47 @@ namespace System.Collections.Immutable
         /// <param name="items">The values to add.</param>
         /// <returns>A new list with the elements added.</returns>
         public ImmutableArray<T> AddRange(ImmutableArray<T> items)
+        {
+            var self = this;
+            return self.InsertRange(self.Length, items);
+        }
+
+        public ImmutableArray<T> InsertRange(int index, ReadOnlySpan<T> items)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+            Requires.Range(index >= 0 && index <= self.Length, nameof(index));
+
+            if (items.IsEmpty)
+            {
+                return self;
+            }
+            if (self.Length == 0)
+            {
+                return items.ToImmutableArray();
+            }
+
+            var tmp = new T[self.Length + items.Length];
+            if (index != 0)
+            {
+                Array.Copy(self.array!, tmp, index);
+            }
+            items.CopyTo(new Span<T>(tmp, index, items.Length));
+            if (index != self.Length)
+            {
+                Array.Copy(self.array!, index, tmp, index + items.Length, self.Length - index);
+            }
+
+            return new ImmutableArray<T>(tmp);
+        }
+
+        public ImmutableArray<T> AddRange(ReadOnlySpan<T> items)
+        {
+            var self = this;
+            return self.InsertRange(self.Length, items);
+        }
+
+        public ImmutableArray<T> AddRange(params T[] items)
         {
             var self = this;
             return self.InsertRange(self.Length, items);

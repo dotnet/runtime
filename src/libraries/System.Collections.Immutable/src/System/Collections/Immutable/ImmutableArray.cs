@@ -81,6 +81,30 @@ namespace System.Collections.Immutable
             return new ImmutableArray<T>(array);
         }
 
+        public static ImmutableArray<T> Create<T>(ReadOnlySpan<T> items)
+        {
+            T[] array = items.ToArray();
+            return new ImmutableArray<T>(array);
+        }
+
+        public static ImmutableArray<T> Create<T>(Span<T> items)
+        {
+            T[] array = items.ToArray();
+            return new ImmutableArray<T>(array);
+        }
+
+        public static ImmutableArray<T> ToImmutableArray<T>(this ReadOnlySpan<T> items)
+        {
+            T[] array = items.ToArray();
+            return new ImmutableArray<T>(array);
+        }
+
+        public static ImmutableArray<T> ToImmutableArray<T>(this Span<T> items)
+        {
+            T[] array = items.ToArray();
+            return new ImmutableArray<T>(array);
+        }
+
         /// <summary>
         /// Creates an <see cref="ImmutableArray{T}"/> populated with the contents of the specified sequence.
         /// </summary>
