@@ -155,6 +155,10 @@ The samples in `src/mono/sample/wasm` can be build and run like this:
 
 To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.
 
+* bench sample
+
+Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mono/wasm runtime performance.
+
 ### Upgrading Emscripten
 
 Bumping Emscripten version involves these steps:
