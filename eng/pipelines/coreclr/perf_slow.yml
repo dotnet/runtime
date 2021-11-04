@@ -98,6 +98,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
       - windows_arm64
@@ -154,6 +155,9 @@ jobs:
       runtimeFlavor: aot
       platforms:
       - Linux_arm64
+      container:
+        image: ubuntu-18.04-cross-20211022152824-f853169
+        registry: mcr
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -172,6 +176,7 @@ jobs:
       runtimeFlavor: coreclr
       platforms:
       - Linux_arm64
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
