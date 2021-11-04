@@ -885,5 +885,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var result = Runtime.InvokeJS(@"null");
             Assert.Null(result);
         }
+
+        [Fact]
+        public static void InvokeJSUndefinedExpression()
+        {
+            var result = Runtime.InvokeJS(@"undefined");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public static void InvokeJSNotInGlobalScope()
+        {
+            var result = Runtime.InvokeJS(@"var test_local_variable_name = 5; globalThis.test_local_variable_name");
+            Assert.Null(result);
+        }
     }
 }
