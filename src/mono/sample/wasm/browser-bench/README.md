@@ -44,6 +44,26 @@ Example console output:
     |                  Json, large serialize |    95.3333ms |
     |                Json, large deserialize |   141.4737ms |
 
+The `.md` output will look like this:
+
+| measurement | time |
+|-:|-:|
+|        Exceptions, NoExceptionHandling |     0.0680us |
+|                   Exceptions, TryCatch |     0.0723us |
+|              Exceptions, TryCatchThrow |     0.0035ms |
+|             Exceptions, TryCatchFilter |     0.0848us |
+|       Exceptions, TryCatchFilterInline |     0.0659us |
+|        Exceptions, TryCatchFilterThrow |     0.0046ms |
+| Exceptions, TryCatchFilterThrowApplies |     0.0036ms |
+|         Json, non-ASCII text serialize |    15.3855ms |
+|       Json, non-ASCII text deserialize |    24.7299ms |
+|                  Json, small serialize |     0.2980ms |
+|                Json, small deserialize |     0.5080ms |
+|                  Json, large serialize |    95.3333ms |
+|                Json, large deserialize |   141.4737ms |
+
+Multiple results can be also easily combined together in text editor to have a table with measurements next to each other for comparison.
+
 ### Filter jobs/measurements
 
 The `-t` option can be used to run subset of jobs/measurements like this:
