@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 public class ReversePInvoke_MashalArrayByOut_AsManagedTest
 {
@@ -56,7 +56,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
     public delegate bool DelUlongArrByOutAsCdeclCaller([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out ulong[] arrArg, out ulong arraySize);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate bool DelStringArrByOutAsCdeclCaller([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1, ArraySubType = UnmanagedType.BStr)] out string[] arrArg, out Int32 arraySize);
-    
+
     #endregion
 
     #region Test Method
@@ -149,45 +149,45 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
 
         //Common value type
         Console.WriteLine("\tScenario 1 : byte ==> BYTE, Array_Size = byte.MinValue, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalByteArray_AsParam_AsByOut(new DelByteArrByOutAsCdeclCaller(TestMethodForByteArray_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalByteArray_AsParam_AsByOut(new DelByteArrByOutAsCdeclCaller(TestMethodForByteArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalByteArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 2 : sbyte ==> CHAR, Array_Size = 1, Return_Array_Size = sbyte.Max");
-        Assert.IsTrue(DoCallBack_MarshalSbyteArray_AsParam_AsByOut(new DelSbyteArrByOutAsCdeclCaller(TestMethodForSbyteArray_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalSbyteArray_AsParam_AsByOut(new DelSbyteArrByOutAsCdeclCaller(TestMethodForSbyteArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalSbyteArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 3 : short ==> SHORT, Array_Size = -1, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalShortArray_AsParam_AsByOut(new DelShortArrByOutAsCdeclCaller(TestMethodForShortArray_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalShortArray_AsParam_AsByOut(new DelShortArrByOutAsCdeclCaller(TestMethodForShortArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalShortArray_AsReversePInvokeByOut_AsCdecl Failed!");
 
         Console.WriteLine("\tScenario 4 : short ==> SHORT, Array_Size = 10, Return_Array_Size = -1");
-        Assert.IsTrue(DoCallBack_MarshalShortArrayReturnNegativeSize_AsParam_AsByOut(new DelShortArrByOutAsCdeclCaller(TestMethodForShortArrayReturnNegativeSize_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalShortArrayReturnNegativeSize_AsParam_AsByOut(new DelShortArrByOutAsCdeclCaller(TestMethodForShortArrayReturnNegativeSize_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalShortArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 5 : ushort ==> USHORT, Array_Size = ushort.MaxValue, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalUshortArray_AsParam_AsByOut(new DelUshortArrByOutAsCdeclCaller(TestMethodForUshortArray_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalUshortArray_AsParam_AsByOut(new DelUshortArrByOutAsCdeclCaller(TestMethodForUshortArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUshortArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 6 : Int32 ==> LONG, Array_Size = 10, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalInt32Array_AsParam_AsByOut(new DelInt32ArrByOutAsCdeclCaller(TestMethodForInt32Array_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalInt32Array_AsParam_AsByOut(new DelInt32ArrByOutAsCdeclCaller(TestMethodForInt32Array_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalInt32Array_AsReversePInvokeByOut_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 7 : UInt32 ==> ULONG, Array_Size = 10, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalUint32Array_AsParam_AsByOut(new DelUint32ArrByOutAsCdeclCaller(TestMethodForUint32Array_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalUint32Array_AsParam_AsByOut(new DelUint32ArrByOutAsCdeclCaller(TestMethodForUint32Array_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUint32Array_AsReversePInvokeByOut_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 8 : long ==> LONGLONG, Array_Size = 10, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalLongArray_AsParam_AsByOut(new DelLongArrByOutAsCdeclCaller(TestMethodForLongArray_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalLongArray_AsParam_AsByOut(new DelLongArrByOutAsCdeclCaller(TestMethodForLongArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalLongArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 9 : ulong ==> ULONGLONG, Array_Size = 10, Return_Array_Size = 20");
-        Assert.IsTrue(DoCallBack_MarshalUlongArray_AsParam_AsByOut(new DelUlongArrByOutAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByOut_AsCdecl)));
+        Assert.True(DoCallBack_MarshalUlongArray_AsParam_AsByOut(new DelUlongArrByOutAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUlongArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
         if (OperatingSystem.IsWindows())
         {
             Console.WriteLine("\tScenario 10 : string ==> BSTR, Array_Size = 10, Return_Array_Size = 20");
-            Assert.IsTrue(DoCallBack_MarshalStringArray_AsParam_AsByOut(new DelStringArrByOutAsCdeclCaller(TestMethodForStringArray_AsReversePInvokeByOut_AsCdecl)));
+            Assert.True(DoCallBack_MarshalStringArray_AsParam_AsByOut(new DelStringArrByOutAsCdeclCaller(TestMethodForStringArray_AsReversePInvokeByOut_AsCdecl)));
             Console.WriteLine("\t\tMarshalStringArray_AsReversePInvokeByOut_AsCdecl Passed!");
         }
     }

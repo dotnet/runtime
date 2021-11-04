@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 namespace CopyConstructorMarshaler
 {
@@ -26,24 +26,24 @@ namespace CopyConstructorMarshaler
                 MethodInfo testMethod = testType.GetMethod("PInvokeNumCopies");
 
                 // PInvoke will copy twice. Once from argument to parameter, and once from the managed to native parameter.
-                Assert.AreEqual(2, (int)testMethod.Invoke(testInstance, null));
+                Assert.Equal(2, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("ReversePInvokeNumCopies");
 
                 // Reverse PInvoke will copy 3 times. Two are from the same paths as the PInvoke,
                 // and the third is from the reverse P/Invoke call.
-                Assert.AreEqual(3, (int)testMethod.Invoke(testInstance, null));
+                Assert.Equal(3, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("PInvokeNumCopiesDerivedType");
 
                 // PInvoke will copy twice. Once from argument to parameter, and once from the managed to native parameter.
-                Assert.AreEqual(2, (int)testMethod.Invoke(testInstance, null));
+                Assert.Equal(2, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("ReversePInvokeNumCopiesDerivedType");
 
                 // Reverse PInvoke will copy 3 times. Two are from the same paths as the PInvoke,
                 // and the third is from the reverse P/Invoke call.
-                Assert.AreEqual(3, (int)testMethod.Invoke(testInstance, null));
+                Assert.Equal(3, (int)testMethod.Invoke(testInstance, null));
             }
             catch (Exception ex)
             {

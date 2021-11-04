@@ -7,6 +7,7 @@ namespace ComWrappersTests.GlobalInstance
 
     using ComWrappersTests.Common;
     using TestLibrary;
+    using Xunit;
 
     partial class Program
     {
@@ -15,7 +16,7 @@ namespace ComWrappersTests.GlobalInstance
             Console.WriteLine($"Running {nameof(ValidateNotRegisteredForTrackerSupport)}...");
 
             int hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
-            Assert.AreNotEqual(GlobalComWrappers.ReleaseObjectsCallAck, hr);
+            Assert.NotEqual(GlobalComWrappers.ReleaseObjectsCallAck, hr);
         }
 
         static int Main(string[] doNotUse)

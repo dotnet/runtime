@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -44,26 +44,26 @@ unsafe partial class GenericsTest
 
         Vector256<float> value2;
         GenericsNative.GetVector256FOut(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, &value2);
-        Assert.AreEqual(value2.GetElement(0), 1.0f);
-        Assert.AreEqual(value2.GetElement(1), 2.0f);
-        Assert.AreEqual(value2.GetElement(2), 3.0f);
-        Assert.AreEqual(value2.GetElement(3), 4.0f);
-        Assert.AreEqual(value2.GetElement(4), 5.0f);
-        Assert.AreEqual(value2.GetElement(5), 6.0f);
-        Assert.AreEqual(value2.GetElement(6), 7.0f);
-        Assert.AreEqual(value2.GetElement(7), 8.0f);
+        Assert.Equal(value2.GetElement(0), 1.0f);
+        Assert.Equal(value2.GetElement(1), 2.0f);
+        Assert.Equal(value2.GetElement(2), 3.0f);
+        Assert.Equal(value2.GetElement(3), 4.0f);
+        Assert.Equal(value2.GetElement(4), 5.0f);
+        Assert.Equal(value2.GetElement(5), 6.0f);
+        Assert.Equal(value2.GetElement(6), 7.0f);
+        Assert.Equal(value2.GetElement(7), 8.0f);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256FOut(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, out Vector256<float> value3));
 
         Vector256<float>* value4 = GenericsNative.GetVector256FPtr(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-        Assert.AreEqual(value4->GetElement(0), 1.0f);
-        Assert.AreEqual(value4->GetElement(1), 2.0f);
-        Assert.AreEqual(value4->GetElement(2), 3.0f);
-        Assert.AreEqual(value4->GetElement(3), 4.0f);
-        Assert.AreEqual(value4->GetElement(4), 5.0f);
-        Assert.AreEqual(value4->GetElement(5), 6.0f);
-        Assert.AreEqual(value4->GetElement(6), 7.0f);
-        Assert.AreEqual(value4->GetElement(7), 8.0f);
+        Assert.Equal(value4->GetElement(0), 1.0f);
+        Assert.Equal(value4->GetElement(1), 2.0f);
+        Assert.Equal(value4->GetElement(2), 3.0f);
+        Assert.Equal(value4->GetElement(3), 4.0f);
+        Assert.Equal(value4->GetElement(4), 5.0f);
+        Assert.Equal(value4->GetElement(5), 6.0f);
+        Assert.Equal(value4->GetElement(6), 7.0f);
+        Assert.Equal(value4->GetElement(7), 8.0f);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256FRef(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f));
 
