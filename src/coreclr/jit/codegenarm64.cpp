@@ -9564,4 +9564,30 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 }
 
+//------------------------------------------------------------------------
+// genCodeForBfiz: Generates the code sequence for a GenTree node that
+// represents a bitfield insert in zero with sign/zero extension.
+//
+// Arguments:
+//    tree - the bitfield insert in zero node.
+//
+void CodeGen::genCodeForBfiz(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_BFIZ));
+
+    emitAttr     size       = emitActualTypeSize(tree);
+    unsigned     shiftBy    = (unsigned)tree->gtGetOp2()->AsIntCon()->IconValue();
+    unsigned     shiftByImm = shiftBy & (emitter::getBitWidth(size) - 1);
+    GenTreeCast* cast       = tree->gtGetOp1()->AsCast();
+    GenTree*     castOp     = cast->CastOp();
+
+    genConsumeRegs(castOp);
+    unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                          : genTypeSize(castOp) * BITS_PER_BYTE;
+    const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
+    GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
+                                  (int)shiftByImm, (int)srcBits);
+    genProduceReg(tree);
+}
+
 #endif // TARGET_ARM64
