@@ -386,13 +386,16 @@ void InlineContext::Dump(unsigned indent)
 
     mdMethodDef calleeToken = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
 
+    // Add more information when verbose mode or NgenDump/JitDump are set
+    bool verboseMode = (compiler->verbose) || (JitConfig.JitPrintInlinedMethodsVerbose() > 0);
+
     // Dump this node
     if (m_Parent == nullptr)
     {
         // Root method
         InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
 
-        if (JitConfig.JitPrintInlinedMethodsVerbose() > 0)
+        if (verboseMode)
         {
             printf("\nInlines into %08X [via %s] %s:\n", calleeToken, policy->GetName(), calleeName);
         }
@@ -411,7 +414,7 @@ void InlineContext::Dump(unsigned indent)
         const char* guarded       = m_Guarded ? " GUARDED" : "";
         const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
-        if (JitConfig.JitPrintInlinedMethodsVerbose() > 0)
+        if (verboseMode)
         {
             if (m_Offset == BAD_IL_OFFSET)
             {
