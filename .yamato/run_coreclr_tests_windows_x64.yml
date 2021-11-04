@@ -1,12 +1,18 @@
-name: Build Windows x64
+name: Run CoreCLR Tests Windows x64
 
 agent:
   type: Unity::VM
   image: platform-foundation/windows-vs2019-il2cpp-bokken:stable
   flavor: b1.xlarge
 
+dependencies:
+  - .yamato/build_classlibs_win.yml
+  - .yamato/build_windows_x64.yml
+
+
 commands:
-  - build.cmd -subset clr -a x64 -c release
+  - src\tests\build.cmd Release x64 -priority=0
+  - src\tests\run.cmd Release x64
 
 triggers:
   pull_requests:
@@ -17,4 +23,4 @@ triggers:
 artifacts: 
   win64:
     paths:
-      - artifacts\bin\coreclr\windows.x64.Release\**
+      - artifacts/log/**

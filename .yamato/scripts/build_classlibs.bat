@@ -8,9 +8,7 @@ for %%x IN ("windows", "OSX", "Linux") do (
         echo "build failed"
         EXIT /B %errorlevel%
     )
-    if not exist "incomingbuilds/coreclrjit-%%x" mkdir "incomingbuilds/coreclrjit-%%x"
 
-    CALL :EchoAndExecute xcopy /s /e /h /y "artifacts/bin/runtime/net7.0-%%x-Release-x64" "incomingbuilds/coreclrjit-%%x"
     CALL :EchoAndExecute taskkill /IM "dotnet.exe" /F
     CALL :EchoAndExecute build.cmd -clean
 )

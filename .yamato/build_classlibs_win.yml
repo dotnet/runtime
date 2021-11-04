@@ -17,4 +17,6 @@ triggers:
 artifacts: 
   win64:
     paths:
-      - incomingbuilds\**
+      - artifacts/bin/runtime/net7.0-windows-Release-x64/**
+      - artifacts/bin/runtime/net7.0-OSX-Release-x64/**
+      - artifacts/bin/runtime/net7.0-Linux-Release-x64/**
