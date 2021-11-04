@@ -14,7 +14,7 @@ To run the benchmark on linux/mac:
     > make build
     > make run
 
-can be used in the browser-bench/ and also in the browser-bench/Console/.
+can be used in the `browser-bench/` and also in the `browser-bench/Console/`.
 
 To run the benchmark on windows:
 
