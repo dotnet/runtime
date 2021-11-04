@@ -287,6 +287,9 @@ GTNODE(MADD             , GenTreeOp          ,0, GTK_BINOP)                // Ge
 #endif
 GTNODE(JMPTABLE         , GenTree            ,0, (GTK_LEAF|GTK_NOCONTAIN)) // Generates the jump table for switches
 GTNODE(SWITCH_TABLE     , GenTreeOp          ,0, (GTK_BINOP|GTK_NOVALUE))  // Jump Table based switch construct
+#ifdef TARGET_ARM64
+GTNODE(BFIZ,              GenTreeBfiz        ,0, GTK_BINOP)                // Bitfield Insert in Zero 
+#endif
 
 //-----------------------------------------------------------------------------
 //  Nodes used only within the code generator:

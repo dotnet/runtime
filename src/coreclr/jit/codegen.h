@@ -1249,6 +1249,7 @@ protected:
 #ifdef TARGET_ARM64
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForMadd(GenTreeOp* tree);
+    void genCodeForBfiz(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
