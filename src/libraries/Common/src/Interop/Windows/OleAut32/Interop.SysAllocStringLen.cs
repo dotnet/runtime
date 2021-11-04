@@ -8,10 +8,10 @@ internal static partial class Interop
 {
     internal static partial class OleAut32
     {
-        [DllImport(Libraries.OleAut32, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr SysAllocStringLen(IntPtr src, uint len);
+        [GeneratedDllImport(Libraries.OleAut32, CharSet = CharSet.Unicode)]
+        internal static partial IntPtr SysAllocStringLen(IntPtr src, uint len);
 
         [GeneratedDllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
-        internal static partial IntPtr SysAllocStringLen(string src, int len);
+        internal static partial IntPtr SysAllocStringLen(string src, uint len);
     }
 }

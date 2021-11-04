@@ -257,7 +257,7 @@ namespace System.Data.OleDb
                 { }
                 finally
                 {
-                    ptr = Interop.OleAut32.SysAllocStringLen(value, value.Length);
+                    ptr = Interop.OleAut32.SysAllocStringLen(value, (uint)value.Length);
 
                     // safe to copy ptr, even if SysAllocStringLen failed
                     Marshal.WriteIntPtr(base.handle, offset, ptr);
