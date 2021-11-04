@@ -15,6 +15,10 @@
     <Compile Include="Utilities.cs" />
     <Compile Include="HostPolicyMock.cs" />
     <Compile Include="XPlatformUtils.cs" />
+
+    <!-- xUnit-style attribute support -->
+    <Compile Include="SkipOnPlatformAttribute.cs" />
+    <Compile Include="TestPlatforms.cs" />
   </ItemGroup>
 
 </Project>

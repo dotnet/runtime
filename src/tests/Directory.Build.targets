@@ -11,9 +11,14 @@
 
   <!-- Default priority building values. -->
   <PropertyGroup>
-    <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Library'">SharedLibrary</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+
+    <IsFactStyleTest>false</IsFactStyleTest>
+    <IsFactStyleTest Condition="'$(OutputType)' == 'Library' and '$(CLRTestKind)' == 'BuildAndRun'">true</IsFactStyleTest>
+    
+    <!-- Switch OutputType to exe, otherwise Roslyn fails to compile the Main method in the generated wrapper -->
+    <OutputType Condition="$(IsFactStyleTest)">exe</OutputType>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
@@ -73,6 +78,13 @@
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
+
+  <!-- Inject the XUnit wrapper generator into test build for [Fact]-style tests -->
+  <ItemGroup Condition="$(IsFactStyleTest)">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Import Project="Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" Condition="$(IsFactStyleTest)" />
 
   <!-- Determine if this project should be built or not -->
   <PropertyGroup>
