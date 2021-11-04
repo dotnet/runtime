@@ -22230,6 +22230,17 @@ void Compiler::considerGuardedDevirtualization(
         return;
     }
 
+    uint32_t const likelyClassAttribs = info.compCompHnd->getClassAttribs(likelyClass);
+
+    if ((likelyClassAttribs & CORINFO_FLG_ABSTRACT) != 0)
+    {
+        // We may see an abstract likely class, if we have a stale profile.
+        // No point guessing for this.
+        //
+        JITDUMP("Not guessing for class; abstract (stale profile)\n");
+        return;
+    }
+
     // Figure out which method will be called.
     //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
@@ -22253,7 +22264,6 @@ void Compiler::considerGuardedDevirtualization(
     // Add this as a potential candidate.
     //
     uint32_t const likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
-    uint32_t const likelyClassAttribs  = info.compCompHnd->getClassAttribs(likelyClass);
     addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyMethodAttribs, likelyClassAttribs,
                                         likelihood);
 }
