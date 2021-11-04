@@ -145,7 +145,7 @@ namespace System.Data.OleDb
                         IntPtr vptr = ADP.IntPtrOffset(rgProperties, ODB.OffsetOf_tagDBPROP_Value);
                         for (int k = 0; k < cProperties; ++k, vptr = ADP.IntPtrOffset(vptr, ODB.SizeOf_tagDBPROP))
                         {
-                            SafeNativeMethods.VariantClear(vptr);
+                            Interop.OleAut32.VariantClear(vptr);
                         }
                         Interop.Ole32.CoTaskMemFree(rgProperties);
                     }

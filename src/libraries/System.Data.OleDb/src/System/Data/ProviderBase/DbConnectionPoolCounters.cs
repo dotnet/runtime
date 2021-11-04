@@ -253,7 +253,7 @@ namespace System.Data.ProviderBase
             }
 
             // TODO: If you do not use GetCurrentProcessId after fixing VSDD 534795, please remove Resource* attributes from this method
-            int pid = SafeNativeMethods.GetCurrentProcessId();
+            uint pid = Interop.Kernel32.GetCurrentProcessId();
 
             // there are several characters which have special meaning
             // to PERFMON.  They recommend that we translate them as shown below, to

@@ -499,11 +499,11 @@ namespace System.Data.OleDb
 
                 if ((ADP.PtrZero != currentValue) && (currentValue != originalValue))
                 {
-                    SafeNativeMethods.SysFreeString(currentValue);
+                    Interop.OleAut32.SysFreeString(currentValue);
                 }
                 if (ADP.PtrZero != originalValue)
                 {
-                    SafeNativeMethods.SysFreeString(originalValue);
+                    Interop.OleAut32.SysFreeString(originalValue);
                 }
 
                 // for debugability - delay clearing memory until after FreeBSTR
@@ -556,11 +556,11 @@ namespace System.Data.OleDb
             finally
             {
                 // always clear the first structure
-                SafeNativeMethods.VariantClear(currentHandle);
+                Interop.OleAut32.VariantClear(currentHandle);
                 if (different)
                 {
                     // second structure different from the first
-                    SafeNativeMethods.VariantClear(originalHandle);
+                    Interop.OleAut32.VariantClear(originalHandle);
                 }
                 else
                 {
@@ -587,11 +587,11 @@ namespace System.Data.OleDb
             finally
             {
                 // always clear the first structure
-                SafeNativeMethods.PropVariantClear(currentHandle);
+                Interop.Ole32.PropVariantClear(currentHandle);
                 if (different)
                 {
                     // second structure different from the first
-                    SafeNativeMethods.PropVariantClear(originalHandle);
+                    Interop.Ole32.PropVariantClear(originalHandle);
                 }
                 else
                 {

@@ -12,9 +12,6 @@ namespace System.Data.Common
     [SuppressUnmanagedCodeSecurity]
     internal static partial class SafeNativeMethods
     {
-        [GeneratedDllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode, PreserveSig = true)]
-        internal static partial int GetUserDefaultLCID();
-
         internal static void ZeroMemory(IntPtr ptr, int length)
         {
             var zeroes = new byte[length];
@@ -38,25 +35,8 @@ namespace System.Data.Common
             return actualPtr;
         }
 
-        [GeneratedDllImport(Interop.Libraries.Kernel32, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        internal static partial int GetCurrentProcessId();
-
-        [GeneratedDllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static partial IntPtr LocalAlloc(int flags, IntPtr countOfBytes);
-
-        [GeneratedDllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static partial IntPtr LocalFree(IntPtr handle);
-
         [GeneratedDllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
         internal static partial IntPtr SysAllocStringLen(string src, int len);  // BSTR
-
-        [GeneratedDllImport(Interop.Libraries.OleAut32)]
-        internal static partial void SysFreeString(IntPtr bstr);
-
-        // only using this to clear existing error info with null
-        [GeneratedDllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = false)]
-        // TLS values are preserved between threads, need to check that we use this API to clear the error state only.
-        private static partial void SetErrorInfo(int dwReserved, IntPtr pIErrorInfo);
 
         [GeneratedDllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static partial int ReleaseSemaphore(IntPtr handle, int releaseCount, IntPtr previousCount);
@@ -67,12 +47,6 @@ namespace System.Data.Common
         [GeneratedDllImport(Interop.Libraries.Kernel32/*, SetLastError=true*/)]
         internal static partial int WaitForSingleObjectEx(IntPtr lpHandles, uint dwMilliseconds, bool bAlertable);
 
-        [GeneratedDllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        internal static partial void PropVariantClear(IntPtr pObject);
-
-        [GeneratedDllImport(Interop.Libraries.OleAut32, PreserveSig = false)]
-        internal static partial void VariantClear(IntPtr pObject);
-
         internal sealed class Wrapper
         {
             private Wrapper() { }
@@ -80,7 +54,7 @@ namespace System.Data.Common
             // SxS: clearing error information is considered safe
             internal static void ClearErrorInfo()
             {
-                SafeNativeMethods.SetErrorInfo(0, ADP.PtrZero);
+                Interop.OleAut32.SetErrorInfo(0, ADP.PtrZero);
             }
         }
     }
