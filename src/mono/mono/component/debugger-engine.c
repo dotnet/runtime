@@ -715,7 +715,7 @@ ss_req_acquire (MonoInternalThread *thread)
 	for (i = 0; i < the_ss_reqs->len; ++i) {
 		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
 		if (current_req->thread == thread) {
-			current_req->refcount ++;	
+			current_req->refcount ++;
 			req = current_req;
 		}
 	}
@@ -723,8 +723,8 @@ ss_req_acquire (MonoInternalThread *thread)
 	return req;
 }
 
-static int 
-ss_req_count ()
+static int
+ss_req_count (void)
 {
 	return the_ss_reqs->len;
 }

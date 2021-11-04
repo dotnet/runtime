@@ -4,13 +4,13 @@
 using System;
 using System.Threading;
 
-internal class Test
+internal class Test_b99969
 {
     public int i;
     private volatile bool _bSpoof = false;
     private volatile bool _bDoSpoof = false;
 
-    private static Test s_target;
+    private static Test_b99969 s_target;
 
     private static void DoSpoof()
     {
@@ -57,7 +57,7 @@ internal class Test
 
     private static int Main()
     {
-        Test t = new Test();
+        Test_b99969 t = new Test_b99969();
 
         s_target = t;
 

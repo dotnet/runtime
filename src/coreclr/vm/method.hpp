@@ -2824,23 +2824,6 @@ public:
         return (ndirect.m_wFlags & kNativeNoMangle) != 0;
     }
 
-
-    DWORD GetECallID() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsQCall());
-        return ndirect.m_dwECallID;
-    }
-
-    void SetECallID(DWORD dwID)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsQCall());
-        ndirect.m_dwECallID = dwID;
-    }
-
     PTR_CUTF8 GetLibNameRaw()
     {
         LIMITED_METHOD_DAC_CONTRACT;

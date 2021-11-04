@@ -36,7 +36,7 @@ FCIMPL2(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout)
 FCIMPLEND
 
 #ifdef TARGET_UNIX
-INT32 QCALLTYPE WaitHandleNative::CorWaitOnePrioritizedNative(HANDLE handle, INT32 timeoutMs)
+extern "C" INT32 QCALLTYPE WaitHandle_CorWaitOnePrioritizedNative(HANDLE handle, INT32 timeoutMs)
 {
     QCALL_CONTRACT;
 

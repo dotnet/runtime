@@ -796,7 +796,9 @@ emit_info_symbol (MonoAotCompile *acfg, const char *name, gboolean func)
 	if (acfg->llvm) {
 		emit_label (acfg, name);
 		/* LLVM generated code references this */
-		sprintf (symbol, "%s%s%s", acfg->user_symbol_prefix, acfg->global_prefix, name);
+		int n = snprintf (symbol, MAX_SYMBOL_SIZE, "%s%s%s", acfg->user_symbol_prefix, acfg->global_prefix, name);
+		if (n >= MAX_SYMBOL_SIZE)
+			symbol[MAX_SYMBOL_SIZE - 1] = 0;
 		emit_label (acfg, symbol);
 
 #ifndef TARGET_WIN32_MSVC
@@ -9454,7 +9456,7 @@ append_mangled_signature (GString *s, MonoMethodSignature *sig)
 	supported = append_mangled_type (s, sig->ret);
 	if (!supported)
 		return FALSE;
-		g_string_append_printf (s, "_");
+	g_string_append_printf (s, "_");
 	if (sig->hasthis)
 		g_string_append_printf (s, "this_");
 	for (i = 0; i < sig->param_count; ++i) {
@@ -9467,7 +9469,7 @@ append_mangled_signature (GString *s, MonoMethodSignature *sig)
 }
 
 static void
-append_mangled_wrapper_type (GString *s, guint32 wrapper_type) 
+append_mangled_wrapper_type (GString *s, guint32 wrapper_type)
 {
 	const char *label;
 

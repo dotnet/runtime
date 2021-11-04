@@ -2582,7 +2582,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
 // Non-virtual direct call to known addresses
 #ifdef TARGET_ARM
-            if (!arm_Valid_Imm_For_BL((ssize_t)addr))
+            if (!validImmForBL((ssize_t)addr))
             {
                 regNumber tmpReg = call->GetSingleTempReg();
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);

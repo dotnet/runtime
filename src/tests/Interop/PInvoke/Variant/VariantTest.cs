@@ -20,7 +20,7 @@ public class GenerateIClassX
     public DateTime FieldValueType;
 }
 
-partial class Test
+partial class Test_VariantTest
 {
     private const byte NumericValue = 15;
 

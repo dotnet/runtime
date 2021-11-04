@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11)</RoslynApiVersion>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
   </PropertyGroup>
 
   <Import Project="Microsoft.Extensions.Logging.Generators.targets"/>

@@ -542,7 +542,7 @@ static UChar* s_breakIteratorRules = NULL;
 // We are customizing the break iterator to exclude the CRxLF rule which don't allow breaking between CR and LF.
 // The general rules syntax explained in the doc https://unicode-org.github.io/icu/userguide/boundaryanalysis/break-rules.html.
 // The ICU latest rules definition exist here https://github.com/unicode-org/icu/blob/main/icu4c/source/data/brkitr/rules/char.txt.
-static UBreakIterator* CreateCustomizedBreakIterator()
+static UBreakIterator* CreateCustomizedBreakIterator(void)
 {
     static UChar emptyString[1];
     UBreakIterator* breaker;
@@ -815,6 +815,7 @@ static int32_t GetSearchIteratorUsingCollator(
     if (!U_SUCCESS(err))
     {
         int32_t r;
+        (void)r;
         r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;
@@ -824,6 +825,7 @@ static int32_t GetSearchIteratorUsingCollator(
     if (!U_SUCCESS(err))
     {
         int32_t r;
+        (void)r;
         r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;

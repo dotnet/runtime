@@ -21,6 +21,9 @@
   </ItemGroup>
 
   <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
+    <MSBuild Targets="Restore"
+             Projects="$(MSBuildThisFileDirectory)mono.proj"
+             Properties="MonoAotCrossRestore=1" /> <!-- Pass this property to make the evaluation of mono.proj during the "BuildMono" target below use an evaluation that picks up NuGet-generated MSBuild targets from this restore. -->
     <MSBuild Targets="BuildMonoCrossTarget"
              Projects="$(MSBuildThisFileFullPath)"
              BuildInParallel="true"
