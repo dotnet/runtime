@@ -164,7 +164,6 @@
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
-    <SdkVersionForWorkloadTesting>6.0.100-rtm.21520.29</SdkVersionForWorkloadTesting>
     <SdkVersionForWorkloadTesting>7.0.100-alpha.1.21528.1</SdkVersionForWorkloadTesting>
     <CompilerPlatformTestingVersion>1.1.1-beta1.21467.5</CompilerPlatformTestingVersion>
     <!-- Docs -->
