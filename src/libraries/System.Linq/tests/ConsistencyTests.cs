@@ -124,6 +124,11 @@ namespace System.Linq.Tests
 
             private Type Strip(Type t)
             {
+                if (t.IsArray)
+                {
+                    return Strip(t.GetElementType()).MakeArrayType();
+                }
+
                 if (t.GetTypeInfo().IsGenericType)
                 {
                     Type g = t;

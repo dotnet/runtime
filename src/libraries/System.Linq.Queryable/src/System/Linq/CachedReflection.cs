@@ -176,6 +176,12 @@ namespace System.Linq
              (s_Concat_TSource_2 ??= new Func<IQueryable<object>, IEnumerable<object>, IQueryable<object>>(Queryable.Concat).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
+        private static MethodInfo? s_Concat_TSource_3;
+
+        public static MethodInfo Concat_TSource_3(Type TSource) =>
+             (s_Concat_TSource_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEnumerable<object>[], IQueryable<object>>(Queryable.Concat).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource);
+
         private static MethodInfo? s_Contains_TSource_2;
 
         public static MethodInfo Contains_TSource_2(Type TSource) =>
@@ -311,15 +317,19 @@ namespace System.Linq
         private static MethodInfo? s_FirstOrDefault_TSource_3;
 
         public static MethodInfo FirstOrDefault_TSource_3(Type TSource) =>
-            (s_FirstOrDefault_TSource_3 ??
-            (s_FirstOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_FirstOrDefault_TSource_3 ??= new Func<IQueryable<object>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_FirstOrDefault_TSource_4;
 
         public static MethodInfo FirstOrDefault_TSource_4(Type TSource) =>
-            (s_FirstOrDefault_TSource_4 ??
-            (s_FirstOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_FirstOrDefault_TSource_4 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition())
+            .MakeGenericMethod(TSource);
+
+        private static MethodInfo? s_Flatten_TSource_1;
+
+        public static MethodInfo Flatten_TSource_1(Type TSource) =>
+            (s_Flatten_TSource_1 ??= new Func<IQueryable<IEnumerable<object>>, IQueryable<object>>(Queryable.Flatten).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_2;

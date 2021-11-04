@@ -16,6 +16,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void AllEmpty()
+        {
+            int[] first = { };
+            int[] second = { };
+            int[] third = { };
+            Assert.Empty(first.AsQueryable().Concat(second.AsQueryable(), third.AsQueryable()));
+        }
+
+        [Fact]
         public void NonEmptyAndNonEmpty()
         {
             int?[] first = { 2, null, 3, 5, 9 };
@@ -26,15 +35,34 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void AllNonEmpty()
+        {
+            int?[] first = { 2, null, 3, 5, 9 };
+            int?[] second = { null, 8, 10 };
+            int?[] third = { 42, null, 42 };
+            int?[] expected = { 2, null, 3, 5, 9, null, 8, 10, 42, null, 42 };
+
+            Assert.Equal(expected, first.AsQueryable().Concat(second.AsQueryable(), third.AsQueryable()));
+        }
+
+        [Fact]
         public void FirstNull()
         {
             AssertExtensions.Throws<ArgumentNullException>("source1", () => ((IQueryable<int>)null).Concat(Enumerable.Range(0, 0).AsQueryable()));
+            AssertExtensions.Throws<ArgumentNullException>("source1", () => ((IQueryable<int>)null).Concat(Enumerable.Range(0, 0).AsQueryable(), rest: null));
         }
 
         [Fact]
         public void SecondNull()
         {
             AssertExtensions.Throws<ArgumentNullException>("source2", () => Enumerable.Range(0, 0).AsQueryable().Concat(null));
+            AssertExtensions.Throws<ArgumentNullException>("source2", () => Enumerable.Range(0, 0).AsQueryable().Concat(null, rest: null));
+        }
+
+        [Fact]
+        public void RestNull()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("rest", () => Enumerable.Range(0, 0).AsQueryable().Concat(Enumerable.Range(0, 0).AsQueryable(), rest: null));
         }
 
         [Fact]
@@ -42,6 +70,13 @@ namespace System.Linq.Tests
         {
             var count = (new int[] { 0, 1, 2 }).AsQueryable().Concat((new int[] { 10, 11, 12 }).AsQueryable()).Count();
             Assert.Equal(6, count);
+        }
+
+        [Fact]
+        public void ConcatMany()
+        {
+            var count = (new int[] { 0, 1, 2 }).AsQueryable().Concat(new int[] { 10, 11, 12 }.AsQueryable(), new int[] { 5, 6, 7 }.AsQueryable()).Count();
+            Assert.Equal(9, count);
         }
     }
 }

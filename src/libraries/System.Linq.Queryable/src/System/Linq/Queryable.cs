@@ -721,6 +721,31 @@ namespace System.Linq
                     ));
         }
 
+        /// <summary>
+        /// Concatenates two or more sequences.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
+        /// <param name="source1">The first sequence to concatenate.</param>
+        /// <param name="source2">The sequence to concatenate to the first sequence.</param>
+        /// <param name="rest">Any remaining sequences to concatenate.</param>
+        /// <returns>An <see cref="IQueryable{T}"/> that contains the concatenated elements of the input sequences.</returns>
+        [DynamicDependency("Concat`1", typeof(Enumerable))]
+        public static IQueryable<TSource> Concat<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, params IEnumerable<TSource>[] rest)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (rest == null)
+                throw Error.ArgumentNull(nameof(rest));
+            return source1.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Concat_TSource_3(typeof(TSource)),
+                    source1.Expression, GetSourceExpression(source2), Expression.Constant(rest, typeof(IEnumerable<TSource>[]))
+                    ));
+        }
+
         [DynamicDependency("Zip`2", typeof(Enumerable))]
         public static IQueryable<(TFirst First, TSecond Second)> Zip<TFirst, TSecond>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2)
         {
@@ -1138,6 +1163,25 @@ namespace System.Linq
                     null,
                     CachedReflectionInfo.FirstOrDefault_TSource_4(typeof(TSource)),
                     source.Expression, Expression.Quote(predicate), Expression.Constant(defaultValue, typeof(TSource))
+                ));
+        }
+
+        /// <summary>
+        /// Flattens a queryable of enumerables into a single concatenated queryable.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
+        /// <param name="sources">The source of queryables to flatten.</param>
+        /// <returns>An <see cref="IQueryable{T}"/> enumerates all inner enumerates in a concatenated view.</returns>
+        [DynamicDependency("Flatten`1", typeof(Enumerable))]
+        public static IQueryable<TSource> Flatten<TSource>(this IQueryable<IEnumerable<TSource>> sources)
+        {
+            if (sources == null)
+                throw Error.ArgumentNull(nameof(sources));
+            return sources.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Flatten_TSource_1(typeof(TSource)),
+                    sources.Expression
                 ));
         }
 

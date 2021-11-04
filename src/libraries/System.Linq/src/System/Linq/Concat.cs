@@ -22,14 +22,42 @@ namespace System.Linq
 
             return first is ConcatIterator<TSource> firstConcat
                 ? firstConcat.Concat(second)
-                : new Concat2Iterator<TSource>(first, second);
+                : new BaseConcatIterator<TSource>(first, second, rest: null);
         }
 
         /// <summary>
-        /// Represents the concatenation of two <see cref="IEnumerable{TSource}"/>.
+        /// Concatenates two or more sequences.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of the input sequences.</typeparam>
+        /// <param name="first">The first sequence to concatenate.</param>
+        /// <param name="second">The sequence to concatenate to the first sequence.</param>
+        /// <param name="rest">Specifies any subsequent sequences to concatenate.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> that contains the concatenated elements of the two input sequences.</returns>
+        public static IEnumerable<TSource> Concat<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, params IEnumerable<TSource>[] rest)
+        {
+            if (first == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+            }
+
+            if (second == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+            }
+
+            if (rest == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.rest);
+            }
+
+            return new BaseConcatIterator<TSource>(first, second, rest);
+        }
+
+        /// <summary>
+        /// Represents the concatenation of two or more <see cref="IEnumerable{TSource}"/> in a single concat operation.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
-        private sealed partial class Concat2Iterator<TSource> : ConcatIterator<TSource>
+        private sealed partial class BaseConcatIterator<TSource> : ConcatIterator<TSource>
         {
             /// <summary>
             /// The first source to concatenate.
@@ -42,44 +70,70 @@ namespace System.Linq
             internal readonly IEnumerable<TSource> _second;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="Concat2Iterator{TSource}"/> class.
+            /// Any remaining enumerables to concatenate.
+            /// </summary>
+            internal readonly IEnumerable<TSource>[] _rest;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="BaseConcatIterator{TSource}"/> class.
             /// </summary>
             /// <param name="first">The first source to concatenate.</param>
             /// <param name="second">The second source to concatenate.</param>
-            internal Concat2Iterator(IEnumerable<TSource> first, IEnumerable<TSource> second)
+            /// <param name="rest">Any remaining sources to concatenate.</param>
+            internal BaseConcatIterator(IEnumerable<TSource> first, IEnumerable<TSource> second, IEnumerable<TSource>[]? rest)
             {
                 Debug.Assert(first != null);
                 Debug.Assert(second != null);
 
                 _first = first;
                 _second = second;
+                _rest = rest ?? Array.Empty<IEnumerable<TSource>>();
             }
 
-            public override Iterator<TSource> Clone() => new Concat2Iterator<TSource>(_first, _second);
+            public override Iterator<TSource> Clone() => new BaseConcatIterator<TSource>(_first, _second, _rest);
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
-                bool hasOnlyCollections = next is ICollection<TSource> &&
-                                          _first is ICollection<TSource> &&
-                                          _second is ICollection<TSource>;
-                return new ConcatNIterator<TSource>(this, next, 2, hasOnlyCollections);
+                bool hasOnlyCollections = next is ICollection<TSource> && HasOnlyCollections;
+                return new ChainedConcatIterator<TSource>(this, next, 2 + _rest.Length, hasOnlyCollections);
             }
 
             internal override IEnumerable<TSource>? GetEnumerable(int index)
             {
-                Debug.Assert(index >= 0 && index <= 2);
+                Debug.Assert(index >= 0 && index <= 2 + _rest.Length);
 
                 return index switch
                 {
                     0 => _first,
                     1 => _second,
-                    _ => null,
+                    _ => index < 2 + _rest.Length ? _rest[index - 2] : null,
                 };
+            }
+
+            private bool HasOnlyCollections
+            {
+                get
+                {
+                    if (_first is not ICollection<TSource> || _second is not ICollection<TSource>)
+                    {
+                        return false;
+                    }
+
+                    foreach (IEnumerable<TSource> segment in _rest)
+                    {
+                        if (segment is not ICollection<TSource>)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
             }
         }
 
         /// <summary>
-        /// Represents the concatenation of three or more <see cref="IEnumerable{TSource}"/>.
+        /// Represents the two or more <see cref="IEnumerable{TSource}"/> chained concat operations.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         /// <remarks>
@@ -90,7 +144,7 @@ namespace System.Linq
         /// would be to use an array to store all of the enumerables, but this has a much better memory profile and
         /// without much additional run-time cost.
         /// </remarks>
-        private sealed partial class ConcatNIterator<TSource> : ConcatIterator<TSource>
+        private sealed partial class ChainedConcatIterator<TSource> : ConcatIterator<TSource>
         {
             /// <summary>
             /// The linked list of previous sources.
@@ -118,7 +172,7 @@ namespace System.Linq
             private readonly bool _hasOnlyCollections;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ConcatNIterator{TSource}"/> class.
+            /// Initializes a new instance of the <see cref="ChainedConcatIterator{TSource}"/> class.
             /// </summary>
             /// <param name="tail">The linked list of previous sources.</param>
             /// <param name="head">The source associated with this iterator.</param>
@@ -127,7 +181,7 @@ namespace System.Linq
             /// <c>true</c> if all sources this iterator concatenates implement <see cref="ICollection{TSource}"/>;
             /// otherwise, <c>false</c>.
             /// </param>
-            internal ConcatNIterator(ConcatIterator<TSource> tail, IEnumerable<TSource> head, int headIndex, bool hasOnlyCollections)
+            internal ChainedConcatIterator(ConcatIterator<TSource> tail, IEnumerable<TSource> head, int headIndex, bool hasOnlyCollections)
             {
                 Debug.Assert(tail != null);
                 Debug.Assert(head != null);
@@ -139,9 +193,9 @@ namespace System.Linq
                 _hasOnlyCollections = hasOnlyCollections;
             }
 
-            private ConcatNIterator<TSource>? PreviousN => _tail as ConcatNIterator<TSource>;
+            private ChainedConcatIterator<TSource>? PreviousN => _tail as ChainedConcatIterator<TSource>;
 
-            public override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_tail, _head, _headIndex, _hasOnlyCollections);
+            public override Iterator<TSource> Clone() => new ChainedConcatIterator<TSource>(_tail, _head, _headIndex, _hasOnlyCollections);
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
@@ -150,11 +204,11 @@ namespace System.Linq
                     // In the unlikely case of this many concatenations, if we produced a ConcatNIterator
                     // with int.MaxValue then state would overflow before it matched its index.
                     // So we use the naive approach of just having a left and right sequence.
-                    return new Concat2Iterator<TSource>(this, next);
+                    return new BaseConcatIterator<TSource>(this, next, rest: null);
                 }
 
                 bool hasOnlyCollections = _hasOnlyCollections && next is ICollection<TSource>;
-                return new ConcatNIterator<TSource>(this, next, _headIndex + 1, hasOnlyCollections);
+                return new ChainedConcatIterator<TSource>(this, next, _headIndex + 1, hasOnlyCollections);
             }
 
             internal override IEnumerable<TSource>? GetEnumerable(int index)
@@ -166,7 +220,7 @@ namespace System.Linq
                     return null;
                 }
 
-                ConcatNIterator<TSource>? node, previousN = this;
+                ChainedConcatIterator<TSource>? node, previousN = this;
                 do
                 {
                     node = previousN;
@@ -177,8 +231,7 @@ namespace System.Linq
                 }
                 while ((previousN = node.PreviousN) != null);
 
-                Debug.Assert(index == 0 || index == 1);
-                Debug.Assert(node._tail is Concat2Iterator<TSource>);
+                Debug.Assert(node._tail is BaseConcatIterator<TSource>);
                 return node._tail.GetEnumerable(index);
             }
         }

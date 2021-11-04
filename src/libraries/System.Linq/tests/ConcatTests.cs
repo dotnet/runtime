@@ -11,28 +11,24 @@ namespace System.Linq.Tests
     public class ConcatTests : EnumerableTests
     {
         [Theory]
-        [InlineData(new int[] { 2, 3, 2, 4, 5 }, new int[] { 1, 9, 4 })]
-        public void SameResultsWithQueryAndRepeatCalls_Int(IEnumerable<int> first, IEnumerable<int> second)
-        {
-            // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
-            SameResultsWithQueryAndRepeatCallsWorker(first, second);
-        }
-
-        [Theory]
-        [InlineData(new[] { "AAA", "", "q", "C", "#", "!@#$%^", "0987654321", "Calling Twice" }, new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS" })]
-        public void SameResultsWithQueryAndRepeatCalls_String(IEnumerable<string> first, IEnumerable<string> second)
-        {
-            // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
-            SameResultsWithQueryAndRepeatCallsWorker(first, second);
-        }
-
-        private static void SameResultsWithQueryAndRepeatCallsWorker<T>(IEnumerable<T> first, IEnumerable<T> second)
+        [MemberData(nameof(SameResultsWithQueryAndRepeatCallsData))]
+        public static void SameResultsWithQueryAndRepeatCalls<T>(IEnumerable<T> first, IEnumerable<T> second)
         {
             first = from item in first select item;
             second = from item in second select item;
 
             VerifyEqualsWorker(first.Concat(second), first.Concat(second));
             VerifyEqualsWorker(second.Concat(first), second.Concat(first));
+
+            VerifyEqualsWorker(first.Concat(second, first, second), first.Concat(second, first, second));
+            VerifyEqualsWorker(second.Concat(first, second, first), second.Concat(first, second, first));
+        }
+
+        public static IEnumerable<object[]> SameResultsWithQueryAndRepeatCallsData()
+        {
+            yield return WrapArgs(new int[] { 2, 3, 2, 4, 5 }, new int[] { 1, 9, 4 });
+            yield return WrapArgs(new[] { "AAA", "", "q", "C", "#", "!@#$%^", "0987654321", "Calling Twice" }, new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS" });
+            static object[] WrapArgs<T>(IEnumerable<T> first, IEnumerable<T> second) => new[] { first, second };
         }
 
         [Theory]
@@ -45,12 +41,27 @@ namespace System.Linq.Tests
             VerifyEqualsWorker(expected.Skip(first.Count()).Concat(expected.Take(first.Count())), second.Concat(first)); // Swap the inputs around
         }
 
+        [Theory]
+        [InlineData(new int[] { }, new int[] { }, new int[] { }, new int[] { })] // All inputs are empty
+        [InlineData(new int[] { }, new int[] { 2, 6, 4, 6, 2 }, new int[] { 7, 8 }, new int[] { 2, 6, 4, 6, 2, 7, 8 })] // One is empty
+        [InlineData(new int[] { 2, 3, 5, 9 }, new int[] { 8, 10 }, new[] { 11, 12 }, new int[] { 2, 3, 5, 9, 8, 10, 11, 12 })] // Neither side is empty
+        public void PossiblyEmptyInputs_ConcatParams(IEnumerable<int> first, IEnumerable<int> second, IEnumerable<int> third, IEnumerable<int> expected)
+        {
+            VerifyEqualsWorker(expected, first.Concat(second, third));
+            VerifyEqualsWorker(expected.Skip(first.Count()).Concat(expected.Take(first.Count())), second.Concat(third, first)); // Swap the inputs around
+        }
+
         [Fact]
         public void ForcedToEnumeratorDoesntEnumerate()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Concat(Enumerable.Range(0, 3));
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+
+            iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Concat(Enumerable.Range(0, 3), Enumerable.Range(0,3));
+            // Don't insist on this behaviour, but check it's correct if it happens
+            en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
 
@@ -59,12 +70,22 @@ namespace System.Linq.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("first", () => ((IEnumerable<int>)null).Concat(Enumerable.Range(0, 0)));
             AssertExtensions.Throws<ArgumentNullException>("first", () => ((IEnumerable<int>)null).Concat(null)); // If both inputs are null, throw for "first" first
+
+            AssertExtensions.Throws<ArgumentNullException>("first", () => ((IEnumerable<int>)null).Concat(Enumerable.Range(0, 0), Enumerable.Range(0, 0)));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => ((IEnumerable<int>)null).Concat(null, rest: null)); // If all inputs are null, throw for "first" first
         }
 
         [Fact]
         public void SecondNull()
         {
             AssertExtensions.Throws<ArgumentNullException>("second", () => Enumerable.Range(0, 0).Concat(null));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => Enumerable.Range(0, 0).Concat(null, rest: null));
+        }
+
+        [Fact]
+        public void RestNull()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("rest", () => Enumerable.Range(0, 0).Concat(Enumerable.Range(0,0), rest: null));
         }
 
         [Theory]
@@ -74,7 +95,9 @@ namespace System.Linq.Tests
         [MemberData(nameof(NonCollectionSourcesData))]
         [MemberData(nameof(ListSourcesData))]
         [MemberData(nameof(ConcatOfConcatsData))]
+        [MemberData(nameof(ParamsConcatData))]
         [MemberData(nameof(ConcatWithSelfData))]
+        [MemberData(nameof(ParamsConcatWithSelfData))]
         [MemberData(nameof(ChainedCollectionConcatData))]
         [MemberData(nameof(AppendedPrependedConcatAlternationsData))]
         public void VerifyEquals(IEnumerable<int> expected, IEnumerable<int> actual)
@@ -125,12 +148,33 @@ namespace System.Linq.Tests
             };
         }
 
+        public static IEnumerable<object[]> ParamsConcatData()
+        {
+            yield return new object[]
+            {
+                Enumerable.Range(0, 20),
+                Enumerable.Concat(
+                    Enumerable.Range(0, 4),
+                    Enumerable.Range(4, 6),
+                    Enumerable.Range(10, 3),
+                    Enumerable.Range(13, 7))
+            };
+        }
+
         public static IEnumerable<object[]> ConcatWithSelfData()
         {
             IEnumerable<int> source = Enumerable.Repeat(1, 4).Concat(Enumerable.Repeat(1, 5));
             source = source.Concat(source);
 
             yield return new object[] { Enumerable.Repeat(1, 18), source };
+        }
+
+        public static IEnumerable<object[]> ParamsConcatWithSelfData()
+        {
+            IEnumerable<int> source = Enumerable.Repeat(1, 4).Concat(Enumerable.Repeat(1, 5), Enumerable.Repeat(1, 3));
+            source = source.Concat(source);
+
+            yield return new object[] { Enumerable.Repeat(1, 24), source };
         }
 
         public static IEnumerable<object[]> ChainedCollectionConcatData() => GenerateSourcesData(innerTransform: e => e.ToList());

@@ -71,6 +71,7 @@ namespace System.Linq
         public static System.Linq.IQueryable<TResult> Cast<TResult>(this System.Linq.IQueryable source) { throw null; }
         public static System.Linq.IQueryable<TSource[]> Chunk<TSource>(this System.Linq.IQueryable<TSource> source, int size) { throw null; }
         public static System.Linq.IQueryable<TSource> Concat<TSource>(this System.Linq.IQueryable<TSource> source1, System.Collections.Generic.IEnumerable<TSource> source2) { throw null; }
+        public static System.Linq.IQueryable<TSource> Concat<TSource>(this System.Linq.IQueryable<TSource> source1, System.Collections.Generic.IEnumerable<TSource> source2, params System.Collections.Generic.IEnumerable<TSource>[] rest) { throw null; }
         public static bool Contains<TSource>(this System.Linq.IQueryable<TSource> source, TSource item) { throw null; }
         public static bool Contains<TSource>(this System.Linq.IQueryable<TSource> source, TSource item, System.Collections.Generic.IEqualityComparer<TSource>? comparer) { throw null; }
         public static int Count<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
@@ -95,6 +96,7 @@ namespace System.Linq
         public static TSource FirstOrDefault<TSource>(this System.Linq.IQueryable<TSource> source, TSource defaultValue) { throw null; }
         public static TSource First<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static TSource First<TSource>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, bool>> predicate) { throw null; }
+        public static System.Linq.IQueryable<TSource> Flatten<TSource>(this System.Linq.IQueryable<System.Collections.Generic.IEnumerable<TSource>> sources) { throw null; }
         public static System.Linq.IQueryable<System.Linq.IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector) { throw null; }
         public static System.Linq.IQueryable<System.Linq.IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { throw null; }
         public static System.Linq.IQueryable<System.Linq.IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Linq.Expressions.Expression<System.Func<TSource, TElement>> elementSelector) { throw null; }

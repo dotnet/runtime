@@ -8,36 +8,58 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class Concat2Iterator<TSource> : ConcatIterator<TSource>
+        private sealed partial class BaseConcatIterator<TSource> : ConcatIterator<TSource>
         {
             public override int GetCount(bool onlyIfCheap)
             {
-                int firstCount, secondCount;
-                if (!_first.TryGetNonEnumeratedCount(out firstCount))
+                int count, totalCount;
+                if (!_first.TryGetNonEnumeratedCount(out totalCount))
                 {
                     if (onlyIfCheap)
                     {
                         return -1;
                     }
 
-                    firstCount = _first.Count();
+                    totalCount = _first.Count();
                 }
 
-                if (!_second.TryGetNonEnumeratedCount(out secondCount))
+                if (!_second.TryGetNonEnumeratedCount(out count))
                 {
                     if (onlyIfCheap)
                     {
                         return -1;
                     }
 
-                    secondCount = _second.Count();
+                    count = _second.Count();
                 }
 
-                return checked(firstCount + secondCount);
+                checked { totalCount += count; }
+
+                foreach (IEnumerable<TSource> segment in _rest)
+                {
+                    if (!segment.TryGetNonEnumeratedCount(out count))
+                    {
+                        if (onlyIfCheap)
+                        {
+                            return -1;
+                        }
+
+                        count = _second.Count();
+                    }
+
+                    checked { totalCount += count; }
+                }
+
+                return totalCount;
             }
 
             public override TSource[] ToArray()
             {
+                if (_rest.Length > 0)
+                {
+                    return LazyToArray();
+                }
+
                 var builder = new SparseArrayBuilder<TSource>(initialize: true);
 
                 bool reservedFirst = builder.ReserveOrAdd(_first);
@@ -62,7 +84,7 @@ namespace System.Linq
             }
         }
 
-        private sealed partial class ConcatNIterator<TSource> : ConcatIterator<TSource>
+        private sealed partial class ChainedConcatIterator<TSource> : ConcatIterator<TSource>
         {
             public override int GetCount(bool onlyIfCheap)
             {
@@ -72,7 +94,7 @@ namespace System.Linq
                 }
 
                 int count = 0;
-                ConcatNIterator<TSource>? node, previousN = this;
+                ChainedConcatIterator<TSource>? node, previousN = this;
 
                 do
                 {
@@ -92,50 +114,11 @@ namespace System.Linq
                 }
                 while ((previousN = node.PreviousN) != null);
 
-                Debug.Assert(node._tail is Concat2Iterator<TSource>);
+                Debug.Assert(node._tail is BaseConcatIterator<TSource>);
                 return checked(count + node._tail.GetCount(onlyIfCheap));
             }
 
             public override TSource[] ToArray() => _hasOnlyCollections ? PreallocatingToArray() : LazyToArray();
-
-            private TSource[] LazyToArray()
-            {
-                Debug.Assert(!_hasOnlyCollections);
-
-                var builder = new SparseArrayBuilder<TSource>(initialize: true);
-                ArrayBuilder<int> deferredCopies = default;
-
-                for (int i = 0; ; i++)
-                {
-                    // Unfortunately, we can't escape re-walking the linked list for each source, which has
-                    // quadratic behavior, because we need to add the sources in order.
-                    // On the bright side, the bottleneck will usually be iterating, buffering, and copying
-                    // each of the enumerables, so this shouldn't be a noticeable perf hit for most scenarios.
-
-                    IEnumerable<TSource>? source = GetEnumerable(i);
-                    if (source == null)
-                    {
-                        break;
-                    }
-
-                    if (builder.ReserveOrAdd(source))
-                    {
-                        deferredCopies.Add(i);
-                    }
-                }
-
-                TSource[] array = builder.ToArray();
-
-                ArrayBuilder<Marker> markers = builder.Markers;
-                for (int i = 0; i < markers.Count; i++)
-                {
-                    Marker marker = markers[i];
-                    IEnumerable<TSource> source = GetEnumerable(deferredCopies[i])!;
-                    EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
-                }
-
-                return array;
-            }
 
             private TSource[] PreallocatingToArray()
             {
@@ -156,7 +139,7 @@ namespace System.Linq
                 var array = new TSource[count];
                 int arrayIndex = array.Length; // We start copying in collection-sized chunks from the end of the array.
 
-                ConcatNIterator<TSource>? node, previousN = this;
+                ChainedConcatIterator<TSource>? node, previousN = this;
                 do
                 {
                     node = previousN;
@@ -173,7 +156,7 @@ namespace System.Linq
                 }
                 while ((previousN = node.PreviousN) != null);
 
-                var previous2 = (Concat2Iterator<TSource>)node._tail;
+                var previous2 = (BaseConcatIterator<TSource>)node._tail;
                 var second = (ICollection<TSource>)previous2._second;
                 int secondCount = second.Count;
 
@@ -215,6 +198,43 @@ namespace System.Linq
                 }
 
                 return list;
+            }
+
+            protected TSource[] LazyToArray()
+            {
+                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+                ArrayBuilder<int> deferredCopies = default;
+
+                for (int i = 0; ; i++)
+                {
+                    // Unfortunately, for the ChainedConcatIterator case we can't escape re-walking the linked list for each source,
+                    // which has quadratic behavior, because we need to add the sources in order.
+                    // On the bright side, the bottleneck will usually be iterating, buffering, and copying
+                    // each of the enumerables, so this shouldn't be a noticeable perf hit for most scenarios.
+
+                    IEnumerable<TSource>? source = GetEnumerable(i);
+                    if (source == null)
+                    {
+                        break;
+                    }
+
+                    if (builder.ReserveOrAdd(source))
+                    {
+                        deferredCopies.Add(i);
+                    }
+                }
+
+                TSource[] array = builder.ToArray();
+
+                ArrayBuilder<Marker> markers = builder.Markers;
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    Marker marker = markers[i];
+                    IEnumerable<TSource> source = GetEnumerable(deferredCopies[i])!;
+                    EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
+                }
+
+                return array;
             }
         }
     }
