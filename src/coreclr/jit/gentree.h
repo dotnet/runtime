@@ -4866,6 +4866,11 @@ struct GenTreeCall final : public GenTree
 
     // IL offset of the call wrt its parent method.
     IL_OFFSET gtRawILOffset;
+
+    // In DEBUG we report even non inline candidates in the inline tree in
+    // fgNoteNonInlineCandidate. We need to keep around the inline context for
+    // this as normally it's part of the candidate info.
+    class InlineContext* gtInlineContext;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     bool IsHelperCall() const
@@ -6185,6 +6190,11 @@ public:
         return !(*this == other);
     }
 
+#ifdef DEBUG
+    // Dump textual representation of this ILLocation to jitstdout.
+    void Dump() const;
+#endif
+
 private:
     IL_OFFSET m_offset;
     bool m_isStackEmpty : 1;
@@ -6217,12 +6227,32 @@ public:
     }
 
     // Retrieve information about the location that inlined this statement.
+    // Note that there can be associated parent information even when IsValid
+    // below returns false.
     bool GetParent(DebugInfo* par) const;
 
     // Get debug info in the root. If this debug info is in the root, then
-    // returns *this. Otherwise returns information of the call in the root that
-    // eventually produced this statement through inlines.
+    // returns *this. Otherwise returns information of the call in the root
+    // that eventually produced this statement through inlines.
     DebugInfo GetRoot() const;
+
+#ifdef DEBUG
+    void Validate() const;
+#else
+    void Validate() const { }
+#endif
+
+#ifdef DEBUG
+    // Dump textual representation of this DebugInfo to jitstdout.
+    void Dump(bool recurse) const;
+#endif
+
+    // Check if this debug info has both a valid inline context and valid
+    // location.
+    bool IsValid() const
+    {
+        return m_inlineContext != nullptr && m_location.IsValid();
+    }
 
     inline bool operator==(const DebugInfo& other) const
     {
@@ -6377,19 +6407,7 @@ public:
     void SetDebugInfo(const DebugInfo& di)
     {
         m_debugInfo = di;
-    }
-
-    // During inlining we require the inline context to be maintained. We use
-    // the storage in the debug info for it. After inlining is over we no
-    // longer require inline contexts for statements without debug information.
-    InlineContext* GetInlineContext()
-    {
-        return m_debugInfo.GetInlineContext();
-    }
-
-    void SetInlineContext(InlineContext* inlineContext)
-    {
-        m_debugInfo = DebugInfo(inlineContext, m_debugInfo.GetLocation());
+        di.Validate();
     }
 
 #ifdef DEBUG
@@ -6470,7 +6488,7 @@ private:
     Statement* m_next;
     Statement* m_prev;
 
-    DebugInfo m_debugInfo; // Debug info for the statement, including inline context
+    DebugInfo m_debugInfo;
 
 #ifdef DEBUG
     IL_OFFSET m_lastILOffset; // The instr offset at the end of this statement.

@@ -6364,8 +6364,9 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
     // Is this call an inline candidate?
     if (call->IsInlineCandidate())
     {
+        InlineContext* createdContext = nullptr;
         // Attempt the inline
-        fgMorphCallInlineHelper(call, inlineResult);
+        fgMorphCallInlineHelper(call, inlineResult, &createdContext);
 
         // We should have made up our minds one way or another....
         assert(inlineResult->IsDecided());
@@ -6374,13 +6375,20 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
         if (inlineResult->IsFailure())
         {
 
+            if (createdContext != nullptr)
+            {
+                // We created a context before we got to the failure, so mark
+                // it as failed in the tree.
+                createdContext->SetFailed(inlineResult);
+            }
+            else
+            {
 #ifdef DEBUG
-
-            // Before we do any cleanup, create a failing InlineContext to
-            // capture details of the inlining attempt.
-            m_inlineStrategy->NewFailure(fgMorphStmt, inlineResult);
-
+                // In debug we always put all inline attempts into the inline tree.
+                InlineContext* ctx = m_inlineStrategy->NewContext(call->gtInlineCandidateInfo->inlinersContext, fgMorphStmt, call);
+                ctx->SetFailed(inlineResult);
 #endif
+            }
 
             inliningFailed = true;
 
@@ -6416,14 +6424,28 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
     }
 }
 
-/*****************************************************************************
- *  Helper to attempt to inline a call
- *  Sets success/failure in inline result
- *  If success, modifies current method's IR with inlinee's IR
- *  If failed, undoes any speculative modifications to current method
- */
-
-void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
+//------------------------------------------------------------------------------
+// fgMorphCallInlineHelper: Helper to attempt to inline a call
+//
+// Arguments:
+//    call           - call expression to inline, inline candidate
+//    result         - result to set to success or failure
+//    createdContext - The context that was created if the inline attempt got to the inliner.
+//
+// Notes:
+//    Attempts to inline the call.
+//
+//    If successful, callee's IR is inserted in place of the call, and
+//    is marked with an InlineContext.
+//
+//    If unsuccessful, the transformations done in anticipation of a
+//    possible inline are undone, and the candidate flag on the call
+//    is cleared.
+//
+//    If a context was created because we got to the importer then it is output by this function.
+//    If the inline succeeded, this context will already be marked as successful. If it failed and
+//    a context is returned, then it will not have been marked as success or failed.
+void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext)
 {
     // Don't expect any surprises here.
     assert(result->IsCandidate());
@@ -6483,7 +6505,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     // Invoke the compiler to inline the call.
     //
 
-    fgInvokeInlineeCompiler(call, result);
+    fgInvokeInlineeCompiler(call, result, createdContext);
 
     if (result->IsFailure())
     {

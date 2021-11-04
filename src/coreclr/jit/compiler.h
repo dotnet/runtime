@@ -3601,6 +3601,7 @@ public:
     void gtDispLclVar(unsigned lclNum, bool padForBiggestDisp = true);
     void gtDispLclVarStructType(unsigned lclNum);
     void gtDispClassLayout(ClassLayout* layout, var_types type);
+    void gtDispILLocation(const ILLocation& loc);
     void gtDispStmt(Statement* stmt, const char* msg = nullptr);
     void gtDispBlockStmts(BasicBlock* block);
     void gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, char* bufp, unsigned bufLength);
@@ -4176,8 +4177,10 @@ public:
     unsigned lvaPSPSym; // variable representing the PSPSym
 #endif
 
-    InlineInfo*     impInlineInfo;
+    InlineInfo*     impInlineInfo; // Only present for inlinees
     InlineStrategy* m_inlineStrategy;
+
+    InlineContext* compInlineContext; // Always present
 
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler* impInlineRoot();
@@ -4594,17 +4597,15 @@ private:
     void       impNoteLastILoffs();
 #endif
 
-    /* Debug info of the stmt currently being imported. It gets set to empty information
-       (DebugInfo()) after it has been set in the appended trees. Then it gets updated at
-       IL instructions for which we have to report mapping info.
-    */
+    // Debug info of current statement being imported. It gets set to contain
+    // no IL location (!impCurStmtDI.GetLocation().IsValid) after it has been
+    // set in the appended trees. Then it gets updated at IL instructions for
+    // which we have to report mapping info.
+    // It will always contain the current inline context.
     DebugInfo impCurStmtDI;
 
+    DebugInfo impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall);
     void impCurStmtOffsSet(IL_OFFSET offs);
-    /*
-     * Get current debug info with stack info and call instruction info incoporated
-     */
-    DebugInfo impCurDebugInfo(IL_OFFSET offs, bool callInstruction = false);
 
     void impNoteBranchOffs();
 
@@ -6162,10 +6163,10 @@ public:
 #endif
 
 public:
-    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
+    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, const DebugInfo& di = DebugInfo());
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
-    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
+    Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, const DebugInfo& di = DebugInfo());
+    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree, const DebugInfo& di = DebugInfo());
 
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
@@ -6359,7 +6360,7 @@ private:
     GenTree* fgMorphCall(GenTreeCall* call);
     GenTree* fgExpandVirtualVtableCallTarget(GenTreeCall* call);
     void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
-    void fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result);
+    void fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
 #if DEBUG
     void fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call);
     static fgWalkPreFn fgFindNonInlineCandidate;
@@ -6485,7 +6486,7 @@ private:
     unsigned fgBigOffsetMorphingTemps[TYP_COUNT];
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
-    void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result);
+    void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
     void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);

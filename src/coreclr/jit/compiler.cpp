@@ -2494,7 +2494,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS));
     }
@@ -3619,8 +3618,6 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 
 void Compiler::compInitDebuggingInfo()
 {
-    assert(!compIsForInlining());
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -6087,6 +6084,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #endif
 
         info.compFlags = impInlineInfo->inlineCandidateInfo->methAttr;
+        compInlineContext = impInlineInfo->inlineContext;
     }
     else
     {
@@ -6094,6 +6092,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef PSEUDORANDOM_NOP_INSERTION
         info.compChecksum = getMethodBodyChecksum((char*)methodInfo->ILCode, methodInfo->ILCodeSize);
 #endif
+        compInlineContext = m_inlineStrategy->GetRootContext();
     }
 
     compSwitchedToOptimized = false;
@@ -6231,10 +6230,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     lvaInitTypeRef();
 
-    if (!compIsForInlining())
-    {
-        compInitDebuggingInfo();
-    }
+    compInitDebuggingInfo();
 
 #ifdef DEBUG
     if (compIsForInlining())

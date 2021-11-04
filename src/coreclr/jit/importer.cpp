@@ -615,10 +615,12 @@ inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
     impMarkContiguousSIMDFieldAssignments(stmt);
 #endif
 
-    /* Once we set impCurStmtDI in an appended tree, we are ready to
-       report the following offsets. So reset impCurStmtDI */
+    // Once we set the current offset as debug info in an appended tree, we are
+    // ready to report the following offsets. Note that we need to compare
+    // offsets here instead of debug info, since we do not set the "is call"
+    // debug in impCurStmtDI.
 
-    if (impLastStmt->GetDebugInfo().GetLocation() == impCurStmtDI.GetLocation())
+    if (impLastStmt->GetDebugInfo().GetLocation().GetOffset() == impCurStmtDI.GetLocation().GetOffset())
     {
         impCurStmtOffsSet(BAD_IL_OFFSET);
     }
@@ -1201,7 +1203,7 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
     assert(varTypeIsStruct(dest));
 
     DebugInfo usedDI = di;
-    if (!usedDI.GetLocation().IsValid())
+    if (!usedDI.IsValid())
     {
         usedDI = impCurStmtDI;
     }
@@ -1284,7 +1286,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     GenTreeFlags destFlags = GTF_EMPTY;
 
     DebugInfo usedDI = di;
-    if (!usedDI.GetLocation().IsValid())
+    if (!usedDI.IsValid())
     {
         usedDI = impCurStmtDI;
     }
@@ -2824,7 +2826,10 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         {
             // Report the debug info. impImportBlockCode won't treat the actual handler as exception block and thus
             // won't do it for us.
-            impCurStmtDI = DebugInfo(impCurStmtDI.GetInlineContext(), ILLocation(newBlk->bbCodeOffs, false, false));
+            // TODO-DEBUGINFO: Previous code always set stack as non-empty
+            // here. Can we not just use impCurStmtOffsSet? Are we out of sync
+            // here with the stack?
+            impCurStmtDI = DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, false, false));
             argStmt        = gtNewStmt(argAsg, impCurStmtDI);
         }
         else
@@ -2881,38 +2886,28 @@ GenTree* Compiler::impCloneExpr(GenTree*             tree,
     return gtNewLclvNode(temp, type);
 }
 
+DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
+{
+    assert(offs != BAD_IL_OFFSET);
+
+    bool isStackEmpty = verCurrentState.esStackDepth <= 0;
+    return DebugInfo(compInlineContext, ILLocation(offs, isStackEmpty, isCall));
+}
+
 /*****************************************************************************
  * Remember the IL offset (including stack-empty info) for the trees we will
- * generate now.
+ * generate next.
  */
 
 inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
 {
-    if (compIsForInlining())
+    if (offs == BAD_IL_OFFSET)
     {
-        Statement* callStmt = impInlineInfo->iciStmt;
-        impCurStmtDI = callStmt->GetDebugInfo();
+        impCurStmtDI = DebugInfo(compInlineContext, ILLocation());
     }
     else
     {
-        bool isStackEmpty = verCurrentState.esStackDepth <= 0;
-        impCurStmtDI = DebugInfo(impCurStmtDI.GetInlineContext(), ILLocation(offs, isStackEmpty, false));
-    }
-}
-
-/*****************************************************************************
- * Returns current IL offset with stack-empty and call-instruction info incorporated
- */
-inline DebugInfo Compiler::impCurDebugInfo(IL_OFFSET offs, bool callInstruction)
-{
-    if (compIsForInlining())
-    {
-        return DebugInfo();
-    }
-    else
-    {
-        bool isStackEmpty = verCurrentState.esStackDepth <= 0;
-        return DebugInfo(impCurStmtDI.GetInlineContext(), ILLocation(offs, isStackEmpty, callInstruction));
+        impCurStmtDI = impCreateDIWithCurrentStackInfo(offs, false);
     }
 }
 
@@ -2997,11 +2992,6 @@ unsigned Compiler::impInitBlockLineInfo()
        nearest known offset */
 
     impCurStmtOffsSet(BAD_IL_OFFSET);
-
-    if (compIsForInlining())
-    {
-        return ~0;
-    }
 
     IL_OFFSET blockOffs = compCurBB->bbCodeOffs;
 
@@ -8453,7 +8443,7 @@ bool Compiler::impIsImplicitTailCallCandidate(
 //    newObjThis                - tree for this pointer or uninitalized newobj temp (or nullptr)
 //    prefixFlags               - IL prefix flags for the call
 //    callInfo                  - EE supplied info for the call
-//    rawILOffset               - IL offset of the opcode
+//    rawILOffset               - IL offset of the opcode, used for guarded devirtualization.
 //
 // Returns:
 //    Type of the call's return value.
@@ -8482,7 +8472,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 {
     assert(opcode == CEE_CALL || opcode == CEE_CALLVIRT || opcode == CEE_NEWOBJ || opcode == CEE_CALLI);
 
-    DebugInfo             di                       = impCurDebugInfo(rawILOffset, true);
+    // The current statement DI may not refer to the exact call, but for calls
+    // we wish to be able to attach the exact IL instruction to get "return
+    // value" support in the debugger, so create one with the exact IL offset.
+    DebugInfo di = impCreateDIWithCurrentStackInfo(rawILOffset, true);
+
     var_types              callRetTyp                     = TYP_COUNT;
     CORINFO_SIG_INFO*      sig                            = nullptr;
     CORINFO_METHOD_HANDLE  methHnd                        = nullptr;
@@ -11725,17 +11719,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         impSpillStackEnsure(true);
                     }
 
-                    // Has impCurStmtDI been reported in any tree?
+                    // Have we reported debug info for any tree?
 
-                    if (impCurStmtDI.GetLocation().IsValid() && opts.compDbgCode)
+                    if (impCurStmtDI.IsValid() && opts.compDbgCode)
                     {
                         GenTree* placeHolder = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
                         impAppendTree(placeHolder, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
-                        assert(!impCurStmtDI.GetLocation().IsValid());
+                        assert(!impCurStmtDI.IsValid());
                     }
 
-                    if (!impCurStmtDI.GetLocation().IsValid())
+                    if (!impCurStmtDI.IsValid())
                     {
                         /* Make sure that nxtStmtIndex is in sync with opcodeOffs.
                            If opcodeOffs has gone past nxtStmtIndex, catch up */
@@ -11807,8 +11801,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impCurStmtOffsSet(opcodeOffs);
                 }
 
-                assert(!impCurStmtDI.GetLocation().IsValid() || nxtStmtOffs == BAD_IL_OFFSET ||
-                       impCurStmtDI.GetLocation().GetOffset() <= nxtStmtOffs);
+                assert(!impCurStmtDI.IsValid() || (nxtStmtOffs == BAD_IL_OFFSET) || (impCurStmtDI.GetLocation().GetOffset() <= nxtStmtOffs));
             }
         }
 
@@ -13464,7 +13457,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* GT_JTRUE is handled specially for non-empty stacks. See 'addStmt'
                    in impImportBlock(block). For correct line numbers, spill stack. */
 
-                if (opts.compDbgCode && impCurStmtDI.GetLocation().IsValid())
+                if (opts.compDbgCode && impCurStmtDI.IsValid())
                 {
                     impSpillStackEnsure(true);
                 }
@@ -19766,6 +19759,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->initClassResult                = initClassResult;
             pInfo->fncRetType                     = fncRetType;
             pInfo->exactContextNeedsRuntimeLookup = false;
+            pInfo->inlinersContext =               pParam->pThis->compInlineContext;
 
             // Note exactContextNeedsRuntimeLookup is reset later on,
             // over in impMarkInlineCandidate.

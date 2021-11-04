@@ -29,11 +29,12 @@
 unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 {
     BYTE*          candidateCode = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
-    InlineContext* inlineContext = inlineInfo->iciStmt->GetInlineContext();
+    InlineContext* inlineContext = inlineInfo->inlineCandidateInfo->inlinersContext;
     InlineResult*  inlineResult  = inlineInfo->inlineResult;
 
     // There should be a context for all candidates.
     assert(inlineContext != nullptr);
+
     int depth = 0;
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
@@ -101,17 +102,6 @@ PhaseStatus Compiler::fgInline()
 
     noway_assert(fgFirstBB != nullptr);
 
-    // Set the root inline context on all statements
-    InlineContext* rootContext = m_inlineStrategy->GetRootContext();
-
-    for (BasicBlock* const block : Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            stmt->SetInlineContext(rootContext);
-        }
-    }
-
     BasicBlock* block       = fgFirstBB;
     bool        madeChanges = false;
 
@@ -123,7 +113,7 @@ PhaseStatus Compiler::fgInline()
         for (Statement* const stmt : block->Statements())
         {
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
             // candidate stage. So scan the tree looking for those early failures.
@@ -234,7 +224,7 @@ PhaseStatus Compiler::fgInline()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
 // fgFindNonInlineCandidate: tree walk helper to ensure that a tree node
@@ -283,7 +273,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
         return;
     }
 
-    InlineResult      inlineResult(this, call, nullptr, "fgNotInlineCandidate");
+    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate");
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
     // Try and recover the reason left behind when the jit decided
@@ -301,8 +291,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 
     if (call->gtCallType == CT_USER_FUNC)
     {
-        // Create InlineContext for the failure
-        m_inlineStrategy->NewFailure(stmt, &inlineResult);
+        m_inlineStrategy->NewContext(call->gtInlineContext, stmt, call)->SetFailed(&inlineResult);
     }
 }
 
@@ -863,7 +852,7 @@ Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, f
 
 #endif // DEBUG
 
-void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineResult)
+void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineResult, InlineContext** createdContext)
 {
     noway_assert(call->gtOper == GT_CALL);
     noway_assert((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0);
@@ -945,6 +934,11 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 {
                     pParam->inlineInfo->InlineRoot = pParam->pThis->impInlineInfo->InlineRoot;
                 }
+
+                // The inline context is part of debug info and must be created
+                // before we start creating statements; we lazily create it as
+                // late as possible, which is here.
+                pParam->inlineInfo->inlineContext = pParam->inlineInfo->InlineRoot->m_inlineStrategy->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
                 pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
                 pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
 
@@ -960,7 +954,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
 
@@ -1010,6 +1003,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
             inlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
         }
     }
+
+    *createdContext = inlineInfo.inlineContext;
 
     if (inlineResult->IsFailure())
     {
@@ -1117,16 +1112,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
 #endif // DEBUG
 
-    // Create a new inline context and mark the inlined statements with it
-    InlineContext* calleeContext = m_inlineStrategy->NewSuccess(pInlineInfo);
-
-    for (BasicBlock* const block : InlineeCompiler->Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            stmt->SetInlineContext(calleeContext);
-        }
-    }
+    // Mark success.
+    pInlineInfo->inlineContext->SetSucceeded(pInlineInfo);
 
     // Prepend statements
     Statement* stmtAfter = fgInlinePrependStatements(pInlineInfo);
@@ -1281,9 +1268,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         block->copyEHRegion(iciBlock);
         block->bbFlags |= iciBlock->bbFlags & BBF_BACKWARD_JUMP;
 
-        if (iciStmt->GetDebugInfo().GetLocation().IsValid())
+        DebugInfo di = iciStmt->GetDebugInfo().GetRoot();
+        if (di.IsValid())
         {
-            block->bbCodeOffs    = iciStmt->GetDebugInfo().GetLocation().GetOffset();
+            block->bbCodeOffs = di.GetLocation().GetOffset();
             block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
         }
         else
@@ -1471,7 +1459,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 {
     BasicBlock*  block        = inlineInfo->iciBlock;
     Statement*   callStmt     = inlineInfo->iciStmt;
-    const DebugInfo& callDI = DebugInfo(nullptr, callStmt->GetDebugInfo().GetLocation());
+    const DebugInfo& callDI = callStmt->GetDebugInfo();
     Statement*   postStmt     = callStmt->GetNextStmt();
     Statement*   afterStmt    = callStmt; // afterStmt is the place where the new statements should be inserted after.
     Statement*   newStmt      = nullptr;
@@ -1834,15 +1822,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 #endif // DEBUG
             }
         }
-    }
-
-    // Update any newly added statements with the appropriate context.
-    InlineContext* context = callStmt->GetInlineContext();
-    assert(context != nullptr);
-    for (Statement* addedStmt = callStmt->GetNextStmt(); addedStmt != postStmt; addedStmt = addedStmt->GetNextStmt())
-    {
-        assert(addedStmt->GetInlineContext() == nullptr);
-        addedStmt->SetInlineContext(context);
     }
 
     return afterStmt;

@@ -608,7 +608,17 @@ void Compiler::eeGetStmtOffsets()
     uint32_t*                    offsets;
     ICorDebugInfo::BoundaryTypes offsetsImplicit;
 
-    info.compCompHnd->getBoundaries(info.compMethodHnd, &offsetsCount, &offsets, &offsetsImplicit);
+    if (compIsForInlining())
+    {
+        // We do not get explicit boundaries for inlinees, only implicit ones.
+        offsetsImplicit = impInlineRoot()->info.compStmtOffsetsImplicit;
+        offsetsCount = 0;
+        offsets = nullptr;
+    }
+    else
+    {
+        info.compCompHnd->getBoundaries(info.compMethodHnd, &offsetsCount, &offsets, &offsetsImplicit);
+    }
 
     /* Set the implicit boundaries */
 
