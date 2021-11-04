@@ -5753,6 +5753,35 @@ void Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2->ClearContained();
     }
     ContainCheckShiftRotate(shift);
+
+#ifdef TARGET_ARM64
+    // Try to recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) tree
+    if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_LSH) && shift->gtGetOp1()->OperIs(GT_CAST) &&
+        shift->gtGetOp2()->IsCnsIntOrI() && !shift->isContained())
+    {
+        GenTreeIntCon* cns  = shift->gtGetOp2()->AsIntCon();
+        GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
+
+        if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
+            // Smaller CastOp is most likely an IND(X) node which is lowered to a zero-extend load
+            cast->CastOp()->TypeIs(TYP_LONG, TYP_INT))
+        {
+            // Cast is either "TYP_LONG <- TYP_INT" or "TYP_INT <- %SMALL_INT% <- TYP_INT" (signed or unsigned)
+            unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
+            unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                                  : genTypeSize(cast->CastOp()) * BITS_PER_BYTE;
+            assert(!cast->CastOp()->isContained());
+
+            // It has to be an upcast and CNS must be in [1..srcBits) range
+            if ((srcBits < dstBits) && ((UINT32)cns->IconValue() < srcBits))
+            {
+                JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
+                shift->ChangeOper(GT_BFIZ);
+                MakeSrcContained(shift, cast);
+            }
+        }
+    }
+#endif
 }
 
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
