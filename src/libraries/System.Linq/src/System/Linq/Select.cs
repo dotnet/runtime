@@ -15,12 +15,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (selector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
+                ThrowHelper.ThrowArgumentNullException(nameof(selector));
             }
 
             if (source is Iterator<TSource> iterator)
@@ -65,12 +65,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (selector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
+                ThrowHelper.ThrowArgumentNullException(nameof(selector));
             }
 
             return SelectIterator(source, selector);

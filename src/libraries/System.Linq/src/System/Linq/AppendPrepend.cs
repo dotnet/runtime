@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             return source is AppendPrependIterator<TSource> appendable
@@ -24,7 +24,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             return source is AppendPrependIterator<TSource> appendable

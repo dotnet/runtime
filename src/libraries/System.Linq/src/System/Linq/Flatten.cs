@@ -18,7 +18,7 @@ namespace System.Linq
         {
             if (sources == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(sources));
             }
 
             return FlattenIterator(sources);

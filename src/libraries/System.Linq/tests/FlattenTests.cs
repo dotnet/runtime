@@ -59,8 +59,8 @@ namespace System.Linq.Tests
         [Fact]
         public static void NullSource()
         {
-            IEnumerable<IEnumerable<int>> source = null!;
-            Assert.Throws<ArgumentNullException>(() => source.Flatten());
+            IEnumerable<IEnumerable<int>> sources = null!;
+            Assert.Throws<ArgumentNullException>("sources", () => sources.Flatten());
         }
     }
 }

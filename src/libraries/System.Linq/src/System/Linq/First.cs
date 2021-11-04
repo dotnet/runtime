@@ -66,7 +66,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (source is IPartition<TSource> partition)
@@ -102,12 +102,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (predicate == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+                ThrowHelper.ThrowArgumentNullException(nameof(predicate));
             }
 
             foreach (TSource element in source)

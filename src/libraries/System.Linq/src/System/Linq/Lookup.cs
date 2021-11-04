@@ -16,12 +16,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (keySelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
             }
 
             return Lookup<TKey, TSource>.Create(source, keySelector, comparer);
@@ -34,17 +34,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (keySelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
             }
 
             if (elementSelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(elementSelector));
             }
 
             return Lookup<TKey, TElement>.Create(source, keySelector, elementSelector, comparer);

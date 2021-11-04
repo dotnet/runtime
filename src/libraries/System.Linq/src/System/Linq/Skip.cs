@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (count <= 0)
@@ -38,12 +38,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (predicate == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+                ThrowHelper.ThrowArgumentNullException(nameof(predicate));
             }
 
             return SkipWhileIterator(source, predicate);
@@ -74,12 +74,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (predicate == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+                ThrowHelper.ThrowArgumentNullException(nameof(predicate));
             }
 
             return SkipWhileIterator(source, predicate);
@@ -116,7 +116,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             return count <= 0 ?

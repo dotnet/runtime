@@ -11,17 +11,17 @@ namespace System.Linq
         {
             if (first is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
 
             if (second is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
 
             if (resultSelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(resultSelector));
             }
 
             return ZipIterator(first, second, resultSelector);
@@ -31,12 +31,12 @@ namespace System.Linq
         {
             if (first is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
 
             if (second is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
 
             return ZipIterator(first, second);
@@ -56,17 +56,17 @@ namespace System.Linq
         {
             if (first is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
 
             if (second is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
 
             if (third is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.third);
+                ThrowHelper.ThrowArgumentNullException(nameof(third));
             }
 
             return ZipIterator(first, second, third);

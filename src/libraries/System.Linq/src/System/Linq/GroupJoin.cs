@@ -11,27 +11,27 @@ namespace System.Linq
         {
             if (outer == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outer);
+                ThrowHelper.ThrowArgumentNullException(nameof(outer));
             }
 
             if (inner == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.inner);
+                ThrowHelper.ThrowArgumentNullException(nameof(inner));
             }
 
             if (outerKeySelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outerKeySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(outerKeySelector));
             }
 
             if (innerKeySelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.innerKeySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(innerKeySelector));
             }
 
             if (resultSelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(resultSelector));
             }
 
             return GroupJoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, null);
@@ -41,27 +41,27 @@ namespace System.Linq
         {
             if (outer == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outer);
+                ThrowHelper.ThrowArgumentNullException(nameof(outer));
             }
 
             if (inner == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.inner);
+                ThrowHelper.ThrowArgumentNullException(nameof(inner));
             }
 
             if (outerKeySelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outerKeySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(outerKeySelector));
             }
 
             if (innerKeySelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.innerKeySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(innerKeySelector));
             }
 
             if (resultSelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(resultSelector));
             }
 
             return GroupJoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);

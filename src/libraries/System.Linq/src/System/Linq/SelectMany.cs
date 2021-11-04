@@ -12,12 +12,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (selector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
+                ThrowHelper.ThrowArgumentNullException(nameof(selector));
             }
 
             return new SelectManySingleSelectorIterator<TSource, TResult>(source, selector);
@@ -27,12 +27,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (selector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
+                ThrowHelper.ThrowArgumentNullException(nameof(selector));
             }
 
             return SelectManyIterator(source, selector);
@@ -59,17 +59,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (collectionSelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collectionSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(collectionSelector));
             }
 
             if (resultSelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(resultSelector));
             }
 
             return SelectManyIterator(source, collectionSelector, resultSelector);
@@ -96,17 +96,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (collectionSelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collectionSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(collectionSelector));
             }
 
             if (resultSelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(resultSelector));
             }
 
             return SelectManyIterator(source, collectionSelector, resultSelector);

@@ -13,7 +13,7 @@ namespace System.Linq
             long max = ((long)start) + count - 1;
             if (count < 0 || max > int.MaxValue)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+                ThrowHelper.ThrowArgumentOutOfRangeException(nameof(count));
             }
 
             if (count == 0)

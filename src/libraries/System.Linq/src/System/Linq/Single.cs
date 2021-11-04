@@ -66,7 +66,7 @@ namespace System.Linq
         {
             if (source is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (source is IList<TSource> list)
@@ -109,12 +109,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (predicate == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+                ThrowHelper.ThrowArgumentNullException(nameof(predicate));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())

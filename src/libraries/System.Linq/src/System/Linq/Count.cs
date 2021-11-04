@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (source is ICollection<TSource> collectionoft)
@@ -49,12 +49,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (predicate == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+                ThrowHelper.ThrowArgumentNullException(nameof(predicate));
             }
 
             int count = 0;
@@ -96,7 +96,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (source is ICollection<TSource> collectionoft)
@@ -129,7 +129,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             long count = 0;
@@ -151,12 +151,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (predicate == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+                ThrowHelper.ThrowArgumentNullException(nameof(predicate));
             }
 
             long count = 0;

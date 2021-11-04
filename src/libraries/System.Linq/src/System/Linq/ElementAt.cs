@@ -13,7 +13,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (source is IPartition<TSource> partition)
@@ -33,7 +33,7 @@ namespace System.Linq
                 return element;
             }
 
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            ThrowHelper.ThrowArgumentOutOfRangeException(nameof(index));
             return default;
         }
 
@@ -52,7 +52,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (!index.IsFromEnd)
@@ -67,7 +67,7 @@ namespace System.Linq
 
             if (!TryGetElementFromEnd(source, index.Value, out TSource? element))
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(nameof(index));
             }
 
             return element;
@@ -77,7 +77,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (source is IPartition<TSource> partition)
@@ -109,7 +109,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (!index.IsFromEnd)

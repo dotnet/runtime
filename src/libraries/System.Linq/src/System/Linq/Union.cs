@@ -15,12 +15,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
 
             if (second == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
 
             return first is UnionIterator<TSource> union && AreEqualityComparersEqual(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
@@ -59,15 +59,15 @@ namespace System.Linq
         {
             if (first is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
             if (second is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
             }
 
             return UnionByIterator(first, second, keySelector, comparer);

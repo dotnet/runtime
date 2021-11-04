@@ -14,12 +14,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
 
             if (second == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
 
             if (first is ICollection<TSource> firstCol && second is ICollection<TSource> secondCol)

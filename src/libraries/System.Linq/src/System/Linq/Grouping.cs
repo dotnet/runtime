@@ -127,7 +127,7 @@ namespace System.Linq
             {
                 if (index < 0 || index >= _count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(nameof(index));
                 }
 
                 return _elements[index];
@@ -152,19 +152,19 @@ namespace System.Linq
         {
             if (source is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
             }
             if (elementSelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(elementSelector));
             }
             if (resultSelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(resultSelector));
             }
 
             _source = source;
@@ -194,15 +194,15 @@ namespace System.Linq
         {
             if (source is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
             }
             if (resultSelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(resultSelector));
             }
 
             _source = source;
@@ -231,15 +231,15 @@ namespace System.Linq
         {
             if (source is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
             }
             if (elementSelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(elementSelector));
             }
 
             _source = source;
@@ -264,11 +264,11 @@ namespace System.Linq
         {
             if (source is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
             }
 
             _source = source;

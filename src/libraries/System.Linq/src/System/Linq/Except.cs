@@ -11,12 +11,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
 
             if (second == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
 
             return ExceptIterator(first, second, null);
@@ -26,12 +26,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
 
             if (second == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
 
             return ExceptIterator(first, second, comparer);
@@ -62,15 +62,15 @@ namespace System.Linq
         {
             if (first is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+                ThrowHelper.ThrowArgumentNullException(nameof(first));
             }
             if (second is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+                ThrowHelper.ThrowArgumentNullException(nameof(second));
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
             }
 
             return ExceptByIterator(first, second, keySelector, comparer);
