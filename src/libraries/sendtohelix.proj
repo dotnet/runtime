@@ -70,7 +70,7 @@
       <_Scenarios Include="$(_Scenarios.Split(','))" />
 
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
-      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps'">
+      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BaseProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BaseProjectsToBuild>
@@ -86,8 +86,18 @@
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>
 
+    <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
+    <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildiosapps'))' == 'true'">
+      <_TestUsingWorkloadsValues Include="false" />
+
+      <_BuildiOSAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildiOSApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingWorkloadsValues.Identity)</AdditionalProperties>
+        <AdditionalProperties Condition="'$(NeedsToBuildAppsOnHelix)' != ''">%(_BuildiOSAppsProjectsToBuild.AdditionalProperties);NeedsToBuildAppsOnHelix=$(NeedsToBuildAppsOnHelix)</AdditionalProperties>
+      </_BuildiOSAppsProjectsToBuild>
+    </ItemGroup>
+
     <ItemGroup>
-      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
+      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -122,7 +132,7 @@
     <Error Condition="!Exists('$(TestEnvFilePath)')" Text="File $(TestEnvFilePath) not found!" />
   </Target>
 
-  <Target Condition="'$(Scenarios)' != '' and '$(TargetOS)' != 'Browser'" Name="CreateAllScenarioTestEnvFiles">
+  <Target Condition="'$(Scenarios)' != '' and '$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator'" Name="CreateAllScenarioTestEnvFiles">
     <!-- This target creates one __TestEnv file for each of the scenarios in the $(Scenarios) comma-separated list. -->
 
     <Message Importance="High" Text="Creating per-scenario TestEnv files for scenarios $(Scenarios)" />

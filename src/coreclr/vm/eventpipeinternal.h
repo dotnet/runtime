@@ -8,92 +8,86 @@
 
 // TODO: Maybe we should move the other types that are used on PInvoke here?
 
-class EventPipeInternal
+enum class ActivityControlCode
 {
-private:
-    enum class ActivityControlCode
-    {
-        EVENT_ACTIVITY_CONTROL_GET_ID = 1,
-        EVENT_ACTIVITY_CONTROL_SET_ID = 2,
-        EVENT_ACTIVITY_CONTROL_CREATE_ID = 3,
-        EVENT_ACTIVITY_CONTROL_GET_SET_ID = 4,
-        EVENT_ACTIVITY_CONTROL_CREATE_SET_ID = 5
-    };
-
-    struct EventPipeEventInstanceData
-    {
-        void *ProviderID;
-        unsigned int EventID;
-        unsigned int ThreadID;
-        LARGE_INTEGER TimeStamp;
-        GUID ActivityId;
-        GUID RelatedActivityId;
-        const BYTE *Payload;
-        unsigned int PayloadLength;
-    };
-
-    struct EventPipeSessionInfo
-    {
-        FILETIME StartTimeAsUTCFileTime;
-        LARGE_INTEGER StartTimeStamp;
-        LARGE_INTEGER TimeStampFrequency;
-    };
-
-public:
-    //!
-    //! Sets the sampling rate and enables the event pipe for the specified configuration.
-    //!
-    static UINT64 QCALLTYPE Enable(
-        __in_z LPCWSTR outputFile,
-        EventPipeSerializationFormat format,
-        UINT32 circularBufferSizeInMB,
-        /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
-        UINT32 numProviders);
-
-    //!
-    //! Disables the specified session Id.
-    //!
-    static void QCALLTYPE Disable(UINT64 sessionID);
-
-    static bool QCALLTYPE GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo);
-
-    static INT_PTR QCALLTYPE CreateProvider(
-        __in_z LPCWSTR providerName,
-        EventPipeCallback pCallbackFunc);
-
-    static INT_PTR QCALLTYPE DefineEvent(
-        INT_PTR provHandle,
-        UINT32 eventID,
-        __int64 keywords,
-        UINT32 eventVersion,
-        UINT32 level,
-        void *pMetadata,
-        UINT32 metadataLength);
-
-    static INT_PTR QCALLTYPE GetProvider(
-        __in_z LPCWSTR providerName);
-
-    static void QCALLTYPE DeleteProvider(
-        INT_PTR provHandle);
-
-    static int QCALLTYPE EventActivityIdControl(
-        uint32_t controlCode,
-        GUID *pActivityId);
-
-    static void QCALLTYPE WriteEventData(
-        INT_PTR eventHandle,
-        EventData *pEventData,
-        UINT32 eventDataCount,
-        LPCGUID pActivityId, LPCGUID pRelatedActivityId);
-
-    static bool QCALLTYPE GetNextEvent(
-        UINT64 sessionID,
-        EventPipeEventInstanceData *pInstance);
-
-    static HANDLE QCALLTYPE GetWaitHandle(
-        UINT64 sessionID);
-
+    EVENT_ACTIVITY_CONTROL_GET_ID = 1,
+    EVENT_ACTIVITY_CONTROL_SET_ID = 2,
+    EVENT_ACTIVITY_CONTROL_CREATE_ID = 3,
+    EVENT_ACTIVITY_CONTROL_GET_SET_ID = 4,
+    EVENT_ACTIVITY_CONTROL_CREATE_SET_ID = 5
 };
+
+struct EventPipeEventInstanceData
+{
+    void *ProviderID;
+    unsigned int EventID;
+    unsigned int ThreadID;
+    LARGE_INTEGER TimeStamp;
+    GUID ActivityId;
+    GUID RelatedActivityId;
+    const BYTE *Payload;
+    unsigned int PayloadLength;
+};
+
+struct EventPipeSessionInfo
+{
+    FILETIME StartTimeAsUTCFileTime;
+    LARGE_INTEGER StartTimeStamp;
+    LARGE_INTEGER TimeStampFrequency;
+};
+
+//!
+//! Sets the sampling rate and enables the event pipe for the specified configuration.
+//!
+extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
+    __in_z LPCWSTR outputFile,
+    EventPipeSerializationFormat format,
+    UINT32 circularBufferSizeInMB,
+    /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
+    UINT32 numProviders);
+
+//!
+//! Disables the specified session Id.
+//!
+extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID);
+
+extern "C" bool QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo);
+
+extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
+    __in_z LPCWSTR providerName,
+    EventPipeCallback pCallbackFunc);
+
+extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
+    INT_PTR provHandle,
+    UINT32 eventID,
+    __int64 keywords,
+    UINT32 eventVersion,
+    UINT32 level,
+    void *pMetadata,
+    UINT32 metadataLength);
+
+extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(
+    __in_z LPCWSTR providerName);
+
+extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(
+    INT_PTR provHandle);
+
+extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(
+    uint32_t controlCode,
+    GUID *pActivityId);
+
+extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
+    INT_PTR eventHandle,
+    EventData *pEventData,
+    UINT32 eventDataCount,
+    LPCGUID pActivityId, LPCGUID pRelatedActivityId);
+
+extern "C" bool QCALLTYPE EventPipeInternal_GetNextEvent(
+    UINT64 sessionID,
+    EventPipeEventInstanceData *pInstance);
+
+extern "C" HANDLE QCALLTYPE EventPipeInternal_GetWaitHandle(
+    UINT64 sessionID);
 
 #endif // FEATURE_PERFTRACING
 

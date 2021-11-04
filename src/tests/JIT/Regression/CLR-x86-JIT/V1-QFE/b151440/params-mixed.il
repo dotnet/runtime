@@ -19,7 +19,7 @@
   .ver 0:0:0:0
 }
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_params_mixed
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed noinlining

@@ -4346,6 +4346,11 @@ protected:
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
+
+#ifdef DEBUG
+    const char* impGetIntrinsicName(CorInfoIntrinsics intrinsicID);
+#endif // DEBUG
+
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
@@ -5460,6 +5465,8 @@ public:
     // assignment.)
     void fgValueNumberTree(GenTree* tree);
 
+    void fgValueNumberAssignment(GenTreeOp* tree);
+
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 
@@ -6137,10 +6144,10 @@ public:
 #endif
 
 public:
-    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
+    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
-    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
+    Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
+    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
 
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
@@ -7311,6 +7318,7 @@ public:
 #define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
 #define OMF_HAS_FROZEN_STRING 0x00000400    // Method has a frozen string (REF constant int), currently only on CoreRT.
+#define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 
     bool doesMethodHaveFatPointer()
     {
@@ -7396,6 +7404,16 @@ public:
         optMethodFlags |= OMF_HAS_PATCHPOINT;
     }
 
+    bool doesMethodHavePartialCompilationPatchpoints()
+    {
+        return (optMethodFlags & OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT) != 0;
+    }
+
+    void setMethodHasPartialCompilationPatchpoint()
+    {
+        optMethodFlags |= OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT;
+    }
+
     unsigned optMethodFlags;
 
     bool doesMethodHaveNoReturnCalls()
@@ -7452,8 +7470,9 @@ public:
     // Redundant branch opts
     //
     PhaseStatus optRedundantBranches();
+    bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
-    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
 
 #if ASSERTION_PROP
@@ -7965,6 +7984,9 @@ public:
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
+    bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
+
+    var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
@@ -8036,9 +8058,16 @@ public:
     CORINFO_EE_INFO* eeGetEEInfo();
 
     // Gets the offset of a SDArray's first element
-    unsigned eeGetArrayDataOffset(var_types type);
-    // Gets the offset of a MDArray's first element
-    unsigned eeGetMDArrayDataOffset(var_types type, unsigned rank);
+    static unsigned eeGetArrayDataOffset();
+
+    // Get the offset of a MDArray's first element
+    static unsigned eeGetMDArrayDataOffset(unsigned rank);
+
+    // Get the offset of a MDArray's dimension length for a given dimension.
+    static unsigned eeGetMDArrayLengthOffset(unsigned rank, unsigned dimension);
+
+    // Get the offset of a MDArray's lower bound for a given dimension.
+    static unsigned eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension);
 
     GenTree* eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig);
 

@@ -4,7 +4,7 @@
 
 using System;
 
-public class Test {
+public class Test_Collect {
 	public static int Main() {
 
 		Object obj1 = new Object();

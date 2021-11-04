@@ -26,10 +26,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCall = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
+            public List<ElementAccessExpressionSyntax> elementAccess = new List<ElementAccessExpressionSyntax>();
             public List<object> argValues = new List<object>();
             public Dictionary<string, JObject> memberAccessValues = new Dictionary<string, JObject>();
             private int visitCount;
             public bool hasMethodCalls;
+            public bool hasElementAccesses;
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -44,7 +46,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (node is MemberAccessExpressionSyntax maes
                         && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
                         && !(node.Parent is MemberAccessExpressionSyntax)
-                        && !(node.Parent is InvocationExpressionSyntax))
+                        && !(node.Parent is InvocationExpressionSyntax)
+                        && !(node.Parent is ElementAccessExpressionSyntax))
                     {
                         memberAccesses.Add(maes);
                     }
@@ -52,6 +55,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (node is IdentifierNameSyntax identifier
                         && !(identifier.Parent is MemberAccessExpressionSyntax)
                         && !(identifier.Parent is InvocationExpressionSyntax)
+                        && !(node.Parent is ElementAccessExpressionSyntax)
                         && !identifiers.Any(x => x.Identifier.Text == identifier.Identifier.Text))
                     {
                         identifiers.Add(identifier);
@@ -65,15 +69,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                     hasMethodCalls = true;
                 }
 
+                if (node is ElementAccessExpressionSyntax)
+                {
+                    if (visitCount == 1)
+                        elementAccess.Add(node as ElementAccessExpressionSyntax);
+                    hasElementAccesses = true;
+                }
+
                 if (node is AssignmentExpressionSyntax)
                     throw new Exception("Assignment is not implemented yet");
                 base.Visit(node);
             }
 
-            public SyntaxTree ReplaceVars(SyntaxTree syntaxTree, IEnumerable<JObject> ma_values, IEnumerable<JObject> id_values, IEnumerable<JObject> method_values)
+            public SyntaxTree ReplaceVars(SyntaxTree syntaxTree, IEnumerable<JObject> ma_values, IEnumerable<JObject> id_values, IEnumerable<JObject> method_values, IEnumerable<JObject> ea_values)
             {
                 var memberAccessToParamName = new Dictionary<string, string>();
                 var methodCallToParamName = new Dictionary<string, string>();
+                var elementAccessToParamName = new Dictionary<string, string>();
 
                 CompilationUnitSyntax root = syntaxTree.GetCompilationUnitRoot();
 
@@ -105,6 +117,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string prefix = iesStr.Trim().Replace(".", "_").Replace("(", "_").Replace(")", "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
+                    }
+
+                    return SyntaxFactory.IdentifierName(id_name);
+                });
+
+                // 1.2 Replace all this.a[x] occurrences with this_a_ABDE
+                root = root.ReplaceNodes(elementAccess, (ea, _) =>
+                {
+                    string eaStr = ea.ToString();
+                    if (!elementAccessToParamName.TryGetValue(eaStr, out string id_name))
+                    {
+                        // Generate a random suffix
+                        string suffix = Guid.NewGuid().ToString().Substring(0, 5);
+                        string prefix = eaStr.Trim().Replace(".", "_").Replace("[", "_").Replace("]", "_");
+                        id_name = $"{prefix}_{suffix}";
+                        elementAccessToParamName[eaStr] = id_name;
                     }
 
                     return SyntaxFactory.IdentifierName(id_name);
@@ -148,6 +176,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
 
+                if (ea_values != null)
+                {
+                    foreach ((ElementAccessExpressionSyntax eas, JObject value) in elementAccess.Zip(ea_values))
+                    {
+                        string node_str = eas.ToString();
+                        if (!elementAccessToParamName.TryGetValue(node_str, out string id_name))
+                        {
+                            throw new Exception($"BUG: Expected to find an id name for the element access string: {node_str}");
+                        }
+                        root = UpdateWithNewMethodParam(root, id_name, value);
+                    }
+                }
 
                 return syntaxTree.WithRootAndOptions(root, syntaxTree.Options);
 
@@ -281,6 +321,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
+        private static async Task<IList<JObject>> ResolveElementAccess(IEnumerable<ElementAccessExpressionSyntax> elementAccesses, Dictionary<string, JObject> memberAccessValues, MemberReferenceResolver resolver, CancellationToken token)
+        {
+            var values = new List<JObject>();
+            JObject index = null;
+            foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses.Reverse())
+            {
+                index = await resolver.Resolve(elementAccess, memberAccessValues, index, token);
+                if (index == null)
+                    throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
+            }
+            values.Add(index);
+            return values;
+        }
+
         [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/51202")]
         internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
@@ -330,7 +384,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             IList<JObject> identifierValues = await ResolveIdentifiers(findVarNMethodCall.identifiers, resolver, token);
 
-            syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null);
+            syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null, null);
 
             if (findVarNMethodCall.hasMethodCalls)
             {
@@ -340,7 +394,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 IList<JObject> methodValues = await ResolveMethodCalls(findVarNMethodCall.methodCall, findVarNMethodCall.memberAccessValues, resolver, token);
 
-                syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, methodValues);
+                syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, methodValues, null);
+            }
+
+            // eg. "elements[0]"
+            if (findVarNMethodCall.hasElementAccesses)
+            {
+                expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
+
+                findVarNMethodCall.VisitInternal(expressionTree);
+
+                IList<JObject> elementAccessValues = await ResolveElementAccess(findVarNMethodCall.elementAccess, findVarNMethodCall.memberAccessValues, resolver, token);
+
+                syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }
 
             expressionTree = GetExpressionFromSyntaxTree(syntaxTree);

@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -114,6 +116,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
             internal void Refine(TPredicate other)
             {
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    StackHelper.CallOnEmptyStack(Refine, other);
+                    return;
+                }
+
                 if (_left is null && _right is null)
                 {
                     // If this is a leaf node create left and/or right children for the new predicate
@@ -187,6 +195,12 @@ namespace System.Text.RegularExpressions.Symbolic
             /// </summary>
             private void ExtendLeft()
             {
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    StackHelper.CallOnEmptyStack(ExtendLeft);
+                    return;
+                }
+
                 if (_left is null && _right is null)
                 {
                     _left = new PartitionTree(_solver, _pred, null, null);
@@ -204,6 +218,12 @@ namespace System.Text.RegularExpressions.Symbolic
             /// </summary>
             private void ExtendRight()
             {
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    StackHelper.CallOnEmptyStack(ExtendRight);
+                    return;
+                }
+
                 if (_left is null && _right is null)
                 {
                     _right = new PartitionTree(_solver, _pred, null, null);

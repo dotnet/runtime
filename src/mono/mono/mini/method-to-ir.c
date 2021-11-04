@@ -2587,8 +2587,7 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	EMIT_NEW_AOTCONST (cfg, slot_ins, MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
 
 	// Can't add basic blocks during decompose/interp entry mode etc.
-	// Can't add basic blocks to the gsharedvt init block either
-	if (cfg->after_method_to_ir || entry->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO || cfg->interp_entry_only) {
+	if (cfg->after_method_to_ir || cfg->interp_entry_only) {
 		MonoInst *args [2] = { rgctx, slot_ins };
 		if (entry->in_mrgctx)
 			call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
@@ -3586,12 +3585,24 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
 	}
 
+	if (cfg->llvm_only) {
+		if (virtual_) {
+			MonoInst *args [ ] = {
+				obj,
+				target,
+				emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD)
+			};
+			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate_virtual, args);
+			return obj;
+		}
+	}
+
 	/* 
 	 * To avoid looking up the compiled code belonging to the target method
 	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
 	 * store it, and we fill it after the method has been compiled.
 	 */
-	if (!method->dynamic) {
+	if (!method->dynamic && !cfg->llvm_only) {
 		MonoInst *code_slot_ins;
 
 		if (target_method_context_used) {
@@ -3614,20 +3625,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);
 	}
 
- 	if (cfg->llvm_only) {
-		if (virtual_) {
-			MonoInst *args [ ] = {
-				obj,
-				target,
-				emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD)
-			};
-			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate_virtual, args);
-		} else {
-			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, &obj);
-		}
-
-		return obj;
-	}
 	if (target_method_context_used || invoke_context_used) {
 		tramp_ins = emit_get_rgctx_dele_tramp (cfg, target_method_context_used | invoke_context_used, klass, method, virtual_, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
@@ -3650,6 +3647,15 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		else
 			trampoline = mono_create_delegate_trampoline_info (klass, method);
 		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
+	}
+
+	if (cfg->llvm_only) {
+		MonoInst *args [ ] = {
+			obj,
+			tramp_ins
+		};
+		mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, args);
+		return obj;
 	}
 
 	/* Set invoke_impl field */
@@ -6394,19 +6400,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_emit_method_call (cfg, wrapper, args, NULL);
 	}
 
-	/* FIRST CODE BLOCK */
-	NEW_BBLOCK (cfg, tblock);
-	tblock->cil_code = ip;
-	cfg->cbb = tblock;
-	cfg->ip = ip;
-
-	ADD_BBLOCK (cfg, tblock);
-
 	if (cfg->method == method) {
 		breakpoint_id = mono_debugger_method_has_breakpoint (method);
 		if (breakpoint_id) {
 			MONO_INST_NEW (cfg, ins, OP_BREAK);
 			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		if (!cfg->method->wrapper_type && header->num_clauses) {
+			for (int i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				/* Finally clauses are checked after the remove_finally pass */
+				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+					cfg->interp_entry_only = TRUE;
+			}
 		}
 	}
 
@@ -6416,9 +6425,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->bb_init = init_localsbb;
 	init_localsbb->real_offset = cfg->real_offset;
 	start_bblock->next_bb = init_localsbb;
-	init_localsbb->next_bb = cfg->cbb;
 	link_bblock (cfg, start_bblock, init_localsbb);
-	link_bblock (cfg, init_localsbb, cfg->cbb);
 	init_localsbb2 = init_localsbb;
 	cfg->cbb = init_localsbb;
 
@@ -6461,7 +6468,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (init_locals)
 			ins->flags |= MONO_INST_INIT;
 		*/
+		if (cfg->llvm_only) {
+			init_localsbb = cfg->cbb;
+			init_localsbb2 = cfg->cbb;
+		}
 	}
+
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		if (cfg->interp_entry_only)
+			emit_llvmonly_interp_entry (cfg, header);
+	}
+
+	/* FIRST CODE BLOCK */
+	NEW_BBLOCK (cfg, tblock);
+	tblock->cil_code = ip;
+	cfg->cbb = tblock;
+	cfg->ip = ip;
+
+	init_localsbb->next_bb = cfg->cbb;
+	link_bblock (cfg, init_localsbb, cfg->cbb);
+
+	ADD_BBLOCK (cfg, tblock);
 
 	CHECK_CFG_EXCEPTION;
 
@@ -6512,19 +6539,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_ADD_INS (cfg->cbb, arg_ins);
 			MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
 		}
-	}
-
-	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		if (!cfg->method->wrapper_type && header->num_clauses) {
-			for (int i = 0; i < header->num_clauses; ++i) {
-				MonoExceptionClause *clause = &header->clauses [i];
-				/* Finally clauses are checked after the remove_finally pass */
-				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
-					cfg->interp_entry_only = TRUE;
-			}
-		}
-		if (cfg->interp_entry_only)
-			emit_llvmonly_interp_entry (cfg, header);
 	}
 
 	skip_dead_blocks = !dont_verify;
@@ -7201,7 +7215,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean direct_icall; direct_icall = FALSE;
 			gboolean tailcall_calli; tailcall_calli = FALSE;
 			gboolean noreturn; noreturn = FALSE;
+#ifdef TARGET_WASM
 			gboolean needs_stack_walk; needs_stack_walk = FALSE;
+#endif
 
 			// Variables shared by CEE_CALLI and CEE_CALL/CEE_CALLVIRT.
 			common_call = FALSE;
@@ -7230,7 +7246,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				printf ("cmethod = %s\n", mono_method_get_full_name (cmethod));
 
 			MonoMethod *cil_method; cil_method = cmethod;
-				
 			if (constrained_class) {
 				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class))
 					// FIXME:
@@ -7248,7 +7263,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					g_assert (cmethod);
 				}
 			}
-					
+
 			if (!dont_verify && !cfg->skip_visibility) {
 				MonoMethod *target_method = cil_method;
 				if (method->is_inflated) {
@@ -7267,9 +7282,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* Use the interpreter instead */
 					cfg->exception_message = g_strdup ("stack walk");
 					cfg->disable_llvm = TRUE;
-				} else {
+				}
+#ifdef TARGET_WASM
+				else {
 					needs_stack_walk = TRUE;
 				}
+#endif
 			}
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {

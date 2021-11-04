@@ -31,9 +31,9 @@ export class StringDecoder {
         cwraps.mono_wasm_string_get_data(mono_string, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = mono_wasm_empty_string;
-        const lengthBytes = Module.HEAP32[pLengthBytes / 4],
-            pChars = Module.HEAP32[ppChars / 4],
-            isInterned = Module.HEAP32[pIsInterned / 4];
+        const lengthBytes = Module.HEAP32[pLengthBytes >>> 2],
+            pChars = Module.HEAP32[ppChars >>> 2],
+            isInterned = Module.HEAP32[pIsInterned >>> 2];
 
         if (pLengthBytes && pChars) {
             if (
@@ -186,9 +186,9 @@ export function js_string_to_mono_string(string: string): MonoString | null {
     return js_string_to_mono_string_new(string);
 }
 
-function js_string_to_mono_string_new(string: string) {
+export function js_string_to_mono_string_new(string: string) : MonoString {
     const buffer = Module._malloc((string.length + 1) * 2);
-    const buffer16 = (<any>buffer / 2) | 0;
+    const buffer16 = (<any>buffer >>> 1) | 0;
     for (let i = 0; i < string.length; i++)
         Module.HEAP16[buffer16 + i] = string.charCodeAt(i);
     Module.HEAP16[buffer16 + string.length] = 0;

@@ -265,7 +265,6 @@ int LinearScan::BuildNode(GenTree* tree)
                 // everything is made explicit by adding casts.
                 assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
             }
-
             FALLTHROUGH;
 
         case GT_AND:
@@ -277,6 +276,12 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_ROR:
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
+            BuildDef(tree);
+            break;
+
+        case GT_BFIZ:
+            assert(tree->gtGetOp1()->OperIs(GT_CAST));
+            srcCount = BuildOperandUses(tree->gtGetOp1()->gtGetOp1());
             BuildDef(tree);
             break;
 

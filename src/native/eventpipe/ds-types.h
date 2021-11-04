@@ -44,6 +44,7 @@ typedef struct _EventPipeStopTracingCommandPayload EventPipeStopTracingCommandPa
 typedef enum {
 	DS_DUMP_COMMANDID_RESERVED = 0x00,
 	DS_DUMP_COMMANDID_GENERATE_CORE_DUMP = 0x01,
+	DS_DUMP_COMMANDID_GENERATE_CORE_DUMP2 = 0x02,
 	// future
 } DiagnosticsDumpCommandId;
 

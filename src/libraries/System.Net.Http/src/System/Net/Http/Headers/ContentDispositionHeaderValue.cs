@@ -21,8 +21,8 @@ namespace System.Net.Http.Headers
         private const string readDate = "read-date";
         private const string size = "size";
 
-        // Use ObjectCollection<T> since we may have multiple parameters with the same name.
-        private ObjectCollection<NameValueHeaderValue>? _parameters;
+        // Use UnvalidatedObjectCollection<T> since we may have multiple parameters with the same name.
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _parameters;
         private string _dispositionType = null!;
 
         #endregion Fields
@@ -39,7 +39,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         public string? Name
         {
@@ -234,7 +234,7 @@ namespace System.Net.Http.Headers
             {
                 current++; // Skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    (ObjectCollection<NameValueHeaderValue>)contentDispositionHeader.Parameters);
+                    (UnvalidatedObjectCollection<NameValueHeaderValue>)contentDispositionHeader.Parameters);
 
                 if (parameterLength == 0)
                 {

@@ -35,6 +35,12 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
             public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] out int[] res);
 
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_char_array", CharSet = CharSet.Unicode)]
+            public static partial int SumChars(char[] chars, int numElements);
+
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_char_array", CharSet = CharSet.Unicode)]
+            public static partial void ReverseChars([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref char[] chars, int numElements);
+
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
             public static partial int SumStringLengths([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] strArray);
 
@@ -119,6 +125,22 @@ namespace DllImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void CharArrayMarshalledToNativeAsExpected()
+        {
+            char[] array = CharacterTests.CharacterMappings().Select(o => (char)o[0]).ToArray();
+            Assert.Equal(array.Sum(c => c), NativeExportsNE.Arrays.SumChars(array, array.Length));
+        }
+
+        [Fact]
+        public void CharArrayRefParameter()
+        {
+            char[] array = CharacterTests.CharacterMappings().Select(o => (char)o[0]).ToArray();
+            var newArray = array;
+            NativeExportsNE.Arrays.ReverseChars(ref newArray, array.Length);
+            Assert.Equal(array.Reverse(), newArray);
+        }
+
+        [Fact]
         public void ArraysReturnedFromNative()
         {
             int start = 5;
@@ -154,14 +176,14 @@ namespace DllImportGenerator.IntegrationTests
                 null
             };
         }
-        
+
         [Fact]
         public void ByValueArrayWithElementMarshalling()
         {
             var strings = GetStringArray();
             Assert.Equal(strings.Sum(str => str?.Length ?? 0), NativeExportsNE.Arrays.SumStringLengths(strings));
         }
-        
+
         [Fact]
         public void ByValueNullArrayWithElementMarshalling()
         {
@@ -174,7 +196,7 @@ namespace DllImportGenerator.IntegrationTests
             var strings = GetStringArray();
             var expectedStrings = strings.Select(s => ReverseChars(s)).ToArray();
             NativeExportsNE.Arrays.ReverseStrings_Ref(ref strings, out _);
-            
+
             Assert.Equal((IEnumerable<string>)expectedStrings, strings);
         }
 
@@ -195,7 +217,7 @@ namespace DllImportGenerator.IntegrationTests
         {
             string[] strings = null;
             NativeExportsNE.Arrays.ReverseStrings_Ref(ref strings, out _);
-            
+
             Assert.Null(strings);
         }
 
@@ -254,6 +276,7 @@ namespace DllImportGenerator.IntegrationTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60624", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsArm64Process))]
         public void ArrayWithSimpleNonBlittableTypeMarshalling(bool result)
         {
             var boolValues = new[]
@@ -301,7 +324,7 @@ namespace DllImportGenerator.IntegrationTests
             numRowsArray.AsSpan().Fill(numRows);
 
             int[][] transposed = NativeExportsNE.Arrays.TransposeMatrix(matrix, numRowsArray, numColumns);
-            
+
             for (int i = 0; i < numRows; i++)
             {
                 for (int j = 0; j < numColumns; j++)

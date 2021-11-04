@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
+    <Compile Include="System\Threading\StackHelper.cs" />
     <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Capture.cs" />
     <Compile Include="System\Text\RegularExpressions\CaptureCollection.cs" />
@@ -17,8 +18,8 @@
     <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
-    <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Debug.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
@@ -53,7 +54,6 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermClassifier.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\RegexNodeToSymbolicConverter.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\StackHelper.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicMatch.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicNFA.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexBuilder.cs" />

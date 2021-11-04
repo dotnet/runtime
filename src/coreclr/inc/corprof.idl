@@ -2602,7 +2602,7 @@ interface ICorProfilerCallback10 : ICorProfilerCallback9
 ]
 interface ICorProfilerCallback11 : ICorProfilerCallback10
 {
-    HRESULT LoadAsNotficationOnly(BOOL *pbNotificationOnly);
+    HRESULT LoadAsNotificationOnly(BOOL *pbNotificationOnly);
 }
 
 /*

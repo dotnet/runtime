@@ -19,7 +19,7 @@
 // Image base: 0x04800000
 
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_b89409
        extends [mscorlib]System.Object
 {
 
@@ -33,11 +33,11 @@
   // Code size       22 (0x16)
   .maxstack  8
   IL_0000:  ldc.i4     2147483647
-  IL_0002:  stsfld     int32 Test::_a
+  IL_0002:  stsfld     int32 Test_b89409::_a
   IL_0007:  ldc.i4.s   10
-  IL_0009:  stsfld     int32 Test::_b
+  IL_0009:  stsfld     int32 Test_b89409::_b
   IL_000e:  ldc.i4.s   30
-  IL_0010:  stsfld     int32 Test::_c
+  IL_0010:  stsfld     int32 Test_b89409::_c
   IL_0015:  ret
 } // end of method Test::.cctor
 
@@ -60,11 +60,11 @@
            int32 V_1,
            int32 V_2)
   .try {
-  IL_0000:  ldsfld     int32 Test::_a
+  IL_0000:  ldsfld     int32 Test_b89409::_a
   IL_0005:  stloc.0
-  IL_0006:  ldsfld     int32 Test::_b
+  IL_0006:  ldsfld     int32 Test_b89409::_b
   IL_000b:  stloc.1
-  IL_000c:  ldsfld     int32 Test::_c
+  IL_000c:  ldsfld     int32 Test_b89409::_c
   IL_0011:  stloc.2
   IL_0012:  ldloc.0
   IL_0013:  ldloc.1

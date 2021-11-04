@@ -112,13 +112,36 @@ namespace System.Text.RegularExpressions.Tests
                 return await RegexGeneratorHelper.SourceGenRegexAsync(pattern, options, matchTimeout);
             }
 
+            // TODO-NONBACKTRACKING
+            // - Handle NonBacktrackingSourceGenerated
+
             return
                 options is null ? new Regex(pattern, RegexOptions.Compiled | OptionsFromEngine(engine)) :
                 matchTimeout is null ? new Regex(pattern, options.Value | OptionsFromEngine(engine)) :
                 new Regex(pattern, options.Value | OptionsFromEngine(engine), matchTimeout.Value);
+        }
+
+        public static async Task<Regex[]> GetRegexesAsync(RegexEngine engine, params (string pattern, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
+        {
+            if (engine == RegexEngine.SourceGenerated)
+            {
+                return await RegexGeneratorHelper.SourceGenRegexAsync(regexes);
+            }
 
             // TODO-NONBACKTRACKING
             // - Handle NonBacktrackingSourceGenerated
+
+            var results = new Regex[regexes.Length];
+            for (int i = 0; i < regexes.Length; i++)
+            {
+                (string pattern, RegexOptions? options, TimeSpan? matchTimeout) = regexes[i];
+                results[i] =
+                    options is null ? new Regex(pattern, RegexOptions.Compiled | OptionsFromEngine(engine)) :
+                    matchTimeout is null ? new Regex(pattern, options.Value | OptionsFromEngine(engine)) :
+                    new Regex(pattern, options.Value | OptionsFromEngine(engine), matchTimeout.Value);
+            }
+
+            return results;
         }
 
         public static RegexOptions OptionsFromEngine(RegexEngine engine) => engine switch

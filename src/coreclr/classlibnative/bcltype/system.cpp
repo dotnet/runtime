@@ -52,7 +52,7 @@ FCIMPLEND;
 
 
 
-VOID QCALLTYPE SystemNative::Exit(INT32 exitcode)
+extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
 {
     QCALL_CONTRACT;
 
@@ -89,23 +89,6 @@ FCIMPL0(INT32, SystemNative::GetExitCode)
     return GetLatchedExitCode();
 }
 FCIMPLEND
-
-void QCALLTYPE SystemNative::_GetCommandLine(QCall::StringHandleOnStack retString)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    LPCWSTR commandLine;
-
-    commandLine = WszGetCommandLine();
-    if (commandLine==NULL)
-        COMPlusThrowOM();
-
-    retString.Set(commandLine);
-
-    END_QCALL;
-}
 
 FCIMPL0(Object*, SystemNative::GetCommandLineArgs)
 {
@@ -174,7 +157,7 @@ FCIMPL1(ReflectMethodObject*, SystemNative::GetMethodFromStackTrace, ArrayBase* 
 }
 FCIMPLEND
 
-INT32 QCALLTYPE SystemNative::GetProcessorCount()
+extern "C" INT32 QCALLTYPE Environment_GetProcessorCount()
 {
     QCALL_CONTRACT;
 
@@ -432,7 +415,7 @@ FCIMPLEND
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-void QCALLTYPE SystemNative::X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
+extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
 {
     QCALL_CONTRACT;
 

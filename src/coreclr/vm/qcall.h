@@ -45,8 +45,7 @@
 // class Foo {
 //
 //  // All QCalls should have the following DllImport and SuppressUnmanagedCodeSecurity attributes
-//  [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-//  [SuppressUnmanagedCodeSecurity]
+//  [DllImport(JitHelpers.QCall, EntryPoint = "FooNative_Bar", CharSet = CharSet.Unicode)]
 //  // QCalls should always be static extern.
 //  private static extern bool Bar(int flags, string inString, StringHandleOnStack retString);
 //
@@ -69,17 +68,10 @@
 // QCall example - unmanaged part (do not replicate the comments into your actual QCall implementation):
 // -----------------------------------------------------------------------------------------------------
 //
-// The entrypoints of all QCalls has to be registered in tables in vm\ecall.cpp using QCFuncEntry macro,
-// For example: QCFuncElement("Bar", FooNative::Bar)
+// The entrypoints of all QCalls has to be registered in tables in vm\qcallentrypoints.cpp using the DllImportEntry macro,
+// For example: DllImportEntry(FooNative_Bar)
 //
-// class FooNative {
-// public:
-//      // All QCalls should be static and should be tagged with QCALLTYPE
-//      static
-//      BOOL QCALLTYPE Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString);
-// };
-//
-// BOOL QCALLTYPE FooNative::Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
+// extern "C" BOOL QCALLTYPE FooNative_Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
 // {
 //      // All QCalls should have QCALL_CONTRACT. It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
 //      QCALL_CONTRACT;
@@ -342,5 +334,7 @@ public:
 };
 
 typedef void* EnregisteredTypeHandle;
+
+extern const void* QCallResolveDllImport(const char* name);
 
 #endif //__QCall_h__

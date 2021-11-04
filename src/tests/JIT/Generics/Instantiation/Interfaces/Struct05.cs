@@ -280,7 +280,7 @@ public struct GenJaggedObjectArray : IGenSubJaggedObjectArray
 }
 
 
-public class Test
+public class Test_Struct05
 {
     public static int counter = 0;
     public static bool result = true;

@@ -3,11 +3,9 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -15,7 +13,7 @@ namespace DllImportGenerator.UnitTests
 {
     public class AdditionalAttributesOnStub
     {
-        [Fact]
+        [ConditionalFact]
         public async Task SkipLocalsInitAdded()
         {
             string source = @"
@@ -45,7 +43,7 @@ struct Native
             Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SkipLocalsInitNotAddedOnForwardingStub()
         {
             string source = @"
@@ -66,47 +64,45 @@ partial class C
 
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
         {
-            yield return new object[] { ReferenceAssemblies.Net.Net50, true };
-            yield return new object[] { ReferenceAssemblies.NetCore.NetCoreApp31, false };
-            yield return new object[] { ReferenceAssemblies.NetStandard.NetStandard20, false };
-            yield return new object[] { ReferenceAssemblies.NetFramework.Net48.Default, false };
+            yield return new object[] { TestTargetFramework.Net, true };
+            yield return new object[] { TestTargetFramework.Net6, true };
+            yield return new object[] { TestTargetFramework.Net5, false };
+            yield return new object[] { TestTargetFramework.Core, false };
+            yield return new object[] { TestTargetFramework.Standard, false };
+            yield return new object[] { TestTargetFramework.Framework, false };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetDownlevelTargetFrameworks))]
-        public async Task SkipLocalsInitOnDownlevelTargetFrameworks(ReferenceAssemblies referenceAssemblies, bool expectSkipLocalsInit)
+        public async Task SkipLocalsInitOnDownlevelTargetFrameworks(TestTargetFramework targetFramework, bool expectSkipLocalsInit)
         {
-            string source = @"
+            string source = $@"
 using System.Runtime.InteropServices;
+{CodeSnippets.GeneratedDllImportAttributeDeclaration}
 namespace System.Runtime.InteropServices
-{
-    sealed class GeneratedDllImportAttribute : System.Attribute
-    {
-        public GeneratedDllImportAttribute(string a) { }
-    }
-
+{{
     sealed class NativeMarshallingAttribute : System.Attribute
-    {
-        public NativeMarshallingAttribute(System.Type nativeType) { }
-    }
-}
+    {{
+        public NativeMarshallingAttribute(System.Type nativeType) {{ }}
+    }}
+}}
 partial class C
-{
+{{
     [GeneratedDllImportAttribute(""DoesNotExist"")]
     public static partial S Method();
-}
+}}
 
 [NativeMarshalling(typeof(Native))]
 struct S
-{
-}
+{{
+}}
 
 struct Native
-{
-    public Native(S s) { }
-    public S ToManaged() { return default; }
-}";
-            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, referenceAssemblies);
+{{
+    public Native(S s) {{ }}
+    public S ToManaged() {{ return default; }}
+}}";
+            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
 
             Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
 
@@ -122,7 +118,7 @@ struct Native
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SkipLocalsInitNotAddedWhenDefinedAtModuleLevel()
         {
             string source = @"
@@ -154,7 +150,7 @@ struct Native
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SkipLocalsInitNotAddedWhenDefinedAtClassLevel()
         {
             string source = @"
@@ -186,7 +182,7 @@ struct Native
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SkipLocalsInitNotAddedWhenDefinedOnMethodByUser()
         {
             string source = @"
