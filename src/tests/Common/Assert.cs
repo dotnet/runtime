@@ -204,7 +204,7 @@ namespace Xunit
         [Obsolete("Did you mean to call Assert.Equal()")]
         public static new bool Equals(Object o1, Object o2)
         {
-            Assert.True(false, "Don\u2019t call this.");
+            Assert.True(false, "Don't call this.");
             throw new Exception();
         }
 
