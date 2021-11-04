@@ -116,6 +116,7 @@ def main(main_args):
         "-base_jit_path", base_jit_path,
         "-diff_jit_path", diff_jit_path,
         "-spmi_location", spmi_location,
+        "-error_limit", "100",
         "-log_level", "debug",
         "-log_file", log_file])
 
