@@ -162,7 +162,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static void ToString(ObjectCollection<NameValueHeaderValue>? values, char separator, bool leadingSeparator,
+        internal static void ToString(UnvalidatedObjectCollection<NameValueHeaderValue>? values, char separator, bool leadingSeparator,
             StringBuilder destination)
         {
             Debug.Assert(destination != null);
@@ -183,7 +183,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static int GetHashCode(ObjectCollection<NameValueHeaderValue>? values)
+        internal static int GetHashCode(UnvalidatedObjectCollection<NameValueHeaderValue>? values)
         {
             if ((values == null) || (values.Count == 0))
             {
@@ -263,7 +263,7 @@ namespace System.Net.Http.Headers
         // Returns the length of a name/value list, separated by 'delimiter'. E.g. "a=b, c=d, e=f" adds 3
         // name/value pairs to 'nameValueCollection' if 'delimiter' equals ','.
         internal static int GetNameValueListLength(string? input, int startIndex, char delimiter,
-            ObjectCollection<NameValueHeaderValue> nameValueCollection)
+            UnvalidatedObjectCollection<NameValueHeaderValue> nameValueCollection)
         {
             Debug.Assert(nameValueCollection != null);
             Debug.Assert(startIndex >= 0);
@@ -301,7 +301,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static NameValueHeaderValue? Find(ObjectCollection<NameValueHeaderValue>? values, string name)
+        internal static NameValueHeaderValue? Find(UnvalidatedObjectCollection<NameValueHeaderValue>? values, string name)
         {
             Debug.Assert((name != null) && (name.Length > 0));
 

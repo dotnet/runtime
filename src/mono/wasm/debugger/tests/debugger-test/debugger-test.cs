@@ -807,3 +807,25 @@ public class MyIncrementer
         return count + 1;
     }
 }
+
+public class DebuggerAttribute
+{
+    static int currentCount = 0;
+
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethod()
+    {
+        currentCount++;
+    }
+
+    public static void VisibleMethod()
+    {
+        currentCount++;
+    }
+
+    public static void Run()
+    {
+        HiddenMethod();
+        VisibleMethod();
+    }
+}

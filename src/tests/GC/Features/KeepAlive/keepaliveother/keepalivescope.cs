@@ -5,7 +5,7 @@
 
 using System;
 
-public class Test {
+public class Test_keepalivescope {
 
     public static int returnValue = 0;
 	public class Dummy {

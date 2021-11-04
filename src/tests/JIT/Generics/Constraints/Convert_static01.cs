@@ -34,7 +34,7 @@ public struct GenStruct<T> where T : IFoo
         return t;
     }
 }
-public class Test
+public class Test_Convert_static01
 {
     public static int counter = 0;
     public static bool result = true;

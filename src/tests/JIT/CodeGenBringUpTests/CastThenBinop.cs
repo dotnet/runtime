@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 
 // Test for https://github.com/dotnet/runtime/issues/13816
-public class Test
+public class Test_CastThenBinop
 {
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int DowncastOr(int a, int b)

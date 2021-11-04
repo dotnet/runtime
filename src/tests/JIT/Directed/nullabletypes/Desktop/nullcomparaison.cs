@@ -1553,7 +1553,7 @@ internal class NullableTest45
 
 
 
-internal class Test
+internal class Test_nullcomparaison
 {
     private static int Main()
     {

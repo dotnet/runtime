@@ -18,7 +18,7 @@ public struct RationalPolynomial
     public Rational b;
 }
 
-public class BringUpTest
+public class BringUpTest_StructFldAddr
 {
     const int Pass = 100;
     const int Fail = -1;

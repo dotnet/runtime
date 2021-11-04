@@ -16,7 +16,7 @@ public class D : IB {}
   
                                        
 
-class Test
+class Test_test137310
 {
 
 	public static void LoadC()

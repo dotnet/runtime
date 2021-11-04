@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class Test
+public class Test_Rotate
 {
     static ulong s_field;
 
@@ -226,7 +226,7 @@ public class Test
         return ((uint)usfield << amount) | ((uint)usfield >> (32 - amount));
     }
 
-    Test(ulong i, uint j, ushort k)
+    Test_Rotate(ulong i, uint j, ushort k)
     {
         field = i;
         volatile_field = j;
@@ -380,7 +380,7 @@ public class Test
             return Fail;
         }
 
-        Test test = new Test(0x123456789abcdef, 0x12345678, 0x1234);
+        Test_Rotate test = new Test_Rotate(0x123456789abcdef, 0x12345678, 0x1234);
 
         if (test.rol64field(11) != 0x1a2b3c4d5e6f7809)
         {

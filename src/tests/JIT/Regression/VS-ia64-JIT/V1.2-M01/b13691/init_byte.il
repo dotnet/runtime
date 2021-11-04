@@ -36,11 +36,11 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_init_byte
        extends [mscorlib]System.Object
 {
   .field private int8 m_ret
-  .field private static class Test global
+  .field private static class Test_init_byte global
   .method private hidebysig static int8  noinline1(int8 'ret') cil managed
   {
     // Code size       4 (0x4)
@@ -102,7 +102,7 @@
     .locals init (int8 V_0,
              int8 V_1)
     IL_0000:  ldloc.0
-    IL_0001:  call       int8 Test::noinline1(int8)
+    IL_0001:  call       int8 Test_init_byte::noinline1(int8)
     IL_0006:  stloc.1
     IL_0007:  br.s       IL_0009
 
@@ -117,7 +117,7 @@
     .locals init (int8 V_0,
              int8 V_1)
     IL_0000:  ldloca.s   V_0
-    IL_0002:  call       int8 Test::noinline2(int8&)
+    IL_0002:  call       int8 Test_init_byte::noinline2(int8&)
     IL_0007:  stloc.1
     IL_0008:  br.s       IL_000a
 
@@ -132,7 +132,7 @@
     .locals init (int8 V_0)
     IL_0000:  ldarg.0
     IL_0001:  ldloc.0
-    IL_0002:  call       int8 Test::noinline1(int8)
+    IL_0002:  call       int8 Test_init_byte::noinline1(int8)
     IL_0007:  stind.i1
     IL_0008:  ret
   } // end of method Test::test5
@@ -144,7 +144,7 @@
     .locals init (int8 V_0)
     IL_0000:  ldarg.0
     IL_0001:  ldloca.s   V_0
-    IL_0003:  call       int8 Test::noinline2(int8&)
+    IL_0003:  call       int8 Test_init_byte::noinline2(int8&)
     IL_0008:  stind.i1
     IL_0009:  ret
   } // end of method Test::test6
@@ -154,9 +154,9 @@
     // Code size       12 (0xc)
     .maxstack  2
     .locals init (int8 V_0)
-    IL_0000:  ldsfld     class Test Test::global
+    IL_0000:  ldsfld     class Test_init_byte Test_init_byte::global
     IL_0005:  ldloc.0
-    IL_0006:  stfld      int8 Test::m_ret
+    IL_0006:  stfld      int8 Test_init_byte::m_ret
     IL_000b:  ret
   } // end of method Test::test7
 
@@ -166,7 +166,7 @@
     .maxstack  4
     .locals init (int8 V_0,
              int8 V_1)
-    IL_0000:  ldsfld     class Test Test::global
+    IL_0000:  ldsfld     class Test_init_byte Test_init_byte::global
     IL_0005:  ldloc.0
     IL_0006:  ldc.i4.1
     IL_0007:  shr
@@ -178,7 +178,7 @@
     IL_0011:  sub
     IL_0012:  ldc.i4     0xb
     IL_0017:  add
-    IL_0018:  stfld      int8 Test::m_ret
+    IL_0018:  stfld      int8 Test_init_byte::m_ret
     IL_001d:  ret
   } // end of method Test::test8
 
@@ -187,10 +187,10 @@
     // Code size       17 (0x11)
     .maxstack  2
     .locals init (int8 V_0)
-    IL_0000:  ldsfld     class Test Test::global
+    IL_0000:  ldsfld     class Test_init_byte Test_init_byte::global
     IL_0005:  ldloc.0
-    IL_0006:  call       int8 Test::noinline1(int8)
-    IL_000b:  stfld      int8 Test::m_ret
+    IL_0006:  call       int8 Test_init_byte::noinline1(int8)
+    IL_000b:  stfld      int8 Test_init_byte::m_ret
     IL_0010:  ret
   } // end of method Test::test9
 
@@ -199,10 +199,10 @@
     // Code size       18 (0x12)
     .maxstack  2
     .locals init (int8 V_0)
-    IL_0000:  ldsfld     class Test Test::global
+    IL_0000:  ldsfld     class Test_init_byte Test_init_byte::global
     IL_0005:  ldloca.s   V_0
-    IL_0007:  call       int8 Test::noinline2(int8&)
-    IL_000c:  stfld      int8 Test::m_ret
+    IL_0007:  call       int8 Test_init_byte::noinline2(int8&)
+    IL_000c:  stfld      int8 Test_init_byte::m_ret
     IL_0011:  ret
   } // end of method Test::test10
 
@@ -255,7 +255,7 @@
     IL_0001:  ldarg.1
     IL_0002:  conv.i4
     IL_0003:  ldloc.0
-    IL_0004:  call       int8 Test::noinline1(int8)
+    IL_0004:  call       int8 Test_init_byte::noinline1(int8)
     IL_0009:  stelem.i1
     IL_000a:  ret
   } // end of method Test::test13
@@ -270,7 +270,7 @@
     IL_0001:  ldarg.1
     IL_0002:  conv.i4
     IL_0003:  ldloca.s   V_0
-    IL_0005:  call       int8 Test::noinline2(int8&)
+    IL_0005:  call       int8 Test_init_byte::noinline2(int8&)
     IL_000a:  stelem.i1
     IL_000b:  ret
   } // end of method Test::test14
@@ -343,7 +343,7 @@
     IL_0004:  ldarg.2
     IL_0005:  conv.i4
     IL_0006:  ldloc.0
-    IL_0007:  call       int8 Test::noinline1(int8)
+    IL_0007:  call       int8 Test_init_byte::noinline1(int8)
     IL_000c:  call       instance void int8[0...,0...,0...]::Set(int32,
                                                                  int32,
                                                                  int32,
@@ -366,7 +366,7 @@
     IL_0009:  ldarg.2
     IL_000a:  conv.u4
     IL_000b:  ldloca.s   V_0
-    IL_000d:  call       int8 Test::noinline2(int8&)
+    IL_000d:  call       int8 Test_init_byte::noinline2(int8&)
     IL_0012:  call       instance void int8[0...,0...,0...]::Set(int32,
                                                                  int32,
                                                                  int32,
@@ -425,7 +425,7 @@
     .locals init (int8 V_0,
              uint8 V_1)
     IL_0000:  ldloc.0
-    IL_0001:  call       int8 Test::noinline1(int8)
+    IL_0001:  call       int8 Test_init_byte::noinline1(int8)
     IL_0006:  conv.u1
     IL_0007:  stloc.1
     IL_0008:  br.s       IL_000a
@@ -442,7 +442,7 @@
     .locals init (int8 V_0,
              uint16 V_1)
     IL_0000:  ldloca.s   V_0
-    IL_0002:  call       int8 Test::noinline2(int8&)
+    IL_0002:  call       int8 Test_init_byte::noinline2(int8&)
     IL_0007:  conv.ovf.u2
     IL_0008:  stloc.1
     IL_0009:  br.s       IL_000b
@@ -461,7 +461,7 @@
              int8[] V_1,
              int8[0...,0...,0...] V_2,
              int8 V_3)
-    IL_0000:  call       int8 Test::test1()
+    IL_0000:  call       int8 Test_init_byte::test1()
     IL_0005:  brfalse.s  IL_001c
 
     IL_0007:  ldstr      "Error 101"
@@ -470,7 +470,7 @@
     IL_0016:  stloc.3
     IL_0017:  br         IL_0347
 
-    IL_001c:  call       int8 Test::test2()
+    IL_001c:  call       int8 Test_init_byte::test2()
     IL_0021:  ldc.i4     0xb
     IL_0026:  beq.s      IL_003d
 
@@ -480,7 +480,7 @@
     IL_0037:  stloc.3
     IL_0038:  br         IL_0347
 
-    IL_003d:  call       int8 Test::test3()
+    IL_003d:  call       int8 Test_init_byte::test3()
     IL_0042:  brfalse.s  IL_0059
 
     IL_0044:  ldstr      "Error 103"
@@ -489,7 +489,7 @@
     IL_0053:  stloc.3
     IL_0054:  br         IL_0347
 
-    IL_0059:  call       int8 Test::test4()
+    IL_0059:  call       int8 Test_init_byte::test4()
     IL_005e:  brfalse.s  IL_0075
 
     IL_0060:  ldstr      "Error 104"
@@ -501,7 +501,7 @@
     IL_0075:  ldc.i4     0x0
     IL_007a:  stloc.0
     IL_007b:  ldloca.s   V_0
-    IL_007d:  call       void Test::test5(int8&)
+    IL_007d:  call       void Test_init_byte::test5(int8&)
     IL_0082:  ldloc.0
     IL_0083:  brfalse.s  IL_009a
 
@@ -512,7 +512,7 @@
     IL_0095:  br         IL_0347
 
     IL_009a:  ldloca.s   V_0
-    IL_009c:  call       void Test::test6(int8&)
+    IL_009c:  call       void Test_init_byte::test6(int8&)
     IL_00a1:  ldloc.0
     IL_00a2:  brfalse.s  IL_00b9
 
@@ -522,9 +522,9 @@
     IL_00b3:  stloc.3
     IL_00b4:  br         IL_0347
 
-    IL_00b9:  call       void Test::test7()
-    IL_00be:  ldsfld     class Test Test::global
-    IL_00c3:  ldfld      int8 Test::m_ret
+    IL_00b9:  call       void Test_init_byte::test7()
+    IL_00be:  ldsfld     class Test_init_byte Test_init_byte::global
+    IL_00c3:  ldfld      int8 Test_init_byte::m_ret
     IL_00c8:  brfalse.s  IL_00df
 
     IL_00ca:  ldstr      "Error 107"
@@ -533,9 +533,9 @@
     IL_00d9:  stloc.3
     IL_00da:  br         IL_0347
 
-    IL_00df:  call       void Test::test8()
-    IL_00e4:  ldsfld     class Test Test::global
-    IL_00e9:  ldfld      int8 Test::m_ret
+    IL_00df:  call       void Test_init_byte::test8()
+    IL_00e4:  ldsfld     class Test_init_byte Test_init_byte::global
+    IL_00e9:  ldfld      int8 Test_init_byte::m_ret
     IL_00ee:  ldc.i4     0xb
     IL_00f3:  beq.s      IL_010a
 
@@ -545,9 +545,9 @@
     IL_0104:  stloc.3
     IL_0105:  br         IL_0347
 
-    IL_010a:  call       void Test::test9()
-    IL_010f:  ldsfld     class Test Test::global
-    IL_0114:  ldfld      int8 Test::m_ret
+    IL_010a:  call       void Test_init_byte::test9()
+    IL_010f:  ldsfld     class Test_init_byte Test_init_byte::global
+    IL_0114:  ldfld      int8 Test_init_byte::m_ret
     IL_0119:  brfalse.s  IL_0130
 
     IL_011b:  ldstr      "Error 109"
@@ -556,9 +556,9 @@
     IL_012a:  stloc.3
     IL_012b:  br         IL_0347
 
-    IL_0130:  call       void Test::test10()
-    IL_0135:  ldsfld     class Test Test::global
-    IL_013a:  ldfld      int8 Test::m_ret
+    IL_0130:  call       void Test_init_byte::test10()
+    IL_0135:  ldsfld     class Test_init_byte Test_init_byte::global
+    IL_013a:  ldfld      int8 Test_init_byte::m_ret
     IL_013f:  brfalse.s  IL_0156
 
     IL_0141:  ldstr      "Error 110"
@@ -572,7 +572,7 @@
     IL_015c:  stloc.1
     IL_015d:  ldloc.1
     IL_015e:  ldc.i4     0x1
-    IL_0163:  call       void Test::test11(int8[],
+    IL_0163:  call       void Test_init_byte::test11(int8[],
                                            int8)
     IL_0168:  ldloc.1
     IL_0169:  ldc.i4.1
@@ -587,7 +587,7 @@
 
     IL_0182:  ldloc.1
     IL_0183:  ldc.i4     0x2
-    IL_0188:  call       void Test::test12(int8[],
+    IL_0188:  call       void Test_init_byte::test12(int8[],
                                            int8)
     IL_018d:  ldloc.1
     IL_018e:  ldc.i4.2
@@ -603,7 +603,7 @@
 
     IL_01ac:  ldloc.1
     IL_01ad:  ldc.i4     0x3
-    IL_01b2:  call       void Test::test13(int8[],
+    IL_01b2:  call       void Test_init_byte::test13(int8[],
                                            int8)
     IL_01b7:  ldloc.1
     IL_01b8:  ldc.i4.3
@@ -618,7 +618,7 @@
 
     IL_01d1:  ldloc.1
     IL_01d2:  ldc.i4     0x4
-    IL_01d7:  call       void Test::test14(int8[],
+    IL_01d7:  call       void Test_init_byte::test14(int8[],
                                            int8)
     IL_01dc:  ldloc.1
     IL_01dd:  ldc.i4.4
@@ -641,7 +641,7 @@
     IL_01ff:  ldloc.2
     IL_0200:  ldc.i4     0x1
     IL_0205:  ldc.i4     0x1
-    IL_020a:  call       void Test::test15(int8[0...,0...,0...],
+    IL_020a:  call       void Test_init_byte::test15(int8[0...,0...,0...],
                                            int8,
                                            int8)
     IL_020f:  ldloc.2
@@ -662,7 +662,7 @@
     IL_022f:  ldloc.2
     IL_0230:  ldc.i4     0x2
     IL_0235:  ldc.i4     0x2
-    IL_023a:  call       void Test::test16(int8[0...,0...,0...],
+    IL_023a:  call       void Test_init_byte::test16(int8[0...,0...,0...],
                                            int8,
                                            int8)
     IL_023f:  ldloc.2
@@ -684,7 +684,7 @@
     IL_0264:  ldloc.2
     IL_0265:  ldc.i4     0x3
     IL_026a:  ldc.i4     0x3
-    IL_026f:  call       void Test::test17(int8[0...,0...,0...],
+    IL_026f:  call       void Test_init_byte::test17(int8[0...,0...,0...],
                                            int8,
                                            int8)
     IL_0274:  ldloc.2
@@ -705,7 +705,7 @@
     IL_0294:  ldloc.2
     IL_0295:  ldc.i4     0x4
     IL_029a:  ldc.i4     0x4
-    IL_029f:  call       void Test::test18(int8[0...,0...,0...],
+    IL_029f:  call       void Test_init_byte::test18(int8[0...,0...,0...],
                                            int8,
                                            int8)
     IL_02a4:  ldloc.2
@@ -723,7 +723,7 @@
     IL_02be:  stloc.3
     IL_02bf:  br         IL_0347
 
-    IL_02c4:  call       int8 Test::test19()
+    IL_02c4:  call       int8 Test_init_byte::test19()
     IL_02c9:  ldc.i4     0x0
     IL_02ce:  conv.i4
     IL_02cf:  beq.s      IL_02e3
@@ -734,7 +734,7 @@
     IL_02e0:  stloc.3
     IL_02e1:  br.s       IL_0347
 
-    IL_02e3:  call       uint8 Test::test20()
+    IL_02e3:  call       uint8 Test_init_byte::test20()
     IL_02e8:  ldc.i4     0xb
     IL_02ed:  conv.i4
     IL_02ee:  beq.s      IL_0302
@@ -745,7 +745,7 @@
     IL_02ff:  stloc.3
     IL_0300:  br.s       IL_0347
 
-    IL_0302:  call       uint8 Test::test21()
+    IL_0302:  call       uint8 Test_init_byte::test21()
     IL_0307:  brfalse.s  IL_031b
 
     IL_0309:  ldstr      "Error 121"
@@ -754,7 +754,7 @@
     IL_0318:  stloc.3
     IL_0319:  br.s       IL_0347
 
-    IL_031b:  call       uint16 Test::test22()
+    IL_031b:  call       uint16 Test_init_byte::test22()
     IL_0320:  conv.i4
     IL_0321:  brfalse.s  IL_0335
 
@@ -780,8 +780,8 @@
   {
     // Code size       11 (0xb)
     .maxstack  1
-    IL_0000:  newobj     instance void Test::.ctor()
-    IL_0005:  stsfld     class Test Test::global
+    IL_0000:  newobj     instance void Test_init_byte::.ctor()
+    IL_0005:  stsfld     class Test_init_byte Test_init_byte::global
     IL_000a:  ret
   } // end of method Test::.cctor
 
@@ -792,7 +792,7 @@
     .maxstack  2
     IL_0000:  ldarg.0
     IL_0001:  ldc.i4     0x0
-    IL_0006:  stfld      int8 Test::m_ret
+    IL_0006:  stfld      int8 Test_init_byte::m_ret
     IL_000b:  ldarg.0
     IL_000c:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0011:  ret

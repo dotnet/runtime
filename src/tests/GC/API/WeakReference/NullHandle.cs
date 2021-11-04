@@ -17,11 +17,11 @@ public class WR : WeakReference
     ~WR()
     {
         Console.WriteLine("Resurrected!");
-        Test.w = this;
+        Test_NullHandle.w = this;
     }
 }
 
-public class Test
+public class Test_NullHandle
 {
     // This weak reference gets resurrected by WR's destructor.
     public static WR w;
@@ -50,7 +50,7 @@ public class Test
         {
             numTests++;
             Console.WriteLine("Get Target Test");
-            Console.WriteLine(Test.w.Target);
+            Console.WriteLine(Test_NullHandle.w.Target);
             Console.WriteLine("Passed");
             numPassed++;
         }
@@ -64,7 +64,7 @@ public class Test
         {
             numTests++;
             Console.WriteLine("IsAlive Test");
-            bool b = Test.w.IsAlive;
+            bool b = Test_NullHandle.w.IsAlive;
             Console.WriteLine(b);
 
             if (!b)
@@ -82,7 +82,7 @@ public class Test
         {
             numTests++;
             Console.WriteLine("Set Target Test");
-            Test.w.Target = new Object();
+            Test_NullHandle.w.Target = new Object();
         }
         catch (InvalidOperationException)
         {

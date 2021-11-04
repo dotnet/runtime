@@ -26,10 +26,9 @@ namespace System.Net.Http.Headers
         private const string sharedMaxAgeString = "s-maxage";
 
         private static readonly HttpHeaderParser s_nameValueListParser = GenericHeaderParser.MultipleValueNameValueParser;
-        private static readonly Action<string> s_checkIsValidToken = CheckIsValidToken;
 
         private bool _noCache;
-        private ObjectCollection<string>? _noCacheHeaders;
+        private TokenObjectCollection? _noCacheHeaders;
         private bool _noStore;
         private TimeSpan? _maxAge;
         private TimeSpan? _sharedMaxAge;
@@ -40,10 +39,10 @@ namespace System.Net.Http.Headers
         private bool _onlyIfCached;
         private bool _publicField;
         private bool _privateField;
-        private ObjectCollection<string>? _privateHeaders;
+        private TokenObjectCollection? _privateHeaders;
         private bool _mustRevalidate;
         private bool _proxyRevalidate;
-        private ObjectCollection<NameValueHeaderValue>? _extensions;
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _extensions;
 
         public bool NoCache
         {
@@ -51,7 +50,7 @@ namespace System.Net.Http.Headers
             set { _noCache = value; }
         }
 
-        public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
+        public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new TokenObjectCollection();
 
         public bool NoStore
         {
@@ -113,7 +112,7 @@ namespace System.Net.Http.Headers
             set { _privateField = value; }
         }
 
-        public ICollection<string> PrivateHeaders => _privateHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
+        public ICollection<string> PrivateHeaders => _privateHeaders ??= new TokenObjectCollection();
 
         public bool MustRevalidate
         {
@@ -127,7 +126,7 @@ namespace System.Net.Http.Headers
             set { _proxyRevalidate = value; }
         }
 
-        public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         public CacheControlHeaderValue()
         {
@@ -525,7 +524,7 @@ namespace System.Net.Http.Headers
         }
 
         private static bool TrySetOptionalTokenList(NameValueHeaderValue nameValue, ref bool boolField,
-            ref ObjectCollection<string>? destination)
+            ref TokenObjectCollection? destination)
         {
             Debug.Assert(nameValue != null);
 
@@ -567,7 +566,7 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                destination ??= new ObjectCollection<string>(s_checkIsValidToken);
+                destination ??= new TokenObjectCollection();
                 destination.Add(valueString.Substring(current, tokenLength));
 
                 current = current + tokenLength;
@@ -620,7 +619,7 @@ namespace System.Net.Http.Headers
             sb.Append(value);
         }
 
-        private static void AppendValues(StringBuilder sb, ObjectCollection<string> values)
+        private static void AppendValues(StringBuilder sb, TokenObjectCollection values)
         {
             bool first = true;
             foreach (string value in values)
@@ -638,14 +637,14 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private static void CheckIsValidToken(string item)
-        {
-            HeaderUtilities.CheckValidToken(item, nameof(item));
-        }
-
         object ICloneable.Clone()
         {
             return new CacheControlHeaderValue(this);
+        }
+
+        private sealed class TokenObjectCollection : ObjectCollection<string>
+        {
+            public override void Validate(string item) => HeaderUtilities.CheckValidToken(item, nameof(item));
         }
     }
 }
