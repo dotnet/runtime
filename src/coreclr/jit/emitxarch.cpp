@@ -159,7 +159,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 //    true if instruction has the 's' bit, false otherwise
 bool emitter::HasSBit(instruction ins)
 {
-    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Sbit) != 0) ;
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Sbit) != 0);
 }
 
 //------------------------------------------------------------------------
@@ -173,7 +173,7 @@ bool emitter::HasSBit(instruction ins)
 //    true if instruction has the 'w' bit, false otherwise
 bool emitter::HasWBit(instruction ins)
 {
-    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0) ;
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0);
 }
 
 //------------------------------------------------------------------------
