@@ -300,6 +300,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
+        case GT_MADD:
+            genCodeForMadd(treeNode->AsOp());
+            break;
 
         case GT_INC_SATURATE:
             genCodeForIncSaturate(treeNode);
