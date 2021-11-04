@@ -6144,10 +6144,10 @@ public:
 #endif
 
 public:
-    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
+    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
-    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
+    Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
+    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree, IL_OFFSETX offs = BAD_IL_OFFSET);
 
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
@@ -7470,6 +7470,7 @@ public:
     // Redundant branch opts
     //
     PhaseStatus optRedundantBranches();
+    bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);

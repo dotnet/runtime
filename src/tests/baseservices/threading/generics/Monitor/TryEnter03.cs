@@ -14,14 +14,14 @@ class Gen<T>
 		Type monitorT = typeof(Gen<T>);
 		Type monitorU = typeof(Gen<U>);
 
-		TestHelper myHelper = new TestHelper(Test.nThreads);
-		TestHelper myHelper2 = new TestHelper(Test.nThreads);
+		TestHelper myHelper = new TestHelper(Test_TryEnter03.nThreads);
+		TestHelper myHelper2 = new TestHelper(Test_TryEnter03.nThreads);
 
 		WaitHandle[] myWaiter = new WaitHandle[2];
 		myWaiter[0] = myHelper.m_Event;
 		myWaiter[1] = myHelper2.m_Event;
 
-		for (int i=0; i<Test.nThreads; i++)
+		for (int i=0; i<Test_TryEnter03.nThreads; i++)
 		{
 			// new MonitorDelegateTS(myHelper.ConsumerTryEnter).BeginInvoke(monitorT,100,null,null);
 			// new MonitorDelegateTS(myHelper2.ConsumerTryEnter).BeginInvoke(monitorU,100,null,null);
@@ -43,7 +43,7 @@ class Gen<T>
 			if(myHelper.Error == true || myHelper2.Error == true)
 				break;
 		}
-		Test.Eval(!(myHelper.Error || myHelper2.Error));
+		Test_TryEnter03.Eval(!(myHelper.Error || myHelper2.Error));
 		
 	}
 
@@ -51,7 +51,7 @@ class Gen<T>
 	
 }
 
-public class Test
+public class Test_TryEnter03
 {
 	public static int nThreads = 25;
 	public static int counter = 0;

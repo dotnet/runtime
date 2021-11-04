@@ -20,7 +20,7 @@ namespace Internal.Cryptography.Pal
             if (storeHandle == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(storeHandle));
 
-            SafeCertStoreHandle certStoreHandle = Interop.crypt32.CertDuplicateStore(storeHandle);
+            SafeCertStoreHandle certStoreHandle = Interop.Crypt32.CertDuplicateStore(storeHandle);
             if (certStoreHandle == null || certStoreHandle.IsInvalid)
                 throw new CryptographicException(SR.Cryptography_InvalidStoreHandle, nameof(storeHandle));
 
@@ -47,7 +47,7 @@ namespace Internal.Cryptography.Pal
 
         public void Add(ICertificatePal certificate)
         {
-            if (!Interop.crypt32.CertAddCertificateContextToStore(_certStore, ((CertificatePal)certificate).CertContext, CertStoreAddDisposition.CERT_STORE_ADD_REPLACE_EXISTING_INHERIT_PROPERTIES, IntPtr.Zero))
+            if (!Interop.Crypt32.CertAddCertificateContextToStore(_certStore, ((CertificatePal)certificate).CertContext, Interop.Crypt32.CertStoreAddDisposition.CERT_STORE_ADD_REPLACE_EXISTING_INHERIT_PROPERTIES, IntPtr.Zero))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
         }
 

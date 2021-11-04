@@ -18,7 +18,7 @@ public class Class1 : I1
 	{}
 }
 
-public class Test
+public class Test_vsw536564
 {
 	public static int Main()
 	{
