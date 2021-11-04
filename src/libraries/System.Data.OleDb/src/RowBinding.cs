@@ -529,7 +529,7 @@ namespace System.Data.OleDb
                 // originalValue is pinned managed memory or pointer to emptyStringOffset
                 if ((ADP.PtrZero != currentValue) && (currentValue != originalValue))
                 {
-                    SafeNativeMethods.CoTaskMemFree(currentValue);
+                    Interop.Ole32.CoTaskMemFree(currentValue);
                 }
 
                 // for debugability - delay clearing memory until after CoTaskMemFree

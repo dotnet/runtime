@@ -129,17 +129,17 @@ namespace System.Data.OleDb
                             IntPtr valuePtr = ADP.IntPtrOffset(infoPtr, (k * ODB.SizeOf_tagDBPROPINFO) + ODB.OffsetOf_tagDBPROPINFO_Value);
                             SafeNativeMethods.VariantClear(valuePtr);
                         }
-                        SafeNativeMethods.CoTaskMemFree(infoPtr); // was allocated by provider
+                        Interop.Ole32.CoTaskMemFree(infoPtr); // was allocated by provider
                     }
                 }
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
 
             ptr = this.descBuffer;
             this.descBuffer = IntPtr.Zero;
             if (IntPtr.Zero != ptr)
             {
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
             return true;
         }

@@ -12,12 +12,6 @@ namespace System.Data.Common
     [SuppressUnmanagedCodeSecurity]
     internal static partial class SafeNativeMethods
     {
-        [GeneratedDllImport(Interop.Libraries.Ole32, SetLastError = false)]
-        internal static partial IntPtr CoTaskMemAlloc(IntPtr cb);
-
-        [GeneratedDllImport(Interop.Libraries.Ole32, SetLastError = false)]
-        internal static partial void CoTaskMemFree(IntPtr handle);
-
         [GeneratedDllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode, PreserveSig = true)]
         internal static partial int GetUserDefaultLCID();
 
