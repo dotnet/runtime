@@ -938,7 +938,10 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 // The inline context is part of debug info and must be created
                 // before we start creating statements; we lazily create it as
                 // late as possible, which is here.
-                pParam->inlineInfo->inlineContext = pParam->inlineInfo->InlineRoot->m_inlineStrategy->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
+                pParam->inlineInfo->inlineContext =
+                    pParam->inlineInfo->InlineRoot->m_inlineStrategy
+                        ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext,
+                                     pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
                 pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
                 pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
 
@@ -1271,7 +1274,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         DebugInfo di = iciStmt->GetDebugInfo().GetRoot();
         if (di.IsValid())
         {
-            block->bbCodeOffs = di.GetLocation().GetOffset();
+            block->bbCodeOffs    = di.GetLocation().GetOffset();
             block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
         }
         else
@@ -1457,13 +1460,13 @@ _Done:
 
 Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 {
-    BasicBlock*  block        = inlineInfo->iciBlock;
-    Statement*   callStmt     = inlineInfo->iciStmt;
-    const DebugInfo& callDI = callStmt->GetDebugInfo();
-    Statement*   postStmt     = callStmt->GetNextStmt();
-    Statement*   afterStmt    = callStmt; // afterStmt is the place where the new statements should be inserted after.
-    Statement*   newStmt      = nullptr;
-    GenTreeCall* call         = inlineInfo->iciCall->AsCall();
+    BasicBlock*      block     = inlineInfo->iciBlock;
+    Statement*       callStmt  = inlineInfo->iciStmt;
+    const DebugInfo& callDI    = callStmt->GetDebugInfo();
+    Statement*       postStmt  = callStmt->GetNextStmt();
+    Statement*       afterStmt = callStmt; // afterStmt is the place where the new statements should be inserted after.
+    Statement*       newStmt   = nullptr;
+    GenTreeCall*     call      = inlineInfo->iciCall->AsCall();
 
     noway_assert(call->gtOper == GT_CALL);
 
@@ -1577,8 +1580,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // argTmpNum here since in-linee compiler instance
                     // would have iterated over these and marked them
                     // accordingly.
-                    impAssignTempGen(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt, callDI,
-                                     block);
+                    impAssignTempGen(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt, callDI, block);
 
                     // We used to refine the temp type here based on
                     // the actual arg, but we now do this up front, when
@@ -1860,7 +1862,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
     JITDUMP("fgInlineAppendStatements: nulling out gc ref inlinee locals.\n");
 
     Statement*           callStmt          = inlineInfo->iciStmt;
-    const DebugInfo& callDI = callStmt->GetDebugInfo();
+    const DebugInfo&     callDI            = callStmt->GetDebugInfo();
     CORINFO_METHOD_INFO* InlineeMethodInfo = InlineeCompiler->info.compMethodInfo;
     const unsigned       lclCnt            = InlineeMethodInfo->locals.numArgs;
     InlLclVarInfo*       lclVarInfo        = inlineInfo->lclVarInfo;

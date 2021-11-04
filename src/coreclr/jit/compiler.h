@@ -2534,7 +2534,6 @@ struct IPmappingDsc
     bool             ipmdIsLabel;   // Can this code be a branch label?
 };
 
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3092,12 +3091,12 @@ public:
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
                                GenTreeCall::Use*     args,
-                               const DebugInfo& di = DebugInfo());
+                               const DebugInfo&      di = DebugInfo());
 
     GenTreeCall* gtNewIndCallNode(GenTree*          addr,
                                   var_types         type,
                                   GenTreeCall::Use* args,
-                                  const DebugInfo& di = DebugInfo());
+                                  const DebugInfo&  di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(unsigned helper, var_types type, GenTreeCall::Use* args = nullptr);
 
@@ -3349,11 +3348,11 @@ public:
 
     GenTreeOp* gtNewAssignNode(GenTree* dst, GenTree* src);
 
-    GenTree* gtNewTempAssign(unsigned    tmp,
-                             GenTree*    val,
-                             Statement** pAfterStmt = nullptr,
-                             const DebugInfo&  di   = DebugInfo(),
-                             BasicBlock* block      = nullptr);
+    GenTree* gtNewTempAssign(unsigned         tmp,
+                             GenTree*         val,
+                             Statement**      pAfterStmt = nullptr,
+                             const DebugInfo& di         = DebugInfo(),
+                             BasicBlock*      block      = nullptr);
 
     GenTree* gtNewRefCOMfield(GenTree*                objPtr,
                               CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -4488,18 +4487,18 @@ public:
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di);
     void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
-    void impAssignTempGen(unsigned    tmp,
-                          GenTree*    val,
-                          unsigned    curLevel,
-                          Statement** pAfterStmt = nullptr,
-                          const DebugInfo& di = DebugInfo(),
-                          BasicBlock* block      = nullptr);
+    void impAssignTempGen(unsigned         tmp,
+                          GenTree*         val,
+                          unsigned         curLevel,
+                          Statement**      pAfterStmt = nullptr,
+                          const DebugInfo& di         = DebugInfo(),
+                          BasicBlock*      block      = nullptr);
     void impAssignTempGen(unsigned             tmpNum,
                           GenTree*             val,
                           CORINFO_CLASS_HANDLE structHnd,
                           unsigned             curLevel,
                           Statement**          pAfterStmt = nullptr,
-                          const DebugInfo& di = DebugInfo(),
+                          const DebugInfo&     di         = DebugInfo(),
                           BasicBlock*          block      = nullptr);
 
     Statement* impExtractLastStmt();
@@ -4513,14 +4512,14 @@ public:
                              CORINFO_CLASS_HANDLE structHnd,
                              unsigned             curLevel,
                              Statement**          pAfterStmt = nullptr,
-                             const DebugInfo&    di   = DebugInfo(),
+                             const DebugInfo&     di         = DebugInfo(),
                              BasicBlock*          block      = nullptr);
     GenTree* impAssignStructPtr(GenTree*             dest,
                                 GenTree*             src,
                                 CORINFO_CLASS_HANDLE structHnd,
                                 unsigned             curLevel,
                                 Statement**          pAfterStmt = nullptr,
-                                const DebugInfo&    di   = DebugInfo(),
+                                const DebugInfo&     di         = DebugInfo(),
                                 BasicBlock*          block      = nullptr);
 
     GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
@@ -6350,13 +6349,13 @@ private:
     GenTree* fgGetStubAddrArg(GenTreeCall* call);
     unsigned fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEntry* argTabEntry);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
-    Statement* fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
-                                                     fgArgTabEntry* argTabEntry,
-                                                     unsigned       lclParamNum,
-                                                     BasicBlock*    block,
+    Statement* fgAssignRecursiveCallArgToCallerParam(GenTree*         arg,
+                                                     fgArgTabEntry*   argTabEntry,
+                                                     unsigned         lclParamNum,
+                                                     BasicBlock*      block,
                                                      const DebugInfo& callDI,
-                                                     Statement*     tmpAssignmentInsertionPoint,
-                                                     Statement*     paramAssignmentInsertionPoint);
+                                                     Statement*       tmpAssignmentInsertionPoint,
+                                                     Statement*       paramAssignmentInsertionPoint);
     GenTree* fgMorphCall(GenTreeCall* call);
     GenTree* fgExpandVirtualVtableCallTarget(GenTreeCall* call);
     void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
@@ -7382,7 +7381,7 @@ public:
     }
 
     void considerGuardedDevirtualization(GenTreeCall*            call,
-                                         IL_OFFSET ilOffset,
+                                         IL_OFFSET               ilOffset,
                                          bool                    isInterface,
                                          CORINFO_METHOD_HANDLE   baseMethod,
                                          CORINFO_CLASS_HANDLE    baseClass,

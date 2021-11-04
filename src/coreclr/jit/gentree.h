@@ -6143,17 +6143,12 @@ class InlineContext;
 class ILLocation
 {
 public:
-    ILLocation()
-        : m_offset(BAD_IL_OFFSET)
-        , m_isStackEmpty(false)
-        , m_isCall(false)
+    ILLocation() : m_offset(BAD_IL_OFFSET), m_isStackEmpty(false), m_isCall(false)
     {
     }
 
     ILLocation(IL_OFFSET offset, bool isStackEmpty, bool isCall)
-        : m_offset(offset)
-        , m_isStackEmpty(isStackEmpty)
-        , m_isCall(isCall)
+        : m_offset(offset), m_isStackEmpty(isStackEmpty), m_isCall(isCall)
     {
     }
 
@@ -6197,22 +6192,19 @@ public:
 
 private:
     IL_OFFSET m_offset;
-    bool m_isStackEmpty : 1;
-    bool m_isCall : 1;
+    bool      m_isStackEmpty : 1;
+    bool      m_isCall : 1;
 };
 
 // Represents debug information about a statement.
 class DebugInfo
 {
 public:
-    DebugInfo()
-        : m_inlineContext(nullptr)
+    DebugInfo() : m_inlineContext(nullptr)
     {
     }
 
-    DebugInfo(InlineContext* inlineContext, ILLocation loc)
-        : m_inlineContext(inlineContext)
-        , m_location(loc)
+    DebugInfo(InlineContext* inlineContext, ILLocation loc) : m_inlineContext(inlineContext), m_location(loc)
     {
     }
 
@@ -6239,7 +6231,9 @@ public:
 #ifdef DEBUG
     void Validate() const;
 #else
-    void Validate() const { }
+    void Validate() const
+    {
+    }
 #endif
 
 #ifdef DEBUG
@@ -6266,7 +6260,7 @@ public:
 
 private:
     InlineContext* m_inlineContext;
-    ILLocation m_location;
+    ILLocation     m_location;
 };
 
 // In LIR there are no longer statements so debug information is inserted linearly using these nodes.

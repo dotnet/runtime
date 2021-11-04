@@ -907,7 +907,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
 {
     static const int IS_INTERNAL_BLOCK = (int32_t)0x80000000;
-    int32_t key = (int32_t)block->bbCodeOffs;
+    int32_t          key               = (int32_t)block->bbCodeOffs;
     // We may see empty BBJ_NONE BBF_INTERNAL blocks that were added
     // by fgNormalizeEH.
     //
@@ -2009,7 +2009,8 @@ private:
         }
 
         EdgeKey(BasicBlock* sourceBlock, BasicBlock* targetBlock)
-            : m_sourceKey(EfficientEdgeCountBlockToKey(sourceBlock)), m_targetKey(EfficientEdgeCountBlockToKey(targetBlock))
+            : m_sourceKey(EfficientEdgeCountBlockToKey(sourceBlock))
+            , m_targetKey(EfficientEdgeCountBlockToKey(targetBlock))
         {
         }
 

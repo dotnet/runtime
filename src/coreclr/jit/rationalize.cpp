@@ -965,8 +965,8 @@ PhaseStatus Rationalizer::DoPhase()
                 DebugInfo di = statement->GetDebugInfo().GetRoot();
                 if (di.IsValid())
                 {
-                    GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                        GenTreeILOffset(di DEBUGARG(statement->GetLastILOffset()));
+                    GenTreeILOffset* ilOffset =
+                        new (comp, GT_IL_OFFSET) GenTreeILOffset(di DEBUGARG(statement->GetLastILOffset()));
                     BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
                 }
 

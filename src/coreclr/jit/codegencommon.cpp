@@ -123,8 +123,8 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 #endif // TARGET_AMD64
 
     //  Initialize the IP-mapping logic.
-    compiler->genIPmappingList        = nullptr;
-    compiler->genIPmappingLast        = nullptr;
+    compiler->genIPmappingList         = nullptr;
+    compiler->genIPmappingLast         = nullptr;
     compiler->genCallSite2DebugInfoMap = nullptr;
 
     /* Assume that we not fully interruptible */
@@ -10411,29 +10411,29 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
 
     switch (ipMapping->ipmdKind)
     {
-    case IPmappingDscKind::Prolog:
-        printf("PROLOG");
-        break;
-    case IPmappingDscKind::Epilog:
-        printf("EPILOG");
-        break;
-    case IPmappingDscKind::NoMapping:
-        printf("NO_MAP");
-        break;
-    case IPmappingDscKind::Normal:
-        const ILLocation& loc = ipMapping->ipmdLoc;
-        Compiler::eeDispILOffs(loc.GetOffset());
-        if (loc.IsStackEmpty())
-        {
-            printf(" STACK_EMPTY");
-        }
+        case IPmappingDscKind::Prolog:
+            printf("PROLOG");
+            break;
+        case IPmappingDscKind::Epilog:
+            printf("EPILOG");
+            break;
+        case IPmappingDscKind::NoMapping:
+            printf("NO_MAP");
+            break;
+        case IPmappingDscKind::Normal:
+            const ILLocation& loc = ipMapping->ipmdLoc;
+            Compiler::eeDispILOffs(loc.GetOffset());
+            if (loc.IsStackEmpty())
+            {
+                printf(" STACK_EMPTY");
+            }
 
-        if (loc.IsCall())
-        {
-            printf(" CALL_INSTRUCTION");
-        }
+            if (loc.IsCall())
+            {
+                printf(" CALL_INSTRUCTION");
+            }
 
-        break;
+            break;
     }
 
     printf(" ");
@@ -10451,7 +10451,7 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
 
 void CodeGen::genIPmappingListDisp()
 {
-    unsigned                mappingNum = 0;
+    unsigned      mappingNum = 0;
     IPmappingDsc* ipMapping;
 
     for (ipMapping = compiler->genIPmappingList; ipMapping != nullptr; ipMapping = ipMapping->ipmdNext)
@@ -10495,7 +10495,8 @@ void CodeGen::genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool i
             // Ignore this one if it's the same IL location as the last one we saw.
             // Note that we'll let through two identical IL offsets if the flag bits
             // differ, or two identical "special" mappings (e.g., PROLOG).
-            if ((compiler->genIPmappingLast != nullptr) && (kind == compiler->genIPmappingLast->ipmdKind) && (di.GetLocation() == compiler->genIPmappingLast->ipmdLoc))
+            if ((compiler->genIPmappingLast != nullptr) && (kind == compiler->genIPmappingLast->ipmdKind) &&
+                (di.GetLocation() == compiler->genIPmappingLast->ipmdLoc))
             {
                 JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", di.GetLocation().GetOffset());
                 return;
@@ -10507,8 +10508,8 @@ void CodeGen::genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool i
 
     IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<IPmappingDsc>(1);
     addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdKind = kind;
-    addMapping->ipmdLoc = di.GetLocation();
+    addMapping->ipmdKind    = kind;
+    addMapping->ipmdLoc     = di.GetLocation();
     addMapping->ipmdIsLabel = isLabel;
     addMapping->ipmdNext    = nullptr;
 
@@ -10549,14 +10550,15 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
         return;
     }
 
-    noway_assert((kind != IPmappingDscKind::Normal) || (di.IsValid() && (di.GetLocation().GetOffset() <= compiler->info.compILCodeSize)));
+    noway_assert((kind != IPmappingDscKind::Normal) ||
+                 (di.IsValid() && (di.GetLocation().GetOffset() <= compiler->info.compILCodeSize)));
 
     /* Create a mapping entry and prepend it to the list */
 
     IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<IPmappingDsc>(1);
     addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdKind = kind;
-    addMapping->ipmdLoc = di.GetLocation();
+    addMapping->ipmdKind    = kind;
+    addMapping->ipmdLoc     = di.GetLocation();
     addMapping->ipmdIsLabel = isLabel;
 
     addMapping->ipmdNext       = compiler->genIPmappingList;
@@ -10636,10 +10638,10 @@ void CodeGen::genIPmappingGen()
         return;
     }
 
-    IPmappingDsc* tmpMapping;
-    IPmappingDsc* prevMapping;
-    unsigned                mappingCnt;
-    UNATIVE_OFFSET          lastNativeOfs;
+    IPmappingDsc*  tmpMapping;
+    IPmappingDsc*  prevMapping;
+    unsigned       mappingCnt;
+    UNATIVE_OFFSET lastNativeOfs;
 
     /* First count the number of distinct mapping records */
 
@@ -10687,7 +10689,8 @@ void CodeGen::genIPmappingGen()
             // Leave prevMapping unchanged as tmpMapping is no longer valid
             tmpMapping->ipmdNativeLoc.Init();
         }
-        else if ((tmpMapping->ipmdKind == IPmappingDscKind::Epilog) || (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
+        else if ((tmpMapping->ipmdKind == IPmappingDscKind::Epilog) ||
+                 (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
         {
             // counting for special cases: see below
             mappingCnt++;
@@ -10744,7 +10747,8 @@ void CodeGen::genIPmappingGen()
             compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, tmpMapping->ipmdKind, tmpMapping->ipmdLoc);
             lastNativeOfs = nextNativeOfs;
         }
-        else if (tmpMapping->ipmdKind == IPmappingDscKind::Epilog || (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
+        else if (tmpMapping->ipmdKind == IPmappingDscKind::Epilog ||
+                 (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
         {
             // For the special case of an IL instruction with no body
             // followed by the epilog (say ret void immediately preceding

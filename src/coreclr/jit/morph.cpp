@@ -6385,7 +6385,8 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             {
 #ifdef DEBUG
                 // In debug we always put all inline attempts into the inline tree.
-                InlineContext* ctx = m_inlineStrategy->NewContext(call->gtInlineCandidateInfo->inlinersContext, fgMorphStmt, call);
+                InlineContext* ctx =
+                    m_inlineStrategy->NewContext(call->gtInlineCandidateInfo->inlinersContext, fgMorphStmt, call);
                 ctx->SetFailed(inlineResult);
 #endif
             }
@@ -8701,8 +8702,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // Transform recursive tail call into a loop.
 
-    Statement* earlyArgInsertionPoint = lastStmt;
-    const DebugInfo& callDI           = lastStmt->GetDebugInfo();
+    Statement*       earlyArgInsertionPoint = lastStmt;
+    const DebugInfo& callDI                 = lastStmt->GetDebugInfo();
 
     // Hoist arg setup statement for the 'this' argument.
     GenTreeCall::Use* thisArg = recursiveTailCall->gtCallThisArg;
@@ -8919,13 +8920,13 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 // Return Value:
 //    parameter assignment statement if one was inserted; nullptr otherwise.
 
-Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
-                                                           fgArgTabEntry* argTabEntry,
-                                                           unsigned       lclParamNum,
-                                                           BasicBlock*    block,
+Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*         arg,
+                                                           fgArgTabEntry*   argTabEntry,
+                                                           unsigned         lclParamNum,
+                                                           BasicBlock*      block,
                                                            const DebugInfo& callDI,
-                                                           Statement*     tmpAssignmentInsertionPoint,
-                                                           Statement*     paramAssignmentInsertionPoint)
+                                                           Statement*       tmpAssignmentInsertionPoint,
+                                                           Statement*       paramAssignmentInsertionPoint)
 {
     // Call arguments should be assigned to temps first and then the temps should be assigned to parameters because
     // some argument trees may reference parameters directly.
@@ -16000,9 +16001,9 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             noway_assert(ret->OperGet() == GT_RETURN);
             noway_assert(ret->gtGetOp1() != nullptr);
 
-            Statement* pAfterStatement = lastStmt;
-            const DebugInfo& di = lastStmt->GetDebugInfo();
-            GenTree*   tree = gtNewTempAssign(genReturnLocal, ret->gtGetOp1(), &pAfterStatement, di, block);
+            Statement*       pAfterStatement = lastStmt;
+            const DebugInfo& di              = lastStmt->GetDebugInfo();
+            GenTree*         tree = gtNewTempAssign(genReturnLocal, ret->gtGetOp1(), &pAfterStatement, di, block);
             if (tree->OperIsCopyBlkOp())
             {
                 tree = fgMorphCopyBlock(tree);

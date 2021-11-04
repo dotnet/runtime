@@ -467,7 +467,8 @@ void DebugInfo::Validate() const
         if (isValidOffs)
         {
             bool isValidStart = di.GetInlineContext()->GetILInstsSet()->bitVectTest(di.GetLocation().GetOffset());
-            assert(isValidStart && "Detected invalid debug info: IL offset does not refer to the start of an IL instruction");
+            assert(isValidStart &&
+                   "Detected invalid debug info: IL offset does not refer to the start of an IL instruction");
         }
         else
         {
@@ -503,7 +504,7 @@ bool DebugInfo::GetParent(DebugInfo* par) const
 //    If this DebugInfo instance is valid, returns a DebugInfo instance
 //    representing the call in the root function that eventually inlined the
 //    statement this DebugInfo describes.
-//    
+//
 //   If this DebugInfo instance is invalid, returns an invalid DebugInfo instance.
 //
 DebugInfo DebugInfo::GetRoot() const
@@ -6535,7 +6536,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     // These get updated after call node is built.
     node->gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
     node->gtRawILOffset       = BAD_IL_OFFSET;
-    node->gtInlineContext = compInlineContext;
+    node->gtInlineContext     = compInlineContext;
 #endif
 
     // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
@@ -8432,7 +8433,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
 #if defined(DEBUG) || defined(INLINE_DATA)
     copy->gtInlineObservation = tree->gtInlineObservation;
     copy->gtRawILOffset       = tree->gtRawILOffset;
-    copy->gtInlineContext = tree->gtInlineContext;
+    copy->gtInlineContext     = tree->gtInlineContext;
 #endif
 
     copy->CopyOtherRegFlags(tree);

@@ -419,13 +419,15 @@ void InlineContext::Dump(unsigned indent)
 
         if (offs == BAD_IL_OFFSET)
         {
-            printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", GetOrdinal(), m_TreeID, calleeToken,
-                   inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed, calleeName);
+            printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", GetOrdinal(),
+                   m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
+                   calleeName);
         }
         else
         {
-            printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", GetOrdinal(), offs, m_TreeID,
-                   calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed, calleeName);
+            printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", GetOrdinal(), offs,
+                   m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
+                   calleeName);
         }
     }
 
@@ -1251,9 +1253,9 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     InlineContext* context = new (m_Compiler, CMK_Inlining) InlineContext(this);
 
     context->m_InlineStrategy = this;
-    context->m_Parent = parentContext;
-    context->m_Sibling = parentContext->m_Child;
-    parentContext->m_Child = context;
+    context->m_Parent         = parentContext;
+    context->m_Sibling        = parentContext->m_Child;
+    parentContext->m_Child    = context;
 
     // In debug builds we record inline contexts in all produced calls to be
     // able to show all failed inlines in the inline tree, even non-candidates.
@@ -1263,8 +1265,8 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     if (call->IsInlineCandidate())
     {
         InlineCandidateInfo* info = call->gtInlineCandidateInfo;
-        context->m_Code = info->methInfo.ILCode;
-        context->m_ILSize = info->methInfo.ILCodeSize;
+        context->m_Code           = info->methInfo.ILCode;
+        context->m_ILSize         = info->methInfo.ILCodeSize;
 
 #ifdef DEBUG
         // All inline candidates should get their own statements that have
@@ -1283,14 +1285,14 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     // ldarg instruction. For SPGO purposes we should consider always storing
     // the exact offset of the call instruction which will be more precise. We
     // may consider storing the statement itself as well.
-    context->m_Location = stmt->GetDebugInfo().GetLocation();
+    context->m_Location      = stmt->GetDebugInfo().GetLocation();
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    context->m_TreeID = call->gtTreeID;
-    context->m_Callee = call->gtCallType == CT_INDIRECT ? nullptr : call->gtCallMethHnd;
+    context->m_TreeID           = call->gtTreeID;
+    context->m_Callee           = call->gtCallType == CT_INDIRECT ? nullptr : call->gtCallMethHnd;
     context->m_ActualCallOffset = call->gtRawILOffset;
 #endif
 
@@ -1300,14 +1302,14 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
 void InlineContext::SetSucceeded(const InlineInfo* info)
 {
     assert(InlIsValidObservation(info->inlineResult->GetObservation()));
-    m_Observation = info->inlineResult->GetObservation();
+    m_Observation    = info->inlineResult->GetObservation();
     m_ImportedILSize = info->inlineResult->GetImportedILSize();
-    m_Success = true;
+    m_Success        = true;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    m_Policy = info->inlineResult->GetPolicy();
+    m_Policy           = info->inlineResult->GetPolicy();
     m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
-    m_Ordinal = m_InlineStrategy->m_InlineCount + 1;
+    m_Ordinal          = m_InlineStrategy->m_InlineCount + 1;
 #endif
 
     m_InlineStrategy->NoteOutcome(this);
@@ -1316,12 +1318,12 @@ void InlineContext::SetSucceeded(const InlineInfo* info)
 void InlineContext::SetFailed(const InlineResult* result)
 {
     assert(InlIsValidObservation(result->GetObservation()));
-    m_Observation = result->GetObservation();
+    m_Observation    = result->GetObservation();
     m_ImportedILSize = result->GetImportedILSize();
-    m_Success = false;
+    m_Success        = false;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    m_Policy = result->GetPolicy();
+    m_Policy           = result->GetPolicy();
     m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
 #endif
 

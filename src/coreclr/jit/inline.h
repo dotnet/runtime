@@ -589,7 +589,7 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     CorInfoInitClassResult initClassResult;
     var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
-    InlineContext* inlinersContext;
+    InlineContext*         inlinersContext;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -833,7 +833,7 @@ private:
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #ifdef DEBUG
-    FixedBitVect*         m_ILInstsSet; // Set of offsets where instructions begin
+    FixedBitVect* m_ILInstsSet; // Set of offsets where instructions begin
 #endif
 };
 

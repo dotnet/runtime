@@ -612,8 +612,8 @@ void Compiler::eeGetStmtOffsets()
     {
         // We do not get explicit boundaries for inlinees, only implicit ones.
         offsetsImplicit = impInlineRoot()->info.compStmtOffsetsImplicit;
-        offsetsCount = 0;
-        offsets = nullptr;
+        offsetsCount    = 0;
+        offsets         = nullptr;
     }
     else
     {
@@ -970,7 +970,8 @@ void Compiler::eeSetLIcount(unsigned count)
     eeBoundariesCount = count;
     if (eeBoundariesCount)
     {
-        eeBoundaries = (ICorDebugInfo::OffsetMapping*)info.compCompHnd->allocateArray(eeBoundariesCount * sizeof(eeBoundaries[0]));
+        eeBoundaries =
+            (ICorDebugInfo::OffsetMapping*)info.compCompHnd->allocateArray(eeBoundariesCount * sizeof(eeBoundaries[0]));
     }
     else
     {
@@ -978,40 +979,39 @@ void Compiler::eeSetLIcount(unsigned count)
     }
 }
 
-void Compiler::eeSetLIinfo(
-    unsigned which, UNATIVE_OFFSET nativeOffset, IPmappingDscKind kind, const ILLocation& loc)
+void Compiler::eeSetLIinfo(unsigned which, UNATIVE_OFFSET nativeOffset, IPmappingDscKind kind, const ILLocation& loc)
 {
     assert(opts.compDbgInfo);
     assert(eeBoundariesCount > 0 && eeBoundaries != nullptr);
     assert(which < eeBoundariesCount);
 
     eeBoundaries[which].nativeOffset = nativeOffset;
-    eeBoundaries[which].source = (ICorDebugInfo::SourceTypes)0;
+    eeBoundaries[which].source       = (ICorDebugInfo::SourceTypes)0;
 
     switch (kind)
     {
         int source;
 
-    case IPmappingDscKind::Normal:
-        eeBoundaries[which].ilOffset = loc.GetOffset();
-        source = loc.IsStackEmpty() ? ICorDebugInfo::STACK_EMPTY : 0;
-        source |= loc.IsCall() ? ICorDebugInfo::CALL_INSTRUCTION : 0;
-        eeBoundaries[which].source = (ICorDebugInfo::SourceTypes)source;
-        break;
-    case IPmappingDscKind::Prolog:
-        eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;
-        eeBoundaries[which].source = ICorDebugInfo::STACK_EMPTY;
-        break;
-    case IPmappingDscKind::Epilog:
-        eeBoundaries[which].ilOffset = ICorDebugInfo::EPILOG;
-        eeBoundaries[which].source = ICorDebugInfo::STACK_EMPTY;
-        break;
-    case IPmappingDscKind::NoMapping:
-        eeBoundaries[which].ilOffset = ICorDebugInfo::NO_MAPPING;
-        eeBoundaries[which].source = ICorDebugInfo::STACK_EMPTY;
-        break;
-    default:
-        unreached();
+        case IPmappingDscKind::Normal:
+            eeBoundaries[which].ilOffset = loc.GetOffset();
+            source                       = loc.IsStackEmpty() ? ICorDebugInfo::STACK_EMPTY : 0;
+            source |= loc.IsCall() ? ICorDebugInfo::CALL_INSTRUCTION : 0;
+            eeBoundaries[which].source = (ICorDebugInfo::SourceTypes)source;
+            break;
+        case IPmappingDscKind::Prolog:
+            eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;
+            eeBoundaries[which].source   = ICorDebugInfo::STACK_EMPTY;
+            break;
+        case IPmappingDscKind::Epilog:
+            eeBoundaries[which].ilOffset = ICorDebugInfo::EPILOG;
+            eeBoundaries[which].source   = ICorDebugInfo::STACK_EMPTY;
+            break;
+        case IPmappingDscKind::NoMapping:
+            eeBoundaries[which].ilOffset = ICorDebugInfo::NO_MAPPING;
+            eeBoundaries[which].source   = ICorDebugInfo::STACK_EMPTY;
+            break;
+        default:
+            unreached();
     }
 }
 

@@ -1629,8 +1629,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         GetEmitter()->emitIns_Call(emitter::EC_INDIR_R, compiler->eeFindHelper(helper),
                                    INDEBUG_LDISASM_COMMA(nullptr) NULL, // addr
                                    argSize, retSize, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                   gcInfo.gcRegByrefSetCur,
-                                   DebugInfo(),
+                                   gcInfo.gcRegByrefSetCur, DebugInfo(),
                                    callTargetReg, // ireg
                                    REG_NA, 0, 0,  // xreg, xmul, disp
                                    false          // isJump

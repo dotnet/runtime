@@ -752,12 +752,12 @@ void Compiler::impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement
  *  curLevel is the stack level for which the spill to the temp is being done.
  */
 
-void Compiler::impAssignTempGen(unsigned    tmp,
-                                GenTree*    val,
-                                unsigned    curLevel,
-                                Statement** pAfterStmt, /* = NULL */
-                                const DebugInfo& di,    /* = DebugInfo() */
-                                BasicBlock* block       /* = NULL */
+void Compiler::impAssignTempGen(unsigned         tmp,
+                                GenTree*         val,
+                                unsigned         curLevel,
+                                Statement**      pAfterStmt, /* = NULL */
+                                const DebugInfo& di,         /* = DebugInfo() */
+                                BasicBlock*      block       /* = NULL */
                                 )
 {
     GenTree* asg = gtNewTempAssign(tmp, val);
@@ -786,7 +786,7 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
                                 CORINFO_CLASS_HANDLE structType,
                                 unsigned             curLevel,
                                 Statement**          pAfterStmt, /* = NULL */
-                                const DebugInfo& di,             /* = DebugInfo() */
+                                const DebugInfo&     di,         /* = DebugInfo() */
                                 BasicBlock*          block       /* = NULL */
                                 )
 {
@@ -1196,7 +1196,7 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
                                    CORINFO_CLASS_HANDLE structHnd,
                                    unsigned             curLevel,
                                    Statement**          pAfterStmt, /* = nullptr */
-                                   const DebugInfo& di,   /* = DebugInfo() */
+                                   const DebugInfo&     di,         /* = DebugInfo() */
                                    BasicBlock*          block       /* = nullptr */
                                    )
 {
@@ -1278,7 +1278,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       CORINFO_CLASS_HANDLE structHnd,
                                       unsigned             curLevel,
                                       Statement**          pAfterStmt, /* = NULL */
-                                      const DebugInfo& di,   /* = DebugInfo() */
+                                      const DebugInfo&     di,         /* = DebugInfo() */
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
@@ -2830,7 +2830,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
             // here. Can we not just use impCurStmtOffsSet? Are we out of sync
             // here with the stack?
             impCurStmtDI = DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, false, false));
-            argStmt        = gtNewStmt(argAsg, impCurStmtDI);
+            argStmt      = gtNewStmt(argAsg, impCurStmtDI);
         }
         else
         {
@@ -9377,7 +9377,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             const bool isLateDevirtualization = false;
             impDevirtualizeCall(call->AsCall(), pResolvedToken, &callInfo->hMethod, &callInfo->methodFlags,
                                 &callInfo->contextHandle, &exactContextHnd, isLateDevirtualization, isExplicitTailCall,
-                                // Take care to pass raw IL offset here as the 'debug info' might be different for inlinees.
+                                // Take care to pass raw IL offset here as the 'debug info' might be different for
+                                // inlinees.
                                 rawILOffset);
         }
 
@@ -11801,7 +11802,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impCurStmtOffsSet(opcodeOffs);
                 }
 
-                assert(!impCurStmtDI.IsValid() || (nxtStmtOffs == BAD_IL_OFFSET) || (impCurStmtDI.GetLocation().GetOffset() <= nxtStmtOffs));
+                assert(!impCurStmtDI.IsValid() || (nxtStmtOffs == BAD_IL_OFFSET) ||
+                       (impCurStmtDI.GetLocation().GetOffset() <= nxtStmtOffs));
             }
         }
 
@@ -17718,7 +17720,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     else if (info.compRetBuffArg != BAD_VAR_NUM)
     {
         // Assign value to return buff (first param)
-        GenTree* retBuffAddr = gtNewLclvNode(info.compRetBuffArg, TYP_BYREF DEBUGARG(impCurStmtDI.GetLocation().GetOffset()));
+        GenTree* retBuffAddr =
+            gtNewLclvNode(info.compRetBuffArg, TYP_BYREF DEBUGARG(impCurStmtDI.GetLocation().GetOffset()));
 
         op2 = impAssignStructPtr(retBuffAddr, op2, retClsHnd, (unsigned)CHECK_SPILL_ALL);
         impAppendTree(op2, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
@@ -19759,7 +19762,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->initClassResult                = initClassResult;
             pInfo->fncRetType                     = fncRetType;
             pInfo->exactContextNeedsRuntimeLookup = false;
-            pInfo->inlinersContext =               pParam->pThis->compInlineContext;
+            pInfo->inlinersContext                = pParam->pThis->compInlineContext;
 
             // Note exactContextNeedsRuntimeLookup is reset later on,
             // over in impMarkInlineCandidate.
@@ -21227,7 +21230,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                    CORINFO_CONTEXT_HANDLE* pExactContextHandle,
                                    bool                    isLateDevirtualization,
                                    bool                    isExplicitTailCall,
-                                   IL_OFFSET ilOffset)
+                                   IL_OFFSET               ilOffset)
 {
     assert(call != nullptr);
     assert(method != nullptr);
@@ -21257,7 +21260,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
             // Record some info needed for the class profiling probe.
             //
-            pInfo->ilOffset      = ilOffset;
+            pInfo->ilOffset   = ilOffset;
             pInfo->probeIndex = info.compClassProbeCount++;
             pInfo->stubAddr   = call->gtStubCallStubAddr;
 
@@ -22131,7 +22134,7 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 //
 void Compiler::considerGuardedDevirtualization(
     GenTreeCall*            call,
-    IL_OFFSET ilOffset,
+    IL_OFFSET               ilOffset,
     bool                    isInterface,
     CORINFO_METHOD_HANDLE   baseMethod,
     CORINFO_CLASS_HANDLE    baseClass,

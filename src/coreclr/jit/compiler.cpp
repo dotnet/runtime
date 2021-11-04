@@ -6083,7 +6083,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         assert((methAttr_Old & (~flagsToIgnore)) == (methAttr_New & (~flagsToIgnore)));
 #endif
 
-        info.compFlags = impInlineInfo->inlineCandidateInfo->methAttr;
+        info.compFlags    = impInlineInfo->inlineCandidateInfo->methAttr;
         compInlineContext = impInlineInfo->inlineContext;
     }
     else
