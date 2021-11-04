@@ -69,6 +69,16 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private static readonly long[] s_trueRepresentation = new long[] { 1 };
 
+        /// <summary>
+        /// Representation of False for compact serialization of BDDs.
+        /// </summary>
+        private static readonly byte[] s_falseRepresentationCompact = new byte[] { 0 };
+
+        /// <summary>
+        /// Representation of True for compact serialization of BDDs.
+        /// </summary>
+        private static readonly byte[] s_trueRepresentationCompact = new byte[] { 1 };
+
         internal BDD(int ordinal, BDD? one, BDD? zero)
         {
             One = one;
@@ -301,6 +311,49 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
+        /// Serialize this BDD into a byte array.
+        /// This method is not valid for MTBDDs where some elements may be negative.
+        /// </summary>
+        public byte[] SerializeToBytes()
+        {
+            if (IsEmpty)
+                return s_falseRepresentationCompact;
+
+            if (IsFull)
+                return s_trueRepresentationCompact;
+
+            // in other cases make use of the general serializer to long[]
+            long[] serialized = Serialize();
+
+            // get the maximal element from the array
+            long m = 0;
+            for (int i = 0; i < serialized.Length; i++)
+            {
+                // make sure this serialization is not applied to MTBDDs
+                Debug.Assert(serialized[i] > 0);
+                m = Math.Max(serialized[i], m);
+            }
+
+            // k is the number of bytes needed to represent the maximal element
+            int k = m <= 0xFFFF ? 2 : (m <= 0xFF_FFFF ? 3 : (m <= 0xFFFF_FFFF ? 4 : (m <= 0xFF_FFFF_FFFF ? 5 : (m <= 0xFFFF_FFFF_FFFF ? 6 : (m <= 0xFF_FFFF_FFFF_FFFF ? 7 : 8)))));
+
+            // the result will contain k as the first element and the number of serialized elements times k
+            byte[] result = new byte[(k * serialized.Length) + 1];
+            result[0] = (byte)k;
+            for (int i=0; i < serialized.Length; i += 1)
+            {
+                long serialized_i = serialized[i];
+                // add the serialized longs as k-byte subsequences
+                for (int j = 1; j <= k; j++)
+                {
+                    result[(i * k) + j] = (byte)serialized_i;
+                    serialized_i = serialized_i >> 8;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Recreates a BDD from a ulong array that has been created using Serialize.
         /// Is executed using a lock on algebra (if algebra != null) in a single thread mode.
         /// If no algebra is given (algebra is null) then creates the BDD without using a BDD algebra --
@@ -351,6 +404,70 @@ namespace System.Text.RegularExpressions.Symbolic
 
             //the result is the final BDD in the nodes array
             return nodes[k - 1];
+        }
+
+        /// <summary>
+        /// Recreates a BDD from a byte array that has been created using SerializeToBytes.
+        /// </summary>
+        public static BDD Deserialize(byte[] bytes, BDDAlgebra algebra)
+        {
+            if (bytes.Length == 1)
+            {
+                return bytes[0] == 0 ? False : True;
+            }
+
+            // here bytes represents an array of longs with k = the number of bytes used per long
+            int k = (int)bytes[0];
+
+            // gets the i'th element from the underlying array of longs represented by bytes
+            long Get(int i)
+            {
+                long l = 0;
+                for (int j = k; j > 0; j--)
+                {
+                    l = (l << 8) | bytes[(k * i) + j];
+                }
+                return l;
+            }
+
+            // n is the total nr of longs that corresponds also to the total number of BDD nodes needed
+            int n = (bytes.Length - 1) / k;
+
+            // make sure the represented nr of longs divides precisely without remainder
+            Debug.Assert((bytes.Length - 1) % k == 0);
+
+            // the number of bits used for ordinals and node identifiers are stored in the first two longs
+            int ordinal_bits = (int)Get(0);
+            int node_bits = (int)Get(1);
+
+            // create bit masks for the sizes of ordinals and node identifiers
+            long ordinal_mask = (1 << ordinal_bits) - 1;
+            long node_mask = (1 << node_bits) - 1;
+            BitLayout(ordinal_bits, node_bits, out int zero_node_shift, out int one_node_shift, out int ordinal_shift);
+
+            // store BDD nodes by their id when they are created
+            BDD[] nodes = new BDD[n];
+            nodes[0] = False;
+            nodes[1] = True;
+
+            for (int i = 2; i < n; i++)
+            {
+                // represents the triple (ordinal, one, zero)
+                long arc = Get(i);
+
+                // reconstruct the ordinal and child identifiers for a non-terminal
+                int ord = (int)((arc >> ordinal_shift) & ordinal_mask);
+                int oneId = (int)((arc >> one_node_shift) & node_mask);
+                int zeroId = (int)((arc >> zero_node_shift) & node_mask);
+
+                // the BDD nodes for the children are guaranteed to exist already
+                // because of the topological order they were serialized by
+                Debug.Assert(oneId < i && zeroId < i);
+                nodes[i] = algebra.GetOrCreateBDD(ord, nodes[oneId], nodes[zeroId]);
+            }
+
+            //the result is the last BDD in the nodes array
+            return nodes[n - 1];
         }
 
         /// <summary>
