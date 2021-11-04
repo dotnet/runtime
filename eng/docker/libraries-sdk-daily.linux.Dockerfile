@@ -8,27 +8,49 @@ WORKDIR /repo
 COPY . .
 
 ARG CONFIGURATION=Release
-#RUN ./build.sh -ci -subset clr+libs -runtimeconfiguration release -c $CONFIGURATION
-RUN mkdir -p /repo/artifacts/bin/testhost
-RUN echo 'lol' > /repo/artifacts/bin/testhost/lol.txt
+RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURATION -ci
 
-RUN mkdir -p /repo/artifacts/bin/Microsoft.NETCore.App.Ref
-RUN echo 'rofl' > /repo/artifacts/bin/Microsoft.NETCore.App.Ref/rofl.txt
-
-RUN mkdir -p /repo/artifacts/bin/Microsoft.NETCore.App.Runtime
-RUN echo 'haha' > /repo/artifacts/bin/Microsoft.NETCore.App.Runtime/haha.txt
+# RUN mkdir -p /repo/artifacts/bin/testhost
+# RUN echo 'lol' > /repo/artifacts/bin/testhost/lol.txt
+# 
+# RUN mkdir -p /repo/artifacts/bin/microsoft.netcore.app.ref
+# RUN echo 'rofl' > /repo/artifacts/bin/microsoft.netcore.app.ref/rofl.txt
+# 
+# RUN mkdir -p /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64
+# RUN echo 'haha' > /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64/haha.txt
 
 FROM $SDK_BASE_IMAGE as target
 
-ARG TESTHOST_LOCATION=/repo/artifacts/bin/testhost
-ARG REF_PACK_LOCATION=/repo/artifacts/bin/Microsoft.NETCore.App.Ref/
-ARG RUNTIME_PACK_LOCATION=/repo/artifacts/bin/Microsoft.NETCore.App.Runtime/
+# Install 7.0 SDK:
+RUN wget https://dot.net/v1/dotnet-install.sh
+RUN bash ./dotnet-install.sh --channel 7.0.1xx --quality daily --install-dir /usr/share/dotnet
 
-RUN echo 'testhost: $TESTHOST_LOCATION'
+# ARG TESTHOST_LOCATION=/repo/artifacts/bin/testhost
+# ARG REF_PACK_LOCATION=/repo/artifacts/bin/microsoft.netcore.app.ref/
+# ARG RUNTIME_PACK_LOCATION=/repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64/
 
-COPY --from=corefxbuild $TESTHOST_LOCATION /runtime-drop/testhost
-COPY --from=corefxbuild $REF_PACK_LOCATION /runtime-drop/Microsoft.NETCore.App.Ref
-COPY --from=corefxbuild $RUNTIME_PACK_LOCATION /runtime-drop/Microsoft.NETCore.App.Runtime
+## Collect the following artifacts under /runtime-drop,
+## so projects can build and test against the live-built runtime:
+## 1. Reference assembly pack (microsoft.netcore.app.ref)
+## 2. Runtime pack (microsoft.netcore.app.runtime.linux-x64)
+## 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
+## 4. testhost
+
+COPY --from=corefxbuild \
+    /repo/artifacts/bin/testhost \
+    /runtime-drop/testhost
+
+COPY --from=corefxbuild \
+    /repo/artifacts/bin/microsoft.netcore.app.ref \
+    /runtime-drop/microsoft.netcore.app.ref
+
+COPY --from=corefxbuild \
+    /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64 \
+    /runtime-drop/microsoft.netcore.app.runtime.linux-x64
+
+COPY --from=corefxbuild \
+    /repo/eng/targetingpacks.targets \
+    /runtime-drop/targetingpacks.targets
 
 #ARG TFM=net7.0
 #ARG OS=Linux
