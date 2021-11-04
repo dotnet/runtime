@@ -90,12 +90,12 @@ def main(main_args):
 
     # Copy *.py to CorrelationPayload
     print('Copying {} -> {}'.format(superpmi_src_directory, correlation_payload_directory))
-    copy_directory(superpmi_src_directory, correlation_payload_directory,
+    copy_directory(superpmi_src_directory, correlation_payload_directory, verbose_output=True,
                    match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
     # Copy clrjit*_arch.dll binaries to CorrelationPayload
     print('Copying binaries {} -> {}'.format(product_directory, correlation_payload_directory))
-    copy_directory(product_directory, correlation_payload_directory, match_func=match_correlation_files)
+    copy_directory(product_directory, correlation_payload_directory, verbose_output=True, match_func=match_correlation_files)
 
     # Set variables
     print('Setting pipeline variables:')

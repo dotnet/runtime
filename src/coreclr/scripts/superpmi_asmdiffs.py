@@ -74,6 +74,7 @@ def main(main_args):
     """
 
     python_path = sys.executable
+    # cwd is the root of the correlation payload directory
     cwd = os.path.dirname(os.path.realpath(__file__))
     coreclr_args = setup_args(main_args)
     spmi_location = os.path.join(cwd, "artifacts", "spmi")
@@ -86,30 +87,26 @@ def main(main_args):
     base_jit_path = os.path.join(coreclr_args.base_jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
     diff_jit_path = os.path.join(coreclr_args.diff_jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
-    print("Fetching history of `main` branch so we can find the baseline JIT")
-    run_command(["git", "fetch", "origin", "main"], _exit_on_fail=True)
+    # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
+    # We pass the full path of the JITs to use as arguments.
+    core_root_dir = cwd
 
-    print("Running jitrollingbuild.py download to get baseline")
-    _, _, return_code = run_command([
-        python_path,
-        os.path.join(cwd, "jitrollingbuild.py"),
-        "download",
-        "-target_dir", base_jit_path,
-        "-spmi_location", spmi_location])
-
-    print("Running superpmi.py download")
+    print("Running superpmi.py download to get MCH files")
     run_command([python_path, os.path.join(cwd, "superpmi.py"), "download", "--no_progress", "-target_os", platform_name,
-                 "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location], _exit_on_fail=True)
+                 "-target_arch", arch_name, "-core_root", core_root_dir, "-spmi_location", spmi_location], _exit_on_fail=True)
 
-    failed_runs = []
-    log_file = os.path.join(log_directory, 'superpmi.log')
+    log_file = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
     print("Running superpmi.py asmdiffs")
+
+    # REVIEW: SuperPMI asm diffs are going to be created in `spmi_location` (./artifacts/spmi)
+    # Will they get copied back?
+    # We need jit-analyze from jitutils to be able to create the summary.md file
 
     _, _, return_code = run_command([
         python_path,
         os.path.join(cwd, "superpmi.py"),
         "asmdiffs",
-        "-core_root", cwd,
+        "-core_root", core_root_dir,
         "-target_os", platform_name,
         "-target_arch", arch_name,
         "-arch", host_arch_name,
@@ -121,32 +118,10 @@ def main(main_args):
         "-log_file", log_file])
 
     if return_code != 0:
-        failed_runs.append("Failure in {}".format(log_file))
+        print("Failure in {}".format(log_file))
+        return 1
 
-    # Consolidate all superpmi_*.logs in superpmi_platform_architecture.log
-    final_log_name = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
-    print("Consolidating final {}".format(final_log_name))
-    with open(final_log_name, "a") as final_superpmi_log:
-        for superpmi_log in os.listdir(log_directory):
-            if not superpmi_log.startswith("superpmi_Jit") or not superpmi_log.endswith(".log"):
-                continue
-
-            print("Appending {}".format(superpmi_log))
-            final_superpmi_log.write("======================================================={}".format(os.linesep))
-            final_superpmi_log.write("Contents from {}{}".format(superpmi_log, os.linesep))
-            final_superpmi_log.write("======================================================={}".format(os.linesep))
-            with open(os.path.join(log_directory, superpmi_log), "r") as current_superpmi_log:
-                contents = current_superpmi_log.read()
-                final_superpmi_log.write(contents)
-
-        # Log failures summary
-        if len(failed_runs) > 0:
-            final_superpmi_log.write(os.linesep)
-            final_superpmi_log.write(os.linesep)
-            final_superpmi_log.write("========Failed runs summary========".format(os.linesep))
-            final_superpmi_log.write(os.linesep.join(failed_runs))
-
-    return 0 if len(failed_runs) == 0 else 1
+    return 0
 
 
 if __name__ == "__main__":

@@ -13,9 +13,6 @@
 # a particular GitHub pull request, and downloads the JIT rolling build for that
 # commit hash.
 #
-# TODO: invoke jitrollingbuild.py or superpmi.py to figure out the baseline from
-# an origin/main commit hash?
-#
 ################################################################################
 ################################################################################
 
@@ -23,7 +20,7 @@ import argparse
 import os
 
 from coreclr_arguments import *
-from azdo_pipelines_util import copy_directory, copy_files, set_pipeline_variable
+from azdo_pipelines_util import copy_directory, copy_files, set_pipeline_variable, run_command
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -63,11 +60,23 @@ def setup_args(args):
     return coreclr_args
 
 
-def match_correlation_files(full_path):
+def match_jit_files(full_path):
+    """ Match all the JIT files that we want to copy and use.
+        Note that we currently only match Windows files, and not osx cross-compile files.
+    """
     file_name = os.path.basename(full_path)
 
     if file_name.startswith("clrjit_") and file_name.endswith(".dll") and file_name.find("osx") == -1:
         return True
+
+    return False
+
+
+def match_superpmi_tool_files(full_path):
+    """ Match all the SuperPMI tool files that we want to copy and use.
+        Note that we currently only match Windows files.
+    """
+    file_name = os.path.basename(full_path)
 
     if file_name == "superpmi.exe" or file_name == "mcs.exe":
         return True
@@ -87,29 +96,58 @@ def main(main_args):
     source_directory = coreclr_args.source_directory
     product_directory = coreclr_args.product_directory
 
+    python_path = sys.executable
+
     # CorrelationPayload directories
     correlation_payload_directory = os.path.join(source_directory, "payload")
-    superpmi_src_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
+    superpmi_scripts_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
 
     helix_source_prefix = "official"
     creator = ""
 
+    ######## Get SuperPMI python scripts
+
     # Copy *.py to CorrelationPayload
-    print('Copying {} -> {}'.format(superpmi_src_directory, correlation_payload_directory))
-    copy_directory(superpmi_src_directory, correlation_payload_directory,
+    print('Copying {} -> {}'.format(superpmi_scripts_directory, correlation_payload_directory))
+    copy_directory(superpmi_scripts_directory, correlation_payload_directory, verbose_copy=True,
                    match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
+    ######## Get baseline JIT
+
+    # Figure out which baseline JIT to use, and download it.
     # Copy base clrjit*_arch.dll binaries to CorrelationPayload\base
     base_jit_directory = os.path.join(correlation_payload_directory, "base")
-    print('Copying base binaries {} -> {}'.format(product_directory, base_jit_directory))
-    copy_directory(product_directory, base_jit_directory, match_func=match_correlation_files)
+    if not os.path.exists(base_jit_directory):
+        os.makedirs(base_jit_directory)
+
+    print("Fetching history of `main` branch so we can find the baseline JIT")
+    run_command(["git", "fetch", "origin", "main"], _exit_on_fail=True)
+
+    # Note: we only support downloading Windows versions of the JIT currently. To support downloading
+    # non-Windows JITs on a Windows machine, pass `-host_os <os>` to jitrollingbuild.py.
+    print("Running jitrollingbuild.py download to get baseline")
+    _, _, return_code = run_command([
+        python_path,
+        os.path.join(superpmi_scripts_directory, "jitrollingbuild.py"),
+        "download",
+        "-arch", arch,
+        "-target_dir", base_jit_directory])
+
+    ######## Get diff JIT
 
     # Copy diff clrjit*_arch.dll binaries to CorrelationPayload\diff
     diff_jit_directory = os.path.join(correlation_payload_directory, "diff")
     print('Copying diff binaries {} -> {}'.format(product_directory, diff_jit_directory))
-    copy_directory(product_directory, diff_jit_directory, match_func=match_correlation_files)
+    copy_directory(product_directory, diff_jit_directory, verbose_copy=True, match_func=match_jit_files)
 
-    # Set variables
+    ######## Get SuperPMI tools
+
+    # Put the SuperPMI tools directly in the root of the correlation payload directory.
+    print('Copying SuperPMI tools {} -> {}'.format(product_directory, correlation_payload_directory))
+    copy_directory(product_directory, correlation_payload_directory, verbose_copy=True, match_func=match_superpmi_tool_files)
+
+    ######## Set pipeline variables
+
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("Architecture", arch)

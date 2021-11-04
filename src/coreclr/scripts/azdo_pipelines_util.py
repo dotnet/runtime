@@ -64,7 +64,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
     return command_stdout, command_stderr, return_code
 
 
-def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda path: True):
+def copy_directory(src_path, dst_path, verbose_output=False, verbose_copy=False, verbose_skip=False, match_func=lambda path: True):
     """Copies directory in 'src_path' to 'dst_path' maintaining the directory
     structure. https://docs.python.org/3.5/library/shutil.html#shutil.copytree can't
     be used in this case because it expects the destination directory should not
@@ -73,29 +73,34 @@ def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda pa
     Args:
         src_path (string): Path of source directory that need to be copied.
         dst_path (string): Path where directory should be copied.
-        verbose_output (bool): True to print every copy or skipped file.
+        verbose_output (bool): True to print every copied or skipped file or error.
+        verbose_copy (bool): True to print every copied file
+        verbose_skip (bool): True to print every skipped file.
         match_func (str -> bool) : Criteria function determining if a file is copied.
     """
+    display_copy = verbose_output or verbose_copy
+    display_skip = verbose_output or verbose_skip
     if not os.path.exists(dst_path):
         os.makedirs(dst_path)
     for item in os.listdir(src_path):
         src_item = os.path.join(src_path, item)
         dst_item = os.path.join(dst_path, item)
         if os.path.isdir(src_item):
-            copy_directory(src_item, dst_item, verbose_output, match_func)
+            copy_directory(src_item, dst_item, verbose_output, verbose_copy, verbose_skip, match_func)
         else:
             try:
                 if match_func(src_item):
-                    if verbose_output:
+                    if display_copy:
                         print("> copy {0} => {1}".format(src_item, dst_item))
                     try:
                         shutil.copy2(src_item, dst_item)
                     except PermissionError as pe_error:
                         print('Ignoring PermissionError: {0}'.format(pe_error))
                 else:
-                    if verbose_output:
+                    if display_skip:
                         print("> skipping {0}".format(src_item))
             except UnicodeEncodeError:
+                # Should this always be displayed? Or is it too verbose somehow?
                 if verbose_output:
                     print("> Got UnicodeEncodeError")
 
