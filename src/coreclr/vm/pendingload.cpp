@@ -114,7 +114,7 @@ BOOL PendingTypeLoadTable::InsertValue(PendingTypeLoadEntry *pData)
 
     _ASSERTE(m_dwNumBuckets != 0);
 
-    DWORD           dwHash = pData->GetTypeKey().ComputeHash();
+    DWORD           dwHash = HashTypeKey(&pData->GetTypeKey());
     DWORD           dwBucket = dwHash % m_dwNumBuckets;
     PendingTypeLoadTable::TableEntry * pNewEntry = AllocNewEntry();
     if (pNewEntry == NULL)
@@ -130,6 +130,7 @@ BOOL PendingTypeLoadTable::InsertValue(PendingTypeLoadEntry *pData)
     return TRUE;
 }
 
+static int CollisionCount;
 
 BOOL PendingTypeLoadTable::DeleteValue(TypeKey *pKey)
 {
@@ -145,7 +146,7 @@ BOOL PendingTypeLoadTable::DeleteValue(TypeKey *pKey)
 
     _ASSERTE(m_dwNumBuckets != 0);
 
-    DWORD           dwHash = pKey->ComputeHash();
+    DWORD           dwHash = HashTypeKey(pKey);
     DWORD           dwBucket = dwHash % m_dwNumBuckets;
     PendingTypeLoadTable::TableEntry * pSearch;
     PendingTypeLoadTable::TableEntry **ppPrev = &m_pBuckets[dwBucket];
@@ -161,6 +162,7 @@ BOOL PendingTypeLoadTable::DeleteValue(TypeKey *pKey)
         }
 
         ppPrev = &pSearch->pNext;
+        printf("CollisionCount: %i \n", ++CollisionCount);
     }
 
     return FALSE;
@@ -182,7 +184,7 @@ PendingTypeLoadTable::TableEntry *PendingTypeLoadTable::FindItem(TypeKey *pKey)
     _ASSERTE(m_dwNumBuckets != 0);
 
 
-    DWORD           dwHash = pKey->ComputeHash();
+    DWORD           dwHash = HashTypeKey(pKey);
     DWORD           dwBucket = dwHash % m_dwNumBuckets;
     PendingTypeLoadTable::TableEntry * pSearch;
 
