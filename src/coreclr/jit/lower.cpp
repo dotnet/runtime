@@ -5773,7 +5773,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
             assert(!cast->CastOp()->isContained());
 
             // It has to be an upcast and CNS must be in [1..srcBits) range
-            if ((srcBits < dstBits) && ((UINT32)cns->IconValue() < srcBits))
+            if ((srcBits < dstBits) && (cns->IconValue() > 0) && (cns->IconValue() < srcBits))
             {
                 JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
                 shift->ChangeOper(GT_BFIZ);

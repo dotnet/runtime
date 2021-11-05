@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
+namespace System.Security.Cryptography.Tests
 {
     public static class CryptographicExceptionTests
     {

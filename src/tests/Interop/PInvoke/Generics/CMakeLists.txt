@@ -22,9 +22,7 @@ if (MSVC)
   add_compile_options(/arch:AVX2)
 else()
   if (NOT CLR_CMAKE_TARGET_ARCH_ARM64 AND NOT CLR_CMAKE_TARGET_ARCH_ARM)
-    # We need -march=native so we can detect if AVX2 is present.
-    # ARM does not like that option too and it make no sense to have this detection there.
-    add_compile_options(-march=native)
+    add_compile_options(-mavx)
   endif()
 endif()
 set(SOURCES

@@ -4,7 +4,7 @@
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.CryptoConfigTests
+namespace System.Security.Cryptography.Tests
 {
     public static class CryptoConfigTests
     {

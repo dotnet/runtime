@@ -45,8 +45,11 @@ namespace System.Text.RegularExpressions.Symbolic.Unicode
             {
                 if (_wordLetterCondition is not TPredicate condition)
                 {
-                    BDD bdd = BDD.Deserialize(UnicodeCategoryRanges.WordCharactersSerializedBDD, _solver.CharSetProvider);
-                    _wordLetterCondition = condition = _solver.ConvertFromCharSet(_solver.CharSetProvider, bdd);
+                    // \w is the union of the 8 categories: 0,1,2,3,4,5,8,18
+                    TPredicate[] predicates = new TPredicate[] {
+                        CategoryCondition(0), CategoryCondition(1), CategoryCondition(2), CategoryCondition(3),
+                        CategoryCondition(4), CategoryCondition(5), CategoryCondition(8), CategoryCondition(18)};
+                    _wordLetterCondition = condition = _solver.Or(predicates);
                 }
 
                 return condition;

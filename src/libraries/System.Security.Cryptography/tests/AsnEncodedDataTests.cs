@@ -4,7 +4,7 @@
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests
+namespace System.Security.Cryptography.Tests
 {
     public class AsnEncodedDataTests
     {
