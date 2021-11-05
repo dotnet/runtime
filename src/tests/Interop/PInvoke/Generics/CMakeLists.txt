@@ -22,7 +22,7 @@ if (MSVC)
   add_compile_options(/arch:AVX2)
 else()
   if (NOT CLR_CMAKE_TARGET_ARCH_ARM64 AND NOT CLR_CMAKE_TARGET_ARCH_ARM)
-    add_compile_options(-mavx2)
+    add_compile_options(-mavx)
   endif()
 endif()
 set(SOURCES
