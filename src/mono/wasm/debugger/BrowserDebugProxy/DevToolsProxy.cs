@@ -232,7 +232,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Send(this.ide, o, token);
         }
 
-        public virtual void SendResponse(MessageId id, Result result, CancellationToken token)
+        internal virtual void SendResponse(MessageId id, Result result, CancellationToken token)
         {
             SendResponseInternal(id, result, token);
         }

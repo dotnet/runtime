@@ -286,7 +286,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             //Send(this.ide, o, token);
         }
 
-        public override void SendResponse(MessageId id, Result result, CancellationToken token)
+        internal override void SendResponse(MessageId id, Result result, CancellationToken token)
         {
             SendResponseInternal(id, result, token);
         }
