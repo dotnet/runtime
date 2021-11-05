@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.Security.Cryptography.Hashing.Tests
+namespace System.Security.Cryptography.Tests
 {
     public class KeyedHashAlgorithmTest
     {

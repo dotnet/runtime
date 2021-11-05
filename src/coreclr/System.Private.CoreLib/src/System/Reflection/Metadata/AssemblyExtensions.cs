@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata
 {
     public static class AssemblyExtensions
     {
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalTryGetRawMetadata")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern unsafe bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);
 

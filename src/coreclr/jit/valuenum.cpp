@@ -4677,21 +4677,6 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
     ValueNum newVN  = VNForFunc(TYP_INT, newFunc, funcAttr.m_args[swap ? 1 : 0], funcAttr.m_args[swap ? 0 : 1]);
     ValueNum result = VNWithExc(newVN, excepVN);
 
-#ifdef DEBUG
-    if (m_pComp->verbose)
-    {
-        printf("%s of ", swap ? (reverse ? "swap-reverse" : "swap") : "reverse");
-        m_pComp->vnPrint(vn, 1);
-        printf(" => ");
-        m_pComp->vnPrint(newVN, 1);
-        if (result != newVN)
-        {
-            m_pComp->vnPrint(result, 1);
-        }
-        printf("\n");
-    }
-#endif
-
     return result;
 }
 

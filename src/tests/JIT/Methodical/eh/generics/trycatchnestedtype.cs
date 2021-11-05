@@ -31,11 +31,11 @@ public class Gen<T> : IGen
     }
 }
 
-public class Test
+public class Test_trycatchnestedtype
 {
     private static TestUtil.TestLog testLog;
 
-    static Test()
+    static Test_trycatchnestedtype()
     {
         // Create test writer object to hold expected output
         StringWriter expectedOut = new StringWriter();

@@ -81,7 +81,9 @@ MONO_HWCAP_VAR(x86_has_lzcnt)
 MONO_HWCAP_VAR(x86_has_popcnt)
 MONO_HWCAP_VAR(x86_has_avx)
 
-gboolean
-mono_hwcap_x86_call_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx);
+#ifndef MONO_X86_CPUIDEX
+#define MONO_X86_CPUIDEX
+gboolean mono_hwcap_x86_call_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx);
+#endif
 
 #endif

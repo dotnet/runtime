@@ -124,7 +124,7 @@ public struct InlinedVal<T>
 }
 
 
-public class Test
+public class Test_GenTypeInlined_Multinested
 {
 	public static int Main()
 	{

@@ -9564,4 +9564,76 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 }
 
+//-----------------------------------------------------------------------------------
+// genCodeForMadd: Emit a madd/msub (Multiply-Add) instruction
+//
+// Arguments:
+//     tree - GT_MADD tree where op1 or op2 is GT_ADD
+//
+void CodeGen::genCodeForMadd(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MADD) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
+
+    GenTree* a;
+    GenTree* b;
+    GenTree* c;
+    if (tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
+    {
+        a = tree->gtGetOp1()->gtGetOp1();
+        b = tree->gtGetOp1()->gtGetOp2();
+        c = tree->gtGetOp2();
+    }
+    else
+    {
+        assert(tree->gtGetOp2()->OperIs(GT_MUL) && tree->gtGetOp2()->isContained());
+        a = tree->gtGetOp2()->gtGetOp1();
+        b = tree->gtGetOp2()->gtGetOp2();
+        c = tree->gtGetOp1();
+    }
+
+    bool useMsub = false;
+    if (a->OperIs(GT_NEG) && a->isContained())
+    {
+        a       = a->gtGetOp1();
+        useMsub = true;
+    }
+    if (b->OperIs(GT_NEG) && b->isContained())
+    {
+        b       = b->gtGetOp1();
+        useMsub = !useMsub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
+    }
+
+    GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
+                                  a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBfiz: Generates the code sequence for a GenTree node that
+// represents a bitfield insert in zero with sign/zero extension.
+//
+// Arguments:
+//    tree - the bitfield insert in zero node.
+//
+void CodeGen::genCodeForBfiz(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_BFIZ));
+
+    emitAttr     size       = emitActualTypeSize(tree);
+    unsigned     shiftBy    = (unsigned)tree->gtGetOp2()->AsIntCon()->IconValue();
+    unsigned     shiftByImm = shiftBy & (emitter::getBitWidth(size) - 1);
+    GenTreeCast* cast       = tree->gtGetOp1()->AsCast();
+    GenTree*     castOp     = cast->CastOp();
+
+    genConsumeRegs(castOp);
+    unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                          : genTypeSize(castOp) * BITS_PER_BYTE;
+    const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
+    GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
+                                  (int)shiftByImm, (int)srcBits);
+
+    genProduceReg(tree);
+}
+
 #endif // TARGET_ARM64

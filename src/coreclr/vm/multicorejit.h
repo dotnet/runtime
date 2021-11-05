@@ -311,14 +311,9 @@ public:
 };
 
 
-// For ecall.cpp
+// For qcallentrypoints.cpp
 
-class MultiCoreJITNative
-{
-public:
-    static void QCALLTYPE InternalSetProfileRoot(__in_z LPCWSTR directoryPath);
-
-    static void QCALLTYPE InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder);
-};
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(__in_z LPCWSTR directoryPath);
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder);
 
 #endif // __MULTICORE_JIT_H__

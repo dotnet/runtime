@@ -280,8 +280,16 @@ GTNODE(PHI_ARG          , GenTreePhiArg      ,0,(GTK_LEAF|GTK_LOCAL))     // phi
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
 //-----------------------------------------------------------------------------
 
+#ifdef TARGET_ARM64
+GTNODE(MADD             , GenTreeOp          ,0, GTK_BINOP)                // Generates the Multiply-Add instruction (madd/msub)
+                                                                           // In future, we might consider enabling it for both armarch and xarch
+                                                                           // for floating-point MADD "unsafe" math
+#endif
 GTNODE(JMPTABLE         , GenTree            ,0, (GTK_LEAF|GTK_NOCONTAIN)) // Generates the jump table for switches
 GTNODE(SWITCH_TABLE     , GenTreeOp          ,0, (GTK_BINOP|GTK_NOVALUE))  // Jump Table based switch construct
+#ifdef TARGET_ARM64
+GTNODE(BFIZ,              GenTreeBfiz        ,0, GTK_BINOP)                // Bitfield Insert in Zero 
+#endif
 
 //-----------------------------------------------------------------------------
 //  Nodes used only within the code generator:

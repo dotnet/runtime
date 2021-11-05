@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Test.IO.Streams;
 using Xunit;
 
-namespace System.Security.Cryptography.Hashing.Tests
+namespace System.Security.Cryptography.Tests
 {
     public class HashAlgorithmTest
     {
@@ -59,6 +59,7 @@ namespace System.Security.Cryptography.Hashing.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task ComputeHashAsync_SupportsCancellation()
         {
             using (CancellationTokenSource cancellationSource = new CancellationTokenSource(100))

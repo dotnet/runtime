@@ -24,16 +24,20 @@ namespace Microsoft.Interop
         private const string GeneratedDllImport = nameof(GeneratedDllImport);
         private const string GeneratedDllImportAttribute = nameof(GeneratedDllImportAttribute);
 
-        private static readonly Version s_minimumSupportedFrameworkVersion = new Version(5, 0);
-
-        internal sealed record IncrementalStubGenerationContext(DllImportStubContext StubContext, ImmutableArray<AttributeSyntax> ForwardedAttributes, GeneratedDllImportData DllImportData, ImmutableArray<Diagnostic> Diagnostics)
+        internal sealed record IncrementalStubGenerationContext(
+            StubEnvironment Environment,
+            DllImportStubContext StubContext,
+            ImmutableArray<AttributeSyntax> ForwardedAttributes,
+            GeneratedDllImportData DllImportData,
+            ImmutableArray<Diagnostic> Diagnostics)
         {
             public bool Equals(IncrementalStubGenerationContext? other)
             {
                 return other is not null
+                    && StubEnvironment.AreCompilationSettingsEqual(Environment, other.Environment)
                     && StubContext.Equals(other.StubContext)
                     && DllImportData.Equals(other.DllImportData)
-                    && ForwardedAttributes.SequenceEqual(other.ForwardedAttributes, (IEqualityComparer<AttributeSyntax>)new SyntaxEquivalentComparer())
+                    && ForwardedAttributes.SequenceEqual(other.ForwardedAttributes, (IEqualityComparer<AttributeSyntax>)SyntaxEquivalentComparer.Instance)
                     && Diagnostics.SequenceEqual(other.Diagnostics);
             }
 
@@ -93,11 +97,11 @@ namespace Microsoft.Interop
                 context.ReportDiagnostic(Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, refReturnMethod.Syntax.GetLocation(), "ref return", refReturnMethod.Symbol.ToDisplayString()));
             });
 
-            IncrementalValueProvider<(Compilation compilation, bool isSupported, Version targetFrameworkVersion)> compilationAndTargetFramework = context.CompilationProvider
+            IncrementalValueProvider<(Compilation compilation, TargetFramework targetFramework, Version targetFrameworkVersion)> compilationAndTargetFramework = context.CompilationProvider
                 .Select(static (compilation, ct) =>
                 {
-                    bool isSupported = IsSupportedTargetFramework(compilation, out Version targetFrameworkVersion);
-                    return (compilation, isSupported, targetFrameworkVersion);
+                    TargetFramework fmk = DetermineTargetFramework(compilation, out Version targetFrameworkVersion);
+                    return (compilation, fmk, targetFrameworkVersion);
                 });
 
             context.RegisterSourceOutput(
@@ -105,16 +109,16 @@ namespace Microsoft.Interop
                     .Combine(methodsToGenerate.Collect()),
                 static (context, data) =>
                 {
-                    if (!data.Left.isSupported && data.Right.Any())
+                    if (data.Left.targetFramework is TargetFramework.Unknown && data.Right.Any())
                     {
-                        // We don't block source generation when the TFM is unsupported.
+                        // We don't block source generation when the TFM is unknown.
                         // This allows a user to copy generated source and use it as a starting point
                         // for manual marshalling if desired.
                         context.ReportDiagnostic(
                             Diagnostic.Create(
                                 GeneratorDiagnostics.TargetFrameworkNotSupported,
                                 Location.None,
-                                s_minimumSupportedFrameworkVersion.ToString(2)));
+                                data.Left.targetFrameworkVersion));
                     }
                 });
 
@@ -127,7 +131,7 @@ namespace Microsoft.Interop
                     static (data, ct) =>
                         new StubEnvironment(
                             data.Left.compilation,
-                            data.Left.isSupported,
+                            data.Left.targetFramework,
                             data.Left.targetFrameworkVersion,
                             data.Left.compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute),
                             data.Right)
@@ -312,7 +316,7 @@ namespace Microsoft.Interop
             return toPrint;
         }
 
-        private static bool IsSupportedTargetFramework(Compilation compilation, out Version version)
+        private static TargetFramework DetermineTargetFramework(Compilation compilation, out Version version)
         {
             IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
             version = systemAssembly.Identity.Version;
@@ -320,12 +324,13 @@ namespace Microsoft.Interop
             return systemAssembly.Identity.Name switch
             {
                 // .NET Framework
-                "mscorlib" => false,
+                "mscorlib" => TargetFramework.Framework,
                 // .NET Standard
-                "netstandard" => false,
+                "netstandard" => TargetFramework.Standard,
                 // .NET Core (when version < 5.0) or .NET
-                "System.Runtime" or "System.Private.CoreLib" => version >= s_minimumSupportedFrameworkVersion,
-                _ => false,
+                "System.Runtime" or "System.Private.CoreLib" =>
+                    (version.Major < 5) ? TargetFramework.Core : TargetFramework.Net,
+                _ => TargetFramework.Unknown,
             };
         }
 
@@ -338,7 +343,6 @@ namespace Microsoft.Interop
                 // [TODO] Report GeneratedDllImport has an error - corrupt metadata?
                 throw new InvalidProgramException();
             }
-
 
             // Default values for these properties are based on the
             // documented semanatics of DllImportAttribute:
@@ -473,7 +477,7 @@ namespace Microsoft.Interop
             // Create the stub.
             var dllImportStub = DllImportStubContext.Create(symbol, stubDllImportData, environment, generatorDiagnostics, ct);
 
-            return new IncrementalStubGenerationContext(dllImportStub, additionalAttributes.ToImmutableArray(), stubDllImportData, generatorDiagnostics.Diagnostics.ToImmutableArray());
+            return new IncrementalStubGenerationContext(environment, dllImportStub, additionalAttributes.ToImmutableArray(), stubDllImportData, generatorDiagnostics.Diagnostics.ToImmutableArray());
         }
 
         private (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
@@ -490,12 +494,16 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new PInvokeStubCodeGenerator(
+                dllImportStub.Environment,
                 dllImportStub.StubContext.ElementTypeInformation,
                 dllImportStub.DllImportData.SetLastError && !options.GenerateForwarders,
                 (elementInfo, ex) => diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails),
                 dllImportStub.StubContext.GeneratorFactory);
 
-            if (stubGenerator.StubIsBasicForwarder)
+            // Check if the generator should produce a forwarder stub - regular DllImport.
+            // This is done if the signature is blittable or the target framework is not supported.
+            if (stubGenerator.StubIsBasicForwarder
+                || !stubGenerator.SupportsTargetFramework)
             {
                 return (PrintForwarderStub(originalSyntax, dllImportStub), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
             }

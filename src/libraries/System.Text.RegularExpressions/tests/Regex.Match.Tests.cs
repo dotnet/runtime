@@ -1827,5 +1827,33 @@ namespace System.Text.RegularExpressions.Tests
                              }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
             }
         }
+
+        [Theory]
+        [MemberData(nameof(MatchWordsInAnchoredRegexes_TestData))]
+        public async Task MatchWordsInAnchoredRegexes(RegexEngine engine, RegexOptions options, string pattern, string input, (int, int)[] matches)
+        {
+            // The aim of these test is to test corner cases of matches involving anchors
+            // For NonBacktracking these tests are meant to
+            // cover most contexts in _nullabilityForContext in SymbolicRegexNode
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            MatchCollection ms = r.Matches(input);
+            Assert.Equal(matches.Length, ms.Count);
+            for (int i = 0; i < matches.Length; i++)
+            {
+                Assert.Equal(ms[i].Index, matches[i].Item1);
+                Assert.Equal(ms[i].Length, matches[i].Item2);
+            }
+        }
+
+        public static IEnumerable<object[]> MatchWordsInAnchoredRegexes_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, RegexOptions.None, @"\b\w{10,}\b", "this is a complicated word in a\nnontrivial sentence", new (int, int)[] { (10, 11), (32, 10) } };
+                yield return new object[] { engine, RegexOptions.Multiline, @"^\w{10,}\b", "this is a\ncomplicated word in a\nnontrivial sentence", new (int, int)[] { (10, 11), (32, 10) } };
+                yield return new object[] { engine, RegexOptions.None, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", "date 10/12/1966 and 10/12/66 are the same", new (int, int)[] { (5, 10), (20, 8) } };
+                yield return new object[] { engine, RegexOptions.Multiline, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}$", "date 10/12/1966\nand 10/12/66\nare the same", new (int, int)[] { (5, 10), (20, 8) } };
+            }
+        }
     }
 }

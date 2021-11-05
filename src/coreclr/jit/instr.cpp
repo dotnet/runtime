@@ -145,11 +145,6 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
 
 /*****************************************************************************/
 #endif // DEBUG
-/*****************************************************************************/
-
-void CodeGen::instInit()
-{
-}
 
 /*****************************************************************************
  *
@@ -995,46 +990,6 @@ void CodeGen::inst_RV_SH(
 
 /*****************************************************************************
  *
- *  Generate a "shift [r/m], icon" instruction.
- */
-
-void CodeGen::inst_TT_SH(instruction ins, GenTree* tree, unsigned val, unsigned offs)
-{
-#ifdef TARGET_XARCH
-    if (val == 0)
-    {
-        // Shift by 0 - why are you wasting our precious time????
-        return;
-    }
-
-    ins = genMapShiftInsToShiftByConstantIns(ins, val);
-    if (val == 1)
-    {
-        inst_TT(ins, tree, offs, 0, emitTypeSize(tree->TypeGet()));
-    }
-    else
-    {
-        inst_TT(ins, tree, offs, val, emitTypeSize(tree->TypeGet()));
-    }
-#endif // TARGET_XARCH
-
-#ifdef TARGET_ARM
-    inst_TT(ins, tree, offs, val, emitTypeSize(tree->TypeGet()));
-#endif
-}
-
-/*****************************************************************************
- *
- *  Generate a "shift [addr], cl" instruction.
- */
-
-void CodeGen::inst_TT_CL(instruction ins, GenTree* tree, unsigned offs)
-{
-    inst_TT(ins, tree, offs, 0, emitTypeSize(tree->TypeGet()));
-}
-
-/*****************************************************************************
- *
  *  Generate an instruction of the form "op reg1, reg2, icon".
  */
 
@@ -1331,23 +1286,6 @@ void CodeGen::inst_RV_RV_TT(
 
 /*****************************************************************************
  *
- *  Generate an instruction with two registers, the second one being a byte
- *  or word register (i.e. this is something like "movzx eax, cl").
- */
-
-void CodeGen::inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumber reg2)
-{
-    assert(size == EA_1BYTE || size == EA_2BYTE);
-#ifdef TARGET_XARCH
-    assert(ins == INS_movsx || ins == INS_movzx);
-    assert(size != EA_1BYTE || (genRegMask(reg2) & RBM_BYTE_REGS));
-#endif
-
-    GetEmitter()->emitIns_R_R(ins, size, reg1, reg2);
-}
-
-/*****************************************************************************
- *
  *  The following should all end up inline in compiler.hpp at some point.
  */
 
@@ -1356,66 +1294,6 @@ void CodeGen::inst_ST_RV(instruction ins, TempDsc* tmp, unsigned ofs, regNumber 
     GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, tmp->tdTempNum(), ofs);
 }
 
-void CodeGen::inst_ST_IV(instruction ins, TempDsc* tmp, unsigned ofs, int val, var_types type)
-{
-    GetEmitter()->emitIns_S_I(ins, emitActualTypeSize(type), tmp->tdTempNum(), ofs, val);
-}
-
-#if FEATURE_FIXED_OUT_ARGS
-/*****************************************************************************
- *
- *  Generate an instruction that references the outgoing argument space
- *  like "str r3, [sp+0x04]"
- */
-
-void CodeGen::inst_SA_RV(instruction ins, unsigned ofs, regNumber reg, var_types type)
-{
-    assert(ofs < compiler->lvaOutgoingArgSpaceSize);
-
-    GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, compiler->lvaOutgoingArgSpaceVar, ofs);
-}
-
-void CodeGen::inst_SA_IV(instruction ins, unsigned ofs, int val, var_types type)
-{
-    assert(ofs < compiler->lvaOutgoingArgSpaceSize);
-
-    GetEmitter()->emitIns_S_I(ins, emitActualTypeSize(type), compiler->lvaOutgoingArgSpaceVar, ofs, val);
-}
-#endif // FEATURE_FIXED_OUT_ARGS
-
-/*****************************************************************************
- *
- *  Generate an instruction with one register and one operand that is byte
- *  or short (e.g. something like "movzx eax, byte ptr [edx]").
- */
-
-void CodeGen::inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTree* tree)
-{
-    assert(size == EA_1BYTE || size == EA_2BYTE);
-
-    inst_RV_TT(ins, reg, tree, 0, size);
-}
-
-void CodeGen::inst_mov_RV_ST(regNumber reg, GenTree* tree)
-{
-    /* Figure out the size of the value being loaded */
-
-    emitAttr    size    = EA_ATTR(genTypeSize(tree->gtType));
-    instruction loadIns = ins_Move_Extend(tree->TypeGet(), false);
-
-    if (size < EA_4BYTE)
-    {
-        /* Generate the "movsx/movzx" opcode */
-
-        inst_RV_ST(loadIns, size, reg, tree);
-    }
-    else
-    {
-        /* Compute op1 into the target register */
-
-        inst_RV_TT(loadIns, reg, tree);
-    }
-}
 #ifdef TARGET_XARCH
 void CodeGen::inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs)
 {
@@ -1517,38 +1395,22 @@ bool CodeGenInterface::validDispForLdSt(target_ssize_t disp, var_types type)
             return false;
     }
 }
-bool CodeGen::arm_Valid_Disp_For_LdSt(target_ssize_t disp, var_types type)
-{
-    return validDispForLdSt(disp, type);
-}
 
 bool CodeGenInterface::validImmForAlu(target_ssize_t imm)
 {
     return emitter::emitIns_valid_imm_for_alu(imm);
-}
-bool CodeGen::arm_Valid_Imm_For_Alu(target_ssize_t imm)
-{
-    return validImmForAlu(imm);
 }
 
 bool CodeGenInterface::validImmForMov(target_ssize_t imm)
 {
     return emitter::emitIns_valid_imm_for_mov(imm);
 }
-bool CodeGen::arm_Valid_Imm_For_Mov(target_ssize_t imm)
-{
-    return validImmForMov(imm);
-}
-
-bool CodeGen::arm_Valid_Imm_For_Small_Mov(regNumber reg, target_ssize_t imm, insFlags flags)
-{
-    return emitter::emitIns_valid_imm_for_small_mov(reg, imm, flags);
-}
 
 bool CodeGenInterface::validImmForAdd(target_ssize_t imm, insFlags flags)
 {
     return emitter::emitIns_valid_imm_for_add(imm, flags);
 }
+
 bool CodeGen::arm_Valid_Imm_For_Add(target_ssize_t imm, insFlags flags)
 {
     return emitter::emitIns_valid_imm_for_add(imm, flags);
@@ -1568,28 +1430,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
         (!compiler->info.compMatchedVM && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
         (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
 }
-bool CodeGen::arm_Valid_Imm_For_BL(ssize_t addr)
-{
-    return validImmForBL(addr);
-}
 
-// Returns true if this instruction writes to a destination register
-//
-bool CodeGen::ins_Writes_Dest(instruction ins)
-{
-    switch (ins)
-    {
-
-        case INS_cmp:
-        case INS_cmn:
-        case INS_tst:
-        case INS_teq:
-            return false;
-
-        default:
-            return true;
-    }
-}
 #endif // TARGET_ARM
 
 #if defined(TARGET_ARM64)
@@ -2093,35 +1934,6 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
 
 #if defined(TARGET_XARCH)
 
-bool CodeGen::isMoveIns(instruction ins)
-{
-    return (ins == INS_mov);
-}
-
-instruction CodeGenInterface::ins_FloatLoad(var_types type)
-{
-    // Do Not use this routine in RyuJIT backend. Instead use ins_Load()/ins_Store()
-    unreached();
-}
-
-// everything is just an addressing mode variation on x64
-instruction CodeGen::ins_FloatStore(var_types type)
-{
-    // Do Not use this routine in RyuJIT backend. Instead use ins_Store()
-    unreached();
-}
-
-instruction CodeGen::ins_FloatCopy(var_types type)
-{
-    // Do Not use this routine in RyuJIT backend. Instead use ins_Load().
-    unreached();
-}
-
-instruction CodeGen::ins_FloatCompare(var_types type)
-{
-    return (type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
-}
-
 instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 {
     switch (oper)
@@ -2137,27 +1949,6 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
         default:
             unreached();
     }
-}
-
-instruction CodeGen::ins_FloatSqrt(var_types type)
-{
-    instruction ins = INS_invalid;
-
-    if (type == TYP_DOUBLE)
-    {
-        ins = INS_sqrtsd;
-    }
-    else if (type == TYP_FLOAT)
-    {
-        ins = INS_sqrtss;
-    }
-    else
-    {
-        assert(!"ins_FloatSqrt: Unsupported type");
-        unreached();
-    }
-
-    return ins;
 }
 
 // Conversions to or from floating point values
@@ -2219,39 +2010,6 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 }
 
 #elif defined(TARGET_ARM)
-
-bool CodeGen::isMoveIns(instruction ins)
-{
-    return (ins == INS_vmov) || (ins == INS_mov);
-}
-
-instruction CodeGenInterface::ins_FloatLoad(var_types type)
-{
-    assert(type == TYP_DOUBLE || type == TYP_FLOAT);
-    return INS_vldr;
-}
-instruction CodeGen::ins_FloatStore(var_types type)
-{
-    assert(type == TYP_DOUBLE || type == TYP_FLOAT);
-    return INS_vstr;
-}
-instruction CodeGen::ins_FloatCopy(var_types type)
-{
-    assert(type == TYP_DOUBLE || type == TYP_FLOAT);
-    return INS_vmov;
-}
-
-instruction CodeGen::ins_FloatCompare(var_types type)
-{
-    // Not used and not implemented
-    unreached();
-}
-
-instruction CodeGen::ins_FloatSqrt(var_types type)
-{
-    // Not used and not implemented
-    unreached();
-}
 
 instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 {
@@ -2400,106 +2158,6 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 #error "Unknown TARGET"
 #endif
     regSet.verifyRegUsed(reg);
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to set the flags based on
- *   comparing a register with zero
- */
-void CodeGen::instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg)
-{
-#if defined(TARGET_XARCH)
-    GetEmitter()->emitIns_R_R(INS_test, size, reg, reg);
-#elif defined(TARGET_ARMARCH)
-    GetEmitter()->emitIns_R_I(INS_cmp, size, reg, 0);
-#else
-#error "Unknown TARGET"
-#endif
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to set the flags based upon
- *   comparing a register with another register
- */
-void CodeGen::instGen_Compare_Reg_To_Reg(emitAttr size, regNumber reg1, regNumber reg2)
-{
-#if defined(TARGET_XARCH) || defined(TARGET_ARMARCH)
-    GetEmitter()->emitIns_R_R(INS_cmp, size, reg1, reg2);
-#else
-#error "Unknown TARGET"
-#endif
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to set the flags based upon
- *   comparing a register with an immediate
- */
-void CodeGen::instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, target_ssize_t imm)
-{
-    if (imm == 0)
-    {
-        instGen_Compare_Reg_To_Zero(size, reg);
-    }
-    else
-    {
-#if defined(TARGET_XARCH)
-#if defined(TARGET_AMD64)
-        if ((EA_SIZE(size) == EA_8BYTE) && (((int)imm != (ssize_t)imm) || EA_IS_CNS_RELOC(size)))
-        {
-            assert(!"Invalid immediate for instGen_Compare_Reg_To_Imm");
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
-        }
-#elif defined(TARGET_ARM)
-        if (arm_Valid_Imm_For_Alu(imm) || arm_Valid_Imm_For_Alu(-imm))
-        {
-            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
-        }
-        else // We need a scratch register
-        {
-            assert(!"Invalid immediate for instGen_Compare_Reg_To_Imm");
-        }
-#elif defined(TARGET_ARM64)
-        if (true) // TODO-ARM64-NYI: arm_Valid_Imm_For_Alu(imm) || arm_Valid_Imm_For_Alu(-imm))
-        {
-            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
-        }
-        else // We need a scratch register
-        {
-            assert(!"Invalid immediate for instGen_Compare_Reg_To_Imm");
-        }
-#else
-#error "Unknown TARGET"
-#endif
-    }
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to move a stack based local variable into a register
- */
-void CodeGen::instGen_Load_Reg_From_Lcl(var_types srcType, regNumber dstReg, int varNum, int offs)
-{
-    emitAttr size = emitTypeSize(srcType);
-
-    GetEmitter()->emitIns_R_S(ins_Load(srcType), size, dstReg, varNum, offs);
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to move a register into a stack based local variable
- */
-void CodeGen::instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, int varNum, int offs)
-{
-    emitAttr size = emitTypeSize(dstType);
-
-    GetEmitter()->emitIns_S_R(ins_Store(dstType), size, srcReg, varNum, offs);
 }
 
 /*****************************************************************************/

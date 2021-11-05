@@ -8,7 +8,7 @@ public class Gen<U>
 	public void Meth<T>(T t) where T : struct, U {}
 }
 
-public class Test
+public class Test_repro
 {
 	public static int Main()
 	{
