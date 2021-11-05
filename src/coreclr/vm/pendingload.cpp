@@ -130,8 +130,6 @@ BOOL PendingTypeLoadTable::InsertValue(PendingTypeLoadEntry *pData)
     return TRUE;
 }
 
-static int CollisionCount;
-
 BOOL PendingTypeLoadTable::DeleteValue(TypeKey *pKey)
 {
     CONTRACTL
@@ -162,7 +160,6 @@ BOOL PendingTypeLoadTable::DeleteValue(TypeKey *pKey)
         }
 
         ppPrev = &pSearch->pNext;
-        printf("CollisionCount: %i \n", ++CollisionCount);
     }
 
     return FALSE;
