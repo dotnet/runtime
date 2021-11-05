@@ -2,6 +2,7 @@
     <PropertyGroup>
         <PackageRid>linux-x64</PackageRid>
         <PackageRid Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</PackageRid>
+        <PackageRid Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx-x64</PackageRid>
         
         <TargetingPacksTargetsLocation Condition="'$(TargetingPacksTargetsLocation)' == ''">../../../../../../eng/targetingpacks.targets</TargetingPacksTargetsLocation>
         <ProductVersion>7.0.0</ProductVersion>

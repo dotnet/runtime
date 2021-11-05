@@ -3,14 +3,13 @@ ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df2
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
-
+ARG CONFIGURATION=Release
 WORKDIR /repo
 COPY . .
 
-ARG CONFIGURATION=Release
 RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURATION -ci
 
-# RUN mkdir -p /repo/artifacts/bin/testhost
+# RUN mkdir -p /repo/artifacts/bin/testhost/net7.0-Linux-Release-x64
 # RUN echo 'lol' > /repo/artifacts/bin/testhost/lol.txt
 # 
 # RUN mkdir -p /repo/artifacts/bin/microsoft.netcore.app.ref
@@ -36,26 +35,29 @@ RUN bash ./dotnet-install.sh --channel 7.0.1xx --quality daily --install-dir /us
 ## 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
 ## 4. testhost
 
-COPY --from=corefxbuild \
-    /repo/artifacts/bin/testhost \
-    /runtime-drop/testhost
+ARG VERSION=7.0
+ARG ARCH=x64
+ARG CONFIGURATION=Release
 
 COPY --from=corefxbuild \
     /repo/artifacts/bin/microsoft.netcore.app.ref \
     /runtime-drop/microsoft.netcore.app.ref
 
 COPY --from=corefxbuild \
-    /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64 \
-    /runtime-drop/microsoft.netcore.app.runtime.linux-x64
+    /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-$ARCH \
+    /runtime-drop/microsoft.netcore.app.runtime.linux-$ARCH
 
 COPY --from=corefxbuild \
     /repo/eng/targetingpacks.targets \
     /runtime-drop/targetingpacks.targets
 
-#ARG TFM=net7.0
-#ARG OS=Linux
-#ARG ARCH=x64
-#ARG CONFIGURATION=Release
+COPY --from=corefxbuild \
+    /repo/artifacts/bin/testhost \
+    /runtime-drop/testhost
+
+# Add AspNetCore bits to testhost:
+RUN mkdir -p /runtime-drop/testhost/net${VERSION}-Linux-${CONFIGURATION}-${ARCH}/shared/Microsoft.AspNetCore.App
+RUN cp -r /usr/share/dotnet/shared/Microsoft.AspNetCore.App/${VERSION}* /runtime-drop/testhost/net${VERSION}-Linux-${CONFIGURATION}-${ARCH}/shared/Microsoft.AspNetCore.App
 
 # ARG COREFX_SHARED_FRAMEWORK_NAME=Microsoft.NETCore.App
 # ARG SOURCE_COREFX_VERSION=7.0.0

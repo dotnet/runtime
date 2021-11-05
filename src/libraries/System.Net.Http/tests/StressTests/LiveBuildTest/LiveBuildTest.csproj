@@ -21,5 +21,8 @@
     <Message Text="NetCoreAppCurrentRuntimePath: $(NetCoreAppCurrentRuntimePath)" Importance="High" />
     <Message Text="NetCoreAppCurrentTargetFrameworkMoniker: $(NetCoreAppCurrentTargetFrameworkMoniker)" Importance="High" />
 
+    <Message Text="TargetRid: $(TargetRid)" Importance="High" />
+
+    <Message Text="RuntimeOS: $(RuntimeOS)" Importance="High" />
   </Target>
 </Project>
