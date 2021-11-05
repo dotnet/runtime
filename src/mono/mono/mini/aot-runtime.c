@@ -710,7 +710,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 			t->pinned = TRUE;
 			++p;
 		} else if (*p == MONO_TYPE_BYREF) {
-			t->byref = TRUE;
+			t->byref__ = TRUE;
 			++p;
 		} else {
 			break;
@@ -3442,19 +3442,14 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 	MonoJitInfo *jinfo;
 	guint8 *code, *ex_info, *p;
 	guint32 *table;
-	int nmethods;
 	gpointer *methods;
 	guint8 *code1, *code2;
 	int methods_len;
 	gboolean async;
-	gpointer orig_addr;
 
 	if (!amodule)
 		return NULL;
 
-	nmethods = amodule->info.nmethods;
-
-	orig_addr = addr;
 	addr = MINI_FTNPTR_TO_ADDR (addr);
 
 	if (!amodule_contains_code_addr (amodule, (guint8 *)addr))
@@ -3903,6 +3898,12 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			}
 			case MONO_PATCH_INFO_FIELD:
 				template_->data = decode_field_info (aot_module, p, &p);
+				if (!template_->data)
+					goto cleanup;
+				break;
+			case MONO_PATCH_INFO_METHOD:
+				template_->data = decode_resolve_method_ref (aot_module, p, &p, error);
+				mono_error_cleanup (error); /* FIXME don't swallow the error */
 				if (!template_->data)
 					goto cleanup;
 				break;

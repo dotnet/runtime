@@ -303,4 +303,7 @@
   <data name="UnterminatedComment" xml:space="preserve">
     <value>Unterminated (?#...) comment.</value>
   </data>
+  <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
+    <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
+  </data>
 </root>

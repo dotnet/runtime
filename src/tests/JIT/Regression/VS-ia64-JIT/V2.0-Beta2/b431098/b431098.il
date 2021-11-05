@@ -12,7 +12,7 @@
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
 }
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_b431098
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32  Main() cil managed
@@ -22,7 +22,7 @@
 
 		ldtoken    string&
 		call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-		call	   bool Test::Bug(object)
+		call	   bool Test_b431098::Bug(object)
                 brtrue.s   Failed
                 ldc.i4     100
                 ldstr      "Test SUCCESS"

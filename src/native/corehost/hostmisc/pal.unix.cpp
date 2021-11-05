@@ -5,7 +5,6 @@
 #define _WITH_GETLINE
 #endif
 
-#include <getexepath.h>
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"
@@ -20,6 +19,7 @@
 #include <locale>
 #include <pwd.h>
 #include "config.h"
+#include <common/getexepath.h>
 
 #if defined(TARGET_OSX)
 #include <mach-o/dyld.h>
@@ -540,6 +540,10 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
 
 #if defined(TARGET_OSX)
     recv->assign(_X("/usr/local/share/dotnet"));
+    if (pal::is_emulating_x64())
+    {
+        append_path(recv, _X("x64"));
+    }
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif
@@ -570,26 +574,43 @@ pal::string_t pal::get_current_os_rid_platform()
     char str[256];
     size_t size = sizeof(str);
 
-    // returns something like 10.5.2
+    // returns something like 10.5.2 or 11.6
     int ret = sysctlbyname("kern.osproductversion", str, &size, nullptr, 0);
     if (ret == 0)
     {
         // the value _should_ be null terminated but let's make sure
         str[size - 1] = 0;
+
         char* pos = strchr(str, '.');
         if (pos != NULL)
         {
-            pos = strchr(pos + 1, '.');
-
-            if (pos != NULL)
+            int major = atoi(str);
+            if (major > 11)
             {
-                // strip anything after second dot and return something like 10.5
+                // starting with 12.0 we track only major release
                 *pos = 0;
-                size = pos - str;
+
+            }
+            else if (major == 11)
+            {
+                // for 11.x we publish RID as 11.0
+                // if we return anything else, it would break the RID graph processing
+                strcpy(str, "11.0");
+            }
+            else
+            {
+                // for 10.x the significant releases are actually the second digit
+                pos = strchr(pos + 1, '.');
+
+                if (pos != NULL)
+                {
+                    // strip anything after second dot and return something like 10.5
+                    *pos = 0;
+                }
             }
         }
 
-        std::string release(str, size);
+        std::string release(str, strlen(str));
         ridOS.append(_X("osx."));
         ridOS.append(release);
     }
@@ -816,7 +837,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    char* path = getexepath();
+    char* path = minipal_getexepath();
     if (!path)
     {
         return false;
@@ -1000,6 +1021,26 @@ void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::st
 bool pal::is_running_in_wow64()
 {
     return false;
+}
+
+bool pal::is_emulating_x64()
+{
+    int is_translated_process = 0;
+#if defined(TARGET_OSX)
+    size_t size = sizeof(is_translated_process);
+    if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
+    {
+        trace::info(_X("Could not determine whether the current process is running under Rosetta."));
+        if (errno != ENOENT)
+        {
+            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno));
+        }
+
+        return false;
+    }
+#endif
+
+    return is_translated_process == 1;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

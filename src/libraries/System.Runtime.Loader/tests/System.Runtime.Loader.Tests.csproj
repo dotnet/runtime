@@ -25,9 +25,13 @@
   <ItemGroup>
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
-    <ProjectReference Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
-    <ProjectReference Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
-    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <!-- iOS & tvOS are aot workloads and loading an embedded assembly results in some dynamic codegen, which is not allowed -->
+    <ProjectReference Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" />
+    <ProjectReference Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" />
+    <ProjectReference Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" />
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />

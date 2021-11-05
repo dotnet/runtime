@@ -12,7 +12,7 @@ struct S
     public String str;
 }
 
-class Test
+class Test_struct1_2
 {
     public static void c(S s1)
     {

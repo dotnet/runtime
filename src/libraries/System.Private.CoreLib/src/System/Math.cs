@@ -49,6 +49,10 @@ namespace System
 
         private const double SCALEB_C3 = 9007199254740992; // 0x1p53
 
+        private const int ILogB_NaN = 0x7fffffff;
+
+        private const int ILogB_Zero = (-1 - 0x7fffffff);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
@@ -786,6 +790,38 @@ namespace System
             {
                 return regularMod;
             }
+        }
+
+        public static int ILogB(double x)
+        {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogb.c
+
+            if (double.IsNaN(x))
+            {
+                return ILogB_NaN;
+            }
+
+            ulong i = BitConverter.DoubleToUInt64Bits(x);
+            int e = (int)((i >> 52) & 0x7FF);
+
+            if (e == 0)
+            {
+                i <<= 12;
+                if (i == 0)
+                {
+                    return ILogB_Zero;
+                }
+
+                for (e = -0x3FF; (i >> 63) == 0; e--, i <<= 1) ;
+                return e;
+            }
+
+            if (e == 0x7FF)
+            {
+                return (i << 12) != 0 ? ILogB_Zero : int.MaxValue;
+            }
+
+            return e - 0x3FF;
         }
 
         public static double Log(double a, double newBase)

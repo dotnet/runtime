@@ -1608,9 +1608,14 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG))
         {
-            genConsumeReg(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp1());
+        }
+        else if (tree->OperIs(GT_MUL))
+        {
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
         }
         else
         {
@@ -1898,7 +1903,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         if (!blkNode->OperIs(GT_STORE_DYN_BLK))
         {
             assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            genSetRegToIcon(sizeReg, blockSize);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, sizeReg, blockSize);
         }
         else
         {

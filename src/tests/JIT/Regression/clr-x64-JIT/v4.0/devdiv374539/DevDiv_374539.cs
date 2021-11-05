@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-internal class Test
+internal class Test_DevDiv_374539
 {
     [DllImport("kernel32.dll")]
     private extern static IntPtr GetModuleHandle(string lpModuleName);

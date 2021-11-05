@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     public class GeneratorTests
     {
         [Fact]

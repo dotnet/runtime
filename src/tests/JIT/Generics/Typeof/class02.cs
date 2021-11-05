@@ -53,7 +53,7 @@ public class Gen<T, U>
     }
 }
 
-public class Test
+public class Test_class02
 {
     public static int counter = 0;
     public static bool result = true;

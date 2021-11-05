@@ -303,6 +303,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_reset) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_key_length) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_padding) \
+    RENAMED_FUNCTION(EVP_CIPHER_get_nid, EVP_CIPHER_nid) \
     REQUIRED_FUNCTION(EVP_CipherFinal_ex) \
     REQUIRED_FUNCTION(EVP_CipherInit_ex) \
     REQUIRED_FUNCTION(EVP_CipherUpdate) \
@@ -757,6 +758,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CIPHER_CTX_reset EVP_CIPHER_CTX_reset_ptr
 #define EVP_CIPHER_CTX_set_key_length EVP_CIPHER_CTX_set_key_length_ptr
 #define EVP_CIPHER_CTX_set_padding EVP_CIPHER_CTX_set_padding_ptr
+#define EVP_CIPHER_get_nid EVP_CIPHER_get_nid_ptr
 #define EVP_CipherFinal_ex EVP_CipherFinal_ex_ptr
 #define EVP_CipherInit_ex EVP_CipherInit_ex_ptr
 #define EVP_CipherUpdate EVP_CipherUpdate_ptr
@@ -1120,6 +1122,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_get_base_id EVP_PKEY_base_id
 #define EVP_PKEY_get_size EVP_PKEY_size
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
+#define EVP_CIPHER_get_nid EVP_CIPHER_nid
 
 #endif
 

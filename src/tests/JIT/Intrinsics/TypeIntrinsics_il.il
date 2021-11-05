@@ -6,7 +6,7 @@
 
 .assembly TypeIntrinsicsTests { }
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_TypeIntrinsics_il
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 Main() cil managed

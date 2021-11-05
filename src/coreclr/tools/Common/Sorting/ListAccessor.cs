@@ -39,8 +39,8 @@ namespace ILCompiler.Sorting.Implementation
         public void SwapElements(List<T> dataStructure, int i, int i2)
         {
             T temp = dataStructure[i];
-            dataStructure[i] = dataStructure[i + 1];
-            dataStructure[i + 1] = temp;
+            dataStructure[i] = dataStructure[i2];
+            dataStructure[i2] = temp;
         }
     }
 }

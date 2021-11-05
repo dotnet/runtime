@@ -216,14 +216,8 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     return ReinitializeCipher(ctx);
 }
 
-CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keySizeInBits, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
+CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keySizeInBits, uint8_t* iv, int32_t enc)
 {
-    if (effectiveKeyLength != 0)
-    {
-        LOG_ERROR("Non-zero effectiveKeyLength is not supported");
-        return FAIL;
-    }
-
     CipherCtx* ctx = AndroidCryptoNative_CipherCreatePartial(type);
 
     // Update the key size if provided

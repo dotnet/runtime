@@ -96,7 +96,7 @@ public struct InlinedVal
 }
 
 
-public class Test
+public class Test_Inlined
 {
 	public static int Main()
 	{

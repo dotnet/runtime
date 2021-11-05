@@ -369,8 +369,12 @@ namespace System.Diagnostics
 
             if (!categoryExists)
             {
-                // Consider adding diagnostic logic here, may be we can dump the nameTable...
-                throw new InvalidOperationException(SR.MissingCategory);
+#if DEBUG
+                string categories = "Categories: " + string.Join(';', library.GetCategories());
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category) + "\r\n" + categories);
+#else
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
+#endif
             }
 
             return counterExists;
@@ -792,7 +796,7 @@ namespace System.Diagnostics
             help = library.GetCategoryHelp(category);
 
             if (help == null)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return help;
         }
@@ -823,7 +827,7 @@ namespace System.Diagnostics
                 }
             }
             if (sample == null)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return sample;
         }
@@ -864,7 +868,7 @@ namespace System.Diagnostics
             }
 
             if (!categoryExists)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return counters;
         }
@@ -929,7 +933,7 @@ namespace System.Diagnostics
             help = library.GetCounterHelp(category, counter, ref categoryExists);
 
             if (!categoryExists)
-                throw new InvalidOperationException(SR.Format(SR.MissingCategoryDetail, category));
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return help;
         }

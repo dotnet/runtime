@@ -1076,7 +1076,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
     while ((arr = m_OldSyncTables) != NULL)
     {
         m_OldSyncTables = (SyncTableEntry*)arr[0].m_Object.Load();
-        delete arr;
+        delete[] arr;
     }
 
 #ifdef DUMP_SB

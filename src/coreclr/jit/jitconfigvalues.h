@@ -502,6 +502,8 @@ CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualiza
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
+// Enable partial compilation for Tier0 methods
+CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)

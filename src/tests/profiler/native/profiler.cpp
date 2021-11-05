@@ -535,7 +535,7 @@ HRESULT STDMETHODCALLTYPE Profiler::EventPipeProviderCreated(EVENTPIPE_PROVIDER 
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE Profiler::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+HRESULT STDMETHODCALLTYPE Profiler::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
 {
     *pbNotificationOnly = FALSE;
     return S_OK;

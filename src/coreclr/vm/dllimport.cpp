@@ -33,6 +33,7 @@
 #include "sigbuilder.h"
 #include "sigformat.h"
 #include "ecall.h"
+#include "qcall.h"
 #include "fieldmarshaler.h"
 #include "pinvokeoverride.h"
 #include "nativelibrary.h"
@@ -4358,8 +4359,9 @@ namespace
         else
         {
             pNMD->ndirect.m_pszLibName = libName;
-            pNMD->ndirect.m_pszEntrypointName = entryPointName;
         }
+
+        pNMD->ndirect.m_pszEntrypointName = entryPointName;
 
         // Do not publish incomplete prestub flags or you will introduce a race condition.
         pNMD->InterlockedSetNDirectFlags(ndirectflags | NDirectMethodDesc::kNDirectPopulated);
@@ -5440,18 +5442,12 @@ namespace
 
         if (pMD->IsQCall())
         {
-            LPVOID pvTarget = pMD->ndirect.m_pNativeNDirectTarget;
-
-            // Do not repeat the lookup if the QCall was hardbound during ngen
-            if (pvTarget == NULL)
-            {
-                pvTarget = ECall::GetQCallImpl(pMD);
-            }
-            else
-            {
-                _ASSERTE(pvTarget == ECall::GetQCallImpl(pMD));
-            }
-
+            void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
+#ifdef _DEBUG
+            CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
+                ("%s::%s is not registered using DllImportentry macro in qcallentrypoints.cpp",
+                pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+#endif
             pMD->SetNDirectTarget(pvTarget);
             return;
         }

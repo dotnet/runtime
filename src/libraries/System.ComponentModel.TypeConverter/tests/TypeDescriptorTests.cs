@@ -13,7 +13,7 @@ namespace System.ComponentModel.Tests
     [Collection("NoParallelTests")] // manipulates cache
     public class TypeDescriptorTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProvider_InvokeObject_GetProviderReturnsExpected()
         {
             var instance = new object();
@@ -47,7 +47,7 @@ namespace System.ComponentModel.Tests
             mockProvider2.Verify(p => p.IsSupportedType(typeof(int)), Times.Once());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProvider_InvokeObjectMultipleTimes_Refreshes()
         {
             var instance = new object();
@@ -96,7 +96,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProvider_InvokeType_GetProviderReturnsExpected()
         {
             Type type = typeof(AddProvider_InvokeType_GetProviderReturnsExpectedType);
@@ -133,7 +133,7 @@ namespace System.ComponentModel.Tests
         private class AddProvider_InvokeType_GetProviderReturnsExpectedType { }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProvider_InvokeTypeMultipleTimes_Refreshes()
         {
             var type = typeof(AddProvider_InvokeTypeMultipleTimes_RefreshesType);
@@ -184,28 +184,28 @@ namespace System.ComponentModel.Tests
 
         private class AddProvider_InvokeTypeMultipleTimes_RefreshesType { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProvider_NullProvider_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("provider", () => TypeDescriptor.AddProvider(null, new object()));
             Assert.Throws<ArgumentNullException>("provider", () => TypeDescriptor.AddProvider(null, typeof(int)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProvider_NullInstance_ThrowsArgumentNullException()
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             Assert.Throws<ArgumentNullException>("instance", () => TypeDescriptor.AddProvider(mockProvider.Object, (object)null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProvider_NullType_ThrowsArgumentNullException()
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             Assert.Throws<ArgumentNullException>("type", () => TypeDescriptor.AddProvider(mockProvider.Object, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProviderTransparent_InvokeObject_GetProviderReturnsExpected()
         {
             var instance = new object();
@@ -239,7 +239,7 @@ namespace System.ComponentModel.Tests
             mockProvider2.Verify(p => p.IsSupportedType(typeof(int)), Times.Once());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProviderTransparent_InvokeObjectMultipleTimes_Refreshes()
         {
             var instance = new object();
@@ -288,7 +288,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProviderTransparent_InvokeType_GetProviderReturnsExpected()
         {
             Type type = typeof(AddProviderTransparent_InvokeType_GetProviderReturnsExpectedType);
@@ -324,7 +324,7 @@ namespace System.ComponentModel.Tests
 
         private class AddProviderTransparent_InvokeType_GetProviderReturnsExpectedType { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProviderTransparent_InvokeTypeMultipleTimes_Refreshes()
         {
             var type = typeof(AddProviderTransparent_InvokeTypeMultipleTimes_RefreshesType);
@@ -375,21 +375,21 @@ namespace System.ComponentModel.Tests
 
         private class AddProviderTransparent_InvokeTypeMultipleTimes_RefreshesType { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProviderTransparent_NullProvider_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("provider", () => TypeDescriptor.AddProviderTransparent(null, new object()));
             Assert.Throws<ArgumentNullException>("provider", () => TypeDescriptor.AddProviderTransparent(null, typeof(int)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProviderTransparent_NullInstance_ThrowsArgumentNullException()
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             Assert.Throws<ArgumentNullException>("instance", () => TypeDescriptor.AddProviderTransparent(mockProvider.Object, (object)null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void AddProviderTransparent_NullType_ThrowsArgumentNullException()
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
@@ -543,7 +543,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(1, properties.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProvider_InvokeObject_RemovesProvider()
         {
             var instance = new object();
@@ -598,7 +598,7 @@ namespace System.ComponentModel.Tests
             mockProvider3.Verify(p => p.IsSupportedType(typeof(int)), Times.Once());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProvider_InvokeObjectWithProviders_Refreshes()
         {
             var instance = new object();
@@ -635,7 +635,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProvider_InvokeObjectWithoutProviders_Refreshes()
         {
             var instance = new object();
@@ -660,7 +660,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProvider_InvokeType_RemovesProvider()
         {
             Type type = typeof(RemoveProvider_InvokeType_RemovesProviderType);
@@ -717,7 +717,7 @@ namespace System.ComponentModel.Tests
 
         private class RemoveProvider_InvokeType_RemovesProviderType { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProvider_InvokeTypeWithProviders_Refreshes()
         {
             Type type = typeof(RemoveProvider_InvokeObjectWithProviders_RefreshesType);
@@ -756,7 +756,7 @@ namespace System.ComponentModel.Tests
 
         private class RemoveProvider_InvokeObjectWithProviders_RefreshesType { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProvider_InvokeTypeWithoutProviders_Refreshes()
         {
             Type type = typeof(RemoveProvider_InvokeTypeWithoutProviders_RefreshesType);
@@ -790,14 +790,14 @@ namespace System.ComponentModel.Tests
             Assert.Throws<ArgumentNullException>("provider", () => TypeDescriptor.RemoveProvider(null, typeof(int)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProvider_NullInstance_ThrowsArgumentNullException()
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             Assert.Throws<ArgumentNullException>("instance", () => TypeDescriptor.RemoveProvider(mockProvider.Object, (object)null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProvider_NullType_ThrowsArgumentNullException()
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
@@ -805,7 +805,7 @@ namespace System.ComponentModel.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProviderTransparent_InvokeObject_RemovesProvider()
         {
             var instance = new object();
@@ -860,7 +860,7 @@ namespace System.ComponentModel.Tests
             mockProvider3.Verify(p => p.IsSupportedType(typeof(int)), Times.Once());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProviderTransparent_InvokeObjectWithProviders_Refreshes()
         {
             var instance = new object();
@@ -897,7 +897,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProviderTransparent_InvokeObjectWithoutProviders_Refreshes()
         {
             var instance = new object();
@@ -922,7 +922,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProviderTransparent_InvokeType_RemovesProvider()
         {
             Type type = typeof(RemoveProviderTransparent_InvokeType_RemovesProviderType);
@@ -979,7 +979,7 @@ namespace System.ComponentModel.Tests
 
         private class RemoveProviderTransparent_InvokeType_RemovesProviderType { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProviderTransparent_InvokeTypeWithProviders_Refreshes()
         {
             Type type = typeof(RemoveProviderTransparent_InvokeObjectWithProviders_RefreshesType);
@@ -1018,7 +1018,7 @@ namespace System.ComponentModel.Tests
 
         private class RemoveProviderTransparent_InvokeObjectWithProviders_RefreshesType { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProviderTransparent_InvokeTypeWithoutProviders_Refreshes()
         {
             Type type = typeof(RemoveProviderTransparent_InvokeTypeWithoutProviders_RefreshesType);
@@ -1052,14 +1052,14 @@ namespace System.ComponentModel.Tests
             Assert.Throws<ArgumentNullException>("provider", () => TypeDescriptor.RemoveProviderTransparent(null, typeof(int)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProviderTransparent_NullInstance_ThrowsArgumentNullException()
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             Assert.Throws<ArgumentNullException>("instance", () => TypeDescriptor.RemoveProviderTransparent(mockProvider.Object, (object)null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void RemoveProviderTransparent_NullType_ThrowsArgumentNullException()
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
@@ -1106,7 +1106,7 @@ namespace System.ComponentModel.Tests
             Assert.NotEqual(firstAssociatedObject, firstAssociation);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         public void SortDescriptorArray_Invoke_ReturnsExpected()
         {
             var notADescriptor1 = new object();

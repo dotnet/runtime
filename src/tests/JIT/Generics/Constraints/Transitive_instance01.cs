@@ -32,7 +32,7 @@ public struct GenStruct<T> where T : IFoo
         return new Transition<T>();
     }
 }
-public class Test
+public class Test_Transitive_instance01
 {
     public static int counter = 0;
     public static bool result = true;
