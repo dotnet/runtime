@@ -106,7 +106,7 @@ namespace Xunit
             if (outerException.InnerException == null)
                 Assert.True(false, string.Format("Expected '{0}.InnerException' to be '{1}', however it is null.", typeof(T), typeof(TInner)));
 
-            if (outerException.InnerException is not T)
+            if (outerException.InnerException is not TInner)
                 Assert.True(false, string.Format("Expected '{0}.InnerException', to be '{1}', however, '{2}' is.", typeof(T), typeof(TInner), outerException.InnerException.GetType()));
 
             return (TInner)outerException.InnerException;
@@ -129,27 +129,15 @@ namespace Xunit
         }
 
         /// <summary>
-        /// Tests whether the two lists are the same length and contain the same objects (using Object.Equals()) in the same order and
-        /// throws an exception if it is not.
-        /// </summary>
-        /// <param name="expected">Expected list.</param>
-        /// <param name="actual">Actual list.</param>
-        /// <param name="message">Message to display upon failure.</param>
-        public static void CollectionEqual<T>(T[] expected, T[] actual, string format, params Object[] args)
-        {
-            CollectionEqual<T>(expected, actual, String.Format(format, args));
-        }
-
-        /// <summary>
         /// Tests whether the two enumerables are the same length and contain the same objects (using Object.Equals()) in the same order and
         /// throws an exception if it is not.
         /// </summary>
         /// <param name="expected">Expected enumerables.</param>
         /// <param name="actual">Actual enumerables.</param>
         /// <param name="message">Message to display upon failure.</param>
-        public static void CollectionEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, string message = "")
+        public static void CollectionEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual)
         {
-            CollectionEqual(CopyToArray(expected), CopyToArray(actual), message);
+            CollectionEqual(CopyToArray(expected), CopyToArray(actual));
         }
 
         /// <summary>

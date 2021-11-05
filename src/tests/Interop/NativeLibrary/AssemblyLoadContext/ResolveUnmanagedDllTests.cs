@@ -30,7 +30,7 @@ public class ALC : AssemblyLoadContext
 
     public void Validate(params string[] expectedNames)
     {
-        AssertExtensions.CollectionEqual(expectedNames, invocations, $"Unexpected invocations for {nameof(LoadUnmanagedDll)}.");
+        AssertExtensions.CollectionEqual(expectedNames, invocations);
     }
 
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
