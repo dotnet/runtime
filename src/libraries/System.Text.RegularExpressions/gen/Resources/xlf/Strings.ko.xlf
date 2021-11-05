@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
         <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
+        <target state="translated">RegexOptions.NonBacktracking에서는 그룹을 대체하는 Regex 대체가 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
