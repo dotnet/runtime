@@ -41,7 +41,7 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 
     updatedTimes[1].tv_sec = (long)times[1].tv_sec;
     updatedTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
-    while (CheckInterrupted(result = 
+    while (CheckInterrupted(result =
 #if HAVE_LUTIMES
         lutimes
 #else
