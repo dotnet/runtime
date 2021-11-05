@@ -23,6 +23,6 @@
 
   <ItemGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
     <ReferencePlatformManifestPath  Include="PlatformManifest.txt" TargetPath="data" GeneratedBuildFile="true" />
-    <FilesToPackage Include="@(ReferencePlatformManifestPath )" />
+    <FilesToPackage Include="@(ReferencePlatformManifestPath)" />
   </ItemGroup>
 </Project>
