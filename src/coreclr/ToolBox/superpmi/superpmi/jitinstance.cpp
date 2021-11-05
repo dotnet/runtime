@@ -369,15 +369,12 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
             pParam->pThis->mc->cr->recMessageLog("Successful Compile");
 
-            pParam->metrics->SuccessfulCompiles++;
             pParam->metrics->NumCodeBytes += NCodeSizeBlock;
         }
         else
         {
             LogDebug("compileMethod failed with result %d", jitResult);
             pParam->result = RESULT_ERROR;
-
-            pParam->metrics->FailingCompiles++;
         }
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
@@ -407,6 +404,20 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     }
 
     mc->cr->secondsToCompile = stj.GetSeconds();
+
+    if (param.result == RESULT_SUCCESS)
+    {
+        metrics->SuccessfulCompiles++;
+    }
+    else
+    {
+        metrics->FailingCompiles++;
+    }
+
+    if (param.result == RESULT_MISSING)
+    {
+        metrics->MissingCompiles++;
+    }
 
     return param.result;
 }

@@ -7,14 +7,23 @@
 class MetricsSummary
 {
 public:
+    // Number of methods successfully jitted.
     int SuccessfulCompiles;
+    // Number of methods that failed jitting.
     int FailingCompiles;
+    // Number of methods that failed jitting due to missing SPMI data.
+    int MissingCompiles;
+    // Number of code bytes produced by the JIT for the successful compiles.
     long long NumCodeBytes;
+    // Number of code bytes that were diffed with the other compiler in diff mode.
+    long long NumDiffedCodeBytes;
 
     MetricsSummary()
         : SuccessfulCompiles(0)
         , FailingCompiles(0)
+        , MissingCompiles(0)
         , NumCodeBytes(0)
+        , NumDiffedCodeBytes(0)
     {
     }
 
