@@ -57,6 +57,7 @@ namespace System.Net.Http
 
         private ValueTask<int>? _readAheadTask;
         private int _readAheadTaskLock; // 0 == free, 1 == held
+        private Exception? _readAheadTaskException;
         private byte[] _readBuffer;
         private int _readOffset;
         private int _readLength;
@@ -132,13 +133,20 @@ namespace System.Net.Http
                     GC.SuppressFinalize(this);
                     _stream.Dispose();
 
-                    // Eat any exceptions from the read-ahead task.  We don't need to log, as we expect
+                    // Eat any exceptions from the read-ahead task. We don't need to log, as we expect
                     // failures from this task due to closing the connection while a read is in progress.
                     ValueTask<int>? readAheadTask = ConsumeReadAheadTask();
                     if (readAheadTask != null)
                     {
                         IgnoreExceptions(readAheadTask.GetValueOrDefault());
                     }
+                }
+                else
+                {
+                    Debug.Assert(_readAheadTask is not ValueTask<int> t
+                        || t.IsCompletedSuccessfully
+                        || t.AsTask().GetAwaiter().GetResult() >= 0, // This may throw on the finalizer thread
+                        $"The readAheadTask threw an exception that was not caught, or ignored during disposal: {_readAheadTask!.Value.AsTask().Exception}");
                 }
             }
         }
@@ -211,15 +219,25 @@ namespace System.Net.Http
             {
                 Debug.Assert(_readAheadTask is null);
                 Debug.Assert(RemainingBuffer.Length == 0);
+                try
+                {
+                    // Issue a zero-byte read.
+                    // If the underlying stream supports it, this will not complete until the stream has data available,
+                    // which will avoid pinning the connection's read buffer (and possibly allow us to release it to the buffer pool in the future, if desired).
+                    // If not, it will complete immediately.
+                    await _stream.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
 
-                // Issue a zero-byte read.
-                // If the underlying stream supports it, this will not complete until the stream has data available,
-                // which will avoid pinning the connection's read buffer (and possibly allow us to release it to the buffer pool in the future, if desired).
-                // If not, it will complete immediately.
-                await _stream.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
-
-                // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
-                return await _stream.ReadAsync(new Memory<byte>(_readBuffer)).ConfigureAwait(false);
+                    // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
+                    return await _stream.ReadAsync(new Memory<byte>(_readBuffer)).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    // It is possible the connection will not be used again after a call to CheckUsabilityOnScavenge.
+                    // If the above ReadAsync throws, we may not be able to observe the Task's exception, leading to UnobservedTaskExceptions.
+                    // Store the exception instead and check for it when consuming the _readAheadTask.
+                    _readAheadTaskException = ex;
+                    return 0;
+                }
             }
         }
 
@@ -567,6 +585,12 @@ namespace System.Net.Http
                         }
 
                         bytesRead = await vt.ConfigureAwait(false);
+                    }
+
+                    if (_readAheadTaskException is not null)
+                    {
+                        // The pre-emptive read triggered by CheckUsabilityOnScavenge threw an exception, rethrow it here
+                        throw _readAheadTaskException;
                     }
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
