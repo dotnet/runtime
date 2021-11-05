@@ -8,6 +8,8 @@ namespace System.IO.Tests
 {
     public class File_AppendText : File_ReadWriteAllText
     {
+        protected override bool IsAppend => true;
+
         protected override void Write(string path, string content)
         {
             var writer = File.AppendText(path);
@@ -15,34 +17,26 @@ namespace System.IO.Tests
             writer.Dispose();
         }
 
-        [Fact]
-        public override void Overwrite()
+        protected override void Write(string path, string content, Encoding encoding)
         {
-            string path = GetTestFilePath();
-            string lines = new string('c', 200);
-            string appendLines = new string('b', 100);
-            Write(path, lines);
-            Write(path, appendLines);
-            Assert.Equal(lines + appendLines, Read(path));
+            var writer = new StreamWriter(path, IsAppend, encoding);
+            writer.Write(content);
+            writer.Dispose();
         }
     }
 
     public class File_AppendAllText : File_ReadWriteAllText
     {
+        protected override bool IsAppend => true;
+
         protected override void Write(string path, string content)
         {
             File.AppendAllText(path, content);
         }
 
-        [Fact]
-        public override void Overwrite()
+        protected override void Write(string path, string content, Encoding encoding)
         {
-            string path = GetTestFilePath();
-            string lines = new string('c', 200);
-            string appendLines = new string('b', 100);
-            Write(path, lines);
-            Write(path, appendLines);
-            Assert.Equal(lines + appendLines, Read(path));
+            File.AppendAllText(path, content, encoding);
         }
     }
 
@@ -62,20 +56,11 @@ namespace System.IO.Tests
 
     public class File_AppendAllLines : File_ReadWriteAllLines_Enumerable
     {
+        protected override bool IsAppend => true;
+
         protected override void Write(string path, string[] content)
         {
             File.AppendAllLines(path, content);
-        }
-
-        [Fact]
-        public override void Overwrite()
-        {
-            string path = GetTestFilePath();
-            string[] lines = new string[] { new string('c', 200) };
-            string[] appendLines = new string[] { new string('b', 100) };
-            Write(path, lines);
-            Write(path, appendLines);
-            Assert.Equal(new string[] { lines[0], appendLines[0] }, Read(path));
         }
     }
 

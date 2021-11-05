@@ -1653,10 +1653,10 @@ namespace System
                 throw new MissingMethodException("Cannot create an abstract class '{0}'.", FullName);
             }
 
-            return ctor.InternalInvoke(null, null, wrapExceptions);
+            return ctor.InvokeWorker(null, wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions, Span<object?>.Empty);
         }
 
-        internal object? CheckValue(object? value, Binder binder, CultureInfo? culture, BindingFlags invokeAttr)
+        internal object? CheckValue(object? value, Binder? binder, CultureInfo? culture, BindingFlags invokeAttr)
         {
             bool failed = false;
             object? res = TryConvertToType(value, ref failed);
@@ -1968,7 +1968,7 @@ namespace System
             if (ctor is null || !ctor.IsPublic)
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt));
 
-            return ctor.InternalInvoke(null, null, wrapExceptions: true)!;
+            return ctor.InvokeCtorWorker(BindingFlags.Default, Span<object?>.Empty)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

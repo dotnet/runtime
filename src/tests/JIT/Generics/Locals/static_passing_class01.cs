@@ -47,16 +47,16 @@ public class Gen<T>
 
         T temp = t1;
 
-        Test.Eval(Fld1.Equals(PassAsIn(temp)));
-        Test.Eval(Fld1.Equals(PassAsRef(ref temp, Fld2)));
-        Test.Eval(Fld2.Equals(temp));
+        Test_static_passing_class01.Eval(Fld1.Equals(PassAsIn(temp)));
+        Test_static_passing_class01.Eval(Fld1.Equals(PassAsRef(ref temp, Fld2)));
+        Test_static_passing_class01.Eval(Fld2.Equals(temp));
         temp = t1;
         PassAsOut(out temp, Fld2);
-        Test.Eval(Fld2.Equals(temp));
+        Test_static_passing_class01.Eval(Fld2.Equals(temp));
     }
 }
 
-public class Test
+public class Test_static_passing_class01
 {
     public static int counter = 0;
     public static bool result = true;

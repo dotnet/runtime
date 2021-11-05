@@ -3,6 +3,8 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -42,6 +44,24 @@ namespace System
             : base(info, context)
         {
             _objectName = info.GetString("ObjectName");
+        }
+
+        [StackTraceHidden]
+        public static void ThrowIf([DoesNotReturnIf(true)] bool condition, object instance)
+        {
+            if (condition)
+            {
+                throw new ObjectDisposedException(instance?.GetType().FullName);
+            }
+        }
+
+        [StackTraceHidden]
+        public static void ThrowIf([DoesNotReturnIf(true)] bool condition, Type type)
+        {
+            if (condition)
+            {
+                throw new ObjectDisposedException(type?.FullName);
+            }
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

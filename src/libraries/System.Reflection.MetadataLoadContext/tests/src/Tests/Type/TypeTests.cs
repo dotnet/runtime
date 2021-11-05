@@ -209,6 +209,63 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        static void TestArrayMethodsGetSetAddressAreNotEquals()
+        {
+           void test(Type type)
+            {
+                MethodInfo v1 = type.GetMethod("Get");
+                MethodInfo v2 = type.GetMethod("Set");
+                MethodInfo v3 = type.GetMethod("Address");
+                Assert.NotEqual(v1, v2);
+                Assert.NotEqual(v1, v3);
+                Assert.NotEqual(v2, v3);
+            }
+
+            test(typeof(int[]));
+            test(typeof(int[]).Project());
+        }
+
+        [Fact]
+        static void TestArrayMethodsGetSetAddressEqualityForDifferentTypes()
+        {
+            void testNotEqual(Type type1, Type type2)
+            {
+                Assert.NotEqual(type1.GetMethod("Get"), type2.GetMethod("Get"));
+                Assert.NotEqual(type1.GetMethod("Set"), type2.GetMethod("Set"));
+                Assert.NotEqual(type1.GetMethod("Address"), type2.GetMethod("Address"));
+            }
+
+            testNotEqual(typeof(int[]), typeof(long[]));
+            testNotEqual(typeof(int[]).Project(), typeof(long[]).Project());
+            testNotEqual(typeof(int[]).Project(), typeof(int[]));
+
+            void testEqual(Type type1, Type type2)
+            {
+                Assert.Equal(type1.GetMethod("Get"), type2.GetMethod("Get"));
+                Assert.Equal(type1.GetMethod("Set"), type2.GetMethod("Set"));
+                Assert.Equal(type1.GetMethod("Address"), type2.GetMethod("Address"));
+            }
+
+            testEqual(typeof(int[]), typeof(int[]));
+            testEqual(typeof(int[]).Project(), typeof(int[]).Project());
+            testEqual(typeof(long[]).Project(), typeof(long[]).Project());
+        }
+
+        [Fact]
+        static void TestArrayGetMethodsResultEqualsFilteredGetMethod()
+        {
+            Type type = typeof(int[]).Project();
+
+            Assert.Equal(type.GetMethod("Get"), type.GetMethods().First(m => m.Name == "Get"));
+            Assert.Equal(type.GetMethod("Set"), type.GetMethods().First(m => m.Name == "Set"));
+            Assert.Equal(type.GetMethod("Address"), type.GetMethods().First(m => m.Name == "Address"));
+
+            Assert.NotEqual(type.GetMethod("Get"), type.GetMethods().First(m => m.Name == "Set"));
+            Assert.NotEqual(type.GetMethod("Set"), type.GetMethods().First(m => m.Name == "Address"));
+            Assert.NotEqual(type.GetMethod("Address"), type.GetMethods().First(m => m.Name == "Get"));
+        }
+
+        [Fact]
         public static void TestArrayAddressMethod()
         {
             bool expectedDefaultValue = true;

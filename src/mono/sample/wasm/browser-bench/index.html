@@ -37,7 +37,7 @@
       };
 
       function yieldBench () {
-        let promise = BINDING.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark", []);
+        let promise = INTERNAL.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark", []);
         promise.then(ret => {
           document.getElementById("out").innerHTML += ret;
           if (ret.length > 0) {
@@ -52,7 +52,7 @@
       var App = {
         init: function () {
           if (tasks != '')
-            BINDING.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks", tasks);
+            INTERNAL.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks", tasks);
           yieldBench ();
         }
       };

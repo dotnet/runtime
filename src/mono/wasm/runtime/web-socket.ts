@@ -10,7 +10,7 @@ import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./g
 import { _wrap_js_thenable_as_task } from "./js-to-cs";
 import { wrap_error } from "./method-calls";
 import { conv_string } from "./strings";
-import { JSHandle, MonoArray, MonoObject, MonoObjectNull, MonoString } from "./types";
+import { Int32Ptr, JSHandle, MonoArray, MonoObject, MonoObjectNull, MonoString } from "./types";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");

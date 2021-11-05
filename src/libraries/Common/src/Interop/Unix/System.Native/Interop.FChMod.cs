@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FChMod", SetLastError = true)]
-        internal static extern int FChMod(SafeFileHandle fd, int mode);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FChMod", SetLastError = true)]
+        internal static partial int FChMod(SafeFileHandle fd, int mode);
     }
 }

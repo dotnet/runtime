@@ -38,10 +38,12 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetSystemInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Memory" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Reflection.Extensions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>

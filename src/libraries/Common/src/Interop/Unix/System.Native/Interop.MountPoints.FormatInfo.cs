@@ -30,11 +30,11 @@ internal static partial class Interop
             internal ulong TotalSize;
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
-        internal static extern int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPStr)]string name, out MountPointInformation mpi);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
+        internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPStr)]string name, out MountPointInformation mpi);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFormatInfoForMountPoint", SetLastError = true)]
-        private static extern unsafe int GetFormatInfoForMountPoint(
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFormatInfoForMountPoint", SetLastError = true)]
+        private static unsafe partial int GetFormatInfoForMountPoint(
             [MarshalAs(UnmanagedType.LPStr)]string name,
             byte* formatNameBuffer,
             int bufferLength,

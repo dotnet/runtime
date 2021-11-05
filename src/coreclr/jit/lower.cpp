@@ -3721,17 +3721,10 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
-            bool hasIndirectionCell = false;
-#if defined(TARGET_ARMARCH)
-            // Skip inserting the indirection node to load the address that is already
-            // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
-            // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
-            hasIndirectionCell = call->IsR2RRelativeIndir();
-#elif defined(TARGET_XARCH)
-            // For xarch we usually get the indirection cell from the return address,
-            // except for fast tailcalls where we do the same as ARM.
-            hasIndirectionCell    = call->IsR2RRelativeIndir() && call->IsFastTailCall();
-#endif
+            // If we are using an indirection cell for a direct call then apply
+            // an optimization that loads the call target directly from the
+            // indirection cell, instead of duplicating the tree.
+            bool hasIndirectionCell = call->GetIndirectionCellArgKind() != NonStandardArgKind::None;
 
             if (!hasIndirectionCell)
             {
@@ -4801,12 +4794,12 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         else
         {
             bool shouldOptimizeVirtualStubCall = false;
-#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64)
             // Skip inserting the indirection node to load the address that is already
-            // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
-            // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
+            // computed in the VSD stub arg register as a hidden parameter. Instead during the
+            // codegen, just load the call target from there.
             shouldOptimizeVirtualStubCall = true;
-#endif // FEATURE_READYTORUN && TARGET_ARMARCH
+#endif
 
             if (!shouldOptimizeVirtualStubCall)
             {
@@ -4904,11 +4897,12 @@ bool Lowering::AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, Ge
 // Arguments:
 //    use - the use of the address we want to transform
 //    isContainable - true if this addressing mode can be contained
+//    targetType - on arm we can use "scale" only for appropriate target type
 //
 // Returns:
 //    true if the address node was changed to a LEA, false otherwise.
 //
-bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable)
+bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types targetType)
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
@@ -4922,15 +4916,26 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable)
     bool     rev    = false;
 
     // Find out if an addressing mode can be constructed
-    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,   // address
-                                                       true,   // fold
-                                                       &rev,   // reverse ops
-                                                       &base,  // base addr
-                                                       &index, // index val
-#if SCALED_ADDR_MODES
+    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,     // address
+                                                       true,     // fold
+                                                       &rev,     // reverse ops
+                                                       &base,    // base addr
+                                                       &index,   // index val
                                                        &scale,   // scaling
-#endif                                                           // SCALED_ADDR_MODES
                                                        &offset); // displacement
+
+#ifdef TARGET_ARMARCH
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    //
+    //   *(ulong*)(data + index * 8); - can be optimized
+    //   *(ulong*)(data + index * 7); - can not be optimized
+    //     *(int*)(data + index * 2); - can not be optimized
+    //
+    if ((scale > 0) && (genTypeSize(targetType) != scale))
+    {
+        return false;
+    }
+#endif
 
     if (scale == 0)
     {
@@ -5748,6 +5753,35 @@ void Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2->ClearContained();
     }
     ContainCheckShiftRotate(shift);
+
+#ifdef TARGET_ARM64
+    // Try to recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) tree
+    if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_LSH) && shift->gtGetOp1()->OperIs(GT_CAST) &&
+        shift->gtGetOp2()->IsCnsIntOrI() && !shift->isContained())
+    {
+        GenTreeIntCon* cns  = shift->gtGetOp2()->AsIntCon();
+        GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
+
+        if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
+            // Smaller CastOp is most likely an IND(X) node which is lowered to a zero-extend load
+            cast->CastOp()->TypeIs(TYP_LONG, TYP_INT))
+        {
+            // Cast is either "TYP_LONG <- TYP_INT" or "TYP_INT <- %SMALL_INT% <- TYP_INT" (signed or unsigned)
+            unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
+            unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                                  : genTypeSize(cast->CastOp()) * BITS_PER_BYTE;
+            assert(!cast->CastOp()->isContained());
+
+            // It has to be an upcast and CNS must be in [1..srcBits) range
+            if ((srcBits < dstBits) && (cns->IconValue() > 0) && (cns->IconValue() < srcBits))
+            {
+                JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
+                shift->ChangeOper(GT_BFIZ);
+                MakeSrcContained(shift, cast);
+            }
+        }
+    }
+#endif
 }
 
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
@@ -5907,7 +5941,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     // Generate the LEA and make it reverse evaluation, because we want to evaluate the index expression before the
     // base.
     unsigned scale  = arrElem->gtArrElemSize;
-    unsigned offset = comp->eeGetMDArrayDataOffset(arrElem->gtArrElemType, arrElem->gtArrRank);
+    unsigned offset = comp->eeGetMDArrayDataOffset(arrElem->gtArrRank);
 
     GenTree* leaIndexNode = prevArrOffs;
     if (!jitIsScaleIndexMul(scale))
@@ -6685,7 +6719,7 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
-    TryCreateAddrMode(ind->Addr(), true);
+    TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
         LowerStoreIndir(ind);
@@ -6708,7 +6742,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
-        TryCreateAddrMode(ind->Addr(), true);
+        TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
         ContainCheckIndir(ind);
 
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -6721,7 +6755,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))`
         // is a complex one it could benefit from an `LEA` that is not contained.
         const bool isContainable = false;
-        TryCreateAddrMode(ind->Addr(), isContainable);
+        TryCreateAddrMode(ind->Addr(), isContainable, ind->TypeGet());
     }
 }
 

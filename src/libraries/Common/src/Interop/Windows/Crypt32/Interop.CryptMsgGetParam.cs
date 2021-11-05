@@ -9,6 +9,22 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static unsafe partial bool CryptMsgGetParam(
+            SafeCryptMsgHandle hCryptMsg,
+            CryptMsgParamType dwParamType,
+            int dwIndex,
+            byte* pvData,
+            ref int pcbData);
+
+        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial bool CryptMsgGetParam(SafeCryptMsgHandle hCryptMsg,
+            CryptMsgParamType dwParamType,
+            int dwIndex,
+            out int pvData,
+            ref int pcbData);
+#else
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
@@ -16,6 +32,7 @@ internal static partial class Interop
             int dwIndex,
             out int pvData,
             [In, Out] ref int pcbData);
+#endif
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CryptMsgGetParam(

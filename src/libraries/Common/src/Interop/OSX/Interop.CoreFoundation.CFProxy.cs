@@ -13,23 +13,23 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [DllImport(Libraries.CFNetworkLibrary)]
-        internal static extern SafeCFDictionaryHandle CFNetworkCopySystemProxySettings();
+        [GeneratedDllImport(Libraries.CFNetworkLibrary)]
+        internal static partial SafeCFDictionaryHandle CFNetworkCopySystemProxySettings();
 
-        [DllImport(Libraries.CFNetworkLibrary)]
-        internal static extern SafeCFArrayHandle CFNetworkCopyProxiesForURL(SafeCreateHandle url, SafeCFDictionaryHandle proxySettings);
+        [GeneratedDllImport(Libraries.CFNetworkLibrary)]
+        internal static partial SafeCFArrayHandle CFNetworkCopyProxiesForURL(SafeCreateHandle url, SafeCFDictionaryHandle proxySettings);
 
         internal delegate void CFProxyAutoConfigurationResultCallback(IntPtr client, IntPtr proxyList, IntPtr error);
 
-        [DllImport(Libraries.CFNetworkLibrary)]
-        internal static extern CFRunLoopSourceRef CFNetworkExecuteProxyAutoConfigurationURL(
+        [GeneratedDllImport(Libraries.CFNetworkLibrary)]
+        internal static partial CFRunLoopSourceRef CFNetworkExecuteProxyAutoConfigurationURL(
             IntPtr proxyAutoConfigURL,
             SafeCreateHandle targetURL,
             CFProxyAutoConfigurationResultCallback cb,
             ref CFStreamClientContext clientContext);
 
-        [DllImport(Libraries.CFNetworkLibrary)]
-        internal static extern CFRunLoopSourceRef CFNetworkExecuteProxyAutoConfigurationScript(
+        [GeneratedDllImport(Libraries.CFNetworkLibrary)]
+        internal static partial CFRunLoopSourceRef CFNetworkExecuteProxyAutoConfigurationScript(
             IntPtr proxyAutoConfigurationScript,
             SafeCreateHandle targetURL,
             CFProxyAutoConfigurationResultCallback cb,
@@ -131,9 +131,13 @@ internal static partial class Interop
                 get
                 {
                     IntPtr dictValue = CFDictionaryGetValue(_dictionary, kCFProxyPortNumberKey);
-                    if (dictValue != IntPtr.Zero && CFNumberGetValue(dictValue, CFNumberType.kCFNumberIntType, out int value) > 0)
+                    unsafe
                     {
-                        return value;
+                        int value;
+                        if (dictValue != IntPtr.Zero && CFNumberGetValue(dictValue, CFNumberType.kCFNumberIntType, &value) > 0)
+                        {
+                            return value;
+                        }
                     }
                     return -1;
                 }

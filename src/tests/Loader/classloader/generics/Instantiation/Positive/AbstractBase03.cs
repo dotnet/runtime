@@ -63,7 +63,7 @@ public class Gen<T> : GenBase<T,int>
 	}
 }
 
-public class Test
+public class Test_AbstractBase03
 {
 	public static int counter = 0;
 	public static bool result = true;

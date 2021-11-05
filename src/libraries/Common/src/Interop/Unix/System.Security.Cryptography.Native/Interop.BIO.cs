@@ -9,35 +9,35 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CreateMemoryBio")]
-        internal static extern SafeBioHandle CreateMemoryBio();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CreateMemoryBio")]
+        internal static partial SafeBioHandle CreateMemoryBio();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewFile")]
-        internal static extern SafeBioHandle BioNewFile(string filename, string mode);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewFile", CharSet = CharSet.Ansi)]
+        internal static partial SafeBioHandle BioNewFile(string filename, string mode);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioDestroy")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioDestroy")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool BioDestroy(IntPtr a);
+        internal static partial bool BioDestroy(IntPtr a);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGets")]
-        internal static extern int BioGets(SafeBioHandle b, byte[] buf, int size);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGets")]
+        internal static partial int BioGets(SafeBioHandle b, byte[] buf, int size);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioRead")]
-        internal static extern int BioRead(SafeBioHandle b, byte[] data, int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioRead")]
+        internal static partial int BioRead(SafeBioHandle b, byte[] data, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        internal static extern int BioWrite(SafeBioHandle b, byte[] data, int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
+        internal static partial int BioWrite(SafeBioHandle b, byte[] data, int len);
 
         internal static int BioWrite(SafeBioHandle b, ReadOnlySpan<byte> data) =>
             BioWrite(b, ref MemoryMarshal.GetReference(data), data.Length);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        private static extern int BioWrite(SafeBioHandle b, ref byte data, int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
+        private static partial int BioWrite(SafeBioHandle b, ref byte data, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryBioSize")]
-        internal static extern int GetMemoryBioSize(SafeBioHandle bio);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryBioSize")]
+        internal static partial int GetMemoryBioSize(SafeBioHandle bio);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioCtrlPending")]
-        internal static extern int BioCtrlPending(SafeBioHandle bio);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioCtrlPending")]
+        internal static partial int BioCtrlPending(SafeBioHandle bio);
     }
 }

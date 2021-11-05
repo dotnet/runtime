@@ -330,6 +330,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal LocalScopeHandleCollection localScopes;
         public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
         public int IsAsync { get; set; }
+        public bool IsHiddenFromDebugger { get; }
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
             this.IsAsync = -1;
@@ -363,6 +364,22 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 StartLocation = new SourceLocation(this, start);
                 EndLocation = new SourceLocation(this, end);
+
+                foreach (var cattr in methodDef.GetCustomAttributes())
+                {
+                    var ctorHandle = asmMetadataReader.GetCustomAttribute(cattr).Constructor;
+                    if (ctorHandle.Kind == HandleKind.MemberReference)
+                    {
+                        var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
+                        var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                        if (name == "DebuggerHiddenAttribute")
+                        {
+                            this.IsHiddenFromDebugger = true;
+                            break;
+                        }
+
+                    }
+                }
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }

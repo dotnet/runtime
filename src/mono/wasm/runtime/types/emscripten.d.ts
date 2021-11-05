@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 declare interface ManagedPointer {
-    __brandbase: "ManagedPointer"
+    __brandManagedPointer: "ManagedPointer"
 }
 
 declare interface NativePointer {
-    __brandbase: "NativePointer"
+    __brandNativePointer: "NativePointer"
 }
 
 declare interface VoidPtr extends NativePointer {
@@ -34,9 +34,9 @@ declare function mergeInto(a: object, b: object): void;
 // TODO, what's wrong with EXPORTED_RUNTIME_METHODS ?
 declare function locateFile(path: string, prefix?: string): string;
 
-declare let Module: t_Module;
+declare let Module: EmscriptenModule;
 
-declare interface t_Module {
+declare interface EmscriptenModule {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
     HEAP32: Int32Array;
@@ -52,6 +52,7 @@ declare interface t_Module {
 
     // this should match emcc -s EXPORTED_RUNTIME_METHODS
     print(message: string): void;
+    printErr(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
     cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     cwrap<T extends Function>(ident: string, ...args: any[]): T;
@@ -64,6 +65,9 @@ declare interface t_Module {
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+
+    preInit?: () => Promise<void>;
+    onRuntimeInitialized?: () => void;
 }
 
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;

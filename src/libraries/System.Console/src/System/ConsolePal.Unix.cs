@@ -796,7 +796,33 @@ namespace System
                 int maxColors = TerminalFormatStrings.Instance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
-                    int ansiCode = _consoleColorToAnsiCode[ccValue] % maxColors;
+                    // The values of the ConsoleColor enums unfortunately don't map to the
+                    // corresponding ANSI values.  We need to do the mapping manually.
+                    // See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
+                    ReadOnlySpan<byte> consoleColorToAnsiCode = new byte[] // rely on C# compiler optimization to avoid array allocation
+                    {
+                        // Dark/Normal colors
+                        0, // Black,
+                        4, // DarkBlue,
+                        2, // DarkGreen,
+                        6, // DarkCyan,
+                        1, // DarkRed,
+                        5, // DarkMagenta,
+                        3, // DarkYellow,
+                        7, // Gray,
+
+                        // Bright colors
+                        8,  // DarkGray,
+                        12, // Blue,
+                        10, // Green,
+                        14, // Cyan,
+                        9,  // Red,
+                        13, // Magenta,
+                        11, // Yellow,
+                        15  // White
+                    };
+
+                    int ansiCode = consoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
 
                     WriteStdoutAnsiString(evaluatedString);
@@ -854,34 +880,6 @@ namespace System
                 return enabled;
             }
         }
-
-        /// <summary>
-        /// The values of the ConsoleColor enums unfortunately don't map to the
-        /// corresponding ANSI values.  We need to do the mapping manually.
-        /// See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-        /// </summary>
-        private static readonly int[] _consoleColorToAnsiCode = new int[]
-        {
-            // Dark/Normal colors
-            0, // Black,
-            4, // DarkBlue,
-            2, // DarkGreen,
-            6, // DarkCyan,
-            1, // DarkRed,
-            5, // DarkMagenta,
-            3, // DarkYellow,
-            7, // Gray,
-
-            // Bright colors
-            8,  // DarkGray,
-            12, // Blue,
-            10, // Green,
-            14, // Cyan,
-            9,  // Red,
-            13, // Magenta,
-            11, // Yellow,
-            15  // White
-        };
 
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
         private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values

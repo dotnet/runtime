@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Open", SetLastError = true)]
-        internal static extern SafeFileHandle Open(string filename, OpenFlags flags, int mode);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Open", CharSet = CharSet.Ansi, SetLastError = true)]
+        internal static partial SafeFileHandle Open(string filename, OpenFlags flags, int mode);
     }
 }

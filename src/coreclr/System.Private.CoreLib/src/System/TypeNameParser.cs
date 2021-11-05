@@ -17,8 +17,8 @@ namespace System
     internal sealed class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region QCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _ReleaseTypeNameParser(IntPtr pTypeNameParser);
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_ReleaseTypeNameParser")]
+        private static extern void Release(IntPtr pTypeNameParser);
         #endregion
 
         public SafeTypeNameParserHandle()
@@ -28,7 +28,7 @@ namespace System
 
         protected override bool ReleaseHandle()
         {
-            _ReleaseTypeNameParser(handle);
+            Release(handle);
             handle = IntPtr.Zero;
             return true;
         }
@@ -37,19 +37,19 @@ namespace System
     internal sealed class TypeNameParser : IDisposable
     {
         #region QCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_CreateTypeNameParser", CharSet = CharSet.Unicode)]
         private static extern void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, bool throwOnError);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetNames")]
         private static extern void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetTypeArguments")]
         private static extern void _GetTypeArguments(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetModifiers")]
         private static extern void _GetModifiers(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetAssemblyName")]
         private static extern void _GetAssemblyName(SafeTypeNameParserHandle pTypeNameParser, StringHandleOnStack retString);
         #endregion
 

@@ -35,7 +35,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi Test
+.class private auto ansi Test_repro
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 

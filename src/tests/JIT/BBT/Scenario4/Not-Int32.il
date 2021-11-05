@@ -11,7 +11,7 @@
 .assembly 'Not-Int32'
 {
 }
-.class public auto ansi Test
+.class public auto ansi Test_Not_Int32
 {
 .method public static int32  Main()
 {

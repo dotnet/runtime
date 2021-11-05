@@ -684,7 +684,9 @@ namespace System.Drawing
         /// WARNING: This method is for internal FX support only.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
+#if NETCOREAPP3_1_OR_GREATER
         [Obsolete(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {
@@ -763,6 +765,7 @@ namespace System.Drawing
             }
         }
 
+#if NETCOREAPP3_1_OR_GREATER
         /// <summary>
         ///  Gets the cumulative offset.
         /// </summary>
@@ -789,6 +792,7 @@ namespace System.Drawing
             Vector2 translation = cumulativeTransform.Translation;
             offset = new PointF(translation.X, translation.Y);
         }
+#endif
 
         public RectangleF VisibleClipBounds
         {

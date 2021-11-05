@@ -968,15 +968,16 @@ public:
 
 #endif // !TARGET_UNIX
 
+    static void PerformGateActivities(int cpuUtilization);
+    static bool NeedGateThreadForIOCompletions();
+
 private:
     static BOOL IsIoPending();
 
     static BOOL CreateGateThread();
     static void EnsureGateThreadRunning();
-    static bool NeedGateThreadForIOCompletions();
     static bool ShouldGateThreadKeepRunning();
     static DWORD WINAPI GateThreadStart(LPVOID lpArgs);
-    static void PerformGateActivities(int cpuUtilization);
     static BOOL SufficientDelaySinceLastSample(unsigned int LastThreadCreationTime,
                                                unsigned NumThreads, // total number of threads of that type (worker or CP)
                                                double   throttleRate=0.0 // the delay is increased by this percentage for each extra thread
