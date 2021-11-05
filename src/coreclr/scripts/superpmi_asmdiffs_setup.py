@@ -20,13 +20,15 @@ import argparse
 import os
 
 from coreclr_arguments import *
-from azdo_pipelines_util import copy_directory, copy_files, set_pipeline_variable, run_command
+from azdo_pipelines_util import copy_directory, copy_files, set_pipeline_variable, run_command, TempDir
 
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
-parser.add_argument("-source_directory", help="path to the directory containing binaries")
-parser.add_argument("-product_directory", help="path to the directory containing binaries")
+parser.add_argument("-source_directory", help="Path to the root directory of the dotnet/runtime source tree")
+parser.add_argument("-product_directory", help="Path to the directory containing built binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
+
+is_windows = platform.system() == "Windows"
 
 
 def setup_args(args):
@@ -87,7 +89,21 @@ def match_superpmi_tool_files(full_path):
 
 
 def main(main_args):
-    """Main entrypoint
+    """Main entrypoint: prepare the Helix data for SuperPMI asmdiffs.
+
+    The Helix correlation payload directory is created and populated as follows:
+
+    <source_directory>\payload -- the correlation payload directory
+        -- contains the *.py scripts from <source_directory>\src\coreclr\scripts
+        -- contains superpmi.exe, mcs.exe from the target-specific build
+    <source_directory>\payload\base
+        -- contains the baseline JITs
+    <source_directory>\payload\diff
+        -- contains the diff JITs
+    <source_directory>\payload\jit-analyze
+        -- contains the self-contained jit-analyze build (from dotnet/jitutils)
+
+    Then, AzDO pipeline variables are set.
 
     Args:
         main_args ([type]): Arguments to the script
@@ -103,9 +119,9 @@ def main(main_args):
     # CorrelationPayload directories
     correlation_payload_directory = os.path.join(source_directory, "payload")
     superpmi_scripts_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
-
-    helix_source_prefix = "official"
-    creator = ""
+    base_jit_directory = os.path.join(correlation_payload_directory, "base")
+    diff_jit_directory = os.path.join(correlation_payload_directory, "diff")
+    jit_analyze_build_directory = os.path.join(correlation_payload_directory, "jit-analyze")
 
     ######## Get SuperPMI python scripts
 
@@ -117,8 +133,6 @@ def main(main_args):
     ######## Get baseline JIT
 
     # Figure out which baseline JIT to use, and download it.
-    # Copy base clrjit*_arch.dll binaries to CorrelationPayload\base
-    base_jit_directory = os.path.join(correlation_payload_directory, "base")
     if not os.path.exists(base_jit_directory):
         os.makedirs(base_jit_directory)
 
@@ -137,8 +151,6 @@ def main(main_args):
 
     ######## Get diff JIT
 
-    # Copy diff clrjit*_arch.dll binaries to CorrelationPayload\diff
-    diff_jit_directory = os.path.join(correlation_payload_directory, "diff")
     print('Copying diff binaries {} -> {}'.format(product_directory, diff_jit_directory))
     copy_directory(product_directory, diff_jit_directory, verbose_copy=True, match_func=match_jit_files)
 
@@ -148,7 +160,57 @@ def main(main_args):
     print('Copying SuperPMI tools {} -> {}'.format(product_directory, correlation_payload_directory))
     copy_directory(product_directory, correlation_payload_directory, verbose_copy=True, match_func=match_superpmi_tool_files)
 
+    ######## Clone and build jitutils: we only need jit-analyze
+
+    try:
+        with TempDir() as jitutils_directory:
+            run_command(
+                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+
+            # Make sure ".dotnet" directory exists, by running the script at least once
+            dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
+            dotnet_script_path = os.path.join(source_directory, dotnet_script_name)
+            run_command([dotnet_script_path, "--info"], jitutils_directory)
+
+            # Build jit-analyze only, and build it as a self-contained app (not framework-dependent).
+            # What target RID are we building? It depends on where we're going to run this code.
+            # The RID catalog is here: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog.
+            #   Windows x64 => win-x64
+            #   Windows x86 => win-x86
+            #   Windows arm32 => win-arm
+            #   Windows arm64 => win-arm64
+            #   Linux x64 => linux-x64
+            #   Linux arm32 => linux-arm
+            #   Linux arm64 => linux-arm64
+            #   macOS x64 => osx-x64
+
+            # NOTE: we currently only support running on Windows x86/x64 (we don't pass the target OS)
+            RID = None
+            if arch is "x86":
+                RID = "win-x86"
+            if arch is "x64":
+                RID = "win-x64"
+
+            # Set dotnet path to run build
+            os.environ["PATH"] = os.path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
+
+            run_command([
+                "dotnet",
+                "publish",
+                "-c", "Release",
+                "--runtime", RID,
+                "--self-contained",
+                "--output", jit_analyze_build_directory,
+                os.path.join(jitutils_directory, "src", "jit-analyze", "jit-analyze.csproj")],
+                jitutils_directory)
+    except PermissionError as pe_error:
+        # Details: https://bugs.python.org/issue26660
+        print('Ignoring PermissionError: {0}'.format(pe_error))
+
     ######## Set pipeline variables
+
+    helix_source_prefix = "official"
+    creator = ""
 
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)

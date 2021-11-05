@@ -83,6 +83,17 @@ def main(main_args):
 
     log_directory = coreclr_args.log_directory
     platform_name = coreclr_args.platform
+
+    # Find the built jit-analyze and put its directory on the PATH
+    jit_analyze_dir = os.path.abspath(os.path.join(script_dir, "jit-analyze"))
+    if not os.path.isdir(jit_analyze_dir):
+        print("Error: jit-analyze not found in {} (continuing)".format(jit_analyze_dir))
+    else:
+        # Put the jit-analyze directory on the PATH so superpmi.py can find it.
+        print("Adding {} to PATH".format(jit_analyze_dir))
+        os.environ["PATH"] = jit_analyze_dir + os.pathsep + os.environ["PATH"]
+
+    # Figure out which JITs to use
     os_name = "win" if platform_name.lower() == "windows" else "unix"
     arch_name = coreclr_args.arch
     host_arch_name = "x64" if arch_name.endswith("64") else "x86"
@@ -101,7 +112,7 @@ def main(main_args):
         python_path,
         os.path.join(script_dir, "superpmi.py"),
         "download",
-        "-filter", "benchmarks.run", ######## *********** TEMPORARY: to make testing faster, only download the smallest MCH file
+        "-filter", "libraries.crossgen2", ######## *********** TEMPORARY: to make testing faster, only download one MCH file
         "--no_progress",
         "-core_root", core_root_dir,
         "-target_os", platform_name,

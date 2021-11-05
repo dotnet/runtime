@@ -2004,11 +2004,11 @@ class SuperPMIReplayAsmDiffs:
                     if current_text_diff is not None:
                         logging.info("Textual differences found in generated asm.")
 
-                        # Find jit-analyze.bat/sh on PATH, if it exists, then invoke it.
+                        # Find jit-analyze on PATH, if it exists, then invoke it.
                         ran_jit_analyze = False
                         path_var = os.environ.get("PATH")
                         if path_var is not None:
-                            jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
+                            jit_analyze_file = "jit-analyze.exe" if platform.system() == "Windows" else "jit-analyze"
                             jit_analyze_path = find_file(jit_analyze_file, path_var.split(os.pathsep))
                             if jit_analyze_path is not None:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
