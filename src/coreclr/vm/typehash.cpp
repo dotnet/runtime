@@ -161,8 +161,6 @@ static DWORD HashPossiblyInstantiatedType(mdTypeDef token, Instantiation inst)
     dwHash = ((dwHash << 5) + dwHash) ^ token;
     if (!inst.IsEmpty())
     {
-        dwHash = ((dwHash << 5) + dwHash) ^ inst.GetNumArgs();
-
         // Hash n type parameters
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
@@ -224,10 +222,6 @@ static DWORD HashTypeHandle(TypeHandle t)
     {
         retVal = HashParamType(t.GetInternalCorElementType(), t.GetTypeParam());
     }
-    else if (t.IsGenericVariable())
-    {
-        retVal = (dac_cast<PTR_TypeVarTypeDesc>(t.AsTypeDesc())->GetToken());
-    }
     else if (t.HasInstantiation())
     {
         retVal = HashPossiblyInstantiatedType(t.GetCl(), t.GetInstantiation());
@@ -236,6 +230,11 @@ static DWORD HashTypeHandle(TypeHandle t)
     {
         FnPtrTypeDesc* pTD = t.AsFnPtrType();
         retVal = HashFnPtrType(pTD->GetCallConv(), pTD->GetNumArgs(), pTD->GetRetAndArgTypesPointer());
+    }
+    else if (t.IsGenericVariable())
+    {
+        _ASSERTE(!"Generic variables are unexpected here.");
+        retVal = t.AsTAddr();
     }
     else
         retVal = HashPossiblyInstantiatedType(t.GetCl(), Instantiation());
