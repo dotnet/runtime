@@ -237,8 +237,9 @@ core_root_parser.add_argument("-core_root", help=core_root_help)
 core_root_parser.add_argument("-log_level", help=log_level_help)
 core_root_parser.add_argument("-log_file", help=log_file_help)
 core_root_parser.add_argument("-spmi_location", help=spmi_location_help)
+core_root_parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
 
-# Create a set of arguments common to target specification. Used for replay, upload, upload-private, download, list-collections.
+# Create a set of arguments common to target specification. Used for collect, replay, asmdiffs, upload, upload-private, download, list-collections.
 
 target_parser = argparse.ArgumentParser(add_help=False)
 
@@ -342,7 +343,6 @@ download_parser.add_argument("-filter", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 download_parser.add_argument("--force_download", action="store_true", help=force_download_help)
-download_parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
 download_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 download_parser.add_argument("-private_store", action="append", help=private_store_help)
 
@@ -2147,7 +2147,8 @@ def determine_coredis_tools(coreclr_args):
             logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        download_one_url(coredistools_uri, coredistools_location)
+        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+        download_one_url(coredistools_uri, coredistools_location, display_progress=not skip_progress)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -3278,6 +3279,11 @@ def setup_args(args):
                         "Unable to set spmi_location",
                         modify_arg=setup_spmi_location_arg)
 
+    coreclr_args.verify(args,
+                        "no_progress",
+                        lambda unused: True,
+                        "Unable to set no_progress")
+
     # Finish setting up logging.
     # The spmi_location is the root directory where we put the log file.
     # Log everything to the log file and only the specified verbosity to the console logger.
@@ -3824,11 +3830,6 @@ def setup_args(args):
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
-
-        coreclr_args.verify(args,
-                            "no_progress",
-                            lambda unused: True,
-                            "Unable to set no_progress")
 
         coreclr_args.verify(args,
                             "filter",

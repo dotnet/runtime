@@ -27,6 +27,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
         command_to_run ([string]): Command to run along with arguments.
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
+        _output_file (): 
     Returns:
         (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
         Otherwise stdout, stderr are empty.

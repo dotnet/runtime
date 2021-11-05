@@ -74,10 +74,13 @@ def main(main_args):
     """
 
     python_path = sys.executable
-    # cwd is the root of the correlation payload directory
-    cwd = os.path.dirname(os.path.realpath(__file__))
+    script_dir = os.path.dirname(os.path.realpath(__file__))
     coreclr_args = setup_args(main_args)
-    spmi_location = os.path.join(cwd, "artifacts", "spmi")
+
+    # It doesn't really matter where we put the SPMI artifacts, except we need to find the log files (summary.md) and
+    # (possibly) generated .dasm files for upload. Here, they are put in <root>/src/coreclr/scripts/artifacts/spmi.
+    spmi_location = os.path.join(script_dir, "artifacts", "spmi")
+
     log_directory = coreclr_args.log_directory
     platform_name = coreclr_args.platform
     os_name = "win" if platform_name.lower() == "windows" else "unix"
@@ -89,23 +92,37 @@ def main(main_args):
 
     # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
     # We pass the full path of the JITs to use as arguments.
-    core_root_dir = cwd
+    core_root_dir = script_dir
 
     print("Running superpmi.py download to get MCH files")
-    run_command([python_path, os.path.join(cwd, "superpmi.py"), "download", "--no_progress", "-target_os", platform_name,
-                 "-target_arch", arch_name, "-core_root", core_root_dir, "-spmi_location", spmi_location], _exit_on_fail=True)
 
-    log_file = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
+    log_file = os.path.join(log_directory, "superpmi_download_{}_{}.log".format(platform_name, arch_name))
+    run_command([
+        python_path,
+        os.path.join(script_dir, "superpmi.py"),
+        "download",
+        "-filter", "benchmarks.run", ######## *********** TEMPORARY: to make testing faster, only download the smallest MCH file
+        "--no_progress",
+        "-core_root", core_root_dir,
+        "-target_os", platform_name,
+        "-target_arch", arch_name,
+        "-spmi_location", spmi_location,
+        "-log_level", "debug",
+        "-log_file", log_file
+        ], _exit_on_fail=True)
+
     print("Running superpmi.py asmdiffs")
+    log_file = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
 
     # REVIEW: SuperPMI asm diffs are going to be created in `spmi_location` (./artifacts/spmi)
-    # Will they get copied back?
+    # Will they get copied back? Do we need to put them in `log_directory`?
     # We need jit-analyze from jitutils to be able to create the summary.md file
 
     _, _, return_code = run_command([
         python_path,
-        os.path.join(cwd, "superpmi.py"),
+        os.path.join(script_dir, "superpmi.py"),
         "asmdiffs",
+        "--no_progress",
         "-core_root", core_root_dir,
         "-target_os", platform_name,
         "-target_arch", arch_name,
@@ -116,6 +133,9 @@ def main(main_args):
         "-error_limit", "100",
         "-log_level", "debug",
         "-log_file", log_file])
+
+    # TODO: the superpmi.py asmdiffs command returns a failure code if there are MISSING data even if there are
+    # no asm diffs. We should probably only fail if there are actual failures (not MISSING or asm diffs).
 
     if return_code != 0:
         print("Failure in {}".format(log_file))
