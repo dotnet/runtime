@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using Xunit;
 
 internal static class Utils
@@ -349,5 +351,32 @@ internal static class Utils
         }
         Debug.WriteLine("Given attribute value {0} does not have any prefix value before :", atrValue);
         return false;
+    }
+}
+
+internal class TestAssemblyLoadContext : AssemblyLoadContext
+{
+    private AssemblyDependencyResolver _resolver;
+
+    public TestAssemblyLoadContext(string name, bool isCollectible, string mainAssemblyToLoadPath = null) : base(name, isCollectible)
+    {
+        if (!PlatformDetection.IsBrowser)
+            _resolver = new AssemblyDependencyResolver(mainAssemblyToLoadPath ?? Assembly.GetExecutingAssembly().Location);
+    }
+
+    protected override Assembly Load(AssemblyName name)
+    {
+        if (PlatformDetection.IsBrowser)
+        {
+            return base.Load(name);
+        }
+
+        string assemblyPath = _resolver.ResolveAssemblyToPath(name);
+        if (assemblyPath != null)
+        {
+            return LoadFromAssemblyPath(assemblyPath);
+        }
+
+        return null;
     }
 }
