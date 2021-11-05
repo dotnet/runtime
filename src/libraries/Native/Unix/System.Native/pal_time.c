@@ -34,14 +34,6 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
     updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
     updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;
     while (CheckInterrupted(result = utimensat(AT_FDCWD, path, updatedTimes, AT_SYMLINK_NOFOLLOW)));
-#elif HAVE_LUTIMES
-    struct timeval updatedTimes[2];
-    updatedTimes[0].tv_sec = (long)times[0].tv_sec;
-    updatedTimes[0].tv_usec = (int)times[0].tv_nsec / 1000;
-
-    updatedTimes[1].tv_sec = (long)times[1].tv_sec;
-    updatedTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
-    while (CheckInterrupted(result = lutimes(path, updatedTimes)));
 #else
     struct timeval updatedTimes[2];
     updatedTimes[0].tv_sec = (long)times[0].tv_sec;
@@ -49,7 +41,13 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 
     updatedTimes[1].tv_sec = (long)times[1].tv_sec;
     updatedTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
-    while (CheckInterrupted(result = utimes(path, updatedTimes)));
+    while (CheckInterrupted(result = 
+#if HAVE_LUTIMES
+        lutimes
+#else
+        utimes
+#endif
+        (path, updatedTimes)));
 #endif
 
     return result;

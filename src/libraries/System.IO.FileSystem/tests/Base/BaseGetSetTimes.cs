@@ -26,13 +26,11 @@ namespace System.IO.Tests
 
         protected abstract T CreateSymlink(string path, string pathToTarget);
 
-        protected T CreateSymlinkToItem(T item, bool isRelative)
+        protected T CreateSymlinkToItem(T item)
         {
-            // Creates a Symlink to 'item' (may or may not exist) that is optionally
-            // a relative path rather than an absolute path.
+            // Creates a Symlink to 'item' (target may or may not exist)
             string itemPath = GetItemPath(item);
-            string target = isRelative ? Path.GetFileName(itemPath) : itemPath;
-            return CreateSymlink(itemPath + ".link", target);
+            return CreateSymlink(path: itemPath + ".link", pathToTarget: itemPath);
         }
 
         protected abstract string GetItemPath(T item);
@@ -88,11 +86,9 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public void SettingUpdatesPropertiesOnSymlink(bool targetIsRelative, bool targetExists)
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SettingUpdatesPropertiesOnSymlink(bool targetExists)
         {
             // This test is in this class since it needs all of the time functions.
             // This test makes sure that the times are set on the symlink itself.
@@ -100,14 +96,13 @@ namespace System.IO.Tests
             // to follow the symlink to completion and set the time on that entry
             // instead (eg. the setattrlist will do this without the flag set).
             // It is also the same case on unix, with the utimensat function.
-            // It is a theory since there are variants which have a relative target
-            // or absolute target, and whether the target exists or not.
+            // It is a theory since we test both the target existing and missing.
 
             T target = targetExists ? GetExistingItem() : GetMissingItem();
 
             // When the target exists, we want to verify that its times don't change.
 
-            T link = CreateSymlinkToItem(target, targetIsRelative);
+            T link = CreateSymlinkToItem(target);
             if (!targetExists)
             {
                 SettingUpdatesPropertiesCore(link);
@@ -121,7 +116,10 @@ namespace System.IO.Tests
                 SettingUpdatesPropertiesCore(link);
 
                 // Ensure that we have the latest times.
-                if (target is FileSystemInfo fsi) fsi.Refresh();
+                if (target is FileSystemInfo fsi)
+                {
+                    fsi.Refresh();
+                }
 
                 // Ensure the target's times haven't changed.
                 DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
