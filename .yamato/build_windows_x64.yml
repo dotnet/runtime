@@ -1,4 +1,4 @@
-name: Build Windows x64
+name: Build and Test Windows x64
 
 agent:
   type: Unity::VM

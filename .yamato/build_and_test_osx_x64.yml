@@ -1,0 +1,26 @@
+name: Build and Test OSX x64
+
+agent:
+  type: Unity::VM::osx
+  image: platform-foundation/mac-bokken:latest
+  flavor: m1.mac
+
+commands:
+  - brew install pkg-config
+  - brew install openssl
+  - ./build.sh -subset clr -a x64 -c release
+  - ./build.sh libs -c release
+  - ./src/tests/build.sh Release x64
+  - ./src/tests/run.sh Release x64
+  - ./build.sh -subset libs.tests -test -c Release
+
+triggers:
+  pull_requests:
+    - targets:
+        only:
+          - "unity-main"
+
+artifacts: 
+  win64:
+    paths:
+      - artifacts/bin/coreclr/OSX.x64.Release/**
