@@ -405,6 +405,12 @@ namespace DebuggerTests
             f.run(100, 200, "9000", "test", 45);
         }
 
+        public static void EvaluateAsyncMethods()
+        {
+            var staticClass = new EvaluateNonStaticClassWithStaticFields();
+            staticClass.run();
+        }
+
     }
 
     public static class EvaluateStaticClass
@@ -412,6 +418,23 @@ namespace DebuggerTests
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
 		public static string StaticPropertyWithError => throw new Exception("not implemented");
+    }
+
+    public class EvaluateNonStaticClassWithStaticFields
+    {
+        public static int StaticField1 = 10;
+        public static string StaticProperty1 => "StaticProperty1";
+		public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        private int HelperMethod()
+	    {
+		    return 5;
+	    }
+
+        public async void run()
+        {
+            var makeAwaitable = await Task.Run(() => HelperMethod());
+        }
     }
 
     public class EvaluateLocalsWithElementAccessTests
