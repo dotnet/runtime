@@ -286,26 +286,28 @@ namespace System.IO
             var security = new FileSecurity();
 
             Assert.Throws<ArgumentNullException>("fileInfo", () =>
-                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
-        }
-
-        [Theory]
-        [MemberData(nameof(ValidArgumentsWriteableStreamNullFileSecurity))]
-        public void FileInfo_Create_NullFileSecurity(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize)
-        {
-            Verify_FileSecurity_CreateFile(mode, rights, share, bufferSize, FileOptions.None, expectedSecurity: null);
+                info.Create(FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Fact]
-        public void FileInfo_Create_NotFound()
+        public void FileInfo_Create_DirectoryNotFound()
         {
             using var tempRootDir = new TempAclDirectory();
             string path = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "file.txt");
-            var fileInfo = new FileInfo(path);
+            var info = new FileInfo(path);
             var security = new FileSecurity();
 
             Assert.Throws<DirectoryNotFoundException>(() =>
-                CreateFileWithSecurity(fileInfo, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+                info.Create(FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidArgumentsWriteableStream))]
+        public void FileInfo_Create_WithSecurity(FileMode mode, FileSystemRights rights, FileShare share, FileOptions options)
+        {
+            Verify_FileSecurity_CreateFile(mode, rights, share, DefaultBufferSize, options, expectedSecurity: null);  // Null security
+            Verify_FileSecurity_CreateFile(mode, rights, share, DefaultBufferSize, options, new FileSecurity());      // Default security
+            Verify_FileSecurity_CreateFile(mode, rights, share, DefaultBufferSize, options, GetFileSecurity(rights)); // Custom security
         }
 
         [Theory]
@@ -318,7 +320,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentOutOfRangeException>("mode", () =>
-                CreateFileWithSecurity(info, invalidMode, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+                info.Create(invalidMode, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Theory]
@@ -330,7 +332,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentOutOfRangeException>("share", () =>
-                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, invalidFileShare, DefaultBufferSize, FileOptions.None, security));
+                info.Create(FileMode.CreateNew, FileSystemRights.WriteData, invalidFileShare, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Theory]
@@ -342,7 +344,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () =>
-                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, invalidBufferSize, FileOptions.None, security));
+                info.Create(FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, invalidBufferSize, FileOptions.None, security));
         }
 
         [Theory]
@@ -360,27 +362,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentException>(() =>
-                CreateFileWithSecurity(info, mode, rights, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
-        }
-
-        [Fact]
-        public void FileInfo_Create_DefaultFileSecurity()
-        {
-            var security = new FileSecurity();
-            Verify_FileSecurity_CreateFile(security);
-        }
-
-        private void CreateFileWithSecurity(FileInfo info, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity security)
-        {
-            if (PlatformDetection.IsNetFramework)
-            {
-                FileSystemAclExtensions.Create(info, mode, rights, share, bufferSize, options, security);
-            }
-            else
-            {
-                info.Create(mode, rights, share, bufferSize, options, security).Dispose();
-                Assert.True(info.Exists);
-            }
+                info.Create(mode, rights, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Theory]
@@ -564,17 +546,12 @@ namespace System.IO
             FileSystemRights.Write
         };
 
-        public static IEnumerable<object[]> ValidArgumentsWriteableStreamNullFileSecurity() =>
+        public static IEnumerable<object[]> ValidArgumentsWriteableStream() =>
             from mode in new[] { FileMode.Create, FileMode.CreateNew, FileMode.OpenOrCreate }
             from rights in s_writeableFileSystemRights
-            from share in new[] { FileShare.None, FileShare.Read, FileShare.Write, FileShare.ReadWrite }
-            from bufferSize in new[] { 1, DefaultBufferSize }
-            select new object[] { mode, rights, share, bufferSize };
-
-        private void Verify_FileSecurity_CreateFile(FileSecurity expectedSecurity)
-        {
-            Verify_FileSecurity_CreateFile(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, expectedSecurity);
-        }
+            from share in Enum.GetValues<FileShare>()
+            from options in Enum.GetValues<FileOptions>()
+            select new object[] { mode, rights, share, options };
 
         private void Verify_FileSecurity_CreateFile(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity expectedSecurity)
         {
@@ -582,15 +559,23 @@ namespace System.IO
             string path = Path.Combine(tempRootDir.Path, "file.txt");
             var fileInfo = new FileInfo(path);
 
-            fileInfo.Create(mode, rights, share, bufferSize, options, expectedSecurity).Dispose();
-            Assert.True(fileInfo.Exists);
-            tempRootDir.CreatedSubfiles.Add(fileInfo);
-
-            if (expectedSecurity != null)
+            using (FileStream fs = fileInfo.Create(mode, rights, share, bufferSize, options, expectedSecurity))
             {
+                Assert.True(fileInfo.Exists);
+                tempRootDir.CreatedSubfiles.Add(fileInfo);
+
                 var actualFileInfo = new FileInfo(path);
-                FileSecurity actualSecurity = actualFileInfo.GetAccessControl(AccessControlSections.Access);
-                VerifyAccessSecurity(expectedSecurity, actualSecurity);
+                FileSecurity actualSecurity = actualFileInfo.GetAccessControl();
+
+                if (expectedSecurity != null)
+                {
+                    VerifyAccessSecurity(expectedSecurity, actualSecurity);
+                }
+                else
+                {
+                    int count = actualSecurity.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier)).Count;
+                    Assert.Equal(0, count);
+                }
             }
         }
 
