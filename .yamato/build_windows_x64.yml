@@ -7,6 +7,10 @@ agent:
 
 commands:
   - build.cmd -subset clr -a x64 -c release
+  - build.cmd libs -c release
+  - src\tests\build.cmd Release x64 -priority=0
+  - src\tests\run.cmd Release x64
+  - build.cmd -subset libs.tests -test -c Release
 
 triggers:
   pull_requests:
