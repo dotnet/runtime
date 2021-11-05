@@ -25,7 +25,7 @@ namespace System.Linq
         {
             if (enumerable is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(enumerable));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.enumerable);
             }
 
             _enumerable = enumerable;
@@ -61,7 +61,7 @@ namespace System.Linq
         {
             if (enumerable is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(enumerable));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.enumerable);
             }
 
             _enumerable = enumerable;

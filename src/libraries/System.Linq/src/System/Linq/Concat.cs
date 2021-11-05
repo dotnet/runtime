@@ -12,12 +12,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(first));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
 
             if (second == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(second));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
             return first is ConcatIterator<TSource> firstConcat
@@ -37,17 +37,17 @@ namespace System.Linq
         {
             if (first == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(first));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
 
             if (second == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(second));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
             if (rest == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(rest));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.rest);
             }
 
             return new BaseConcatIterator<TSource>(first, second, rest);

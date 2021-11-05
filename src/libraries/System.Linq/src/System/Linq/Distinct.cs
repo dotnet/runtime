@@ -14,7 +14,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return new DistinctIterator<TSource>(source, comparer);
@@ -49,11 +49,11 @@ namespace System.Linq
         {
             if (source is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
             return DistinctByIterator(source, keySelector, comparer);

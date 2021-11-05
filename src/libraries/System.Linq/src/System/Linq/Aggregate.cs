@@ -11,12 +11,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (func == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(func));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -40,12 +40,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (func == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(func));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
 
             TAccumulate result = seed;
@@ -61,17 +61,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (func == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(func));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
 
             if (resultSelector == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(resultSelector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
 
             TAccumulate result = seed;

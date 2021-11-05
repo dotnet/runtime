@@ -118,11 +118,11 @@ namespace System.Linq
         {
             if (source is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
             _parent = parent;

@@ -13,12 +13,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(first));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
 
             if (second == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(second));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
             return IntersectIterator(first, second, comparer);
@@ -59,15 +59,15 @@ namespace System.Linq
         {
             if (first is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(first));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
             if (second is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(second));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
             if (keySelector is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(keySelector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
             return IntersectByIterator(first, second, keySelector, comparer);

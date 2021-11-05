@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (count < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(nameof(count));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
 
             if (count == 0)
