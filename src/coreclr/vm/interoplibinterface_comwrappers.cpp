@@ -903,12 +903,10 @@ namespace
                                 : ExternalObjectContext::Flags_None) |
                             (uniqueInstance
                                 ? ExternalObjectContext::Flags_None
-                                : ExternalObjectContext::Flags_InCache);
-
-                if (flags & CreateObjectFlags::CreateObjectFlags_Aggregated)
-                {
-                    eocFlags |= ExternalObjectContext::Flags_Aggregated;
-                }
+                                : ExternalObjectContext::Flags_InCache) |
+                            ((flags & CreateObjectFlags::CreateObjectFlags_Aggregated) != 0
+                                ? ExternalObjectContext::Flags_Aggregated
+                                : ExternalObjectContext::Flags_None);
 
                 ExternalObjectContext::Construct(
                     resultHolder.GetContext(),
@@ -1816,7 +1814,7 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
     {
         ExternalObjectContext* context = reinterpret_cast<ExternalObjectContext*>(contextMaybe);
         *wrapperId = context->WrapperId;
-        *isAggregated = (context->Flags & ExternalObjectContext::Flags_Aggregated) != 0;
+        *isAggregated = context->IsSet(ExternalObjectContext::Flags_Aggregated);
 
         IUnknown* identity = reinterpret_cast<IUnknown*>(context->Identity);
         GCX_PREEMP();
