@@ -35,9 +35,9 @@ namespace ComWrappersTests
     {
         private struct Vtbl
         {
-            public delegate*<IntPtr, Guid*, IntPtr*, int> QueryInterface;
-            public delegate*<IntPtr, int> AddRef;
-            public delegate*<IntPtr, int> Release;
+            public delegate* unmanaged<IntPtr, Guid*, IntPtr*, int> QueryInterface;
+            public delegate* unmanaged<IntPtr, int> AddRef;
+            public delegate* unmanaged<IntPtr, int> Release;
         }
 
         private readonly IntPtr instance;
