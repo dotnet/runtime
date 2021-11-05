@@ -78,8 +78,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// where c'_i = c_i if b_i = true and c'_i is Not(c_i) otherwise.
         /// If n=0 return Tuple({},True)
         /// </summary>
-        /// <param name="constraints">array of constraints</param>
+        /// <param name="constraints">constraints</param>
         /// <returns>constraints that are satisfiable</returns>
-        List<T> GenerateMinterms(params T[] constraints);
+        List<T> GenerateMinterms(IEnumerable<T> constraints);
     }
 }
