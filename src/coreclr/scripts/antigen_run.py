@@ -20,7 +20,7 @@ from os import path, walk
 from os.path import getsize
 import os
 from coreclr_arguments import *
-from azdo_pipelines_util import run_command, TempDir
+from jitutil import run_command, TempDir
 
 parser = argparse.ArgumentParser(description="description")
 

@@ -20,7 +20,7 @@ import zipfile
 from os import path
 from coreclr_arguments import *
 from superpmi import TempDir, determine_mcs_tool_path, determine_superpmi_tool_path, is_nonzero_length_file
-from azdo_pipelines_util import run_command
+from jitutil import run_command
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"

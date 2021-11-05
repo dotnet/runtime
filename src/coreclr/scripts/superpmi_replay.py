@@ -15,7 +15,7 @@
 import argparse
 import os
 from coreclr_arguments import *
-from azdo_pipelines_util import run_command
+from jitutil import run_command
 
 parser = argparse.ArgumentParser(description="description")
 

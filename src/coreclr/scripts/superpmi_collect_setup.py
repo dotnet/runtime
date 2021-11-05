@@ -37,7 +37,7 @@ import os
 import stat
 
 from coreclr_arguments import *
-from azdo_pipelines_util import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
+from jitutil import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
 
 
 # Start of parser object creation.

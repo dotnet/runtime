@@ -17,7 +17,7 @@ import argparse
 import os
 
 from coreclr_arguments import *
-from azdo_pipelines_util import copy_directory, copy_files, set_pipeline_variable
+from jitutil import copy_directory, copy_files, set_pipeline_variable
 
 parser = argparse.ArgumentParser(description="description")
 

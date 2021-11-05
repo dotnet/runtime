@@ -3,12 +3,11 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 #
-# Title               : azdo_pipelines_util.py
+# Title               : jitutil.py
 #
 # Notes:
 #
-# Utility functions used by Python scripts involved with Azure DevOps Pipelines
-# setup.
+# Utility functions used by Python scripts used by the CLR JIT team.
 #
 ################################################################################
 ################################################################################
