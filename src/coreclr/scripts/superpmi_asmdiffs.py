@@ -109,11 +109,12 @@ def main(main_args):
     print("Running superpmi.py download to get MCH files")
 
     log_file = os.path.join(log_directory, "superpmi_download_{}_{}.log".format(platform_name, arch_name))
+    # Add this for restricted testing:
+    #   "-filter", "libraries.crossgen2", ######## *********** TEMPORARY: to make testing faster, only download one MCH file
     run_command([
         python_path,
         os.path.join(script_dir, "superpmi.py"),
         "download",
-        "-filter", "libraries.crossgen2", ######## *********** TEMPORARY: to make testing faster, only download one MCH file
         "--no_progress",
         "-core_root", core_root_dir,
         "-target_os", platform_name,
