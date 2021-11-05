@@ -270,5 +270,11 @@ inline void CoreClrFree(void *p)
 #define strcpy_s TP_strcpy_s
 #endif
 
+#if defined(TARGET_XARCH) && !defined(_MSC_VER)
+#define ENABLE_AVX __attribute__ ((target("avx")))
+#else
+#define ENABLE_AVX
+#endif
+
 #endif
 
