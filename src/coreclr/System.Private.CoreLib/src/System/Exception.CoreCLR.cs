@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -69,6 +70,7 @@ namespace System
 
         public MethodBase? TargetSite
         {
+            [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
             get
             {
                 if (_exceptionMethod != null)
@@ -85,13 +87,17 @@ namespace System
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The API will return null if the metadata for current method cannot be established.")]
         private string? CreateSourceName()
         {
             StackTrace st = new StackTrace(this, fNeedFileInfo: false);
             if (st.FrameCount > 0)
             {
                 StackFrame sf = st.GetFrame(0)!;
-                MethodBase method = sf.GetMethod()!;
+                MethodBase? method = sf.GetMethod();
+                if (method == null)
+                    return null;
 
                 Module module = method.Module;
 
@@ -242,7 +248,7 @@ namespace System
             return retMesg!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMessageFromNativeResources")]
         private static extern void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
 
         internal readonly struct DispatchState

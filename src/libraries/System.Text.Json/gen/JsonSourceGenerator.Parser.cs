@@ -14,6 +14,7 @@ using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.Json.SourceGeneration
@@ -25,6 +26,7 @@ namespace System.Text.Json.SourceGeneration
             private const string SystemTextJsonNamespace = "System.Text.Json";
             private const string JsonConverterAttributeFullName = "System.Text.Json.Serialization.JsonConverterAttribute";
             private const string JsonConverterFactoryFullName = "System.Text.Json.Serialization.JsonConverterFactory";
+            private const string JsonConverterOfTFullName = "System.Text.Json.Serialization.JsonConverter`1";
             private const string JsonArrayFullName = "System.Text.Json.Nodes.JsonArray";
             private const string JsonElementFullName = "System.Text.Json.JsonElement";
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
@@ -99,6 +101,9 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _iAsyncEnumerableGenericType;
             private readonly Type? _dateOnlyType;
             private readonly Type? _timeOnlyType;
+
+            // Needed for converter validation
+            private readonly Type _jsonConverterOfTType;
 
             private readonly HashSet<Type> _numberTypes = new();
             private readonly HashSet<Type> _knownTypes = new();
@@ -195,7 +200,7 @@ namespace System.Text.Json.SourceGeneration
                 _stringType = _metadataLoadContext.Resolve(SpecialType.System_String);
 
                 _dateTimeOffsetType = _metadataLoadContext.Resolve(typeof(DateTimeOffset));
-                _byteArrayType = _metadataLoadContext.Resolve(typeof(byte[]));
+                _byteArrayType = _metadataLoadContext.Resolve(typeof(byte)).MakeArrayType();
                 _guidType = _metadataLoadContext.Resolve(typeof(Guid));
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
@@ -214,6 +219,8 @@ namespace System.Text.Json.SourceGeneration
                 _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
                 _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
+                _jsonConverterOfTType = _metadataLoadContext.Resolve(JsonConverterOfTFullName);
+
                 PopulateKnownTypes();
             }
 
@@ -223,8 +230,12 @@ namespace System.Text.Json.SourceGeneration
                 INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
                 INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerAttributeFullName);
                 INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSourceGenerationOptionsAttributeFullName);
+                INamedTypeSymbol jsonConverterOfTAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonConverterOfTFullName);
 
-                if (jsonSerializerContextSymbol == null || jsonSerializableAttributeSymbol == null || jsonSourceGenerationOptionsAttributeSymbol == null)
+                if (jsonSerializerContextSymbol == null ||
+                    jsonSerializableAttributeSymbol == null ||
+                    jsonSourceGenerationOptionsAttributeSymbol == null ||
+                    jsonConverterOfTAttributeSymbol == null)
                 {
                     return null;
                 }
@@ -644,6 +655,7 @@ namespace System.Text.Json.SourceGeneration
                 bool hasInitOnlyProperties = false;
                 bool hasTypeFactoryConverter = false;
                 bool hasPropertyFactoryConverters = false;
+                bool canContainNullableReferenceAnnotations = type.CanContainNullableReferenceTypeAnnotations();
 
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(type);
                 foreach (CustomAttributeData attributeData in attributeDataList)
@@ -1010,6 +1022,7 @@ namespace System.Text.Json.SourceGeneration
                     converterInstatiationLogic,
                     implementsIJsonOnSerialized : implementsIJsonOnSerialized,
                     implementsIJsonOnSerializing : implementsIJsonOnSerializing,
+                    canContainNullableReferenceAnnotations: canContainNullableReferenceAnnotations,
                     hasTypeFactoryConverter : hasTypeFactoryConverter,
                     hasPropertyFactoryConverters : hasPropertyFactoryConverters);
 
@@ -1351,7 +1364,14 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                if (converterType.GetCompatibleBaseClass(JsonConverterFactoryFullName) != null)
+                // Validated when creating the source generation spec.
+                Debug.Assert(_jsonConverterOfTType != null);
+
+                if (converterType.GetCompatibleGenericBaseClass(_jsonConverterOfTType) != null)
+                {
+                    return $"new {converterType.GetCompilableName()}()";
+                }
+                else if (converterType.GetCompatibleBaseClass(JsonConverterFactoryFullName) != null)
                 {
                     hasFactoryConverter = true;
 
@@ -1365,7 +1385,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                return $"new {converterType.GetCompilableName()}()";
+                return null;
             }
 
             private static string DetermineRuntimePropName(string clrPropName, string? jsonPropName, JsonKnownNamingPolicy namingPolicy)

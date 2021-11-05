@@ -36,6 +36,8 @@ public:
             , indexes(nullptr)
             , hash(nullptr)
             , methodStatsTypes(nullptr)
+            , baseMetricsSummaryFile(nullptr)
+            , diffMetricsSummaryFile(nullptr)
             , mclFilename(nullptr)
             , diffMCLFilename(nullptr)
             , targetArchitecture(nullptr)
@@ -67,6 +69,8 @@ public:
         int*  indexes;
         char* hash;
         char* methodStatsTypes;
+        char* baseMetricsSummaryFile;
+        char* diffMetricsSummaryFile;
         char* mclFilename;
         char* diffMCLFilename;
         char* targetArchitecture;

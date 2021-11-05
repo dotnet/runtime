@@ -12,8 +12,7 @@
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
-    <JsonToItemsTaskFactoryTasksAssemblyPath>{JsonToItemsTaskFactoryTasksAssemblyPath}</JsonToItemsTaskFactoryTasksAssemblyPath>
-    <RuntimeConfigParserTasksAssemblyPath>{RuntimeConfigParserTasksAssemblyPath}</RuntimeConfigParserTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
 
     <!-- Needed for targetingpacks.targets -->

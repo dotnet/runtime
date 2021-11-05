@@ -53,6 +53,7 @@ namespace R2RTest
                         Map(),
                         Pdb(),
                         Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Iterations(),
@@ -92,6 +93,7 @@ namespace R2RTest
                         Map(),
                         Pdb(),
                         Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Iterations(),
@@ -124,6 +126,7 @@ namespace R2RTest
                         Map(),
                         Pdb(),
                         Perfmap(),
+                        PerfmapFormatVersion(),
                         Crossgen2Parallelism(),
                         Crossgen2JitPath(),
                         DegreeOfParallelism(),
@@ -155,6 +158,7 @@ namespace R2RTest
                         Map(),
                         Pdb(),
                         Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
@@ -173,6 +177,7 @@ namespace R2RTest
                         Map(),
                         Pdb(),
                         Perfmap(),
+                        PerfmapFormatVersion(),
                         CompilationTimeoutMinutes(),
                         Crossgen2Path(),
                         MibcPath(),
@@ -237,6 +242,9 @@ namespace R2RTest
 
             Option Perfmap() =>
                 new Option<bool>(new[] { "--perfmap" }, "Generate perfmap symbol information");
+
+            Option PerfmapFormatVersion() =>
+                new Option<int>(new[] { "--perfmap-format-version" }, "Perfmap format version to generate");
 
             Option DegreeOfParallelism() =>
                 new Option<int>(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)");

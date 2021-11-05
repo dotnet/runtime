@@ -79,6 +79,7 @@
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-proclib.h>
 
 #include <mono/component/debugger-state-machine.h>
 #include "debugger-agent.h"
@@ -2540,7 +2541,6 @@ try_process_suspend (void *the_tls, MonoContext *ctx, gboolean from_breakpoint)
 static void
 suspend_vm (void)
 {
-	gboolean tp_suspend = FALSE;
 	mono_loader_lock ();
 
 	mono_coop_mutex_lock (&suspend_mutex);
@@ -2556,12 +2556,6 @@ suspend_vm (void)
 	}
 
 	mono_coop_mutex_unlock (&suspend_mutex);
-
-	if (suspend_count == 1)
-		/*
-		 * Suspend creation of new threadpool threads, since they cannot run
-		 */
-		tp_suspend = TRUE;
 	mono_loader_unlock ();
 }
 
@@ -2575,7 +2569,6 @@ static void
 resume_vm (void)
 {
 	g_assert (is_debugger_thread ());
-	gboolean tp_resume = FALSE;
 
 	mono_loader_lock ();
 
@@ -2598,8 +2591,6 @@ resume_vm (void)
 	mono_coop_mutex_unlock (&suspend_mutex);
 	//g_assert (err == 0);
 
-	if (suspend_count == 0)
-		tp_resume = TRUE;
 	mono_loader_unlock ();
 }
 
@@ -5022,7 +5013,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 	MonoObject *obj;
 	gboolean boxed_vtype = FALSE;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		if (!(*(void**)addr)) {
 			/* This can happen with compiler generated locals */
 			//PRINT_MSG ("%s\n", mono_type_full_name (t));
@@ -5256,7 +5247,6 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 {
 	guint8 *addr = (guint8*)void_addr;
 	guint8 *buf = (guint8*)void_buf;
-	gboolean is_enum;
 	MonoClass *klass;
 	MonoClassField *f;
 	int nfields;
@@ -5264,7 +5254,8 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	MonoDomain *d;
 	ErrorCode err;
 
-	is_enum = decode_byte (buf, &buf, limit);
+	/* is_enum, ignored */
+	decode_byte (buf, &buf, limit);
 	if (CHECK_PROTOCOL_VERSION(2, 61))
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
@@ -5486,7 +5477,6 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 			} else if (type == MONO_TYPE_VALUETYPE) {
 				ERROR_DECL (error);
 				guint8 *buf2;
-				gboolean is_enum;
 				MonoClass *klass;
 				MonoDomain *d;
 				guint8 *vtype_buf;
@@ -5498,7 +5488,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				* Same as the beginning of the handle_vtype case above.
 				*/
 				buf2 = buf;
-				is_enum = decode_byte (buf, &buf, limit);
+				decode_byte (buf, &buf, limit);
 				decode_byte (buf, &buf, limit); //ignore is boxed
 				klass = decode_typeid (buf, &buf, limit, &d, &err);
 				if (err != ERR_NONE)
@@ -5698,7 +5688,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 		host_mgreg_t v;
 		gboolean is_signed = FALSE;
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			addr = (guint8 *)mono_arch_context_get_int_reg (ctx, reg);
 
 			if (addr) {
@@ -5708,7 +5698,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 			break;
 		}
 
-		if (!t->byref && (t->type == MONO_TYPE_I1 || t->type == MONO_TYPE_I2 || t->type == MONO_TYPE_I4 || t->type == MONO_TYPE_I8))
+		if (!m_type_is_byref (t) && (t->type == MONO_TYPE_I1 || t->type == MONO_TYPE_I2 || t->type == MONO_TYPE_I4 || t->type == MONO_TYPE_I8))
 			is_signed = TRUE;
 
 		switch (size) {
@@ -5753,7 +5743,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 
 		//PRINT_MSG ("[R%d+%d] = %p\n", reg, var->offset, addr);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			addr = *(guint8**)addr;
 
 			if (!addr)
@@ -6102,7 +6092,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 			if (args [i] && ((MonoObject*)args [i])->vtable->domain != domain)
 				NOT_IMPLEMENTED;
 
-			if (sig->params [i]->byref) {
+			if (m_type_is_byref (sig->params [i])) {
 				arg_buf [i] = g_newa (guint8, sizeof (gpointer));
 				*(gpointer*)arg_buf [i] = args [i];
 				args [i] = arg_buf [i];
@@ -6177,7 +6167,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 				buffer_add_value (buf, mono_get_void_type_dbg (), NULL, domain);
 			}
 		} else if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
 				buffer_add_value (buf, ret_byval, &res, domain);
 			} else {
@@ -6194,7 +6184,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 			} else {
 				g_assert (res);
 
-				if (sig->ret->byref) {
+				if (m_type_is_byref (sig->ret)) {
 					MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
 					buffer_add_value (buf, ret_byval, mono_object_unbox_internal (res), domain);
 				} else {
@@ -6212,7 +6202,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 			for (i = 0; i < nargs; ++i) {
 				if (MONO_TYPE_IS_REFERENCE (sig->params [i]))
 					buffer_add_value (buf, sig->params [i], &args [i], domain);
-				else if (sig->params [i]->byref)
+				else if (m_type_is_byref (sig->params [i]))
 					/* add_value () does an indirection */
 					buffer_add_value (buf, sig->params [i], &arg_buf [i], domain);
 				else
@@ -7891,7 +7881,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			b |= (1 << 0);
 		if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR)
 			b |= (1 << 1);
-		if (!type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U)))
+		if (!m_type_is_byref (type) && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U)))
 			b |= (1 << 2);
 		if (type->type == MONO_TYPE_VALUETYPE)
 			b |= (1 << 3);
@@ -8926,7 +8916,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		for (int i = 0; i < tls->frame_count; i++)
 		{
-			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%lld] - [%lld]\n", i, (uint64_t) MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx), sp_received);
+			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%" PRIu64 "] - [%" PRId64 "]\n", i, (uint64_t) MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx), sp_received);
 			if (sp_received == (uint64_t)MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx)) {
 				buffer_add_int(buf, i);
 				break;
@@ -9513,7 +9503,7 @@ create_file_to_check_memory_address (void)
 {
 	if (file_check_valid_memory != -1)
 		return;
-	char *file_name = g_strdup_printf ("debugger_check_valid_memory.%d", getpid());
+	char *file_name = g_strdup_printf ("debugger_check_valid_memory.%d", mono_process_current_pid ());
 	filename_check_valid_memory = g_build_filename (g_get_tmp_dir (), file_name, (const char*)NULL);
 	file_check_valid_memory = open(filename_check_valid_memory, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR);
 	g_free (file_name);
@@ -9624,8 +9614,6 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_typeid (buf, obj->vtable->domain, mono_class_from_mono_type_internal (((MonoReflectionType*)obj->vtable->type)->type));
 		break;
 	case CMD_OBJECT_REF_GET_VALUES_ICORDBG: {
-		gpointer iter;
-		iter = NULL;
 		len = 1;
 		MonoClass *dummy_class;
 		int field_token =  decode_int (p, &p, end);

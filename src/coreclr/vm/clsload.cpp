@@ -654,8 +654,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
         Module * pCurrentClsModule = i.GetModule();
         PREFIX_ASSUME(pCurrentClsModule != NULL);
 
-        if (pCurrentClsModule->IsResource())
-            continue;
         if (pLookInThisModuleOnly && (pCurrentClsModule != pLookInThisModuleOnly))
             continue;
 
@@ -844,7 +842,7 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     {
         Module *pModule = i.GetModule();
         PREFIX_ASSUME(pModule != NULL);
-        if (pModule->IsResource() || pModule->GetAvailableClassHash() != NULL)
+        if (pModule->GetAvailableClassHash() != NULL)
             continue;
 
         // Lazy construction of the case-sensitive hashtable of types is *only* a scenario for ReadyToRun images
@@ -858,16 +856,13 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     }
 
     // Add exported types of the manifest module to the hashtable
-    if (!GetAssembly()->GetManifestModule()->IsResource())
-    {
-        IMDInternalImport * pManifestImport = GetAssembly()->GetManifestImport();
-        HENUMInternalHolder phEnum(pManifestImport);
-        phEnum.EnumInit(mdtExportedType, mdTokenNil);
+    IMDInternalImport * pManifestImport = GetAssembly()->GetManifestImport();
+    HENUMInternalHolder phEnum(pManifestImport);
+    phEnum.EnumInit(mdtExportedType, mdTokenNil);
 
-        mdToken mdExportedType;
-        while (pManifestImport->EnumNext(&phEnum, &mdExportedType))
-            AddExportedTypeHaveLock(GetAssembly()->GetManifestModule(), mdExportedType, &amTracker);
-    }
+    mdToken mdExportedType;
+    while (pManifestImport->EnumNext(&phEnum, &mdExportedType))
+        AddExportedTypeHaveLock(GetAssembly()->GetManifestModule(), mdExportedType, &amTracker);
 
     amTracker.SuppressRelease();
 }
@@ -884,7 +879,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     }
     CONTRACTL_END;
 
-    if (!GetAssembly()->GetManifestModule()->IsResource() && GetAssembly()->GetManifestModule()->GetAvailableClassHash() == NULL)
+    if (GetAssembly()->GetManifestModule()->GetAvailableClassHash() == NULL)
     {
         // This is a R2R assembly, and a case insensitive type lookup was triggered.
         // Construct the case-sensitive table first, since the case-insensitive table
@@ -900,9 +895,6 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     while (i.Next())
     {
         Module *pModule = i.GetModule();
-        if (pModule->IsResource())
-            continue;
-
         if (pModule->GetAvailableClassCaseInsHash() == NULL)
         {
             EEClassHashTable *pNewClassCaseInsHash = pModule->GetAvailableClassHash()->MakeCaseInsensitiveTable(pModule, &amTracker);

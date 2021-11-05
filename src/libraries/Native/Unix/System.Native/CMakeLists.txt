@@ -8,8 +8,6 @@ if (CLR_CMAKE_TARGET_OSX)
     add_definitions(-D_DARWIN_C_SOURCE)
 endif ()
 
-include_directories("${CLR_SRC_NATIVE_DIR}/common")
-
 set(NATIVE_SOURCES
     pal_errno.c
     pal_interfaceaddresses.c

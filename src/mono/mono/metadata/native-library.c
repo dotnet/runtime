@@ -526,7 +526,8 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name, lflags);
 
 	// Check the assembly directory if the search flag is set and the image exists
-	if (flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY && image != NULL && module == NULL) {
+	if ((flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY) != 0 && image != NULL && 
+		module == NULL && (image->filename != NULL)) {
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
 			module = netcore_probe_for_module_variations (mdirname, file_name, lflags);
@@ -1003,7 +1004,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	/* If qcalls are disabled, we fall back to the normal pinvoke code for them */
 #ifndef DISABLE_QCALLS
 	if (strcmp (new_scope, "QCall") == 0) {
-		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, status_out);
+		piinfo->addr = mono_lookup_pinvoke_qcall_internal (new_import);
 		if (!piinfo->addr) {
 			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
 						"Unable to find qcall for '%s'.",
@@ -1048,7 +1049,7 @@ retry_with_libcoreclr:
 			mono_custom_attrs_free (cinfo);
 	}
 	if (flags < 0)
-		flags = 0;
+		flags = DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY;
 	module = netcore_lookup_native_library (alc, image, new_scope, flags);
 
 	if (!module) {

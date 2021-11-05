@@ -474,8 +474,12 @@ public:
 
     HRESULT EventPipeProviderCreated(EventPipeProvider *provider);
 
-    HRESULT LoadAsNotficationOnly(BOOL *pbNotificationOnly);
+    HRESULT LoadAsNotificationOnly(BOOL *pbNotificationOnly);
 
+    ProfToEEInterfaceImpl *GetProfToEE()
+    {
+        return m_pProfToEE;
+    }
 private:
 
     //

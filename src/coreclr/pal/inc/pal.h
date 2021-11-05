@@ -432,13 +432,22 @@ PALAPI
 PAL_SetShutdownCallback(
     IN PSHUTDOWN_CALLBACK callback);
 
+// Must be the same as the copy in excep.h and the WriteDumpFlags enum in the diagnostics repo
+enum
+{
+    GenerateDumpFlagsNone = 0x00,
+    GenerateDumpFlagsLoggingEnabled = 0x01,
+    GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
+    GenerateDumpFlagsCrashReportEnabled = 0x04
+};
+
 PALIMPORT
 BOOL
 PALAPI
 PAL_GenerateCoreDump(
     IN LPCSTR dumpName,
     IN INT dumpType,
-    IN BOOL diag);
+    IN ULONG32 flags);
 
 typedef VOID (*PPAL_STARTUP_CALLBACK)(
     char *modulePath,
@@ -2742,6 +2751,13 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
     IN SIZE_T dwSize);
+
+PALIMPORT
+void
+PALAPI
+PAL_GetExecutableMemoryAllocatorPreferredRange(
+    OUT PVOID *start,
+    OUT PVOID *end);
 
 PALIMPORT
 LPVOID

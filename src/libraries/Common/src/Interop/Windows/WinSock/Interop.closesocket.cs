@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, SetLastError = true)]
-        internal static extern SocketError closesocket([In] IntPtr socketHandle);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, SetLastError = true)]
+        internal static partial SocketError closesocket(IntPtr socketHandle);
     }
 }

@@ -8,7 +8,7 @@ namespace System.Runtime.Intrinsics.X86
 {
     [Intrinsic]
     [CLSCompliant(false)]
-    [RequiresPreviewFeatures]
+    [RequiresPreviewFeatures("AvxVnni is in preview.")]
     public abstract class AvxVnni : Avx2
     {
         internal AvxVnni() { }

@@ -3,10 +3,10 @@
 
 using System;
 
-class Test
+class Test_baduwinfo
 {
     private static TestUtil.TestLog testLog;
-    static Test()
+    static Test_baduwinfo()
     {
         // Create test writer object to hold expected output
         System.IO.StringWriter expectedOut = new System.IO.StringWriter();
@@ -122,7 +122,7 @@ class Test
         {
             if (100 != foo()) Console.WriteLine("foo() Failed");
 
-            if (s != "Test1") Console.WriteLine("s!=\"Test\" Failed");
+            if (s != "Test1") Console.WriteLine("s!=\"Test_baduwinfo\" Failed");
         }
         catch
         {

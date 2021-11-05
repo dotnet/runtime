@@ -15,7 +15,7 @@ struct GenInt : IGen<int>
 
 	public void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread14.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -25,8 +25,8 @@ struct GenInt : IGen<int>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread14.Eval(Test_thread14.Xcounter==1);
+		Test_thread14.Xcounter = 0;
 	}
 }
 
@@ -36,7 +36,7 @@ struct GenDouble : IGen<double>
 
 	public void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread14.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -46,8 +46,8 @@ struct GenDouble : IGen<double>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread14.Eval(Test_thread14.Xcounter==1);
+		Test_thread14.Xcounter = 0;
 	}
 }
 
@@ -57,7 +57,7 @@ struct GenString : IGen<string>
 
 	public void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread14.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -67,8 +67,8 @@ struct GenString : IGen<string>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread14.Eval(Test_thread14.Xcounter==1);
+		Test_thread14.Xcounter = 0;
 	}
 }
 
@@ -78,7 +78,7 @@ struct GenObject : IGen<object>
 
 	public void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread14.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -88,8 +88,8 @@ struct GenObject : IGen<object>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread14.Eval(Test_thread14.Xcounter==1);
+		Test_thread14.Xcounter = 0;
 	}
 }
 
@@ -99,7 +99,7 @@ struct GenGuid : IGen<Guid>
 
 	public void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread14.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -109,11 +109,11 @@ struct GenGuid : IGen<Guid>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread14.Eval(Test_thread14.Xcounter==1);
+		Test_thread14.Xcounter = 0;
 	}
 }
-public class Test
+public class Test_thread14
 {
 	public static int nThreads =50;
 	public static int counter = 0;

@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class Test {
+public class Test_finalizeexcep {
 
     public class List {
         public int val;

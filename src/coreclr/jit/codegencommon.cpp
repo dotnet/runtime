@@ -100,8 +100,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
     regSet.tmpInit();
 
-    instInit();
-
 #ifdef LATE_DISASM
     getDisAssembler().disInit(compiler);
 #endif
@@ -1299,10 +1297,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *      *rv1Ptr     ...     base operand
  *      *rv2Ptr     ...     optional operand
  *      *revPtr     ...     true if rv2 is before rv1 in the evaluation order
- *  #if SCALED_ADDR_MODES
  *      *mulPtr     ...     optional multiplier (2/4/8) for rv2
  *                          Note that for [reg1 + reg2] and [reg1 + reg2 + icon], *mulPtr == 0.
- *  #endif
  *      *cnsPtr     ...     integer constant [optional]
  *
  *  IMPORTANT NOTE: This routine doesn't generate any code, it merely
@@ -1310,15 +1306,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *                  form an address mode later on.
  */
 
-bool CodeGen::genCreateAddrMode(GenTree*  addr,
-                                bool      fold,
-                                bool*     revPtr,
-                                GenTree** rv1Ptr,
-                                GenTree** rv2Ptr,
-#if SCALED_ADDR_MODES
-                                unsigned* mulPtr,
-#endif // SCALED_ADDR_MODES
-                                ssize_t* cnsPtr)
+bool CodeGen::genCreateAddrMode(
+    GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr)
 {
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1368,10 +1357,8 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
     GenTree* op1;
     GenTree* op2;
 
-    ssize_t cns;
-#if SCALED_ADDR_MODES
+    ssize_t  cns;
     unsigned mul;
-#endif // SCALED_ADDR_MODES
 
     GenTree* tmp;
 
@@ -1395,9 +1382,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
 
             op1     ...     base address
             op2     ...     optional scaled index
-#if SCALED_ADDR_MODES
             mul     ...     optional multiplier (2/4/8) for op2
-#endif
             cns     ...     optional displacement
 
         Here we try to find such a set of operands and arrange for these
@@ -1405,9 +1390,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
      */
 
     cns = 0;
-#if SCALED_ADDR_MODES
     mul = 0;
-#endif // SCALED_ADDR_MODES
 
 AGAIN:
     /* We come back to 'AGAIN' if we have an add of a constant, and we are folding that
@@ -1416,9 +1399,7 @@ AGAIN:
     */
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if SCALED_ADDR_MODES
     assert(mul == 0);
-#endif // SCALED_ADDR_MODES
 
     /* Special case: keep constants as 'op2' */
 
@@ -1461,7 +1442,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH)
                 // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
@@ -1484,7 +1465,7 @@ AGAIN:
                         goto FOUND_AM;
                     }
                     break;
-#endif // SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#endif // !defined(TARGET_ARMARCH)
 
                 default:
                     break;
@@ -1525,8 +1506,6 @@ AGAIN:
 
             break;
 
-#if SCALED_ADDR_MODES
-
         case GT_MUL:
 
             if (op1->gtOverflow())
@@ -1566,8 +1545,6 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-
-#endif // SCALED_ADDR_MODES
 #endif // !TARGET_ARMARCH
 
         case GT_NOP:
@@ -1588,7 +1565,9 @@ AGAIN:
     switch (op2->gtOper)
     {
 #if !defined(TARGET_ARMARCH)
-        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
+        // arm doesn't support both scale and offset at the same. Offset is handled
+        // at the emitter as a peephole optimization.
         case GT_ADD:
 
             if (op2->gtOverflow())
@@ -1606,8 +1585,6 @@ AGAIN:
             }
 
             break;
-
-#if SCALED_ADDR_MODES
 
         case GT_MUL:
 
@@ -1644,9 +1621,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-
-#endif // SCALED_ADDR_MODES
-#endif // !TARGET_ARMARCH
+#endif // TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -1720,13 +1695,11 @@ FOUND_AM:
                 /* Get hold of the index value */
                 ssize_t ixv = index->AsIntConCommon()->IconValue();
 
-#if SCALED_ADDR_MODES
                 /* Scale the index if necessary */
                 if (tmpMul)
                 {
                     ixv *= tmpMul;
                 }
-#endif
 
                 if (FitsIn<INT32>(cns + ixv))
                 {
@@ -1734,10 +1707,8 @@ FOUND_AM:
 
                     cns += ixv;
 
-#if SCALED_ADDR_MODES
                     /* There is no scaled operand any more */
                     mul = 0;
-#endif
                     rv2 = nullptr;
                 }
             }
@@ -1759,9 +1730,7 @@ FOUND_AM:
     *revPtr = rev;
     *rv1Ptr = rv1;
     *rv2Ptr = rv2;
-#if SCALED_ADDR_MODES
     *mulPtr = mul;
-#endif
     *cnsPtr = cns;
 
     return true;
@@ -1794,7 +1763,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     {
         // load the GS cookie constant into a reg
         //
-        genSetRegToIcon(regGSConst, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSConst, compiler->gsGlobalSecurityCookieVal);
     }
     else
     {
@@ -2181,11 +2150,18 @@ void CodeGen::genGenerateMachineCode()
             printf("unknown architecture");
         }
 
-#if defined(TARGET_WINDOWS)
-        printf(" - Windows");
-#elif defined(TARGET_UNIX)
-        printf(" - Unix");
-#endif
+        if (TargetOS::IsWindows)
+        {
+            printf(" - Windows");
+        }
+        else if (TargetOS::IsMacOS)
+        {
+            printf(" - MacOS");
+        }
+        else if (TargetOS::IsUnix)
+        {
+            printf(" - Unix");
+        }
 
         printf("\n");
 
@@ -3393,11 +3369,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             // Check if this is an HFA register arg and return the HFA type
             if (varDsc.lvIsHfaRegArg())
             {
-#if defined(TARGET_WINDOWS)
                 // Cannot have hfa types on windows arm targets
                 // in vararg methods.
-                assert(!compiler->info.compIsVarArgs);
-#endif // defined(TARGET_WINDOWS)
+                assert(!TargetOS::IsWindows || !compiler->info.compIsVarArgs);
                 return varDsc.GetHfaType();
             }
             return compiler->mangleVarArgsType(varDsc.lvType);
@@ -3464,12 +3438,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // Change regType to the HFA type when we have a HFA argument
         if (varDsc->lvIsHfaRegArg())
         {
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            if (compiler->info.compIsVarArgs)
+#if defined(TARGET_ARM64)
+            if (TargetOS::IsWindows && compiler->info.compIsVarArgs)
             {
                 assert(!"Illegal incoming HFA arg encountered in Vararg method.");
             }
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64)
             regType = varDsc->GetHfaType();
         }
 
@@ -6278,6 +6252,15 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 continue;
             }
 
+            // We currently don't expect to see multi-reg args in OSR methods, as struct
+            // promotion is disabled and so any struct arg just uses the spilled location
+            // on the original frame.
+            //
+            // If we ever enable promotion we'll need to generalize what follows to copy each
+            // field from the original frame to its OSR home.
+            //
+            assert(!varDsc->lvIsMultiRegArg);
+
             if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
             {
                 JITDUMP("---OSR--- V%02u (reg) not live at entry\n", varNum);
@@ -6297,7 +6280,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             }
 
             // Note we are always reading from the original frame here
-            const var_types lclTyp  = genActualType(varDsc->lvType);
+            //
+            const var_types lclTyp  = varDsc->GetActualRegisterType();
             const emitAttr  size    = emitTypeSize(lclTyp);
             const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
 
@@ -7785,6 +7769,55 @@ GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* 
     }
 
     return call->gtControlExpr;
+}
+
+//------------------------------------------------------------------------
+// getCallIndirectionCellReg - Get the register containing the indirection cell for a call
+//
+// Arguments:
+//    call - the node
+//
+// Returns:
+//   The register containing the indirection cell, or REG_NA if this call does not use an indirection cell argument.
+//
+// Notes:
+//   We currently use indirection cells for VSD on all platforms and for R2R calls on ARM architectures.
+//
+regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
+{
+    regNumber result = REG_NA;
+    switch (call->GetIndirectionCellArgKind())
+    {
+        case NonStandardArgKind::None:
+            break;
+        case NonStandardArgKind::R2RIndirectionCell:
+            result = REG_R2R_INDIRECT_PARAM;
+            break;
+        case NonStandardArgKind::VirtualStubCell:
+            result = compiler->virtualStubParamInfo->GetReg();
+            break;
+        default:
+            unreached();
+    }
+
+#ifdef DEBUG
+    regNumber       foundReg = REG_NA;
+    unsigned        argCount = call->fgArgInfo->ArgCount();
+    fgArgTabEntry** argTable = call->fgArgInfo->ArgTable();
+    for (unsigned i = 0; i < argCount; i++)
+    {
+        NonStandardArgKind kind = argTable[i]->nonStandardArgKind;
+        if ((kind == NonStandardArgKind::R2RIndirectionCell) || (kind == NonStandardArgKind::VirtualStubCell))
+        {
+            foundReg = argTable[i]->GetRegNum();
+            break;
+        }
+    }
+
+    assert(foundReg == result);
+#endif
+
+    return result;
 }
 
 /*****************************************************************************
@@ -12550,9 +12583,9 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         if (!hasPoisonImm)
         {
 #ifdef TARGET_64BIT
-            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd, TYP_LONG);
+            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd);
 #else
-            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcd, TYP_INT);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_SCRATCH, (ssize_t)0xcdcdcdcd);
 #endif
             hasPoisonImm = true;
         }

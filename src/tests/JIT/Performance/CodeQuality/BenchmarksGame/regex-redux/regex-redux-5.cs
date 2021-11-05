@@ -17,10 +17,6 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
@@ -54,21 +50,6 @@ namespace BenchmarksGame
             }
 
             return 100;
-        }
-
-        [Benchmark(InnerIterationCount = 14)]
-        public static void RunBench()
-        {
-            var helpers = new TestHarnessHelpers(bigInput: true);
-
-            Benchmark.Iterate(() =>
-            {
-                using (var inputStream = helpers.GetInputStream())
-                using (var input = new StreamReader(inputStream))
-                {
-                    Assert.Equal(helpers.ExpectedLength, Bench(input, false));
-                }
-            });
         }
 
         static int Bench(TextReader inputReader, bool verbose)

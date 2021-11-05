@@ -517,8 +517,8 @@ int LinearScan::BuildNode(GenTree* tree)
             // Consumes arrLen & index - has no result
             srcCount = 2;
             assert(dstCount == 0);
-            BuildUse(tree->AsBoundsChk()->gtIndex);
-            BuildUse(tree->AsBoundsChk()->gtArrLen);
+            BuildUse(tree->AsBoundsChk()->GetIndex());
+            BuildUse(tree->AsBoundsChk()->GetArrayLength());
         }
         break;
 

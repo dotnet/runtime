@@ -3547,7 +3547,7 @@ ErrExit:
 #ifdef DACCESS_COMPILE
     ThrowHR(hr);
 #else
-    EEFileLoadException::Throw(pModule2->GetFile(), hr);
+    EEFileLoadException::Throw(pModule2->GetPEAssembly(), hr);
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 

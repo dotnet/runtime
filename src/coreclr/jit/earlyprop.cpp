@@ -298,9 +298,9 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
             {
                 GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
 
-                if ((check->gtArrLen == tree) && check->gtIndex->IsCnsIntOrI())
+                if ((check->GetArrayLength() == tree) && check->GetIndex()->IsCnsIntOrI())
                 {
-                    ssize_t checkConstVal = check->gtIndex->AsIntCon()->IconValue();
+                    ssize_t checkConstVal = check->GetIndex()->AsIntCon()->IconValue();
                     if ((checkConstVal >= 0) && (checkConstVal < actualConstVal))
                     {
                         GenTree* comma = check->gtGetParent(nullptr);

@@ -159,7 +159,7 @@
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="new">Malformed \\k&lt;...&gt; named back reference.</target>
+        <target state="translated">Źle sformułowany znak \\k&lt;...&gt; nazwany odwołaniem wstecznym.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
@@ -190,6 +190,11 @@
       <trans-unit id="NoResultOnFailed">
         <source>Result cannot be called on a failed Match.</source>
         <target state="translated">Nie można wywołać wyniku błędnego dopasowania.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
+        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
+        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">

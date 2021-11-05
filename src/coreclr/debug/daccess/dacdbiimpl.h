@@ -53,7 +53,7 @@ public:
 
     // Overridden from ClrDataAccess. Gets an internal metadata importer for the file.
     virtual IMDInternalImport* GetMDImport(
-        const PEFile* pPEFile,
+        const PEAssembly* pPEAssembly,
         const ReflectionModule * pReflectionModule,
         bool fThrowEx);
 
@@ -149,7 +149,7 @@ public:
     HRESULT GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT *pLayout);
     HRESULT GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLayout);
     void GetGCHeapInformation(COR_HEAPINFO * pHeapInfo);
-    HRESULT GetPEFileMDInternalRW(VMPTR_PEFile vmPEFile, OUT TADDR* pAddrMDInternalRW);
+    HRESULT GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW);
     HRESULT GetReJitInfo(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ReJitInfo* pReJitInfo);
     HRESULT GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT GetReJitInfo(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_ReJitInfo* pReJitInfo);
@@ -952,15 +952,15 @@ protected:
     IMetaDataLookup * m_pMetaDataLookup;
 
 
-    // Metadata lookups is just a property on the PEFile in the normal builds,
+    // Metadata lookups is just a property on the PEAssembly in the normal builds,
     // and so VM code tends to access the same metadata importer many times in a row.
     // Cache the most-recently used to avoid excessive redundant lookups.
 
-    // PEFile of Cached Importer. Invalidated between Flush calls. If this is Non-null,
+    // PEAssembly of Cached Importer. Invalidated between Flush calls. If this is Non-null,
     // then the importer is m_pCachedImporter, and we can avoid using IMetaDataLookup
-    VMPTR_PEFile m_pCachedPEFile;
+    VMPTR_PEAssembly m_pCachedPEAssembly;
 
-    // Value of cached importer, corresponds with m_pCachedPEFile.
+    // Value of cached importer, corresponds with m_pCachedPEAssembly.
     IMDInternalImport  * m_pCachedImporter;
 
     // Value of cached hijack function list, corresponds to g_pDebugger->m_rgHijackFunction
@@ -1104,13 +1104,13 @@ private:
 public:
     // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
     // from it's search path.
-    bool GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
+    bool GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                        DWORD &dwTimeStamp,
                                        DWORD &dwSize,
                                        bool  &isNGEN,
                                        IStringHolder* pStrFilename);
 
-    bool GetILImageInfoFromNgenPEFile(VMPTR_PEFile vmPEFile,
+    bool GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
                                       DWORD &dwTimeStamp,
                                       DWORD &dwSize,
                                       IStringHolder* pStrFilename);

@@ -1,0 +1,205 @@
+parameters:
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  buildConfig: ''
+  runtimeFlavor: ''
+  helixQueues: ''
+  targetRid: ''
+  nameSuffix: ''
+  platform: ''
+  shouldContinueOnError: ''
+  rootFolder: ''
+  includeRootFolder: ''
+  displayName: ''
+  artifactName: ''
+  archiveExtension: ''
+  archiveType: ''
+  tarCompression: ''
+
+
+steps:
+  - task: DownloadPipelineArtifact@2
+    displayName: Download runtime packages
+    inputs:
+      artifact: 'IntermediateArtifacts'
+      path: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+      patterns: |
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-!(*.symbols).nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-!(*.symbols).nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-!(*.symbols).nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
+        
+      # Other artifacts to include once they are being built
+      # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+
+  - task: CopyFiles@2
+    displayName: Flatten packages
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+      contents: '*/Shipping/*.nupkg'
+      cleanTargetFolder: false
+      targetFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+      flattenFolders: true
+  
+  - script: |
+      for file in *.nupkg
+        do     
+          mv -v "$file" "${file%.nupkg}.zip" 
+        done
+    displayName: Change nupkgs to zips
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+    
+
+  #Unzip the nuget packages to make the actual runtimes accessible
+  - task: ExtractFiles@1
+    displayName: Extract android-arm runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract android-arm64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract android-x86 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract android-x64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract maccatalyst-x64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract iossimulator-x64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+
+  - script: |
+      curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
+      ./dotnet.sh workload update --from-rollback-file ./rollback.json
+      ./dotnet.sh workload install maui --skip-manifest-update
+    displayName: Install MAUI workload
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - script: |
+      ./dotnet.sh new maui -n MauiTesting
+      cd MauiTesting
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+    displayName: Setup MAUI Project
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - script: |
+      chmod -R a+r .
+      ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
+      mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
+    displayName: Build MAUI Android
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+  - script: |
+      chmod -R a+r .
+      ../dotnet.sh publish -bl:MauiiOS.binlog -f net6.0-ios -c Release
+      mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiiOSDefault.app
+    displayName: Build MAUI iOS
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+  - script: |
+      chmod -R a+r .
+      ../dotnet.sh publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
+      mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiTesting.app ./MauiMacCatalystDefault.app
+    displayName: Build MAUI MacCatalyst
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiAndroid binlog'
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiiOS binlog'
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiMacCatalyst binlog'
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
+        includeRootFolder: true
+        displayName: Maui Android App
+        artifactName: MauiAndroidApp
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiiOSDefault.app
+        includeRootFolder: true
+        displayName: Maui iOS App
+        artifactName: MauiiOSDefault
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalystDefault.app
+        includeRootFolder: true
+        displayName: Maui MacCatalyst App
+        artifactName: MauiMacCatalystDefault
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - script: rm -r -f ./bin
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+    displayName: Clean bin directory
+    condition: succeededOrFailed()
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      archType: ${{ parameters.archType }}
+      buildConfig: ${{ parameters.buildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      helixQueues: ${{ parameters.helixQueues }}
+      targetRid: ${{ parameters.targetRid }}
+      nameSuffix: ${{ parameters.nameSuffix }}
+      platform: ${{ parameters.platform }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      rootFolder:  ${{ parameters.rootFolder }}
+      includeRootFolder:  ${{ parameters.includeRootFolder }}
+      displayName:  ${{ parameters.displayName }}
+      artifactName:  ${{ parameters.artifactName }}
+      archiveExtension:  ${{ parameters.archiveExtension }}
+      archiveType:  ${{ parameters.archiveType }}
+      tarCompression:  ${{ parameters.tarCompression }}

@@ -48,6 +48,7 @@ i=ini_i.i.i.i
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void DifferentConfigSources_Merged_KeysAreSorted()
         {
             var config = BuildConfig();
@@ -77,6 +78,7 @@ i=ini_i.i.i.i
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void DifferentConfigSources_Merged_WithOverwrites()
         {
             var config = BuildConfig();
@@ -103,7 +105,17 @@ i=ini_i.i.i.i
 
         public ArrayTests()
         {
-            var basePath = AppContext.BaseDirectory ?? string.Empty;
+            string basePath;
+
+            if (PlatformDetection.IsAppleMobile && !PlatformDetection.IsMacCatalyst)
+            {
+                basePath = Path.GetTempPath();
+            }
+            else
+            {
+                basePath = AppContext.BaseDirectory ?? string.Empty;
+            }
+
             _iniConfigFilePath = Path.GetRandomFileName();
             _xmlConfigFilePath = Path.GetRandomFileName();
             _json1ConfigFilePath = Path.GetRandomFileName();

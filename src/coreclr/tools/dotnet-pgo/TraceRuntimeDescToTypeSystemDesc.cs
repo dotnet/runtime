@@ -93,15 +93,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         class ModuleDescInfo
         {
-            public ModuleDescInfo(long id, TraceManagedModule traceManagedModule)
+            public ModuleDescInfo(long id, string assemblyName)
             {
                 ID = id;
-                TraceManagedModule = traceManagedModule;
+                AssemblyName = assemblyName;
             }
 
             public readonly long ID;
             public ModuleDesc Module;
-            public readonly TraceManagedModule TraceManagedModule;
+            public readonly string AssemblyName;
         }
 
         private readonly Dictionary<long, MethodDescInfo> _methods = new Dictionary<long, MethodDescInfo>();
@@ -222,9 +222,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
 
             Dictionary<long, int> assemblyToCLRInstanceIDMap = new Dictionary<long, int>();
+            Dictionary<long, string> assemblyToFullyQualifiedAssemblyName = new Dictionary<long, string>();
             foreach (var assemblyLoadTrace in _traceProcess.EventsInProcess.ByEventType<AssemblyLoadUnloadTraceData>())
             {
                 assemblyToCLRInstanceIDMap[assemblyLoadTrace.AssemblyID] = assemblyLoadTrace.ClrInstanceID;
+                assemblyToFullyQualifiedAssemblyName[assemblyLoadTrace.AssemblyID] = assemblyLoadTrace.FullyQualifiedAssemblyName;
             }
 
             foreach (var moduleFile in _traceProcess.LoadedModules)
@@ -240,20 +242,16 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     if (clrInstanceIDModule != _clrInstanceID)
                         continue;
 
-                    if (managedModule.ModuleFile != null)
-                    {
-                        ModuleDescInfo currentInfo;
-                        if (_modules.TryGetValue(managedModule.ModuleID, out currentInfo))
-                        {
-                            continue;
-                        }
-                        currentInfo = new ModuleDescInfo(managedModule.ModuleID, managedModule);
+                    var currentInfo = new ModuleDescInfo(managedModule.ModuleID, assemblyToFullyQualifiedAssemblyName[managedModule.AssemblyID]);
+                    if (!_modules.ContainsKey(managedModule.ModuleID))
                         _modules.Add(managedModule.ModuleID, currentInfo);
-                    }
                 }
             }
+        }
 
-
+        // Call before any api other than ResolveModuleID will work
+        public void Init()
+        {
             // Fill in all the types
             foreach (var entry in _types)
             {
@@ -271,14 +269,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     if (minfo.Module != null)
                         return minfo.Module;
 
-                    string simpleName = minfo.TraceManagedModule.Name;
-
-                    if (!File.Exists(minfo.TraceManagedModule.FilePath) && minfo.TraceManagedModule.FilePath.EndsWith(".il.dll") && simpleName.EndsWith(".il"))
-                    {
-                        simpleName = simpleName.Substring(0, simpleName.Length - 3);
-                    }
-
-                    minfo.Module = _context.ResolveAssembly(new AssemblyName(simpleName), throwIfNotFound);
+                    minfo.Module = _context.ResolveAssembly(new AssemblyName(minfo.AssemblyName), throwIfNotFound);
                     return minfo.Module;
                 }
                 else

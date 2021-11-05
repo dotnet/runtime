@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <Platform>$(TargetArchitecture)</Platform>
-    <DotNetHostBinDir>$(ArtifactsBinDir)$(OutputRid).$(Configuration)\corehost</DotNetHostBinDir>
   </PropertyGroup>
 
   <PropertyGroup>

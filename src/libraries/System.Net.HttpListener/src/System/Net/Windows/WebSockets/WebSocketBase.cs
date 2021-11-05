@@ -1239,10 +1239,7 @@ namespace System.Net.WebSockets
 
         private void ThrowIfDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         private void UpdateReceiveState(int newReceiveState, int expectedReceiveState)
@@ -1632,7 +1629,7 @@ namespace System.Net.WebSockets
                 return ReceiveResult;
             }
 
-            public class ReceiveOperation : WebSocketOperation
+            public sealed class ReceiveOperation : WebSocketOperation
             {
                 private int _receiveState;
                 private bool _pongReceived;
@@ -1888,7 +1885,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            public class CloseOutputOperation : SendOperation
+            public sealed class CloseOutputOperation : SendOperation
             {
                 public CloseOutputOperation(WebSocketBase webSocket)
                     : base(webSocket)
@@ -2194,10 +2191,7 @@ namespace System.Net.WebSockets
 
             private void ThrowIfDisposed()
             {
-                if (_isDisposed)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
             }
         }
 

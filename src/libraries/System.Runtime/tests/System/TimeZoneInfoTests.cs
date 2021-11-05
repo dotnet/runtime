@@ -2349,6 +2349,14 @@ namespace System.Tests
             "Zulu"
         };
 
+        // On Android GMT, GMT+0, and GMT-0 are values
+        private static readonly string[] s_GMTAliases = new [] {
+            "GMT",
+            "GMT0",
+            "GMT+0",
+            "GMT-0"
+        };
+
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -2401,7 +2409,12 @@ namespace System.Tests
                 // All we can really say generically here is that they aren't empty.
                 Assert.False(string.IsNullOrWhiteSpace(timeZone.DisplayName), $"Id: \"{timeZone.Id}\", DisplayName should not have been empty.");
                 Assert.False(string.IsNullOrWhiteSpace(timeZone.StandardName), $"Id: \"{timeZone.Id}\", StandardName should not have been empty.");
-                Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");
+
+                // GMT* on Android does sets daylight savings time to false, so there will be no DaylightName
+                if (!PlatformDetection.IsAndroid || (PlatformDetection.IsAndroid && !timeZone.Id.StartsWith("GMT")))
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");
+                }
             }
         }
 
@@ -2586,6 +2599,10 @@ namespace System.Tests
                 // UTC and all of its aliases (Etc/UTC, and others) start with just "(UTC) "
                 Assert.StartsWith("(UTC) ", tzi.DisplayName);
             }
+            else if (s_GMTAliases.Contains(tzi.Id, StringComparer.OrdinalIgnoreCase))
+            {
+                Assert.StartsWith("GMT", tzi.DisplayName);
+            }
             else
             {
                 Assert.False(string.IsNullOrWhiteSpace(tzi.StandardName));
@@ -2701,6 +2718,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(nameof(DoesNotSupportIanaNamesConversion))]
+        [PlatformSpecific(~TestPlatforms.Android)]
         public static void UnsupportedImplicitConversionTest()
         {
             string nonNativeTzName = s_isWindows ? "America/Los_Angeles" : "Pacific Standard Time";
@@ -3109,6 +3127,14 @@ namespace System.Tests
             {
                 // native string is null terminated
                 var cultureName = new string(lpUiLanguageString);
+
+                string tzResourceFilePath = Path.Join(Environment.SystemDirectory, cultureName, "tzres.dll.mui");
+                if (!File.Exists(tzResourceFilePath))
+                {
+                    // If Windows installed a UI language but did not include the time zone resources DLL for that language,
+                    // then skip this language as .NET will not be able to get the localized resources for that language.
+                    return 1;
+                }
 
                 try
                 {

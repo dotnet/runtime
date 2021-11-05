@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public abstract partial class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
+    public abstract class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         public static readonly Stream Null = new NullStream();
 
@@ -331,6 +331,18 @@ namespace System.IO
                 }
             }
         }
+
+#if CORERT // TODO: https://github.com/dotnet/corert/issues/3251
+        private bool HasOverriddenBeginEndRead() => true;
+
+        private bool HasOverriddenBeginEndWrite() => true;
+#else
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern bool HasOverriddenBeginEndRead();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern bool HasOverriddenBeginEndWrite();
+#endif
 
         private Task<int> BeginEndReadAsync(byte[] buffer, int offset, int count)
         {

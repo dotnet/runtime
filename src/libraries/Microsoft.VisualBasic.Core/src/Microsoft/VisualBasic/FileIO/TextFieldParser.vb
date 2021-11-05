@@ -1540,7 +1540,7 @@ Namespace Microsoft.VisualBasic.FileIO
     '''  will build the field and handle escaped quotes
     ''' </summary>
     ''' <remarks></remarks>
-    Friend Class QuoteDelimitedFieldBuilder
+    Friend NotInheritable Class QuoteDelimitedFieldBuilder
         ''' <summary>
         '''  Creates an instance of the class and sets some properties
         ''' </summary>

@@ -58,7 +58,7 @@ public struct Point
 
 }
 
-public class BringUpTest
+public class BringUpTest_struct16args
 {
     const int Pass = 100;
     const int Fail = -1;

@@ -95,9 +95,9 @@ mini_magic_type_size (MonoCompile *cfg, MonoType *type)
 		return 4;
 	else if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8)
 		return 8;
-	else if (type->type == MONO_TYPE_R4 && !type->byref && (!cfg || cfg->r4fp))
+	else if (type->type == MONO_TYPE_R4 && !m_type_is_byref (type) && (!cfg || cfg->r4fp))
 		return 4;
-	else if (type->type == MONO_TYPE_R8 && !type->byref)
+	else if (type->type == MONO_TYPE_R8 && !m_type_is_byref (type))
 		return 8;
 	return TARGET_SIZEOF_VOID_P;
 }
@@ -372,6 +372,8 @@ mono_class_is_magic_assembly (MonoClass *klass)
 		return TRUE;
 	if (!strcmp ("Xamarin.WatchOS", aname))
 		return TRUE;
+	if (!strcmp ("Xamarin.MacCatalyst", aname))
+		return TRUE;
 	/* regression test suite */
 	if (!strcmp ("builtin-types", aname))
 		return TRUE;
@@ -427,7 +429,7 @@ mono_class_is_magic_float (MonoClass *klass)
 	if (!mono_class_is_magic_assembly (klass))
 		return FALSE;
 
-	if (strcmp ("System", m_class_get_name_space (klass)) != 0)
+	if (strcmp ("System", m_class_get_name_space (klass)) != 0 && strcmp ("ObjCRuntime", m_class_get_name_space (klass)) != 0)
 		return FALSE;
 
 	if (strcmp ("nfloat", m_class_get_name (klass)) == 0) {
@@ -471,12 +473,12 @@ mini_native_type_replace_type (MonoType *type)
 	klass = type->data.klass;
 
 	if (mono_class_is_magic_int (klass))
-		return type->byref ? m_class_get_this_arg (mono_defaults.int_class) : mono_get_int_type ();
+		return m_type_is_byref (type) ? mono_class_get_byref_type (mono_defaults.int_class) : mono_get_int_type ();
 	if (mono_class_is_magic_float (klass))
 #if TARGET_SIZEOF_VOID_P == 8
-		return type->byref ? m_class_get_this_arg (mono_defaults.double_class) : m_class_get_byval_arg (mono_defaults.double_class);
+		return m_type_is_byref (type) ? mono_class_get_byref_type (mono_defaults.double_class) : m_class_get_byval_arg (mono_defaults.double_class);
 #else
-		return type->byref ? m_class_get_this_arg (mono_defaults.single_class) : m_class_get_byval_arg (mono_defaults.single_class);
+		return m_type_is_byref (type) ? mono_class_get_byref_type (mono_defaults.single_class) : m_class_get_byval_arg (mono_defaults.single_class);
 #endif
 	return type;
 }

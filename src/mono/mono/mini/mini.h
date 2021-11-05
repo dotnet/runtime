@@ -138,8 +138,8 @@ typedef struct SeqPointInfo SeqPointInfo;
 #define printf g_print
 #endif
 
-#define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
-#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
@@ -297,7 +297,7 @@ enum {
 
 #define MONO_JUMP_TABLE_FROM_INS(ins) (((ins)->opcode == OP_JUMP_TABLE) ? (ins)->inst_p0 : (((ins)->opcode == OP_AOTCONST) && (ins->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH) ? (ins)->inst_p0 : (((ins)->opcode == OP_SWITCH) ? (ins)->inst_p0 : ((((ins)->opcode == OP_GOT_ENTRY) && ((ins)->inst_right->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH)) ? (ins)->inst_right->inst_p0 : NULL))))
 
-#define MONO_INS_HAS_NO_SIDE_EFFECT(ins) (mono_op_no_side_effects ((ins)->opcode))
+#define MONO_INS_HAS_NO_SIDE_EFFECT(ins) (mono_ins_no_side_effects ((ins)))
 
 #define MONO_INS_IS_PCONST_NULL(ins) ((ins)->opcode == OP_PCONST && (ins)->inst_p0 == 0)
 
@@ -1063,7 +1063,9 @@ typedef enum {
 	/* Same as MONO_PATCH_INFO_METHOD_FTNDESC */
 	MONO_RGCTX_INFO_METHOD_FTNDESC                = 33,
 	/* mono_type_size () for a class */
-	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34
+	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34,
+	/* A gsharedvt_out wrapper for a method */
+	MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT    = 35
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */
@@ -1123,6 +1125,7 @@ typedef struct {
 
 typedef struct
 {
+	MonoClass *klass;
 	MonoMethod *invoke;
 	MonoMethod *method;
 	MonoMethodSignature *invoke_sig;
@@ -1144,7 +1147,7 @@ typedef struct
 	gpointer addr;
 	gpointer arg;
 	MonoMethod *method;
-	/* InterpMethod* */
+	/* Tagged InterpMethod* */
 	gpointer interp_method;
 } MonoFtnDesc;
 
@@ -2152,6 +2155,7 @@ int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
 gboolean  mono_op_no_side_effects           (int opcode);
+gboolean  mono_ins_no_side_effects          (MonoInst *ins);
 guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type);
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type);
 guint32   mono_type_to_stloc_coerce         (MonoType *type);

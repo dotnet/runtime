@@ -41,7 +41,12 @@ namespace DebuggerTests
         static protected string FindTestPath()
         {
             var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", "Debug", "publish");
+#if DEBUG
+            var config="Debug";
+#else
+            var config="Release";
+#endif            
+            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", config, "publish");
             if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
                 return test_app_path;
 
@@ -803,7 +808,7 @@ namespace DebuggerTests
                 return null;
 
             var locals = frame_props.Value["result"];
-            // FIXME: Should be done when generating the list in library_mono.js, but not sure yet
+            // FIXME: Should be done when generating the list in library-dotnet.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
             {
