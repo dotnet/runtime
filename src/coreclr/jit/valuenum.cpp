@@ -1814,7 +1814,12 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
-            return VNForLongCon(0);
+            // We do not have the base type - a "fake" one will have to do. Note that we cannot
+            // use the HWIntrinsic "get_Zero" VNFunc here. This is because they only represent
+            // "fully zeroed" vectors, and here we may be loading one from memory, leaving upper
+            // bits undefined. So using "SIMD_Init" is "the next best thing", so to speak, and
+            // TYP_FLOAT is one of the more popular base types, so that's why we use it here.
+            return VNForFunc(typ, VNF_SIMD_Init, VNForFloatCon(0), VNForSimdType(genTypeSize(typ), TYP_FLOAT));
 #endif // FEATURE_SIMD
 
         // These should be unreached.
@@ -1859,6 +1864,17 @@ ValueNum ValueNumStore::VNOneForType(var_types typ)
             return NoVN;
     }
 }
+
+#ifdef FEATURE_SIMD
+ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType)
+{
+    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseType));
+    ValueNum sizeVN     = VNForIntCon(simdSize);
+    ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
+
+    return simdTypeVN;
+}
+#endif // FEATURE_SIMD
 
 class Object* ValueNumStore::s_specialRefConsts[] = {nullptr, nullptr, nullptr};
 
@@ -9510,9 +9526,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
 
         if (encodeResultType)
         {
-            ValueNum vnSize     = vnStore->VNForIntCon(simdNode->GetSimdSize());
-            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->GetSimdBaseType()));
-            ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
+            ValueNum simdTypeVN = vnStore->VNForSimdType(simdNode->GetSimdSize(), simdNode->GetSimdBaseType());
             resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -9627,9 +9641,8 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 
     if (encodeResultType)
     {
-        ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->GetSimdSize());
-        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->GetSimdBaseType()));
-        ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
+        ValueNum simdTypeVN =
+            vnStore->VNForSimdType(hwIntrinsicNode->GetSimdSize(), hwIntrinsicNode->GetSimdBaseType());
         resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG

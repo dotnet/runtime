@@ -463,6 +463,11 @@ public:
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
     ValueNum VNOneForType(var_types typ);
 
+#ifdef FEATURE_SIMD
+    // A helper function for constructing VNF_SimdType VNs.
+    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+#endif // FEATURE_SIMD
+
     // Create or return the existimg value number representing a singleton exception set
     // for the the exception value "x".
     ValueNum VNExcSetSingleton(ValueNum x);
