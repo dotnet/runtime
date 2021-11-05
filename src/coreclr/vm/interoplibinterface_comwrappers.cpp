@@ -53,6 +53,9 @@ namespace
             // The EOC is "detached" and no longer used to map between identity and a managed object.
             // This will only be set if the EOC was inserted into the cache.
             Flags_Detached = 8,
+
+            // This EOC is an aggregated instance
+            Flags_Aggregated = 16
         };
         DWORD Flags;
 
@@ -901,6 +904,12 @@ namespace
                             (uniqueInstance
                                 ? ExternalObjectContext::Flags_None
                                 : ExternalObjectContext::Flags_InCache);
+
+                if (flags & CreateObjectFlags::CreateObjectFlags_Aggregated)
+                {
+                    eocFlags |= ExternalObjectContext::Flags_Aggregated;
+                }
+
                 ExternalObjectContext::Construct(
                     resultHolder.GetContext(),
                     identity,
@@ -1774,7 +1783,7 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
         objRef);
 }
 
-IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId)
+IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId, _Out_ bool* isAggregated)
 {
     CONTRACTL
     {
@@ -1807,6 +1816,7 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
     {
         ExternalObjectContext* context = reinterpret_cast<ExternalObjectContext*>(contextMaybe);
         *wrapperId = context->WrapperId;
+        *isAggregated = (context->Flags & ExternalObjectContext::Flags_Aggregated) != 0;
 
         IUnknown* identity = reinterpret_cast<IUnknown*>(context->Identity);
         GCX_PREEMP();
