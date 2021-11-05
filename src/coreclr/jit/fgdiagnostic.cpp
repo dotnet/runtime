@@ -2841,9 +2841,9 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
 void Compiler::fgDebugCheckFlags(GenTree* tree)
 {
-    const unsigned   kind      = tree->OperKind();
-    GenTreeFlags     treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
-    GenTreeFlags     chkFlags  = GTF_EMPTY;
+    const unsigned kind      = tree->OperKind();
+    GenTreeFlags   treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
+    GenTreeFlags   chkFlags  = GTF_EMPTY;
 
     if (tree->OperMayThrow(this))
     {
@@ -2966,7 +2966,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 {
                     // Is this constant a handle of some kind?
                     //
-                    unsigned handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
+                    GenTreeFlags handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
                     if (handleKind != 0)
                     {
                         const GenTreeFlags indAddFlags = (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
@@ -3102,11 +3102,11 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         }
 
         if (tree->OperIs(GT_ADDR) && (op1->OperIs(GT_LCL_VAR, GT_CLS_VAR) ||
-                                (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
+                                      (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
         {
             // TODO-Cleanup: This is a hack, because `GTF_GLOB_REF` description says:
             // `sub-expression uses global variable(s)`, so if a child has it set its parent
-            // must have it set as well. However, we clear it from the parent in cases 
+            // must have it set as well. However, we clear it from the parent in cases
             // ADDR(LCL_VAR or CLS_VAR).
             chkFlags &= ~GTF_GLOB_REF;
         }
@@ -3131,6 +3131,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
                 }
@@ -3143,6 +3145,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
                 }

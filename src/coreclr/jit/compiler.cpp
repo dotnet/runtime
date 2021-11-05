@@ -9277,7 +9277,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_CNS_INT:
 
             {
-                unsigned handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
+                GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
 
                 switch (handleKind)
                 {
@@ -9517,7 +9517,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             default:
 
             {
-                unsigned flags = (tree->gtFlags & (~(unsigned)(GTF_COMMON_MASK | GTF_OVERFLOW)));
+                GenTreeFlags flags = (tree->gtFlags & (~(GTF_COMMON_MASK | GTF_OVERFLOW)));
                 if (flags != 0)
                 {
                     chars += printf("[%08X]", flags);

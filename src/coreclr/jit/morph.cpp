@@ -11705,10 +11705,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         // TODO-Cleanup: This is a hack, because `GTF_GLOB_REF` description says:
         // `sub-expression uses global variable(s)`, so if a child has it set its parent
-        // must have it set as well. However, we clear it from the parent in cases 
+        // must have it set as well. However, we clear it from the parent in cases
         // ADDR(LCL_VAR or CLS_VAR).
         if (oper == GT_ADDR && (op1->OperIs(GT_LCL_VAR, GT_CLS_VAR) ||
-            (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->OperIs(GT_CLS_VAR_ADDR))))
+                                (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->OperIs(GT_CLS_VAR_ADDR))))
         {
             tree->gtFlags &= ~GTF_GLOB_REF;
         }
@@ -13026,7 +13026,7 @@ DONE_MORPHING_CHILDREN:
                 tree          = op1;
                 GenTree* addr = commaNode->AsOp()->gtOp2;
                 // TODO-1stClassStructs: we often create a struct IND without a handle, fix it.
-                GenTreeIndir* indir  = gtNewIndir(typ, addr);
+                GenTreeIndir* indir = gtNewIndir(typ, addr);
                 // This is very conservative
                 indir->gtFlags |= treeFlags & ~GTF_ALL_EFFECT & ~GTF_IND_NONFAULTING;
                 indir->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
@@ -14552,7 +14552,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             noway_assert(GenTree::OperIsRotate(rotateOp));
 
-            unsigned inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
+            GenTreeFlags inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
 
             // We can use the same tree only during global morph; reusing the tree in a later morph
             // may invalidate value numbers.
