@@ -670,7 +670,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, Frame mono_frame, Breakpoint bp, CancellationToken token)
+        protected async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, Frame mono_frame, Breakpoint bp, CancellationToken token)
         {
             if (string.IsNullOrEmpty(bp?.Condition) || mono_frame == null)
                 return true;
@@ -736,8 +736,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, IEnumerable<JObject> orig_callframes, CancellationToken token)
+        protected virtual async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, JObject args, CancellationToken token)
         {
+            var orig_callframes = args?["callFrames"]?.Values<JObject>();
             var callFrames = new List<object>();
             var frames = new List<Frame>();
             var commandParams = new MemoryStream();
@@ -834,7 +835,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return true;
         }
-        private async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
+        internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
             Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(), token);
             if (res.IsErr)
@@ -884,7 +885,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             objectId = $"dotnet:object:{object_id}"
                         });
 
-                        var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, args?["callFrames"]?.Values<JObject>(), token);
+                        var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, args, token);
                         return ret;
                     }
                     case EventKind.UserBreak:
@@ -896,7 +897,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int methodId = 0;
                         if (event_kind != EventKind.UserBreak)
                             methodId = retDebuggerCmdReader.ReadInt32();
-                        var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, args?["callFrames"]?.Values<JObject>(), token);
+                        var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, args, token);
                         return ret;
                     }
                 }
@@ -984,7 +985,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             GetContext(msg_id).ClearState();
         }
 
-        private async Task<bool> Step(MessageId msg_id, StepKind kind, CancellationToken token)
+        protected async Task<bool> Step(MessageId msg_id, StepKind kind, CancellationToken token)
         {
             ExecutionContext context = GetContext(msg_id);
             if (context.CallStack == null)
