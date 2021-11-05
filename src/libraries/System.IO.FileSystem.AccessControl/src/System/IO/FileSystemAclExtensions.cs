@@ -340,7 +340,9 @@ namespace System.IO
                 SafeFileHandle handle;
                 using (DisableMediaInsertionPrompt.Create())
                 {
-                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                    // The Inheritable bit is only set in the SECURITY_ATTRIBUTES struct,
+                    // and should not be passed to the CreateFile P/Invoke.
+                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, (share & ~FileShare.Inheritable), secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
                     ValidateFileHandle(handle, fullPath);
                 }
                 return handle;
