@@ -216,6 +216,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                 }
+                else if (rootObject == null)
+                {
+                    rootObject = await TryToRunOnLoadedClasses(varName, token);
+                    return rootObject;
+                }
             }
             if (rootObject == null)
                 rootObject = await TryToRunOnLoadedClasses(varName, token);
