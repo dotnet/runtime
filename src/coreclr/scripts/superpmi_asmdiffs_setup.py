@@ -186,9 +186,9 @@ def main(main_args):
 
             # NOTE: we currently only support running on Windows x86/x64 (we don't pass the target OS)
             RID = None
-            if arch is "x86":
+            if arch == "x86":
                 RID = "win-x86"
-            if arch is "x64":
+            if arch == "x64":
                 RID = "win-x64"
 
             # Set dotnet path to run build

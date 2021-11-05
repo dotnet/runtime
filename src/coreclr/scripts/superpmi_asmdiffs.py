@@ -14,6 +14,7 @@
 
 import argparse
 import os
+import shutil
 from coreclr_arguments import *
 from azdo_pipelines_util import run_command
 
@@ -74,7 +75,7 @@ def main(main_args):
     """
 
     python_path = sys.executable
-    script_dir = os.path.dirname(os.path.realpath(__file__))
+    script_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     coreclr_args = setup_args(main_args)
 
     # It doesn't really matter where we put the SPMI artifacts, except we need to find the log files (summary.md) and
@@ -85,7 +86,7 @@ def main(main_args):
     platform_name = coreclr_args.platform
 
     # Find the built jit-analyze and put its directory on the PATH
-    jit_analyze_dir = os.path.abspath(os.path.join(script_dir, "jit-analyze"))
+    jit_analyze_dir = os.path.join(script_dir, "jit-analyze")
     if not os.path.isdir(jit_analyze_dir):
         print("Error: jit-analyze not found in {} (continuing)".format(jit_analyze_dir))
     else:
@@ -129,6 +130,10 @@ def main(main_args):
     # Will they get copied back? Do we need to put them in `log_directory`?
     # We need jit-analyze from jitutils to be able to create the summary.md file
 
+    overall_md_summary_file = os.path.join(spmi_location, "diff_summary.md")
+    if os.path.isfile(overall_md_summary_file):
+        os.remove(overall_md_summary_file)
+
     _, _, return_code = run_command([
         python_path,
         os.path.join(script_dir, "superpmi.py"),
@@ -144,6 +149,18 @@ def main(main_args):
         "-error_limit", "100",
         "-log_level", "debug",
         "-log_file", log_file])
+
+    # If there are asm diffs, and jit-analyze ran, we'll get a diff_summary.md file in the spmi_location directory.
+    # We make sure the file doesn't exist before we run diffs, so we don't need to worry about superpmi.py creating
+    # a unique, numbered file.
+
+    if os.path.isfile(overall_md_summary_file):
+        try:
+            overall_md_summary_file_target = os.path.join(log_directory, "superpmi_diff_summary_{}_{}.md".format(platform_name, arch_name))
+            print("Copying summary file {} -> {}".format(overall_md_summary_file, overall_md_summary_file_target))
+            shutil.copy2(overall_md_summary_file, overall_md_summary_file_target)
+        except PermissionError as pe_error:
+            print('Ignoring PermissionError: {0}'.format(pe_error))
 
     # TODO: the superpmi.py asmdiffs command returns a failure code if there are MISSING data even if there are
     # no asm diffs. We should probably only fail if there are actual failures (not MISSING or asm diffs).

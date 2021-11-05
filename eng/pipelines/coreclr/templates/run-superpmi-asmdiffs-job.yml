@@ -106,6 +106,14 @@ jobs:
         targetFolder: '$(SpmiLogsLocation)'
       condition: always()
 
+    - task: CopyFiles@2
+      displayName: Copying superpmi.md of all partitions
+      inputs:
+        sourceFolder: '$(HelixResultLocation)'
+        contents: '**/superpmi_*.md'
+        targetFolder: '$(SpmiLogsLocation)'
+      condition: always()
+
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI logs
       inputs:
@@ -113,7 +121,7 @@ jobs:
         artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)'
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -arch $(archType) -platform $(osGroup)$(osSubgroup) -build_config $(buildConfig)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiLogsLocation) -arch $(archType) -platform $(osGroup)$(osSubgroup)
       displayName: ${{ format('Summarize ({0}{1} {2})', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
       condition: always()
 

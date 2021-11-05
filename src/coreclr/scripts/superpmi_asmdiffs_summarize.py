@@ -24,9 +24,9 @@ from coreclr_arguments import *
 
 parser = argparse.ArgumentParser(description="description")
 
+parser.add_argument("-diff_summary_dir", help="Path to diff summary directory")
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-platform", help="OS platform")
-parser.add_argument("-build_config", help="Build configuration of runtime under test")
 
 def setup_args(args):
     """ Setup the args.
@@ -42,6 +42,11 @@ def setup_args(args):
                                     require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
+                        "diff_summary_dir",
+                        lambda diff_summary_dir: os.path.isdir(diff_summary_dir),
+                        "diff_summary_dir doesn't exist")
+
+    coreclr_args.verify(args,
                         "arch",
                         lambda unused: True,
                         "Unable to set arch")
@@ -50,11 +55,6 @@ def setup_args(args):
                         "platform",
                         lambda unused: True,
                         "Unable to set platform")
-
-    coreclr_args.verify(args,
-                        "build_config",
-                        lambda unused: True,
-                        "Unable to set build_config")
 
     return coreclr_args
 
@@ -68,22 +68,27 @@ def main(main_args):
 
     coreclr_args = setup_args(main_args)
 
+    diff_summary_dir = coreclr_args.diff_summary_dir
     arch = coreclr_args.arch
     platform = coreclr_args.platform
-    build_config = coreclr_args.build_config
 
-    print("arch: {}".format(arch))
-    print("platform: {}".format(platform))
-    print("build_config: {}".format(build_config))
+    # Consolidate all superpmi_diff_summary_*.md in overall_diff_summary_<platform>_<architecture>.md
+    # (Don't name it "superpmi_xxx.md" or we'll consolidate it into itself.)
+    final_md_path = os.path.join(diff_summary_dir, "overall_diff_summary_{}_{}.md".format(platform, arch))
+    print("Consolidating final {}".format(final_md_path))
+    with open(final_md_path, "a") as f:
+        for superpmi_md_file in os.listdir(diff_summary_dir):
+            if not superpmi_md_file.startswith("superpmi_") or not superpmi_md_file.endswith(".md"):
+                continue
+            print("Appending {}".format(superpmi_md_file))
+            with open(os.path.join(diff_summary_dir, superpmi_md_file), "r") as current_superpmi_md:
+                contents = current_superpmi_md.read()
+                f.write(contents)
 
-    # TODO: collect all the summary.md files from the partitions into a full summary.md file
-    # and tell AzDO about it so it creates an "Extensions" page on the AzDO UI showing the
-    # asm diffs. Also, upload this file.
+    print("##vso[task.uploadsummary]{}".format(final_md_path))
 
-    #print("##vso[task.uploadsummary]{}".format(md_path))
-
-    #with open(md_path, "r") as f:
-    #    print(f.read())
+    with open(final_md_path, "r") as f:
+        print(f.read())
 
     return 0
 
