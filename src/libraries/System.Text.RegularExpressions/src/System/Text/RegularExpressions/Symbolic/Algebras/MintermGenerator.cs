@@ -38,41 +38,16 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="preds">array of predicates</param>
         /// <returns>all minterms of the given predicate sequence</returns>
-        public List<TPredicate> GenerateMinterms(params TPredicate[] preds)
+        public List<TPredicate> GenerateMinterms(IEnumerable<TPredicate> preds)
         {
             var tree = new PartitionTree(_algebra.True);
-
-            // The minterms will be solved using non-equivalent predicates, i.e., the equivalence classes of preds
-            var seen = new HashSet<EquivalenceClass>();
-            for (int i = 0; i < preds.Length; i++)
+            foreach (TPredicate pred in preds)
             {
-                // Use a wrapper that overloads Equals to be logical equivalence as the key
-                if (seen.Add(new EquivalenceClass(_algebra, preds[i])))
-                {
-                    // Push each equivalence class into the partition tree
-                    tree.Refine(_algebra, preds[i]);
-                }
+                // Push each predicate into the partition tree
+                tree.Refine(_algebra, pred);
             }
-
             // Return all minterms as the leaves of the partition tree
             return tree.GetLeafPredicates();
-        }
-
-        /// <summary>Wraps a predicate as an equivalence class object whose Equals method is equivalence checking.</summary>
-        private readonly struct EquivalenceClass
-        {
-            private readonly TPredicate _set;
-            private readonly IBooleanAlgebra<TPredicate> _algebra;
-
-            internal EquivalenceClass(IBooleanAlgebra<TPredicate> algebra, TPredicate set)
-            {
-                _set = set;
-                _algebra = algebra;
-            }
-
-            public override int GetHashCode() => _set.GetHashCode();
-
-            public override bool Equals([NotNullWhen(true)] object? obj) => obj is EquivalenceClass ec && _algebra.AreEquivalent(_set, ec._set);
         }
 
         /// <summary>A partition tree for efficiently solving minterms.</summary>

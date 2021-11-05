@@ -78,7 +78,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public bool HashCodesRespectEquivalence => true;
         public CharSetSolver CharSetProvider => throw new NotSupportedException();
         public bool AreEquivalent(BV predicate1, BV predicate2) => predicate1.Equals(predicate2);
-        public List<BV> GenerateMinterms(params BV[] constraints) => _mintermGenerator.GenerateMinterms(constraints);
+        public List<BV> GenerateMinterms(IEnumerable<BV> constraints) => _mintermGenerator.GenerateMinterms(constraints);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSatisfiable(BV predicate) => !predicate.Equals(False);

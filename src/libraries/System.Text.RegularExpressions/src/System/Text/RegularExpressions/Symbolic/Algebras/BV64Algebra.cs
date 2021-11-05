@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool AreEquivalent(ulong predicate1, ulong predicate2) => predicate1 == predicate2;
 
-        public List<ulong> GenerateMinterms(params ulong[] constraints) => _mintermGenerator.GenerateMinterms(constraints);
+        public List<ulong> GenerateMinterms(IEnumerable<ulong> constraints) => _mintermGenerator.GenerateMinterms(constraints);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSatisfiable(ulong predicate) => predicate != _false;
