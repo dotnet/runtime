@@ -8,6 +8,20 @@ namespace DllImportGenerator.UnitTests
     internal static class CodeSnippets
     {
         /// <summary>
+        /// Partially define attribute for pre-.NET 6.0
+        /// </summary>
+        public static readonly string GeneratedDllImportAttributeDeclaration = @"
+namespace System.Runtime.InteropServices
+{
+    sealed class GeneratedDllImportAttribute : System.Attribute
+    {
+        public GeneratedDllImportAttribute(string a) { }
+        public CharSet CharSet { get; set; }
+    }
+}
+";
+
+        /// <summary>
         /// Trivial declaration of GeneratedDllImport usage
         /// </summary>
         public static readonly string TrivialClassDeclarations = @"
@@ -336,8 +350,9 @@ partial class Test
         /// <summary>
         /// Declaration with parameters with <see cref="CharSet"/> set.
         /// </summary>
-        public static string BasicParametersAndModifiersWithCharSet(string typename, CharSet value) => @$"
+        public static string BasicParametersAndModifiersWithCharSet(string typename, CharSet value, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"", CharSet = CharSet.{value})]
@@ -349,14 +364,15 @@ partial class Test
 }}
 ";
 
-        public static string BasicParametersAndModifiersWithCharSet<T>(CharSet value) =>
-            BasicParametersAndModifiersWithCharSet(typeof(T).ToString(), value);
+        public static string BasicParametersAndModifiersWithCharSet<T>(CharSet value, string preDeclaration = "") =>
+            BasicParametersAndModifiersWithCharSet(typeof(T).ToString(), value, preDeclaration);
 
         /// <summary>
         /// Declaration with parameters.
         /// </summary>
-        public static string BasicParametersAndModifiers(string typeName) => @$"
+        public static string BasicParametersAndModifiers(string typeName, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -396,7 +412,7 @@ partial class Test
         out {typeName} pOut);
 }}";
 
-        public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).ToString());
+        public static string BasicParametersAndModifiers<T>(string preDeclaration = "") => BasicParametersAndModifiers(typeof(T).ToString(), preDeclaration);
 
         /// <summary>
         /// Declaration with [In, Out] style attributes on a by-value parameter.

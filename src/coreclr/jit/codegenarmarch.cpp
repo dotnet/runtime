@@ -300,6 +300,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
+        case GT_MADD:
+            genCodeForMadd(treeNode->AsOp());
+            break;
 
         case GT_INC_SATURATE:
             genCodeForIncSaturate(treeNode);
@@ -311,6 +314,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_SWAP:
             genCodeForSwap(treeNode->AsOp());
+            break;
+
+        case GT_BFIZ:
+            genCodeForBfiz(treeNode->AsOp());
             break;
 #endif // TARGET_ARM64
 
@@ -1614,8 +1621,9 @@ void CodeGen::genCodeForShift(GenTree* tree)
     genTreeOps  oper       = tree->OperGet();
     instruction ins        = genGetInsForOper(oper, targetType);
     emitAttr    size       = emitActualTypeSize(tree);
+    regNumber   dstReg     = tree->GetRegNum();
 
-    assert(tree->GetRegNum() != REG_NA);
+    assert(dstReg != REG_NA);
 
     genConsumeOperands(tree->AsOp());
 
@@ -1623,14 +1631,13 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTree* shiftBy = tree->gtGetOp2();
     if (!shiftBy->IsCnsIntOrI())
     {
-        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
+        GetEmitter()->emitIns_R_R_R(ins, size, dstReg, operand->GetRegNum(), shiftBy->GetRegNum());
     }
     else
     {
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
         unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
-
-        GetEmitter()->emitIns_R_R_I(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
+        GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
     }
 
     genProduceReg(tree);
@@ -2582,7 +2589,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
 // Non-virtual direct call to known addresses
 #ifdef TARGET_ARM
-            if (!arm_Valid_Imm_For_BL((ssize_t)addr))
+            if (!validImmForBL((ssize_t)addr))
             {
                 regNumber tmpReg = call->GetSingleTempReg();
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);

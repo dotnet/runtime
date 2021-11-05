@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, runtimeHelpers } from "./modules";
-import { AssetEntry, CharPtr, CharPtrNull, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
+import { INTERNAL, Module, MONO, runtimeHelpers } from "./modules";
+import { AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -11,6 +11,34 @@ import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from ".
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
+
+export async function mono_wasm_pre_init(): Promise<void> {
+    const moduleExt = Module as EmscriptenModuleMono;
+    if (moduleExt.configSrc) {
+        // sets MONO.config implicitly
+        await mono_wasm_load_config(moduleExt.configSrc);
+
+        if (moduleExt.onConfigLoaded) {
+            try {
+                moduleExt.onConfigLoaded();
+            }
+            catch (err: any) {
+                Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
+                Module.printErr("MONO_WASM: Stacktrace: \n");
+                Module.printErr(err.stack);
+                throw err;
+            }
+        }
+    }
+}
+
+export function mono_wasm_on_runtime_initialized(): void {
+    const moduleExt = Module as EmscriptenModuleMono;
+    if (!moduleExt.config || moduleExt.config.isError) {
+        return;
+    }
+    mono_load_runtime_and_bcl_args(moduleExt.config);
+}
 
 // Set environment variable NAME to VALUE
 // Should be called before mono_load_runtime_and_bcl () in most cases
@@ -94,7 +122,7 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
     }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
-            console.error(`Error loading ICU asset ${asset.name}`);
+            console.error(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
@@ -102,49 +130,11 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
 }
 
 // Initializes the runtime and loads assemblies, debug information, and other files.
-// @args is a dictionary-style Object with the following properties:
-//    assembly_root: (required) the subfolder containing managed assemblies and pdbs
-//    debug_level or enable_debugging: (required)
-//    assets: (required) a list of assets to load along with the runtime. each asset
-//     is a dictionary-style Object with the following properties:
-//        name: (required) the name of the asset, including extension.
-//        behavior: (required) determines how the asset will be handled once loaded:
-//          "heap": store asset into the native heap
-//          "assembly": load asset as a managed assembly (or debugging information)
-//          "resource": load asset as a managed resource assembly
-//          "icu": load asset as an ICU data archive
-//          "vfs": load asset into the virtual filesystem (for fopen, File.Open, etc)
-//        load_remote: (optional) if true, an attempt will be made to load the asset
-//          from each location in @args.remote_sources.
-//        virtual_path: (optional) if specified, overrides the path of the asset in
-//          the virtual filesystem and similar data structures once loaded.
-//        is_optional: (optional) if true, any failure to load this asset will be ignored.
-//    loaded_cb: (required) a function () invoked when loading has completed.
-//    fetch_file_cb: (optional) a function (string) invoked to fetch a given file.
-//      If no callback is provided a default implementation appropriate for the current
-//      environment will be selected (readFileSync in node, fetch elsewhere).
-//      If no default implementation is available this call will fail.
-//    remote_sources: (optional) additional search locations for assets.
-//      sources will be checked in sequential order until the asset is found.
-//      the string "./" indicates to load from the application directory (as with the
-//      files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates
-//      that asset loads can be attempted from a remote server. Sources must end with a "/".
-//    environment_variables: (optional) dictionary-style Object containing environment variables
-//    runtime_options: (optional) array of runtime options as strings
-//    aot_profiler_options: (optional) dictionary-style Object. see the comments for
-//      mono_wasm_init_aot_profiler. If omitted, aot profiler will not be initialized.
-//    coverage_profiler_options: (optional) dictionary-style Object. see the comments for
-//      mono_wasm_init_coverage_profiler. If omitted, coverage profiler will not be initialized.
-//    globalization_mode: (optional) configures the runtime's globalization mode:
-//      "icu": load ICU globalization data from any runtime assets with behavior "icu".
-//      "invariant": operate in invariant globalization mode.
-//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
-//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
 export function mono_load_runtime_and_bcl_args(args: MonoConfig): void {
     try {
         return _load_assets_and_runtime(args);
     } catch (exc: any) {
-        console.error("error in mono_load_runtime_and_bcl_args:", exc);
+        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", exc);
         throw exc;
     }
 }
@@ -205,7 +195,9 @@ function _get_fetch_file_cb_from_args(args: MonoConfig): (asset: string) => Prom
 }
 
 function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
-    ctx.loaded_files.forEach(value => runtimeHelpers.loaded_files.push(value.url));
+    const moduleExt = Module as EmscriptenModuleMono;
+
+    ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
     if (ctx.tracing) {
         console.log("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
         console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
@@ -219,9 +211,9 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
         try {
             cwraps.mono_wasm_load_runtime("unused", args.debug_level || 0);
         } catch (ex: any) {
-            Module.print("MONO_WASM: load_runtime () failed: " + ex);
-            Module.print("MONO_WASM: Stacktrace: \n");
-            Module.print(ex.stack);
+            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + ex);
+            Module.printErr("MONO_WASM: Stacktrace: \n");
+            Module.printErr(ex.stack);
 
             const wasm_exit = cwraps.mono_wasm_exit;
             wasm_exit(1);
@@ -240,15 +232,18 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
     }
     mono_wasm_setenv("TZ", tz || "UTC");
     mono_wasm_runtime_ready();
-    args.loaded_cb();
-}
 
-
-export function mono_bindings_init(binding_asm?: string): void {
-    if (binding_asm) {
-        INTERNAL.BINDING_ASM = binding_asm;
+    if (moduleExt.onDotNetReady) {
+        try {
+            moduleExt.onDotNetReady();
+        }
+        catch (err: any) {
+            Module.printErr("MONO_WASM: onDotNetReady () failed: " + err);
+            Module.printErr("MONO_WASM: Stacktrace: \n");
+            Module.printErr(err.stack);
+            throw err;
+        }
     }
-
 }
 
 export function bindings_lazy_init(): void {
@@ -315,14 +310,6 @@ export function bindings_lazy_init(): void {
 function _load_assets_and_runtime(args: MonoConfig) {
     if (args.enable_debugging)
         args.debug_level = args.enable_debugging;
-    if (args.assembly_list)
-        throw new Error("Invalid args (assembly_list was replaced by assets)");
-    if (args.runtime_assets)
-        throw new Error("Invalid args (runtime_assets was replaced by assets)");
-    if (args.runtime_asset_sources)
-        throw new Error("Invalid args (runtime_asset_sources was replaced by remote_sources)");
-    if (!args.loaded_cb)
-        throw new Error("loaded_cb not provided");
 
     const ctx: MonoInitContext = {
         tracing: args.diagnostic_tracing || false,
@@ -335,7 +322,7 @@ function _load_assets_and_runtime(args: MonoConfig) {
     };
 
     if (ctx.tracing)
-        console.log("mono_wasm_load_runtime_with_args", JSON.stringify(args));
+        console.log("MONO_WASM: mono_wasm_load_runtime_with_args", JSON.stringify(args));
 
     _apply_configuration_from_args(args);
 
@@ -348,7 +335,7 @@ function _load_assets_and_runtime(args: MonoConfig) {
             try {
                 _finalize_startup(args, ctx);
             } catch (exc: any) {
-                console.error("Unhandled exception in _finalize_startup", exc);
+                console.error("MONO_WASM: Unhandled exception in _finalize_startup", exc);
                 console.error(exc.stack);
                 throw exc;
             }
@@ -359,7 +346,7 @@ function _load_assets_and_runtime(args: MonoConfig) {
         try {
             _handle_loaded_asset(ctx, asset, url, buffer);
         } catch (exc) {
-            console.error(`Unhandled exception in processFetchResponseBuffer ${url}`, exc);
+            console.error(`MONO_WASM: Unhandled exception in processFetchResponseBuffer ${url} ${exc}`);
             throw exc;
         } finally {
             onPendingRequestComplete();
@@ -376,7 +363,7 @@ function _load_assets_and_runtime(args: MonoConfig) {
                     attemptNextSource();
                     return;
                 } catch (exc) {
-                    console.error(`MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset ${asset.name}`, exc);
+                    console.error(`MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset ${asset.name} ${exc}`);
                     throw exc;
                 }
             }
@@ -385,7 +372,7 @@ function _load_assets_and_runtime(args: MonoConfig) {
                 const bufferPromise = response.arrayBuffer();
                 bufferPromise.then((data) => processFetchResponseBuffer(asset, response.url, data));
             } catch (exc) {
-                console.error(`MONO_WASM: Unhandled exception in handleFetchResponse for asset ${asset.name}`, exc);
+                console.error(`MONO_WASM: Unhandled exception in handleFetchResponse for asset ${asset.name} ${exc}`);
                 attemptNextSource();
             }
         };
@@ -432,15 +419,15 @@ function _load_assets_and_runtime(args: MonoConfig) {
             try {
                 if (asset.name === attemptUrl) {
                     if (ctx.tracing)
-                        console.log(`Attempting to fetch '${attemptUrl}'`);
+                        console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}'`);
                 } else {
                     if (ctx.tracing)
-                        console.log(`Attempting to fetch '${attemptUrl}' for ${asset.name}`);
+                        console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}' for ${asset.name}`);
                 }
                 const fetch_promise = fetch_file_cb(attemptUrl);
                 fetch_promise.then(handleFetchResponse);
             } catch (exc) {
-                console.error(`MONO_WASM: Error fetching ${attemptUrl}`, exc);
+                console.error(`MONO_WASM: Error fetching ${attemptUrl} ${exc}`);
                 attemptNextSource();
             }
         };
@@ -529,10 +516,16 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
             config = JSON.parse(json);
         }
         runtimeHelpers.config = config;
+        config.environment_variables = config.environment_variables || {};
+        config.assets = config.assets || [];
+        config.runtime_options = config.runtime_options || [];
+        config.globalization_mode = config.globalization_mode || GlobalizationMode.AUTO;
+
     } catch (exc) {
-        const errMessage = "failed to load config file " + configFilePath;
-        console.error(errMessage, exc);
-        runtimeHelpers.config = { message: errMessage, error: exc };
+        const errMessage = `Failed to load config file ${configFilePath} ${exc}`;
+        console.error(errMessage);
+        runtimeHelpers.config = { message: errMessage, error: exc, isError: true };
+        throw exc;
     } finally {
         Module.removeRunDependency(configFilePath);
     }

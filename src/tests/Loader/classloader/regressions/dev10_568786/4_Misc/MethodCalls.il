@@ -350,7 +350,7 @@
 
 } // end of class Caller`4
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_MethodCalls
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 

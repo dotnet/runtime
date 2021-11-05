@@ -90,6 +90,34 @@ namespace NativeExports
             }
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "sum_char_array")]
+        public static int SumChars(ushort* values, int numValues)
+        {
+            if (values == null)
+            {
+                return -1;
+            }
+
+            int sum = 0;
+            for (int i = 0; i < numValues; i++)
+            {
+                sum += values[i];
+            }
+            return sum;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "reverse_char_array")]
+        public static void ReverseChars(ushort** values, int numValues)
+        {
+            if (*values == null)
+            {
+                return;
+            }
+
+            var span = new Span<ushort>(*values, numValues);
+            span.Reverse();
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "sum_string_lengths")]
         public static int SumStringLengths(ushort** strArray)
         {

@@ -151,7 +151,6 @@ namespace System.Reflection.TypeLoading
         {
             int rank = _rank;
 
-            int uniquifier = 0;
             RoType systemInt32 = Loader.GetCoreType(CoreType.Int32);
             RoType elementType = GetRoElementType();
             RoType systemVoid = Loader.GetCoreType(CoreType.Void);
@@ -163,7 +162,7 @@ namespace System.Reflection.TypeLoading
                 {
                     getParameters[i] = systemInt32;
                 }
-                yield return new RoSyntheticMethod(this, uniquifier++, "Get", elementType, getParameters);
+                yield return new RoSyntheticMethod(this, 0, "Get", elementType, getParameters);
             }
 
             if (filter == null || filter.Matches("Set"))
@@ -174,7 +173,7 @@ namespace System.Reflection.TypeLoading
                     setParameters[i] = systemInt32;
                 }
                 setParameters[rank] = elementType;
-                yield return new RoSyntheticMethod(this, uniquifier++, "Set", systemVoid, setParameters);
+                yield return new RoSyntheticMethod(this, 1, "Set", systemVoid, setParameters);
             }
 
             if (filter == null || filter.Matches("Address"))
@@ -184,7 +183,7 @@ namespace System.Reflection.TypeLoading
                 {
                     addressParameters[i] = systemInt32;
                 }
-                yield return new RoSyntheticMethod(this, uniquifier++, "Address", elementType.GetUniqueByRefType(), addressParameters);
+                yield return new RoSyntheticMethod(this, 2, "Address", elementType.GetUniqueByRefType(), addressParameters);
             }
         }
     }

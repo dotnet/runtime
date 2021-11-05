@@ -100,8 +100,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
     regSet.tmpInit();
 
-    instInit();
-
 #ifdef LATE_DISASM
     getDisAssembler().disInit(compiler);
 #endif
@@ -1588,7 +1586,6 @@ AGAIN:
 
             break;
 
-#endif // TARGET_ARMARCH
         case GT_MUL:
 
             if (op2->gtOverflow())
@@ -1624,6 +1621,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
+#endif // TARGET_ARMARCH
 
         case GT_NOP:
 

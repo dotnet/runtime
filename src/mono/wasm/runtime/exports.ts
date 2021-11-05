@@ -21,12 +21,14 @@ import {
     mono_wasm_fire_debugger_agent_message,
 } from "./debug";
 import { runtimeHelpers, setLegacyModules } from "./modules";
-import { MonoArray, MonoConfig, MonoConfigError, MonoObject } from "./types";
+import { EmscriptenModuleMono, MonoArray, MonoConfig, MonoConfigError, MonoObject } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    mono_wasm_set_main_args
+    mono_wasm_set_main_args,
+    mono_wasm_pre_init,
+    mono_wasm_on_runtime_initialized
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -73,7 +75,7 @@ export const MONO: MONO = <any>{
     mono_wasm_load_runtime: cwraps.mono_wasm_load_runtime,
 
     config: runtimeHelpers.config,
-    loaded_files: runtimeHelpers.loaded_files,
+    loaded_files: [],
 
     // generated bindings closure `library_mono`
     mono_wasm_new_root_buffer_from_pointer,
@@ -108,6 +110,8 @@ export const BINDING: BINDING = <any>{
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: any, module: any): void {
+    const moduleExt = module as EmscriptenModuleMono;
+
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     setLegacyModules(dotnet, mono, binding, internal, module);
 
@@ -117,17 +121,20 @@ function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: an
     Object.assign(binding, BINDING);
     Object.assign(internal, INTERNAL);
 
-    // backward compatibility, sync with EmscriptenModuleMono
-    Object.assign(module, {
-        // https://github.com/search?q=mono_bind_static_method&type=Code
-        mono_bind_static_method: (fqn: string, signature: ArgsMarshalString): Function => {
+    // this could be overriden on Module
+    moduleExt.preInit = mono_wasm_pre_init;
+    moduleExt.onRuntimeInitialized = mono_wasm_on_runtime_initialized;
+
+    if (!moduleExt.disableDotNet6Compatibility) {
+        // backward compatibility
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        moduleExt.mono_bind_static_method = (fqn: string, signature: ArgsMarshalString): Function => {
             console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
-        },
-    });
+        };
 
-    // here we expose objects used in tests to global namespace
-    if (!module.no_global_exports) {
+        // here we expose objects used in tests to global namespace
         (<any>globalThis).Module = module;
         const warnWrap = (name: string, value: any) => {
             if (typeof ((<any>globalThis)[name]) !== "undefined") {

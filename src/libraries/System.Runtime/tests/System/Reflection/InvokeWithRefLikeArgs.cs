@@ -38,7 +38,8 @@ namespace System.Reflection.Tests
             Assert.Null(args[0]); // no value should have been copied back
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
         public static void MethodTakesRefToRefStructAsArg_ThrowsNSE()
         {

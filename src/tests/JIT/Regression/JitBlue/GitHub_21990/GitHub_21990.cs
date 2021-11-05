@@ -14,7 +14,7 @@ class GenericException<T> : Exception
 {
 }
 
-public class Test
+public class Test_GitHub_21990
 {
     public struct S
     {
@@ -576,7 +576,7 @@ public class Test
         const int Pass = 100;
         const int Fail = -1;
 
-        Test test = new Test();
+        Test_GitHub_21990 test = new Test_GitHub_21990();
 
         if (!test.TestGenericSharing<object>())
         {

@@ -72,6 +72,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platforms:
+    - Linux_x86
     - Linux_x64
     - Linux_arm
     - Linux_arm64
@@ -292,7 +293,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -305,7 +306,6 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         - wasmtestonbrowser

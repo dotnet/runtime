@@ -51,7 +51,7 @@ generate_core_dump_command_try_parse_payload (
 
 	if (!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->dump_name ) ||
 		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->dump_type) ||
-		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->diagnostics))
+		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->flags))
 		ep_raise_error ();
 
 ep_on_exit:
@@ -106,6 +106,7 @@ dump_protocol_helper_generate_core_dump (
 		return false;
 
 	ds_ipc_result_t ipc_result = DS_IPC_E_FAIL;
+	DiagnosticsDumpCommandId commandId = (DiagnosticsDumpCommandId)ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (message));
 	DiagnosticsGenerateCoreDumpCommandPayload *payload;
 	payload = (DiagnosticsGenerateCoreDumpCommandPayload *)ds_ipc_message_try_parse_payload (message, generate_core_dump_command_try_parse_payload);
 
@@ -114,7 +115,7 @@ dump_protocol_helper_generate_core_dump (
 		ep_raise_error ();
 	}
 
-	ipc_result = ds_rt_generate_core_dump (payload);
+	ipc_result = ds_rt_generate_core_dump (commandId, payload);
 	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();
@@ -144,6 +145,7 @@ ds_dump_protocol_helper_handle_ipc_message (
 
 	switch ((DiagnosticsDumpCommandId)ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (message))) {
 	case DS_DUMP_COMMANDID_GENERATE_CORE_DUMP:
+	case DS_DUMP_COMMANDID_GENERATE_CORE_DUMP2:
 		result = dump_protocol_helper_generate_core_dump (message, stream);
 		break;
 	default:

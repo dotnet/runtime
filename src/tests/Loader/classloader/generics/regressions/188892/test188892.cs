@@ -12,7 +12,7 @@ class C3 : C1<C3> { }
 
                                        
 
-class Test
+class Test_test188892
 {
 
 	public static void LoadTypes()

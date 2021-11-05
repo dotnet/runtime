@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.FileProviders
 {
     public partial class PhysicalFileProviderTests : FileCleanupTestBase
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink(bool useWildcard)
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.FileProviders
                 $"Change event was not raised - current time: {DateTime.UtcNow:O}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath):O}.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
         [OuterLoop]
         [InlineData(false)]
         [InlineData(true)]
@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.FileProviders
             await Assert.ThrowsAsync<TaskCanceledException>(() => tcs.Task);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.FileProviders
             catch (UnauthorizedAccessException) { }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink_TargetDeleted(bool useWildcard)

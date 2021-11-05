@@ -50,7 +50,7 @@ public struct Gen<T> : IGen<T>
     }
 }
 
-public class Test
+public class Test_Struct02
 {
     public static int counter = 0;
     public static bool result = true;

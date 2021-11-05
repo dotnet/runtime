@@ -17,6 +17,16 @@ namespace System.Text.RegularExpressions.Symbolic.Unicode
             }
             sw.Write("}");
         }
+
+        public static void WriteByteArrayInitSyntax(StreamWriter sw, byte[] values)
+        {
+            sw.Write("new byte[] {");
+            for (int i = 0; i < values.Length; i++)
+            {
+                sw.Write($" 0x{values[i]:X}, ");
+            }
+            sw.Write("}");
+        }
     }
 #endif
 }

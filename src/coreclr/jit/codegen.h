@@ -1248,6 +1248,8 @@ protected:
     void genCodeForJumpTrue(GenTreeOp* jtrue);
 #ifdef TARGET_ARM64
     void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForMadd(GenTreeOp* tree);
+    void genCodeForBfiz(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1338,8 +1340,6 @@ protected:
     */
 
 public:
-    void instInit();
-
     void instGen(instruction ins);
 
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
@@ -1384,10 +1384,6 @@ public:
         instruction ins, regNumber reg, target_ssize_t val, emitAttr size, insFlags flags = INS_FLAGS_DONT_CARE);
 
     void inst_ST_RV(instruction ins, TempDsc* tmp, unsigned ofs, regNumber reg, var_types type);
-    void inst_ST_IV(instruction ins, TempDsc* tmp, unsigned ofs, int val, var_types type);
-
-    void inst_SA_RV(instruction ins, unsigned ofs, regNumber reg, var_types type);
-    void inst_SA_IV(instruction ins, unsigned ofs, int val, var_types type);
 
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
@@ -1402,15 +1398,7 @@ public:
                     emitAttr    size  = EA_UNKNOWN,
                     insFlags    flags = INS_FLAGS_DONT_CARE);
 
-    void inst_FS_TT(instruction ins, GenTree* tree);
-
     void inst_RV_SH(instruction ins, emitAttr size, regNumber reg, unsigned val, insFlags flags = INS_FLAGS_DONT_CARE);
-
-    void inst_TT_SH(instruction ins, GenTree* tree, unsigned val, unsigned offs = 0);
-
-    void inst_RV_CL(instruction ins, regNumber reg, var_types type = TYP_I_IMPL);
-
-    void inst_TT_CL(instruction ins, GenTree* tree, unsigned offs = 0);
 
 #if defined(TARGET_XARCH)
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
@@ -1418,38 +1406,20 @@ public:
     void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);
 #endif
 
-    void inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumber reg2);
-
-    void inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTree* tree);
-
-    void inst_mov_RV_ST(regNumber reg, GenTree* tree);
-
     void inst_set_SV_var(GenTree* tree);
 
 #ifdef TARGET_ARM
     bool arm_Valid_Imm_For_Instr(instruction ins, target_ssize_t imm, insFlags flags);
-    bool arm_Valid_Disp_For_LdSt(target_ssize_t disp, var_types type);
-    bool arm_Valid_Imm_For_Alu(target_ssize_t imm);
-    bool arm_Valid_Imm_For_Mov(target_ssize_t imm);
-    bool arm_Valid_Imm_For_Small_Mov(regNumber reg, target_ssize_t imm, insFlags flags);
     bool arm_Valid_Imm_For_Add(target_ssize_t imm, insFlags flag);
     bool arm_Valid_Imm_For_Add_SP(target_ssize_t imm);
-    bool arm_Valid_Imm_For_BL(ssize_t addr);
-
-    bool ins_Writes_Dest(instruction ins);
 #endif
 
-    bool isMoveIns(instruction ins);
     instruction ins_Move_Extend(var_types srcType, bool srcInReg);
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
-    static instruction ins_FloatStore(var_types type = TYP_DOUBLE);
-    static instruction ins_FloatCopy(var_types type = TYP_DOUBLE);
     instruction ins_FloatConv(var_types to, var_types from);
-    instruction ins_FloatCompare(var_types type);
     instruction ins_MathOp(genTreeOps oper, var_types type);
-    instruction ins_FloatSqrt(var_types type);
 
     void instGen_Return(unsigned stkArgSize);
 
@@ -1468,16 +1438,6 @@ public:
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
-
-    void instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg);
-
-    void instGen_Compare_Reg_To_Reg(emitAttr size, regNumber reg1, regNumber reg2);
-
-    void instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, target_ssize_t imm);
-
-    void instGen_Load_Reg_From_Lcl(var_types srcType, regNumber dstReg, int varNum, int offs);
-
-    void instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, int varNum, int offs);
 
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
@@ -1527,45 +1487,6 @@ public:
     void inst_JCC(GenCondition condition, BasicBlock* target);
     void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
 };
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                       Instruction                                         XX
-XX                      Inline functions                                     XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-#ifdef TARGET_XARCH
-/*****************************************************************************
- *
- *  Generate a floating-point instruction that has one operand given by
- *  a tree (which has been made addressable).
- */
-
-inline void CodeGen::inst_FS_TT(instruction ins, GenTree* tree)
-{
-    assert(instIsFP(ins));
-
-    assert(varTypeIsFloating(tree->gtType));
-
-    inst_TT(ins, tree, 0);
-}
-#endif
-
-/*****************************************************************************
- *
- *  Generate a "shift reg, cl" instruction.
- */
-
-inline void CodeGen::inst_RV_CL(instruction ins, regNumber reg, var_types type)
-{
-    inst_RV(ins, reg, type);
-}
-
-/*****************************************************************************/
 
 // A simple phase that just invokes a method on the codegen instance
 //

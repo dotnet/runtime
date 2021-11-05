@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-public class Test
+public class Test_494226
 {
     [System.Security.SecuritySafeCritical]
     public static int Main()
@@ -39,7 +39,7 @@ public class Test
 }
 
 /*
-Test passes if the following assert is not hit:
+Test_494226 passes if the following assert is not hit:
 
 (*card_word)==0
 

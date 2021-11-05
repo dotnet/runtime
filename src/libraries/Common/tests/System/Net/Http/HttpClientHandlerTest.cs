@@ -399,7 +399,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             const string content = "hello world";
-
+            string authSafeValue = "QWxhZGRpbjpvcGVuIHNlc2FtZQ==";
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
             // Exercises all exposed request.Headers and request.Content.Headers strongly-typed properties
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -421,7 +421,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("Access-Control-Request-Method", "GET");
                     request.Headers.Add("Access-Control-Request-Headers", "GET");
                     request.Headers.Add("Age", "12");
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", "QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authSafeValue);
                     request.Headers.CacheControl = new CacheControlHeaderValue() { NoCache = true };
                     request.Headers.Connection.Add("close");
                     request.Headers.Add("Cookie", "$Version=1; Skin=new");
@@ -444,7 +444,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.MaxForwards = 10;
                     request.Headers.Add("Origin", "http://www.example-social-network.com");
                     request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
-                    request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic", "QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
+                    request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic", authSafeValue);
                     request.Headers.Range = new RangeHeaderValue(500, 999);
                     request.Headers.Referrer = new Uri("http://en.wikipedia.org/wiki/Main_Page");
                     request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("trailers"));
@@ -504,7 +504,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal("GET", requestData.GetSingleHeaderValue("Access-Control-Request-Headers"));
                     }
                     Assert.Equal("12", requestData.GetSingleHeaderValue("Age"));
-                    Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Authorization"));
+                    Assert.Equal($"Basic {authSafeValue}", requestData.GetSingleHeaderValue("Authorization"));
                     Assert.Equal("no-cache", requestData.GetSingleHeaderValue("Cache-Control"));
                     if (PlatformDetection.IsNotBrowser)
                     {
@@ -512,7 +512,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal("Tue, 15 Nov 1994 08:12:31 GMT", requestData.GetSingleHeaderValue("Date"));
                         Assert.Equal("100-continue", requestData.GetSingleHeaderValue("Expect"));
                         Assert.Equal("http://www.example-social-network.com", requestData.GetSingleHeaderValue("Origin"));
-                        Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Proxy-Authorization"));
+                        Assert.Equal($"Basic {authSafeValue}", requestData.GetSingleHeaderValue("Proxy-Authorization"));
                         Assert.Equal("Mozilla/5.0", requestData.GetSingleHeaderValue("User-Agent"));
                         Assert.Equal("http://en.wikipedia.org/wiki/Main_Page", requestData.GetSingleHeaderValue("Referer"));
                         Assert.Equal("MyTrailer", requestData.GetSingleHeaderValue("Trailer"));

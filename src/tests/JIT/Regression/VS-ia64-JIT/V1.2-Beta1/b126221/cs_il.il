@@ -32,7 +32,7 @@
   .field public int32 dummy
 } 
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_cs_il
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 

@@ -321,7 +321,7 @@ FCIMPL1(FC_BOOL_RET, ObjectNative::IsLockHeld, Object* pThisUNSAFE)
 }
 FCIMPLEND
 
-INT64 QCALLTYPE ObjectNative::GetMonitorLockContentionCount()
+extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorLockContentionCount()
 {
     QCALL_CONTRACT;
 

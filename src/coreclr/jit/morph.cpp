@@ -7132,15 +7132,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
-    // Heuristic: regular calls to noreturn methods can sometimes be
-    // merged, so if we have multiple such calls, we defer tail calling.
-    //
-    // TODO: re-examine this; now that we're merging before morph we
-    // don't need to worry about interfering with merges.
-    //
-    if (call->IsNoReturn() && (optNoReturnCallCount > 1))
+    if (call->IsNoReturn() && !call->IsTailPrefixedCall())
     {
-        failTailCall("Defer tail calling throw helper; anticipating merge");
+        // Such tail calls always throw an exception and we won't be able to see current
+        // Caller() in the stacktrace.
+        failTailCall("Never returns");
         return nullptr;
     }
 
@@ -10922,7 +10918,7 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
 
         tree->gtOp1  = op1->AsCast()->CastOp();
         tree->gtOp2  = op2->AsCast()->CastOp();
-        tree->gtType = fromType;
+        tree->gtType = genActualType(fromType);
 
         op1->gtType                 = genActualType(toType);
         op1->AsCast()->gtOp1        = tree;
@@ -12180,11 +12176,9 @@ DONE_MORPHING_CHILDREN:
 
                     op2 = op2Child;
                 }
-
                 // -a - -b = > b - a
                 // SUB(NEG(a), (NEG(b)) => SUB(b, a)
-
-                if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
+                else if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
                 {
                     // tree: SUB
                     // op1: NEG
@@ -12405,13 +12399,11 @@ DONE_MORPHING_CHILDREN:
                         op1 = op2;
                         op2 = op1Child;
                     }
-
                     // a + -b = > a - b
                     // ADD(a, (NEG(b)) => SUB(a, b)
-
-                    if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                    else if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
                     {
-                        // a is non cosntant because it was already canonicalized to have
+                        // a is non constant because it was already canonicalized to have
                         // variable on the left and constant on the right.
 
                         // tree: ADD

@@ -18,6 +18,10 @@
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'android-x86'" />
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.android-x64"
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'android-x64'" />
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64"
+                             Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'maccatalyst-x64'" />
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"
+                             Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'iossimulator-x64'" />
     </ItemGroup>
   </Target>
 </Project>

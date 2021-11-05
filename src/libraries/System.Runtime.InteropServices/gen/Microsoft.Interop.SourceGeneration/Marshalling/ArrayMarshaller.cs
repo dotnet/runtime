@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -21,6 +22,11 @@ namespace Microsoft.Interop
             _elementType = elementType;
             _enablePinning = enablePinning;
             _options = options;
+        }
+
+        public bool IsSupported(TargetFramework target, Version version)
+        {
+            return target is TargetFramework.Net && version.Major >= 6;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)

@@ -86,7 +86,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -130,7 +130,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -172,7 +172,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:EnableSoftTrimming=true /p:BuildDarwinFrameworks=true
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -185,6 +185,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),

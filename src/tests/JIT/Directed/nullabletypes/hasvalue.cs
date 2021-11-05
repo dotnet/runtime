@@ -29,21 +29,21 @@ class NullableTest1
 
     public static void Run()
     {
-        Test.IsFalse(i.HasValue);
+        Test_nullabletypes.IsFalse(i.HasValue);
         i = null;
-        Test.IsFalse(i.HasValue);
-        Test.IsFalse(s.HasValue);
+        Test_nullabletypes.IsFalse(i.HasValue);
+        Test_nullabletypes.IsFalse(s.HasValue);
         s = null;
-        Test.IsFalse(s.HasValue);
-        Test.IsFalse(imps.HasValue);
+        Test_nullabletypes.IsFalse(s.HasValue);
+        Test_nullabletypes.IsFalse(imps.HasValue);
         imps = null;
-        Test.IsFalse(imps.HasValue);
-        Test.IsFalse(genfoo.HasValue);
+        Test_nullabletypes.IsFalse(imps.HasValue);
+        Test_nullabletypes.IsFalse(genfoo.HasValue);
         genfoo = null;
-        Test.IsFalse(genfoo.HasValue);
-        Test.IsFalse(genint.HasValue);
+        Test_nullabletypes.IsFalse(genfoo.HasValue);
+        Test_nullabletypes.IsFalse(genint.HasValue);
         genint = null;
-        Test.IsFalse(genint.HasValue);
+        Test_nullabletypes.IsFalse(genint.HasValue);
     }
 }
 
@@ -58,11 +58,11 @@ class NullableTest2
 
     public static void Run()
     {
-        Test.Eval(i.HasValue);
-        Test.Eval(s.HasValue);
-        Test.Eval(imps.HasValue);
-        Test.Eval(genfoo.HasValue);
-        Test.Eval(genint.HasValue);
+        Test_nullabletypes.Eval(i.HasValue);
+        Test_nullabletypes.Eval(s.HasValue);
+        Test_nullabletypes.Eval(imps.HasValue);
+        Test_nullabletypes.Eval(genfoo.HasValue);
+        Test_nullabletypes.Eval(genint.HasValue);
     }
 }
 
