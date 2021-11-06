@@ -94,6 +94,16 @@ def main(main_args):
         print("Adding {} to PATH".format(jit_analyze_dir))
         os.environ["PATH"] = jit_analyze_dir + os.pathsep + os.environ["PATH"]
 
+    # Find the portable `git` installation, and put `git.exe` on the PATH, for use by `jit-analyze`.
+    git_directory = os.path.join(script_dir, "git", "cmd")
+    git_exe_tool = os.path.join(git_directory, "git.exe")
+    if not os.path.isfile(git_exe_tool):
+        print("Error: `git` not found at {} (continuing)".format(git_exe_tool))
+    else:
+        # Put the git\cmd directory on the PATH so jit-analyze can find it.
+        print("Adding {} to PATH".format(git_directory))
+        os.environ["PATH"] = git_directory + os.pathsep + os.environ["PATH"]
+
     # Figure out which JITs to use
     os_name = "win" if platform_name.lower() == "windows" else "unix"
     arch_name = coreclr_args.arch
@@ -110,7 +120,7 @@ def main(main_args):
 
     log_file = os.path.join(log_directory, "superpmi_download_{}_{}.log".format(platform_name, arch_name))
     # Add this for restricted testing:
-    #   "-filter", "libraries.crossgen2", ######## *********** TEMPORARY: to make testing faster, only download one MCH file
+    #   "-filter", "benchmarks", "libraries.crossgen2", ######## *********** TEMPORARY: to make testing faster, only download one MCH file
     run_command([
         python_path,
         os.path.join(script_dir, "superpmi.py"),
@@ -135,11 +145,14 @@ def main(main_args):
     if os.path.isfile(overall_md_summary_file):
         os.remove(overall_md_summary_file)
 
+    # Add to force asm diffs:
+    #   "-diff_jit_option", "JitCloneLoops=0"
     _, _, return_code = run_command([
         python_path,
         os.path.join(script_dir, "superpmi.py"),
         "asmdiffs",
         "--no_progress",
+        "-diff_jit_option", "JitCloneLoops=0",
         "-core_root", core_root_dir,
         "-target_os", platform_name,
         "-target_arch", arch_name,

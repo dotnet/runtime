@@ -17,10 +17,11 @@
 ################################################################################
 
 import argparse
+import logging
 import os
 
 from coreclr_arguments import *
-from jitutil import copy_directory, copy_files, set_pipeline_variable, run_command, TempDir
+from jitutil import copy_directory, set_pipeline_variable, run_command, TempDir, download_files
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -102,12 +103,26 @@ def main(main_args):
         -- contains the diff JITs
     <source_directory>\payload\jit-analyze
         -- contains the self-contained jit-analyze build (from dotnet/jitutils)
+    <source_directory>\payload\git
+        -- contains a Portable ("xcopy installable") `git` tool, downloaded from:
+        https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/git/Git-2.32.0-64-bit.zip
+        This is needed by jit-analyze to do `git diff` on the generated asm. The `<source_directory>\payload\git\cmd`
+        directory is added to the PATH.
+        NOTE: this only runs on Windows.
 
     Then, AzDO pipeline variables are set.
 
     Args:
         main_args ([type]): Arguments to the script
     """
+
+    # Set up logging.
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.INFO)
+    logger.addHandler(stream_handler)
+
     coreclr_args = setup_args(main_args)
 
     arch = coreclr_args.arch
@@ -122,6 +137,20 @@ def main(main_args):
     base_jit_directory = os.path.join(correlation_payload_directory, "base")
     diff_jit_directory = os.path.join(correlation_payload_directory, "diff")
     jit_analyze_build_directory = os.path.join(correlation_payload_directory, "jit-analyze")
+    git_directory = os.path.join(correlation_payload_directory, "git")
+
+    ######## Get the portable `git` package
+
+    git_url = "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/git/Git-2.32.0-64-bit.zip"
+
+    print('Downloading {} -> {}'.format(git_url, git_directory))
+
+    urls = [ git_url ]
+    # There are too many files to be verbose in the download and copy.
+    download_files(urls, git_directory, verbose=False, display_progress=False)
+    git_exe_tool = os.path.join(git_directory, "cmd", "git.exe")
+    if not os.path.isfile(git_exe_tool):
+        print('Error: `git` not found at {}'.format(git_exe_tool))
 
     ######## Get SuperPMI python scripts
 
