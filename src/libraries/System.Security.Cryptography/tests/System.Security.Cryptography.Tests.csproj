@@ -25,6 +25,7 @@
     <Compile Include="AsnEncodedDataTests.cs" />
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />
+    <Compile Include="AsymmetricAlgorithmTests.cs" />
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="CryptoConfigTests.cs" />
     <Compile Include="CryptographicException.cs" />

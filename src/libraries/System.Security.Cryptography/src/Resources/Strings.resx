@@ -90,6 +90,15 @@
   <data name="Argument_PemEncoding_EncodedSizeTooLarge" xml:space="preserve">
     <value>The encoded PEM size is too large to represent as a signed 32-bit integer.</value>
   </data>
+  <data name="Argument_PemImport_NoPemFound" xml:space="preserve">
+    <value>No supported key formats were found. Check that the input represents the contents of a PEM-encoded key file, not the path to such a file.</value>
+  </data>
+  <data name="Argument_PemImport_AmbiguousPem" xml:space="preserve">
+    <value>The input contains multiple keys, but only one key can be imported.</value>
+  </data>
+  <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
+    <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
+  </data>
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
