@@ -1,0 +1,13 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)\PInvoke_Default.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\PInvoke_False_False.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\PInvoke_False_True.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\PInvoke_True_False.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\PInvoke_True_True.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Program.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\TestData.cs" />
+  </ItemGroup>
+</Project>

@@ -6,7 +6,9 @@ using System.Text;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public class BFM_CharMarshaler
+using static TestData;
+
+public class PInvoke_True_True
 {
     [DllImport("Char_BestFitMappingNative", BestFitMapping = true, ThrowOnUnmappableChar = true)]
     public static extern bool Char_In([In]char c);
@@ -34,51 +36,6 @@ public class BFM_CharMarshaler
 
     [DllImport("Char_BestFitMappingNative", BestFitMapping = true, ThrowOnUnmappableChar = true)]
     public static extern bool CharBuffer_InOutByRef_StringBuilder([In, Out]ref StringBuilder s);
-
-    static String GetValidString()
-    {
-        return "This is the initial test string.";
-    }
-
-    static String GetInvalidString()
-    {
-        StringBuilder sbl = new StringBuilder();
-        sbl.Append((char)0x2216);
-        sbl.Append((char)0x2044);
-        sbl.Append((char)0x2215);
-        sbl.Append((char)0x0589);
-        sbl.Append((char)0x2236);
-        //sbl.Append ('乀');
-        return sbl.ToString();
-    }
-
-    static StringBuilder GetValidStringBuilder()
-    {
-        StringBuilder sb = new StringBuilder("test string.");
-        return sb;
-    }
-
-    static StringBuilder GetInvalidStringBuilder()
-    {
-        StringBuilder sbl = new StringBuilder();
-        sbl.Append((char)0x2216);
-        sbl.Append((char)0x2044);
-        sbl.Append((char)0x2215);
-        sbl.Append((char)0x0589);
-        sbl.Append((char)0x2236);
-        //sbl.Append ('乀');
-        return sbl;
-    }
-
-    static char GetInvalidChar()
-    {
-        return (char)0x2216;
-    }
-
-    static char GetValidChar()
-    {
-        return 'c';
-    }
 
     static void testChar()
     {
@@ -149,30 +106,11 @@ public class BFM_CharMarshaler
         Assert.True(CharBuffer_InOutByRef_StringBuilder(ref cTemp));
     }
 
-    static void runTest()
+    public static void RunTest()
     {
+        Console.WriteLine(" -- Validate P/Invokes: BestFitMapping=true, ThrowOnUnmappableChar=true");
         testChar();
         testCharBufferString();
         testCharBufferStringBuilder();
-    }
-
-    public static int Main()
-    {
-        if (System.Globalization.CultureInfo.CurrentCulture.Name != "en-US")
-        {
-            Console.WriteLine("Non-US English platforms are not supported.\nPassing without running tests");
-
-            Console.WriteLine("--- Success");
-            return 100;
-        }
-
-        try
-        {
-            runTest();
-            return 100;
-        } catch (Exception e){
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
     }
 }
