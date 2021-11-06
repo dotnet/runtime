@@ -13,7 +13,7 @@ internal static partial class Interop
     // use Stat in debug builds.
     internal static partial class Kernel32
     {
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack=4)]
         internal struct BY_HANDLE_FILE_INFORMATION
         {
             internal uint dwFileAttributes;

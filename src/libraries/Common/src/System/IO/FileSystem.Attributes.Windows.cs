@@ -120,8 +120,7 @@ namespace System.IO
             }
             else
             {
-                Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInformationData = default;
-                Interop.Kernel32.GetFileInformationByHandle(fileHandle, fileInformationData);
+                Interop.Kernel32.GetFileInformationByHandle(fileHandle, out var fileInformationData);
                 data.PopulateFrom(ref fileInformationData);
 
                 return Interop.Errors.ERROR_SUCCESS;
