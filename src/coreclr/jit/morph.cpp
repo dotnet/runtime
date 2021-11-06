@@ -4909,7 +4909,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
     GenTree* arg     = fgMakeTmpArgNode(argEntry);
 
     // Change the expression to "(tmp=val),tmp"
-    arg                                  = gtNewOperNode(GT_COMMA, arg->TypeGet(), copyBlk, arg);
+    arg  = gtNewOperNode(GT_COMMA, arg->TypeGet(), copyBlk, arg);
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -5465,11 +5465,23 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     GenTree* cns = gtNewIconNode(elemOffs, TYP_I_IMPL);
 
+#ifdef TARGET_ARMARCH
+    // For ARM/ARM64 we create the following tree:
+    //
+    //   (arrRef + elemOffset) + (index)
+    //
+    // instead of this for xarch:
+    //
+    //   arrRef + (index + elemOffset)
+    //
+    // It allows us to hoist '(arrRef + elemOffset)' part in loops while on XArch
+    // it will be handled via more powerful addressing modes.
+    GenTree* basePlusOffset = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, cns);
+    addr                    = gtNewOperNode(GT_ADD, TYP_BYREF, basePlusOffset, addr);
+#else
     addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, cns);
-
-    /* Add the object ref to the element's offset */
-
     addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
+#endif
 
     assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0) ||
            (GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL));
@@ -5539,16 +5551,16 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), arrRefDefn, tree);
     }
 
-    JITDUMP("fgMorphArrayIndex (before remorph):\n");
-    DISPTREE(tree);
+    JITDUMP("fgMorphArrayIndex (before remorph):\n")
+    DISPTREE(tree)
 
     // Currently we morph the tree to perform some folding operations prior
     // to attaching fieldSeq info and labeling constant array index contributions
     //
     tree = fgMorphTree(tree);
 
-    JITDUMP("fgMorphArrayIndex (after remorph):\n");
-    DISPTREE(tree);
+    JITDUMP("fgMorphArrayIndex (after remorph):\n")
+    DISPTREE(tree)
 
     // Ideally we just want to proceed to attaching fieldSeq info and labeling the
     // constant array index contributions, but the morphing operation may have changed
@@ -5572,38 +5584,51 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     assert(!fgGlobalMorph || (arrElem->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
     DBEXEC(fgGlobalMorph && (arrElem == tree), tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
-    addr = arrElem->AsOp()->gtOp1;
+    addr = arrElem->gtGetOp1();
 
-    assert(addr->TypeGet() == TYP_BYREF);
+    assert(addr->TypeIs(TYP_BYREF));
 
     GenTree* cnsOff = nullptr;
-    if (addr->OperGet() == GT_ADD)
+    if (addr->OperIs(GT_ADD))
     {
-        assert(addr->TypeGet() == TYP_BYREF);
-        assert(addr->AsOp()->gtOp1->TypeGet() == TYP_REF);
-
-        addr = addr->AsOp()->gtOp2;
+#ifdef TARGET_ARMARCH
+        // On arm/arm64 addr tree is a bit different, see above ^
+        if (addr->gtGetOp1()->OperIs(GT_ADD) && addr->gtGetOp1()->gtGetOp2()->IsCnsIntOrI())
+        {
+            assert(addr->gtGetOp1()->gtGetOp1()->TypeIs(TYP_REF));
+            cnsOff = addr->gtGetOp1()->gtGetOp2();
+            addr   = addr->gtGetOp2();
+            // Label any constant array index contributions with #ConstantIndex and any LclVars with GTF_VAR_ARR_INDEX
+            addr->LabelIndex(this);
+        }
+        else if (addr->gtGetOp2()->IsCnsIntOrI())
+        {
+            cnsOff = addr->gtGetOp2();
+            addr   = nullptr;
+        }
+#else
+        assert(addr->gtGetOp1()->TypeIs(TYP_REF));
+        addr = addr->gtGetOp2();
 
         // Look for the constant [#FirstElem] node here, or as the RHS of an ADD.
-
-        if (addr->gtOper == GT_CNS_INT)
+        if (addr->IsCnsIntOrI())
         {
             cnsOff = addr;
             addr   = nullptr;
         }
         else
         {
-            if ((addr->OperGet() == GT_ADD) && (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT))
+            if ((addr->OperIs(GT_ADD)) && addr->gtGetOp2()->IsCnsIntOrI())
             {
-                cnsOff = addr->AsOp()->gtOp2;
-                addr   = addr->AsOp()->gtOp1;
+                cnsOff = addr->gtGetOp2();
+                addr   = addr->gtGetOp1();
             }
-
             // Label any constant array index contributions with #ConstantIndex and any LclVars with GTF_VAR_ARR_INDEX
             addr->LabelIndex(this);
         }
+#endif
     }
-    else if (addr->OperGet() == GT_CNS_INT)
+    else if (addr->IsCnsIntOrI())
     {
         cnsOff = addr;
     }
