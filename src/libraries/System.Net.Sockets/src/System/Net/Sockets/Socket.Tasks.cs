@@ -62,7 +62,8 @@ namespace System.Net.Sockets
                 Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
                 new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
 
-            Debug.Assert(saea.BufferList == null);
+            Debug.Assert(saea.BufferList is null);
+            Debug.Assert(saea.AcceptSocket is null);
             saea.SetBuffer(null, 0, 0);
             saea.AcceptSocket = acceptSocket;
             saea.WrapExceptionsForNetworkStream = false;
@@ -1048,6 +1049,8 @@ namespace System.Net.Sockets
                 Socket acceptSocket = AcceptSocket!;
                 SocketError error = SocketError;
 
+                AcceptSocket = null;
+
                 Release();
 
                 return error == SocketError.Success ?
@@ -1404,6 +1407,8 @@ namespace System.Net.Sockets
                 SocketError error = SocketError;
                 Socket acceptSocket = AcceptSocket!;
                 CancellationToken cancellationToken = _cancellationToken;
+
+                AcceptSocket = null;
 
                 Release();
 
