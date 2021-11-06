@@ -8,6 +8,7 @@ namespace NetClient
     using System.Runtime.InteropServices;
 
     using TestLibrary;
+    using Xunit;
     using Server.Contract;
     using Server.Contract.Servers;
     using Server.Contract.Events;
@@ -29,8 +30,8 @@ namespace NetClient
             string message = string.Empty;
             eventTesting.FireEvent();
 
-            Assert.IsTrue(eventFired, "Event didn't fire");
-            Assert.AreEqual(nameof(EventTesting.FireEvent), message, "Event message is incorrect");
+            Assert.True(eventFired);
+            Assert.Equal(nameof(EventTesting.FireEvent), message);
 
             // Remove event
             eventTesting.OnEvent -= OnEventEventHandler;
@@ -40,7 +41,7 @@ namespace NetClient
             eventFired = false;
             eventTesting.FireEvent();
 
-            Assert.IsFalse(eventFired, "Event shouldn't fire");
+            Assert.False(eventFired);
 
             void OnEventEventHandler(string msg)
             {
@@ -68,8 +69,8 @@ namespace NetClient
             string message = string.Empty;
             eventTesting.FireEvent();
 
-            Assert.IsTrue(eventFired, "Event didn't fire");
-            Assert.AreEqual(nameof(EventTesting.FireEvent), message, "Event message is incorrect");
+            Assert.True(eventFired);
+            Assert.Equal(nameof(EventTesting.FireEvent), message);
 
             comAwareEventInfo.RemoveEventHandler(eventTesting, handler);
 
@@ -78,7 +79,7 @@ namespace NetClient
             eventFired = false;
             eventTesting.FireEvent();
 
-            Assert.IsFalse(eventFired, "Event shouldn't fire");
+            Assert.False(eventFired);
 
             void OnEventEventHandler(string msg)
             {

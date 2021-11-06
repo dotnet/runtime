@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 unsafe class ArrayWithOffsetTest
 {
@@ -23,17 +23,17 @@ unsafe class ArrayWithOffsetTest
                 fixed (int* expectedSubArray = expected.Slice(i))
                 fixed (int* newValueSubArray = newValue.Slice(i))
                 {
-                    Assert.IsTrue(ArrayWithOffsetNative.Marshal_InOut(expectedSubArray, offset, expected.Length - i, newValueSubArray), $"Native call failed with element offset {i}.");
+                    Assert.True(ArrayWithOffsetNative.Marshal_InOut(expectedSubArray, offset, expected.Length - i, newValueSubArray), $"Native call failed with element offset {i}.");
                 }
 
                 for (int j = 0; j < i; j++)
                 {
-                    Assert.AreEqual(expected[j], array[j]);
+                    Assert.Equal(expected[j], array[j]);
                 }
 
                 for (int j = i; j < array.Length; j++)
                 {
-                    Assert.AreEqual(newValue[j], array[j]);
+                    Assert.Equal(newValue[j], array[j]);
                 }
             }
 

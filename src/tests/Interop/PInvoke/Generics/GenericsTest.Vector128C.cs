@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -45,27 +45,27 @@ unsafe partial class GenericsTest
         Vector128<char> value2;
         GenericsNative.GetVector128COut('0', '1', '2', '3', '4', '5', '6', '7', &value2);
         Vector128<short> tValue2 = *(Vector128<short>*)&value2;
-        Assert.AreEqual(tValue2.GetElement(0), (short)'0');
-        Assert.AreEqual(tValue2.GetElement(1), (short)'1');
-        Assert.AreEqual(tValue2.GetElement(2), (short)'2');
-        Assert.AreEqual(tValue2.GetElement(3), (short)'3');
-        Assert.AreEqual(tValue2.GetElement(4), (short)'4');
-        Assert.AreEqual(tValue2.GetElement(5), (short)'5');
-        Assert.AreEqual(tValue2.GetElement(6), (short)'6');
-        Assert.AreEqual(tValue2.GetElement(7), (short)'7');
+        Assert.Equal(tValue2.GetElement(0), (short)'0');
+        Assert.Equal(tValue2.GetElement(1), (short)'1');
+        Assert.Equal(tValue2.GetElement(2), (short)'2');
+        Assert.Equal(tValue2.GetElement(3), (short)'3');
+        Assert.Equal(tValue2.GetElement(4), (short)'4');
+        Assert.Equal(tValue2.GetElement(5), (short)'5');
+        Assert.Equal(tValue2.GetElement(6), (short)'6');
+        Assert.Equal(tValue2.GetElement(7), (short)'7');
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128COut('0', '1', '2', '3', '4', '5', '6', '7', out Vector128<char> value3));
 
         Vector128<char>* value4 = GenericsNative.GetVector128CPtr('0', '1', '2', '3', '4', '5', '6', '7');
         Vector128<short>* tValue4 = (Vector128<short>*)value4;
-        Assert.AreEqual(tValue4->GetElement(0), (short)'0');
-        Assert.AreEqual(tValue4->GetElement(1), (short)'1');
-        Assert.AreEqual(tValue4->GetElement(2), (short)'2');
-        Assert.AreEqual(tValue4->GetElement(3), (short)'3');
-        Assert.AreEqual(tValue4->GetElement(4), (short)'4');
-        Assert.AreEqual(tValue4->GetElement(5), (short)'5');
-        Assert.AreEqual(tValue4->GetElement(6), (short)'6');
-        Assert.AreEqual(tValue4->GetElement(7), (short)'7');
+        Assert.Equal(tValue4->GetElement(0), (short)'0');
+        Assert.Equal(tValue4->GetElement(1), (short)'1');
+        Assert.Equal(tValue4->GetElement(2), (short)'2');
+        Assert.Equal(tValue4->GetElement(3), (short)'3');
+        Assert.Equal(tValue4->GetElement(4), (short)'4');
+        Assert.Equal(tValue4->GetElement(5), (short)'5');
+        Assert.Equal(tValue4->GetElement(6), (short)'6');
+        Assert.Equal(tValue4->GetElement(7), (short)'7');
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128CRef('0', '1', '2', '3', '4', '5', '6', '7'));
 

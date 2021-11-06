@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System;
 using System.Reflection;
 using System.Text;
-using TestLibrary;
+using Xunit;
 
 class Test
 {
@@ -35,27 +35,27 @@ class Test
         UIntPtr uintPtrReturn = (UIntPtr)3000;
 
         UIntPtr uintPtr1 = uintPtrManaged;
-        Assert.AreEqual(uintPtrReturn, Marshal_In(uintPtr1), "The return value is wrong");
+        Assert.Equal(uintPtrReturn, Marshal_In(uintPtr1));
 
         UIntPtr uintPtr2 = uintPtrManaged;
-        Assert.AreEqual(uintPtrReturn, Marshal_InOut(uintPtr2), "The return value is wrong");
-        Assert.AreEqual(uintPtrManaged, uintPtr2, "The parameter value is changed");
+        Assert.Equal(uintPtrReturn, Marshal_InOut(uintPtr2));
+        Assert.Equal(uintPtrManaged, uintPtr2);
 
         UIntPtr uintPtr3 = uintPtrManaged;
-        Assert.AreEqual(uintPtrReturn, Marshal_Out(uintPtr3), "The return value is wrong");
-        Assert.AreEqual(uintPtrManaged, uintPtr3, "The parameter value is changed");
+        Assert.Equal(uintPtrReturn, Marshal_Out(uintPtr3));
+        Assert.Equal(uintPtrManaged, uintPtr3);
 
         UIntPtr uintPtr4 = uintPtrManaged;
-        Assert.AreEqual(uintPtrReturn, MarshalPointer_In(ref uintPtr4), "The return value is wrong");
-        Assert.AreEqual(uintPtrManaged, uintPtr4, "The parameter value is changed");
+        Assert.Equal(uintPtrReturn, MarshalPointer_In(ref uintPtr4));
+        Assert.Equal(uintPtrManaged, uintPtr4);
 
         UIntPtr uintPtr5 = uintPtrManaged;
-        Assert.AreEqual(uintPtrReturn, MarshalPointer_InOut(ref uintPtr5), "The return value is wrong");
-        Assert.AreEqual(uintPtrNative, uintPtr5, "The passed value is wrong");
+        Assert.Equal(uintPtrReturn, MarshalPointer_InOut(ref uintPtr5));
+        Assert.Equal(uintPtrNative, uintPtr5);
 
         UIntPtr uintPtr6 = uintPtrManaged;
-        Assert.AreEqual(uintPtrReturn, MarshalPointer_Out(out uintPtr6), "The return value is wrong");
-        Assert.AreEqual(uintPtrNative, uintPtr6, "The passed value is wrong");
+        Assert.Equal(uintPtrReturn, MarshalPointer_Out(out uintPtr6));
+        Assert.Equal(uintPtrNative, uintPtr6);
 
         return 100;
     }
