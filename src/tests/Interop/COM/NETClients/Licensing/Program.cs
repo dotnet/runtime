@@ -10,6 +10,7 @@ namespace NetClient
     using System.Runtime.InteropServices;
 
     using TestLibrary;
+    using Xunit;
     using Server.Contract;
     using Server.Contract.Servers;
 
@@ -28,12 +29,12 @@ namespace NetClient
             try
             {
                 var tmp = (LicenseTesting)new LicenseTestingClass();
-                Assert.Fail("Activation of licensed class should fail");
+                Assert.True(false, "Activation of licensed class should fail");
             }
             catch (COMException e)
             {
                 const int CLASS_E_NOTLICENSED = unchecked((int)0x80040112);
-                Assert.AreEqual(CLASS_E_NOTLICENSED, e.HResult);
+                Assert.Equal(CLASS_E_NOTLICENSED, e.HResult);
             }
             finally
             {
@@ -87,10 +88,10 @@ namespace NetClient
                 var licenseTesting = (LicenseTesting)new LicenseTestingClass();
 
                 // During design time the IClassFactory::CreateInstance will be called - no license
-                Assert.AreEqual(null, licenseTesting.GetLicense());
+                Assert.Equal(null, licenseTesting.GetLicense());
 
                 // Verify the value retrieved from the IClassFactory2::RequestLicKey was what was set
-                Assert.AreEqual(DefaultLicKey, LicenseManager.CurrentContext.GetSavedLicenseKey(typeof(LicenseTestingClass), resourceAssembly: null));
+                Assert.Equal(DefaultLicKey, LicenseManager.CurrentContext.GetSavedLicenseKey(typeof(LicenseTestingClass), resourceAssembly: null));
             }
             finally
             {
@@ -112,7 +113,7 @@ namespace NetClient
                 var licenseTesting = (LicenseTesting)new LicenseTestingClass();
 
                 // During runtime the IClassFactory::CreateInstance2 will be called with license from context
-                Assert.AreEqual(licKey, licenseTesting.GetLicense());
+                Assert.Equal(licKey, licenseTesting.GetLicense());
             }
             finally
             {

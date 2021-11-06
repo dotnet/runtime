@@ -9,7 +9,7 @@ namespace ObjectiveCMarshalAPI
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ObjectiveC;
 
-    using TestLibrary;
+    using Xunit;
 
     class NativeObjCMarshalTests
     {
@@ -97,8 +97,8 @@ namespace ObjectiveCMarshalAPI
             {
                 if (_contract != null)
                 {
-                    Assert.AreEqual(nuint.MaxValue, _contract->RefCountDown);  // Validate finalizer queue callback
-                    Assert.AreEqual(_expectedCount, _contract->RefCountUp);    // Validate "is referenced" callback
+                    Assert.Equal(nuint.MaxValue, _contract->RefCountDown);  // Validate finalizer queue callback
+                    Assert.Equal(_expectedCount, _contract->RefCountUp);    // Validate "is referenced" callback
                 }
 
                 FinalizeCount++;
@@ -111,8 +111,8 @@ namespace ObjectiveCMarshalAPI
                 _contract = (Contract*)mem;
 
                 // Contract should be 0 initialized when supplied.
-                Assert.AreEqual((nuint)0, _contract->RefCountDown);
-                Assert.AreEqual((nuint)0, _contract->RefCountUp);
+                Assert.Equal((nuint)0, _contract->RefCountDown);
+                Assert.Equal((nuint)0, _contract->RefCountUp);
 
                 _expectedCount = (nuint)count;
                 _contract->RefCountDown = _expectedCount;
@@ -145,7 +145,7 @@ namespace ObjectiveCMarshalAPI
             GCHandle h = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out Span<IntPtr> s);
 
             // Validate contract length for tagged memory.
-            Assert.AreEqual(2, s.Length);
+            Assert.Equal(2, s.Length);
 
             // Make the "is referenced" callback run at least 'count' number of times.
             fixed (void* p = s)
@@ -160,9 +160,9 @@ namespace ObjectiveCMarshalAPI
 
             // Validate the memory is the same but the GCHandles are distinct.
             fixed (void* p = s)
-                Assert.AreEqual(obj.Contract, new IntPtr(p));
+                Assert.Equal(obj.Contract, new IntPtr(p));
 
-            Assert.AreNotEqual(handle, h);
+            Assert.NotEqual(handle, h);
             h.Free();
         }
 
@@ -217,7 +217,7 @@ namespace ObjectiveCMarshalAPI
             // Validate we finalized all the objects we allocated.
             // It is important to validate the count prior to freeing
             // the handles to verify they are not keeping objects alive.
-            Assert.AreEqual(Base.FinalizeCount, Base.AllocCount);
+            Assert.Equal(Base.FinalizeCount, Base.AllocCount);
 
             // Clean up all allocated handles that are no longer needed.
             foreach (var h in handles)
@@ -255,7 +255,7 @@ namespace ObjectiveCMarshalAPI
             out IntPtr context)
         {
             var lastMethod = (MethodInfo)MethodBase.GetMethodFromHandle(lastMethodHandle);
-            Assert.IsTrue(lastMethod != null);
+            Assert.True(lastMethod != null);
 
             context = IntPtr.Zero;
             if (e is IntException ie)
@@ -268,7 +268,7 @@ namespace ObjectiveCMarshalAPI
                 return (delegate* unmanaged<IntPtr, void>)NativeObjCMarshalTests.GetThrowException();
             }
 
-            Assert.Fail("Unknown exception type");
+            Assert.True(false, "Unknown exception type");
             throw new Exception("Unreachable");
         }
 
@@ -296,7 +296,7 @@ namespace ObjectiveCMarshalAPI
             {
                 delegate* unmanaged<int, void> testNativeMethod = scen.Fptr;
                 int ret = NativeObjCMarshalTests.CallAndCatch((IntPtr)testNativeMethod, scen.Expected);
-                Assert.AreEqual(scen.Expected, ret);
+                Assert.Equal(scen.Expected, ret);
             }
 
             GC.KeepAlive(delThrowInt);
@@ -306,7 +306,7 @@ namespace ObjectiveCMarshalAPI
         static void Validate_Initialize_FailsOnSecondAttempt()
         {
             Console.WriteLine($"Running {nameof(Validate_Initialize_FailsOnSecondAttempt)}...");
-            
+
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {

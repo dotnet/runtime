@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using TestLibrary;
+using Xunit;
 
 public class RunInALC
 {
@@ -44,7 +44,7 @@ public class RunInALC
         Type inContextType = inContextAssembly.GetType("CustomMarshalers.CustomMarshalerTest");
         object instance = Activator.CreateInstance(inContextType);
         MethodInfo parseIntMethod = inContextType.GetMethod("ParseInt", BindingFlags.Instance | BindingFlags.Public);
-        Assert.AreEqual(1234, (int)parseIntMethod.Invoke(instance, new object[]{"1234"}));
+        Assert.Equal(1234, (int)parseIntMethod.Invoke(instance, new object[]{"1234"}));
         GC.KeepAlive(context);
     }
 }

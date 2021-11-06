@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using TestLibrary;
+using Xunit;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -39,17 +39,17 @@ internal class MyCriticalHandle : CriticalHandle
         {
             return handle;
         }
-        set 
+        set
         {
             handle = value;
         }
     }
-    
+
     internal static IntPtr GetUniqueHandle()
     {
         return new IntPtr(s_uniqueHandleValue++);
     }
-    
+
     internal static bool IsHandleClosed(IntPtr handle)
     {
         return s_closedHandles.Contains(handle.ToInt32());
@@ -92,7 +92,7 @@ public class CriticalHandleWithNoDefaultCtor : AbstractCriticalHandle
 
 public class CriticalHandleTest
 {
-    private static Native.HandleCallback s_handleCallback = (handleValue) => 
+    private static Native.HandleCallback s_handleCallback = (handleValue) =>
     {
         GC.Collect();
         GC.WaitForPendingFinalizers();
@@ -105,7 +105,7 @@ public class CriticalHandleTest
         InWorker(handleValue);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue), "Handle was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -114,7 +114,7 @@ public class CriticalHandleTest
         MyCriticalHandle hande = new MyCriticalHandle() { Handle = handleValue };
         IntPtr value;
         value = Native.In(hande, s_handleCallback);
-        Assert.AreEqual(handleValue.ToInt32(), value.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), value.ToInt32());
     }
 
     public static void Ret()
@@ -123,14 +123,14 @@ public class CriticalHandleTest
         RetWorker(handleValue);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue), "Handle was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void RetWorker(IntPtr handleValue)
     {
         MyCriticalHandle hande = Native.Ret(handleValue);
-        Assert.AreEqual(handleValue.ToInt32(), hande.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), hande.Handle.ToInt32());
     }
 
     public static void Out()
@@ -139,7 +139,7 @@ public class CriticalHandleTest
         OutWorker(handleValue);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue), "Handle was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -147,7 +147,7 @@ public class CriticalHandleTest
     {
         MyCriticalHandle hande;
         Native.Out(handleValue, out hande);
-        Assert.AreEqual(handleValue.ToInt32(), hande.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), hande.Handle.ToInt32());
     }
 
     public static void InRef()
@@ -156,7 +156,7 @@ public class CriticalHandleTest
         InRefWorker(handleValue);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue), "Handle was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -164,7 +164,7 @@ public class CriticalHandleTest
     {
         MyCriticalHandle hande = new MyCriticalHandle() { Handle = handleValue };
         Native.InRef(ref hande, s_handleCallback);
-        Assert.AreEqual(handleValue.ToInt32(), hande.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), hande.Handle.ToInt32());
     }
 
     public static void Ref()
@@ -173,7 +173,7 @@ public class CriticalHandleTest
         RefWorker(handleValue);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue), "Handle was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -181,7 +181,7 @@ public class CriticalHandleTest
     {
         MyCriticalHandle hande = new MyCriticalHandle() { Handle = handleValue };
         Native.Ref(ref hande, s_handleCallback);
-        Assert.AreEqual(handleValue.ToInt32(), hande.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), hande.Handle.ToInt32());
     }
 
     public static void RefModify()
@@ -191,8 +191,8 @@ public class CriticalHandleTest
         RefModifyWorker(handleValue1, handleValue2);
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue1), "Handle 1 was not closed");
-        Assert.IsTrue(MyCriticalHandle.IsHandleClosed(handleValue2), "Handle 2 was not closed");
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue1));
+        Assert.True(MyCriticalHandle.IsHandleClosed(handleValue2));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -200,7 +200,7 @@ public class CriticalHandleTest
     {
         MyCriticalHandle hande = new MyCriticalHandle() { Handle = handleValue1 };
         Native.RefModify(handleValue2, ref hande, s_handleCallback);
-        Assert.AreEqual(handleValue2.ToInt32(), hande.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue2.ToInt32(), hande.Handle.ToInt32());
     }
 
     internal class Native
@@ -237,20 +237,20 @@ public class AbstractCriticalHandleTest
         AbstractCriticalHandle handle = new CriticalHandleWithNoDefaultCtor(handleValue);
         IntPtr value;
         value = Native.In(handle, null);
-        Assert.AreEqual(handleValue.ToInt32(), value.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), value.ToInt32());
     }
 
     public static void Ret()
     {
         IntPtr handleValue = new IntPtr(2);
-        Assert.Throws<MarshalDirectiveException>(() => Native.Ret(handleValue), "Calling P/Invoke that returns an abstract critical handle");
+        Assert.Throws<MarshalDirectiveException>(() => Native.Ret(handleValue));
     }
 
     public static void Out()
     {
         IntPtr handleValue = new IntPtr(3);
         AbstractCriticalHandle handle;
-        Assert.Throws<MarshalDirectiveException>(() => Native.Out(handleValue, out handle), "Calling P/Invoke that has an out abstract critical handle parameter");
+        Assert.Throws<MarshalDirectiveException>(() => Native.Out(handleValue, out handle));
     }
 
     public static void InRef()
@@ -258,14 +258,14 @@ public class AbstractCriticalHandleTest
         IntPtr handleValue = new IntPtr(4);
         AbstractCriticalHandle handle = new CriticalHandleWithNoDefaultCtor(handleValue);
         Native.InRef(ref handle, null);
-        Assert.AreEqual(handleValue.ToInt32(), handle.Handle.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), handle.Handle.ToInt32());
     }
 
     public static void Ref()
     {
         IntPtr handleValue = new IntPtr(5);
         AbstractCriticalHandle handle = new CriticalHandleWithNoDefaultCtor(handleValue);
-        Assert.Throws<MarshalDirectiveException>(() => Native.Ref(ref handle, null), "Calling P/Invoke that has a ref abstract critical handle parameter");
+        Assert.Throws<MarshalDirectiveException>(() => Native.Ref(ref handle, null));
     }
 
     internal class Native
@@ -299,14 +299,14 @@ public class NoDefaultCtorCriticalHandleTest
         CriticalHandleWithNoDefaultCtor handle = new CriticalHandleWithNoDefaultCtor(handleValue);
         IntPtr value;
         value = Native.In(handle, null);
-        Assert.AreEqual(handleValue.ToInt32(), value.ToInt32(), "Handle value");
+        Assert.Equal(handleValue.ToInt32(), value.ToInt32());
     }
 
     public static void Ret()
     {
         IntPtr handleValue = new IntPtr(2);
         //TODO: Expected MissingMemberException but throws MissingMethodException
-        Assert.Throws<MissingMethodException>(() => Native.Ret(handleValue), "Calling P/Invoke that returns an no default ctor critical handle");
+        Assert.Throws<MissingMethodException>(() => Native.Ret(handleValue));
     }
 
     public static void Out()
@@ -314,7 +314,7 @@ public class NoDefaultCtorCriticalHandleTest
         IntPtr handleValue = new IntPtr(3);
         CriticalHandleWithNoDefaultCtor handle;
         //TODO: Expected MissingMemberException but throws MissingMethodException
-        Assert.Throws<MissingMethodException>(() => Native.Out(handleValue, out handle), "Calling P/Invoke that has an out no default ctor critical handle parameter");
+        Assert.Throws<MissingMethodException>(() => Native.Out(handleValue, out handle));
     }
 
     public static void InRef()
@@ -322,7 +322,7 @@ public class NoDefaultCtorCriticalHandleTest
         IntPtr handleValue = new IntPtr(4);
         CriticalHandleWithNoDefaultCtor handle = new CriticalHandleWithNoDefaultCtor(handleValue);
         //TODO: Expected MissingMemberException but throws MissingMethodException
-        Assert.Throws<MissingMethodException>(() => Native.InRef(ref handle, null), "Calling P/Invoke that has a [In] ref no default ctor critical handle parameter");
+        Assert.Throws<MissingMethodException>(() => Native.InRef(ref handle, null));
     }
 
     public static void Ref()
@@ -330,7 +330,7 @@ public class NoDefaultCtorCriticalHandleTest
         IntPtr handleValue = new IntPtr(5);
         CriticalHandleWithNoDefaultCtor handle = new CriticalHandleWithNoDefaultCtor(handleValue);
         //TODO: Expected MissingMemberException but throws MissingMethodException
-        Assert.Throws<MissingMethodException>(() => Native.Ref(ref handle, null), "Calling P/Invoke that has a ref no default ctor critical handle parameter");
+        Assert.Throws<MissingMethodException>(() => Native.Ref(ref handle, null));
     }
 
     internal class Native
