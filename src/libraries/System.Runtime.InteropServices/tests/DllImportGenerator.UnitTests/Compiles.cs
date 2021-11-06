@@ -325,6 +325,15 @@ namespace DllImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fallback to a forwarder.
             {
+                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                yield return new object[] { code, TestTargetFramework.Net5, true };
+                yield return new object[] { code, TestTargetFramework.Core, true };
+                yield return new object[] { code, TestTargetFramework.Standard, true };
+                yield return new object[] { code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            {
                 string code = CodeSnippets.BasicParametersAndModifiersWithCharSet<string>(CharSet.Unicode, CodeSnippets.GeneratedDllImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };

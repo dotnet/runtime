@@ -141,8 +141,8 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         private static partial bool CertCreateCertificateChainEngine(ref CERT_CHAIN_ENGINE_CONFIG pConfig, out SafeChainEngineHandle hChainEngineHandle);
 
-        [DllImport(Libraries.Crypt32)]
-        public static extern void CertFreeCertificateChainEngine(IntPtr hChainEngine);
+        [GeneratedDllImport(Libraries.Crypt32)]
+        public static partial void CertFreeCertificateChainEngine(IntPtr hChainEngine);
 
         [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
         public static unsafe partial bool CertGetCertificateChain(IntPtr hChainEngine, SafeCertContextHandle pCertContext, Interop.Crypt32.FILETIME* pTime, SafeCertStoreHandle hStore, ref CERT_CHAIN_PARA pChainPara, CertChainFlags dwFlags, IntPtr pvReserved, out SafeX509ChainHandle ppChainContext);

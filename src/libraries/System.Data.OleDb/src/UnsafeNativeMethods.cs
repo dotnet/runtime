@@ -832,11 +832,11 @@ namespace System.Data.Common
             }
         }
 
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int CreateWellKnownSid(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static partial int CreateWellKnownSid(
             int sidType,
             byte[]? domainSid,
-            [Out] byte[] resultSid,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] out byte[] resultSid,
             ref uint resultSidLength);
     }
 }
