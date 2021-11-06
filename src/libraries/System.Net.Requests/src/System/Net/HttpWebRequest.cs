@@ -690,7 +690,21 @@ namespace System.Net
             get; set;
         }
 
-        public static new RequestCachePolicy? DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+        private static RequestCachePolicy? _defaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+        private static bool _isDefaultCachePolicySet;
+
+        public static new RequestCachePolicy? DefaultCachePolicy
+        {
+            get
+            {
+                return _defaultCachePolicy;
+            }
+            set
+            {
+                _isDefaultCachePolicySet = true;
+                _defaultCachePolicy = value;
+            }
+        }
 
         public DateTime IfModifiedSince
         {
@@ -1209,51 +1223,71 @@ namespace System.Net
         {
             RequestCachePolicy? policy = GetApplicableCachePolicy();
 
-            if (policy != null)
+            if (policy != null && policy.Level != RequestCacheLevel.BypassCache)
             {
-                if (request.Headers.CacheControl == null)
-                {
-                    request.Headers.CacheControl = new CacheControlHeaderValue();
-                }
+                CacheControlHeaderValue? cacheControl = null;
+                var pragmaHeaders = request.Headers.Pragma;
 
                 if (policy is HttpRequestCachePolicy httpRequestCachePolicy)
                 {
                     switch (httpRequestCachePolicy.Level)
                     {
                         case HttpRequestCacheLevel.NoCacheNoStore:
-                            request.Headers.CacheControl.NoCache = true;
-                            request.Headers.CacheControl.NoStore = true;
-                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                NoCache = true,
+                                NoStore = true
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
                             break;
                         case HttpRequestCacheLevel.Reload:
-                            request.Headers.CacheControl.NoCache = true;
-                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                NoCache = true
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
                             break;
                         case HttpRequestCacheLevel.CacheOnly:
+                            throw new WebException(SR.CacheEntryNotFound, WebExceptionStatus.CacheEntryNotFound);
                         case HttpRequestCacheLevel.CacheOrNextCacheOnly:
-                            request.Headers.CacheControl.OnlyIfCached = true;
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                OnlyIfCached = true
+                            };
                             break;
                         case HttpRequestCacheLevel.Default:
                             if (httpRequestCachePolicy.MinFresh > TimeSpan.Zero)
                             {
-                                request.Headers.CacheControl.MinFresh = httpRequestCachePolicy.MinFresh;
+                                cacheControl = new CacheControlHeaderValue
+                                {
+                                    MinFresh = httpRequestCachePolicy.MinFresh
+                                };
                             }
 
                             if (httpRequestCachePolicy.MaxAge != TimeSpan.MaxValue)
                             {
-                                request.Headers.CacheControl.MaxAge = httpRequestCachePolicy.MaxAge;
+                                cacheControl = new CacheControlHeaderValue
+                                {
+                                    MaxAge = httpRequestCachePolicy.MaxAge
+                                };
                             }
 
                             if (httpRequestCachePolicy.MaxStale > TimeSpan.Zero)
                             {
-                                request.Headers.CacheControl.MaxStale = true;
-                                request.Headers.CacheControl.MaxStaleLimit = httpRequestCachePolicy.MaxStale;
+                                cacheControl = new CacheControlHeaderValue
+                                {
+                                    MaxStale = true,
+                                    MaxStaleLimit = httpRequestCachePolicy.MaxStale
+                                };
                             }
 
                             break;
                         case HttpRequestCacheLevel.Refresh:
-                            request.Headers.CacheControl.MaxAge = TimeSpan.Zero;
-                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                MaxAge = TimeSpan.Zero
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
                             break;
                     }
                 }
@@ -1262,18 +1296,28 @@ namespace System.Net
                     switch (policy.Level)
                     {
                         case RequestCacheLevel.NoCacheNoStore:
-                            request.Headers.CacheControl.NoCache = true;
-                            request.Headers.CacheControl.NoStore = true;
-                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                NoCache = true,
+                                NoStore = true
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
                             break;
                         case RequestCacheLevel.Reload:
-                            request.Headers.CacheControl.NoCache = true;
-                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                NoCache = true
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
                             break;
                         case RequestCacheLevel.CacheOnly:
-                            request.Headers.CacheControl.OnlyIfCached = true;
-                            break;
+                            throw new WebException(SR.CacheEntryNotFound, WebExceptionStatus.CacheEntryNotFound);
                     }
+                }
+
+                if (cacheControl != null)
+                {
+                    request.Headers.CacheControl = cacheControl;
                 }
             }
         }
@@ -1284,20 +1328,17 @@ namespace System.Net
             {
                 return CachePolicy;
             }
-            else if (IsDefaultCachePolicySet(DefaultCachePolicy))
+            else if (_isDefaultCachePolicySet && DefaultCachePolicy != null)
             {
                 return DefaultCachePolicy;
             }
-            else if (IsDefaultCachePolicySet(WebRequest.DefaultCachePolicy))
+            else if (WebRequest.DefaultCachePolicy != null)
             {
                 return WebRequest.DefaultCachePolicy;
             }
 
             return null;
         }
-
-        private static bool IsDefaultCachePolicySet(RequestCachePolicy? policy) => policy != null
-                        && policy.Level != RequestCacheLevel.BypassCache;
 
         public override IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
         {

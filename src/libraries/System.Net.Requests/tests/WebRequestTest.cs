@@ -190,34 +190,63 @@ namespace System.Net.Tests
             Assert.False(success);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RequestCacheLevel.NoCacheNoStore, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
         [InlineData(RequestCacheLevel.Reload, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
-        [InlineData(RequestCacheLevel.CacheOnly, new string[] { "Cache-Control: only-if-cached" })]
-        public async Task SendGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
+        public void SendGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
             RequestCacheLevel requestCacheLevel, string[] expectedHeaders)
         {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            RemoteExecutor.Invoke(async (reqCacheLevel, eh0, eh1) =>
             {
-                WebRequest.DefaultCachePolicy = new RequestCachePolicy(requestCacheLevel);
-                WebRequest request = WebRequest.Create(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-
-                await server.AcceptConnectionAsync(async connection =>
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
-                    List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                    WebRequest.DefaultCachePolicy = new RequestCachePolicy(Enum.Parse<RequestCacheLevel>(reqCacheLevel));
+                    WebRequest request = WebRequest.Create(uri);
+                    Task<WebResponse> getResponse = request.GetResponseAsync();
 
-                    foreach (string header in expectedHeaders)
+                    await server.AcceptConnectionAsync(async connection =>
                     {
-                        Assert.Contains(header, headers);
+                        List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                        Assert.Contains(eh0, headers);
+                        Assert.Contains(eh1, headers);
+                    });
+
+                    using (var response = (HttpWebResponse)await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
                 });
+            }, requestCacheLevel.ToString(), expectedHeaders[0], expectedHeaders[1]).Dispose();
+        }
 
-                using (var response = (HttpWebResponse)await getResponse)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SendGetRequest_WithGlobalCachePolicyBypassCache_DoNotAddCacheHeaders()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                }
-            });
+                    WebRequest.DefaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+                    WebRequest request = WebRequest.Create(uri);
+                    Task<WebResponse> getResponse = request.GetResponseAsync();
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+
+                        foreach(string header in headers)
+                        {
+                            Assert.DoesNotContain("Pragma", header);
+                            Assert.DoesNotContain("Cache-Control", header);
+                        }
+                    });
+
+                    using (var response = (HttpWebResponse)await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+                });
+            }).Dispose();
         }
 
         private class FakeRequest : WebRequest

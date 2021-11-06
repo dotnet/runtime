@@ -258,6 +258,7 @@ namespace System.Net.Tests
             Assert.Equal("GET", request.Method);
             Assert.Equal(64, HttpWebRequest.DefaultMaximumResponseHeadersLength);
             Assert.NotNull(HttpWebRequest.DefaultCachePolicy);
+            Assert.Equal(RequestCacheLevel.BypassCache, HttpWebRequest.DefaultCachePolicy.Level);
             Assert.Equal(0, HttpWebRequest.DefaultMaximumErrorResponseLength);
             Assert.NotNull(request.Proxy);
             Assert.Equal(remoteServer, request.RequestUri);
@@ -1926,7 +1927,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(HttpRequestCacheLevel.NoCacheNoStore, null, null, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache"})]
         [InlineData(HttpRequestCacheLevel.Reload, null, null, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
-        [InlineData(HttpRequestCacheLevel.CacheOnly, null, null, new string[] { "Cache-Control: only-if-cached" })]
         [InlineData(HttpRequestCacheLevel.CacheOrNextCacheOnly, null, null, new string[] { "Cache-Control: only-if-cached" })]
         [InlineData(HttpRequestCacheLevel.Default, HttpCacheAgeControl.MinFresh, 10, new string[] { "Cache-Control: min-fresh=10" })]
         [InlineData(HttpRequestCacheLevel.Default, HttpCacheAgeControl.MaxAge, 10, new string[] { "Cache-Control: max-age=10" })]
@@ -1963,7 +1963,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(RequestCacheLevel.NoCacheNoStore, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
         [InlineData(RequestCacheLevel.Reload, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
-        [InlineData(RequestCacheLevel.CacheOnly, new string[] { "Cache-Control: only-if-cached" })]
         public async Task SendHttpGetRequest_WithCachePolicy_AddCacheHeaders(
             RequestCacheLevel requestCacheLevel, string[] expectedHeaders)
         {
@@ -1990,26 +1989,95 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RequestCacheLevel.NoCacheNoStore, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
         [InlineData(RequestCacheLevel.Reload, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
-        [InlineData(RequestCacheLevel.CacheOnly, new string[] { "Cache-Control: only-if-cached" })]
-        public async Task SendHttpGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
+        public void SendHttpGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
             RequestCacheLevel requestCacheLevel, string[] expectedHeaders)
+        {
+            RemoteExecutor.Invoke(async (async, reqCacheLevel, eh0, eh1) =>
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    HttpWebRequest.DefaultCachePolicy = new RequestCachePolicy(Enum.Parse<RequestCacheLevel>(reqCacheLevel));
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    Task<WebResponse> getResponse = bool.Parse(async) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse());
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                        Assert.Contains(eh0, headers);
+                        Assert.Contains(eh1, headers);
+                    });
+
+                    using (var response = (HttpWebResponse)await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+                });
+            }, (this is HttpWebRequestTest_Async).ToString(), requestCacheLevel.ToString(), expectedHeaders[0], expectedHeaders[1]).Dispose();
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SendHttpGetRequest_WithCachePolicyCacheOnly_ThrowException(
+            bool isHttpCachePolicy)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp("http://anything");
+            request.CachePolicy = isHttpCachePolicy ? new HttpRequestCachePolicy(HttpRequestCacheLevel.CacheOnly)
+                : new RequestCachePolicy(RequestCacheLevel.CacheOnly);
+            WebException exception = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
+            Assert.Equal(SR.CacheEntryNotFound, exception.Message);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SendHttpGetRequest_WithGlobalCachePolicyBypassCache_DoNotAddCacheHeaders()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    HttpWebRequest.DefaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    Task<WebResponse> getResponse = request.GetResponseAsync();
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+
+                        foreach (string header in headers)
+                        {
+                            Assert.DoesNotContain("Pragma", header);
+                            Assert.DoesNotContain("Cache-Control", header);
+                        }
+                    });
+
+                    using (var response = (HttpWebResponse)await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+                });
+            }).Dispose();
+        }
+
+        [Fact]
+        public async Task SendHttpGetRequest_WithCachePolicyBypassCache_DoNotAddHeaders()
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                HttpWebRequest.DefaultCachePolicy = new RequestCachePolicy(requestCacheLevel);
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = GetResponseAsync(request);
+                request.CachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
 
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
 
-                    foreach (string header in expectedHeaders)
+                    foreach (string header in headers)
                     {
-                        Assert.Contains(header, headers);
+                        Assert.DoesNotContain("Pragma", header);
+                        Assert.DoesNotContain("Cache-Control", header);
                     }
                 });
 
