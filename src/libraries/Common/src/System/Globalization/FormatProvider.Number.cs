@@ -517,7 +517,19 @@ namespace System.Globalization
                             {
                                 exp = exp * 10 + (ch - '0');
                                 ch = ++p < strEnd ? *p : '\0';
-                            } while (char.IsAsciiDigit(ch));
+                            } while (char.IsAsciiDigit(ch) && (exp < int.MaxValue / 10));
+
+                            if (char.IsAsciiDigit(ch))
+                            {
+                                // We still had remaining characters but bailed early because
+                                // the exponent was going to overflow. If exp is exactly 214748364
+                                // then we can technically handle one more character being 0-9
+                                // but the additional complexity might not be worthwhile.
+
+                                Debug.Assert(exp >= 214748364);
+                                return false;
+                            }
+
                             if (negExp)
                             {
                                 exp = -exp;
