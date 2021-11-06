@@ -7,7 +7,7 @@
 #
 # Notes:
 #
-# Script to run "superpmi asmdiffs" for various collections.
+# Script to run "superpmi asmdiffs" for various collections on the Helix machines.
 #
 ################################################################################
 ################################################################################
@@ -68,7 +68,10 @@ def setup_args(args):
 
 
 def main(main_args):
-    """Main entrypoint
+    """ Run superpmi asmdiffs process on the Helix machines.
+
+    See superpmi_asmdiffs_setup.py for how the directory structure is set up in the
+    correlation payload. This script lives in the root of that directory tree.
 
     Args:
         main_args ([type]): Arguments to the script
@@ -78,8 +81,8 @@ def main(main_args):
     script_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     coreclr_args = setup_args(main_args)
 
-    # It doesn't really matter where we put the SPMI artifacts, except we need to find the log files (summary.md) and
-    # (possibly) generated .dasm files for upload. Here, they are put in <root>/src/coreclr/scripts/artifacts/spmi.
+    # It doesn't really matter where we put the downloaded SPMI artifacts.
+    # Here, they are put in <correlation_payload>/artifacts/spmi.
     spmi_location = os.path.join(script_dir, "artifacts", "spmi")
 
     log_directory = coreclr_args.log_directory
@@ -100,7 +103,7 @@ def main(main_args):
     if not os.path.isfile(git_exe_tool):
         print("Error: `git` not found at {} (continuing)".format(git_exe_tool))
     else:
-        # Put the git\cmd directory on the PATH so jit-analyze can find it.
+        # Put the git/cmd directory on the PATH so jit-analyze can find it.
         print("Adding {} to PATH".format(git_directory))
         os.environ["PATH"] = git_directory + os.pathsep + os.environ["PATH"]
 
@@ -119,8 +122,6 @@ def main(main_args):
     print("Running superpmi.py download to get MCH files")
 
     log_file = os.path.join(log_directory, "superpmi_download_{}_{}.log".format(platform_name, arch_name))
-    # Add this for restricted testing:
-    #   "-filter", "benchmarks", "libraries.crossgen2", ######## *********** TEMPORARY: to make testing faster, only download one MCH file
     run_command([
         python_path,
         os.path.join(script_dir, "superpmi.py"),
@@ -137,22 +138,15 @@ def main(main_args):
     print("Running superpmi.py asmdiffs")
     log_file = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
 
-    # REVIEW: SuperPMI asm diffs are going to be created in `spmi_location` (./artifacts/spmi)
-    # Will they get copied back? Do we need to put them in `log_directory`?
-    # We need jit-analyze from jitutils to be able to create the summary.md file
-
     overall_md_summary_file = os.path.join(spmi_location, "diff_summary.md")
     if os.path.isfile(overall_md_summary_file):
         os.remove(overall_md_summary_file)
 
-    # Add to force asm diffs:
-    #   "-diff_jit_option", "JitCloneLoops=0"
     _, _, return_code = run_command([
         python_path,
         os.path.join(script_dir, "superpmi.py"),
         "asmdiffs",
         "--no_progress",
-        "-diff_jit_option", "JitCloneLoops=0",
         "-core_root", core_root_dir,
         "-target_os", platform_name,
         "-target_arch", arch_name,
