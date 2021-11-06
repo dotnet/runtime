@@ -114,15 +114,15 @@ jobs:
         targetFolder: '$(SpmiLogsLocation)'
       condition: always()
 
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiLogsLocation) -arch $(archType) -platform $(osGroup)$(osSubgroup)
+      displayName: ${{ format('Summarize ({0}{1} {2})', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+      condition: always()
+
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI logs
       inputs:
         targetPath: $(SpmiLogsLocation)
         artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)'
-      condition: always()
-
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiLogsLocation) -arch $(archType) -platform $(osGroup)$(osSubgroup)
-      displayName: ${{ format('Summarize ({0}{1} {2})', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
       condition: always()
 
     - task: PublishPipelineArtifact@1
