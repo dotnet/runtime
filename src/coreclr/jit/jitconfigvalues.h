@@ -125,7 +125,13 @@ CONFIG_INTEGER(JitQueryCurrentStaticFieldClass, W("JitQueryCurrentStaticFieldCla
 CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions"), 0)
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
+
+// Controls verbosity for JitPrintInlinedMethods. Ignored for JitDump/NgenDump where
+// it's always set.
+CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLevel"), 0)
+// Prints a tree of inlinees for a specific method (use '*' for all methods)
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
+
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), 0) // 1 enable in dumps, 2 assert if issues found
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)

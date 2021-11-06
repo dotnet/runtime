@@ -695,7 +695,7 @@ public:
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump the full subtree, including failures
-    void Dump(unsigned indent = 0);
+    void Dump(bool verbose, unsigned indent = 0);
 
     // Dump only the success subtree, with rich data
     void DumpData(unsigned indent = 0);
@@ -923,7 +923,7 @@ public:
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump textual description of inlines done so far.
-    void Dump(bool showBudget);
+    void Dump(bool verbose);
 
     // Dump data-format description of inlines done so far.
     void DumpData();
