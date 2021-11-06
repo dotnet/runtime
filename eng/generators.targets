@@ -18,7 +18,7 @@
     <EnabledGenerators Include="DllImportGenerator"
                        Condition="'$(EnableDllImportGenerator)' == ''
                         and '$(IsFrameworkSupportFacade)' != 'true'
-                        and '$(IsNetCoreAppSrc)' == 'true'
+                        and '$(IsSourceProject)' == 'true'
                         and '$(MSBuildProjectExtension)' == '.csproj'
                         and (
                           ('@(Reference)' != ''
@@ -27,6 +27,12 @@
                             and @(Reference->AnyHaveMetadataValue('Identity', 'System.Memory')))
                           or ('@(ProjectReference)' != ''
                             and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" />
+    <EnabledGenerators Include="DllImportGenerator"
+                       Condition="'$(EnableDllImportGenerator)' == ''
+                        and '$(IsFrameworkSupportFacade)' != 'true'
+                        and '$(IsSourceProject)' == 'true'
+                        and '$(MSBuildProjectExtension)' == '.csproj'
+                        and '$(TargetFrameworkIdentifier)' == '.NETStandard'" />
   </ItemGroup>
 
   <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
@@ -35,8 +41,10 @@
                         and '$(IncludeDllImportGeneratorSources)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedMarshallingAttribute.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
+
+    <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
+    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedMarshallingAttribute.cs" />
+    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"
