@@ -5604,6 +5604,10 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             cnsOff = addr->gtGetOp2();
             addr   = nullptr;
         }
+        else
+        {
+            unreached();
+        }
 #else
         assert(addr->gtGetOp1()->TypeIs(TYP_REF));
         addr = addr->gtGetOp2();
@@ -5623,10 +5627,6 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             }
             // Label any constant array index contributions with #ConstantIndex and any LclVars with GTF_VAR_ARR_INDEX
             addr->LabelIndex(this);
-        }
-        else
-        {
-            unreached();
         }
 #endif
     }
