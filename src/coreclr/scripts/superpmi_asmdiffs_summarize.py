@@ -14,12 +14,7 @@
 ################################################################################
 
 import argparse
-import json
 import os
-import re
-import zipfile
-from collections import defaultdict
-from os import walk
 from coreclr_arguments import *
 
 parser = argparse.ArgumentParser(description="description")
@@ -73,17 +68,18 @@ def main(main_args):
     platform = coreclr_args.platform
 
     # Consolidate all superpmi_diff_summary_*.md in overall_diff_summary_<platform>_<architecture>.md
-    # (Don't name it "superpmi_xxx.md" or we'll consolidate it into itself.)
+    # (Don't name it "superpmi_xxx.md" or we might consolidate it into itself.)
     final_md_path = os.path.join(diff_summary_dir, "overall_diff_summary_{}_{}.md".format(platform, arch))
     print("Consolidating final {}".format(final_md_path))
     with open(final_md_path, "a") as f:
-        for superpmi_md_file in os.listdir(diff_summary_dir):
-            if not superpmi_md_file.startswith("superpmi_") or not superpmi_md_file.endswith(".md"):
-                continue
-            print("Appending {}".format(superpmi_md_file))
-            with open(os.path.join(diff_summary_dir, superpmi_md_file), "r") as current_superpmi_md:
-                contents = current_superpmi_md.read()
-                f.write(contents)
+        for dirpath, _, files in os.walk(diff_summary_dir):
+            for file_name in files:
+                if file_name.startswith("superpmi_") and file_name.endswith(".md"):
+                    full_file_path = os.path.join(dirpath, file_name)
+                    print("Appending {}".format(full_file_path))
+                    with open(full_file_path, "r") as current_superpmi_md:
+                        contents = current_superpmi_md.read()
+                        f.write(contents)
 
     print("##vso[task.uploadsummary]{}".format(final_md_path))
 
