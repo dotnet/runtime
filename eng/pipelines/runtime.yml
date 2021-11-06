@@ -94,8 +94,8 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Build CoreCLR checked using GCC toolchain
-# Only when CoreCLR is changed
+# Build the whole product using GNU compiler toolchain
+# When CoreCLR, Mono, Libraries, Installer and src/tests are changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -110,6 +110,9 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
