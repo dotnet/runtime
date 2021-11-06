@@ -257,8 +257,8 @@ namespace ComWrappersTests
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            Assert.IsNull(handle.Target);
-            Assert.IsFalse(weakRef.TryGetTarget(out _));
+            Assert.Null(handle.Target);
+            Assert.False(weakRef.TryGetTarget(out _));
 
             static (GCHandle handle, WeakReference<DerivedObject>) GetWeakReference()
             {
