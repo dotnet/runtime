@@ -2340,7 +2340,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 // Prioritize contained node by checking if any op is contained first.
                 // If none of them is contained, check if any op is regOptional.
-                bool hasContainedOp = false;
+                bool     hasContainedOp = false;
                 unsigned containedOpNum = 0;
 
                 if (op1->isContained() || op2->isContained() || op3->isContained())
@@ -2381,7 +2381,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
 
                 // Intrinsics with CopyUpperBits semantics must have op1 as target
-                if ( containedOpNum == 1 && !copiesUpperBits)
+                if (containedOpNum == 1 && !copiesUpperBits)
                 {
                     if (resultOpNum == 3)
                     {
