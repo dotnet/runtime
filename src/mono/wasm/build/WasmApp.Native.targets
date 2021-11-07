@@ -228,11 +228,11 @@
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.extpre.js" Kind="extern-pre-js" Condition="'$(WasmEnableES6)' == 'true'"/>
-      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.pre.js" Kind="pre-js" Condition="'$(WasmEnableES6)' != 'true'"/>
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.extpre.js" Kind="extern-pre-js"/>
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.pre.js" Kind="pre-js" />
       <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js" Kind="pre-js" />
       <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" Exclude="$(_WasmRuntimePackSrcDir)\*.iffe.js;$(_WasmRuntimePackSrcDir)\*.*pre.js;$(_WasmRuntimePackSrcDir)\*.*post.js"/>
-      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.post.js" Kind="post-js" Condition="'$(WasmEnableES6)' == 'true'"/>
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.post.js" Kind="post-js" />
       <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.extpost.js" Kind="extern-post-js" Condition="'$(WasmEnableES6)' != 'true'"/>
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>

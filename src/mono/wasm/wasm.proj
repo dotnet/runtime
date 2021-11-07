@@ -183,6 +183,9 @@
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
                        runtime/library-dotnet.js;
+                       runtime/modularize-dotnet.pre.js;
+                       runtime/modularize-dotnet.post.js;
+                       runtime/modularize-dotnet.extpost.js;
                        $(SystemNativeDir)\pal_random.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
