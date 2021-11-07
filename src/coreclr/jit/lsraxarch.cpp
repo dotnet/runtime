@@ -2339,94 +2339,60 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 assert(!copiesUpperBits || !op1->isContained());
 
                 // Intrinsics with CopyUpperBits semantics must have op1 as target
-                if (resultOpNum == 1 || copiesUpperBits)
+                if ((op1->isContained() || op1->IsRegOptional()) && !copiesUpperBits)
                 {
-                    tgtPrefUse = BuildUse(op1);
-                    srcCount += 1;
-
-                    if (op2->isContained() || op2->IsRegOptional())
+                    if (resultOpNum == 3)
                     {
-                        // op1 = (op1 * [op2]) + op3
-                        srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op1);
-                        srcCount += BuildDelayFreeUses(op3, op1);
-                    }
-                    else
-                    {
-                        // op1 = (op1 * op2) + [op3]
-                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
-                        srcCount += BuildDelayFreeUses(op2, op1);
-                    }
-                }
-                else if (resultOpNum == 2)
-                {
-                    tgtPrefUse = BuildUse(op2);
-                    srcCount += 1;
-
-                    if (op1->isContained() || op1->IsRegOptional())
-                    {
-                        // op2 = ([op1] * op2) + op3
-                        srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op2);
-                        srcCount += BuildDelayFreeUses(op3, op2);
-                    }
-                    else
-                    {
-                        // op2 = (op1 * op2) + [op3]
-                        srcCount += BuildDelayFreeUses(op1, op2);
-                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
-                    }
-                }
-                else if (resultOpNum == 3)
-                {
-                    tgtPrefUse = BuildUse(op3);
-                    srcCount += 1;
-
-                    if (op1->isContained() || op1->IsRegOptional())
-                    {
+                        tgtPrefUse = BuildUse(op3);
                         // op3 = ([op1] * op2) + op3
                         srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op3);
                         srcCount += BuildDelayFreeUses(op2, op3);
                     }
                     else
                     {
+                        tgtPrefUse = BuildUse(op2);
+                        // op2 = ([op1] * op2) + op3
+                        srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op2);
+                        srcCount += BuildDelayFreeUses(op3, op2);
+                    }
+                    srcCount += 1;
+                }
+                else if (op3->isContained() || op3->IsRegOptional())
+                {
+                    if (resultOpNum == 2 && !copiesUpperBits)
+                    {
+                        tgtPrefUse = BuildUse(op2);
+                        // op2 = (op1 * op2) + [op3]
+                        srcCount += BuildDelayFreeUses(op1, op2);
+                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+                    }
+                    else
+                    {
+                        tgtPrefUse = BuildUse(op1);
+                        // op1 = (op1 * op2) + [op3]
+                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+                        srcCount += BuildDelayFreeUses(op2, op1);
+                    }
+                    srcCount += 1;
+                }
+                else
+                {
+                    assert(op2->isContained() || op2->IsRegOptional());
+                    if (resultOpNum == 3 && !copiesUpperBits)
+                    {
+                        tgtPrefUse = BuildUse(op3);
                         // op3 = (op1 * [op2]) + op3
                         srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op3);
                         srcCount += BuildDelayFreeUses(op1, op3);
                     }
-                }
-                else
-                {
-                    assert(resultOpNum == 0);
-                    if (op1->isContained() || op1->IsRegOptional())
-                    {
-                        // In the case that result is written into destination that is different from any of the
-                        // source operands, we set op2 to be tgtPrefUse when op1 is contained.
-
-                        tgtPrefUse = BuildUse(op2);
-                        srcCount += 1;
-                        // result = ([op1] * op2) + op3
-                        srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op2);
-                        srcCount += BuildDelayFreeUses(op3, op2);
-                    }
                     else
                     {
-                        // When op1 is not contained, we set op1 to be tgtPrefUse.
-
                         tgtPrefUse = BuildUse(op1);
-                        srcCount += 1;
-
-                        if (op2->isContained() || op2->IsRegOptional())
-                        {
-                            // result = (op1 * [op2]) + op3
-                            srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op1);
-                            srcCount += BuildDelayFreeUses(op3, op1);
-                        }
-                        else
-                        {
-                            // result = (op1 * op2) + [op3]
-                            srcCount += BuildDelayFreeUses(op2, op1);
-                            srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
-                        }
+                        // op1 = (op1 * [op2]) + op3
+                        srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op1);
+                        srcCount += BuildDelayFreeUses(op3, op1);
                     }
+                    srcCount += 1;
                 }
 
                 buildUses = false;

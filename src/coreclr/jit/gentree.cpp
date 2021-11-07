@@ -21825,7 +21825,7 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
 //
 // Return Value:
 //     The operand number overwritten or lastUse. 0 is the default value, where the result is written into
-//      a destination that is not one of the source operands.
+//      a destination that is not one of the source operands and there is no last use op.
 //
 unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
@@ -21850,17 +21850,16 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
             return 3;
         }
     }
-    else
-    {
-        // For LclVar, check if any op is lastUse
 
-        if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
-            return 1;
-        else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
-            return 3;
-        else
-            return 2;
-    }
+    // If no overwritten op, check if there is any last use op
+
+    if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
+        return 1;
+    else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
+        return 3;
+    else if (op2->OperIs(GT_LCL_VAR) && op2->IsLastUse(0))
+        return 2;
+
     return 0;
 }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
