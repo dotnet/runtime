@@ -486,10 +486,8 @@ jobs:
       - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+      - name: wasmbuildtestsContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: Windows_wasm_WBT
@@ -497,8 +495,7 @@ jobs:
       timeoutInMinutes: 180
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
@@ -511,8 +508,7 @@ jobs:
         - buildwasmapps
         condition: >-
           or(
-          eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true),
+          eq(variables['wasmbuildtestsContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml

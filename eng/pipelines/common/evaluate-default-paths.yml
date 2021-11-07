@@ -31,7 +31,6 @@ jobs:
       - src/libraries/System.Private.CoreLib/*
       - src/libraries/Native/Unix/System.Globalization.Native/*
       - src/libraries/Native/Unix/Common/*
-      - src/tests/BuildWasmApps/*
       - src/native/*
       exclude:
       - eng/Version.Details.xml
@@ -99,6 +98,17 @@ jobs:
       - src/coreclr/vm/*
       exclude:
       - '*'
+    - subset: wasmbuildtests
+      include:
+      - src/tasks/*
+      - src/tests/BuildWasmApps/*
+      - src/mono/wasm/build/*
+      - src/mono/wasm/runtime/*
+      - src/mono/nuget/*
+      - src/mono/mono/*
+      exclude:
+      - src/mono/nuget/Microsoft.NET.Runtime.Android.Sample.Mono/*
+      - src/mono/nuget/Microsoft.NET.Runtime.iOS.Sample.Mono/*
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}
