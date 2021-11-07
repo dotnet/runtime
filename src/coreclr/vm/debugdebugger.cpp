@@ -785,6 +785,9 @@ extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
 
     BEGIN_QCALL;
 
+    // TODO: There is a race for dynamic and collectible methods here between getting
+    // the MethodDesc here and when the managed wrapper converts it into a MethodBase
+    // where the method could be collected.
     EECodeInfo codeInfo((PCODE)ip);
     if (codeInfo.IsValid())
     {

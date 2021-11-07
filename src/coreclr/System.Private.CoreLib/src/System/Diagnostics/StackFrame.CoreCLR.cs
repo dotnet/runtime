@@ -61,15 +61,15 @@ namespace System.Diagnostics
         /// Returns the method info instance for the managed code IP address.
         /// </summary>
         /// <param name="ip">code address</param>
-        /// <returns>MethodInfo instance or null if IP not found</returns>
-        internal static MethodInfo? GetMethodInfoFromNativeIP(IntPtr ip)
+        /// <returns>MethodBase instance for the method or null if IP not found</returns>
+        internal static MethodBase? GetMethodFromNativeIP(IntPtr ip)
         {
             RuntimeMethodHandleInternal method = GetMethodDescFromNativeIP(ip);
 
             if (method.Value == IntPtr.Zero)
                 return null;
 
-            return RuntimeType.GetMethodBase(null, method) as MethodInfo;
+            return RuntimeType.GetMethodBase(null, method);
         }
     }
 }
