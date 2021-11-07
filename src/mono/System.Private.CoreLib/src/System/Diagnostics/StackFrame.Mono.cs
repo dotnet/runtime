@@ -51,11 +51,5 @@ namespace System.Diagnostics
         private static extern bool get_frame_info(int skipFrames, bool needFileInfo,
             out MethodBase method, out int ilOffset, out int nativeOffset, out string file, out int line, out int column);
 
-        /// <summary>
-        /// Returns the method info instance for the managed code IP address.
-        /// </summary>
-        /// <param name="ip">code address</param>
-        /// <returns>MethodBase instance for the method or null if IP not found</returns>
-        internal static MethodBase? GetMethodFromNativeIP(IntPtr ip) => throw new NotSupportedException();
     }
 }
