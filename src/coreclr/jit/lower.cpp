@@ -5033,6 +5033,27 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
         }
     }
 
+#ifdef TARGET_ARM64
+    // Check if we can "contain" LEA(BFIZ) in order to emit ldr/str with SXT/UTW extension
+    if (index != nullptr && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
+        index->gtGetOp2()->IsCnsIntOrI())
+    {
+        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+        assert(cast->isContained());
+
+        unsigned shiftBy  = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
+        unsigned castTo   = genTypeSize(cast->CastToType());
+        unsigned castFrom = genTypeSize(cast->CastFromType());
+        unsigned target   = genTypeSize(targetType);
+
+        // For now only two the most popular cases are handled. TODO: extend
+        if ((castFrom == 4) && (castTo == 8) && (target == (1U << shiftBy)) && (target >= 4))
+        {
+            MakeSrcContained(addrMode, index);
+        }
+    }
+#endif
+
     JITDUMP("New addressing mode node:\n  ");
     DISPNODE(addrMode);
     JITDUMP("\n");

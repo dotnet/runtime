@@ -13481,8 +13481,32 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 }
                 else // no scale
                 {
-                    // Then load/store dataReg from/to [memBase + index]
-                    emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
+                    if (index->OperIs(GT_BFIZ) && index->isContained())
+                    {
+                        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                        assert(cast->isContained());
+                        const bool isZeroExtended = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
+                        insOpts    opts           = INS_OPTS_NONE;
+                        int        shift          = (int)index->gtGetOp2()->AsIntCon()->IconValue();
+                        switch (shift)
+                        {
+                            case 2:
+                                opts = isZeroExtended ? INS_OPTS_UXTW : INS_OPTS_SXTW;
+                                break;
+                            case 3:
+                                opts = isZeroExtended ? INS_OPTS_UXTX : INS_OPTS_SXTX;
+                                break;
+                            default:
+                                unreached();
+                        }
+                        emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(), opts,
+                                          shift);
+                    }
+                    else
+                    {
+                        // Then load/store dataReg from/to [memBase + index]
+                        emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
+                    }
                 }
             }
         }

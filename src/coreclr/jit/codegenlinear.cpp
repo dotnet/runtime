@@ -1574,6 +1574,12 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree);
         }
+        else if (tree->OperIs(GT_BFIZ))
+        {
+            GenTreeCast* cast = tree->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+            genConsumeAddress(cast->CastOp());
+        }
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a

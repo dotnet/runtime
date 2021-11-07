@@ -3021,10 +3021,20 @@ int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
         BuildUse(addrMode->Base(), candidates);
         srcCount++;
     }
-    if ((addrMode->Index() != nullptr) && !addrMode->Index()->isContained())
+    if (addrMode->Index() != nullptr)
     {
-        BuildUse(addrMode->Index(), candidates);
-        srcCount++;
+        if (!addrMode->Index()->isContained())
+        {
+            BuildUse(addrMode->Index(), candidates);
+            srcCount++;
+        }
+        else if (addrMode->Index()->OperIs(GT_BFIZ))
+        {
+            GenTreeCast* cast = addrMode->Index()->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+            BuildUse(cast->CastOp(), candidates);
+            srcCount++;
+        }
     }
     return srcCount;
 }

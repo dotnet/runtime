@@ -689,7 +689,16 @@ int LinearScan::BuildNode(GenTree* tree)
             if (index != nullptr)
             {
                 srcCount++;
-                BuildUse(index);
+                if (index->OperIs(GT_BFIZ) && index->isContained())
+                {
+                    GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                    assert(cast->isContained());
+                    BuildUse(cast->CastOp());
+                }
+                else
+                {
+                    BuildUse(index);
+                }
             }
             assert(dstCount == 1);
 
