@@ -3028,6 +3028,7 @@ int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
             BuildUse(addrMode->Index(), candidates);
             srcCount++;
         }
+#ifdef TARGET_ARM64
         else if (addrMode->Index()->OperIs(GT_BFIZ))
         {
             GenTreeCast* cast = addrMode->Index()->gtGetOp1()->AsCast();
@@ -3035,6 +3036,7 @@ int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
             BuildUse(cast->CastOp(), candidates);
             srcCount++;
         }
+#endif
     }
     return srcCount;
 }
