@@ -5036,7 +5036,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
 #ifdef TARGET_ARM64
     // Check if we can "contain" LEA(BFIZ) in order to emit ldr/str with SXT/UTW extension
     if (index != nullptr && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
-        index->gtGetOp2()->IsCnsIntOrI())
+        index->gtGetOp2()->IsCnsIntOrI() && varTypeIsIntegral(targetType))
     {
         GenTreeCast* cast = index->gtGetOp1()->AsCast();
         assert(cast->isContained());
