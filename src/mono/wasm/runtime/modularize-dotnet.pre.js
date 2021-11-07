@@ -1,10 +1,11 @@
 const MONO = {}, BINDING = {}, INTERNAL = {};
 var ENVIRONMENT_IS_GLOBAL = typeof globalThis.Module === "object";
 if (ENVIRONMENT_IS_GLOBAL) {
-    createDotnetRuntime = globalThis.Module;
+    globalThis.Module.ready = Module.ready;
+    Module = createDotnetRuntime = globalThis.Module;
 }
 else if (typeof createDotnetRuntime === "function") {
-    createDotnetRuntime = createDotnetRuntime({ MONO, BINDING, INTERNAL, Module });
+    Module = { ready: Module.ready };
+    Object.assign(Module, createDotnetRuntime({ MONO, BINDING, INTERNAL, Module }))
+    createDotnetRuntime = Module;
 }
-createDotnetRuntime.ready = Module.ready;
-Module = createDotnetRuntime;

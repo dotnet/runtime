@@ -8,7 +8,7 @@
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 const is_browser = typeof window != "undefined";
-const is_node = !is_browser && typeof process != 'undefined';
+const is_node = !is_browser && typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
 
 // if the engine doesn't provide a console
 if (typeof (console) === "undefined") {
@@ -102,49 +102,56 @@ if (typeof globalThis.performance === 'undefined') {
     }
 }
 
-var Module = {
-    no_global_exports: true,
-    mainScriptUrlOrBlob: "dotnet.js",
-    config: null,
-    configSrc: "./mono-config.json",
-    onConfigLoaded: function () {
-        if (!Module.config) {
-            console.error("Could not find ./mono-config.json. Cancelling run");
+loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
+    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
+        disableDotNet6Compatibility: true,
+        mainScriptUrlOrBlob: "dotnet.js",
+        config: null,
+        configSrc: "./mono-config.json",
+        onConfigLoaded: function () {
+            if (!Module.config) {
+                console.error("Could not find ./mono-config.json. Cancelling run");
+                fail_exec(1);
+            }
+            // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
+            for (let variable in processedArguments.setenv) {
+                Module.config.environment_variables[variable] = processedArguments.setenv[variable];
+            }
+
+            if (!processedArguments.enable_gc) {
+                INTERNAL.mono_wasm_enable_on_demand_gc(0);
+            }
+        },
+        onDotNetReady: function () {
+            let wds = Module.FS.stat(processedArguments.working_dir);
+            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
+                fail_exec(1, `Could not find working directory ${processedArguments.working_dir}`);
+                return;
+            }
+
+            Module.FS.chdir(processedArguments.working_dir);
+
+            App.init({ MONO, INTERNAL, BINDING, Module });
+        },
+        onAbort: function (x) {
+            console.log("ABORT: " + x);
+            const err = new Error();
+            console.log("Stacktrace: \n");
+            console.error(err.stack);
             fail_exec(1);
-        }
-        // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-        for (let variable in processedArguments.setenv) {
-            Module.config.environment_variables[variable] = processedArguments.setenv[variable];
-        }
+        },
+    }))
+}).catch(function (err) {
+    console.error(err);
+    fail_exec(1, "failed to load the dotnet.js file");
+    throw err;
+});
 
-        if (!processedArguments.enable_gc) {
-            INTERNAL.mono_wasm_enable_on_demand_gc(0);
-        }
-    },
-    onDotNetReady: function () {
-        let wds = Module.FS.stat(processedArguments.working_dir);
-        if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-            fail_exec(1, `Could not find working directory ${processedArguments.working_dir}`);
-            return;
-        }
-
-        Module.FS.chdir(processedArguments.working_dir);
-
-        App.init();
-    },
-    onAbort: function (x) {
-        console.log("ABORT: " + x);
-        const err = new Error();
-        console.log("Stacktrace: \n");
-        console.error(err.stack);
-        fail_exec(1);
-    },
-};
 
 const App = {
-    init: function () {
+    init: function ({ MONO, INTERNAL, BINDING, Module }) {
         console.info("Initializing.....");
-
+        Object.assign(App, { MONO, INTERNAL, BINDING, Module });
         for (let i = 0; i < processedArguments.profilers.length; ++i) {
             const init = Module.cwrap('mono_wasm_load_profiler_' + processedArguments.profilers[i], 'void', ['string']);
             init("");
@@ -218,7 +225,7 @@ const App = {
 
         const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
         try {
-            return INTERNAL.call_static_method(fqn, args || [], signature);
+            return App.INTERNAL.call_static_method(fqn, args || [], signature);
         } catch (exc) {
             console.error("exception thrown in", fqn);
             throw exc;
@@ -233,14 +240,18 @@ function fail_exec(exit_code, reason) {
     }
     if (is_browser) {
         // Notify the selenium script
-        Module.exit_code = exit_code;
+        if (App.Module) {
+            App.Module.exit_code = exit_code;
+        }
         originalConsole.log("WASM EXIT " + exit_code);
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
     } else { // shell or node
-        INTERNAL.mono_wasm_exit(exit_code);
+        if (App.INTERNAL) {
+            App.INTERNAL.mono_wasm_exit(exit_code);
+        }
     }
 }
 
@@ -320,8 +331,10 @@ try {
 async function loadDotnet(file) {
     let loadScript = undefined;
     if (typeof WScript !== "undefined") { // Chakra
-        loadScript = WScript.LoadScriptFile;
-        return globalThis.Module;
+        loadScript = function (file) {
+            WScript.LoadScriptFile(file);
+            return globalThis.createDotnetRuntime;
+        };
     } else if (is_node) { // NodeJS
         loadScript = async function (file) {
             return require(file);
@@ -331,13 +344,18 @@ async function loadDotnet(file) {
             const script = document.createElement("script");
             script.src = file;
             document.head.appendChild(script);
-            return globalThis.Module;
+            while (true) {
+                if (globalThis.createDotnetRuntime) {
+                    return globalThis.createDotnetRuntime;
+                }
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
         loadScript = async function (file) {
             globalThis.load(file)
-            return globalThis.Module;
+            return globalThis.createDotnetRuntime;
         }
     }
     else {
@@ -346,9 +364,3 @@ async function loadDotnet(file) {
 
     return loadScript(file);
 }
-
-loadDotnet("./dotnet.js").catch(function (err) {
-    console.error(err);
-    fail_exec(1, "failed to load the dotnet.js file");
-    throw err;
-});
