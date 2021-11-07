@@ -5047,7 +5047,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
         unsigned target   = genTypeSize(targetType);
 
         // For now only two the most popular cases are handled. TODO: extend
-        if ((castFrom == 4) && (castTo == 8) && (target == (1U << shiftBy)) && (target >= 4))
+        if ((castFrom == 4) && (castTo == 8) && (target == (1U << shiftBy)) && (target >= 4) && (scale == 1) &&
+            (offset == 0))
         {
             MakeSrcContained(addrMode, index);
         }
