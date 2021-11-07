@@ -356,13 +356,14 @@ InlineContext::InlineContext(InlineStrategy* strategy)
 //
 // Arguments:
 //    indent   - indentation level for this node
+//    verbose  - more verbose output if true
 
-void InlineContext::Dump(unsigned indent)
+void InlineContext::Dump(bool verbose, unsigned indent)
 {
     // Handle fact that siblings are in reverse order.
     if (m_Sibling != nullptr)
     {
-        m_Sibling->Dump(indent);
+        m_Sibling->Dump(verbose, indent);
     }
 
     // We may not know callee name in some of the failing cases
@@ -391,35 +392,52 @@ void InlineContext::Dump(unsigned indent)
     {
         // Root method
         InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
-        printf("Inlines into %08X [via %s] %s\n", calleeToken, policy->GetName(), calleeName);
+
+        if (verbose)
+        {
+            printf("\nInlines into %08X [via %s] %s:\n", calleeToken, policy->GetName(), calleeName);
+        }
+        else
+        {
+            printf("\nInlines into %s:\n", calleeName);
+        }
     }
     else
     {
         // Inline attempt.
         const char* inlineTarget  = InlGetTargetString(m_Observation);
         const char* inlineReason  = InlGetObservationString(m_Observation);
-        const char* inlineResult  = m_Success ? "" : "FAILED: ";
-        const char* devirtualized = m_Devirtualized ? " devirt" : "";
-        const char* guarded       = m_Guarded ? " guarded" : "";
-        const char* unboxed       = m_Unboxed ? " unboxed" : "";
+        const char* inlineResult  = m_Success ? "INLINED: " : "FAILED: ";
+        const char* devirtualized = m_Devirtualized ? " DEVIRT" : "";
+        const char* guarded       = m_Guarded ? " GUARDED" : "";
+        const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
-        if (m_Offset == BAD_IL_OFFSET)
+        if (verbose)
         {
-            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
-                   inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed, calleeName);
+            if (m_Offset == BAD_IL_OFFSET)
+            {
+                printf("%*s[%u IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID,
+                       calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
+                       calleeName);
+            }
+            else
+            {
+                printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal,
+                       jitGetILoffs(m_Offset), m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded,
+                       devirtualized, unboxed, calleeName);
+            }
         }
         else
         {
-            IL_OFFSET offset = jitGetILoffs(m_Offset);
-            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID,
-                   calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed, calleeName);
+            printf("%*s[%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
+                   calleeName);
         }
     }
 
     // Recurse to first child
     if (m_Child != nullptr)
     {
-        m_Child->Dump(indent + 2);
+        m_Child->Dump(verbose, indent + 2);
     }
 }
 
@@ -763,21 +781,7 @@ void InlineResult::Report()
 
         if ((m_Callee != nullptr) && (obs != InlineObservation::CALLEE_IS_NOINLINE))
         {
-
-#ifdef DEBUG
-
-            const char* obsString = InlGetObservationString(obs);
-
-            if (VERBOSE)
-            {
-                JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, obsString);
-            }
-            else if (m_RootCompiler->fgPrintInlinedMethods)
-            {
-                printf("Marking %s as NOINLINE because of %s\n", callee, obsString);
-            }
-
-#endif // DEBUG
+            JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, InlGetObservationString(obs));
 
             COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
             comp->setMethodAttribs(m_Callee, CORINFO_FLG_BAD_INLINEE);
@@ -1361,13 +1365,13 @@ InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineR
 // Dump: dump description of inline behavior
 //
 // Arguments:
-//   showBudget - also dump final budget values
+//   verbose - print more details such as final budget values and IL offsets
 
-void InlineStrategy::Dump(bool showBudget)
+void InlineStrategy::Dump(bool verbose)
 {
-    m_RootContext->Dump();
+    m_RootContext->Dump(verbose);
 
-    if (!showBudget)
+    if (!verbose)
     {
         return;
     }
