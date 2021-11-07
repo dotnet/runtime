@@ -26,6 +26,7 @@ declare let ENVIRONMENT_IS_WEB: boolean;
 declare let ENVIRONMENT_IS_SHELL: boolean;
 declare let ENVIRONMENT_IS_NODE: boolean;
 declare let ENVIRONMENT_IS_WORKER: boolean;
+declare let ENVIRONMENT_IS_GLOBAL: boolean;
 declare let LibraryManager: any;
 
 declare function autoAddDeps(a: object, b: string): void;

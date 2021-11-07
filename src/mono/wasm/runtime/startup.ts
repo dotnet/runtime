@@ -233,6 +233,20 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
     mono_wasm_setenv("TZ", tz || "UTC");
     mono_wasm_runtime_ready();
 
+    //legacy app loading
+    const argsAny: any = args;
+    if (argsAny.loaded_cb) {
+        try {
+            argsAny.loaded_cb();
+        }
+        catch (err: any) {
+            Module.printErr("MONO_WASM: loaded_cb () failed: " + err);
+            Module.printErr("MONO_WASM: Stacktrace: \n");
+            Module.printErr(err.stack);
+            throw err;
+        }
+    }
+
     if (moduleExt.onDotNetReady) {
         try {
             moduleExt.onDotNetReady();

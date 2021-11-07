@@ -6,11 +6,8 @@
 
 const DotNetSupportLib = {
     $DOTNET: {},
-    $MONO: {},
-    $BINDING: {},
-    $INTERNAL: {},
-    // this line will be executed on runtime, populating the objects with methods
-    $DOTNET__postset: "__dotnet_runtime.INTERNAL.export_to_emscripten (DOTNET, MONO, BINDING, INTERNAL, Module);",
+    // this line will be executed early on runtime
+    $DOTNET__postset: "__dotnet_runtime.__exportAPI(MONO, BINDING, INTERNAL, Module);",
 };
 
 // the methods would be visible to EMCC linker
@@ -61,12 +58,9 @@ const linked_functions = [
 // -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple proxy for each exported function so that emcc will include them in the final output
 for (let linked_function of linked_functions) {
-    const fn_template = `return __dotnet_runtime.INTERNAL.linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
+    const fn_template = `return __dotnet_runtime.__linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
     DotNetSupportLib[linked_function] = new Function(fn_template);
 }
 
 autoAddDeps(DotNetSupportLib, "$DOTNET");
-autoAddDeps(DotNetSupportLib, "$MONO");
-autoAddDeps(DotNetSupportLib, "$BINDING");
-autoAddDeps(DotNetSupportLib, "$INTERNAL");
 mergeInto(LibraryManager.library, DotNetSupportLib);

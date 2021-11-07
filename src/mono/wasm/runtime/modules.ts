@@ -10,12 +10,10 @@ import { EmscriptenModuleMono, MonoConfig, RuntimeHelpers } from "./types";
 export let Module: EmscriptenModule & EmscriptenModuleMono;
 export let MONO: any;
 export let BINDING: any;
-export let DOTNET: any;
 export let INTERNAL: any;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function setLegacyModules(dotnet: any, mono: any, binding: any, internal: any, module: EmscriptenModule & EmscriptenModuleMono) {
-    DOTNET = dotnet;
+export function setAPI(mono: any, binding: any, internal: any, module: EmscriptenModule & EmscriptenModuleMono) {
     MONO = mono;
     BINDING = binding;
     INTERNAL = internal;

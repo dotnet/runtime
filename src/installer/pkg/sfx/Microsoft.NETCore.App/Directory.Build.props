@@ -221,6 +221,9 @@
     <PlatformManifestFileEntry Include="runtime.iffe.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="library-dotnet.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="modularize-dotnet.pre.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="modularize-dotnet.post.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="modularize-dotnet.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="pal_random.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />

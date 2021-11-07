@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
   <body onload="onLoad()">
-    <h3 id="header">Wasm Browser Sample</h3>
+    <h3 id="header">Wasm Browser Legacy Sample</h3>
     Result from Sample.Test.TestMeaning: <span id="out"></span>
     <script type='text/javascript'>
       var is_testing = false;
@@ -35,8 +35,8 @@
       };
 
       var App = {
-        init: function ({ MONO, INTERNAL, BINDING, Module }) {
-          var ret = INTERNAL.call_static_method("[Wasm.Browser.Sample] Sample.Test:TestMeaning", []);
+        init: function () {
+          var ret = INTERNAL.call_static_method("[Wasm.Browser.LegacySample] Sample.Test:TestMeaning", []);
           document.getElementById("out").innerHTML = ret;
 
           if (is_testing)
@@ -48,8 +48,9 @@
         },
       };
     </script>
-    <script type="text/javascript" src="dotnet.js"></script>
     <script type="text/javascript" src="runtime.js"></script>
+
+    <script defer src="dotnet.js"></script>
 
   </body>
 </html>

@@ -107,8 +107,6 @@ var Module = {
     mainScriptUrlOrBlob: "dotnet.js",
     config: null,
     configSrc: "./mono-config.json",
-    print: console.log,
-    printErr: console.error,
     onConfigLoaded: function () {
         if (!Module.config) {
             console.error("Could not find ./mono-config.json. Cancelling run");

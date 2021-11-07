@@ -107,6 +107,9 @@
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
+      <!-- need to re-link dotnet.js when targeting legacy or CommonJS -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'true'" >true</WasmBuildNative>
+
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
 
@@ -115,6 +118,8 @@
       <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
+      <!-- need to re-link dotnet.js when targeting legacy or CommonJS -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'true'" >true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
@@ -223,8 +228,12 @@
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" Exclude="$(_WasmRuntimePackSrcDir)\*.iffe.js"/>
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.extpre.js" Kind="extern-pre-js" Condition="'$(WasmEnableES6)' == 'true'"/>
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.pre.js" Kind="pre-js" Condition="'$(WasmEnableES6)' != 'true'"/>
       <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js" Kind="pre-js" />
+      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" Exclude="$(_WasmRuntimePackSrcDir)\*.iffe.js;$(_WasmRuntimePackSrcDir)\*.*pre.js;$(_WasmRuntimePackSrcDir)\*.*post.js"/>
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.post.js" Kind="post-js" Condition="'$(WasmEnableES6)' == 'true'"/>
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.extpost.js" Kind="extern-post-js" Condition="'$(WasmEnableES6)' != 'true'"/>
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 
@@ -349,10 +358,12 @@
       <_EmccLinkStepArgs Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
       <_WasmLinkDependencies Include="@(_DotnetJSSrcFile)" />
 
-      <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
+      <_EmccLinkStepArgs Include="--extern-pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'extern-pre-js'" />
       <_EmccLinkStepArgs Include="--pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
+      <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
       <_EmccLinkStepArgs Include="--post-js &quot;%(_WasmExtraJSFile.Identity)&quot;"    Condition="'%(_WasmExtraJSFile.Kind)' == 'post-js'" />
-      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library' or '%(_WasmExtraJSFile.Kind)' == 'pre-js' or '%(_WasmExtraJSFile.Kind)' == 'post-js'" />
+      <_EmccLinkStepArgs Include="--extern-post-js &quot;%(_WasmExtraJSFile.Identity)&quot;"    Condition="'%(_WasmExtraJSFile.Kind)' == 'extern-post-js'" />
+      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library' or '%(_WasmExtraJSFile.Kind)' == 'pre-js' or '%(_WasmExtraJSFile.Kind)' == 'post-js' or '%(_WasmExtraJSFile.Kind)' == 'extern-pre-js' or '%(_WasmExtraJSFile.Kind)' == 'extern-post-js'" />
 
       <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
