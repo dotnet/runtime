@@ -36,6 +36,10 @@
     <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
       <method name="LoadInMemoryAssembly" />
     </type>
+
+    <type fullname="System.Diagnostics.StackFrame">
+      <method name="GetMethodFromNativeIP" />
+    </type>
   </assembly>
 
   <!-- The private Event methods are accessed by private reflection in the base EventSource class. -->
