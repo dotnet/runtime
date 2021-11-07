@@ -135,6 +135,7 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_generic_virtual_call) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_iface_call_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
+MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt_fast) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
 MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
 MONO_JIT_ICALL (mini_llvmonly_pop_lmf) \

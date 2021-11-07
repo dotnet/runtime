@@ -862,6 +862,18 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
+	if (is_gsharedvt && !(is_iface || fsig->generic_param_count || variant_iface || special_array_interface)) {
+		MonoInst *ftndesc_ins;
+
+		/* Normal virtual call using a gsharedvt calling conv */
+		icall_args [0] = sp [0];
+		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
+
+		ftndesc_ins = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_vcall_gsharedvt_fast, icall_args);
+
+		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
+	}
+
 	/*
 	 * Non-optimized cases
 	 */

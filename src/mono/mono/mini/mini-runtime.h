@@ -115,6 +115,7 @@ jit_code_hash_unlock (MonoJitMemoryManager *jit_mm)
 typedef struct {
 	/* interp virtual method table */
 	gpointer *interp_vtable;
+	MonoFtnDesc **gsharedvt_vtable;
 } MonoVTableEEData;
 
 /*
