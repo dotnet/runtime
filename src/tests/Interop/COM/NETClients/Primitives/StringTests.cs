@@ -9,7 +9,7 @@ namespace NetClient
     using System.Linq;
     using System.Text;
     using System.Runtime.InteropServices;
-    using TestLibrary;
+    using Xunit;
 
     class StringTests
     {
@@ -83,7 +83,7 @@ namespace NetClient
 
                 string expected = p.Item1 + p.Item2;
                 string actual = this.server.Add_LPStr(p.Item1, p.Item2);
-                Assert.AreEqual(expected, actual, "Add_String_LPStr (simple)");
+                Assert.Equal(expected, actual);
             }
 
             foreach (var s in reversableStrings)
@@ -98,23 +98,23 @@ namespace NetClient
                 string expected = Reverse(local);
 
                 string actual = this.server.Reverse_LPStr(local);
-                Assert.AreEqual(expected, actual);
+                Assert.Equal(expected, actual);
 
                 actual = this.server.Reverse_LPStr_Ref(ref local);
-                Assert.AreEqual(expected, actual);
-                Assert.AreEqual(expected, local);
+                Assert.Equal(expected, actual);
+                Assert.Equal(expected, local);
 
                 local = s;
                 actual = this.server.Reverse_LPStr_InRef(ref local);
-                Assert.AreEqual(expected, actual);
-                Assert.AreEqual(s, local);
+                Assert.Equal(expected, actual);
+                Assert.Equal(s, local);
 
                 this.server.Reverse_LPStr_Out(local, out actual);
-                Assert.AreEqual(expected, actual);
+                Assert.Equal(expected, actual);
 
                 actual = local;
                 this.server.Reverse_LPStr_OutAttr(local, actual); // No-op for strings
-                Assert.AreEqual(local, actual);
+                Assert.Equal(local, actual);
             }
 
             foreach (var s in reversableStrings)
@@ -129,35 +129,35 @@ namespace NetClient
                 string expected = Reverse(local.ToString());
 
                 StringBuilder actual = this.server.Reverse_SB_LPStr(local);
-                Assert.AreEqual(expected, actual.ToString());
-                Assert.AreEqual(expected, local.ToString());
+                Assert.Equal(expected, actual.ToString());
+                Assert.Equal(expected, local.ToString());
 
                 local = new StringBuilder(s);
                 actual = this.server.Reverse_SB_LPStr_Ref(ref local);
-                Assert.AreEqual(expected, actual.ToString());
-                Assert.AreEqual(expected, local.ToString());
+                Assert.Equal(expected, actual.ToString());
+                Assert.Equal(expected, local.ToString());
 
                 local = new StringBuilder(s);
                 actual = this.server.Reverse_SB_LPStr_InRef(ref local);
-                Assert.AreEqual(expected, actual.ToString());
+                Assert.Equal(expected, actual.ToString());
 
                 // Palindromes are _always_ equal
                 if (!string.Equals(s, expected))
                 {
-                    Assert.AreNotEqual(expected, local.ToString());
+                    Assert.NotEqual(expected, local.ToString());
                 }
 
                 local = new StringBuilder(s);
                 actual = new StringBuilder();
                 this.server.Reverse_SB_LPStr_Out(local, out actual);
-                Assert.AreEqual(expected, actual.ToString());
-                Assert.AreEqual(expected, local.ToString());
+                Assert.Equal(expected, actual.ToString());
+                Assert.Equal(expected, local.ToString());
 
                 local = new StringBuilder(s);
                 actual = new StringBuilder(s.Length);
                 this.server.Reverse_SB_LPStr_OutAttr(local, actual);
-                Assert.AreEqual(expected, actual.ToString());
-                Assert.AreEqual(expected, local.ToString());
+                Assert.Equal(expected, actual.ToString());
+                Assert.Equal(expected, local.ToString());
             }
         }
 
@@ -168,7 +168,7 @@ namespace NetClient
             {
                 string expected = p.Item1 + p.Item2;
                 string actual = this.server.Add_LPWStr(p.Item1, p.Item2);
-                Assert.AreEqual(expected, actual, "Add_String_LPWStr (simple)");
+                Assert.Equal(expected, actual);
             }
 
             foreach (var s in reversableStrings)
@@ -177,19 +177,19 @@ namespace NetClient
                 string expected = Reverse(local);
 
                 string actual = this.server.Reverse_LPWStr(local);
-                Assert.AreEqual(expected, actual);
+                Assert.Equal(expected, actual);
 
                 actual = this.server.Reverse_LPWStr_Ref(ref local);
-                Assert.AreEqual(expected, actual);
-                Assert.AreEqual(expected, local);
+                Assert.Equal(expected, actual);
+                Assert.Equal(expected, local);
 
                 local = s;
                 actual = this.server.Reverse_LPWStr_InRef(ref local);
-                Assert.AreEqual(expected, actual);
-                Assert.AreEqual(s, local);
+                Assert.Equal(expected, actual);
+                Assert.Equal(s, local);
 
                 this.server.Reverse_LPWStr_Out(local, out actual);
-                Assert.AreEqual(expected, actual);
+                Assert.Equal(expected, actual);
 
                 actual = local;
                 Assert.Throws<MarshalDirectiveException>( () => this.server.Reverse_LPWStr_OutAttr(local, actual));
@@ -201,35 +201,35 @@ namespace NetClient
                 string expected = Reverse(local.ToString());
 
                 StringBuilder actual = this.server.Reverse_SB_LPWStr(local);
-                Assert.AreEqual(expected, actual.ToString());
-                Assert.AreEqual(expected, local.ToString());
+                Assert.Equal(expected, actual.ToString());
+                Assert.Equal(expected, local.ToString());
 
                 local = new StringBuilder(s);
                 actual = this.server.Reverse_SB_LPWStr_Ref(ref local);
-                Assert.AreEqual(expected, actual.ToString());
-                Assert.AreEqual(expected, local.ToString());
+                Assert.Equal(expected, actual.ToString());
+                Assert.Equal(expected, local.ToString());
 
                 local = new StringBuilder(s);
                 actual = this.server.Reverse_SB_LPWStr_InRef(ref local);
-                Assert.AreEqual(expected, actual.ToString());
+                Assert.Equal(expected, actual.ToString());
 
                 // Palindromes are _always_ equal
                 if (!string.Equals(s, expected))
                 {
-                    Assert.AreNotEqual(expected, local.ToString());
+                    Assert.NotEqual(expected, local.ToString());
                 }
 
                 local = new StringBuilder(s);
                 actual = new StringBuilder();
                 this.server.Reverse_SB_LPWStr_Out(local, out actual);
-                Assert.AreEqual(expected, actual.ToString());
-                Assert.AreEqual(expected, local.ToString());
+                Assert.Equal(expected, actual.ToString());
+                Assert.Equal(expected, local.ToString());
 
                 local = new StringBuilder(s);
                 actual = new StringBuilder(s.Length);
                 this.server.Reverse_SB_LPWStr_OutAttr(local, actual);
-                Assert.AreEqual(expected, actual.ToString());
-                Assert.AreEqual(expected, local.ToString());
+                Assert.Equal(expected, actual.ToString());
+                Assert.Equal(expected, local.ToString());
             }
         }
 
@@ -240,7 +240,7 @@ namespace NetClient
             {
                 string expected = p.Item1 + p.Item2;
                 string actual = this.server.Add_BStr(p.Item1, p.Item2);
-                Assert.AreEqual(expected, actual, "Add_String_BStr (simple)");
+                Assert.Equal(expected, actual);
             }
 
             foreach (var s in reversableStrings)
@@ -249,23 +249,23 @@ namespace NetClient
                 string expected = Reverse(local);
 
                 string actual = this.server.Reverse_BStr(local);
-                Assert.AreEqual(expected, actual);
+                Assert.Equal(expected, actual);
 
                 actual = this.server.Reverse_BStr_Ref(ref local);
-                Assert.AreEqual(expected, actual);
-                Assert.AreEqual(expected, local);
+                Assert.Equal(expected, actual);
+                Assert.Equal(expected, local);
 
                 local = s;
                 actual = this.server.Reverse_BStr_InRef(ref local);
-                Assert.AreEqual(expected, actual);
-                Assert.AreEqual(s, local);
+                Assert.Equal(expected, actual);
+                Assert.Equal(s, local);
 
                 this.server.Reverse_BStr_Out(local, out actual);
-                Assert.AreEqual(expected, actual);
+                Assert.Equal(expected, actual);
 
                 actual = local;
                 this.server.Reverse_BStr_OutAttr(local, actual); // No-op for strings
-                Assert.AreEqual(local, actual);
+                Assert.Equal(local, actual);
             }
         }
 
@@ -278,7 +278,7 @@ namespace NetClient
                 string expected = Reverse(local);
 
                 string actual = this.server.Reverse_LPWStr_With_LCID(local);
-                Assert.AreEqual(expected, actual);
+                Assert.Equal(expected, actual);
             }
 
             CultureInfo culture = new CultureInfo("es-ES", false);
@@ -288,7 +288,7 @@ namespace NetClient
             {
                 CultureInfo.CurrentCulture = culture;
                 this.server.Pass_Through_LCID(out int lcid);
-                Assert.AreEqual(englishCulture.LCID, lcid); // CLR->COM LCID marshalling is explicitly hardcoded to en-US as requested by VSTO instead of passing the current culture.
+                Assert.Equal(englishCulture.LCID, lcid); // CLR->COM LCID marshalling is explicitly hardcoded to en-US as requested by VSTO instead of passing the current culture.
             }
             finally
             {

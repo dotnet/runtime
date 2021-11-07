@@ -8,6 +8,7 @@ namespace NetClient
     using System.Runtime.InteropServices;
 
     using TestLibrary;
+    using Xunit;
     using Server.Contract;
     using Server.Contract.Servers;
 
@@ -49,17 +50,17 @@ namespace NetClient
             allocated += AllocateInstances(1);
             allocated += AllocateInstances(2);
             allocated += AllocateInstances(3);
-            Assert.AreNotEqual(0, GetAllocationCount());
+            Assert.NotEqual(0, GetAllocationCount());
 
             ForceGC();
 
-            Assert.AreEqual(0, GetAllocationCount());
+            Assert.Equal(0, GetAllocationCount());
         }
 
         static void Validate_COMServer_DisableEagerCleanUp()
         {
             Console.WriteLine($"Calling {nameof(Validate_COMServer_DisableEagerCleanUp)}...");
-            Assert.AreEqual(0, GetAllocationCount());
+            Assert.Equal(0, GetAllocationCount());
 
             Thread.CurrentThread.DisableComObjectEagerCleanup();
 
@@ -67,18 +68,18 @@ namespace NetClient
             allocated += AllocateInstances(1);
             allocated += AllocateInstances(2);
             allocated += AllocateInstances(3);
-            Assert.AreNotEqual(0, GetAllocationCount());
+            Assert.NotEqual(0, GetAllocationCount());
 
             ForceGC();
 
-            Assert.AreNotEqual(0, GetAllocationCount());
+            Assert.NotEqual(0, GetAllocationCount());
 
             Marshal.CleanupUnusedObjectsInCurrentContext();
 
             ForceGC();
 
-            Assert.AreEqual(0, GetAllocationCount());
-            Assert.IsFalse(Marshal.AreComObjectsAvailableForCleanup());
+            Assert.Equal(0, GetAllocationCount());
+            Assert.False(Marshal.AreComObjectsAvailableForCleanup());
         }
 
         static int Main(string[] doNotUse)
@@ -99,7 +100,7 @@ namespace NetClient
                 {
                     // Initialization for all future tests
                     Initialize();
-                    Assert.IsTrue(GetAllocationCount != null);
+                    Assert.True(GetAllocationCount != null);
 
                     Validate_COMServer_CleanUp();
                     Validate_COMServer_DisableEagerCleanUp();
