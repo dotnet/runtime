@@ -180,6 +180,7 @@
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
 
+    <MakeDir Directories="$(WasmCachePath)" Condition="'$(WasmCachePath)' != '' and !Exists($(WasmCachePath))" />
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
   </Target>
 
