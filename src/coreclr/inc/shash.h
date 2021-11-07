@@ -264,11 +264,6 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // NoThrow version of CheckGrowth function. Returns FALSE on failure.
     BOOL CheckGrowthNoThrow();
 
-    // See if it is OK to grow the hash table by one element. If not, allocate new
-    // hash table and return it together with its size *pcNewSize (used by code:AddPhases).
-    // Returns NULL if there already is space for one element.
-    element_t * CheckGrowth_OnlyAllocateNewTable(count_t * pcNewSize);
-
     // Allocates new resized hash table for growth. Does not update the hash table on the object.
     // The new size is computed based on the current population, growth factor, and maximum density factor.
     element_t * Grow_OnlyAllocateNewTable(count_t * pcNewSize);
@@ -278,7 +273,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
     // Utility function to allocate new table (does not copy the values into it yet). Returns the size of new table in
     // *pcNewTableSize (finds next prime).
-    // Phase 1 of code:Reallocate - it is split to support code:AddPhases.
+    // Phase 1 of code:Reallocate
     element_t * AllocateNewTable(count_t requestedSize, count_t * pcNewTableSize);
 
     // NoThrow version of AllocateNewTable utility function. Returns NULL on failure.
@@ -287,11 +282,11 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // Utility function to replace old table with newly allocated table (as allocated by
     // code:AllocateNewTable). Copies all 'old' values into the new table first.
     // Returns the old table. Caller is expected to delete it (via code:DeleteOldTable).
-    // Phase 2 of code:Reallocate - it is split to support code:AddPhases.
+    // Phase 2 of code:Reallocate
     element_t * ReplaceTable(element_t * newTable, count_t newTableSize);
 
     // Utility function to delete old table (as returned by code:ReplaceTable).
-    // Phase 3 of code:Reallocate - it is split to support code:AddPhases.
+    // Phase 3 of code:Reallocate
     void DeleteOldTable(element_t * oldTable);
 
     // Utility function that does not call code:CheckGrowth.
@@ -502,92 +497,6 @@ class EMPTY_BASES_DECL SHash : public TRAITS
         }
     };
 
-    // Wrapper and holder for adding an element to the hash table. Useful for Add operations that have to happen
-    // under a rare lock that does not allow call out into host.
-    // There are 3 phases:
-    //    1. code:PreallocateForAdd ... Can allocate memory (calls into host).
-    //    2. code:Add ... Adds one element (does NOT call into host).
-    //       or code:AddNothing_PublishPreallocatedTable ... Publishes the pre-allocated memory from step #1 (if any).
-    //    3. code:DeleteOldTable (or destructor) ... Can delete the old memory (calls into host).
-    // Example:
-    //      CrstHolder lockAdd(&crstLockForAdd); // Serialize all Add operations.
-    //      HostAssemblyMap::AddPhases addCall;
-    //      addCall.PreallocateForAdd(&shash); // 1. Allocates memory for one Add call (if needed). addCall serves as holder for the allocated memory.
-    //      {
-    //          // We cannot call out into host from ForbidSuspend region (i.e. no allocations/deallocations).
-    //          ForbidSuspendThreadHolder suspend; // Required by the 'special' read-lock
-    //          {
-    //              CrstHolder lock(&crstLock);
-    //              if (some_condition)
-    //              {   // 2a. Add item. This may replace SHash inner table with the one pre-allocated in step 1.
-    //                  addCall.Add(shashItem);
-    //              }
-    //              else
-    //              {   // 2b. Skip adding item. This may replace SHash inner table with the one pre-allocated in step 1.
-    //                  addCall.AddNothing_PublishPreallocatedTable();
-    //              }
-    //          }
-    //      }
-    //      addCall.DeleteOldTable(); // 3. Cleanup old table memory from shash (if it was replaced by pre-allocated table in step 2).
-    //                                // Note: addCall destructor would take care of deleting the memory as well.
-    class AddPhases
-    {
-    public:
-        AddPhases();
-        ~AddPhases();
-
-        // Prepares object for one call to code:Add. Pre-allocates new table memory if needed, does not publish
-        // the table yet (it is kept ready only in this holder for call to code:Add).
-        // Calls out into host.
-        void PreallocateForAdd(SHash * pHash);
-
-        // Add an element to the hash table. This will never replace an element; multiple elements may be stored
-        // with the same key.
-        // Will use/publish pre-allocated memory from code:PreallocateForAdd.
-        // Does not call out into host.
-        // Only one Add* method can be called once per object! (Create a new object for each call)
-        void Add(const element_t & element);
-
-        // Element will not be added to the hash table.
-        // Will use/publish pre-allocated memory from code:PreallocateForAdd.
-        // Does not call out into host.
-        // Only one Add* method can be called once per object! (Create a new object for each call)
-        void AddNothing_PublishPreallocatedTable();
-
-        // Deletes old table if it was replaced by call to code:Add or code:AddNothing_PublishPreallocatedTable.
-        // Calls out into host.
-        void DeleteOldTable();
-
-    private:
-        SHash *     m_pHash;
-        element_t * m_newTable;
-        count_t     m_newTableSize;
-        element_t * m_oldTable;
-
-    #ifdef _DEBUG
-        PTR_element_t dbg_m_table;
-        count_t       dbg_m_tableSize;
-        count_t       dbg_m_tableCount;
-        count_t       dbg_m_tableOccupied;
-        count_t       dbg_m_tableMax;
-        BOOL          dbg_m_fAddCalled;
-    #endif //_DEBUG
-    };  // class SHash::AddPhases
-
-    // Adds an entry to the hash table according to the guidelines above for
-    // avoiding a callout to the host while the read lock is held.
-    // Returns true if elem was added to the map, otherwise false.
-    // When elem was not added (false is returned), and if ppStoredElem is non-null,
-    // then it is set to point to the value in the map.
-    template <typename LockHolderT,
-              typename AddLockHolderT,
-              typename LockT,
-              typename AddLockT>
-    bool CheckAddInPhases(
-        element_t const & elem,
-        LockT & lock,
-        AddLockT & addLock,
-        IUnknown * addRefObject = nullptr);
 
   private:
 
