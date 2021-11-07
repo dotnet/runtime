@@ -2338,8 +2338,50 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
                 assert(!copiesUpperBits || !op1->isContained());
 
+                // Prioritize contained node by checking if any op is contained first.
+                // If none of them is contained, check if any op is regOptional.
+                bool hasContainedOp = false;
+                unsigned containedOpNum = 0;
+
+                if (op1->isContained() || op2->isContained() || op3->isContained())
+                {
+                    hasContainedOp = true;
+                }
+                if (hasContainedOp)
+                {
+                    if (op1->isContained())
+                    {
+                        containedOpNum = 1;
+                    }
+                    else if (op2->isContained())
+                    {
+                        containedOpNum = 2;
+                    }
+                    else
+                    {
+                        assert(op3->isContained());
+                        containedOpNum = 3;
+                    }
+                }
+                else
+                {
+                    if (op1->IsRegOptional())
+                    {
+                        containedOpNum = 1;
+                    }
+                    else if (op2->IsRegOptional())
+                    {
+                        containedOpNum = 2;
+                    }
+                    else
+                    {
+                        assert(op3->IsRegOptional());
+                        containedOpNum = 3;
+                    }
+                }
+
                 // Intrinsics with CopyUpperBits semantics must have op1 as target
-                if ((op1->isContained() || op1->IsRegOptional()) && !copiesUpperBits)
+                if ( containedOpNum == 1 && !copiesUpperBits)
                 {
                     if (resultOpNum == 3)
                     {
@@ -2357,7 +2399,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     }
                     srcCount += 1;
                 }
-                else if (op3->isContained() || op3->IsRegOptional())
+                else if (containedOpNum == 3)
                 {
                     if (resultOpNum == 2 && !copiesUpperBits)
                     {
@@ -2377,7 +2419,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 else
                 {
-                    assert(op2->isContained() || op2->IsRegOptional());
+                    assert(containedOpNum == 2);
                     if (resultOpNum == 3 && !copiesUpperBits)
                     {
                         tgtPrefUse = BuildUse(op3);
