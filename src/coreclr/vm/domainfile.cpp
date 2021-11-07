@@ -723,7 +723,7 @@ DomainAssembly::~DomainAssembly()
     if (m_fHostAssemblyPublished)
     {
         // Remove association first.
-        UnRegisterFromHostedAssembly();
+        UnRegisterFromHostAssembly();
     }
 
     ModuleIterator i = IterateModules(kModIterIncludeLoading);
@@ -853,11 +853,11 @@ void DomainAssembly::Begin()
         m_pDomain->AddAssembly(this);
     }
     // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
-    RegisterWithHostedAssembly();
+    RegisterWithHostAssembly();
     m_fHostAssemblyPublished = true;
 }
 
-void DomainAssembly::RegisterWithHostedAssembly()
+void DomainAssembly::RegisterWithHostAssembly()
 {
     CONTRACTL
     {
@@ -873,7 +873,7 @@ void DomainAssembly::RegisterWithHostedAssembly()
     }
 }
 
-void DomainAssembly::UnRegisterFromHostedAssembly()
+void DomainAssembly::UnRegisterFromHostAssembly()
 {
     CONTRACTL
     {
