@@ -723,7 +723,7 @@ DomainAssembly::~DomainAssembly()
     if (m_fHostAssemblyPublished)
     {
         // Remove association first.
-        GetAppDomain()->UnPublishHostedAssembly(this);
+        UnRegisterFromHostedAssembly();
     }
 
     ModuleIterator i = IterateModules(kModIterIncludeLoading);
@@ -853,8 +853,40 @@ void DomainAssembly::Begin()
         m_pDomain->AddAssembly(this);
     }
     // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
-    GetAppDomain()->PublishHostedAssembly(this);
+    RegisterWithHostedAssembly();
     m_fHostAssemblyPublished = true;
+}
+
+void DomainAssembly::RegisterWithHostedAssembly()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    if (GetPEAssembly()->HasHostAssembly())
+    {
+        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(this);
+    }
+}
+
+void DomainAssembly::UnRegisterFromHostedAssembly()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    if (GetPEAssembly()->HasHostAssembly())
+    {
+        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(nullptr);
+    }
 }
 
 void DomainAssembly::Allocate()
