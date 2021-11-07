@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration>Debug</Configuration>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.mjs</WasmMainJSPath>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <WasmDebugLevel>1</WasmDebugLevel>
@@ -19,6 +19,13 @@
   <PropertyGroup>
     <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
   </PropertyGroup>
+<!--
+  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedRuntimePack PackageDirectory="c:\Dev\runtime\artifacts\bin\microsoft.netcore.app.runtime.browser-wasm\Debug" Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+  </Target>
+-->
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 </Project>

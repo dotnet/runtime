@@ -12,6 +12,14 @@ import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
 
+export let runtime_is_initialized_resolve: Function;
+export let runtime_is_initialized_reject: Function;
+export const runtime_is_initialized = new Promise((resolve, reject) => {
+    runtime_is_initialized_resolve = resolve;
+    runtime_is_initialized_reject = reject;
+});
+
+
 export async function mono_wasm_pre_init(): Promise<void> {
     const moduleExt = Module as EmscriptenModuleMono;
     if (moduleExt.configSrc) {
@@ -26,6 +34,7 @@ export async function mono_wasm_pre_init(): Promise<void> {
                 Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
                 Module.printErr("MONO_WASM: Stacktrace: \n");
                 Module.printErr(err.stack);
+                runtime_is_initialized_reject(err);
                 throw err;
             }
         }
@@ -132,9 +141,10 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
 // Initializes the runtime and loads assemblies, debug information, and other files.
 export function mono_load_runtime_and_bcl_args(args: MonoConfig): void {
     try {
-        return _load_assets_and_runtime(args);
+        _load_assets_and_runtime(args);
     } catch (exc: any) {
         console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", exc);
+        runtime_is_initialized_reject(exc);
         throw exc;
     }
 }
@@ -232,6 +242,8 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
     }
     mono_wasm_setenv("TZ", tz || "UTC");
     mono_wasm_runtime_ready();
+
+    runtime_is_initialized_resolve();
 
     //legacy app loading
     const argsAny: any = args;

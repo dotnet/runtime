@@ -28,7 +28,8 @@ import {
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
     mono_wasm_set_main_args,
     mono_wasm_pre_init,
-    mono_wasm_on_runtime_initialized
+    mono_wasm_on_runtime_initialized,
+    runtime_is_initialized
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -136,6 +137,9 @@ export const __exportAPI: any = (mono: any, binding: any, internal: any, module:
     }
     if (!moduleExt.onRuntimeInitialized) {
         moduleExt.onRuntimeInitialized = mono_wasm_on_runtime_initialized;
+        module.ready = module.ready.then(() => {
+            return runtime_is_initialized;
+        });
     }
     if (!moduleExt.print) {
         moduleExt.print = console.log;
