@@ -5465,17 +5465,15 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     GenTree* cns = gtNewIconNode(elemOffs, TYP_I_IMPL);
 
+// We're going to create a platform-specific address:
+//
+// XArch:   "arrRef + (index + elemOffset)"
+// ArmArch: "(arrRef + elemOffset) + index" // both ADD are BYREF here
+//
+// It'll allow us to hoist/CSE the invariant part which is "arrRef + elemOffset" on ArmArch.
+// We don't really need it on XArch because of more powerful addressing modes such as [base + index*scale + offset]
+//
 #ifdef TARGET_ARMARCH
-    // For ARM/ARM64 we create the following tree:
-    //
-    //   (arrRef + elemOffset) + (index)
-    //
-    // instead of this for xarch:
-    //
-    //   arrRef + (index + elemOffset)
-    //
-    // It allows us to hoist '(arrRef + elemOffset)' part in loops while on XArch
-    // it will be handled via more powerful addressing modes.
     GenTree* basePlusOffset = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, cns);
     addr                    = gtNewOperNode(GT_ADD, TYP_BYREF, basePlusOffset, addr);
 #else
@@ -5574,15 +5572,15 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     if (fgIsCommaThrow(tree))
     {
-        if ((arrElem != indTree) ||         // A new tree node may have been created
-            (indTree->OperGet() != GT_IND)) // The GT_IND may have been changed to a GT_CNS_INT
+        if ((arrElem != indTree) ||    // A new tree node may have been created
+            (indTree->OperIs(GT_IND))) // The GT_IND may have been changed to a GT_CNS_INT
         {
             return tree; // Just return the Comma-Throw, don't try to attach the fieldSeq info, etc..
         }
     }
 
     assert(!fgGlobalMorph || (arrElem->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
-    DBEXEC(fgGlobalMorph && (arrElem == tree), tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
+    DBEXEC(fgGlobalMorph && (arrElem == tree), tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED)
 
     addr = arrElem->gtGetOp1();
 
@@ -5599,16 +5597,14 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             // Label any constant array index contributions with #ConstantIndex and any LclVars with GTF_VAR_ARR_INDEX
             addr->LabelIndex(this);
         }
-        else if (addr->gtGetOp2()->IsCnsIntOrI())
+        else
         {
+            assert(addr->gtGetOp2()->IsCnsIntOrI());
             cnsOff = addr->gtGetOp2();
             addr   = nullptr;
         }
-        else
-        {
-            unreached();
-        }
 #else
+        assert(addr->TypeIs(TYP_BYREF));
         assert(addr->gtGetOp1()->TypeIs(TYP_REF));
         addr = addr->gtGetOp2();
 
