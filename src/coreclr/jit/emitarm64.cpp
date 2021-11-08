@@ -6985,6 +6985,14 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
     {
         shiftAmount = insOptsLSL(opt) ? scale : 0;
     }
+
+    // If target reg is ZR - it means we're doing an implicit nullcheck
+    // where target type was ignored and set to TYP_INT.
+    if ((reg1 == REG_ZR) && (shiftAmount > 0))
+    {
+        shiftAmount = scale;       
+    }
+
     assert((shiftAmount == scale) || (shiftAmount == 0));
 
     reg2 = encodingSPtoZR(reg2);
@@ -13489,9 +13497,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                         // For now, this code only supports extensions from i32/u32
                         assert(cast->isContained() && varTypeIsInt(cast->CastFromType()));
 
-                        const bool isZeroExtended = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
                         emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
-                                          isZeroExtended ? INS_OPTS_UXTW : INS_OPTS_SXTW,
+                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW,
                                           (int)index->gtGetOp2()->AsIntCon()->IconValue());
                     }
                     else

@@ -5461,23 +5461,23 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // the partial byref will not point within the object, and thus not get updated correctly during a GC.
     // This is mostly a risk in fully-interruptible code regions.
 
-    /* Add the first element's offset */
+    // We're going to create a platform-specific 'addr' tree:
+    //
+    // XArch:   "arrRef + (index + elemOffset)"
+    // ArmArch: "(arrRef + elemOffset) + index"
+    //
+    // It'll allow us to hoist/CSE the invariant part which is "arrRef + elemOffset" on ArmArch.
+    // We don't really need it on XArch because of more powerful addressing modes such as [base + index*scale + offset]
+    // ArmArch's tree should still be safe from GC's point of view since both ADD operations are byref and point to
+    // within the object so GC will be able to correctly track and update them.
 
-    GenTree* cns = gtNewIconNode(elemOffs, TYP_I_IMPL);
-
-// We're going to create a platform-specific address:
-//
-// XArch:   "arrRef + (index + elemOffset)"
-// ArmArch: "(arrRef + elemOffset) + index" // both ADD are BYREF here
-//
-// It'll allow us to hoist/CSE the invariant part which is "arrRef + elemOffset" on ArmArch.
-// We don't really need it on XArch because of more powerful addressing modes such as [base + index*scale + offset]
-//
+    // First element's offset
+    GenTree* elemOffset = gtNewIconNode(elemOffs, TYP_I_IMPL);
 #ifdef TARGET_ARMARCH
-    GenTree* basePlusOffset = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, cns);
+    GenTree* basePlusOffset = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, elemOffset);
     addr                    = gtNewOperNode(GT_ADD, TYP_BYREF, basePlusOffset, addr);
 #else
-    addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, cns);
+    addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, elemOffset);
     addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
 #endif
 
@@ -5572,8 +5572,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     if (fgIsCommaThrow(tree))
     {
-        if ((arrElem != indTree) ||    // A new tree node may have been created
-            (indTree->OperIs(GT_IND))) // The GT_IND may have been changed to a GT_CNS_INT
+        if ((arrElem != indTree) ||     // A new tree node may have been created
+            (!indTree->OperIs(GT_IND))) // The GT_IND may have been changed to a GT_CNS_INT
         {
             return tree; // Just return the Comma-Throw, don't try to attach the fieldSeq info, etc..
         }
@@ -5587,12 +5587,13 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* cnsOff = nullptr;
     if (addr->OperIs(GT_ADD))
     {
+        GenTree* addrOp1 = addr->gtGetOp1();
 #ifdef TARGET_ARMARCH
         // On arm/arm64 addr tree is a bit different, see above ^
-        if (addr->gtGetOp1()->OperIs(GT_ADD) && addr->gtGetOp1()->gtGetOp2()->IsCnsIntOrI())
+        if (addrOp1->OperIs(GT_ADD) && addrOp1->gtGetOp2()->IsCnsIntOrI())
         {
-            assert(addr->gtGetOp1()->gtGetOp1()->TypeIs(TYP_REF));
-            cnsOff = addr->gtGetOp1()->gtGetOp2();
+            assert(addrOp1->gtGetOp1()->TypeIs(TYP_REF));
+            cnsOff = addrOp1->gtGetOp2();
             addr   = addr->gtGetOp2();
             // Label any constant array index contributions with #ConstantIndex and any LclVars with GTF_VAR_ARR_INDEX
             addr->LabelIndex(this);
