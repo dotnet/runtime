@@ -482,8 +482,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    #- ${{ if or(eq(variables['isFullMatrix'], true), eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true)) }}:
-    - or(eq($[ variables['isFullMatrix'] ], true), eq($[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ], true)):
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
       - Browser_wasm_win
     variables:
       # map dependencies variables to local variables

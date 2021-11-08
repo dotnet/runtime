@@ -326,7 +326,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     # BuildWasmApps should only happen on the rolling build. No need to duplicate the build on PR's
-    - ${{ if or(eq(variables['isFullMatrix'], true), eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true)) }}:
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
       - Browser_wasm
     variables:
       # map dependencies variables to local variables
