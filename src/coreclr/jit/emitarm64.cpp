@@ -6990,7 +6990,7 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
     // where target type was ignored and set to TYP_INT.
     if ((reg1 == REG_ZR) && (shiftAmount > 0))
     {
-        shiftAmount = scale;       
+        shiftAmount = scale;
     }
 
     assert((shiftAmount == scale) || (shiftAmount == 0));
