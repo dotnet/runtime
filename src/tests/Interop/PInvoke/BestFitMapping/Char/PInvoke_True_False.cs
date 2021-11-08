@@ -4,9 +4,6 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using Xunit;
-
-using static TestData;
 
 public class PInvoke_True_False
 {
@@ -37,92 +34,35 @@ public class PInvoke_True_False
     [DllImport("Char_BestFitMappingNative", BestFitMapping = true, ThrowOnUnmappableChar = false)]
     public static extern bool CharBuffer_InOutByRef_StringBuilder([In, Out]ref StringBuilder s);
 
-    static void testChar()
-    {
-        Assert.True(Char_In(GetInvalidChar()));
-
-        Assert.True(Char_In(GetValidChar()));
-
-        char cTemp = GetInvalidChar();
-        char cTempClone = cTemp;
-        Assert.True(Char_InByRef(ref cTemp));
-        Assert.Equal(cTempClone, cTemp);
-
-        cTemp = GetValidChar();
-        cTempClone = cTemp;
-        Assert.True(Char_InByRef(ref cTemp));
-        Assert.Equal(cTempClone, cTemp);
-
-        cTemp = GetInvalidChar();
-        cTempClone = cTemp;
-        Assert.True(Char_InOutByRef(ref cTemp));
-        Assert.NotEqual(cTempClone, cTemp);
-
-        cTemp = GetValidChar();
-        cTempClone = cTemp;
-        Assert.True(Char_InOutByRef(ref cTemp));
-        Assert.Equal(cTempClone, cTemp);
-    }
-
-    static void testCharBufferString()
-    {
-        Assert.True(CharBuffer_In_String(GetInvalidString()));
-
-        Assert.True(CharBuffer_In_String(GetValidString()));
-
-        String cTemp = GetInvalidString();
-        String cTempClone = cTemp;
-        Assert.True(CharBuffer_InByRef_String(ref cTemp));
-        Assert.Equal(cTempClone, cTemp);
-
-        cTemp = GetValidString();
-        cTempClone = cTemp;
-        Assert.True(CharBuffer_InByRef_String(ref cTemp));
-        Assert.Equal(cTempClone, cTemp);
-
-        cTemp = GetInvalidString();
-        cTempClone = cTemp;
-        Assert.True(CharBuffer_InOutByRef_String(ref cTemp));
-        Assert.NotEqual(cTempClone, cTemp);
-
-        cTemp = GetValidString();
-        cTempClone = cTemp;
-        Assert.True(CharBuffer_InOutByRef_String(ref cTemp));
-        Assert.Equal(cTempClone, cTemp);
-    }
-
-    static void testCharBufferStringBuilder()
-    {
-        Assert.True(CharBuffer_In_StringBuilder(GetInvalidStringBuilder()));
-
-        Assert.True(CharBuffer_In_StringBuilder(GetValidStringBuilder()));
-
-        StringBuilder cTemp = GetInvalidStringBuilder();
-        StringBuilder cTempClone = cTemp;
-        Assert.True(CharBuffer_InByRef_StringBuilder(ref cTemp));
-        Assert.Equal(cTempClone.ToString(), cTemp.ToString());
-
-        cTemp = GetValidStringBuilder();
-        cTempClone = cTemp;
-        Assert.True(CharBuffer_InByRef_StringBuilder(ref cTemp));
-        Assert.Equal(cTempClone.ToString(), cTemp.ToString());
-
-        cTemp = GetInvalidStringBuilder();
-        cTempClone = cTemp;
-        Assert.True(CharBuffer_InOutByRef_StringBuilder(ref cTemp));
-        Assert.NotEqual(cTempClone.ToString(), cTemp.ToString());
-
-        cTemp = GetValidStringBuilder();
-        cTempClone = cTemp;
-        Assert.True(CharBuffer_InOutByRef_StringBuilder(ref cTemp));
-        Assert.Equal(cTempClone.ToString(), cTemp.ToString());
-    }
-
-    public static void RunTest()
+    public static unsafe void RunTest()
     {
         Console.WriteLine(" -- Validate P/Invokes: BestFitMapping=true, ThrowOnUnmappableChar=false");
-        testChar();
-        testCharBufferString();
-        testCharBufferStringBuilder();
+
+        bool bestFitMapping = true;
+        bool throwOnUnmappableChar = false;
+
+        Test.ValidateChar(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<char>(
+                &Char_In,
+                &Char_InByRef,
+                &Char_InOutByRef));
+
+        Test.ValidateString(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<string>(
+                &CharBuffer_In_String,
+                &CharBuffer_InByRef_String,
+                &CharBuffer_InOutByRef_String));
+
+        Test.ValidateStringBuilder(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<StringBuilder>(
+                &CharBuffer_In_StringBuilder,
+                &CharBuffer_InByRef_StringBuilder,
+                &CharBuffer_InOutByRef_StringBuilder));
     }
 }

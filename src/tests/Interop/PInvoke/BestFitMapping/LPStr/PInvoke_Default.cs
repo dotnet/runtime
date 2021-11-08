@@ -23,7 +23,6 @@ public partial class PInvoke_Default
         public String str;
     }
 
-#pragma warning disable 618
     [DllImport("LPStr_BestFitMappingNative")]
     public static extern bool LPStrBuffer_In_String([In][MarshalAs(UnmanagedType.LPStr)]String s);
 
@@ -77,5 +76,73 @@ public partial class PInvoke_Default
 
     [DllImport("LPStr_BestFitMappingNative")]
     public static extern bool LPStrBuffer_InOutByRef_Array_Struct([In, Out][MarshalAs(UnmanagedType.LPArray)]ref LPStrTestStruct[] structArray);
-#pragma warning restore 618
+
+    private static LPStrTestStruct GetInvalidStruct() => new LPStrTestStruct() { str = GetInvalidString() };
+
+    private static LPStrTestStruct GetValidStruct() => new LPStrTestStruct() { str = GetValidString() };
+
+    private static unsafe void RunTest(bool bestFitMapping, bool throwOnUnmappableChar)
+    {
+        Console.WriteLine(" -- Validate P/Invokes: BestFitMapping not set, ThrowOnUnmappableChar not set");
+
+        Test.ValidateString(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<string>(
+                &LPStrBuffer_In_String,
+                &LPStrBuffer_InByRef_String,
+                &LPStrBuffer_InOutByRef_String));
+
+        Test.ValidateStringBuilder(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<StringBuilder>(
+                &LPStrBuffer_In_StringBuilder,
+                &LPStrBuffer_InByRef_StringBuilder,
+                &LPStrBuffer_InOutByRef_StringBuilder));
+
+        Test.ValidateStringArray(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<string[]>(
+                &LPStrBuffer_In_Array_String,
+                &LPStrBuffer_InByRef_Array_String,
+                &LPStrBuffer_InOutByRef_Array_String));
+
+        Test.Validate(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<LPStrTestStruct>(
+                &LPStrBuffer_In_Struct_String,
+                &LPStrBuffer_InByRef_Struct_String,
+                &LPStrBuffer_InOutByRef_Struct_String),
+            new Test.DataContext<LPStrTestStruct, string>(
+                GetInvalidStruct(),
+                GetValidStruct(),
+                (LPStrTestStruct s) => s.str));
+
+        Test.Validate(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<LPStrTestClass>(
+                &LPStrBuffer_In_Class_String,
+                &LPStrBuffer_InByRef_Class_String,
+                &LPStrBuffer_InOutByRef_Class_String),
+            new Test.DataContext<LPStrTestClass, string>(
+                new LPStrTestClass() { str = GetInvalidString() },
+                new LPStrTestClass() { str = GetValidString() },
+                (LPStrTestClass s) => s.str));
+
+        Test.Validate(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<LPStrTestStruct[]>(
+                &LPStrBuffer_In_Array_Struct,
+                &LPStrBuffer_InByRef_Array_Struct,
+                &LPStrBuffer_InOutByRef_Array_Struct),
+            new Test.DataContext<LPStrTestStruct[], string>(
+                new LPStrTestStruct[] { GetInvalidStruct(), GetInvalidStruct() },
+                new LPStrTestStruct[] { GetValidStruct(), GetValidStruct() },
+                (LPStrTestStruct[] s) => s[0].str));
+    }
 }

@@ -4,7 +4,6 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using Xunit;
 
 using static TestData;
 
@@ -26,7 +25,6 @@ public class PInvoke_False_False
         public String str;
     }
 
-#pragma warning disable 618
     [DllImport("LPStr_BestFitMappingNative", BestFitMapping = false, ThrowOnUnmappableChar = false)]
     public static extern bool LPStrBuffer_In_String([In][MarshalAs(UnmanagedType.LPStr)]String s);
 
@@ -80,198 +78,76 @@ public class PInvoke_False_False
 
     [DllImport("LPStr_BestFitMappingNative", BestFitMapping = true, ThrowOnUnmappableChar = true)]
     public static extern bool LPStrBuffer_InOutByRef_Array_Struct([In, Out][MarshalAs(UnmanagedType.LPArray)]ref LPStrTestStruct[] structArray);
-#pragma warning restore 618
 
-    static void testLPStrBufferString()
-    {
-        Assert.True(LPStrBuffer_In_String(GetInvalidString()));
+    private static LPStrTestStruct GetInvalidStruct() => new LPStrTestStruct() { str = GetInvalidString() };
 
-        Assert.True(LPStrBuffer_In_String(GetValidString()));
+    private static LPStrTestStruct GetValidStruct() => new LPStrTestStruct() { str = GetValidString() };
 
-        String cTemp = GetInvalidString();
-        Assert.True(LPStrBuffer_InByRef_String(ref cTemp));
-
-        cTemp = GetValidString();
-        Assert.True(LPStrBuffer_InByRef_String(ref cTemp));
-
-        cTemp = GetInvalidString();
-        String cTempClone = cTemp;
-        Assert.True(LPStrBuffer_InOutByRef_String(ref cTemp));
-        Assert.NotEqual(cTempClone, cTemp);
-
-        cTemp = GetValidString();
-        cTempClone = cTemp;
-        Assert.True(LPStrBuffer_InOutByRef_String(ref cTemp));
-        Assert.Equal(cTempClone, cTemp);
-    }
-
-    static void testLPStrBufferStringBuilder()
-    {
-        StringBuilder sb = GetInvalidStringBuilder();
-        Assert.True(LPStrBuffer_In_StringBuilder(sb));
-
-        Assert.True(LPStrBuffer_In_StringBuilder(GetValidStringBuilder()));
-
-        StringBuilder cTemp = GetInvalidStringBuilder();
-        Assert.True(LPStrBuffer_InByRef_StringBuilder(ref cTemp));
-
-        cTemp = GetValidStringBuilder();
-        Assert.True(LPStrBuffer_InByRef_StringBuilder(ref cTemp));
-
-        cTemp = GetInvalidStringBuilder();
-        StringBuilder cTempClone = cTemp;
-        Assert.True(LPStrBuffer_InOutByRef_StringBuilder(ref cTemp));
-        Assert.NotEqual(cTempClone.ToString(), cTemp.ToString());
-
-        cTemp = GetValidStringBuilder();
-        cTempClone = cTemp;
-        Assert.True(LPStrBuffer_InOutByRef_StringBuilder(ref cTemp));
-        Assert.Equal(cTempClone.ToString(), cTemp.ToString());
-    }
-
-    static LPStrTestStruct GetInvalidStruct()
-    {
-        LPStrTestStruct inValidStruct = new LPStrTestStruct();
-        inValidStruct.str = GetInvalidString();
-
-        return inValidStruct;
-    }
-
-
-    static LPStrTestStruct GetValidStruct()
-    {
-        LPStrTestStruct validStruct = new LPStrTestStruct();
-        validStruct.str = GetValidString();
-
-        return validStruct;
-    }
-
-    static void testLPStrBufferStruct()
-    {
-        LPStrTestStruct lpss = GetInvalidStruct();
-        Assert.True(LPStrBuffer_In_Struct_String(lpss));
-
-        Assert.True(LPStrBuffer_In_Struct_String(GetValidStruct()));
-
-        LPStrTestStruct cTemp = GetInvalidStruct();
-        Assert.True(LPStrBuffer_InByRef_Struct_String(ref cTemp));
-
-        cTemp = GetValidStruct();
-        Assert.True(LPStrBuffer_InByRef_Struct_String(ref cTemp));
-
-        cTemp = GetInvalidStruct();
-        LPStrTestStruct cTempClone = cTemp;
-        Assert.True(LPStrBuffer_InOutByRef_Struct_String(ref cTemp));
-        Assert.NotEqual(cTempClone.str, cTemp.str);
-
-        cTemp = GetValidStruct();
-        cTempClone = cTemp;
-        Assert.True(LPStrBuffer_InOutByRef_Struct_String(ref cTemp));
-        Assert.Equal(cTempClone.str, cTemp.str);
-    }
-
-    static void testLPStrBufferClass()
-    {
-        LPStrTestClass lpss = new LPStrTestClass();
-        lpss.str = GetInvalidString();
-        Assert.True(LPStrBuffer_In_Class_String(lpss));
-
-        lpss.str = GetValidString();
-        Assert.True(LPStrBuffer_In_Class_String(lpss));
-
-        LPStrTestClass cTemp = new LPStrTestClass();
-        cTemp.str = GetInvalidString();
-        Assert.True(LPStrBuffer_InByRef_Class_String(ref cTemp));
-
-        cTemp.str = GetValidString();
-        Assert.True(LPStrBuffer_InByRef_Class_String(ref cTemp));
-
-        cTemp.str = GetInvalidString();
-        LPStrTestClass cTempClone = new LPStrTestClass();
-        cTempClone.str = cTemp.str;
-        Assert.True(LPStrBuffer_InOutByRef_Class_String(ref cTemp));
-        Assert.NotEqual(cTempClone.str, cTemp.str);
-
-        cTemp.str = GetValidString();
-        cTempClone.str = cTemp.str;
-        Assert.True(LPStrBuffer_InOutByRef_Class_String(ref cTemp));
-        Assert.Equal(cTempClone.str, cTemp.str);
-    }
-
-    static void testLPStrBufferArray()
-    {
-        String[] lpss = GetInvalidStringArray();
-        Assert.True(LPStrBuffer_In_Array_String(lpss));
-
-        Assert.True(LPStrBuffer_In_Array_String(GetValidStringArray()));
-
-        String[] cTemp = GetInvalidStringArray();
-        Assert.True(LPStrBuffer_InByRef_Array_String(ref cTemp));
-
-        cTemp = GetValidStringArray();
-        Assert.True(LPStrBuffer_InByRef_Array_String(ref cTemp));
-
-        cTemp = GetInvalidStringArray();
-        String[] cTempClone = new String[3];
-        cTempClone[0] = cTemp[0];
-        Assert.True(LPStrBuffer_InOutByRef_Array_String(ref cTemp));
-        Assert.NotEqual(cTempClone[0], cTemp[0]);
-
-        cTemp = GetValidStringArray();
-        cTempClone[0] = cTemp[0];
-        Assert.True(LPStrBuffer_InOutByRef_Array_String(ref cTemp));
-        Assert.Equal(cTempClone[0], cTemp[0]);
-    }
-
-    static void testLPStrBufferArrayOfStructs()
-    {
-        LPStrTestStruct[] lpss = new LPStrTestStruct[2];
-        lpss[0] = GetInvalidStruct();
-        lpss[1] = GetInvalidStruct();
-        Assert.True(LPStrBuffer_In_Array_Struct(lpss));
-
-        lpss = new LPStrTestStruct[2];
-        lpss[0] = GetValidStruct();
-        lpss[1] = GetValidStruct();
-        Assert.True(LPStrBuffer_In_Array_Struct(lpss));
-
-        lpss = new LPStrTestStruct[2];
-        lpss[0] = GetInvalidStruct();
-        lpss[1] = GetInvalidStruct();
-        Assert.True(LPStrBuffer_InByRef_Array_Struct(ref lpss));
-
-        lpss = new LPStrTestStruct[2];
-        lpss[0] = GetValidStruct();
-        lpss[1] = GetValidStruct();
-        Assert.True(LPStrBuffer_InByRef_Array_Struct(ref lpss));
-
-        lpss = new LPStrTestStruct[2];
-        lpss[0] = GetInvalidStruct();
-        lpss[1] = GetInvalidStruct();
-        LPStrTestStruct[] lpssClone = new LPStrTestStruct[2];
-        lpssClone[0].str = lpss[0].str;
-        lpssClone[1].str = lpss[1].str;
-        Assert.True(LPStrBuffer_InOutByRef_Array_Struct(ref lpss));
-        Assert.NotEqual(lpss[0].str, lpssClone[0].str);
-
-        lpss = new LPStrTestStruct[2];
-        lpss[0] = GetValidStruct();
-        lpss[1] = GetValidStruct();
-        lpssClone = new LPStrTestStruct[2];
-        lpssClone[0].str = lpss[0].str;
-        lpssClone[1].str = lpss[1].str;
-        Assert.True(LPStrBuffer_InOutByRef_Array_Struct(ref lpss));
-        Assert.Equal(lpss[0].str, lpssClone[0].str);
-    }
-
-    public static void RunTest()
+    public static unsafe void RunTest()
     {
         Console.WriteLine(" -- Validate P/Invokes: BestFitMapping=false, ThrowOnUnmappableChar=false");
-        testLPStrBufferString();
-        testLPStrBufferStringBuilder();
-        testLPStrBufferStruct();
-        testLPStrBufferArray();
-        testLPStrBufferClass();
-        testLPStrBufferArrayOfStructs();
+
+        bool bestFitMapping = false;
+        bool throwOnUnmappableChar = false;
+
+        Test.ValidateString(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<string>(
+                &LPStrBuffer_In_String,
+                &LPStrBuffer_InByRef_String,
+                &LPStrBuffer_InOutByRef_String));
+
+        Test.ValidateStringBuilder(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<StringBuilder>(
+                &LPStrBuffer_In_StringBuilder,
+                &LPStrBuffer_InByRef_StringBuilder,
+                &LPStrBuffer_InOutByRef_StringBuilder));
+
+        Test.ValidateStringArray(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<string[]>(
+                &LPStrBuffer_In_Array_String,
+                &LPStrBuffer_InByRef_Array_String,
+                &LPStrBuffer_InOutByRef_Array_String));
+
+        Test.Validate(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<LPStrTestStruct>(
+                &LPStrBuffer_In_Struct_String,
+                &LPStrBuffer_InByRef_Struct_String,
+                &LPStrBuffer_InOutByRef_Struct_String),
+            new Test.DataContext<LPStrTestStruct, string>(
+                GetInvalidStruct(),
+                GetValidStruct(),
+                (LPStrTestStruct s) => s.str));
+
+        Test.Validate(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<LPStrTestClass>(
+                &LPStrBuffer_In_Class_String,
+                &LPStrBuffer_InByRef_Class_String,
+                &LPStrBuffer_InOutByRef_Class_String),
+            new Test.DataContext<LPStrTestClass, string>(
+                new LPStrTestClass() { str = GetInvalidString() },
+                new LPStrTestClass() { str = GetValidString() },
+                (LPStrTestClass s) => s.str));
+
+        Test.Validate(
+            bestFitMapping,
+            throwOnUnmappableChar,
+            new Test.Functions<LPStrTestStruct[]>(
+                &LPStrBuffer_In_Array_Struct,
+                &LPStrBuffer_InByRef_Array_Struct,
+                &LPStrBuffer_InOutByRef_Array_Struct),
+            new Test.DataContext<LPStrTestStruct[], string>(
+                new LPStrTestStruct[] { GetInvalidStruct(), GetInvalidStruct() },
+                new LPStrTestStruct[] { GetValidStruct(), GetValidStruct() },
+                (LPStrTestStruct[] s) => s[0].str));
     }
 }
