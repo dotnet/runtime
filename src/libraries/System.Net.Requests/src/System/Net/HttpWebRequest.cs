@@ -1226,7 +1226,7 @@ namespace System.Net
             if (policy != null && policy.Level != RequestCacheLevel.BypassCache)
             {
                 CacheControlHeaderValue? cacheControl = null;
-                var pragmaHeaders = request.Headers.Pragma;
+                HttpHeaderValueCollection<NameValueHeaderValue> pragmaHeaders = request.Headers.Pragma;
 
                 if (policy is HttpRequestCachePolicy httpRequestCachePolicy)
                 {
@@ -1256,29 +1256,22 @@ namespace System.Net
                             };
                             break;
                         case HttpRequestCacheLevel.Default:
+                            cacheControl = new CacheControlHeaderValue();
+
                             if (httpRequestCachePolicy.MinFresh > TimeSpan.Zero)
                             {
-                                cacheControl = new CacheControlHeaderValue
-                                {
-                                    MinFresh = httpRequestCachePolicy.MinFresh
-                                };
+                                cacheControl.MinFresh = httpRequestCachePolicy.MinFresh;
                             }
 
                             if (httpRequestCachePolicy.MaxAge != TimeSpan.MaxValue)
                             {
-                                cacheControl = new CacheControlHeaderValue
-                                {
-                                    MaxAge = httpRequestCachePolicy.MaxAge
-                                };
+                                cacheControl.MaxAge = httpRequestCachePolicy.MaxAge;
                             }
 
                             if (httpRequestCachePolicy.MaxStale > TimeSpan.Zero)
                             {
-                                cacheControl = new CacheControlHeaderValue
-                                {
-                                    MaxStale = true,
-                                    MaxStaleLimit = httpRequestCachePolicy.MaxStale
-                                };
+                                cacheControl.MaxStale = true;
+                                cacheControl.MaxStaleLimit = httpRequestCachePolicy.MaxStale;
                             }
 
                             break;
@@ -1332,12 +1325,10 @@ namespace System.Net
             {
                 return DefaultCachePolicy;
             }
-            else if (WebRequest.DefaultCachePolicy != null)
+            else
             {
                 return WebRequest.DefaultCachePolicy;
             }
-
-            return null;
         }
 
         public override IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
