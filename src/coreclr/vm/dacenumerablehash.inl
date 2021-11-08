@@ -41,10 +41,12 @@ DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModu
     m_pModule = pModule;
     m_pHeap = pHeap;
 
-    S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * S_SIZE_T(cInitialBuckets);
+    // two extra slots - slot [0] contains length,
+    //                   slot [1] will contain the next version of the table if it resizes 
+    S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * S_SIZE_T(cInitialBuckets + 2);
 
     m_cEntries = 0;
-    m_pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets + S_SIZE_T(2 * sizeof(PTR_VolatileEntry)));
+    m_pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
     ((size_t*)m_pBuckets)[0] = cInitialBuckets;
 
     // Note: Memory allocated on loader heap is zero filled
@@ -171,17 +173,19 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     DWORD cBuckets = (DWORD)((size_t*)curBuckets)[0];
 
     // Make the new bucket table larger by the scale factor requested by the subclass (but also prime).
-        DWORD cNewBuckets = NextLargestPrime(cBuckets * SCALE_FACTOR);
-    S_SIZE_T cbNewBuckets = S_SIZE_T(cNewBuckets) * S_SIZE_T(sizeof(PTR_VolatileEntry));
+    DWORD cNewBuckets = NextLargestPrime(cBuckets * SCALE_FACTOR);
+    // two extra slots - slot [0] contains length,
+    //                   slot [1] will contain the next version of the table if it resizes 
+    S_SIZE_T cbNewBuckets = S_SIZE_T(cNewBuckets + 2) * S_SIZE_T(sizeof(PTR_VolatileEntry));
 
-    AllocMemHolder<PTR_VolatileEntry*> pTails(GetHeap()->AllocMem_NoThrow(cbNewBuckets + S_SIZE_T(2 * sizeof(PTR_VolatileEntry))));
+    AllocMemHolder<PTR_VolatileEntry> pTails(GetHeap()->AllocMem_NoThrow(cbNewBuckets));
 
-    PTR_VolatileEntry *pNewBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem_NoThrow(cbNewBuckets + S_SIZE_T(2 * sizeof(PTR_VolatileEntry)));
+    PTR_VolatileEntry *pNewBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem_NoThrow(cbNewBuckets);
     if (!pNewBuckets)
         return;
 
-    ((size_t*)pNewBuckets)[0] = cNewBuckets;
-    ((PTR_VolatileEntry**)curBuckets)[1] = pNewBuckets;
+    ((size_t*)pNewBuckets)[0] = cNewBuckets;            // element 0 stores the length of the table
+    ((PTR_VolatileEntry**)curBuckets)[1] = pNewBuckets; // element 1 stores the next version of the table
 
     // the new buckets must be published before we start moving entries.
     MemoryBarrier();
@@ -191,29 +195,39 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     // memset(pNewBuckets, 0, cNewBuckets * sizeof(PTR_VolatileEntry));
 
     // Run through the old table and transfer all the entries. Be sure not to mess with the integrity of the
-    // old table while we are doing this, as there can be concurrent readers! Note that it is OK if the
-    // concurrent reader misses out on a match, though - they will have to acquire the lock on a miss & try
-    // again.
+    // old table while we are doing this, as there can be concurrent readers!
+    // IMPORTANT: every entry must be reachable from the old bucket
+    //            only after an entry appears in the correct bucket in the new table we can remove it from the old.
+    //            it is ok to appear temporarily in a wrong bucket.
+
     for (DWORD i = 0; i < cBuckets; i++)
     {
-        PTR_VolatileEntry pEntry = curBuckets[i + 2];
-
-        // Try to lock out readers from scanning this bucket. This is obviously a race which may fail.
-        // However, note that it's OK if somebody is already in the list - it's OK if we mess with the bucket
-        // groups, as long as we don't destroy anything. The lookup function will still do appropriate
-        // comparison even if it wanders aimlessly amongst entries while we are rearranging things. If a
-        // lookup finds a match under those circumstances, great. If not, they will have to acquire the lock &
-        // try again anyway.
-        curBuckets[i + 2] = NULL;
+        DWORD dwCurBucket = i + 2;
+        PTR_VolatileEntry pEntry = curBuckets[dwCurBucket];
 
         while (pEntry != NULL)
         {
-            DWORD dwNewBucket = pEntry->m_iHashValue % cNewBuckets;
+            DWORD dwNewBucket = (pEntry->m_iHashValue % cNewBuckets) + 2;
             PTR_VolatileEntry pNextEntry  = pEntry->m_pNextEntry;
 
-            pEntry->m_pNextEntry = pNewBuckets[dwNewBucket + 2];
-            pNewBuckets[dwNewBucket + 2] = pEntry;
+            // make the pEntry reachable in the new bucket, together with all the chain (that is temporary and ok)
+            if (pTails[dwNewBucket] == NULL)
+            {
+                pNewBuckets[dwNewBucket] = pEntry;
+            }
+            else
+            {
+                pTails[dwNewBucket]->m_pNextEntry = pEntry;
+            }
 
+            // skip pEntry in the old bucket after it appears in the new.
+            VolatileStore(&curBuckets[dwCurBucket], pNextEntry);
+
+            // drop the rest of the bucket after old table starts referring to it
+            VolatileStore(&pEntry->m_pNextEntry, (PTR_VolatileEntry)NULL);
+
+            // remember the new bucket tail
+            pTails[dwNewBucket] = pEntry;
             pEntry = pNextEntry;
         }
     }
