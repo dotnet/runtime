@@ -99,6 +99,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 yield return new object[] { "Digest realm=\"testrealm\",nonce=\"6afd170437eb5144258b308f7c491d96\",opaque=\"\",stale=FALSE,algorithm=MD5,qop=\"auth\"", true };
                 yield return new object[] { "Digest realm=\"testrealm\", domain=\"\", nonce=\"NA42+vpOFQd1GwCyVRZuhhy+jDn4BMRl\", algorithm=MD5, qop=\"auth\", stale=false", true };
+                yield return new object[] { "Digest realm=\"\", nonce=\"NA42+vpOFQd1GwCyVRZuhhy+jDn4BMRl\", algorithm=MD5, qop=\"auth\", stale=false", true };
             }
         }
 
