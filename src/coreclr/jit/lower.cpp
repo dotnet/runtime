@@ -5049,7 +5049,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
         {
             // scale and offset have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
             // where there is no room for additional offsets/scales.
-            // TODO: make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
+            // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
             MakeSrcContained(addrMode, index);
         }
     }
