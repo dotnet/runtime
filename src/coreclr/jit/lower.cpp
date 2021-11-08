@@ -5046,7 +5046,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
         unsigned castFrom = genTypeSize(cast->CastFromType());
         unsigned target   = genTypeSize(targetType);
 
-        // For now only two the most popular cases are handled. TODO: extend
+        // For now we only handle the most popular case for indices 32 -> 64 sign/zero extension
+        // Where target is 32 or 64. TODO: enable for 8 and 16
         if ((castFrom == 4) && (castTo == 8) && (target == (1U << shiftBy)) && (target >= 4) && (scale == 1) &&
             (offset == 0))
         {
