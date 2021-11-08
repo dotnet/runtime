@@ -135,11 +135,9 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseInsertEntry(DacEnumerableHa
     // Prepare to link the new entry at the head of the bucket chain.
     pVolatileEntry->m_pNextEntry = (GetBuckets())[dwBucket];
 
-    // Make sure that all writes to the entry are visible before publishing the entry.
-    MemoryBarrier();
-
     // Publish the entry by pointing the bucket at it.
-    (GetBuckets())[dwBucket] = pVolatileEntry;
+    // Make sure that all writes to the entry are visible before publishing the entry.
+    VolatileStore(&(GetBuckets())[dwBucket], pVolatileEntry);
 
     m_cEntries++;
 
@@ -207,15 +205,13 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     }
 
     // Make sure that all writes are visible before publishing the new array.
-    MemoryBarrier();
-    m_pBuckets = pNewBuckets;
+    VolatileStore(&m_pBuckets, pNewBuckets);
 
     // The new number of buckets has to be published last (prior to this readers may miscalculate a bucket
     // index, but the result will always be in range and they'll simply walk the wrong chain and get a miss,
     // prompting a retry under the lock). If we let the count become visible unordered wrt to the bucket array
     // itself a reader could potentially read buckets from beyond the end of the old bucket list).
-    MemoryBarrier();
-    m_cBuckets = cNewBuckets;
+    VolatileStore(&m_cBuckets, cNewBuckets);
 }
 
 // Returns the next prime larger (or equal to) than the number given.
