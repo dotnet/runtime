@@ -76,7 +76,7 @@ namespace System.Xml.Serialization
             internal Member(XmlSerializationReaderILGen outerClass, string source, string? arraySource, string? arrayName, int i, MemberMapping mapping, bool multiRef, string? choiceSource)
             {
                 _source = source;
-                _arrayName = $"{arrayName}_{i.ToString(CultureInfo.InvariantCulture)}";
+                _arrayName = string.Create(CultureInfo.InvariantCulture, $"{arrayName}_{i}");
                 _choiceArrayName = $"choice_{_arrayName}";
                 _choiceSource = choiceSource;
 
