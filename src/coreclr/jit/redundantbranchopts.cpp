@@ -46,6 +46,7 @@ PhaseStatus Compiler::optRedundantBranches()
             //
             if (block->bbJumpKind == BBJ_COND)
             {
+                madeChanges |= m_compiler->optRedundantRelop(block);
                 madeChanges |= m_compiler->optRedundantBranch(block);
             }
         }
@@ -98,7 +99,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     GenTree* const tree = jumpTree->AsOp()->gtOp1;
 
-    if (!(tree->OperKind() & GTK_RELOP))
+    if (!tree->OperIsCompare())
     {
         return false;
     }
@@ -688,6 +689,386 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // We optimized.
     //
     fgModified = true;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// optRedundantRelop: see if the value of tree is redundant given earlier
+//   relops in this block.
+//
+// Arguments:
+//    block - block of interest (BBJ_COND)
+//
+// Returns:
+//    true, if changes were made.
+//
+// Notes:
+//
+// Here's a walkthrough of how this operates. Given a block like
+//
+// STMT00388 (IL 0x30D...  ???)
+//  *  ASG       ref    <l:$9d3, c:$9d4>
+//  +--*  LCL_VAR   ref    V121 tmp97       d:1 <l:$2c8, c:$99f>
+//   \--*  IND       ref    <l:$9d3, c:$9d4>
+//       \--*  LCL_VAR   byref  V116 tmp92       u:1 (last use) Zero Fseq[m_task] $18c
+//
+// STMT00390 (IL 0x30D...  ???)
+//  *  ASG       bool   <l:$8ff, c:$a02>
+//  +--*  LCL_VAR   int    V123 tmp99       d:1 <l:$8ff, c:$a02>
+//  \--*  NE        int    <l:$8ff, c:$a02>
+//     +--*  LCL_VAR   ref    V121 tmp97       u:1 <l:$2c8, c:$99f>
+//     \--*  CNS_INT   ref    null $VN.Null
+//
+// STMT00391
+//  *  ASG       ref    $133
+//  +--*  LCL_VAR   ref    V124 tmp100      d:1 $133
+//  \--*  IND       ref    $133
+//     \--*  CNS_INT(h) long   0x31BD3020 [ICON_STR_HDL] $34f
+//
+// STMT00392
+//  *  JTRUE     void
+//  \--*  NE        int    <l:$8ff, c:$a02>
+//     +--*  LCL_VAR   int    V123 tmp99       u:1 (last use) <l:$8ff, c:$a02>
+//     \--*  CNS_INT   int    0 $40
+//
+// We will first consider STMT00391. It is a local assign but the RHS value number
+// isn't related to $8ff. So we continue searching and add V124 to the array
+// of defined locals.
+//
+// Next we consider STMT00390. It is a local assign and the RHS value number is
+// the same, $8ff. So this compare is a fwd-sub candidate. We check if any local
+// on the RHS is in the defined locals array. The answer is no. So the RHS tree
+// can be safely forwarded in place of the compare in STMT00392. We check if V123 is
+// live out of the block. The answer is no. So This RHS tree becomes the candidate tree.
+// We add V123 to the array of defined locals and keep searching.
+//
+// Next we consider STMT00388, It is a local assign but the RHS value number
+// isn't related to $8ff. So we continue searching and add V121 to the array
+// of defined locals.
+//
+// We reach the end of the block and stop searching.
+//
+// Since we found a viable candidate, we clone it and substitute into the jump:
+//
+// STMT00388 (IL 0x30D...  ???)
+//  *  ASG       ref    <l:$9d3, c:$9d4>
+//  +--*  LCL_VAR   ref    V121 tmp97       d:1 <l:$2c8, c:$99f>
+//   \--*  IND       ref    <l:$9d3, c:$9d4>
+//       \--*  LCL_VAR   byref  V116 tmp92       u:1 (last use) Zero Fseq[m_task] $18c
+//
+// STMT00390 (IL 0x30D...  ???)
+//  *  ASG       bool   <l:$8ff, c:$a02>
+//  +--*  LCL_VAR   int    V123 tmp99       d:1 <l:$8ff, c:$a02>
+//  \--*  NE        int    <l:$8ff, c:$a02>
+//     +--*  LCL_VAR   ref    V121 tmp97       u:1 <l:$2c8, c:$99f>
+//     \--*  CNS_INT   ref    null $VN.Null
+//
+// STMT00391
+//  *  ASG       ref    $133
+//  +--*  LCL_VAR   ref    V124 tmp100      d:1 $133
+//  \--*  IND       ref    $133
+//     \--*  CNS_INT(h) long   0x31BD3020 [ICON_STR_HDL] $34f
+//
+// STMT00392
+//  *  JTRUE     void
+//  \--*  NE        int    <l:$8ff, c:$a02>
+//     +--*  LCL_VAR   ref    V121 tmp97       u:1 <l:$2c8, c:$99f>
+//     \--*  CNS_INT   ref    null $VN.Null
+//
+// We anticipate that STMT00390 will become dead code, and if and so we've
+// eliminated one of the two compares in the block.
+//
+bool Compiler::optRedundantRelop(BasicBlock* const block)
+{
+    Statement* const stmt = block->lastStmt();
+
+    if (stmt == nullptr)
+    {
+        return false;
+    }
+
+    GenTree* const jumpTree = stmt->GetRootNode();
+
+    if (!jumpTree->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    GenTree* const tree = jumpTree->AsOp()->gtOp1;
+
+    if (!tree->OperIsCompare())
+    {
+        return false;
+    }
+
+    // If tree has side effects other than GTF_EXCEPT, bail.
+    //
+    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        if ((tree->gtFlags & GTF_SIDE_EFFECT) != GTF_EXCEPT)
+        {
+            return false;
+        }
+    }
+
+    // If relop's value is known, bail.
+    //
+    const ValueNum treeVN = tree->GetVN(VNK_Liberal);
+
+    if (vnStore->IsVNConstant(treeVN))
+    {
+        JITDUMP(" -- no, jump tree cond is constant\n");
+        return false;
+    }
+
+    // If there's just one statement, bail.
+    //
+    if (stmt == block->firstStmt())
+    {
+        JITDUMP(" -- no, no prior stmt\n");
+        return false;
+    }
+
+    JITDUMP("\noptRedundantRelop in " FMT_BB "; jump tree is\n", block->bbNum);
+    DISPTREE(jumpTree);
+
+    // We're going to search back to find the earliest tree in block that
+    //  * makes the current relop redundant;
+    //  * can safely and profitably forward substituted to the jump.
+    //
+    Statement* prevStmt      = stmt;
+    GenTree*   candidateTree = nullptr;
+    bool       reverse       = false;
+
+    // We need to keep track of which locals might be killed by
+    // the trees between the expression we want to forward substitute
+    // and the jump.
+    //
+    // We don't use a varset here because we are indexing by local ID,
+    // not by tracked index.
+    //
+    // The table size here also implicitly limits how far back we'll search.
+    //
+    enum
+    {
+        DEFINED_LOCALS_SIZE = 10
+    };
+    unsigned definedLocals[DEFINED_LOCALS_SIZE];
+    unsigned definedLocalsCount = 0;
+
+    while (true)
+    {
+        prevStmt = prevStmt->GetPrevStmt();
+
+        // Backwards statement walks wrap around, so if we get
+        // back to stmt we've seen everything there is to see.
+        //
+        if (prevStmt == stmt)
+        {
+            break;
+        }
+
+        // We are looking for ASG(lcl, ...)
+        //
+        GenTree* const prevTree = prevStmt->GetRootNode();
+
+        JITDUMP(" ... checking previous tree\n");
+        DISPTREE(prevTree);
+
+        // Ignore nops.
+        //
+        if (prevTree->OperIs(GT_NOP))
+        {
+            continue;
+        }
+
+        // If prevTree has side effects other than GTF_EXCEPT or GTF_ASG, bail.
+        //
+        if ((prevTree->gtFlags & GTF_SIDE_EFFECT) != (prevTree->gtFlags & (GTF_EXCEPT | GTF_ASG)))
+        {
+            JITDUMP(" -- prev tree has side effects\n");
+            break;
+        }
+
+        if (!prevTree->OperIs(GT_ASG))
+        {
+            JITDUMP(" -- prev tree not ASG\n");
+            break;
+        }
+
+        GenTree* const prevTreeLHS = prevTree->AsOp()->gtOp1;
+        GenTree* const prevTreeRHS = prevTree->AsOp()->gtOp2;
+
+        if (!prevTreeLHS->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP(" -- prev tree not ASG(LCL...)\n");
+            break;
+        }
+
+        // If we are seeing PHIs we have run out of interesting stmts.
+        //
+        if (prevTreeRHS->OperIs(GT_PHI))
+        {
+            JITDUMP(" -- prev tree is a phi\n");
+            break;
+        }
+
+        // Bail if RHS has an embedded assignment. We could handle this
+        // if we generalized the interference check we run below.
+        //
+        if ((prevTreeRHS->gtFlags & GTF_ASG) != 0)
+        {
+            JITDUMP(" -- prev tree RHS has embedded assignment\n");
+            break;
+        }
+
+        // Figure out what local is assigned here.
+        //
+        const unsigned   prevTreeLcl    = prevTreeLHS->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLcl);
+
+        // If local is not tracked, assume we can't safely reason about interference
+        // or liveness.
+        //
+        if (!prevTreeLclDsc->lvTracked)
+        {
+            JITDUMP(" -- prev tree defs untracked V%02u\n", prevTreeLcl);
+            break;
+        }
+
+        // If we've run out of room to keep track of defined locals, bail.
+        //
+        if (definedLocalsCount >= DEFINED_LOCALS_SIZE)
+        {
+            JITDUMP(" -- ran out of space for tracking kills\n");
+            break;
+        }
+
+        definedLocals[definedLocalsCount++] = prevTreeLcl;
+
+        // If the VN of RHS is the VN of the current tree, or is "related", consider forward sub.
+        //
+        // Todo: generalize to allow when normal VN of RHS == normal VN of tree, and RHS except set contains tree except
+        // set.
+        // The concern here is whether can we forward sub an excepting (but otherwise non-side effecting tree) and
+        // guarantee
+        // the same side effect behavior.
+        //
+        // A common case we see is that there's a compare of an array element guarded by a bounds check,
+        // so prevTree is something like:
+        //
+        //    (ASG lcl, (COMMA (bds-check), (NE (array-indir), ...)))
+        //
+        // This may have the same normal VN as our tree, but also has an exception set.
+        //
+        // Another common pattern is that the prevTree contains a call.
+        //
+        const ValueNum domCmpVN    = prevTreeRHS->GetVN(VNK_Liberal);
+        const ValueNum domCmpSwpVN = vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+        const ValueNum domCmpRevVN = vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
+        const ValueNum domCmpSwpRevVN =
+            vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse);
+
+        const bool matchCmp       = ((domCmpVN != ValueNumStore::NoVN) && (domCmpVN == treeVN));
+        const bool matchSwp       = ((domCmpSwpVN != ValueNumStore::NoVN) && (domCmpSwpVN == treeVN));
+        const bool matchRev       = ((domCmpRevVN != ValueNumStore::NoVN) && (domCmpRevVN == treeVN));
+        const bool matchSwpRev    = ((domCmpSwpRevVN != ValueNumStore::NoVN) && (domCmpSwpRevVN == treeVN));
+        const bool domIsSameRelop = matchCmp || matchSwp;
+        const bool domIsRevRelop  = matchRev || matchSwpRev;
+
+        // If the tree is some unrelated computation, keep looking farther up.
+        //
+        if (!domIsSameRelop && !domIsRevRelop)
+        {
+            JITDUMP(" -- prev tree VN is not related\n");
+            continue;
+        }
+
+        JITDUMP("  -- prev tree has %srelop with %s liberal VN\n", matchSwp || matchSwpRev ? "swapped " : "",
+                domIsSameRelop ? "the same" : "a reverse");
+
+        // See if we can safely move a copy of prevTreeRHS later, to replace tree.
+        // We can, if none of its lcls are killed.
+        //
+        bool interferes = false;
+
+        for (unsigned int i = 0; i < definedLocalsCount; i++)
+        {
+            if (gtHasRef(prevTreeRHS, definedLocals[i], /*def only*/ false))
+            {
+                JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
+                interferes = true;
+                break;
+            }
+        }
+
+        if (interferes)
+        {
+            break;
+        }
+
+        // Heuristic: only forward sub a relop
+        //
+        if (!prevTreeRHS->OperIsCompare())
+        {
+            JITDUMP(" -- prev tree is not relop\n");
+            continue;
+        }
+
+        // Heuristic: if the lcl defined here is live out, forward sub
+        // won't result in the original becoming dead. If the local is not
+        // live out that still may happen, but it's less likely.
+        //
+        if (VarSetOps::IsMember(this, block->bbLiveOut, prevTreeLclDsc->lvVarIndex))
+        {
+            JITDUMP(" -- prev tree lcl V%02u is live-out\n", prevTreeLcl);
+            continue;
+        }
+
+        JITDUMP(" -- prev tree is viable candidate for relop fwd sub!\n");
+        candidateTree = prevTreeRHS;
+        reverse       = domIsRevRelop;
+    }
+
+    if (candidateTree == nullptr)
+    {
+        return false;
+    }
+
+    // Looks good -- we are going to forward-sub candidateTree
+    //
+    GenTree* const substituteTree = gtCloneExpr(candidateTree);
+
+    // If we need the reverse compare, make it so
+    //
+    if (reverse)
+    {
+        substituteTree->SetOper(GenTree::ReverseRelop(substituteTree->OperGet()));
+
+        // This substitute tree will have the VN the same as the original.
+        // (modulo excep sets...? hmmm)
+        substituteTree->SetVNsFromNode(tree);
+    }
+
+    // We just intentionally created a duplicate -- we don't want CSE to undo this.
+    // (hopefully, the original is now dead).
+    //
+    // Also this relop is now a subtree of a jump.
+    //
+    substituteTree->gtFlags |= (GTF_DONT_CSE | GTF_RELOP_JMP_USED);
+
+    // Swap in the new tree.
+    //
+    GenTree** const treeUse = &(jumpTree->AsOp()->gtOp1);
+    jumpTree->ReplaceOperand(treeUse, substituteTree);
+    fgSetStmtSeq(stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    DEBUG_DESTROY_NODE(tree);
+
+    JITDUMP(" -- done! new jump tree is\n");
+    DISPTREE(jumpTree);
+
     return true;
 }
 

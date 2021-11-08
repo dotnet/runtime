@@ -49,9 +49,7 @@ namespace {namespacename}
             }
 
             Ranges whitespace = new Ranges();
-            Ranges wordcharacter = new Ranges();
             Regex whitespaceRegex = new(@"\s");
-            Regex wordcharRegex = new(@"\w");
             for (int i = 0; i <= maxChar; i++)
             {
                 char ch = (char)i;
@@ -59,9 +57,6 @@ namespace {namespacename}
 
                 if (whitespaceRegex.IsMatch(ch.ToString()))
                     whitespace.Add(i);
-
-                if (wordcharRegex.IsMatch(ch.ToString()))
-                    wordcharacter.Add(i);
             }
 
             //generate bdd reprs for each of the category ranges
@@ -72,30 +67,22 @@ namespace {namespacename}
 
             BDD whitespaceBdd = bddb.CreateBddForIntRanges(whitespace.ranges);
 
-            BDD wordCharBdd = bddb.CreateBddForIntRanges(wordcharacter.ranges);
-
             sw.WriteLine("        /// <summary>Serialized BDD representations of all the Unicode categories.</summary>");
-            sw.WriteLine("        public static readonly long[][] AllCategoriesSerializedBDD = new long[][]");
+            sw.WriteLine("        public static readonly byte[][] AllCategoriesSerializedBDD = new byte[][]");
             sw.WriteLine("        {");
             for (int i = 0; i < catBDDs.Length; i++)
             {
                 sw.WriteLine("            // {0}({1}):", (UnicodeCategory)i, i);
                 sw.Write("            ");
-                GeneratorHelper.WriteInt64ArrayInitSyntax(sw, catBDDs[i].Serialize());
+                GeneratorHelper.WriteByteArrayInitSyntax(sw, catBDDs[i].SerializeToBytes());
                 sw.WriteLine(",");
             }
             sw.WriteLine("        };");
             sw.WriteLine();
 
             sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all whitespace characters.</summary>");
-            sw.Write($"        public static readonly long[] WhitespaceSerializedBDD = ");
-            GeneratorHelper.WriteInt64ArrayInitSyntax(sw, whitespaceBdd.Serialize());
-            sw.WriteLine(";");
-            sw.WriteLine();
-
-            sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all word characters</summary>");
-            sw.Write($"        public static readonly long[] WordCharactersSerializedBDD = ");
-            GeneratorHelper.WriteInt64ArrayInitSyntax(sw, wordCharBdd.Serialize());
+            sw.Write($"        public static readonly byte[] WhitespaceSerializedBDD = ");
+            GeneratorHelper.WriteByteArrayInitSyntax(sw, whitespaceBdd.SerializeToBytes());
             sw.WriteLine(";");
         }
     }

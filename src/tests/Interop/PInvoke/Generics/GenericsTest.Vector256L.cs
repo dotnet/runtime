@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -44,18 +44,18 @@ unsafe partial class GenericsTest
 
         Vector256<long> value2;
         GenericsNative.GetVector256LOut(1L, 2L, 3L, 4L, &value2);
-        Assert.AreEqual(value2.GetElement(0), 1L);
-        Assert.AreEqual(value2.GetElement(1), 2L);
-        Assert.AreEqual(value2.GetElement(2), 3L);
-        Assert.AreEqual(value2.GetElement(3), 4L);
+        Assert.Equal(value2.GetElement(0), 1L);
+        Assert.Equal(value2.GetElement(1), 2L);
+        Assert.Equal(value2.GetElement(2), 3L);
+        Assert.Equal(value2.GetElement(3), 4L);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256LOut(1L, 2L, 3L, 4L, out Vector256<long> value3));
 
         Vector256<long>* value4 = GenericsNative.GetVector256LPtr(1L, 2L, 3L, 4L);
-        Assert.AreEqual(value4->GetElement(0), 1L);
-        Assert.AreEqual(value4->GetElement(1), 2L);
-        Assert.AreEqual(value4->GetElement(2), 3L);
-        Assert.AreEqual(value4->GetElement(3), 4L);
+        Assert.Equal(value4->GetElement(0), 1L);
+        Assert.Equal(value4->GetElement(1), 2L);
+        Assert.Equal(value4->GetElement(2), 3L);
+        Assert.Equal(value4->GetElement(3), 4L);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256LRef(1L, 2L, 3L, 4L));
 

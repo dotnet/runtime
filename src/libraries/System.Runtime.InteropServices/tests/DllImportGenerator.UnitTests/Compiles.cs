@@ -24,7 +24,7 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.NestedTypes };
             yield return new[] { CodeSnippets.UnsafeContext };
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
             yield return new[] { CodeSnippets.DefaultParameters };
             yield return new[] { CodeSnippets.UseCSharpFeaturesForConstants };
 
@@ -325,6 +325,15 @@ namespace DllImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fallback to a forwarder.
             {
+                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                yield return new object[] { code, TestTargetFramework.Net5, true };
+                yield return new object[] { code, TestTargetFramework.Core, true };
+                yield return new object[] { code, TestTargetFramework.Standard, true };
+                yield return new object[] { code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            {
                 string code = CodeSnippets.BasicParametersAndModifiersWithCharSet<string>(CharSet.Unicode, CodeSnippets.GeneratedDllImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
@@ -399,7 +408,7 @@ namespace DllImportGenerator.UnitTests
 
         public static IEnumerable<object[]> SnippetsWithBlittableTypesButNonBlittableDataToCompile()
         {
-            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
             yield return new[] { CodeSnippets.PreserveSigFalse<int>() };
         }
