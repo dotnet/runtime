@@ -31,6 +31,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             return visitor.Visit(data.Right.GetAssemblyOrModuleSymbol(data.Left))!;
         });
 
+        var assemblyName = context.CompilationProvider.Select((comp, ct) => comp.Assembly.MetadataName);
+
         var allMethods = methodsInSource.Collect().Combine(methodsInReferencedAssemblies.Collect()).SelectMany((methods, ct) => methods.Left.AddRange(methods.Right));
 
         var aliasMap = context.CompilationProvider.Select((comp, ct) =>
@@ -52,10 +54,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left.Left, data.Left.Right, data.Right)))
             .Collect()
             .Combine(aliasMap)
-            .Combine(context.AnalyzerConfigOptionsProvider),
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Combine(assemblyName),
             static (context, data) =>
             {
-                var ((methods, aliasMap), configOptions) = data;
+                var (((methods, aliasMap), configOptions), assemblyName) = data;
 
                 bool referenceCoreLib = configOptions.GlobalOptions.ReferenceSystemPrivateCoreLib();
 
@@ -64,7 +67,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 // TODO: add error (maybe in MSBuild that referencing CoreLib directly from a merged test runner is not supported)
                 if (isMergedTestRunnerAssembly && !referenceCoreLib)
                 {
-                    context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap));
+                    context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
                 }
                 else
                 {
@@ -74,26 +77,34 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             });
     }
 
-    private static string GenerateFullTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap)
+    private static string GenerateFullTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName)
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         StringBuilder builder = new();
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
 
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
+
         foreach (ITestInfo test in testInfos)
         {
+            builder.AppendLine("{");
+
+            builder.AppendLine($"TimeSpan testStart = stopwatch.Elapsed;");
             builder.AppendLine("try {");
+            builder.AppendLine($"bool {Constants.TestResultReportedIdentifier} = false;");
             builder.AppendLine(test.ExecutionStatement);
-            builder.AppendLine("}");
-            builder.AppendLine("catch (Xunit.XunitException ex) {");
-            // TODO: report assert failure
-            builder.AppendLine("System.WriteLine(ex.ToString());");
+            builder.AppendLine($"if (!{Constants.TestResultReportedIdentifier}) summary.ReportPassedTest(null, null, null, stopwatch.Elapsed - testStart);");
             builder.AppendLine("}");
             builder.AppendLine("catch (System.Exception ex) {");
-            // TODO: report unexpected exception
-            builder.AppendLine("System.WriteLine(ex.ToString());");
+            builder.AppendLine($"summary.ReportFailedTest(null, null, null, stopwatch.Elapsed - testStart, ex);");
+            builder.AppendLine("}");
+
             builder.AppendLine("}");
         }
+
+        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput());");
+
         return builder.ToString();
     }
 
