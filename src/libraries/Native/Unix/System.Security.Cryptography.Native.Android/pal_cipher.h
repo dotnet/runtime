@@ -25,7 +25,7 @@ typedef struct CipherCtx
 } CipherCtx;
 
 PALEXPORT int32_t AndroidCryptoNative_CipherIsSupported(CipherInfo* type);
-PALEXPORT CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keySizeInBits, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc);
+PALEXPORT CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keySizeInBits, uint8_t* iv, int32_t enc);
 PALEXPORT CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type);
 PALEXPORT int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength);
 PALEXPORT int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t* iv, int32_t enc);

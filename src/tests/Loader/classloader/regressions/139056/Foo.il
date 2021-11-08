@@ -100,7 +100,7 @@
 
 } // end of class Bar
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_Foo
        extends [mscorlib]System.Object
 {
 

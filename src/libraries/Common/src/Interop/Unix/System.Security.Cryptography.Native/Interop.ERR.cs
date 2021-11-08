@@ -13,8 +13,8 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
         internal static extern ulong ErrClearError();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
-        private static extern ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
+        private static partial ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
         internal static extern ulong ErrPeekError();

@@ -1,0 +1,86 @@
+<Project>
+
+  <PropertyGroup>
+    <EnableDllImportGenerator Condition="'$(EnableDllImportGenerator)' == ''
+                        and '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableDllImportGenerator>
+    <SetDllImportGeneratorConstants>false</SetDllImportGeneratorConstants>
+    <IncludeDllImportGeneratorSources Condition="'$(IncludeDllImportGeneratorSources)' == ''">true</IncludeDllImportGeneratorSources>
+  </PropertyGroup>
+  <ItemGroup>
+    <EnabledGenerators Include="DllImportGenerator" Condition="'$(EnableDllImportGenerator)' == 'true'" />
+    <!-- If the current project is not System.Private.CoreLib, we enable the DllImportGenerator source generator
+         when the project is a C# source project that either:
+         - references System.Private.CoreLib, or
+         - references the following assemblies:
+          - System.Runtime.InteropServices
+          - System.Runtime.CompilerServices.Unsafe
+          - System.Memory -->
+    <EnabledGenerators Include="DllImportGenerator"
+                       Condition="'$(EnableDllImportGenerator)' == ''
+                        and '$(IsFrameworkSupportFacade)' != 'true'
+                        and '$(IsSourceProject)' == 'true'
+                        and '$(MSBuildProjectExtension)' == '.csproj'
+                        and (
+                          ('@(Reference)' != ''
+                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))
+                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe'))
+                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Memory')))
+                          or ('@(ProjectReference)' != ''
+                            and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" />
+    <EnabledGenerators Include="DllImportGenerator"
+                       Condition="'$(EnableDllImportGenerator)' == ''
+                        and '$(IsFrameworkSupportFacade)' != 'true'
+                        and '$(IsSourceProject)' == 'true'
+                        and '$(MSBuildProjectExtension)' == '.csproj'
+                        and '$(TargetFrameworkIdentifier)' == '.NETStandard'" />
+  </ItemGroup>
+
+  <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
+  <ItemGroup Condition="'@(EnabledGenerators)' != ''
+                        and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))
+                        and '$(IncludeDllImportGeneratorSources)' == 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
+
+    <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
+    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedMarshallingAttribute.cs" />
+    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
+  </ItemGroup>
+
+  <Target Name="ConfigureGenerators"
+          DependsOnTargets="ConfigureDllImportGenerator"
+          BeforeTargets="CoreCompile" />
+
+  <!-- Microsoft.Interop.DllImportGenerator -->
+  <Target Name="ConfigureDllImportGenerator"
+          Condition="'@(EnabledGenerators)' != '' and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))"
+          DependsOnTargets="ResolveReferences"
+          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
+    <PropertyGroup>
+        <DllImportGenerator_UseMarshalType>true</DllImportGenerator_UseMarshalType>
+    </PropertyGroup>
+    <!-- Projects that directly reference System.Private.CoreLib are typically low level enough that they don't reference
+         System.Runtime.CompilerServices.Unsafe, so we use the Unsafe type defined in CoreLib (Internal.Runtime.CompilerServices.Unsafe) for these projects. -->
+    <PropertyGroup Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib' or
+                              ('@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)')))">
+        <DllImportGenerator_UseInternalUnsafeType>true</DllImportGenerator_UseInternalUnsafeType>
+        <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
+    </PropertyGroup>
+
+    <MSBuild Projects="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
+             RemoveProperties="TargetFramework">
+      <Output TaskParameter="TargetOutputs" PropertyName="DllImportGeneratorOutputPath" />
+    </MSBuild>
+
+    <!-- We add the copy of Microsoft.Interop.SourceGeneration.dll that lives next to Microsoft.Interop.DllImportGenerator.dll
+         to work around https://github.com/dotnet/roslyn/issues/56442 -->
+    <ItemGroup>
+      <Analyzer Include="$([MSBuild]::NormalizePath('$([System.IO.Path]::GetDirectoryName('$(DllImportGeneratorOutputPath)'))', 'Microsoft.Interop.SourceGeneration.dll'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
+    </PropertyGroup>
+  </Target>
+
+  <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/Microsoft.Interop.DllImportGenerator.props" />
+</Project>

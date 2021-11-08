@@ -701,7 +701,7 @@ private:
 #define CLFLG_STRUCTPROMOTE 0x00000
 #endif
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #define FEATURE_LOOP_ALIGN 1
 #else
 #define FEATURE_LOOP_ALIGN 0

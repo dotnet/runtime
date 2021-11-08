@@ -1900,7 +1900,7 @@ namespace System.Net.Http
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(async);
-            if (NetEventSource.Log.IsEnabled()) Trace($"{request}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
             try
             {

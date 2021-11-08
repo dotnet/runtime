@@ -33,13 +33,13 @@ public class Gen<T>
 			{
 				throw new GenException<T>();
 			}
-			Test.Eval(!throwException);
+			Test_try_finally02.Eval(!throwException);
 		}
 		finally
 		{
-			Test.Eval(true);
+			Test_try_finally02.Eval(true);
 		}
-		Test.Eval(!throwException);
+		Test_try_finally02.Eval(!throwException);
 	}
 	
 	public void ExceptionTest(bool throwException)
@@ -47,17 +47,17 @@ public class Gen<T>
 		try
 		{
 			InternalExceptionTest(throwException);
-			Test.Eval(!throwException);
+			Test_try_finally02.Eval(!throwException);
 		}
 		catch
 		{
-			Test.Eval(throwException);
+			Test_try_finally02.Eval(throwException);
 		}
 	}
 	
 }
 
-public class Test
+public class Test_try_finally02
 {
 	public static int counter = 0;
 	public static bool result = true;

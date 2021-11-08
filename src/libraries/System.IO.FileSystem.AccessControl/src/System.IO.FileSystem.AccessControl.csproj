@@ -96,6 +96,7 @@
     <Reference Include="System.Memory" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Handles" />
     <Reference Include="System.Runtime.InteropServices" Condition="'$(TargetsWindows)' == 'true'" />

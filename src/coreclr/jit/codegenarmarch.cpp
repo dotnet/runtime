@@ -213,6 +213,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_OR:
         case GT_XOR:
         case GT_AND:
+        case GT_AND_NOT:
             assert(varTypeIsIntegralOrI(treeNode));
 
             FALLTHROUGH;
@@ -300,6 +301,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
+        case GT_MADD:
+            genCodeForMadd(treeNode->AsOp());
+            break;
 
         case GT_INC_SATURATE:
             genCodeForIncSaturate(treeNode);
@@ -311,6 +315,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_SWAP:
             genCodeForSwap(treeNode->AsOp());
+            break;
+
+        case GT_BFIZ:
+            genCodeForBfiz(treeNode->AsOp());
             break;
 #endif // TARGET_ARM64
 
@@ -553,22 +561,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     }
 }
 
-//------------------------------------------------------------------------
-// genSetRegToIcon: Generate code that will set the given register to the integer constant.
-//
-void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags DEBUGARG(GenTreeFlags gtFlags))
-{
-    // Reg cannot be a FP reg
-    assert(!genIsValidFloatReg(reg));
-
-    // The only TYP_REF constant that can come this path is a managed 'null' since it is not
-    // relocatable.  Other ref type constants (e.g. string objects) go through a different
-    // code path.
-    noway_assert(type != TYP_REF || val == 0);
-
-    instGen_Set_Reg_To_Imm(emitActualTypeSize(type), reg, val, flags);
-}
-
 //---------------------------------------------------------------------
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
 //
@@ -593,7 +585,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     {
         noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
         // initReg = #GlobalSecurityCookieVal; [frame.GSSecurityCookie] = initReg
-        genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, compiler->gsGlobalSecurityCookieVal);
         GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
     else
@@ -1431,9 +1423,9 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIsBoundsCheck());
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree* arrLen    = bndsChk->gtArrLen;
-    GenTree* arrIndex  = bndsChk->gtIndex;
-    GenTree* arrRef    = NULL;
+    GenTree* arrLen    = bndsChk->GetArrayLength();
+    GenTree* arrIndex  = bndsChk->GetIndex();
+    GenTree* arrRef    = nullptr;
     int      lenOffset = 0;
 
     GenTree*     src1;
@@ -1518,46 +1510,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 }
 
 //------------------------------------------------------------------------
-// genOffsetOfMDArrayLowerBound: Returns the offset from the Array object to the
-//   lower bound for the given dimension.
-//
-// Arguments:
-//    elemType  - the element type of the array
-//    rank      - the rank of the array
-//    dimension - the dimension for which the lower bound offset will be returned.
-//
-// Return Value:
-//    The offset.
-// TODO-Cleanup: move to CodeGenCommon.cpp
-
-// static
-unsigned CodeGen::genOffsetOfMDArrayLowerBound(var_types elemType, unsigned rank, unsigned dimension)
-{
-    // Note that the lower bound and length fields of the Array object are always TYP_INT
-    return compiler->eeGetArrayDataOffset(elemType) + genTypeSize(TYP_INT) * (dimension + rank);
-}
-
-//------------------------------------------------------------------------
-// genOffsetOfMDArrayLength: Returns the offset from the Array object to the
-//   size for the given dimension.
-//
-// Arguments:
-//    elemType  - the element type of the array
-//    rank      - the rank of the array
-//    dimension - the dimension for which the lower bound offset will be returned.
-//
-// Return Value:
-//    The offset.
-// TODO-Cleanup: move to CodeGenCommon.cpp
-
-// static
-unsigned CodeGen::genOffsetOfMDArrayDimensionSize(var_types elemType, unsigned rank, unsigned dimension)
-{
-    // Note that the lower bound and length fields of the Array object are always TYP_INT
-    return compiler->eeGetArrayDataOffset(elemType) + genTypeSize(TYP_INT) * dimension;
-}
-
-//------------------------------------------------------------------------
 // genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
 //                     producing the effective index by subtracting the lower bound.
 //
@@ -1587,11 +1539,11 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     var_types elemType = arrIndex->gtArrElemType;
     unsigned  offset;
 
-    offset = genOffsetOfMDArrayLowerBound(elemType, rank, dim);
+    offset = compiler->eeGetMDArrayLowerBoundOffset(rank, dim);
     emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
     emit->emitIns_R_R_R(INS_sub, EA_4BYTE, tgtReg, indexReg, tmpReg);
 
-    offset = genOffsetOfMDArrayDimensionSize(elemType, rank, dim);
+    offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
     emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
     emit->emitIns_R_R(INS_cmp, EA_4BYTE, tgtReg, tmpReg);
 
@@ -1639,7 +1591,7 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
         unsigned  dim      = arrOffset->gtCurrDim;
         unsigned  rank     = arrOffset->gtArrRank;
         var_types elemType = arrOffset->gtArrElemType;
-        unsigned  offset   = genOffsetOfMDArrayDimensionSize(elemType, rank, dim);
+        unsigned  offset   = compiler->eeGetMDArrayLengthOffset(rank, dim);
 
         // Load tmpReg with the dimension size and evaluate
         // tgtReg = offsetReg*tmpReg + indexReg.
@@ -1670,8 +1622,9 @@ void CodeGen::genCodeForShift(GenTree* tree)
     genTreeOps  oper       = tree->OperGet();
     instruction ins        = genGetInsForOper(oper, targetType);
     emitAttr    size       = emitActualTypeSize(tree);
+    regNumber   dstReg     = tree->GetRegNum();
 
-    assert(tree->GetRegNum() != REG_NA);
+    assert(dstReg != REG_NA);
 
     genConsumeOperands(tree->AsOp());
 
@@ -1679,14 +1632,13 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTree* shiftBy = tree->gtGetOp2();
     if (!shiftBy->IsCnsIntOrI())
     {
-        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
+        GetEmitter()->emitIns_R_R_R(ins, size, dstReg, operand->GetRegNum(), shiftBy->GetRegNum());
     }
     else
     {
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
         unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
-
-        GetEmitter()->emitIns_R_R_I(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
+        GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
     }
 
     genProduceReg(tree);
@@ -1817,7 +1769,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
         // tmpReg = element size
-        CodeGen::genSetRegToIcon(tmpReg, (ssize_t)node->gtElemSize, TYP_INT);
+        instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
 
         // dest = index * tmpReg + base
         GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), index->GetRegNum(),
@@ -2565,109 +2517,109 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     call->IsFastTailCall());
         // clang-format on
     }
-    else if (call->IsR2ROrVirtualStubRelativeIndir())
-    {
-        // Generate a indirect call to a virtual user defined function or helper method
-        assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
-#ifdef FEATURE_READYTORUN
-        assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-               ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
-#endif // FEATURE_READYTORUN
-        assert(call->gtControlExpr == nullptr);
-
-        regNumber tmpReg = call->GetSingleTempReg();
-        // For fast tailcalls we have already loaded the call target when processing the call node.
-        if (!call->IsFastTailCall())
-        {
-            regNumber callAddrReg =
-                call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
-            GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
-        }
-        else
-        {
-            // Register where we save call address in should not be overridden by epilog.
-            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == tmpReg);
-        }
-
-        // We have now generated code for gtControlExpr evaluating it into `tmpReg`.
-        // We just need to emit "call tmpReg" in this case.
-        //
-        assert(genIsValidIntReg(tmpReg));
-
-        // clang-format off
-        genEmitCall(emitter::EC_INDIR_R,
-                    methHnd,
-                    INDEBUG_LDISASM_COMMA(sigInfo)
-                    nullptr, // addr
-                    retSize
-                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                    ilOffset,
-                    tmpReg,
-                    call->IsFastTailCall());
-        // clang-format on
-    }
     else
     {
-        // Generate a direct call to a non-virtual user defined or helper method
-        assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
-
-        void* addr = nullptr;
-#ifdef FEATURE_READYTORUN
-        if (call->gtEntryPoint.addr != NULL)
+        // If we have no target and this is a call with indirection cell
+        // then we do an optimization where we load the call address directly
+        // from the indirection cell instead of duplicating the tree.
+        // In BuildCall we ensure that get an extra register for the purpose.
+        regNumber indirCellReg = getCallIndirectionCellReg(call);
+        if (indirCellReg != REG_NA)
         {
-            assert(call->gtEntryPoint.accessType == IAT_VALUE);
-            addr = call->gtEntryPoint.addr;
-        }
-        else
-#endif // FEATURE_READYTORUN
-            if (call->gtCallType == CT_HELPER)
-        {
-            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
-            noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            assert(call->IsR2ROrVirtualStubRelativeIndir());
+            regNumber targetAddrReg = call->GetSingleTempReg();
+            // For fast tailcalls we have already loaded the call target when processing the call node.
+            if (!call->IsFastTailCall())
+            {
+                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
+                                          indirCellReg);
+            }
+            else
+            {
+                // Register where we save call address in should not be overridden by epilog.
+                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == targetAddrReg);
+            }
 
-            void* pAddr = nullptr;
-            addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-            assert(pAddr == nullptr);
-        }
-        else
-        {
-            // Direct call to a non-virtual user function.
-            addr = call->gtDirectCallAddress;
-        }
+            // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
+            // We just need to emit "bl targetAddrReg" in this case.
+            //
+            assert(genIsValidIntReg(targetAddrReg));
 
-        assert(addr != nullptr);
-
-// Non-virtual direct call to known addresses
-#ifdef TARGET_ARM
-        if (!arm_Valid_Imm_For_BL((ssize_t)addr))
-        {
-            regNumber tmpReg = call->GetSingleTempReg();
-            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);
             // clang-format off
             genEmitCall(emitter::EC_INDIR_R,
                         methHnd,
                         INDEBUG_LDISASM_COMMA(sigInfo)
-                        NULL,
-                        retSize,
+                        nullptr, // addr
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                         ilOffset,
-                        tmpReg,
+                        targetAddrReg,
                         call->IsFastTailCall());
             // clang-format on
         }
         else
-#endif // TARGET_ARM
         {
-            // clang-format off
-            genEmitCall(emitter::EC_FUNC_TOKEN,
-                        methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo)
-                        addr,
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        ilOffset,
-                        REG_NA,
-                        call->IsFastTailCall());
-            // clang-format on
+            // Generate a direct call to a non-virtual user defined or helper method
+            assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
+
+            void* addr = nullptr;
+#ifdef FEATURE_READYTORUN
+            if (call->gtEntryPoint.addr != NULL)
+            {
+                assert(call->gtEntryPoint.accessType == IAT_VALUE);
+                addr = call->gtEntryPoint.addr;
+            }
+            else
+#endif // FEATURE_READYTORUN
+                if (call->gtCallType == CT_HELPER)
+            {
+                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+                void* pAddr = nullptr;
+                addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+                assert(pAddr == nullptr);
+            }
+            else
+            {
+                // Direct call to a non-virtual user function.
+                addr = call->gtDirectCallAddress;
+            }
+
+            assert(addr != nullptr);
+
+// Non-virtual direct call to known addresses
+#ifdef TARGET_ARM
+            if (!validImmForBL((ssize_t)addr))
+            {
+                regNumber tmpReg = call->GetSingleTempReg();
+                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);
+                // clang-format off
+                genEmitCall(emitter::EC_INDIR_R,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            NULL,
+                            retSize,
+                            ilOffset,
+                            tmpReg,
+                            call->IsFastTailCall());
+                // clang-format on
+            }
+            else
+#endif // TARGET_ARM
+            {
+                // clang-format off
+                genEmitCall(emitter::EC_FUNC_TOKEN,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            addr,
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            ilOffset,
+                            REG_NA,
+                            call->IsFastTailCall());
+                // clang-format on
+            }
         }
     }
 }

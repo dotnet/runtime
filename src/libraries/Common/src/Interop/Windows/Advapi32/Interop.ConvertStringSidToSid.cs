@@ -8,7 +8,14 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSidToSidW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int ConvertStringSidToSid(string stringSid, out IntPtr ByteArray);
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSidToSidW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial int ConvertStringSidToSid(
+#else
+        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSidToSidW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern int ConvertStringSidToSid(
+#endif
+            string stringSid,
+            out IntPtr ByteArray);
     }
 }

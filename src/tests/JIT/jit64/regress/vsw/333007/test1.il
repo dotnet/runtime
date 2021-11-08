@@ -41,7 +41,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_test1
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
@@ -51,11 +51,11 @@
     .maxstack  8
 
     IL_0000:  ldc.i4.0
-    IL_0001:  call       int32 Test::sw(int32)
+    IL_0001:  call       int32 Test_test1::sw(int32)
     IL_0006:  pop
 
     IL_0007:  ldc.i4.0
-    IL_0008:  call       int32 Test::sw(int32)
+    IL_0008:  call       int32 Test_test1::sw(int32)
 
     IL_00ff:  ldc.i4 100
     IL_0100:  bne.un FAIL

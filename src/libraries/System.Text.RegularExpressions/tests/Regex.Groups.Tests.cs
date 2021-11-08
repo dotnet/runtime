@@ -503,12 +503,13 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"^(([d-f]*)|([c-e]*))$", "dddeeeccceee", RegexOptions.None, new string[] { "dddeeeccceee", "dddeeeccceee", "", "dddeeeccceee" } };
             yield return new object[] { null, @"^(([c-e]*)|([d-f]*))$", "dddeeeccceee", RegexOptions.None, new string[] { "dddeeeccceee", "dddeeeccceee", "dddeeeccceee", "" } };
 
-            yield return new object[] { null, @"(([a-d]*)|([a-z]*))", "aaabbbcccdddeeefff", RegexOptions.None, new string[] { "aaabbbcccddd", "aaabbbcccddd", "aaabbbcccddd", "" } };
-            yield return new object[] { null, @"(([d-f]*)|([c-e]*))", "dddeeeccceee", RegexOptions.None, new string[] { "dddeee", "dddeee", "dddeee", "" } };
+            // Different match in NonBackTracking when order of alternations does not matter
+            yield return new object[] { null, @"(([a-d]*)|([a-z]*))", "aaabbbcccdddeeefff", RegexOptions.None, new string[] { "aaabbbcccddd", "aaabbbcccddd", "aaabbbcccddd", "" }, "aaabbbcccdddeeefff" }; // <-- Nonbacktracking match same as for "(([a-z]*)|([a-d]*))"
+            yield return new object[] { null, @"(([d-f]*)|([c-e]*))", "dddeeeccceee", RegexOptions.None, new string[] { "dddeee", "dddeee", "dddeee", "" }, "dddeeeccceee" }; // <-- Nonbacktracking match same as for "(([c-e]*)|([d-f]*))"
             yield return new object[] { null, @"(([c-e]*)|([d-f]*))", "dddeeeccceee", RegexOptions.None, new string[] { "dddeeeccceee", "dddeeeccceee", "dddeeeccceee", "" } };
 
-            yield return new object[] { null, @"(([a-d]*)|(.*))", "aaabbbcccdddeeefff", RegexOptions.None, new string[] { "aaabbbcccddd", "aaabbbcccddd", "aaabbbcccddd", "" } };
-            yield return new object[] { null, @"(([d-f]*)|(.*))", "dddeeeccceee", RegexOptions.None, new string[] { "dddeee", "dddeee", "dddeee", "" } };
+            yield return new object[] { null, @"(([a-d]*)|(.*))", "aaabbbcccdddeeefff", RegexOptions.None, new string[] { "aaabbbcccddd", "aaabbbcccddd", "aaabbbcccddd", "" }, "aaabbbcccdddeeefff" }; // <-- Nonbacktracking match same as for ".*"
+            yield return new object[] { null, @"(([d-f]*)|(.*))", "dddeeeccceee", RegexOptions.None, new string[] { "dddeee", "dddeee", "dddeee", "" }, "dddeeeccceee" }; // <-- Nonbacktracking match same as for ".*"
             yield return new object[] { null, @"(([c-e]*)|(.*))", "dddeeeccceee", RegexOptions.None, new string[] { "dddeeeccceee", "dddeeeccceee", "dddeeeccceee", "" } };
 
             // \p{Pi} (Punctuation Initial quote) \p{Pf} (Punctuation Final quote)
@@ -770,7 +771,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(?s).*(?-s)[1a]", "\n\n\n\n1", RegexOptions.None, new string[] { "\n\n\n\n1" } };
             yield return new object[] { null, @".*|.*|.*", "", RegexOptions.None, new string[] { "" } };
             yield return new object[] { null, @".*123|abc", "abc\n123", RegexOptions.None, new string[] { "abc" } };
-            yield return new object[] { null, @".*123|abc", "abc\n123", RegexOptions.Singleline, new string[] { "abc\n123" } };
+            yield return new object[] { null, @".*123|abc", "abc\n123", RegexOptions.Singleline, new string[] { "abc\n123" }, "abc" }; // <-- Nonbacktracking match same as for "abc|.*123"
+            yield return new object[] { null, @"abc|.*123", "abc\n123", RegexOptions.Singleline, new string[] { "abc" } };
             yield return new object[] { null, @".*", "\n", RegexOptions.None, new string[] { "" } };
             yield return new object[] { null, @".*\n", "\n", RegexOptions.None, new string[] { "\n" } };
             yield return new object[] { null, @".*", "\n", RegexOptions.Singleline, new string[] { "\n" } };
@@ -778,7 +780,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @".*", "abc", RegexOptions.None, new string[] { "abc" } };
             yield return new object[] { null, @".*abc", "abc", RegexOptions.None, new string[] { "abc" } };
             yield return new object[] { null, @".*abc|ghi", "ghi", RegexOptions.None, new string[] { "ghi" } };
-            yield return new object[] { null, @".*abc|.*ghi", "abcghi", RegexOptions.None, new string[] { "abc" } };
+            yield return new object[] { null, @".*abc|.*ghi", "abcghi", RegexOptions.None, new string[] { "abc" }, "abcghi" }; // <-- Nonbacktracking match same as for ".*ghi|.*abc"
+            yield return new object[] { null, @".*ghi|.*abc", "abcghi", RegexOptions.None, new string[] { "abcghi" } };
             yield return new object[] { null, @".*abc|.*ghi", "bcghi", RegexOptions.None, new string[] { "bcghi" } };
             yield return new object[] { null, @".*abc|.+c", " \n   \n   bc", RegexOptions.None, new string[] { "   bc" } };
             yield return new object[] { null, @".*abc", "12345 abc", RegexOptions.None, new string[] { "12345 abc" } };
@@ -906,7 +909,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Groups_CustomCulture_TestData_AzeriLatin))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/56407", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36900", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        public async Task Groups(string cultureName, string pattern, string input, RegexOptions options, string[] expectedGroups)
+        public async Task Groups(string cultureName, string pattern, string input, RegexOptions options, string[] expectedGroups, string altMatch = null)
         {
             if (cultureName is null)
             {
@@ -918,29 +921,55 @@ namespace System.Text.RegularExpressions.Tests
             {
                 foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {
-                    await GroupsAsync(engine, pattern, input, options, expectedGroups);
+                    // Alternative altMatch when order of alternations matters in backtracking but order does not matter in NonBacktracking mode
+                    // Also in NonBacktracking there is only a single top-level match, which is expectedGroups[0] when altMatch is null
+                    string[] expected = engine == RegexEngine.NonBacktracking ?
+                        new string[] { altMatch ?? expectedGroups[0] } :
+                        expectedGroups;
+
+                    await GroupsAsync(engine, pattern, input, options, expected);
                 }
             }
 
             static async Task GroupsAsync(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedGroups)
             {
-                Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+                if (engine == RegexEngine.NonBacktracking && pattern.Contains("?(cat)"))
+                {
+                    // General if-then-else construct is not supported and uses the ?(cat) condition in the tests
+                    // TODO-NONBACKTRACKING: The constructor will throw NotSupportedException so this check will become obsolete
+                    return;
+                }
+
+                Regex regex;
+                try
+                {
+                    regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+                }
+                catch (NotSupportedException) when (RegexHelpers.IsNonBacktracking(engine))
+                {
+                    // Some constructs are not supported in NonBacktracking mode, such as: if-then-else, lookaround, and backreferences
+                    return;
+                }
 
                 Match match = regex.Match(input);
-                Assert.True(match.Success);
 
-                Assert.Equal(expectedGroups.Length, match.Groups.Count);
+                Assert.True(match.Success);
                 Assert.Equal(expectedGroups[0], match.Value);
 
-                int[] groupNumbers = regex.GetGroupNumbers();
-                string[] groupNames = regex.GetGroupNames();
-                for (int i = 0; i < expectedGroups.Length; i++)
+                if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
-                    Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+                    Assert.Equal(expectedGroups.Length, match.Groups.Count);
 
-                    Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
-                    Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                    int[] groupNumbers = regex.GetGroupNumbers();
+                    string[] groupNames = regex.GetGroupNames();
+                    for (int i = 0; i < expectedGroups.Length; i++)
+                    {
+                        Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
+                        Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+
+                        Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
+                        Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                    }
                 }
             }
         }

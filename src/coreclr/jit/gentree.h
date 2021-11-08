@@ -1876,7 +1876,7 @@ public:
     static unsigned char s_gtTrueSizes[];
 #endif
 #if COUNT_AST_OPERS
-    static LONG s_gtNodeCounts[];
+    static unsigned s_gtNodeCounts[];
 #endif
 
     static void InitNodeSize();
@@ -2831,7 +2831,6 @@ class GenTreeUseEdgeIterator final
 
     // Advance functions for special nodes
     void AdvanceCmpXchg();
-    void AdvanceBoundsChk();
     void AdvanceArrElem();
     void AdvanceArrOffset();
     void AdvanceDynBlk();
@@ -4101,6 +4100,26 @@ public:
 
 class fgArgInfo;
 
+enum class NonStandardArgKind : unsigned
+{
+    None,
+    PInvokeFrame,
+    PInvokeTarget,
+    PInvokeCookie,
+    WrapperDelegateCell,
+    ShiftLow,
+    ShiftHigh,
+    FixedRetBuffer,
+    VirtualStubCell,
+    R2RIndirectionCell,
+
+    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate in fgArgInfo
+};
+
+#ifdef DEBUG
+const char* getNonStandardArgKindName(NonStandardArgKind kind);
+#endif
+
 struct GenTreeCall final : public GenTree
 {
     class Use
@@ -4472,12 +4491,14 @@ struct GenTreeCall final : public GenTree
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {
-#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
-        bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
-        return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
-#else
-        return false;
-#endif // FEATURE_READYTORUN && TARGET_ARMARCH
+#if defined(FEATURE_READYTORUN)
+        if (IsR2RRelativeIndir())
+        {
+            return true;
+        }
+#endif
+
+        return IsVirtualStubRelativeIndir();
     }
 
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
@@ -4651,7 +4672,7 @@ struct GenTreeCall final : public GenTree
     }
     bool IsVirtualStubRelativeIndir() const
     {
-        return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
+        return IsVirtualStub() && (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
 
     bool IsR2RRelativeIndir() const
@@ -4770,6 +4791,40 @@ struct GenTreeCall final : public GenTree
     bool IsExpandedEarly() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
+    }
+
+    //-----------------------------------------------------------------------------------------
+    // GetIndirectionCellArgKind: Get the kind of indirection cell used by this call.
+    //
+    // Arguments:
+    //     None
+    //
+    // Return Value:
+    //     The kind (either R2RIndirectionCell or VirtualStubCell),
+    //     or NonStandardArgKind::None if this call does not have an indirection cell.
+    //
+    NonStandardArgKind GetIndirectionCellArgKind() const
+    {
+        if (IsVirtualStub())
+        {
+            return NonStandardArgKind::VirtualStubCell;
+        }
+
+#if defined(TARGET_ARMARCH)
+        // For ARM architectures, we always use an indirection cell for R2R calls.
+        if (IsR2RRelativeIndir())
+        {
+            return NonStandardArgKind::R2RIndirectionCell;
+        }
+#elif defined(TARGET_XARCH)
+        // On XARCH we disassemble it from callsite except for tailcalls that need indirection cell.
+        if (IsR2RRelativeIndir() && IsFastTailCall())
+        {
+            return NonStandardArgKind::R2RIndirectionCell;
+        }
+#endif
+
+        return NonStandardArgKind::None;
     }
 
     void ResetArgInfo();
@@ -5425,39 +5480,38 @@ public:
 // - the "kind" of the throw block to branch to on failure
 // It generates no result.
 
-struct GenTreeBoundsChk : public GenTree
+struct GenTreeBoundsChk : public GenTreeOp
 {
-    GenTree* gtIndex;  // The index expression.
-    GenTree* gtArrLen; // An expression for the length of the array being indexed.
-
     BasicBlock*     gtIndRngFailBB; // Basic block to jump to for array-index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
     GenTreeBoundsChk(genTreeOps oper, var_types type, GenTree* index, GenTree* arrLen, SpecialCodeKind kind)
-        : GenTree(oper, type), gtIndex(index), gtArrLen(arrLen), gtIndRngFailBB(nullptr), gtThrowKind(kind)
+        : GenTreeOp(oper, type, index, arrLen), gtIndRngFailBB(nullptr), gtThrowKind(kind)
     {
-        // Effects flags propagate upwards.
-        gtFlags |= (index->gtFlags & GTF_ALL_EFFECT);
-        gtFlags |= (arrLen->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= GTF_EXCEPT;
     }
 #if DEBUGGABLE_GENTREE
-    GenTreeBoundsChk() : GenTree()
+    GenTreeBoundsChk() : GenTreeOp()
     {
     }
 #endif
 
-    // If the gtArrLen is really an array length, returns array reference, else "NULL".
+    // If this check is against GT_ARR_LENGTH, returns array reference, else "NULL".
     GenTree* GetArray()
     {
-        if (gtArrLen->OperGet() == GT_ARR_LENGTH)
-        {
-            return gtArrLen->AsArrLen()->ArrRef();
-        }
-        else
-        {
-            return nullptr;
-        }
+        return GetArrayLength()->OperIs(GT_ARR_LENGTH) ? GetArrayLength()->AsArrLen()->ArrRef() : nullptr;
+    }
+
+    // The index expression.
+    GenTree* GetIndex()
+    {
+        return gtOp1;
+    }
+
+    // An expression for the length of the array being indexed.
+    GenTree* GetArrayLength()
+    {
+        return gtOp2;
     }
 };
 

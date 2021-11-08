@@ -5,7 +5,6 @@
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
     <IsTestProject>true</IsTestProject>
     <BundleXunitRunner>true</BundleXunitRunner>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <TestFramework>xunit</TestFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>

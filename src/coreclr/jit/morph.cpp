@@ -5545,7 +5545,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // Currently we morph the tree to perform some folding operations prior
     // to attaching fieldSeq info and labeling constant array index contributions
     //
-    fgMorphTree(tree);
+    tree = fgMorphTree(tree);
 
     JITDUMP("fgMorphArrayIndex (after remorph):\n");
     DISPTREE(tree);
@@ -5570,6 +5570,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     }
 
     assert(!fgGlobalMorph || (arrElem->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
+    DBEXEC(fgGlobalMorph && (arrElem == tree), tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
     addr = arrElem->AsOp()->gtOp1;
 
@@ -7131,15 +7132,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
-    // Heuristic: regular calls to noreturn methods can sometimes be
-    // merged, so if we have multiple such calls, we defer tail calling.
-    //
-    // TODO: re-examine this; now that we're merging before morph we
-    // don't need to worry about interfering with merges.
-    //
-    if (call->IsNoReturn() && (optNoReturnCallCount > 1))
+    if (call->IsNoReturn() && !call->IsTailPrefixedCall())
     {
-        failTailCall("Defer tail calling throw helper; anticipating merge");
+        // Such tail calls always throw an exception and we won't be able to see current
+        // Caller() in the stacktrace.
+        failTailCall("Never returns");
         return nullptr;
     }
 
@@ -10872,6 +10869,72 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     return op1;
 }
 
+//------------------------------------------------------------------------------
+// fgMorphCastedBitwiseOp : Try to simplify "(T)x op (T)y" to "(T)(x op y)".
+//
+// Arguments:
+//     tree - node to fold
+//
+// Return Value:
+//     A folded GenTree* instance, or nullptr if it couldn't be folded
+GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
+{
+    assert(varTypeIsIntegralOrI(tree));
+    assert(tree->OperIs(GT_OR, GT_AND, GT_XOR));
+
+    GenTree*   op1  = tree->gtGetOp1();
+    GenTree*   op2  = tree->gtGetOp2();
+    genTreeOps oper = tree->OperGet();
+
+    // see whether both ops are casts, with matching to and from types.
+    if (op1->OperIs(GT_CAST) && op2->OperIs(GT_CAST))
+    {
+        // bail if either operand is a checked cast
+        if (op1->gtOverflow() || op2->gtOverflow())
+        {
+            return nullptr;
+        }
+
+        var_types fromType   = op1->AsCast()->CastOp()->TypeGet();
+        var_types toType     = op1->AsCast()->CastToType();
+        bool      isUnsigned = op1->IsUnsigned();
+
+        if ((op2->CastFromType() != fromType) || (op2->CastToType() != toType) || (op2->IsUnsigned() != isUnsigned))
+        {
+            return nullptr;
+        }
+
+        /*
+        // Reuse gentree nodes:
+        //
+        //     tree             op1
+        //     /   \             |
+        //   op1   op2   ==>   tree
+        //    |     |          /   \.
+        //    x     y         x     y
+        //
+        // (op2 becomes garbage)
+        */
+
+        tree->gtOp1  = op1->AsCast()->CastOp();
+        tree->gtOp2  = op2->AsCast()->CastOp();
+        tree->gtType = genActualType(fromType);
+
+        op1->gtType                 = genActualType(toType);
+        op1->AsCast()->gtOp1        = tree;
+        op1->AsCast()->CastToType() = toType;
+        op1->SetAllEffectsFlags(tree);
+        // no need to update isUnsigned
+
+        DEBUG_DESTROY_NODE(op2);
+        INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        return op1;
+    }
+
+    return nullptr;
+}
+
 /*****************************************************************************
  *
  *  Transform the given GTK_SMPOP tree for code generation.
@@ -11116,24 +11179,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 assert(tree->OperIs(GT_DIV));
                 tree->ChangeOper(GT_UDIV);
                 return fgMorphSmpOp(tree, mac);
-            }
-
-            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
-            {
-                // DIV(NEG(a), C) => DIV(a, NEG(C))
-                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                    !op2->IsIconHandle())
-                {
-                    ssize_t op2Value = op2->AsIntCon()->IconValue();
-                    if (op2Value != 1 && op2Value != -1) // Div must throw exception for int(long).MinValue / -1.
-                    {
-                        tree->AsOp()->gtOp1 = op1->gtGetOp1();
-                        DEBUG_DESTROY_NODE(op1);
-                        tree->AsOp()->gtOp2 = gtNewIconNode(-op2Value, op2->TypeGet());
-                        DEBUG_DESTROY_NODE(op2);
-                        return fgMorphSmpOp(tree, mac);
-                    }
-                }
             }
 
 #ifndef TARGET_64BIT
@@ -12131,11 +12176,9 @@ DONE_MORPHING_CHILDREN:
 
                     op2 = op2Child;
                 }
-
                 // -a - -b = > b - a
                 // SUB(NEG(a), (NEG(b)) => SUB(b, a)
-
-                if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
+                else if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
                 {
                     // tree: SUB
                     // op1: NEG
@@ -12356,13 +12399,11 @@ DONE_MORPHING_CHILDREN:
                         op1 = op2;
                         op2 = op1Child;
                     }
-
                     // a + -b = > a - b
                     // ADD(a, (NEG(b)) => SUB(a, b)
-
-                    if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                    else if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
                     {
-                        // a is non cosntant because it was already canonicalized to have
+                        // a is non constant because it was already canonicalized to have
                         // variable on the left and constant on the right.
 
                         // tree: ADD
@@ -12458,7 +12499,6 @@ DONE_MORPHING_CHILDREN:
                     op2->AsIntConCommon()->SetIconValue(genLog2(abs_mult));
                     changeToShift = true;
                 }
-#if LEA_AVAILABLE
                 else if ((lowestBit > 1) && jitIsScaleIndexMul(lowestBit) && optAvoidIntMult())
                 {
                     int     shift  = genLog2(lowestBit);
@@ -12488,7 +12528,6 @@ DONE_MORPHING_CHILDREN:
                         changeToShift = true;
                     }
                 }
-#endif // LEA_AVAILABLE
                 if (changeToShift)
                 {
                     // vnStore is null before the ValueNumber phase has run
@@ -12514,6 +12553,22 @@ DONE_MORPHING_CHILDREN:
                 typ  = tree->TypeGet();
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
+            }
+
+            if (fgGlobalMorph && varTypeIsIntegralOrI(tree) && tree->OperIs(GT_AND, GT_OR, GT_XOR))
+            {
+                GenTree* result = fgMorphCastedBitwiseOp(tree->AsOp());
+                if (result != nullptr)
+                {
+                    assert(result->OperIs(GT_CAST));
+                    assert(result->AsOp()->gtOp2 == nullptr);
+                    // tree got folded to a unary (cast) op
+                    tree = result;
+                    oper = tree->OperGet();
+                    typ  = tree->TypeGet();
+                    op1  = tree->AsOp()->gtGetOp1();
+                    op2  = nullptr;
+                }
             }
 
             if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
@@ -12589,6 +12644,16 @@ DONE_MORPHING_CHILDREN:
             noway_assert(varTypeIsFloating(op1->TypeGet()));
 
             fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_ARITH_EXCPN);
+            break;
+
+        case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+        case GT_SIMD_CHK:
+#endif
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HW_INTRINSIC_CHK:
+#endif
+            fgSetRngChkTarget(tree);
             break;
 
         case GT_OBJ:
@@ -14465,7 +14530,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             noway_assert(GenTree::OperIsRotate(rotateOp));
 
-            unsigned inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
+            GenTreeFlags inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
 
             // We can use the same tree only during global morph; reusing the tree in a later morph
             // may invalidate value numbers.
@@ -14740,35 +14805,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             }
             tree = fgMorphCall(tree->AsCall());
             break;
-
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-        {
-            fgSetRngChkTarget(tree);
-
-            GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
-            bndsChk->gtIndex          = fgMorphTree(bndsChk->gtIndex);
-            bndsChk->gtArrLen         = fgMorphTree(bndsChk->gtArrLen);
-            // If the index is a comma(throw, x), just return that.
-            if (!optValnumCSE_phase && fgIsCommaThrow(bndsChk->gtIndex))
-            {
-                tree = bndsChk->gtIndex;
-            }
-
-            bndsChk->gtFlags &= ~GTF_CALL;
-
-            // Propagate effects flags upwards
-            bndsChk->gtFlags |= (bndsChk->gtIndex->gtFlags & GTF_ALL_EFFECT);
-            bndsChk->gtFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
-
-            // Otherwise, we don't change the tree.
-        }
-        break;
 
         case GT_ARR_ELEM:
             tree->AsArrElem()->gtArrObj = fgMorphTree(tree->AsArrElem()->gtArrObj);

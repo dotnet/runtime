@@ -9,8 +9,13 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "ReplaceFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "ReplaceFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static partial bool ReplaceFilePrivate(
+#else
+        [DllImport(Libraries.Kernel32, EntryPoint = "ReplaceFileW", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool ReplaceFilePrivate(
+#endif
             string replacedFileName, string replacementFileName, string? backupFileName,
             int dwReplaceFlags, IntPtr lpExclude, IntPtr lpReserved);
 

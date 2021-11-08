@@ -67,7 +67,11 @@
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LocalAppContextSwitches.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Linux.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Linux\OpenLdap\Interop.Ldap.cs">
       <Link>Common\Interop\Linux\OpenLdap\Interop.Ldap.cs</Link>
     </Compile>

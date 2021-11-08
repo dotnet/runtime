@@ -4801,7 +4801,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(callType == EC_FUNC_TOKEN);
 
         // if addr is nullptr then this call is treated as a recursive call.
-        assert(addr == nullptr || codeGen->arm_Valid_Imm_For_BL((ssize_t)addr));
+        assert(addr == nullptr || codeGen->validImmForBL((ssize_t)addr));
 
         if (isJump)
         {
@@ -8095,7 +8095,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     if (dst->gtSetFlags())
     {
         assert((ins == INS_add) || (ins == INS_adc) || (ins == INS_sub) || (ins == INS_sbc) || (ins == INS_and) ||
-               (ins == INS_orr) || (ins == INS_eor) || (ins == INS_orn));
+               (ins == INS_orr) || (ins == INS_eor) || (ins == INS_orn) || (ins == INS_bic));
         flags = INS_FLAGS_SET;
     }
 

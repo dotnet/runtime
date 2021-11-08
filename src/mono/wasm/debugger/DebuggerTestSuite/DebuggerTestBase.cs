@@ -41,7 +41,12 @@ namespace DebuggerTests
         static protected string FindTestPath()
         {
             var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", "Debug", "publish");
+#if DEBUG
+            var config="Debug";
+#else
+            var config="Release";
+#endif            
+            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", config, "publish");
             if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
                 return test_app_path;
 

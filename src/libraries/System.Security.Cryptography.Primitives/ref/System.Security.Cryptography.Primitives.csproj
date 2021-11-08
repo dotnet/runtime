@@ -4,10 +4,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Security.Cryptography.Primitives.cs" />
     <Compile Include="System.Security.Cryptography.Primitives.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
   </ItemGroup>
 </Project>

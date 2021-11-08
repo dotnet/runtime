@@ -51,12 +51,8 @@
  ************************************************************************
  */
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.MDBenchF
 {
@@ -594,19 +590,6 @@ public class MDLLoops
             _vx[j] = 0.001;
             _xx[j] = 0.001;
             _grd[j] = (double)(j / 8 + 3);
-        }
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        var lloops = new MDLLoops();
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                lloops.Bench();
-            }
         }
     }
 

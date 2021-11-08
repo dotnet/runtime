@@ -23,7 +23,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly Test
+.assembly Test_Test
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
@@ -40,7 +40,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_Test
        extends [mscorlib_1]System.Object
 {
   .method public hidebysig static int32 Main() cil managed

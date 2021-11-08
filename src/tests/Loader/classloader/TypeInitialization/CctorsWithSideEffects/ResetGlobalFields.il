@@ -59,7 +59,7 @@
 
 } // end of class A
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_ResetGlobalFields
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

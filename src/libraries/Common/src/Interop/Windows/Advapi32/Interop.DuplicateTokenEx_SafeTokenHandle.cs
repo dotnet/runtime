@@ -10,8 +10,14 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Interop.Libraries.Advapi32, SetLastError = true)]
+        internal static partial bool DuplicateTokenEx(
+#else
         [DllImport(Interop.Libraries.Advapi32, SetLastError = true)]
-        internal static extern bool DuplicateTokenEx(SafeTokenHandle ExistingTokenHandle,
+        internal static extern bool DuplicateTokenEx(
+#endif
+            SafeTokenHandle ExistingTokenHandle,
             TokenAccessLevels DesiredAccess,
             IntPtr TokenAttributes,
             SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,

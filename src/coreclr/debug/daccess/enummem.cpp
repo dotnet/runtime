@@ -1597,6 +1597,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerSkinny(IN CLRDataEnumMemoryFlags f
     //
     // collect CLR static
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRStatic(flags); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRHeapCrticalStatic(flags); );
 
     // Dump AppDomain-specific info needed for MiniDumpNormal.
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpAppDomainInfo(flags); )

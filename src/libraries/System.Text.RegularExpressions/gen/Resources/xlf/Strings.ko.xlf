@@ -192,6 +192,11 @@
         <target state="translated">실패한 Match에서 결과를 호출할 수 없습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
+        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
+        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">읽기 전용 컬렉션입니다.</target>

@@ -224,16 +224,6 @@ namespace System.Globalization
             return (dynamicalMoment - Noon2000Jan01) / DaysInUniformLengthCentury;
         }
 
-        private static bool IsNegative(double value)
-        {
-            return Math.Sign(value) == -1;
-        }
-
-        private static double CopySign(double value, double sign)
-        {
-            return (IsNegative(value) == IsNegative(sign)) ? value : -value;
-        }
-
         // equation-of-time; approximate the difference between apparent solar time and mean solar time
         // formal definition is EOT = GHA - GMHA
         // GHA is the Greenwich Hour Angle of the apparent (actual) Sun
@@ -261,7 +251,7 @@ namespace System.Globalization
 
             // approximation of equation of time is not valid for dates that are many millennia in the past or future
             // thus limited to a half day
-            return CopySign(Math.Min(Math.Abs(equation), TwelveHours), equation);
+            return Math.CopySign(Math.Min(Math.Abs(equation), TwelveHours), equation);
         }
 
         private static double AsLocalTime(double apparentMidday, double longitude)

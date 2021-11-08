@@ -535,8 +535,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
-            srcCount = BuildOperandUses(tree->AsBoundsChk()->gtIndex);
-            srcCount += BuildOperandUses(tree->AsBoundsChk()->gtArrLen);
+            srcCount = BuildOperandUses(tree->AsBoundsChk()->GetIndex());
+            srcCount += BuildOperandUses(tree->AsBoundsChk()->GetArrayLength());
             break;
 
         case GT_ARR_ELEM:

@@ -4,13 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-#if MS_IO_REDIST
-using System.IO;
-
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     internal static partial class FileSystem
     {

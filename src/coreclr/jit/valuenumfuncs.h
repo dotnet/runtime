@@ -69,16 +69,6 @@ ValueNumFuncDef(InvalidCastExc, 2, false, false, false)     // CastClass check, 
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false)  // Raises Integer overflow when Arg 0 is negative
 ValueNumFuncDef(HelperMultipleExc, 0, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
 
-ValueNumFuncDef(Lng2Dbl, 1, false, false, false)
-ValueNumFuncDef(ULng2Dbl, 1, false, false, false)
-ValueNumFuncDef(Dbl2Int, 1, false, false, false)
-ValueNumFuncDef(Dbl2UInt, 1, false, false, false)
-ValueNumFuncDef(Dbl2Lng, 1, false, false, false)
-ValueNumFuncDef(Dbl2ULng, 1, false, false, false)
-ValueNumFuncDef(Dbl2IntOvf, 1, false, false, false)
-ValueNumFuncDef(Dbl2UIntOvf, 1, false, false, false)
-ValueNumFuncDef(Dbl2LngOvf, 1, false, false, false)
-ValueNumFuncDef(Dbl2ULngOvf, 1, false, false, false)
 ValueNumFuncDef(FltRound, 1, false, false, false)
 ValueNumFuncDef(DblRound, 1, false, false, false)
 

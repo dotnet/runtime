@@ -11,7 +11,7 @@ namespace System
 {
     /// <summary>Defines an integer type that is represented in a base-2 format.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures]
+    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IBinaryInteger<TSelf>
         : IBinaryNumber<TSelf>,
           IShiftOperators<TSelf, TSelf>

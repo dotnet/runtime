@@ -525,13 +525,14 @@ GenTree* Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig)
 //------------------------------------------------------------------------
 // eeGetArrayDataOffset: Gets the offset of a SDArray's first element
 //
-// Arguments:
-//    type - The array element type
-//
 // Return Value:
 //    The offset to the first array element.
-
-unsigned Compiler::eeGetArrayDataOffset(var_types type)
+//
+// Notes:
+//    See the comments at the definition of CORINFO_Array for a description of how arrays are laid out in memory.
+//
+// static
+unsigned Compiler::eeGetArrayDataOffset()
 {
     return OFFSETOF__CORINFO_Array__data;
 }
@@ -540,7 +541,6 @@ unsigned Compiler::eeGetArrayDataOffset(var_types type)
 // eeGetMDArrayDataOffset: Gets the offset of a MDArray's first element
 //
 // Arguments:
-//    type - The array element type
 //    rank - The array rank
 //
 // Return Value:
@@ -548,13 +548,56 @@ unsigned Compiler::eeGetArrayDataOffset(var_types type)
 //
 // Assumptions:
 //    The rank should be greater than 0.
-
-unsigned Compiler::eeGetMDArrayDataOffset(var_types type, unsigned rank)
+//
+// static
+unsigned Compiler::eeGetMDArrayDataOffset(unsigned rank)
 {
     assert(rank > 0);
     // Note that below we're specifically using genTypeSize(TYP_INT) because array
     // indices are not native int.
-    return eeGetArrayDataOffset(type) + 2 * genTypeSize(TYP_INT) * rank;
+    return eeGetArrayDataOffset() + 2 * genTypeSize(TYP_INT) * rank;
+}
+
+//------------------------------------------------------------------------
+// eeGetMDArrayLengthOffset: Returns the offset from the Array object to the
+//   size for the given dimension.
+//
+// Arguments:
+//    rank      - the rank of the array
+//    dimension - the dimension for which the lower bound offset will be returned.
+//
+// Return Value:
+//    The offset.
+//
+// static
+unsigned Compiler::eeGetMDArrayLengthOffset(unsigned rank, unsigned dimension)
+{
+    // Note that we don't actually need the `rank` value for this calculation, but we pass it anyway,
+    // to be consistent with other MD array functions.
+    assert(rank > 0);
+    assert(dimension < rank);
+    // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
+    return eeGetArrayDataOffset() + genTypeSize(TYP_INT) * dimension;
+}
+
+//------------------------------------------------------------------------
+// eeGetMDArrayLowerBoundOffset: Returns the offset from the Array object to the
+//   lower bound for the given dimension.
+//
+// Arguments:
+//    rank      - the rank of the array
+//    dimension - the dimension for which the lower bound offset will be returned.
+//
+// Return Value:
+//    The offset.
+//
+// static
+unsigned Compiler::eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension)
+{
+    assert(rank > 0);
+    assert(dimension < rank);
+    // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
+    return eeGetArrayDataOffset() + genTypeSize(TYP_INT) * (dimension + rank);
 }
 
 /*****************************************************************************/

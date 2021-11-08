@@ -40,7 +40,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_Test6_ImplementingClass
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  method1() cil managed
@@ -81,7 +81,7 @@
              [4] bool CS$4$0001)
     .try
     {
-      IL_0000:  call       void Test::method1()
+      IL_0000:  call       void Test_Test6_ImplementingClass::method1()
       IL_0005:  nop
       IL_0006:  ldstr      "PASS at method1(): Loaded type A"
       IL_000b:  call       void [System.Console]System.Console::WriteLine(string)
@@ -110,7 +110,7 @@
     IL_002f:  nop
     .try
     {
-      IL_0030:  call       void Test::method2()
+      IL_0030:  call       void Test_Test6_ImplementingClass::method2()
       IL_0035:  nop
       IL_0036:  ldstr      "PASS at method2(): Loaded type B"
       IL_003b:  call       void [System.Console]System.Console::WriteLine(string)

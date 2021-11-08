@@ -19,6 +19,7 @@ namespace System.Xml.Serialization
     using System.Xml.Serialization;
     using System.Xml;
     using System.Diagnostics.CodeAnalysis;
+    using System.Runtime.CompilerServices;
 
     ///<internalonly/>
     public abstract class XmlSerializationWriter : XmlSerializationGeneratedCode
@@ -1465,14 +1466,13 @@ namespace System.Xml.Serialization
     {
         private static readonly Hashtable s_nameToAssemblyMap = new Hashtable();
         private static readonly Hashtable s_assemblyToNameMap = new Hashtable();
-        private static readonly Hashtable s_tableIsTypeDynamic = Hashtable.Synchronized(new Hashtable());
+        private static readonly ContextAwareTables<object> s_tableIsTypeDynamic = new ContextAwareTables<object>();
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
         internal static bool IsTypeDynamic(Type type)
         {
-            object? oIsTypeDynamic = s_tableIsTypeDynamic[type];
-            if (oIsTypeDynamic == null)
+            object oIsTypeDynamic = s_tableIsTypeDynamic.GetOrCreateValue(type, () =>
             {
                 Assembly assembly = type.Assembly;
                 bool isTypeDynamic = assembly.IsDynamic /*|| string.IsNullOrEmpty(assembly.Location)*/;
@@ -1500,8 +1500,8 @@ namespace System.Xml.Serialization
                         }
                     }
                 }
-                s_tableIsTypeDynamic[type] = oIsTypeDynamic = isTypeDynamic;
-            }
+                return isTypeDynamic;
+            });
             return (bool)oIsTypeDynamic;
         }
 

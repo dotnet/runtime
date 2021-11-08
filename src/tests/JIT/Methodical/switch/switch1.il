@@ -14,7 +14,7 @@
 
 .module 'switch1.exe'
 
-.class public auto ansi Test
+.class public auto ansi Test_switch1
        extends ['mscorlib']System.Object
 {
   .method private hidebysig static void  DoSwitch(int32 'value') il managed
@@ -53,7 +53,7 @@
     .entrypoint
     .maxstack  8
     IL_0000:  ldc.i4.1
-    IL_0001:  call       void Test::DoSwitch(int32)
+    IL_0001:  call       void Test_switch1::DoSwitch(int32)
     IL_0006:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
               call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
               ret

@@ -15,23 +15,24 @@ namespace Microsoft.Extensions.Configuration
     {
         public ChainedConfigurationProvider(Microsoft.Extensions.Configuration.ChainedConfigurationSource source) { }
         public void Dispose() { }
-        public System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string parentPath) { throw null; }
+        public System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public void Load() { }
-        public void Set(string key, string value) { }
-        public bool TryGet(string key, out string value) { throw null; }
+        public void Set(string key, string? value) { }
+        public bool TryGet(string key, out string? value) { throw null; }
     }
     public partial class ChainedConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         public ChainedConfigurationSource() { }
-        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public Microsoft.Extensions.Configuration.IConfiguration? Configuration { get { throw null; } set { } }
         public bool ShouldDisposeConfiguration { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
     public sealed partial class ConfigurationManager : Microsoft.Extensions.Configuration.IConfigurationBuilder, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
     {
         public ConfigurationManager() { }
-        public string this[string key] { get { throw null; } set { throw null; } }
+        public string? this[string key] { get { throw null; } set { throw null; } }
         public IConfigurationSection GetSection(string key) { throw null; }
         public System.Collections.Generic.IEnumerable<IConfigurationSection> GetChildren() { throw null; }
         public void Dispose() { throw null; }
@@ -55,19 +56,19 @@ namespace Microsoft.Extensions.Configuration
     {
         public ConfigurationKeyComparer() { }
         public static Microsoft.Extensions.Configuration.ConfigurationKeyComparer Instance { get { throw null; } }
-        public int Compare(string x, string y) { throw null; }
+        public int Compare(string? x, string? y) { throw null; }
     }
     public abstract partial class ConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider
     {
         protected ConfigurationProvider() { }
-        protected System.Collections.Generic.IDictionary<string, string> Data { get { throw null; } set { } }
-        public virtual System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string parentPath) { throw null; }
+        protected System.Collections.Generic.IDictionary<string, string?> Data { get { throw null; } set { } }
+        public virtual System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public virtual void Load() { }
         protected void OnReload() { }
-        public virtual void Set(string key, string value) { }
+        public virtual void Set(string key, string? value) { }
         public override string ToString() { throw null; }
-        public virtual bool TryGet(string key, out string value) { throw null; }
+        public virtual bool TryGet(string key, out string? value) { throw null; }
     }
     public partial class ConfigurationReloadToken : Microsoft.Extensions.Primitives.IChangeToken
     {
@@ -75,12 +76,12 @@ namespace Microsoft.Extensions.Configuration
         public bool ActiveChangeCallbacks { get { throw null; } }
         public bool HasChanged { get { throw null; } }
         public void OnReload() { }
-        public System.IDisposable RegisterChangeCallback(System.Action<object> callback, object state) { throw null; }
+        public System.IDisposable RegisterChangeCallback(System.Action<object?> callback, object? state) { throw null; }
     }
     public partial class ConfigurationRoot : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
     {
         public ConfigurationRoot(System.Collections.Generic.IList<Microsoft.Extensions.Configuration.IConfigurationProvider> providers) { }
-        public string this[string key] { get { throw null; } set { } }
+        public string? this[string key] { get { throw null; } set { } }
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationProvider> Providers { get { throw null; } }
         public void Dispose() { }
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren() { throw null; }
@@ -91,10 +92,10 @@ namespace Microsoft.Extensions.Configuration
     public partial class ConfigurationSection : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationSection
     {
         public ConfigurationSection(Microsoft.Extensions.Configuration.IConfigurationRoot root, string path) { }
-        public string this[string key] { get { throw null; } set { } }
+        public string? this[string key] { get { throw null; } set { } }
         public string Key { get { throw null; } }
         public string Path { get { throw null; } }
-        public string Value { get { throw null; } set { } }
+        public string? Value { get { throw null; } set { } }
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren() { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key) { throw null; }
@@ -102,7 +103,7 @@ namespace Microsoft.Extensions.Configuration
     public static partial class MemoryConfigurationBuilderExtensions
     {
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder) { throw null; }
-        public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> initialData) { throw null; }
+        public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? initialData) { throw null; }
     }
     public abstract partial class StreamConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider
     {
@@ -114,23 +115,24 @@ namespace Microsoft.Extensions.Configuration
     public abstract partial class StreamConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         protected StreamConfigurationSource() { }
-        public System.IO.Stream Stream { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public System.IO.Stream? Stream { get { throw null; } set { } }
         public abstract Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder);
     }
 }
 namespace Microsoft.Extensions.Configuration.Memory
 {
-    public partial class MemoryConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.IEnumerable
+    public partial class MemoryConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>, System.Collections.IEnumerable
     {
         public MemoryConfigurationProvider(Microsoft.Extensions.Configuration.Memory.MemoryConfigurationSource source) { }
-        public void Add(string key, string value) { }
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string>> GetEnumerator() { throw null; }
+        public void Add(string key, string? value) { }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string?>> GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     public partial class MemoryConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         public MemoryConfigurationSource() { }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> InitialData { get { throw null; } set { } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? InitialData { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
 }

@@ -33,6 +33,9 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
 
   <!-- For IncrementalHash -->
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

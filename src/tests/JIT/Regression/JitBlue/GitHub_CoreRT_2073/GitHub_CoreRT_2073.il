@@ -10,7 +10,7 @@
 
 .assembly GitHub_CoreRT_2073.exe {}
 
-.class public Test
+.class public Test_GitHub_CoreRT_2073
 {
 
 .method private hidebysig static bool  tailAsgReturn(int32 deep) cil managed
@@ -29,12 +29,12 @@
     IL_000a:  ldarg.0
     IL_000b:  ldc.i4.1
     IL_000c:  sub
-    IL_000d:  call       bool Test::tailAsgReturn(int32)
+    IL_000d:  call       bool Test_GitHub_CoreRT_2073::tailAsgReturn(int32)
     IL_000e:  br IL_0017
     IL_000f:  ldarg.0
     IL_0010:  ldc.i4.2
     IL_0011:  sub
-    IL_0012:  call       bool Test::tailAsgReturn(int32)
+    IL_0012:  call       bool Test_GitHub_CoreRT_2073::tailAsgReturn(int32)
     IL_0017:  ret
 } // end of method Test::tailAsgReturn
 
@@ -44,7 +44,7 @@
   // Code size       14 (0xe)
   .maxstack  8
   IL_0000:  ldc.i4.s   100
-  IL_0002:  call       bool Test::tailAsgReturn(int32)
+  IL_0002:  call       bool Test_GitHub_CoreRT_2073::tailAsgReturn(int32)
   IL_0007:  brtrue.s   IL_000b
   IL_0009:  ldc.i4.m1
   IL_000a:  ret

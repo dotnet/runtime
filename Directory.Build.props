@@ -20,6 +20,7 @@
     <_hostOS Condition="'$(TargetOS)' == 'Browser'">Browser</_hostOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
+    <TargetsAppleMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</TargetsAppleMobile>
   </PropertyGroup>
 
   <!-- Platform property is required by RepoLayout.props in Arcade SDK. -->
@@ -62,6 +63,8 @@
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
     <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
+    <!-- Don't build for NETFramework during source-build. -->
+    <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
   </PropertyGroup>
 
   <PropertyGroup>
@@ -120,7 +123,7 @@
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.LastIndexOfAny("-"))</_distroRidIndex>
+    <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
 
     <_runtimeOS>$(RuntimeOS)</_runtimeOS>
     <_runtimeOS Condition="'$(_runtimeOS)' == ''">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_runtimeOS>

@@ -10,8 +10,8 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyCreate")]
-        internal static extern SafeEvpPKeyHandle EvpPkeyCreate();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyCreate")]
+        internal static partial SafeEvpPKeyHandle EvpPkeyCreate();
 
         [DllImport(Libraries.CryptoNative)]
         private static extern SafeEvpPKeyHandle CryptoNative_EvpPKeyDuplicate(
@@ -40,20 +40,20 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
         internal static extern void EvpPkeyDestroy(IntPtr pkey);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeySize")]
-        internal static extern int EvpPKeySize(SafeEvpPKeyHandle pkey);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeySize")]
+        internal static partial int EvpPKeySize(SafeEvpPKeyHandle pkey);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
-        internal static extern int UpRefEvpPkey(SafeEvpPKeyHandle handle);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
+        internal static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern unsafe SafeEvpPKeyHandle CryptoNative_DecodeSubjectPublicKeyInfo(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static unsafe partial SafeEvpPKeyHandle CryptoNative_DecodeSubjectPublicKeyInfo(
             byte* buf,
             int len,
             int algId);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern unsafe SafeEvpPKeyHandle CryptoNative_DecodePkcs8PrivateKey(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static unsafe partial SafeEvpPKeyHandle CryptoNative_DecodePkcs8PrivateKey(
             byte* buf,
             int len,
             int algId);

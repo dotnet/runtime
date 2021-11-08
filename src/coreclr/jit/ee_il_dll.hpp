@@ -62,6 +62,18 @@ bool Compiler::eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
 }
 
 FORCEINLINE
+bool Compiler::eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
+{
+    return info.compCompHnd->isFieldStatic(fldHnd);
+}
+
+FORCEINLINE
+var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd)
+{
+    return JITtype2varType(info.compCompHnd->getFieldType(fldHnd));
+}
+
+FORCEINLINE
 void Compiler::eeGetSig(unsigned               sigTok,
                         CORINFO_MODULE_HANDLE  scope,
                         CORINFO_CONTEXT_HANDLE context,

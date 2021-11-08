@@ -748,7 +748,7 @@ static int
 stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
 {
 	type = mini_native_type_replace_type (type);
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		result->data.p = *(gpointer*)data;
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -835,7 +835,7 @@ static int
 stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 {
 	type = mini_native_type_replace_type (type);
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;
 		return MINT_STACK_SLOT_SIZE;
@@ -1031,16 +1031,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 #define EXCEPTION_CHECKPOINT	\
 	do {										\
 		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method)) { \
-			MonoException *exc = mono_thread_interruption_checkpoint ();	\
-			if (exc)							\
-				THROW_EX_GENERAL (exc, ip, TRUE);					\
-		}									\
-	} while (0)
-
-/* Don't throw exception if thread is in GC Safe mode. Should only happen in managed-to-native wrapper. */
-#define EXCEPTION_CHECKPOINT_GC_UNSAFE	\
-	do {										\
-		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method) && mono_thread_is_gc_unsafe_mode ()) { \
 			MonoException *exc = mono_thread_interruption_checkpoint ();	\
 			if (exc)							\
 				THROW_EX_GENERAL (exc, ip, TRUE);					\
@@ -1258,7 +1248,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		margs->ilen++;
 
 	for (int i = 0; i < sig->param_count; i++) {
-		guint32 ptype = sig->params [i]->byref ? MONO_TYPE_PTR : sig->params [i]->type;
+		guint32 ptype = m_type_is_byref (sig->params [i]) ? MONO_TYPE_PTR : sig->params [i]->type;
 		switch (ptype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -1332,7 +1322,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		MonoType *type = sig->params [i];
 		guint32 ptype;
 retry:
-		ptype = type->byref ? MONO_TYPE_PTR : type->type;
+		ptype = m_type_is_byref (type) ? MONO_TYPE_PTR : type->type;
 		switch (ptype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -1530,7 +1520,8 @@ ves_pinvoke_method (
 	stackval *ret_sp,
 	stackval *sp,
 	gboolean save_last_error,
-	gpointer *cache)
+	gpointer *cache,
+	gboolean *gc_transitions)
 {
 	InterpFrame frame = {0};
 	frame.parent = parent_frame;
@@ -1541,14 +1532,7 @@ ves_pinvoke_method (
 	MonoLMFExt ext;
 	gpointer args;
 
-	/*
-	 * When there's a calli in a pinvoke wrapper, we're in GC Safe mode.
-	 * When we're called for some other calli, we may be in GC Unsafe mode.
-	 *
-	 * On any code path where we call anything other than the entry_func,
-	 * we need to switch back to GC Unsafe before calling the runtime.
-	 */
-	MONO_REQ_GC_NEUTRAL_MODE;
+	MONO_REQ_GC_UNSAFE_MODE;
 
 #ifdef HOST_WASM
 	/*
@@ -1584,9 +1568,7 @@ ves_pinvoke_method (
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
-	MONO_ENTER_GC_UNSAFE;
 	mono_arch_set_native_call_context_args (&ccontext, &frame, sig);
-	MONO_EXIT_GC_UNSAFE;
 	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, &frame);
@@ -1594,16 +1576,23 @@ ves_pinvoke_method (
 #endif
 
 	INTERP_PUSH_LMF_WITH_CTX (&frame, ext, exit_pinvoke);
-	entry_func ((gpointer) addr, args);
+
+	if (*gc_transitions) {
+		MONO_ENTER_GC_SAFE;
+		entry_func ((gpointer) addr, args);
+		MONO_EXIT_GC_SAFE;
+		*gc_transitions = FALSE;
+	} else {
+		entry_func ((gpointer) addr, args);
+	}
+
 	if (save_last_error)
 		mono_marshal_set_last_error ();
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	if (!context->has_resume_state) {
-		MONO_ENTER_GC_UNSAFE;
 		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig);
-		MONO_EXIT_GC_UNSAFE;
 	}
 
 	g_free (ccontext.stack);
@@ -1630,14 +1619,14 @@ exit_pinvoke:
  *   Initialize del->interp_method.
  */
 static void
-interp_init_delegate (MonoDelegate *del, MonoError *error)
+interp_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **out_info, MonoError *error)
 {
 	MonoMethod *method;
 
 	if (del->interp_method) {
 		/* Delegate created by a call to ves_icall_mono_delegate_ctor_interp () */
 		del->method = ((InterpMethod *)del->interp_method)->method;
-	} if (del->method_ptr && !del->method) {
+	} else if (del->method_ptr && !del->method) {
 		/* Delegate created from methodInfo.MethodHandle.GetFunctionPointer() */
 		del->interp_method = (InterpMethod *)del->method_ptr;
 		if (mono_llvm_only)
@@ -1679,6 +1668,25 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 		/* Return any errors from method compilation */
 		mono_interp_transform_method ((InterpMethod *) del->interp_method, get_context (), error);
 		return_if_nok (error);
+	}
+
+	/*
+	 * Compute a MonoDelegateTrampInfo for this delegate if possible and pass it back to
+	 * the caller.
+	 * Keep a 1 element cache in imethod->del_info. This should be good enough since most methods
+	 * are only associated with one delegate type.
+	 */
+	if (out_info)
+		*out_info = NULL;
+	if (mono_llvm_only) {
+		InterpMethod *imethod = del->interp_method;
+		method = imethod->method;
+		if (imethod->del_info && imethod->del_info->klass == del->object.vtable->klass) {
+			*out_info = imethod->del_info;
+		} else if (!imethod->del_info) {
+			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method);
+			*out_info = imethod->del_info;
+		}
 	}
 }
 
@@ -1965,7 +1973,9 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	// method is transformed.
 	context->stack_pointer = (guchar*)(sp + 4);
 
+	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
 
@@ -2016,6 +2026,20 @@ interp_entry (InterpEntryData *data)
 	sp_args = sp = (stackval*)context->stack_pointer;
 
 	method = rmethod->method;
+
+	if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke")) {
+		/*
+		 * This happens when AOT code for the invoke wrapper is not found.
+		 * Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
+		 */
+		ERROR_DECL (error);
+		MonoDelegate *del = (MonoDelegate*)data->this_arg;
+		// FIXME: This is slow
+		method = mono_marshal_get_delegate_invoke (method, del);
+		data->rmethod = mono_interp_get_imethod (method, error);
+		mono_error_assert_ok (error);
+	}
+
 	sig = mono_method_signature_internal (method);
 
 	// FIXME: Optimize this
@@ -2031,7 +2055,7 @@ interp_entry (InterpEntryData *data)
 	else
 		params = data->args;
 	for (i = 0; i < sig->param_count; ++i) {
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			sp_args->data.p = params [i];
 			sp_args++;
 		} else {
@@ -2047,7 +2071,9 @@ interp_entry (InterpEntryData *data)
 
 	context->stack_pointer = (guchar*)sp_args;
 
+	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
 
@@ -2179,12 +2205,19 @@ do_icall (MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpoi
 #endif
 // Do not inline in case order of frame addresses matters, and maybe other reasons.
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
-do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
+do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error, gboolean *gc_transitions)
 {
 	MonoLMFExt ext;
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 
-	do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+	if (*gc_transitions) {
+		MONO_ENTER_GC_SAFE;
+		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+		MONO_EXIT_GC_SAFE;
+		*gc_transitions = FALSE;
+	} else {
+		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+	}
 
 	interp_pop_lmf (&ext);
 
@@ -2366,7 +2399,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 		for (int i = 0; i < rmethod->param_count; ++i) {
 			MonoType *t = rmethod->param_types [i];
 			int mt = mint_type (t);
-			if (sig->params [i]->byref) {
+			if (m_type_is_byref (sig->params [i])) {
 				cinfo->arginfo [i] = JIT_ARG_BYVAL;
 			} else if (mt == MINT_TYPE_O) {
 				cinfo->arginfo [i] = JIT_ARG_BYREF;
@@ -2745,7 +2778,9 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	}
 	context->stack_pointer = (guchar*)newsp;
 
+	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
 	g_assert (!context->has_resume_state);
@@ -3129,14 +3164,14 @@ static MONO_NEVER_INLINE MonoException*
 mono_interp_leave (InterpFrame* parent_frame)
 {
 	InterpFrame frame = {parent_frame};
-
+	gboolean gc_transitions = FALSE;
 	stackval tmp_sp;
 	/*
 	 * We need for mono_thread_get_undeniable_exception to be able to unwind
 	 * to check the abort threshold. For this to work we use frame as a
 	 * dummy frame that is stored in the lmf and serves as the transition frame
 	 */
-	do_icall_wrapper (&frame, NULL, MINT_ICALL_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE);
+	do_icall_wrapper (&frame, NULL, MINT_ICALL_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
 
 	return (MonoException*)tmp_sp.data.p;
 }
@@ -3244,6 +3279,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	unsigned char *locals = NULL;
 	int call_args_offset;
 	int return_offset;
+	gboolean gc_transitions = FALSE;
 
 #if DEBUG_INTERP
 	int tracing = global_tracing;
@@ -3411,8 +3447,33 @@ main_loop:
 			LOCAL_VAR (ip [1], gint64) = READ64 (ip + 2); /* note union usage */
 			ip += 6;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TAILCALL)
+		MINT_IN_CASE(MINT_TAILCALL_VIRT)
 		MINT_IN_CASE(MINT_JMP) {
-			InterpMethod *new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			gboolean is_tailcall = *ip != MINT_JMP;
+			InterpMethod *new_method;
+
+			if (is_tailcall) {
+				guint16 params_offset = ip [1];
+				guint16 params_size = ip [3];
+
+				// Copy the params to their location at the start of the frame
+				memmove (frame->stack, (guchar*)frame->stack + params_offset, params_size);
+				new_method = (InterpMethod*)frame->imethod->data_items [ip [2]];
+
+				if (*ip == MINT_TAILCALL_VIRT) {
+					gint16 slot = (gint16)ip [4];
+					MonoObject *this_arg = LOCAL_VAR (0, MonoObject*);
+					new_method = get_virtual_method_fast (new_method, this_arg->vtable, slot);
+					if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (new_method->method->klass)) {
+						/* unbox */
+						gpointer unboxed = mono_object_unbox_internal (this_arg);
+						LOCAL_VAR (0, gpointer) = unboxed;
+					}
+				}
+			} else {
+				new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			}
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
 				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
@@ -3536,8 +3597,8 @@ main_loop:
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 7;
 
-			do_icall_wrapper (frame, csignature, opcode, ret, args, target_ip, save_last_error);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, csignature, opcode, ret, args, target_ip, save_last_error, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 7;
 			MINT_IN_BREAK;
@@ -3564,9 +3625,9 @@ main_loop:
 			gpointer *cache = (gpointer*)&frame->imethod->data_items [ip [7]];
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 8;
-			ves_pinvoke_method (imethod, csignature, (MonoFuncV)code, context, frame, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [3]), save_last_error, cache);
+			ves_pinvoke_method (imethod, csignature, (MonoFuncV)code, context, frame, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [3]), save_last_error, cache, &gc_transitions);
 
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 
 			ip += 8;
@@ -6256,8 +6317,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_PPPPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
 			frame->state.ip = ip + 3;
-			do_icall_wrapper (frame, NULL, *ip, NULL, (stackval*)(locals + ip [1]), frame->imethod->data_items [ip [2]], FALSE);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, NULL, *ip, NULL, (stackval*)(locals + ip [1]), frame->imethod->data_items [ip [2]], FALSE, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6269,8 +6330,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_PPPPP_P)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->state.ip = ip + 4;
-			do_icall_wrapper (frame, NULL, *ip, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame->imethod->data_items [ip [3]], FALSE);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, NULL, *ip, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame->imethod->data_items [ip [3]], FALSE, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6320,9 +6381,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gpointer) = mono_domain_get ();
 			ip += 2;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_GET_SP)
-			LOCAL_VAR (ip [1], gpointer) = frame;
-			ip += 2;
+		MINT_IN_CASE(MINT_MONO_ENABLE_GCTRANS)
+			gc_transitions = TRUE;
+			ip++;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_INTR_LOC)
 			if (G_UNLIKELY (ss_enabled)) {
@@ -6778,19 +6839,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], double) = scalbn (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], gint32));
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ILOGB) {
-			int result;
-			double x = LOCAL_VAR (ip [2], double);
-			if (FP_ILOGB0 != INT_MIN && x == 0.0)
-				result = INT_MIN;
-			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
-				result = INT_MAX;
-			else
-				result = ilogb (x);
-			LOCAL_VAR (ip [1],  gint32) = result;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 
 #define MATH_UNOPF(mathfunc) \
 	LOCAL_VAR (ip [1], float) = mathfunc (LOCAL_VAR (ip [2], float)); \
@@ -6831,19 +6879,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], float) = scalbnf (LOCAL_VAR (ip [2], float), LOCAL_VAR (ip [3], gint32));
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ILOGBF) {
-			int result;
-			float x = LOCAL_VAR (ip [2], float);
-			if (FP_ILOGB0 != INT_MIN && x == 0.0)
-				result = INT_MIN;
-			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
-				result = INT_MAX;
-			else
-				result = ilogbf (x);
-			LOCAL_VAR (ip [1], gint32) = result;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 
 		MINT_IN_CASE(MINT_INTRINS_ENUM_HASFLAG) {
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [4]];
@@ -7515,6 +7550,14 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 			func (copy_jit_info_data.jit_info_array [i], user_data);
 		g_free (copy_jit_info_data.jit_info_array);
 	}
+}
+
+static gboolean
+interp_sufficient_stack (gsize size)
+{
+	ThreadContext *context = get_context ();
+
+	return (context->stack_pointer + size) < (context->stack_start + INTERP_STACK_SIZE);
 }
 
 static void

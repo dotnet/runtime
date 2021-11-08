@@ -1692,22 +1692,26 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
     {
         case GT_CNS_INT:
         {
-            // relocatable values tend to come down as a CNS_INT of native int type
-            // so the line between these two opcodes is kind of blurry
             GenTreeIntConCommon* con    = tree->AsIntConCommon();
             ssize_t              cnsVal = con->IconValue();
 
+            emitAttr attr = emitActualTypeSize(targetType);
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
             if (con->ImmedValNeedsReloc(compiler))
             {
-                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal,
-                                       INS_FLAGS_DONT_CARE DEBUGARG(tree->AsIntCon()->gtTargetHandle)
-                                           DEBUGARG(tree->AsIntCon()->gtFlags));
-                regSet.verifyRegUsed(targetReg);
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
-            else
+
+            if (targetType == TYP_BYREF)
             {
-                genSetRegToIcon(targetReg, cnsVal, targetType);
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
+
+            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(tree->AsIntCon()->gtTargetHandle)
+                                       DEBUGARG(tree->AsIntCon()->gtFlags));
+            regSet.verifyRegUsed(targetReg);
         }
         break;
 
@@ -1813,7 +1817,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, OR and XOR
+// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR and XOR
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
@@ -1822,8 +1826,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     var_types        targetType = treeNode->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(oper == GT_ADD || oper == GT_SUB || oper == GT_MUL || oper == GT_DIV || oper == GT_UDIV || oper == GT_AND ||
-           oper == GT_OR || oper == GT_XOR);
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
@@ -1841,6 +1844,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
                 break;
             case GT_AND:
                 ins = INS_ands;
+                break;
+            case GT_AND_NOT:
+                ins = INS_bics;
                 break;
             default:
                 noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
@@ -2279,7 +2285,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         {
             regCnt = tree->ExtractTempReg();
         }
-        genSetRegToIcon(regCnt, amount, ((unsigned int)amount == amount) ? TYP_INT : TYP_LONG);
+        instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
 
     if (compiler->info.compInitMem)
@@ -3114,6 +3120,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
                 break;
             case GT_AND:
                 ins = INS_and;
+                break;
+            case GT_AND_NOT:
+                ins = INS_bic;
                 break;
             case GT_DIV:
                 ins = INS_sdiv;
@@ -4623,7 +4632,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     }
     else
     {
-        genSetRegToIcon(REG_PROFILER_ENTER_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
@@ -4667,7 +4676,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     }
     else
     {
-        genSetRegToIcon(REG_PROFILER_LEAVE_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     gcInfo.gcMarkRegSetNpt(RBM_PROFILER_LEAVE_ARG_FUNC_ID);
@@ -9508,6 +9517,128 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         regSet.verifyRegUsed(initReg);
         *pInitRegZeroed = false; // The initReg does not contain zero
     }
+}
+
+//-----------------------------------------------------------------------------------
+// instGen_MemoryBarrier: Emit a MemoryBarrier instruction
+//
+// Arguments:
+//     barrierKind - kind of barrier to emit (Full or Load-Only).
+//
+// Notes:
+//     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
+//
+void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
+{
+#ifdef DEBUG
+    if (JitConfig.JitNoMemoryBarriers() == 1)
+    {
+        return;
+    }
+#endif // DEBUG
+
+    // Avoid emitting redundant memory barriers on arm64 if they belong to the same IG
+    // and there were no memory accesses in-between them
+    emitter::instrDesc* lastMemBarrier = GetEmitter()->emitLastMemBarrier;
+    if ((lastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
+    {
+        BarrierKind prevBarrierKind = BARRIER_FULL;
+        if (lastMemBarrier->idSmallCns() == INS_BARRIER_ISHLD)
+        {
+            prevBarrierKind = BARRIER_LOAD_ONLY;
+        }
+        else
+        {
+            // Currently we only emit two kinds of barriers on arm64:
+            //  ISH   - Full (inner shareable domain)
+            //  ISHLD - LoadOnly (inner shareable domain)
+            assert(lastMemBarrier->idSmallCns() == INS_BARRIER_ISH);
+        }
+
+        if ((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL))
+        {
+            // Previous memory barrier: load-only, current: full
+            // Upgrade the previous one to full
+            assert((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL));
+            lastMemBarrier->idSmallCns(INS_BARRIER_ISH);
+        }
+    }
+    else
+    {
+        GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
+    }
+}
+
+//-----------------------------------------------------------------------------------
+// genCodeForMadd: Emit a madd/msub (Multiply-Add) instruction
+//
+// Arguments:
+//     tree - GT_MADD tree where op1 or op2 is GT_ADD
+//
+void CodeGen::genCodeForMadd(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MADD) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
+
+    GenTree* a;
+    GenTree* b;
+    GenTree* c;
+    if (tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
+    {
+        a = tree->gtGetOp1()->gtGetOp1();
+        b = tree->gtGetOp1()->gtGetOp2();
+        c = tree->gtGetOp2();
+    }
+    else
+    {
+        assert(tree->gtGetOp2()->OperIs(GT_MUL) && tree->gtGetOp2()->isContained());
+        a = tree->gtGetOp2()->gtGetOp1();
+        b = tree->gtGetOp2()->gtGetOp2();
+        c = tree->gtGetOp1();
+    }
+
+    bool useMsub = false;
+    if (a->OperIs(GT_NEG) && a->isContained())
+    {
+        a       = a->gtGetOp1();
+        useMsub = true;
+    }
+    if (b->OperIs(GT_NEG) && b->isContained())
+    {
+        b       = b->gtGetOp1();
+        useMsub = !useMsub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
+    }
+
+    GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
+                                  a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBfiz: Generates the code sequence for a GenTree node that
+// represents a bitfield insert in zero with sign/zero extension.
+//
+// Arguments:
+//    tree - the bitfield insert in zero node.
+//
+void CodeGen::genCodeForBfiz(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_BFIZ));
+
+    emitAttr     size       = emitActualTypeSize(tree);
+    unsigned     shiftBy    = (unsigned)tree->gtGetOp2()->AsIntCon()->IconValue();
+    unsigned     shiftByImm = shiftBy & (emitter::getBitWidth(size) - 1);
+    GenTreeCast* cast       = tree->gtGetOp1()->AsCast();
+    GenTree*     castOp     = cast->CastOp();
+
+    genConsumeRegs(castOp);
+    unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                          : genTypeSize(castOp) * BITS_PER_BYTE;
+    const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
+    GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
+                                  (int)shiftByImm, (int)srcBits);
+
+    genProduceReg(tree);
 }
 
 #endif // TARGET_ARM64

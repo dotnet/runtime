@@ -103,9 +103,12 @@ code_t AddRexPrefix(instruction ins, code_t code);
 bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSEInstruction(instruction ins);
 static bool IsMovInstruction(instruction ins);
+bool HasSideEffect(instruction ins, emitAttr size);
 bool IsRedundantMov(
     instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
 bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src);
+
+bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs);
 
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
@@ -306,10 +309,6 @@ inline emitAttr emitDecodeScale(unsigned ensz)
 /************************************************************************/
 
 public:
-void emitLoopAlign(unsigned short paddingBytes);
-
-void emitLongLoopAlign(unsigned short alignmentBoundary);
-
 void emitIns(instruction ins);
 
 void emitIns(instruction ins, emitAttr attr);

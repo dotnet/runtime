@@ -209,7 +209,7 @@
 
 } // end of class Conversion2`3
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_RecursiveGen
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 

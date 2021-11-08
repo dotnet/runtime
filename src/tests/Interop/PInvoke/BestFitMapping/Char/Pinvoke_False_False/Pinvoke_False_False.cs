@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 public class BFM_CharMarshaler
 {
@@ -82,71 +82,71 @@ public class BFM_CharMarshaler
 
     static void testChar()
     {
-        Assert.IsTrue(Char_In(GetInvalidChar()), "[Error] Location tc1");
+        Assert.True(Char_In(GetInvalidChar()));
 
-        Assert.IsTrue(Char_In(GetValidChar()), "[Error] Location tc2");
+        Assert.True(Char_In(GetValidChar()));
 
         char cTemp = GetInvalidChar();
-        Assert.IsTrue(Char_InByRef(ref cTemp), "[Error] Location tc3");
+        Assert.True(Char_InByRef(ref cTemp));
 
         cTemp = GetValidChar();
-        Assert.IsTrue(Char_InByRef(ref cTemp), "[Error] Location t4");
+        Assert.True(Char_InByRef(ref cTemp));
 
         cTemp = GetInvalidChar();
-        Assert.IsTrue(Char_InOutByRef(ref cTemp), "[Error] Location tc55");
-        Assert.AreEqual('?', cTemp, "[Error] Location tc6");
+        Assert.True(Char_InOutByRef(ref cTemp));
+        Assert.Equal('?', cTemp);
 
         cTemp = GetValidChar();
         char cTempClone = cTemp;
-        Assert.IsTrue(Char_InOutByRef(ref cTemp), "[Error] Location tc7");
-        Assert.AreEqual(cTempClone, cTemp, "[Error] Location tc6");
+        Assert.True(Char_InOutByRef(ref cTemp));
+        Assert.Equal(cTempClone, cTemp);
     }
 
     static void testCharBufferString()
     {
-        Assert.IsTrue(CharBuffer_In_String(GetInvalidString()), "[Error] Location tcbs1");
+        Assert.True(CharBuffer_In_String(GetInvalidString()));
 
-        Assert.IsTrue(CharBuffer_In_String(GetValidString()), "[Error] Location tcbs2");
+        Assert.True(CharBuffer_In_String(GetValidString()));
 
         String cTemp = GetInvalidString();
-        Assert.IsTrue(CharBuffer_InByRef_String(ref cTemp), "[Error] Location tcbs3");
+        Assert.True(CharBuffer_InByRef_String(ref cTemp));
 
         cTemp = GetValidString();
-        Assert.IsTrue(CharBuffer_InByRef_String(ref cTemp), "[Error] Location tcbs4");
+        Assert.True(CharBuffer_InByRef_String(ref cTemp));
 
         cTemp = GetInvalidString();
         String cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InOutByRef_String(ref cTemp), "[Error] Location tcbs5");
-        Assert.AreNotEqual(cTempClone, cTemp, "[Error] Location tcbs6");
+        Assert.True(CharBuffer_InOutByRef_String(ref cTemp));
+        Assert.NotEqual(cTempClone, cTemp);
 
         cTemp = GetValidString();
         cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InOutByRef_String(ref cTemp), "[Error] Location tcbs77");
-        Assert.AreEqual(cTempClone, cTemp, "[Error] Location tcbs8");
+        Assert.True(CharBuffer_InOutByRef_String(ref cTemp));
+        Assert.Equal(cTempClone, cTemp);
     }
 
     static void testCharBufferStringBuilder()
     {
         StringBuilder sb = GetInvalidStringBuilder();
-        Assert.IsTrue(CharBuffer_In_StringBuilder(sb), "[Error] Location tcbsb1");
+        Assert.True(CharBuffer_In_StringBuilder(sb));
 
-        Assert.IsTrue(CharBuffer_In_StringBuilder(GetValidStringBuilder()), "[Error] Location tcbsb2");
+        Assert.True(CharBuffer_In_StringBuilder(GetValidStringBuilder()));
 
         StringBuilder cTemp = GetInvalidStringBuilder();
-        Assert.IsTrue(CharBuffer_InByRef_StringBuilder(ref cTemp), "[Error] Location tcbsb3");
+        Assert.True(CharBuffer_InByRef_StringBuilder(ref cTemp));
 
         cTemp = GetValidStringBuilder();
-        Assert.IsTrue(CharBuffer_InByRef_StringBuilder(ref cTemp), "[Error] Location tcbsb4");
+        Assert.True(CharBuffer_InByRef_StringBuilder(ref cTemp));
 
         cTemp = GetInvalidStringBuilder();
         StringBuilder cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InOutByRef_StringBuilder(ref cTemp), "[Error] Location tcbsb5");
-        Assert.AreNotEqual(cTempClone.ToString(), cTemp.ToString(), "[Error] Location tcbsb6");
+        Assert.True(CharBuffer_InOutByRef_StringBuilder(ref cTemp));
+        Assert.NotEqual(cTempClone.ToString(), cTemp.ToString());
 
         cTemp = GetValidStringBuilder();
         cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InOutByRef_StringBuilder(ref cTemp), "[Error] Location tcbsb7");
-        Assert.AreEqual(cTempClone.ToString(), cTemp.ToString(), "[Error] Location tcbsb8");
+        Assert.True(CharBuffer_InOutByRef_StringBuilder(ref cTemp));
+        Assert.Equal(cTempClone.ToString(), cTemp.ToString());
     }
 
     static void runTest()
@@ -171,8 +171,8 @@ public class BFM_CharMarshaler
             runTest();
             return 100;
         } catch (Exception e){
-            Console.WriteLine($"Test Failure: {e}"); 
-            return 101; 
+            Console.WriteLine($"Test Failure: {e}");
+            return 101;
         }
     }
 }

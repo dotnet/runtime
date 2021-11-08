@@ -1,5 +1,4 @@
-# This job definition automates the exploratory tool.
-
+# This job definition automates the fuzzing tools Antigen/Fuzzlyn
 trigger: none
 
 schedules:
@@ -9,6 +8,11 @@ schedules:
     include:
     - main
   always: true
+
+variables:
+  # Set toolName variable from pipeline name so we can use it during template expansion
+  - name: toolName
+    value: ${{ variables['Build.DefinitionName'] }}
 
 jobs:
 
@@ -47,3 +51,4 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
+      toolName: ${{ variables.toolName }}

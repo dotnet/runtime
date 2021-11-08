@@ -231,7 +231,7 @@
     <Output TaskParameter="TargetOutputs" ItemName="Reference" />
    </MSBuild>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(ReferenceSystemPrivateCoreLib)' != 'true'">
       <Reference Include="$(TargetingPackPath)/*.dll" >
         <Private>false</Private>
       </Reference>

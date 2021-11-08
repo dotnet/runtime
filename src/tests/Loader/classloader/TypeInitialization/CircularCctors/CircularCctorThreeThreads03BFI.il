@@ -283,7 +283,7 @@
 
 } // end of class E
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_CircularCctorThreeThreads03BFI
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  RunGetA() cil managed
@@ -328,7 +328,7 @@
              bool V_4)
     IL_0000:  nop
     IL_0001:  ldnull
-    IL_0002:  ldftn      void Test::RunGetA()
+    IL_0002:  ldftn      void Test_CircularCctorThreeThreads03BFI::RunGetA()
     IL_0008:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
     IL_000d:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
@@ -338,7 +338,7 @@
     IL_0019:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_001e:  nop
     IL_001f:  ldnull
-    IL_0020:  ldftn      void Test::RunGetC()
+    IL_0020:  ldftn      void Test_CircularCctorThreeThreads03BFI::RunGetC()
     IL_0026:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
     IL_002b:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
@@ -348,7 +348,7 @@
     IL_0037:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_003c:  nop
     IL_003d:  ldnull
-    IL_003e:  ldftn      void Test::RunGetE()
+    IL_003e:  ldftn      void Test_CircularCctorThreeThreads03BFI::RunGetE()
     IL_0044:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
     IL_0049:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)

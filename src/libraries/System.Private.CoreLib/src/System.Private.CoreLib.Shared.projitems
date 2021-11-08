@@ -602,6 +602,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InterfaceMapping.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IntrospectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvalidFilterCriteriaException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvocationFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflectableType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\LocalVariableInfo.cs" />
@@ -634,7 +635,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ReflectionTypeLoadException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ResourceAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ResourceLocation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\RuntimeConstructorInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\RuntimeMethodBody.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\RuntimeMethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureArrayType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureByRefType.cs" />
@@ -1057,6 +1060,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskAsyncEnumerableExtensions.ToBlockingEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCanceledException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCompletionSource.cs" />
@@ -1111,6 +1115,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Type.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeCode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TypedReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeInitializationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeLoadException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeUnloadedException.cs" />
@@ -1667,7 +1672,7 @@
       <Link>Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs">
-        <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
+      <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs</Link>
@@ -2147,6 +2152,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.Android.cs" Condition="'$(TargetsAndroid)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.NonAndroid.cs" Condition="'$(TargetsAndroid)' != 'true'" />
   </ItemGroup>
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(IsOSXLike)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetTimes.OtherUnix.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
@@ -2157,22 +2165,14 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs"
-             Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
-             Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
-    <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsFreeBSD)' == 'true'"
-             Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true'"
-             Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
-    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'"
-             Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
-    <Compile Include="$(CommonPath)System\IO\StringParser.cs" Condition="'$(TargetsLinux)' == 'true'"
-             Link="Common\System\IO\StringParser.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs" Condition="'$(IsOSXLike)' == 'true'"
-             Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />
-    <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFsStat.TryReadProcessStatusInfo.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'"
-             Link="Common\Interop\SunOS\Interop.ProcFsStat.TryReadProcessStatusInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs" Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
+    <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
+    <Compile Include="$(CommonPath)System\IO\StringParser.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\System\IO\StringParser.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs" Condition="'$(IsOSXLike)' == 'true'" Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />
+    <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFsStat.TryReadProcessStatusInfo.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" Link="Common\Interop\SunOS\Interop.ProcFsStat.TryReadProcessStatusInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.FreeBSD.cs" Condition="'$(TargetsFreeBSD)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Linux.cs" Condition="'$(TargetsLinux)' == 'true'" />
@@ -2202,10 +2202,13 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libc.cs">
+      <Link>Common\Interop\OSX\Interop.libc.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetTimes.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.iOSSupportVersion.cs"
-             Link="Common\Interop\OSX\System.Native\Interop.iOSSupportVersion.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.iOSSupportVersion.cs" Link="Common\Interop\OSX\System.Native\Interop.iOSSupportVersion.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsX86Intrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
@@ -2269,7 +2272,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Portable.cs" Condition="'$(FeatureCoreCLR)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" Condition="'$(FeatureCoreCLR)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NativeRuntimeEventSource.PortableThreadPool.cs" Condition="'$(FeatureCoreCLR)' != 'true' and '$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs" Condition="'$(FeatureCoreCLR)' == 'true' or '$(FeatureMono)' == 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs" Condition="'$(FeatureCoreCLR)' == 'true' or '$(FeatureMono)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Blocking.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.GateThread.cs" />
@@ -2288,8 +2291,7 @@
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCTrackedTypeAttribute.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs"
-             Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs" Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AutoreleasePool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.AutoreleasePool.OSX.cs" />
   </ItemGroup>

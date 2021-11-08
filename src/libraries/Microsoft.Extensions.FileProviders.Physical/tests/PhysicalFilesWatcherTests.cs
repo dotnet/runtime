@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders.Physical.Tests
 {
-    public class PhysicalFilesWatcherTests
+    public class PhysicalFilesWatcherTests : FileCleanupTestBase
     {
         private const int WaitTimeForTokenToFire = 500;
 
@@ -21,14 +21,14 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void CreateFileChangeToken_DoesNotAllowPathsAboveRoot()
         {
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
             {
-                var token = physicalFilesWatcher.CreateFileChangeToken(Path.GetFullPath(Path.Combine(root.RootPath, "..")));
+                var token = physicalFilesWatcher.CreateFileChangeToken(Path.GetFullPath(Path.Combine(root.Path, "..")));
                 Assert.IsType<NullChangeToken>(token);
 
-                token = physicalFilesWatcher.CreateFileChangeToken(Path.GetFullPath(Path.Combine(root.RootPath, "../")));
+                token = physicalFilesWatcher.CreateFileChangeToken(Path.GetFullPath(Path.Combine(root.Path, "../")));
                 Assert.IsType<NullChangeToken>(token);
 
                 token = physicalFilesWatcher.CreateFileChangeToken("..");
@@ -41,19 +41,19 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task HandlesOnRenamedEventsThatMatchRootPath()
         {
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
             {
                 var token = physicalFilesWatcher.CreateFileChangeToken("**");
                 var called = false;
                 token.RegisterChangeCallback(o => called = true, null);
 
-                fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.RootPath, string.Empty, string.Empty));
+                fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, string.Empty, string.Empty));
                 await Task.Delay(WaitTimeForTokenToFire).ConfigureAwait(false);
                 Assert.False(called, "Callback should not have been triggered");
 
-                fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.RootPath, "old.txt", "new.txt"));
+                fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, "old.txt", "new.txt"));
                 await Task.Delay(WaitTimeForTokenToFire).ConfigureAwait(false);
                 Assert.True(called, "Callback should have been triggered");
             }
@@ -134,9 +134,9 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_AddsPollingChangeTokenWithCancellationToken_WhenActiveCallbackIsTrue()
         {
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
             {
                 physicalFilesWatcher.UseActivePolling = true;
 
@@ -161,9 +161,9 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_AddsPollingChangeTokenWhenPollingIsEnabled()
         {
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
             {
                 var changeToken = physicalFilesWatcher.GetOrAddFilePathChangeToken("some-path");
 
@@ -186,9 +186,9 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_DoesNotAddsPollingChangeTokenWhenCallbackIsDisabled()
         {
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
             {
                 var changeToken = physicalFilesWatcher.GetOrAddFilePathChangeToken("some-path");
 
@@ -201,9 +201,9 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddWildcardChangeToken_AddsPollingChangeTokenWithCancellationToken_WhenActiveCallbackIsTrue()
         {
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
             {
                 physicalFilesWatcher.UseActivePolling = true;
 
