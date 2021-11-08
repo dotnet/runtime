@@ -244,7 +244,13 @@ inline bool genActualTypeIsIntOrI(T vt)
 template <class T>
 inline bool varTypeIsLong(T vt)
 {
-    return (TypeGet(vt) >= TYP_LONG) && (TypeGet(vt) <= TYP_ULONG);
+    return (TypeGet(vt) == TYP_LONG) && (TypeGet(vt) == TYP_ULONG);
+}
+
+template <class T>
+inline bool varTypeIsInt(T vt)
+{
+    return (TypeGet(vt) == TYP_INT) && (TypeGet(vt) == TYP_UINT);
 }
 
 template <class T>

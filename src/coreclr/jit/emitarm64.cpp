@@ -13485,7 +13485,10 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     {
                         // Then load/store dataReg from/to [memBase + index*scale with sign/zero extension]
                         GenTreeCast* cast = index->gtGetOp1()->AsCast();
-                        assert(cast->isContained() && varTypeToSigned(cast->CastFromType()) == TYP_INT);
+
+                        // For now, this code only supports extensions from i32/u32
+                        assert(cast->isContained() && varTypeIsInt(cast->CastFromType()));
+
                         const bool isZeroExtended = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
                         emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
                                           isZeroExtended ? INS_OPTS_UXTW : INS_OPTS_SXTW,

@@ -5034,24 +5034,22 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
     }
 
 #ifdef TARGET_ARM64
-    // Check if we can "contain" LEA(BFIZ) in order to emit ldr/str with SXT/UTW extension
+    // Check if we can "contain" LEA(BFIZ) in order to emit ldr/str with SXTW/UXTW extension
     if (index != nullptr && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
         index->gtGetOp2()->IsCnsIntOrI() && varTypeIsIntegral(targetType))
     {
         GenTreeCast* cast = index->gtGetOp1()->AsCast();
         assert(cast->isContained());
 
-        const unsigned shiftBy  = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
-        const unsigned castTo   = genTypeSize(cast->CastToType());
-        const unsigned castFrom = genTypeSize(cast->CastFromType());
-        const unsigned target   = genTypeSize(targetType);
+        const unsigned shiftBy = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
 
-        // For now we only handle the most popular cases for indices 32 -> 64 sign/zero extension
-        // Where target is 32 or 64. TODO: enable for 8 and 16 (requires some changes in the emitter)
-        if ((castFrom == 4) && (castTo == 8) && (target == (1U << shiftBy)) && (target >= 2) && (scale == 1) &&
-            (offset == 0))
+        // For now we only handle the most popular cases for 32bit indices with sign or zero extension to 64bit
+        if (varTypeIsInt(cast->CastFromType()) && varTypeIsLong(cast->CastToType()) &&
+            (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
         {
-            // TODO: make sure that genCreateAddrMode mark such BFIZ trees as GTF_DONT_CSE for better CQ.
+            // scale and offset have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
+            // where there is no room for additional offsets/scales.
+            // TODO: make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
             MakeSrcContained(addrMode, index);
         }
     }
