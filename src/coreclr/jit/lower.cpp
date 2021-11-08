@@ -5034,21 +5034,21 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
     }
 
 #ifdef TARGET_ARM64
-    // Check if we can "contain" LEA(BFIZ) in order to emit ldr/str with SXTW/UXTW extension
+    // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
     if (index != nullptr && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
         index->gtGetOp2()->IsCnsIntOrI() && varTypeIsIntegral(targetType))
     {
+        // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
         GenTreeCast* cast = index->gtGetOp1()->AsCast();
         assert(cast->isContained());
 
         const unsigned shiftBy = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
 
-        // For now we only handle the most popular cases for 32bit indices with sign or zero extension to 64bit
+        // 'scale' and 'offset' have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
+        // where there is no room for additional offsets/scales on ARM64. 'shiftBy' has to match target's width.
         if (varTypeIsInt(cast->CastFromType()) && varTypeIsLong(cast->CastToType()) &&
             (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
         {
-            // scale and offset have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
-            // where there is no room for additional offsets/scales.
             // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
             MakeSrcContained(addrMode, index);
         }
