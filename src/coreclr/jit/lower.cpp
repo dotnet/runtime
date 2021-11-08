@@ -5041,16 +5041,17 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
         GenTreeCast* cast = index->gtGetOp1()->AsCast();
         assert(cast->isContained());
 
-        unsigned shiftBy  = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
-        unsigned castTo   = genTypeSize(cast->CastToType());
-        unsigned castFrom = genTypeSize(cast->CastFromType());
-        unsigned target   = genTypeSize(targetType);
+        const unsigned shiftBy  = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
+        const unsigned castTo   = genTypeSize(cast->CastToType());
+        const unsigned castFrom = genTypeSize(cast->CastFromType());
+        const unsigned target   = genTypeSize(targetType);
 
-        // For now we only handle the most popular case for indices 32 -> 64 sign/zero extension
-        // Where target is 32 or 64. TODO: enable for 8 and 16
+        // For now we only handle the most popular cases for indices 32 -> 64 sign/zero extension
+        // Where target is 32 or 64. TODO: enable for 8 and 16 (requires some changes in the emitter)
         if ((castFrom == 4) && (castTo == 8) && (target == (1U << shiftBy)) && (target >= 4) && (scale == 1) &&
             (offset == 0))
         {
+            // TODO: make sure that genCreateAddrMode mark such BFIZ trees as GTF_DONT_CSE for better CQ.
             MakeSrcContained(addrMode, index);
         }
     }
