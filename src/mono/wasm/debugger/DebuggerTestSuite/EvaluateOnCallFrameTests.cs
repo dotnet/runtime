@@ -692,6 +692,7 @@ namespace DebuggerTests
 
                 var frame = pause_location["callFrames"][0];
 
+                await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass", expect_ok: true);
                 await EvaluateOnCallFrameAndCheck(id,
                     ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
@@ -710,6 +711,7 @@ namespace DebuggerTests
 
                 var frame = pause_location["callFrames"][0];
 
+                await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass", expect_ok: true);
                 await EvaluateOnCallFrameAndCheck(id,
                     ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
@@ -730,6 +732,7 @@ namespace DebuggerTests
 
                 var frame = pause_location["callFrames"][0];
 
+                await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass", expect_ok: true);
                 await EvaluateOnCallFrameAndCheck(id,
                     ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
@@ -748,6 +751,7 @@ namespace DebuggerTests
 
                 var frame = pause_location["callFrames"][0];
 
+                await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateNonStaticClassWithStaticFields", expect_ok: true);
                 await EvaluateOnCallFrameAndCheck(id,
                     ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
