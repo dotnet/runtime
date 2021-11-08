@@ -2,7 +2,7 @@ name: Build and Test Windows x64
 
 agent:
   type: Unity::VM
-  image: platform-foundation/windows-vs2019-il2cpp-bokken:stable
+  image: desktop/win10-uwp:latest
   flavor: b1.xlarge
 
 commands:
