@@ -27,6 +27,8 @@
 
 #include "bundle.h"
 
+class DomainAssembly;
+
 namespace BINDER_SPACE
 {
     // BINDER_SPACE::Assembly represents a result of binding to an actual assembly (PEImage)
@@ -53,12 +55,24 @@ namespace BINDER_SPACE
             return m_pBinder;
         }
 
+        DomainAssembly* GetDomainAssembly()
+        {
+            return m_domainAssembly;
+        }
+
+        void SetDomainAssembly(DomainAssembly* value)
+        {
+            _ASSERTE(value == NULL || m_domainAssembly == NULL);
+            m_domainAssembly = value;
+        }
+
     private:
         LONG                     m_cRef;
         PEImage                 *m_pPEImage;
         AssemblyName            *m_pAssemblyName;
         AssemblyBinder          *m_pBinder;
         bool                     m_isInTPA;
+        DomainAssembly          *m_domainAssembly;
 
         inline void SetBinder(AssemblyBinder *pBinder)
         {

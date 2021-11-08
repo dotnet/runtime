@@ -1424,6 +1424,7 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, g
 			target = ins_offset + *(gint16*)(data + 1);
 			g_string_append_printf (str, " %u, IR_%04x", *(guint16*)data, target);
 		}
+		break;
 	case MintOpPair2:
 		g_string_append_printf (str, " %u <- %u, %u <- %u", data [0], data [1], data [2], data [3]);
 		break;
@@ -3141,6 +3142,24 @@ interp_emit_arg_conv (TransformData *td, MonoMethodSignature *csignature)
 		emit_convert (td, &arg_start [i], csignature->params [i]);
 }
 
+static gint16
+get_virt_method_slot (MonoMethod *method)
+{
+	if (mono_class_is_interface (method->klass))
+		return (gint16)(-2 * MONO_IMT_SIZE + mono_method_get_imt_slot (method));
+	else
+		return (gint16)mono_method_get_vtable_slot (method);
+}
+
+static int*
+create_call_args (TransformData *td, int num_args)
+{
+	int *call_args = (int*) mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
+	for (int i = 0; i < num_args; i++)
+		call_args [i] = td->sp [i].local;
+	call_args [num_args] = -1;
+	return call_args;
+}
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
@@ -3149,7 +3168,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	MonoMethodSignature *csignature;
 	int is_virtual = *td->ip == CEE_CALLVIRT;
 	int calli = *td->ip == CEE_CALLI || *td->ip == CEE_MONO_CALLI_EXTRA_ARG;
-	int i;
 	guint32 res_size = 0;
 	int op = -1;
 	int native = 0;
@@ -3300,26 +3318,44 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
-	if (tailcall && !td->gen_sdb_seq_points && !calli && op == -1 && (!is_virtual || (target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
+	if (tailcall && !td->gen_sdb_seq_points && !calli && op == -1 &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
 		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
 		(void)mono_class_vtable_checked (target_method->klass, error);
 		return_val_if_nok (error, FALSE);
 
-		if (method == target_method && *(td->ip + 5) == CEE_RET && !(csignature->hasthis && m_class_is_valuetype (target_method->klass))) {
+		if (*(td->ip + 5) == CEE_RET) {
 			if (td->inlined_method)
 				return FALSE;
 
 			if (td->verbose_level)
 				g_print ("Optimize tail call of %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 
-			for (i = csignature->param_count - 1 + !!csignature->hasthis; i >= 0; --i)
-				store_arg (td, i);
+			int num_args = csignature->param_count + !!csignature->hasthis;
+			td->sp -= num_args;
+			guint32 params_stack_size = get_stack_size (td->sp, num_args);
 
-			interp_add_ins (td, MINT_BR);
-			// We are branching to the beginning of the method
-			td->last_ins->info.target_bb = td->entry_bb;
+			int *call_args = create_call_args (td, num_args);
+
+			if (is_virtual) {
+				interp_add_ins (td, MINT_CKNULL);
+				interp_ins_set_sreg (td->last_ins, td->sp->local);
+				set_simple_type_and_local (td, td->sp, td->sp->type);
+				interp_ins_set_dreg (td->last_ins, td->sp->local);
+
+				interp_add_ins (td, MINT_TAILCALL_VIRT);
+				td->last_ins->data [2] = get_virt_method_slot (target_method);
+			} else {
+				interp_add_ins (td, MINT_TAILCALL);
+			}
+			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+			td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (target_method, error));
+			return_val_if_nok (error, FALSE);
+			td->last_ins->data [1] = params_stack_size;
+			td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+			td->last_ins->info.call_args = call_args;
+
 			int in_offset = td->ip - td->il_code;
 			if (interp_ip_in_cbb (td, in_offset + 5))
 				++td->ip; /* gobble the CEE_RET if it isn't branched to */				
@@ -3375,10 +3411,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	td->sp -= num_args;
 	guint32 params_stack_size = get_stack_size (td->sp, num_args);
 
-	int *call_args = (int*) mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
-	for (int i = 0; i < num_args; i++)
-		call_args [i] = td->sp [i].local;
-	call_args [num_args] = -1;
+	int *call_args = create_call_args (td, num_args);
 
 	// We overwrite it with the return local, save it for future use
 	if (csignature->param_count || csignature->hasthis)
@@ -3517,10 +3550,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				td->last_ins->data [2] = params_stack_size;
 			} else if (is_virtual) {
 				interp_add_ins (td, MINT_CALLVIRT_FAST);
-				if (mono_class_is_interface (target_method->klass))
-					td->last_ins->data [1] = -2 * MONO_IMT_SIZE + mono_method_get_imt_slot (target_method);
-				else
-					td->last_ins->data [1] = mono_method_get_vtable_slot (target_method);
+				td->last_ins->data [1] = get_virt_method_slot (target_method);
 			} else if (is_virtual) {
 				interp_add_ins (td, MINT_CALLVIRT);
 			} else {
