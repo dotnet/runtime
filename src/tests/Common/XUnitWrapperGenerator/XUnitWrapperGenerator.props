@@ -1,9 +1,12 @@
 ﻿<Project>
   <ItemGroup>
+    <!-- Properties used for filtering -->
     <CompilerVisibleProperty Include="RuntimeFlavor" />
     <CompilerVisibleProperty Include="TargetOS" />
     <CompilerVisibleProperty Include="TargetArchitecture" />
     <CompilerVisibleProperty Include="Priority" />
+    <!-- Properties that influence test harness generation -->
     <CompilerVisibleProperty Include="ReferenceSystemPrivateCoreLib" />
+    <CompilerVisibleProperty Include="IsMergedTestRunnerAssembly" />
   </ItemGroup>
 </Project>

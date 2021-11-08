@@ -57,18 +57,56 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 var ((methods, aliasMap), configOptions) = data;
 
-                bool referenceCoreLib = configOptions.GlobalOptions.TryGetValue("build_property.ReferenceSystemPrivateCoreLib", out string? referenceCoreLibStr) && bool.TryParse(referenceCoreLibStr, out bool referenceCoreLibValue) && referenceCoreLibValue;
-                string consoleType = referenceCoreLib ? "Internal.Console" : "System.Console";
+                bool referenceCoreLib = configOptions.GlobalOptions.ReferenceSystemPrivateCoreLib();
 
-                // For simplicity, we'll use top-level statements for the generated Main method.
-                StringBuilder builder = new();
-                builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
-                builder.AppendLine("try {");
-                builder.AppendLine(string.Join("\n", methods.Select(m => m.ExecutionStatement)));
-                builder.AppendLine($"}} catch(System.Exception ex) {{ {consoleType}.WriteLine(ex.ToString()); return 101; }}");
-                builder.AppendLine("return 100;");
-                context.AddSource("Main.g.cs", builder.ToString());
+                bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+
+                // TODO: add error (maybe in MSBuild that referencing CoreLib directly from a merged test runner is not supported)
+                if (isMergedTestRunnerAssembly && !referenceCoreLib)
+                {
+                    context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap));
+                }
+                else
+                {
+                    string consoleType = referenceCoreLib ? "Internal.Console" : "System.Console";
+                    context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap, consoleType));
+                }
             });
+    }
+
+    private static string GenerateFullTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap)
+    {
+        // For simplicity, we'll use top-level statements for the generated Main method.
+        StringBuilder builder = new();
+        builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+
+        foreach (ITestInfo test in testInfos)
+        {
+            builder.AppendLine("try {");
+            builder.AppendLine(test.ExecutionStatement);
+            builder.AppendLine("}");
+            builder.AppendLine("catch (Xunit.XunitException ex) {");
+            // TODO: report assert failure
+            builder.AppendLine("System.WriteLine(ex.ToString());");
+            builder.AppendLine("}");
+            builder.AppendLine("catch (System.Exception ex) {");
+            // TODO: report unexpected exception
+            builder.AppendLine("System.WriteLine(ex.ToString());");
+            builder.AppendLine("}");
+        }
+        return builder.ToString();
+    }
+
+    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string consoleType)
+    {
+        // For simplicity, we'll use top-level statements for the generated Main method.
+        StringBuilder builder = new();
+        builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+        builder.AppendLine("try {");
+        builder.AppendLine(string.Join("\n", testInfos.Select(m => m.ExecutionStatement)));
+        builder.AppendLine($"}} catch(System.Exception ex) {{ {consoleType}.WriteLine(ex.ToString()); return 101; }}");
+        builder.AppendLine("return 100;");
+        return builder.ToString();
     }
 
     private class ExternallyReferencedTestMethodsVisitor : SymbolVisitor<IEnumerable<IMethodSymbol>>

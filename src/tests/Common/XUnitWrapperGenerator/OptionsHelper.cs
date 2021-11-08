@@ -1,0 +1,22 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+using Microsoft.CodeAnalysis.Diagnostics;
+
+namespace XUnitWrapperGenerator;
+
+public static class OptionsHelper
+{
+    public const string ReferenceSystemPrivateCoreLibOption = "build_property.ReferenceSystemPrivateCoreLib";
+    public const string IsMergedTestRunnerAssemblyOption = "build_property.IsMergedTestRunnerAssembly";
+
+    private static bool GetBoolOption(this AnalyzerConfigOptions options, string key)
+    {
+        return options.TryGetValue(key, out string? value)
+            && bool.TryParse(value, out bool result)
+            && result;
+    }
+
+    internal static bool ReferenceSystemPrivateCoreLib(this AnalyzerConfigOptions options) => options.GetBoolOption(ReferenceSystemPrivateCoreLibOption);
+
+    internal static bool IsMergedTestRunnerAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsMergedTestRunnerAssemblyOption);
+}
