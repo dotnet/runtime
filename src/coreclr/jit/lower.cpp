@@ -5048,7 +5048,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
 
         // For now we only handle the most popular cases for indices 32 -> 64 sign/zero extension
         // Where target is 32 or 64. TODO: enable for 8 and 16 (requires some changes in the emitter)
-        if ((castFrom == 4) && (castTo == 8) && (target == (1U << shiftBy)) && (target >= 4) && (scale == 1) &&
+        if ((castFrom == 4) && (castTo == 8) && (target == (1U << shiftBy)) && (target >= 2) && (scale == 1) &&
             (offset == 0))
         {
             // TODO: make sure that genCreateAddrMode mark such BFIZ trees as GTF_DONT_CSE for better CQ.
