@@ -19,6 +19,7 @@ RUN unzip $PACKAGES_DIR.zip
 RUN dpkg -i $PACKAGES_DIR/$MSQUIC_PACKAGE
 RUN rm -rf $PACKAGES_DIR*
 
+ARG VERSION=7.0
 ARG CONFIGURATION=Release
 ARG ARCH=x64
 
@@ -34,6 +35,8 @@ ENV COMPlus_DbgMiniDumpName="/share/coredump.%p"
 
 EXPOSE 5001
 
+ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
+ENV ARCH=$ARCH
 ENV HTTPSTRESS_ARGS=''
-CMD /live-runtime-artifacts/testhost/net7.0-Linux-$CONFIGURATION-$ARCH/dotnet exec ./bin/$CONFIGURATION/net7.0/HttpStress.dll $HTTPSTRESS_ARGS
+CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-$ARCH/dotnet exec ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS
