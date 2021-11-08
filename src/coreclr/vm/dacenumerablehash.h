@@ -210,7 +210,6 @@ private:
     LoaderHeap             *m_pHeap;
 
     DPTR(PTR_VolatileEntry)                  m_pBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
-    DWORD                                    m_cBuckets;  // Count of buckets in the above array (always non-zero)
     DWORD                                    m_cEntries;  // Count of elements
 };
 
