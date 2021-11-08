@@ -12,6 +12,6 @@ jobs:
       - uses: github/codespaces-precache@v1-stable
         with:
           regions: WestUs2 EastUs WestEurope
-          sku_name: standardLinux32gb premiumLinux
+          sku_name: premiumLinux
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
