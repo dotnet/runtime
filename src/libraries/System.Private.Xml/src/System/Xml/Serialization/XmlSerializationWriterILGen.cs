@@ -605,7 +605,7 @@ namespace System.Xml.Serialization
 
         private string NextMethodName(string name)
         {
-            return $"Write{(++NextMethodNumber).ToString(null, NumberFormatInfo.InvariantInfo)}_{CodeIdentifier.MakeValidInternal(name)}";
+            return string.Create(CultureInfo.InvariantCulture, $"Write{++NextMethodNumber}_{CodeIdentifier.MakeValidInternal(name)}");
         }
 
         private void WriteEnumMethod(EnumMapping mapping)
