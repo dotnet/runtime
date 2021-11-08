@@ -794,6 +794,14 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         return false;
     }
 
+    // If there's just one statement, bail.
+    //
+    if (stmt == block->firstStmt())
+    {
+        JITDUMP(" -- no, no prior stmt\n");
+        return false;
+    }
+
     GenTree* const jumpTree = stmt->GetRootNode();
 
     if (!jumpTree->OperIs(GT_JTRUE))
@@ -828,13 +836,9 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         return false;
     }
 
-    // If there's just one statement, bail.
+    // Save off the jump tree's liberal exceptional VN.
     //
-    if (stmt == block->firstStmt())
-    {
-        JITDUMP(" -- no, no prior stmt\n");
-        return false;
-    }
+    const ValueNum treeExcVN = vnStore->VNExceptionSet(tree->GetVN(VNK_Liberal));
 
     JITDUMP("\noptRedundantRelop in " FMT_BB "; jump tree is\n", block->bbNum);
     DISPTREE(jumpTree);
@@ -1001,6 +1005,19 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         }
 
         JITDUMP("  -- prev tree has relop with %s liberal VN\n", ValueNumStore::VNRelationString(vnRelationMatch));
+
+        // If the jump tree VN has exceptions, verify that the RHS tree has a superset.
+        //
+        if (treeExcVN != vnStore->VNForEmptyExcSet())
+        {
+            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeRHS->GetVN(VNK_Liberal));
+
+            if (!vnStore->VNExcIsSubset(prevTreeExcVN, treeExcVN))
+            {
+                JITDUMP(" -- prev tree does not anticipate all jump tree exceptions\n");
+                break;
+            }
+        }
 
         // See if we can safely move a copy of prevTreeRHS later, to replace tree.
         // We can, if none of its lcls are killed.
