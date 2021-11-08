@@ -871,7 +871,7 @@ namespace System.Xml.Serialization
             string? id = (string?)_references[o];
             if (id == null)
             {
-                id = $"{_idBase}id{(++_nextId).ToString(CultureInfo.InvariantCulture)}";
+                id = string.Create(CultureInfo.InvariantCulture, $"{_idBase}id{++_nextId}");
                 _references.Add(o, id);
                 if (addToReferencesList) _referencesToWrite!.Add(o);
             }
