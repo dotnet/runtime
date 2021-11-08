@@ -106,6 +106,7 @@ protected:
         TADDR   m_pEntry;               // The entry the caller is currently looking at (or NULL to begin
                                         // with). This is a VolatileEntry* and should always be a target address
                                         // not a DAC PTR_.
+        TADDR   m_curTable;
     };
 
     // This opaque structure provides enumeration context when walking all entries in the table. Initialized
@@ -186,6 +187,8 @@ private:
         PTR_VolatileEntry   m_pNextEntry;       // Pointer to the next entry in the bucket chain (or NULL)
         DacEnumerableHashValue       m_iHashValue;       // The hash value associated with the entry
     };
+
+    DPTR(VALUE) BaseFindFirstEntryByHashCore(PTR_VolatileEntry* curBuckets, DacEnumerableHashValue iHash, LookupContext* pContext);
 
 #ifndef DACCESS_COMPILE
     // Determine loader heap to be used for allocation of entries and bucket lists.

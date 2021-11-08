@@ -1140,18 +1140,18 @@ TypeHandle ClassLoader::LookupTypeHandleForTypeKey(TypeKey *pKey)
     // Make an initial lookup without taking any locks.
     TypeHandle th = LookupTypeHandleForTypeKeyInner(pKey, FALSE);
 
-    // A non-null TypeHandle for the above lookup indicates success
-    // A null TypeHandle only indicates "well, it might have been there,
-    // try again with a lock".  This kind of negative result will
-    // only happen while accessing the underlying EETypeHashTable
-    // during a resize, i.e. very rarely. In such a case, we just
-    // perform the lookup again, but indicate that appropriate locks
-    // should be taken.
+    //// A non-null TypeHandle for the above lookup indicates success
+    //// A null TypeHandle only indicates "well, it might have been there,
+    //// try again with a lock".  This kind of negative result will
+    //// only happen while accessing the underlying EETypeHashTable
+    //// during a resize, i.e. very rarely. In such a case, we just
+    //// perform the lookup again, but indicate that appropriate locks
+    //// should be taken.
 
-    if (th.IsNull())
-    {
-        th = LookupTypeHandleForTypeKeyInner(pKey, TRUE);
-    }
+    //if (th.IsNull())
+    //{
+    //    th = LookupTypeHandleForTypeKeyInner(pKey, TRUE);
+    //}
 
     return th;
 }

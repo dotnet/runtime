@@ -181,6 +181,10 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
         return;
 
     ((size_t*)pNewBuckets)[0] = cNewBuckets;
+    ((PTR_VolatileEntry**)curBuckets)[1] = pNewBuckets;
+
+    // the new buckets must be published before we start moving entries.
+    MemoryBarrier();
 
     // All buckets are initially empty.
     // Note: Memory allocated on loader heap is zero filled
@@ -215,8 +219,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     }
 
     // Make sure that all writes are visible before publishing the new array.
-    MemoryBarrier();
-    m_pBuckets = pNewBuckets;
+    VolatileStore(&m_pBuckets, pNewBuckets);
 }
 
 // Returns the next prime larger (or equal to) than the number given.
@@ -264,36 +267,57 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
     if (m_cEntries == 0)
         return NULL;
 
-    auto curBuckets = GetBuckets();
-    DWORD cBuckets = (DWORD)dac_cast<size_t>(curBuckets[0]);
+    PTR_VolatileEntry* curBuckets = GetBuckets();
+    return BaseFindFirstEntryByHashCore(curBuckets, iHash, pContext);
+}
 
-    // Compute which bucket the entry belongs in based on the hash.
-    DWORD dwBucket = iHash % cBuckets;
-
-    // Point at the first entry in the bucket chain which would contain any entries with the given hash code.
-    PTR_VolatileEntry pEntry = curBuckets[dwBucket + 2];
-
-    // Walk the bucket chain one entry at a time.
-    while (pEntry)
+template <DAC_ENUM_HASH_PARAMS>
+DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHashCore(PTR_VolatileEntry* curBuckets, DacEnumerableHashValue iHash, LookupContext* pContext)
+{
+    CONTRACTL
     {
-        if (pEntry->m_iHashValue == iHash)
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+        PRECONDITION(CheckPointer(pContext));
+    }
+    CONTRACTL_END;
+
+    do
+    {
+        DWORD cBuckets = (DWORD)dac_cast<size_t>(curBuckets[0]);
+
+        // Compute which bucket the entry belongs in based on the hash.
+        DWORD dwBucket = iHash % cBuckets;
+
+        // Point at the first entry in the bucket chain which would contain any entries with the given hash code.
+        PTR_VolatileEntry pEntry = curBuckets[dwBucket + 2];
+
+        // Walk the bucket chain one entry at a time.
+        while (pEntry)
         {
-            // We've found our match.
+            if (pEntry->m_iHashValue == iHash)
+            {
+                // We've found our match.
 
-            // Record our current search state into the provided context so that a subsequent call to
-            // BaseFindNextEntryByHash can pick up the search where it left off.
-            pContext->m_pEntry = dac_cast<TADDR>(pEntry);
+                // Record our current search state into the provided context so that a subsequent call to
+                // BaseFindNextEntryByHash can pick up the search where it left off.
+                pContext->m_pEntry = dac_cast<TADDR>(pEntry);
+                pContext->m_curTable = dac_cast<TADDR>(curBuckets);
 
-            // Return the address of the sub-classes' embedded entry structure.
-            return VALUE_FROM_VOLATILE_ENTRY(pEntry);
+                // Return the address of the sub-classes' embedded entry structure.
+                return VALUE_FROM_VOLATILE_ENTRY(pEntry);
+            }
+
+            // Move to the next entry in the chain.
+            pEntry = pEntry->m_pNextEntry;
         }
 
-        // Move to the next entry in the chain.
-        pEntry = pEntry->m_pNextEntry;
-    }
+        curBuckets = (DPTR(PTR_VolatileEntry))dac_cast<TADDR>(curBuckets[1]);
+    } while (curBuckets != nullptr);
 
     // If we get here then none of the entries in the target bucket matched the hash code and we have a miss
-    // (for this section of the table at least).
     return NULL;
 }
 
@@ -332,6 +356,15 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
             pContext->m_pEntry = dac_cast<TADDR>(pVolatileEntry);
             return VALUE_FROM_VOLATILE_ENTRY(pVolatileEntry);
         }
+    }
+
+    // check for next buckets must hapen after we looked through current
+    MemoryBarrier();
+
+    auto nextBuckets = ((DPTR(PTR_VolatileEntry)*)pContext->m_curTable)[1];
+    if (nextBuckets != nullptr)
+    {
+        return BaseFindFirstEntryByHashCore(nextBuckets, iHash, pContext);
     }
 
     return NULL;
