@@ -1428,7 +1428,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Rule #3: Otherwise, generate a new prefix of the form 'xp_??', where ?? is a stringized counter
-            genPrefix = $"xp_{(_prefixIndex++).ToString(CultureInfo.InvariantCulture)}";
+            genPrefix = string.Create(CultureInfo.InvariantCulture, $"xp_{_prefixIndex++}");
 
 
         ReturnPrefix:
