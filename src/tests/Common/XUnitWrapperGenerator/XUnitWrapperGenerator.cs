@@ -51,15 +51,21 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .Combine(aliasMap)
             .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left.Left, data.Left.Right, data.Right)))
             .Collect()
-            .Combine(aliasMap),
-            static (context, methodsAndAliasMap) =>
+            .Combine(aliasMap)
+            .Combine(context.AnalyzerConfigOptionsProvider),
+            static (context, data) =>
             {
+                var ((methods, aliasMap), configOptions) = data;
+
+                bool referenceCoreLib = configOptions.GlobalOptions.TryGetValue("build_property.ReferenceSystemPrivateCoreLib", out string? referenceCoreLibStr) && bool.TryParse(referenceCoreLibStr, out bool referenceCoreLibValue) && referenceCoreLibValue;
+                string consoleType = referenceCoreLib ? "Internal.Console" : "System.Console";
+
                 // For simplicity, we'll use top-level statements for the generated Main method.
                 StringBuilder builder = new();
-                builder.AppendLine(string.Join("\n", methodsAndAliasMap.Right.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+                builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
                 builder.AppendLine("try {");
-                builder.AppendLine(string.Join("\n", methodsAndAliasMap.Left.Select(m => m.ExecutionStatement)));
-                builder.AppendLine("} catch(System.Exception) { return 101; }");
+                builder.AppendLine(string.Join("\n", methods.Select(m => m.ExecutionStatement)));
+                builder.AppendLine($"}} catch(System.Exception ex) {{ {consoleType}.WriteLine(ex.ToString()); return 101; }}");
                 builder.AppendLine("return 100;");
                 context.AddSource("Main.g.cs", builder.ToString());
             });

@@ -4,5 +4,6 @@
     <CompilerVisibleProperty Include="TargetOS" />
     <CompilerVisibleProperty Include="TargetArchitecture" />
     <CompilerVisibleProperty Include="Priority" />
+    <CompilerVisibleProperty Include="ReferenceSystemPrivateCoreLib" />
   </ItemGroup>
 </Project>
