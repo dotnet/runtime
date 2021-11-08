@@ -1592,7 +1592,7 @@ namespace System.Xml
         private string GeneratePrefix()
         {
             int temp = _stack[_top].prefixCount++ + 1;
-            return $"d{_top.ToString("d", CultureInfo.InvariantCulture)}p{temp.ToString("d", CultureInfo.InvariantCulture)}";
+            return string.Create(CultureInfo.InvariantCulture, $"d{_top:d}p{temp:d}");
         }
 
         private void InternalWriteProcessingInstruction(string name, string? text)
