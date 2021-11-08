@@ -4159,6 +4159,9 @@ TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
 HRESULT ClrDataAccess::DACTryGetComWrappersHandleFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTHANDLE* objHandle)
 {
     HRESULT hr = E_FAIL;
+    TADDR ccw, managedObjectWrapperPtr;
+    ULONG32 bytesRead = 0;
+    OBJECTHANDLE handle;
 
     if (ccwPtr == 0 || objHandle == NULL)
     {
@@ -4172,18 +4175,16 @@ HRESULT ClrDataAccess::DACTryGetComWrappersHandleFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    TADDR ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
+    ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
 
     // Return ManagedObjectWrapper as an OBJECTHANDLE. (The OBJECTHANDLE is guaranteed to live at offset 0).
-    TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccwPtr);
+    managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccwPtr);
     if (managedObjectWrapperPtr == NULL)
     {
         hr = E_FAIL;
         goto ErrExit;
     }
 
-    ULONG32 bytesRead = 0;
-    OBJECTHANDLE handle;
     IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtr, (PBYTE)&handle, sizeof(OBJECTHANDLE), &bytesRead));
     if (bytesRead != sizeof(OBJECTHANDLE))
     {
