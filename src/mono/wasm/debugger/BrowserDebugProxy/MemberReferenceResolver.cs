@@ -119,40 +119,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
                 var store = await proxy.LoadStore(sessionId, token);
-
-                // first - check the current assembly
-                var currentFrame = ctx.CallStack.FirstOrDefault();
-                var currentAssembly = currentFrame.Method.Info.TypeInfo.assembly;
-                string namespaceName = currentAssembly.Name;
-
-                // remove .dll from the end
-                if (namespaceName.Length > 4)
-                    namespaceName = currentAssembly.Name.Remove(currentAssembly.Name.Length - 4);
-
-                // look for classes in the current namespace
-                var matchingType = currentAssembly.TypesByName.Keys
-                    .Where(k => k == string.Join(".", new string[] { namespaceName, classNameToFind }))
-                    .Select(t => currentAssembly.GetTypeByName(t))
-                    .FirstOrDefault();
-
-                // if not found, look in all namespaces in the current assembly
-                if (matchingType == null)
-                {
-                    matchingType = currentAssembly.TypesByName.Keys
-                    .Where(k => k == classNameToFind)
-                    .Select(t => currentAssembly.GetTypeByName(t))
-                    .FirstOrDefault();
-                }
-                if (matchingType != null)
-                {
-                    typeId = await sdbHelper.GetTypeIdFromToken(sessionId, currentAssembly.DebugId, matchingType.Token, token);
-                    continue;
-                }
-
-                // if not found in the current assembly, look in the other assemblies
                 foreach (var asm in store.assemblies)
                 {
                     var type = asm.GetTypeByName(classNameToFind);
+                    if (type == null) //search in the current namespace
+                    {
+                        var namespaceName = ctx.CallStack.FirstOrDefault().Method.Info.TypeInfo.Namespace;
+                        var classNameToFindWithNamespace = namespaceName + "." + classNameToFind;
+                        type = asm.GetTypeByName(classNameToFindWithNamespace);
+                    }
                     if (type != null)
                     {
                         typeId = await sdbHelper.GetTypeIdFromToken(sessionId, asm.DebugId, type.Token, token);

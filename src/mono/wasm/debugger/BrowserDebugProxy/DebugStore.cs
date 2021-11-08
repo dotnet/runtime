@@ -477,7 +477,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private TypeDefinition type;
         private List<MethodInfo> methods;
         internal int Token { get; }
-
+        internal string Namespace { get; }
         public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
         {
             this.assembly = assembly;
@@ -486,21 +486,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.type = type;
             methods = new List<MethodInfo>();
             Name = metadataReader.GetString(type.Name);
-            var namespaceName = "";
+            Namespace = "";
             if (type.IsNested)
             {
                 var declaringType = metadataReader.GetTypeDefinition(type.GetDeclaringType());
                 Name = metadataReader.GetString(declaringType.Name) + "/" + Name;
-                namespaceName = metadataReader.GetString(declaringType.Namespace);
+                Namespace = metadataReader.GetString(declaringType.Namespace);
             }
             else
             {
-                namespaceName = metadataReader.GetString(type.Namespace);
+                Namespace = metadataReader.GetString(type.Namespace);
             }
-
-            if (namespaceName.Length > 0)
-                namespaceName += ".";
-            FullName = namespaceName + Name;
+            if (Namespace.Length > 0)
+                FullName = Namespace + "." + Name;
+            else
+                FullName = Name;
         }
 
         public TypeInfo(AssemblyInfo assembly, string name)
