@@ -50,7 +50,7 @@
     <HelixWorkItem Include="Startup - Android HelloWorld">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroidWithDiag.apk .;$(Python) pre.py</PreCommands>
-      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroidWithDiag.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot;</Command>
+      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroidWithDiag.apk --package-name net.dot.HelloAndroid --exit-code 42 --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
       <Timeout>00:20:00</Timeout>
     </HelixWorkItem>
