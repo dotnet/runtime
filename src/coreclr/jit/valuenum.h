@@ -841,10 +841,15 @@ public:
     //
     enum class VN_RELATION_KIND
     {
+        VRK_Same,       // (x >  y)
         VRK_Swap,       // (y >  x)
         VRK_Reverse,    // (x <= y)
         VRK_SwapReverse // (y >= x)
     };
+
+#ifdef DEBUG
+    static const char* VNRelationString(VN_RELATION_KIND vrk);
+#endif
 
     ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
 
