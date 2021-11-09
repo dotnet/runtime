@@ -582,7 +582,7 @@ namespace System.Xml.Xsl.XPath
                 case LexKind.String: return "<string literal>";
                 case LexKind.Eof: return "<eof>";
                 default:
-                    Debug.Fail("Unexpected LexKind: " + t.ToString());
+                    Debug.Fail($"Unexpected LexKind: {t}");
                     return string.Empty;
             }
         }

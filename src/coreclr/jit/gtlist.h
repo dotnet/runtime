@@ -126,32 +126,12 @@ GTNODE(UMOD             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(OR               , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
 GTNODE(XOR              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
 GTNODE(AND              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
-GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP)
 
 GTNODE(LSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSZ              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
-GTNODE(INC_SATURATE     , GenTreeOp          ,0,GTK_UNOP)  // saturating increment, used in division by a constant (LowerUnsignedDivOrMod)
-
-// Returns high bits (top N bits of the 2N bit result of an NxN multiply)
-// GT_MULHI is used in division by a constant (LowerUnsignedDivOrMod). We turn
-// the div into a MULHI + some adjustments. In codegen, we only use the
-// results of the high register, and we drop the low results.
-GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP)
-
-// A mul that returns the 2N bit result of an NxN multiply. This op is used for
-// multiplies that take two ints and return a long result. For 32 bit targets,
-// all other multiplies with long results are morphed into helper calls.
-// It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
-// part of the result, whereas GT_MUL_LONG keeps both parts of the result.
-// MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
-#if !defined(TARGET_64BIT)
-GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
-#elif defined(TARGET_ARM64)
-GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP)
-#endif
 
 GTNODE(ASG              , GenTreeOp          ,0,(GTK_BINOP|GTK_NOTLIR))
 GTNODE(EQ               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
@@ -220,6 +200,31 @@ GTNODE(SIMD             , GenTreeSIMD        ,0,(GTK_BINOP|GTK_EXOP))     // SIM
 GTNODE(HWINTRINSIC      , GenTreeHWIntrinsic ,0,(GTK_BINOP|GTK_EXOP))               // hardware intrinsics
 #endif // FEATURE_HW_INTRINSICS
 
+//-----------------------------------------------------------------------------
+//  Backend-specific arithmetic nodes:
+//-----------------------------------------------------------------------------
+
+GTNODE(INC_SATURATE     , GenTreeOp          ,0,GTK_UNOP)  // saturating increment, used in division by a constant (LowerUnsignedDivOrMod)
+
+// Returns high bits (top N bits of the 2N bit result of an NxN multiply)
+// GT_MULHI is used in division by a constant (LowerUnsignedDivOrMod). We turn
+// the div into a MULHI + some adjustments. In codegen, we only use the
+// results of the high register, and we drop the low results.
+GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP)
+
+// A mul that returns the 2N bit result of an NxN multiply. This op is used for
+// multiplies that take two ints and return a long result. For 32 bit targets,
+// all other multiplies with long results are morphed into helper calls.
+// It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
+// part of the result, whereas GT_MUL_LONG keeps both parts of the result.
+// MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
+#if !defined(TARGET_64BIT)
+GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
+#elif defined(TARGET_ARM64)
+GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP)
+#endif
+// AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
+GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP)
 //-----------------------------------------------------------------------------
 //  LIR specific compare and conditional branch/set nodes:
 //-----------------------------------------------------------------------------

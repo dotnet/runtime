@@ -8,7 +8,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Assertion.cs" />
+    <Compile Include="AssertExtensions.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="TestFramework.cs" />
@@ -17,4 +17,7 @@
     <Compile Include="XPlatformUtils.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="runtime" />
+  </ItemGroup>
 </Project>

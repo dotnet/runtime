@@ -2495,6 +2495,52 @@ TailCall:
     }
 }
 
+//------------------------------------------------------------------------
+// VNForFieldSelector: A specialized version (with logging) of VNForHandle
+//                     that is used for field handle selectors.
+//
+// Arguments:
+//    fieldHnd   - handle of the field in question
+//    pFieldType - [out] parameter for the field's type
+//    pStructHnd - optional [out] parameter for the struct handle,
+//                 populated if the field is of a struct type
+//
+// Return Value:
+//    Value number corresponding to the given field handle.
+//
+ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE  fieldHnd,
+                                           var_types*            pFieldType,
+                                           CORINFO_CLASS_HANDLE* pStructHnd)
+{
+    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
+    ValueNum             fldHndVN  = VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
+
+    CorInfoType fieldCit  = m_pComp->info.compCompHnd->getFieldType(fieldHnd, &structHnd);
+    var_types   fieldType = JITtype2varType(fieldCit);
+
+#ifdef DEBUG
+    if (m_pComp->verbose)
+    {
+        const char* modName;
+        const char* fldName = m_pComp->eeGetFieldName(fieldHnd, &modName);
+        printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s", fldName, fldHndVN, varTypeName(fieldType));
+        if (varTypeIsStruct(fieldType))
+        {
+            printf(", size = %u", m_pComp->info.compCompHnd->getClassSize(structHnd));
+        }
+        printf("\n");
+    }
+#endif
+
+    if (pStructHnd != nullptr)
+    {
+        *pStructHnd = structHnd;
+    }
+    *pFieldType = fieldType;
+
+    return fldHndVN;
+}
+
 ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, ValueNum arg0VN)
 {
     assert(CanEvalForConstantArgs(func));
@@ -3812,12 +3858,11 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
 
         assert(field != FieldSeqStore::NotAField());
 
-        CORINFO_FIELD_HANDLE fldHnd    = field->m_fieldHnd;
-        CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
-        ValueNum             fldHndVN  = VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
-        noway_assert(fldHnd != nullptr);
-        CorInfoType fieldCit  = m_pComp->info.compCompHnd->getFieldType(fldHnd, &structHnd);
-        var_types   fieldType = JITtype2varType(fieldCit);
+        JITDUMP("  VNApplySelectors:\n");
+        var_types            fieldType;
+        CORINFO_CLASS_HANDLE structHnd;
+        CORINFO_FIELD_HANDLE fldHnd   = field->GetFieldHandle();
+        ValueNum             fldHndVN = VNForFieldSelector(fldHnd, &fieldType, &structHnd);
 
         size_t structSize = 0;
         if (varTypeIsStruct(fieldType))
@@ -3834,21 +3879,6 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
         {
             *wbFinalStructSize = structSize;
         }
-
-#ifdef DEBUG
-        if (m_pComp->verbose)
-        {
-            printf("  VNApplySelectors:\n");
-            const char* modName;
-            const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
-            printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s", fldName, fldHndVN, varTypeName(fieldType));
-            if (varTypeIsStruct(fieldType))
-            {
-                printf(", size = %d", structSize);
-            }
-            printf("\n");
-        }
-#endif
 
         map = VNForMapSelect(vnk, fieldType, map, fldHndVN);
     }
@@ -4005,48 +4035,27 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
             return VNApplySelectorsAssign(vnk, map, fieldSeq->m_next, value, dstIndType);
         }
 
+        if (fieldSeq->m_next == nullptr)
+        {
+            JITDUMP("  VNApplySelectorsAssign:\n");
+        }
+
         // Otherwise, fldHnd is a real field handle.
-        CORINFO_FIELD_HANDLE fldHnd   = fieldSeq->m_fieldHnd;
-        ValueNum             fldHndVN = VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
-        noway_assert(fldHnd != nullptr);
-        CorInfoType fieldCit  = m_pComp->info.compCompHnd->getFieldType(fldHnd);
-        var_types   fieldType = JITtype2varType(fieldCit);
+        var_types fieldType;
+        ValueNum  fldHndVN = VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType);
 
         ValueNum valueAfter;
-        if (fieldSeq->m_next)
+        if (fieldSeq->m_next != nullptr)
         {
-#ifdef DEBUG
-            if (m_pComp->verbose)
-            {
-                const char* modName;
-                const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
-                printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s\n", fldName, fldHndVN,
-                       varTypeName(fieldType));
-            }
-#endif
             ValueNum fseqMap = VNForMapSelect(vnk, fieldType, map, fldHndVN);
             valueAfter       = VNApplySelectorsAssign(vnk, fseqMap, fieldSeq->m_next, value, dstIndType);
         }
         else
         {
-#ifdef DEBUG
-            if (m_pComp->verbose)
-            {
-                if (fieldSeq->m_next == nullptr)
-                {
-                    printf("  VNApplySelectorsAssign:\n");
-                }
-                const char* modName;
-                const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
-                printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s\n", fldName, fldHndVN,
-                       varTypeName(fieldType));
-            }
-#endif
             valueAfter = VNApplySelectorsAssignTypeCoerce(value, dstIndType);
         }
 
-        ValueNum newMap = VNForMapStore(fieldType, map, fldHndVN, valueAfter);
-        return newMap;
+        return VNForMapStore(fieldType, map, fldHndVN, valueAfter);
     }
 }
 
@@ -4548,18 +4557,25 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //    vrk - whether the new vn should swap, reverse, or both
 //
 // Returns:
-//    vn for reversed/swapped comparsion, or NoVN.
+//    vn for related comparsion, or NoVN.
 //
 // Note:
 //    If "vn" corresponds to (x > y), the resulting VN corresponds to
+//    VRK_Same               (x > y)
 //    VRK_Swap               (y < x)
 //    VRK_Reverse            (x <= y)
 //    VRK_SwapReverse        (y >= x)
 //
-//    Will return NoVN for all float comparisons.
+//    VRK_Same will always return the VN passed in.
+//    For other relations, this method will return NoVN for all float comparisons.
 //
 ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 {
+    if (vrk == VN_RELATION_KIND::VRK_Same)
+    {
+        return vn;
+    }
+
     if (vn == NoVN)
     {
         return NoVN;
@@ -4679,6 +4695,25 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 
     return result;
 }
+
+#ifdef DEBUG
+const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
+{
+    switch (vrk)
+    {
+        case VN_RELATION_KIND::VRK_Same:
+            return "same";
+        case VN_RELATION_KIND::VRK_Reverse:
+            return "reversed";
+        case VN_RELATION_KIND::VRK_Swap:
+            return "swapped";
+        case VN_RELATION_KIND::VRK_SwapReverse:
+            return "swapped and reversed";
+        default:
+            return "unknown vn relation";
+    }
+}
+#endif
 
 bool ValueNumStore::IsVNRelop(ValueNum vn)
 {
@@ -7768,82 +7803,80 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                             assert(fldSeq != nullptr);
                         }
 
-                        // Get a field sequence for just the first field in the sequence
-                        //
-                        FieldSeqNode* firstFieldOnly = GetFieldSeqStore()->CreateSingleton(fldSeq->m_fieldHnd);
-
-                        // The final field in the sequence will need to match the 'indType'
-                        var_types indType = lhs->TypeGet();
-                        ValueNum  fldMapVN =
-                            vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], firstFieldOnly);
-
-                        // The type of the field is "struct" if there are more fields in the sequence,
-                        // otherwise it is the type returned from VNApplySelectors above.
-                        var_types firstFieldType = vnStore->TypeOfVN(fldMapVN);
-
                         // The value number from the rhs of the assignment
-                        ValueNum storeVal    = rhsVNPair.GetLiberal();
-                        ValueNum newFldMapVN = ValueNumStore::NoVN;
+                        ValueNum storeVal  = rhsVNPair.GetLiberal();
+                        ValueNum newHeapVN = ValueNumStore::NoVN;
+
+                        // We will check that the final field in the sequence matches 'indType'.
+                        var_types indType = lhs->TypeGet();
 
                         // when (obj != nullptr) we have an instance field, otherwise a static field
                         // when (staticOffset != nullptr) it represents a offset into a static or the call to
                         // Shared Static Base
                         if ((obj != nullptr) || (staticOffset != nullptr))
                         {
-                            ValueNum valAtAddr = fldMapVN;
-                            ValueNum normVal   = ValueNumStore::NoVN;
+                            var_types firstFieldType;
+                            ValueNum  firstFieldSelectorVN =
+                                vnStore->VNForFieldSelector(fldSeq->GetFieldHandle(), &firstFieldType);
 
+                            // Construct the "field map" VN. It represents memory state of the first field
+                            // of all objects on the heap. This is our primary map.
+                            ValueNum fldMapVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType,
+                                                                        fgCurMemoryVN[GcHeap], firstFieldSelectorVN);
+
+                            ValueNum firstFieldValueSelectorVN = ValueNumStore::NoVN;
                             if (obj != nullptr)
                             {
-                                // Unpack, Norm,Exc for 'obj'
-                                ValueNum vnObjExcSet;
-                                vnStore->VNUnpackExc(obj->gtVNPair.GetLiberal(), &normVal, &vnObjExcSet);
-                                vnExcSet = vnStore->VNExcSetUnion(vnExcSet, vnObjExcSet);
-
-                                // construct the ValueNumber for 'fldMap at obj'
-                                valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
+                                firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                             }
                             else // (staticOffset != nullptr)
                             {
-                                // construct the ValueNumber for 'fldMap at staticOffset'
-                                normVal   = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
-                                valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
-                            }
-                            // Now get rid of any remaining struct field dereferences. (if they exist)
-                            if (fldSeq->m_next)
-                            {
-                                storeVal = vnStore->VNApplySelectorsAssign(VNK_Liberal, valAtAddr, fldSeq->m_next,
-                                                                           storeVal, indType);
+                                firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                             }
 
-                            // From which we can construct the new ValueNumber for 'fldMap at normVal'
-                            newFldMapVN =
-                                vnStore->VNForMapStore(vnStore->TypeOfVN(fldMapVN), fldMapVN, normVal, storeVal);
+                            ValueNum newFirstFieldValueVN = ValueNumStore::NoVN;
+                            // Optimization: avoid traversting the maps for the value of the first field if
+                            // we do not need it, which is the case if the rest of the field sequence is empty.
+                            if (fldSeq->m_next == nullptr)
+                            {
+                                newFirstFieldValueVN = vnStore->VNApplySelectorsAssignTypeCoerce(storeVal, indType);
+                            }
+                            else
+                            {
+                                // Construct the ValueNumber for fldMap[obj/offset]. This (struct)
+                                // map represents the specific field we're looking to store to.
+                                ValueNum firstFieldValueVN =
+                                    vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN,
+                                                            firstFieldValueSelectorVN);
+
+                                // Construct the maps updating the rest of the fields in the sequence.
+                                newFirstFieldValueVN =
+                                    vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN, fldSeq->m_next,
+                                                                    storeVal, indType);
+                            }
+
+                            // Finally, construct the new field map...
+                            ValueNum newFldMapVN =
+                                vnStore->VNForMapStore(vnStore->TypeOfVN(fldMapVN), fldMapVN, firstFieldValueSelectorVN,
+                                                       newFirstFieldValueVN);
+
+                            // ...and a new value for the heap.
+                            newHeapVN = vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap], firstFieldSelectorVN,
+                                                               newFldMapVN);
                         }
                         else
                         {
-                            // plain static field
-
-                            // Now get rid of any remaining struct field dereferences. (if they exist)
-                            if (fldSeq->m_next)
-                            {
-                                storeVal = vnStore->VNApplySelectorsAssign(VNK_Liberal, fldMapVN, fldSeq->m_next,
-                                                                           storeVal, indType);
-                            }
-
-                            newFldMapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
-                                                                          storeVal, indType);
+                            // Plain static field.
+                            newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
+                                                                        storeVal, indType);
                         }
 
                         // It is not strictly necessary to set the lhs value number,
                         // but the dumps read better with it set to the 'storeVal' that we just computed
                         lhs->gtVNPair.SetBoth(storeVal);
 
-                        // Update the field map for firstField in GcHeap to this new value.
-                        ValueNum heapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap],
-                                                                          firstFieldOnly, newFldMapVN, indType);
-
-                        recordGcHeapStore(tree, heapVN DEBUGARG("StoreField"));
+                        // Update the GcHeap value.
+                        recordGcHeapStore(tree, newHeapVN DEBUGARG("StoreField"));
                     }
                 }
                 else

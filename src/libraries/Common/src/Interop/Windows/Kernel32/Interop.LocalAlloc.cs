@@ -10,6 +10,7 @@ internal static partial class Interop
     {
         internal const uint LMEM_FIXED = 0x0000;
         internal const uint LMEM_MOVEABLE = 0x0002;
+        internal const uint LMEM_ZEROINIT = 0x0040;
 
         [DllImport(Libraries.Kernel32)]
         internal static extern IntPtr LocalAlloc(uint uFlags, nuint uBytes);
