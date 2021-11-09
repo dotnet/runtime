@@ -673,6 +673,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await Task.Yield();
             throw new Exception();
         }
+
+        public static async ValueTask AsynchronousValueTask() 
+        {
+            await Task.Yield();
+        }
+
+        public static async ValueTask<int> AsynchronousValueTaskInt(int i) 
+        {
+            await Task.Yield();
+            return i;
+        }
     }
 
     public enum TestEnum : uint {

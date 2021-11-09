@@ -974,5 +974,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             Assert.False(success, "FailedAsynchronousTask didn't failed.");
         }
+
+        [Fact]
+        [Trait("Category","Marek")]
+        public static async Task MarshalAsynchronousValueTaskDoesNotWorkYet()
+        {
+            var exception = await Assert.ThrowsAsync<JSException>(() => MarshalTask("AsynchronousValueTask"));
+            Assert.StartsWith("Error: no idea on how to unbox value types", exception.Message);
+        }
+
+        [Fact]
+        [Trait("Category","Marek")]
+        public static async Task MarshalAsynchronousValueTaskIntDoesNotWorkYet()
+        {
+            var exception = await Assert.ThrowsAsync<JSException>(() => MarshalTask("AsynchronousValueTaskInt", "7"));
+            Assert.StartsWith("Error: no idea on how to unbox value types", exception.Message);
+        }
     }
 }
