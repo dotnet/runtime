@@ -1979,8 +1979,12 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
     GenTree*       op1         = node->gtGetOp1();
     GenTree*       op2         = node->gtGetOp2();
     var_types      targetType  = node->TypeGet();
-    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
-    emitter*       emit        = GetEmitter();
+    if ((intrinsicId == NI_BMI2_MultiplyNoFlags2) || (intrinsicId == NI_BMI2_X64_MultiplyNoFlags2))
+    {
+        targetType = op1->TypeGet();
+    }
+    instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
+    emitter*    emit = GetEmitter();
 
     assert(targetReg != REG_NA);
     assert(op1 != nullptr);
@@ -2029,58 +2033,41 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_BMI2_MultiplyNoFlags:
+        case NI_BMI2_MultiplyNoFlags2:
         case NI_BMI2_X64_MultiplyNoFlags:
+        case NI_BMI2_X64_MultiplyNoFlags2:
         {
             int numArgs = HWIntrinsicInfo::lookupNumArgs(node);
-            assert(numArgs == 2 || numArgs == 3);
+            assert(numArgs == 2);
 
-            regNumber op1Reg = REG_NA;
-            regNumber op2Reg = REG_NA;
-            regNumber op3Reg = REG_NA;
-            regNumber lowReg = REG_NA;
+            regNumber op1Reg  = REG_NA;
+            regNumber op2Reg  = REG_NA;
+            regNumber lowReg  = targetReg;
+            regNumber highReg = targetReg;
 
-            if (numArgs == 2)
+            op1Reg = op1->GetRegNum();
+            op2Reg = op2->GetRegNum();
+            if ((intrinsicId == NI_BMI2_MultiplyNoFlags2) || (intrinsicId == NI_BMI2_X64_MultiplyNoFlags2))
             {
-                op1Reg = op1->GetRegNum();
-                op2Reg = op2->GetRegNum();
-                lowReg = targetReg;
+                highReg = node->AsHWIntrinsic()->GetOtherReg();
+            }
+
+            emitAttr attr = emitTypeSize(targetType);
+            GenTree* explicitSrc = op2;
+
+            if (op2Reg == REG_EDX)
+            {
+                assert(op1Reg != REG_EDX);
+                explicitSrc = op1;
             }
             else
             {
-                GenTreeArgList* argList = op1->AsArgList();
-                op1                     = argList->Current();
-                op1Reg                  = op1->GetRegNum();
-                argList                 = argList->Rest();
-                op2                     = argList->Current();
-                op2Reg                  = op2->GetRegNum();
-                argList                 = argList->Rest();
-                GenTree* op3            = argList->Current();
-                op3Reg                  = op3->GetRegNum();
-                assert(!op3->isContained());
-                assert(op3Reg != op1Reg);
-                assert(op3Reg != targetReg);
-                assert(op3Reg != REG_EDX);
-                lowReg = node->GetSingleTempReg();
-                assert(op3Reg != lowReg);
-                assert(lowReg != targetReg);
+                // mov the first operand into implicit source operand EDX/RDX
+                emit->emitIns_Mov(INS_mov, attr, REG_EDX, op1Reg, /* canSkip */ true);
             }
-
-            // These do not support containment
-            assert(!op2->isContained());
-            emitAttr attr = emitTypeSize(targetType);
-
-            // mov the first operand into implicit source operand EDX/RDX
-            assert((op2Reg != REG_EDX) || (op1Reg == REG_EDX));
-            emit->emitIns_Mov(INS_mov, attr, REG_EDX, op1Reg, /* canSkip */ true);
 
             // generate code for MULX
-            genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, lowReg, op2);
-
-            // If requires the lower half result, store in the memory pointed to by op3
-            if (numArgs == 3)
-            {
-                emit->emitIns_AR_R(INS_mov, attr, lowReg, op3Reg, 0);
-            }
+            genHWIntrinsic_R_R_RM(node, ins, attr, highReg, lowReg, explicitSrc);
 
             break;
         }

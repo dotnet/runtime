@@ -10392,7 +10392,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             }
         }
     }
-    else
+    else if (!effectiveVal->OperIsHWIntrinsic())
     {
         GenTreeIndir*        indirTree        = nullptr;
         GenTreeLclVarCommon* lclNode          = nullptr;

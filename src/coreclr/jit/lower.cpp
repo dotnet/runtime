@@ -3358,8 +3358,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
         {
-            assert(!retVal->TypeIs(TYP_STRUCT));
-            if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
+            if (!retVal->TypeIs(TYP_STRUCT) && varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
             {
                 GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
                 ret->gtOp1       = bitcast;
@@ -6477,10 +6476,10 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
         }
     }
 #ifdef TARGET_XARCH
-    // For local stores on XARCH we only handle mismatched src/dest register count for
-    // calls of SIMD type. If the source was another lclVar similarly promoted, we would
+    // For local stores on XARCH we can't handle another lclVar source.
+    // If the source was another lclVar similarly promoted, we would
     // have broken it into multiple stores.
-    if (lclNode->OperIs(GT_STORE_LCL_VAR) && !lclNode->gtGetOp1()->OperIs(GT_CALL))
+    if (lclNode->OperIs(GT_STORE_LCL_VAR) && lclNode->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
         canEnregister = false;
     }

@@ -21241,29 +21241,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
     {
         return true;
     }
-#ifdef TARGET_XARCH
-    else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) &&
-             (category == HW_Category_IMM || category == HW_Category_Scalar))
-    {
-        // Some intrinsics (without HW_Category_MemoryStore) also have MemoryStore semantics
-
-        // Bmi2/Bmi2.X64.MultiplyNoFlags may return the lower half result by a out argument
-        // unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low)
-        //
-        // So, the 3-argument form is MemoryStore
-        if (HWIntrinsicInfo::lookupNumArgs(this) == 3)
-        {
-            switch (gtHWIntrinsicId)
-            {
-                case NI_BMI2_MultiplyNoFlags:
-                case NI_BMI2_X64_MultiplyNoFlags:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-    }
-#endif // TARGET_XARCH
 #endif // TARGET_XARCH || TARGET_ARM64
     return false;
 }

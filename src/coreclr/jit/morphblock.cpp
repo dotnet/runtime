@@ -840,13 +840,13 @@ void MorphCopyBlockHelper::MorphStructCases()
     }
 #endif // TARGET_ARM
 
-    // Don't use field by field assignment if the src is a call,
+    // Don't use field by field assignment if the src is a call or HW intrinsic,
     // lowering will handle it without spilling the call result into memory
     // to access the individual fields.
     //
-    if (m_src->OperGet() == GT_CALL)
+    if (m_src->OperIs(GT_CALL) || m_src->OperIsHWIntrinsic())
     {
-        JITDUMP(" src is a call");
+        JITDUMP(" src is a call or HW intrinsic");
         requiresCopyBlock = true;
     }
 

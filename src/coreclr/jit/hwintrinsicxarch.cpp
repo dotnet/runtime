@@ -1762,6 +1762,34 @@ GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METH
             return gtNewScalarHWIntrinsicNode(callType, op2, op1, intrinsic);
         }
 
+        case NI_BMI2_MultiplyNoFlags:
+        case NI_BMI2_MultiplyNoFlags2:
+        case NI_BMI2_X64_MultiplyNoFlags:
+        case NI_BMI2_X64_MultiplyNoFlags2:
+        {
+            if (sig->numArgs == 3)
+            {
+                // These are implemented in terms of NI_BMI2_MultiplyNoFlags2 or NI_BMI2_X64_MultiplyNoFlags2.
+                assert((intrinsic == NI_BMI2_MultiplyNoFlags) || (intrinsic == NI_BMI2_X64_MultiplyNoFlags));
+                {
+                    return nullptr;
+                }
+            }
+            assert(sig->numArgs == 2);
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            if (callType == TYP_STRUCT)
+            {
+                CORINFO_CLASS_HANDLE structHandle = sig->retTypeSigClass;
+                assert(structHandle != NO_CLASS_HANDLE);
+                GenTreeHWIntrinsic* result = gtNewScalarHWIntrinsicNode(TYP_STRUCT, op1, op2, intrinsic);
+                result->SetLayout(typGetObjLayout(structHandle));
+                return result;
+            }
+            return gtNewScalarHWIntrinsicNode(callType, op1, op2, intrinsic);
+        }
+
         default:
             return nullptr;
     }

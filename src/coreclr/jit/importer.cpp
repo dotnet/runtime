@@ -1288,7 +1288,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     }
 
     assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR, GT_COMMA) ||
-           (src->TypeGet() != TYP_STRUCT && src->OperIsSimdOrHWintrinsic()));
+           src->OperIsSimdOrHWintrinsic());
 
     var_types asgType = src->TypeGet();
 
