@@ -760,9 +760,6 @@ namespace DebuggerTests
 
                 var frame = pause_location["callFrames"][0];
 
-                await EvaluateOnCallFrame(id, "staticClass", expect_ok: true);
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("staticClass", TObject("DebuggerTests.EvaluateNonStaticClassWithStaticFields", is_null: false)));
                 await EvaluateOnCallFrameAndCheck(id,
                     ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
