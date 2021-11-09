@@ -225,6 +225,13 @@ namespace System.Reflection
             return RuntimeMethodHandle.InvokeMethod(null, arguments, Signature, true, wrapExceptions)!;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private object InvokeArrayCtorWorker(in Span<int> arguments)
+        {
+            Debug.Assert(m_declaringType.IsArray);
+            return RuntimeMethodHandle.InvokeArrayCtor(in arguments, Signature);
+        }
+
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody? GetMethodBody()
         {

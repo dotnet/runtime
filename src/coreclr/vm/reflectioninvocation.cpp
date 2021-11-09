@@ -451,7 +451,7 @@ struct ByRefToNullable  {
     }
 };
 
-void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pFrame)
+static void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pFrame)
 {
     // Use static contracts b/c we have SEH.
     STATIC_CONTRACT_THROWS;
@@ -477,44 +477,6 @@ void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pF
     }
     PAL_ENDTRY
 } // CallDescrWorkerReflectionWrapper
-
-OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, Span<OBJECTREF>* objs, int argCnt)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
-    _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
-             th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
-
-    // Validate all of the parameters.  These all typed as integers
-    int allocSize = 0;
-    if (!ClrSafeInt<int>::multiply(sizeof(INT32), argCnt, allocSize))
-        COMPlusThrow(kArgumentException, IDS_EE_SIGTOOCOMPLEX);
-
-    INT32* indexes = (INT32*) _alloca((size_t)allocSize);
-    ZeroMemory(indexes, allocSize);
-
-    for (DWORD i=0; i<(DWORD)argCnt; i++)
-    {
-        if (!objs->GetAt(i))
-            COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
-
-        MethodTable* pMT = objs->GetAt(i)->GetMethodTable();
-        CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
-
-        if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
-            COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
-
-        memcpy(&indexes[i], objs->GetAt(i)->UnBox(),pMT->GetNumInstanceFieldBytes());
-    }
-
-    return AllocateArrayEx(th, indexes, argCnt);
-}
 
 static BOOL IsActivationNeededForMethodInvoke(MethodDesc * pMD)
 {
@@ -785,17 +747,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     if (fConstructor)
     {
-        // If we are invoking a constructor on an array then we must
-        // handle this specially.  String objects allocate themselves
-        // so they are a special case.
-        if (ownerType.IsArray()) {
-            gc.retVal = InvokeArrayConstructor(ownerType,
-                                               pMeth,
-                                               objs,
-                                               gc.pSig->NumFixedArgs());
-            goto Done;
-        }
-
         MethodTable * pMT = ownerType.AsMethodTable();
 
         {
@@ -936,8 +887,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     // If an exception occurs a gc may happen but we are going to dump the stack anyway and we do
     // not need to protect anything.
 
-    PVOID pRetBufStackCopy = NULL;
-
     {
     BEGINFORBIDGC();
 #ifdef _DEBUG
@@ -947,24 +896,8 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     // Take care of any return arguments
     if (fHasRetBuffArg)
     {
-        // We stack-allocate this ret buff, to preserve the invariant that ret-buffs are always in the
-        // caller's stack frame.  We'll copy into gc.retVal later.
-        TypeHandle retTH = gc.pSig->GetReturnTypeHandle();
-        MethodTable* pMT = retTH.GetMethodTable();
-        if (pMT->IsStructRequiringStackAllocRetBuf())
-        {
-            SIZE_T sz = pMT->GetNumInstanceFieldBytes();
-            pRetBufStackCopy = _alloca(sz);
-            memset(pRetBufStackCopy, 0, sz);
-
-            pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pRetBufStackCopy, pMT, pValueClasses);
-            *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pRetBufStackCopy;
-        }
-        else
-        {
-            PVOID pRetBuff = gc.retVal->GetData();
-            *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pRetBuff;
-        }
+        PVOID pRetBuff = gc.retVal->GetData();
+        *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pRetBuff;
     }
 
     // copy args
@@ -1128,10 +1061,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         {
             CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
         }
-        else if (pRetBufStackCopy)
-        {
-            CopyValueClass(gc.retVal->GetData(), pRetBufStackCopy, gc.retVal->GetMethodTable());
-        }
         // From here on out, it is OK to have GCs since the return object (which may have had
         // GC pointers has been put into a GC object and thus protected.
 
@@ -1166,8 +1095,39 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     }
 
-Done:
-    ;
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.retVal);
+}
+FCIMPLEND
+
+
+FCIMPL2(Object*, RuntimeMethodHandle::InvokeArrayCtor,
+    Span<int>* args,
+    SignatureNative* pSigUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    struct
+    {
+        SIGNATURENATIVEREF pSig;
+        OBJECTREF retVal;
+    } gc;
+
+    gc.pSig = (SIGNATURENATIVEREF)pSigUNSAFE;
+    gc.retVal = NULL;
+
+    TypeHandle th = gc.pSig->GetDeclaringType();
+    int argCnt = gc.pSig->NumFixedArgs();
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+
+    // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
+    _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
+             th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+
+    gc.retVal = AllocateArrayEx(th, static_cast<int*>(*args), argCnt);
+
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.retVal);

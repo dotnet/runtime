@@ -982,6 +982,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? InvokeMethod(object? target, in Span<object?> arguments, Signature sig, bool constructor, bool wrapExceptions);
 
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object InvokeArrayCtor(in Span<int> arguments, Signature sig);
+
         [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static extern void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
 
