@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly AutoInit.dll{}
+.assembly AutoInit {}
 .assembly extern xunit.core
 {
 	.publickeytoken = (
