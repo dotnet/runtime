@@ -333,7 +333,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
         }
 
         // in a case if resize is in progress, look in the new table as well.
-        // if existing entry is ot in the old table, it must be in the new
+        // if existing entry is not in the old table, it must be in the new
         // since we unlink it from old only after linking into the new.
         curBuckets = (DPTR(PTR_VolatileEntry))dac_cast<TADDR>(curBuckets[1]);
     } while (curBuckets != nullptr);
