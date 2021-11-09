@@ -4909,7 +4909,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
     GenTree* arg     = fgMakeTmpArgNode(argEntry);
 
     // Change the expression to "(tmp=val),tmp"
-    arg  = gtNewOperNode(GT_COMMA, arg->TypeGet(), copyBlk, arg);
+    arg                                  = gtNewOperNode(GT_COMMA, arg->TypeGet(), copyBlk, arg);
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -5472,18 +5472,32 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // 2) should still be safe from GC's point of view since both ADD operations are byref and point to
     // within the object so GC will be able to correctly track and update them.
 
+    bool groupArrayRefWithElemOffset = false;
+#ifdef TARGET_ARMARCH
+    groupArrayRefWithElemOffset = true;
     // TODO: in some cases even on ARM we better use 1) shape because if "index" is invariant and "arrRef" is not
     // we at least will be able to hoist/CSE "index + elemOffset" in some cases.
+    // See https://github.com/dotnet/runtime/pull/61293#issuecomment-964146497
+
+    // Use 2) form only for primitive types for now - it significantly reduced number of size regressions
+    if (!varTypeIsIntegral(elemTyp))
+    {
+        groupArrayRefWithElemOffset = false;
+    }
+#endif
 
     // First element's offset
     GenTree* elemOffset = gtNewIconNode(elemOffs, TYP_I_IMPL);
-#ifdef TARGET_ARMARCH
-    GenTree* basePlusOffset = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, elemOffset);
-    addr                    = gtNewOperNode(GT_ADD, TYP_BYREF, basePlusOffset, addr);
-#else
-    addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, elemOffset);
-    addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
-#endif
+    if (groupArrayRefWithElemOffset)
+    {
+        GenTree* basePlusOffset = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, elemOffset);
+        addr                    = gtNewOperNode(GT_ADD, TYP_BYREF, basePlusOffset, addr);
+    }
+    else
+    {
+        addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, elemOffset);
+        addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
+    }
 
     assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0) ||
            (GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL));
@@ -5592,44 +5606,48 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     if (addr->OperIs(GT_ADD))
     {
         GenTree* addrOp1 = addr->gtGetOp1();
-#ifdef TARGET_ARMARCH
-        // On arm/arm64 addr tree is a bit different, see above ^
-        if (addrOp1->OperIs(GT_ADD) && addrOp1->gtGetOp2()->IsCnsIntOrI())
+        if (groupArrayRefWithElemOffset)
         {
-            assert(addrOp1->gtGetOp1()->TypeIs(TYP_REF));
-            cnsOff = addrOp1->gtGetOp2();
-            addr   = addr->gtGetOp2();
-            // Label any constant array index contributions with #ConstantIndex and any LclVars with GTF_VAR_ARR_INDEX
-            addr->LabelIndex(this);
-        }
-        else
-        {
-            assert(addr->gtGetOp2()->IsCnsIntOrI());
-            cnsOff = addr->gtGetOp2();
-            addr   = nullptr;
-        }
-#else
-        assert(addr->TypeIs(TYP_BYREF));
-        assert(addr->gtGetOp1()->TypeIs(TYP_REF));
-        addr = addr->gtGetOp2();
-
-        // Look for the constant [#FirstElem] node here, or as the RHS of an ADD.
-        if (addr->IsCnsIntOrI())
-        {
-            cnsOff = addr;
-            addr   = nullptr;
-        }
-        else
-        {
-            if ((addr->OperIs(GT_ADD)) && addr->gtGetOp2()->IsCnsIntOrI())
+            if (addrOp1->OperIs(GT_ADD) && addrOp1->gtGetOp2()->IsCnsIntOrI())
             {
-                cnsOff = addr->gtGetOp2();
-                addr   = addr->gtGetOp1();
+                assert(addrOp1->gtGetOp1()->TypeIs(TYP_REF));
+                cnsOff = addrOp1->gtGetOp2();
+                addr   = addr->gtGetOp2();
+                // Label any constant array index contributions with #ConstantIndex and any LclVars with
+                // GTF_VAR_ARR_INDEX
+                addr->LabelIndex(this);
             }
-            // Label any constant array index contributions with #ConstantIndex and any LclVars with GTF_VAR_ARR_INDEX
-            addr->LabelIndex(this);
+            else
+            {
+                assert(addr->gtGetOp2()->IsCnsIntOrI());
+                cnsOff = addr->gtGetOp2();
+                addr   = nullptr;
+            }
         }
-#endif
+        else
+        {
+            assert(addr->TypeIs(TYP_BYREF));
+            assert(addr->gtGetOp1()->TypeIs(TYP_REF));
+            addr = addr->gtGetOp2();
+
+            // Look for the constant [#FirstElem] node here, or as the RHS of an ADD.
+            if (addr->IsCnsIntOrI())
+            {
+                cnsOff = addr;
+                addr   = nullptr;
+            }
+            else
+            {
+                if ((addr->OperIs(GT_ADD)) && addr->gtGetOp2()->IsCnsIntOrI())
+                {
+                    cnsOff = addr->gtGetOp2();
+                    addr   = addr->gtGetOp1();
+                }
+                // Label any constant array index contributions with #ConstantIndex and any LclVars with
+                // GTF_VAR_ARR_INDEX
+                addr->LabelIndex(this);
+            }
+        }
     }
     else if (addr->IsCnsIntOrI())
     {
