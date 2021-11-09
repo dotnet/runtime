@@ -5461,15 +5461,19 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // the partial byref will not point within the object, and thus not get updated correctly during a GC.
     // This is mostly a risk in fully-interruptible code regions.
 
-    // We're going to create a platform-specific 'addr' tree:
+    // We can generate two types of trees for "addr":
     //
-    // XArch:   "arrRef + (index + elemOffset)"
-    // ArmArch: "(arrRef + elemOffset) + index"
+    //  1) "arrRef + (index + elemOffset)"
+    //  2) "(arrRef + elemOffset) + index"
     //
-    // It'll allow us to hoist/CSE the invariant part which is "arrRef + elemOffset" on ArmArch.
-    // We don't really need it on XArch because of more powerful addressing modes such as [base + index*scale + offset]
-    // ArmArch's tree should still be safe from GC's point of view since both ADD operations are byref and point to
+    // XArch has powerful addressing modes such as [base + index*scale + offset] so it's fine with 1),
+    // while for Arm we better try to make an invariant sub-tree as large as possible, which is usually
+    // "(arrRef + elemOffset)" and is CSE/LoopHoisting friendly => produces better codegen.
+    // 2) should still be safe from GC's point of view since both ADD operations are byref and point to
     // within the object so GC will be able to correctly track and update them.
+
+    // TODO: in some cases even on ARM we better use 1) shape because if "index" is invariant and "arrRef" is not
+    // we at least will be able to hoist/CSE "index + elemOffset" in some cases.
 
     // First element's offset
     GenTree* elemOffset = gtNewIconNode(elemOffs, TYP_I_IMPL);

@@ -5046,8 +5046,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
 
         // 'scale' and 'offset' have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
         // where there is no room for additional offsets/scales on ARM64. 'shiftBy' has to match target's width.
-        if (varTypeIsInt(cast->CastFromType()) && varTypeIsLong(cast->CastToType()) &&
-            (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
+        if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && (genTypeSize(targetType) == (1U << shiftBy)) &&
+            (scale == 1) && (offset == 0))
         {
             // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
             MakeSrcContained(addrMode, index);
