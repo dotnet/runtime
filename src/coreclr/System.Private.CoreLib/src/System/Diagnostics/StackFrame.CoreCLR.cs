@@ -58,7 +58,9 @@ namespace System.Diagnostics
         private static extern RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
 
         /// <summary>
-        /// Returns the method info instance for the managed code IP address.
+        /// Returns the MethodBase instance for the managed code IP address.
+        ///
+        /// Warning: The implementation of this method has race for dynamic and collectible methods.
         /// </summary>
         /// <param name="ip">code address</param>
         /// <returns>MethodBase instance for the method or null if IP not found</returns>
