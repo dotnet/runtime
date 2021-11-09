@@ -430,15 +430,15 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         {
             if (offs == BAD_IL_OFFSET)
             {
-                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID,
-                       calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
+                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal,
+                       m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
                        calleeName);
             }
             else
             {
-                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal,
-                       offs, m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded,
-                       devirtualized, unboxed, calleeName);
+                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, offs,
+                       m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
+                       calleeName);
             }
         }
         else

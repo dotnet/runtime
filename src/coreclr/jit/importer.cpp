@@ -2886,7 +2886,6 @@ GenTree* Compiler::impCloneExpr(GenTree*             tree,
     return gtNewLclvNode(temp, type);
 }
 
-
 //------------------------------------------------------------------------
 // impCreateDIWithCurrentStackInfo: Create a DebugInfo instance with the
 // specified IL offset and 'is call' bit, using the current stack to determine
