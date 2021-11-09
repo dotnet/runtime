@@ -1,4 +1,4 @@
-<Project>
+<Project Sdk="Microsoft.Build.Traversal">
   <Target Name="Build">
     <Msbuild Targets="Pack" Projects="dotnet-pgo.csproj" />
   </Target>
