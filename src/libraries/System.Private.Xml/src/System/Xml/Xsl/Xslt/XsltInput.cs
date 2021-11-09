@@ -1212,7 +1212,7 @@ namespace System.Xml.Xsl.Xslt
             public Location start;
             public Location valueStart;
             public Location end;
-            public string QualifiedName { get { return prefix.Length == 0 ? localName : string.Concat(prefix, ":", localName); } }
+            public string QualifiedName { get { return prefix.Length == 0 ? localName : $"{prefix}:{localName}"; } }
         }
     }
 }
