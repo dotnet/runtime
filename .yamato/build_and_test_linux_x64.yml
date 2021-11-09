@@ -1,13 +1,11 @@
-name: Build and Test OSX x64
+name: Build and Test Linux x64
 
 agent:
-  type: Unity::VM::osx
-  image: platform-foundation/mac-bokken:latest
-  flavor: m1.mac
+  type: Unity::VM
+  image: platform-foundation/linux-ubuntu-18.04-mono-bokken:latest
+  flavor: b1.large
 
 commands:
-  - brew install pkg-config
-  - brew install openssl
   - ./build.sh -subset clr -a x64 -c release
   - ./build.sh libs -c release
   - ./src/tests/build.sh Release x64
@@ -21,6 +19,6 @@ triggers:
           - "unity-main"
 
 artifacts: 
-  osx64:
+  linux64:
     paths:
-      - artifacts/bin/coreclr/OSX.x64.Release/**
+      - artifacts/bin/coreclr/Linux.x64.Release/**
