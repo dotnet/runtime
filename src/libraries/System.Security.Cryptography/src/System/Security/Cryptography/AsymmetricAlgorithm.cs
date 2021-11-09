@@ -362,7 +362,8 @@ namespace System.Security.Cryptography
         /// </remarks>
         public virtual void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyImportHelpers.ImportPem(input, label => {
+            PemKeyImportHelpers.ImportPem(input, label =>
+            {
                 if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
                 {
                     return ImportPkcs8PrivateKey;
