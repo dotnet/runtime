@@ -640,7 +640,7 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, is_a
                     file_handle.extractall(temp_location)
 
                 # Copy everything that was extracted to the target directory.
-                copy_directory(temp_location, target_dir, verbose_output=verbose, match_func=lambda path: not path.endswith(".zip"))
+                copy_directory(temp_location, target_dir, verbose_copy=verbose, match_func=lambda path: not path.endswith(".zip"))
 
                 # The caller wants to know where all the files ended up, so compute that.
                 for dirpath, _, files in os.walk(temp_location, topdown=True):
