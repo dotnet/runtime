@@ -328,15 +328,11 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    # BuildWasmApps should only happen on the rolling build. No need to duplicate the build on PR's
-    - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Browser_wasm
+    - Browser_wasm
     variables:
       # map dependencies variables to local variables
       - name: wasmbuildtestsContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
-      - name: installerContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_WasmBuildTests
@@ -345,7 +341,6 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -357,7 +352,6 @@ jobs:
         condition: >-
           or(
           eq(variables['wasmbuildtestsContainsChange'], true),
-          eq(variables['installerContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
