@@ -7,7 +7,11 @@ import { BINDING, runtimeHelpers } from "./modules";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
 import { MarshalType, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
-import { _create_temp_frame, getI32, getU32, getF32, getF64, __AllSetters__ } from "./memory";
+import { 
+    _create_temp_frame, 
+    getI32, getU32, getF32, getF64, 
+    setI32, setU32, setF32, setF64, setI64,
+} from "./memory";
 import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
@@ -213,8 +217,12 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
         Module,
         _malloc: Module._malloc,
         mono_wasm_unbox_rooted: cwraps.mono_wasm_unbox_rooted,
+        setI32,
+        setU32,
+        setF32,
+        setF64,
+        setI64
     };
-    Object.assign(closure, __AllSetters__);
     let indirectLocalOffset = 0;
 
     body.push(
