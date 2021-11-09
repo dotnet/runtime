@@ -167,7 +167,7 @@ def main(main_args):
         os.makedirs(base_jit_directory)
 
     print("Fetching history of `main` branch so we can find the baseline JIT")
-    run_command(["git", "fetch", "origin", "main"], _exit_on_fail=True)
+    run_command(["git", "fetch", "origin", "main"], source_directory, _exit_on_fail=True)
 
     # Note: we only support downloading Windows versions of the JIT currently. To support downloading
     # non-Windows JITs on a Windows machine, pass `-host_os <os>` to jitrollingbuild.py.
@@ -177,7 +177,8 @@ def main(main_args):
         os.path.join(superpmi_scripts_directory, "jitrollingbuild.py"),
         "download",
         "-arch", arch,
-        "-target_dir", base_jit_directory])
+        "-target_dir", base_jit_directory],
+        source_directory)
 
     ######## Get diff JIT
 
