@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 namespace SafeHandleTests
 {
@@ -15,21 +15,21 @@ namespace SafeHandleTests
         public static void RunTest()
         {
             var testHandle = new TestSafeHandle(initialValue);
-            Assert.IsTrue(SafeHandleNative.SafeHandleByValue(testHandle, initialValue));
-            Assert.IsFalse(testHandle.IsClosed);
+            Assert.True(SafeHandleNative.SafeHandleByValue(testHandle, initialValue));
+            Assert.False(testHandle.IsClosed);
 
-            Assert.IsTrue(SafeHandleNative.SafeHandleByRef(ref testHandle, initialValue, newValue));
-            Assert.IsFalse(testHandle.IsClosed);
+            Assert.True(SafeHandleNative.SafeHandleByRef(ref testHandle, initialValue, newValue));
+            Assert.False(testHandle.IsClosed);
 
             testHandle = null;
             SafeHandleNative.SafeHandleOut(out testHandle, initialValue);
-            Assert.IsFalse(testHandle.IsClosed);
+            Assert.False(testHandle.IsClosed);
 
             testHandle = SafeHandleNative.SafeHandleReturn(newValue);
-            Assert.IsFalse(testHandle.IsClosed);
+            Assert.False(testHandle.IsClosed);
 
             testHandle = SafeHandleNative.SafeHandleReturn_Swapped(newValue);
-            Assert.IsFalse(testHandle.IsClosed);
+            Assert.False(testHandle.IsClosed);
 
             var str = new SafeHandleNative.StructWithHandle
             {
@@ -37,10 +37,10 @@ namespace SafeHandleTests
             };
 
             SafeHandleNative.StructWithSafeHandleByValue(str, initialValue);
-            Assert.IsFalse(str.handle.IsClosed);
-            
+            Assert.False(str.handle.IsClosed);
+
             SafeHandleNative.StructWithSafeHandleByRef(ref str, initialValue, initialValue);
-            Assert.IsFalse(str.handle.IsClosed);
+            Assert.False(str.handle.IsClosed);
         }
     }
 }

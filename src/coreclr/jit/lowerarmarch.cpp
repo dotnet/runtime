@@ -1605,6 +1605,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             }
             // If both 'a' and 'b' are GT_NEG - MADD will be emitted.
 
+            node->ChangeOper(GT_MADD);
             MakeSrcContained(node, mul);
         }
     }

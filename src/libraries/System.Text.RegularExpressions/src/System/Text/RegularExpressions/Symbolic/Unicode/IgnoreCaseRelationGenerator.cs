@@ -41,70 +41,54 @@ namespace {namespacename}
             sw.WriteLine("        /// <summary>Serialized BDD for mapping characters to their case-ignoring equivalence classes in the default (en-US) culture.</summary>");
 
             var solver = new CharSetSolver();
-            Dictionary<char, BDD> ignoreCase = ComputeIgnoreCaseDictionary(solver, new CultureInfo(DefaultCultureName));
+            List<EquivalenceClass> ignoreCaseEquivalenceClasses = ComputeIgnoreCaseEquivalenceClasses(solver, new CultureInfo(DefaultCultureName));
             BDD ignorecase = solver.False;
-            foreach (KeyValuePair<char, BDD> kv in ignoreCase)
+            foreach (EquivalenceClass ec in ignoreCaseEquivalenceClasses)
             {
-                BDD a = solver.CreateCharSetFromRange(kv.Key, kv.Key);
-                BDD b = kv.Value;
-                ignorecase = solver.Or(ignorecase, solver.And(solver.ShiftLeft(a, 16), b));
+                // Create the Cartesian product of ec._set with itself
+                BDD crossproduct = solver.And(solver.ShiftLeft(ec._set, 16), ec._set);
+                // Add the product into the overall lookup table
+                ignorecase = solver.Or(ignorecase, crossproduct);
             }
 
-            sw.Write("        public static readonly long[] IgnoreCaseEnUsSerializedBDD = ");
-            GeneratorHelper.WriteInt64ArrayInitSyntax(sw, ignorecase.Serialize());
+            sw.Write("        public static readonly byte[] IgnoreCaseEnUsSerializedBDD = ");
+            GeneratorHelper.WriteByteArrayInitSyntax(sw, ignorecase.SerializeToBytes());
             sw.WriteLine(";");
         }
 
-        private static Dictionary<char, BDD> ComputeIgnoreCaseDictionary(CharSetSolver solver, CultureInfo culture)
+        private static List<EquivalenceClass> ComputeIgnoreCaseEquivalenceClasses(CharSetSolver solver, CultureInfo culture)
         {
-            CultureInfo originalCulture = CultureInfo.CurrentCulture;
-            try
+            var ignoreCase = new Dictionary<char, EquivalenceClass>();
+            var sets = new List<EquivalenceClass>();
+
+            for (uint i = 65; i <= 0xFFFF; i++)
             {
-                CultureInfo.CurrentCulture = culture;
+                char C = (char)i;
+                char c = char.ToLower(C, culture);
 
-                var ignoreCase = new Dictionary<char, BDD>();
-
-                for (uint i = 0; i <= 0xFFFF; i++)
+                if (c == C)
                 {
-                    char c = (char)i;
-                    char cUpper = char.ToUpper(c);
-                    char cLower = char.ToLower(c);
-
-                    if (cUpper == cLower)
-                    {
-                        continue;
-                    }
-
-                    // c may be different from both cUpper as well as cLower.
-                    // Make sure that the regex engine considers c as being equivalent to cUpper and cLower, else ignore c.
-                    // In some cases c != cU but the regex engine does not consider the chacarters equivalent wrt the ignore-case option.
-                    if (Regex.IsMatch($"{cUpper}{cLower}", $"^(?i:\\u{i:X4}\\u{i:X4})$"))
-                    {
-                        BDD equiv = solver.False;
-
-                        if (ignoreCase.ContainsKey(c))
-                            equiv = solver.Or(equiv, ignoreCase[c]);
-
-                        if (ignoreCase.ContainsKey(cUpper))
-                            equiv = solver.Or(equiv, ignoreCase[cUpper]);
-
-                        if (ignoreCase.ContainsKey(cLower))
-                            equiv = solver.Or(equiv, ignoreCase[cLower]);
-
-                        // Make sure all characters are included initially or when some is still missing
-                        equiv = solver.Or(equiv, solver.Or(solver.CreateCharSetFromRange(c, c), solver.Or(solver.CreateCharSetFromRange(cUpper, cUpper), solver.CreateCharSetFromRange(cLower, cLower))));
-
-                        // Update all the members with their case-invariance equivalence classes
-                        foreach (char d in solver.GenerateAllCharacters(equiv))
-                            ignoreCase[d] = equiv;
-                    }
+                    continue;
                 }
 
-                return ignoreCase;
+                EquivalenceClass? ec;
+                if (!ignoreCase.TryGetValue(c, out ec))
+                {
+                    ec = new EquivalenceClass(solver.CharConstraint(c));
+                    ignoreCase[c] = ec;
+                    sets.Add(ec);
+                }
+                ec._set = solver.Or(ec._set, solver.CharConstraint(C));
             }
-            finally
+            return sets;
+        }
+
+        private class EquivalenceClass
+        {
+            public BDD _set;
+            public EquivalenceClass(BDD set)
             {
-                CultureInfo.CurrentCulture = originalCulture;
+                _set = set;
             }
         }
     };

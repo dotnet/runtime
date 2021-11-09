@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 [assembly: BestFitMapping(true, ThrowOnUnmappableChar = false)]
 
@@ -119,54 +119,54 @@ public class BFM_LPStrMarshaler
 
     static void testLPStrBufferString()
     {
-        Assert.IsTrue(LPStrBuffer_In_String(GetInvalidString()), "[Error] Location tlpsbs1");
-        Assert.IsTrue(LPStrBuffer_In_String(GetValidString()), "[Error] Location tlpsbs2");
+        Assert.True(LPStrBuffer_In_String(GetInvalidString()));
+        Assert.True(LPStrBuffer_In_String(GetValidString()));
 
         String cTemp = GetInvalidString();
         String cTempClone = cTemp;
-        Assert.IsTrue(LPStrBuffer_InByRef_String(ref cTemp), "[Error] Location tlpsbs3");
-        Assert.AreEqual(cTempClone, cTemp, "[Error] Location tlpsbs4");
+        Assert.True(LPStrBuffer_InByRef_String(ref cTemp));
+        Assert.Equal(cTempClone, cTemp);
 
         cTemp = GetValidString();
         cTempClone = cTemp;
-        Assert.IsTrue(LPStrBuffer_InByRef_String(ref cTemp), "[Error] Location tlpsbs5");
-        Assert.AreEqual(cTempClone, cTemp, "[Error] Location tlpsbs6");
+        Assert.True(LPStrBuffer_InByRef_String(ref cTemp));
+        Assert.Equal(cTempClone, cTemp);
 
         cTemp = GetInvalidString();
         cTempClone = cTemp;
-        Assert.IsTrue(LPStrBuffer_InOutByRef_String(ref cTemp), "[Error] Location tlpsbs7");
-        Assert.AreNotEqual(cTempClone, cTemp, "[Error] Location tlpsbs8");
+        Assert.True(LPStrBuffer_InOutByRef_String(ref cTemp));
+        Assert.NotEqual(cTempClone, cTemp);
 
         cTemp = GetValidString();
         cTempClone = cTemp;
-        Assert.IsTrue(LPStrBuffer_InOutByRef_String(ref cTemp), "[Error] Location tlpsbs9");
-        Assert.AreEqual(cTempClone, cTemp, "[Error] Location tlpsbs10");
+        Assert.True(LPStrBuffer_InOutByRef_String(ref cTemp));
+        Assert.Equal(cTempClone, cTemp);
     }
 
     static void testLPStrBufferStringBuilder()
     {
-        Assert.IsTrue(LPStrBuffer_In_StringBuilder(GetInvalidStringBuilder()), "[Error] Location tlpsbsb1");
-        Assert.IsTrue(LPStrBuffer_In_StringBuilder(GetValidStringBuilder()), "[Error] Location tlpsbsb2");
+        Assert.True(LPStrBuffer_In_StringBuilder(GetInvalidStringBuilder()));
+        Assert.True(LPStrBuffer_In_StringBuilder(GetValidStringBuilder()));
 
         StringBuilder cTemp = GetInvalidStringBuilder();
         StringBuilder cTempClone = cTemp;
-        Assert.IsTrue(LPStrBuffer_InByRef_StringBuilder(ref cTemp), "[Error] Location tlpsbsb3");
-        Assert.AreEqual(cTempClone.ToString(), cTemp.ToString(), "[Error] Location tlpsbsb4");
+        Assert.True(LPStrBuffer_InByRef_StringBuilder(ref cTemp));
+        Assert.Equal(cTempClone.ToString(), cTemp.ToString());
 
         cTemp = GetValidStringBuilder();
         cTempClone = cTemp;
-        Assert.IsTrue(LPStrBuffer_InByRef_StringBuilder(ref cTemp), "[Error] Location tlpsbsb5");
-        Assert.AreEqual(cTempClone.ToString(), cTemp.ToString(), "[Error] Location tlpsbsb6");
+        Assert.True(LPStrBuffer_InByRef_StringBuilder(ref cTemp));
+        Assert.Equal(cTempClone.ToString(), cTemp.ToString());
 
         cTemp = GetInvalidStringBuilder();
         cTempClone = cTemp;
-        Assert.IsTrue(LPStrBuffer_InOutByRef_StringBuilder(ref cTemp), "[Error] Location tlpsbsb7");
-        Assert.AreNotEqual(cTempClone.ToString(), cTemp.ToString(), "[Error] Location tlpsbsb8");
+        Assert.True(LPStrBuffer_InOutByRef_StringBuilder(ref cTemp));
+        Assert.NotEqual(cTempClone.ToString(), cTemp.ToString());
 
         cTemp = GetValidStringBuilder();
         cTempClone = cTemp;
-        Assert.IsTrue(LPStrBuffer_InOutByRef_StringBuilder(ref cTemp), "[Error] Location tlpsbsb9");
-        Assert.AreEqual(cTempClone.ToString(), cTemp.ToString(), "[Error] Location tlpsbsb10");
+        Assert.True(LPStrBuffer_InOutByRef_StringBuilder(ref cTemp));
+        Assert.Equal(cTempClone.ToString(), cTemp.ToString());
     }
 
     static LPStrTestStruct GetInvalidStruct()
@@ -188,20 +188,20 @@ public class BFM_LPStrMarshaler
 
     static void testLPStrBufferStruct()
     {
-        Assert.IsTrue(LPStrBuffer_In_Struct_String(GetInvalidStruct()), "[Error] Location tlpsbst1");
-        Assert.IsTrue(LPStrBuffer_In_Struct_String(GetValidStruct()), "[Error] Location tlpsbst2");
+        Assert.True(LPStrBuffer_In_Struct_String(GetInvalidStruct()));
+        Assert.True(LPStrBuffer_In_Struct_String(GetValidStruct()));
 
         LPStrTestStruct lpss = GetInvalidStruct();
-        Assert.IsTrue(LPStrBuffer_InByRef_Struct_String(ref lpss), "[Error] Location tlpsbst3");
+        Assert.True(LPStrBuffer_InByRef_Struct_String(ref lpss));
 
         lpss = GetValidStruct();
-        Assert.IsTrue(LPStrBuffer_InByRef_Struct_String(ref lpss), "[Error] Location tlpsbst4");
+        Assert.True(LPStrBuffer_InByRef_Struct_String(ref lpss));
 
         lpss = GetInvalidStruct();
-        Assert.IsTrue(LPStrBuffer_InOutByRef_Struct_String(ref lpss), "[Error] Location tlpsbst5");
+        Assert.True(LPStrBuffer_InOutByRef_Struct_String(ref lpss));
 
         lpss = GetValidStruct();
-        Assert.IsTrue(LPStrBuffer_InOutByRef_Struct_String(ref lpss), "[Error] Location tlpsbst6");
+        Assert.True(LPStrBuffer_InOutByRef_Struct_String(ref lpss));
     }
 
     static String[] GetValidArray()
@@ -229,44 +229,44 @@ public class BFM_LPStrMarshaler
     static void testLPStrBufferArray()
     {
         String[] s = GetInvalidArray();
-        Assert.IsTrue(LPStrBuffer_In_Array_String(s), "[Error] Location tlpsba1");
+        Assert.True(LPStrBuffer_In_Array_String(s));
 
         s = GetValidArray();
-        Assert.IsTrue(LPStrBuffer_In_Array_String(s), "[Error] Location tlpsba2");
+        Assert.True(LPStrBuffer_In_Array_String(s));
 
         s = GetInvalidArray();
-        Assert.IsTrue(LPStrBuffer_InByRef_Array_String(ref s), "[Error] Location tlpsba3");
+        Assert.True(LPStrBuffer_InByRef_Array_String(ref s));
 
         s = GetValidArray();
-        Assert.IsTrue(LPStrBuffer_InByRef_Array_String(ref s), "[Error] Location tlpsba4");
+        Assert.True(LPStrBuffer_InByRef_Array_String(ref s));
 
         s = GetInvalidArray();
-        Assert.IsTrue(LPStrBuffer_InOutByRef_Array_String(ref s), "[Error] Location tlpsba5");
+        Assert.True(LPStrBuffer_InOutByRef_Array_String(ref s));
 
         s = GetValidArray();
-        Assert.IsTrue(LPStrBuffer_InOutByRef_Array_String(ref s), "[Error] Location tlpsba6");
+        Assert.True(LPStrBuffer_InOutByRef_Array_String(ref s));
     }
 
     static void testLPStrBufferClass()
     {
         LPStrTestClass sClass = new LPStrTestClass();
         sClass.str = GetInvalidString();
-        Assert.IsTrue(LPStrBuffer_In_Class_String(sClass), "[Error] Location tlpsbc1");
+        Assert.True(LPStrBuffer_In_Class_String(sClass));
 
         sClass.str = GetValidString();
-        Assert.IsTrue(LPStrBuffer_In_Class_String(sClass), "[Error] Location tlpsbc2");
+        Assert.True(LPStrBuffer_In_Class_String(sClass));
 
         sClass.str = GetInvalidString();
-        Assert.IsTrue(LPStrBuffer_InByRef_Class_String(ref sClass), "[Error] Location tlpsbc3");
+        Assert.True(LPStrBuffer_InByRef_Class_String(ref sClass));
 
         sClass.str = GetValidString();
-        Assert.IsTrue(LPStrBuffer_InByRef_Class_String(ref sClass), "[Error] Location tlpsbc4");
+        Assert.True(LPStrBuffer_InByRef_Class_String(ref sClass));
 
         sClass.str = GetInvalidString();
-        Assert.IsTrue(LPStrBuffer_InOutByRef_Class_String(ref sClass), "[Error] Location tlpsbc5");
+        Assert.True(LPStrBuffer_InOutByRef_Class_String(ref sClass));
 
         sClass.str = GetValidString();
-        Assert.IsTrue(LPStrBuffer_InOutByRef_Class_String(ref sClass), "[Error] Location tlpsbc6");
+        Assert.True(LPStrBuffer_InOutByRef_Class_String(ref sClass));
     }
 
     static void testLPStrBufferArrayOfStructs()
@@ -274,32 +274,32 @@ public class BFM_LPStrMarshaler
         LPStrTestStruct[] lpss = new LPStrTestStruct[2];
         lpss[0] = GetInvalidStruct();
         lpss[1] = GetInvalidStruct();
-        Assert.IsTrue(LPStrBuffer_In_Array_Struct(lpss), "[Error] Location tlpsbaos1");
+        Assert.True(LPStrBuffer_In_Array_Struct(lpss));
 
         lpss = new LPStrTestStruct[2];
         lpss[0] = GetValidStruct();
         lpss[1] = GetValidStruct();
-        Assert.IsTrue(LPStrBuffer_In_Array_Struct(lpss), "[Error] Location tlpsbaos2");
+        Assert.True(LPStrBuffer_In_Array_Struct(lpss));
 
         lpss = new LPStrTestStruct[2];
         lpss[0] = GetInvalidStruct();
         lpss[1] = GetInvalidStruct();
-        Assert.IsTrue(LPStrBuffer_InByRef_Array_Struct(ref lpss), "[Error] Location tlpsbaos3");
+        Assert.True(LPStrBuffer_InByRef_Array_Struct(ref lpss));
 
         lpss = new LPStrTestStruct[2];
         lpss[0] = GetValidStruct();
         lpss[1] = GetValidStruct();
-        Assert.IsTrue(LPStrBuffer_InByRef_Array_Struct(ref lpss), "[Error] Location tlpsbaos4");
+        Assert.True(LPStrBuffer_InByRef_Array_Struct(ref lpss));
 
         lpss = new LPStrTestStruct[2];
         lpss[0] = GetInvalidStruct();
         lpss[1] = GetInvalidStruct();
-        Assert.IsTrue(LPStrBuffer_InOutByRef_Array_Struct(ref lpss), "[Error] Location tlpsbaos5");
+        Assert.True(LPStrBuffer_InOutByRef_Array_Struct(ref lpss));
 
         lpss = new LPStrTestStruct[2];
         lpss[0] = GetValidStruct();
         lpss[1] = GetValidStruct();
-        Assert.IsTrue(LPStrBuffer_InOutByRef_Array_Struct(ref lpss), "[Error] Location tlpsbaos6");
+        Assert.True(LPStrBuffer_InOutByRef_Array_Struct(ref lpss));
     }
 
     static void runTest()
@@ -329,7 +329,7 @@ public class BFM_LPStrMarshaler
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Test Failure: {e}"); 
+            Console.WriteLine($"Test Failure: {e}");
             return 101;
         }
     }

@@ -10,6 +10,7 @@ namespace Activator
     using System.Runtime.InteropServices;
 
     using TestLibrary;
+    using Xunit;
 
     using Console = Internal.Console;
 
@@ -28,8 +29,7 @@ namespace Activator
                         InterfaceId = notIClassFactory
                     };
                     ComActivator.GetClassFactoryForType(cxt);
-                },
-                "Non-IClassFactory request should fail");
+                });
         }
 
         static void NonrootedAssemblyPath(bool builtInComDisabled)
@@ -48,11 +48,11 @@ namespace Activator
 
             if (!builtInComDisabled)
             {
-                Assert.Throws<ArgumentException>(action, "Non-root assembly path should not be valid");
+                Assert.Throws<ArgumentException>(action);
             }
             else
             {
-                Assert.Throws<NotSupportedException>(action, "Built-in COM has been disabled via a feature switch");
+                Assert.Throws<NotSupportedException>(action);
             }
         }
 
@@ -74,13 +74,13 @@ namespace Activator
 
             if (!builtInComDisabled)
             {
-                COMException e = Assert.Throws<COMException>(action, "Class should not be found");
+                COMException e = Assert.Throws<COMException>(action);
                 const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
-                Assert.AreEqual(CLASS_E_CLASSNOTAVAILABLE, e.HResult, "Unexpected HRESULT");
+                Assert.Equal(CLASS_E_CLASSNOTAVAILABLE, e.HResult);
             }
             else
             {
-                Assert.Throws<NotSupportedException>(action, "Built-in COM has been disabled via a feature switch");
+                Assert.Throws<NotSupportedException>(action);
             }
         }
 
@@ -119,7 +119,7 @@ namespace Activator
                 if (builtInComDisabled)
                 {
                     Assert.Throws<NotSupportedException>(
-                        () => ComActivator.GetClassFactoryForType(cxt), "Built-in COM has been disabled via a feature switch");
+                        () => ComActivator.GetClassFactoryForType(cxt));
                     return;
                 }
 
@@ -156,7 +156,7 @@ namespace Activator
                 typeCFromAssemblyB = (Type)svr.GetTypeFromC();
             }
 
-            Assert.AreNotEqual(typeCFromAssemblyA, typeCFromAssemblyB, "Types should be from different AssemblyLoadContexts");
+            Assert.NotEqual(typeCFromAssemblyA, typeCFromAssemblyB);
         }
 
         static void ValidateUserDefinedRegistrationCallbacks()
@@ -208,15 +208,15 @@ namespace Activator
                     Marshal.Release(svrRaw);
 
                     var inst = (IValidateRegistrationCallbacks)svr;
-                    Assert.IsFalse(inst.DidRegister());
-                    Assert.IsFalse(inst.DidUnregister());
+                    Assert.False(inst.DidRegister());
+                    Assert.False(inst.DidUnregister());
 
                     cxt.InterfaceId = Guid.Empty;
                     ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
                     ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
 
-                    Assert.IsTrue(inst.DidRegister(), $"User-defined register function should have been called.");
-                    Assert.IsTrue(inst.DidUnregister(), $"User-defined unregister function should have been called.");
+                    Assert.True(inst.DidRegister(), $"User-defined register function should have been called.");
+                    Assert.True(inst.DidUnregister(), $"User-defined unregister function should have been called.");
                 }
             }
 
@@ -258,7 +258,7 @@ namespace Activator
                         exceptionThrown = true;
                     }
 
-                    Assert.IsTrue(exceptionThrown || !inst.DidRegister());
+                    Assert.True(exceptionThrown || !inst.DidRegister());
 
                     exceptionThrown = false;
                     try
@@ -270,7 +270,7 @@ namespace Activator
                         exceptionThrown = true;
                     }
 
-                    Assert.IsTrue(exceptionThrown || !inst.DidUnregister());
+                    Assert.True(exceptionThrown || !inst.DidUnregister());
                 }
             }
         }
