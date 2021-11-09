@@ -14,10 +14,19 @@
 
 #include <mono/metadata/components.h>
 
-static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
-static MonoCoreLookupPaths *native_lib_paths;
-static MonoCoreLookupPaths *app_paths;
-static MonoCoreLookupPaths *platform_resource_roots;
+typedef struct MonoCoreLoaderData {
+	/* From host properties */
+
+	MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
+	MonoCoreLookupPaths *native_lib_paths;
+	MonoCoreLookupPaths *app_paths;
+	MonoCoreLookupPaths *platform_resource_roots;
+
+	/* Cached */
+	gboolean tpa_has_exe; /* any .exe files (unusual) in the TPA list ? */
+} MonoCoreLoaderData;
+
+static MonoCoreLoaderData core_loader_data;
 
 static void
 mono_core_trusted_platform_assemblies_free (MonoCoreTrustedPlatformAssemblies *a)
@@ -39,7 +48,7 @@ mono_core_lookup_paths_free (MonoCoreLookupPaths *dl)
 }
 
 static gboolean
-parse_trusted_platform_assemblies (const char *assemblies_paths)
+parse_trusted_platform_assemblies (const char *assemblies_paths, MonoCoreTrustedPlatformAssemblies **out)
 {
 	// From
 	// https://docs.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
@@ -66,7 +75,7 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->basenames [asm_count] = NULL;
 	a->basename_lens [asm_count] = 0;
 
-	trusted_platform_assemblies = a;
+	*out = a;
 	return TRUE;
 }
 
@@ -89,53 +98,76 @@ parse_lookup_paths (const char *search_path)
 	return dl;
 }
 
-static MonoAssembly*
-mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gpointer user_data, MonoError *error)
+static gboolean
+try_find_assembly (const char *basename, uint32_t basename_len, MonoCoreTrustedPlatformAssemblies *a, int i, MonoAssemblyName *aname, MonoAssembly **result)
 {
-	MonoAssembly *result = NULL;
-	MonoCoreTrustedPlatformAssemblies *a = (MonoCoreTrustedPlatformAssemblies *)user_data;
-	/* TODO: check that CoreCLR wants the strong name semantics here */
-	MonoAssemblyCandidatePredicate predicate = &mono_assembly_candidate_predicate_sn_same_name;
-	void* predicate_ud = aname;
-	char *basename = NULL;
+	if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
+		MonoAssemblyLoadContext *default_alc;
+		default_alc = mono_alc_get_default ();
 
+
+		/* TODO: check that CoreCLR wants the strong name semantics here */
+		MonoAssemblyCandidatePredicate predicate = &mono_assembly_candidate_predicate_sn_same_name;
+		void* predicate_ud = aname;
+		MonoAssemblyOpenRequest req;
+		mono_assembly_request_prepare_open (&req, default_alc);
+		req.request.predicate = predicate;
+		req.request.predicate_ud = predicate_ud;
+
+		const char *fullpath = a->assembly_filepaths [i];
+
+		gboolean found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
+
+		if (found) {
+			MonoImageOpenStatus status;
+			*result = mono_assembly_request_open (fullpath, &req, &status);
+			/* TODO: do something with the status at the end? */
+			if (*result)
+				return TRUE;
+		}
+	}
+	return FALSE;
+
+}
+
+static MonoAssembly*
+mono_core_preload_hook (MonoAssemblyLoadContext *alc G_GNUC_UNUSED, MonoAssemblyName *aname, char **assemblies_path, gpointer user_data, MonoError *error)
+{
+	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
+
+	MonoAssembly *result = NULL;
+	MonoCoreLoaderData *d = (MonoCoreLoaderData*)user_data;
+	MonoCoreTrustedPlatformAssemblies *a = d->trusted_platform_assemblies;
+	char *basename = NULL;
+	char *exe_name = NULL;
+	
 	if (a == NULL) // no TPA paths set
 		goto leave;
 
 	g_assert (aname);
 	g_assert (aname->name);
-	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
-	MonoAssemblyLoadContext *default_alc;
-	default_alc = mono_alc_get_default ();
 
-	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
+	basename = g_strconcat (aname->name, ".dll", (const char*)NULL);
+	if (d->tpa_has_exe)
+		exe_name = g_strconcat (aname->name, ".exe", (const char*)NULL);
 
 	size_t basename_len;
 	basename_len = strlen (basename);
+	size_t exe_name_len = 0;
+	if (exe_name)
+		exe_name_len = strlen (exe_name);
 
 	for (int i = 0; i < a->assembly_count; ++i) {
-		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
-			MonoAssemblyOpenRequest req;
-			mono_assembly_request_prepare_open (&req, default_alc);
-			req.request.predicate = predicate;
-			req.request.predicate_ud = predicate_ud;
-
-			const char *fullpath = a->assembly_filepaths [i];
-
-			gboolean found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
-
-			if (found) {
-				MonoImageOpenStatus status;
-				result = mono_assembly_request_open (fullpath, &req, &status);
-				/* TODO: do something with the status at the end? */
-				if (result)
-					break;
-			}
-		}
+		if (try_find_assembly (basename, basename_len, a, i, aname, &result))
+			break;
+		if (exe_name && try_find_assembly (exe_name, exe_name_len, a, i, aname, &result))
+			break;		    
 	}
 
 leave:
 	g_free (basename);
+	if (exe_name)
+		g_free (exe_name);
 
 	if (!result) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: did not find '%s'.", aname->name);
@@ -148,7 +180,17 @@ leave:
 static void
 install_assembly_loader_hooks (void)
 {
-	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE);
+	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)&core_loader_data, FALSE);
+}
+
+static gboolean
+check_tpa_has_exe (MonoCoreTrustedPlatformAssemblies *tpa)
+{
+	for (int i = 0; i < tpa->assembly_count; ++i) {
+		if (strcasestr (tpa->basenames[i], ".exe") != NULL)
+			return TRUE;
+	}
+	return FALSE;
 }
 
 static gboolean
@@ -160,20 +202,25 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 	for (int i = 0; i < propertyCount; ++i) {
 		size_t prop_len = strlen (propertyKeys [i]);
 		if (prop_len == 27 && !strncmp (propertyKeys [i], "TRUSTED_PLATFORM_ASSEMBLIES", 27)) {
-			parse_trusted_platform_assemblies (propertyValues[i]);
+//			fprintf (stderr, "\n\n\tTPA list was: '%s'\n\n", propertyValues[i]);
+			parse_trusted_platform_assemblies (propertyValues[i], &core_loader_data.trusted_platform_assemblies);
+			core_loader_data.tpa_has_exe = check_tpa_has_exe(core_loader_data.trusted_platform_assemblies);
 		} else if (prop_len == 9 && !strncmp (propertyKeys [i], "APP_PATHS", 9)) {
-			app_paths = parse_lookup_paths (propertyValues [i]);
+//			fprintf (stderr, "\n\n\tapp paths was: '%s'\n\n", propertyValues[i]);
+			core_loader_data.app_paths = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 23 && !strncmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS", 23)) {
-			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
+//			fprintf (stderr, "\n\n\tresource roots was: '%s'\n\n", propertyValues[i]);
+			 /* FIXME: this property is unused */
+			core_loader_data.platform_resource_roots = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {
-			native_lib_paths = parse_lookup_paths (propertyValues [i]);
+			core_loader_data.native_lib_paths = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 16 && !strncmp (propertyKeys [i], "PINVOKE_OVERRIDE", 16)) {
 			PInvokeOverrideFn override_fn = (PInvokeOverrideFn)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
 			mono_loader_install_pinvoke_override (override_fn);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.
-			printf ("\t Unprocessed property %03d '%s': <%s>\n", i, propertyKeys[i], propertyValues[i]);
+			fprintf (stderr, "\t Unprocessed property %03d '%s': <%s>\n", i, propertyKeys[i], propertyValues[i]);
 #endif
 		}
 	}
@@ -185,12 +232,12 @@ finish_initialization (void)
 {
 	install_assembly_loader_hooks ();
 
-	if (native_lib_paths != NULL)
-		mono_set_pinvoke_search_directories (native_lib_paths->dir_count, g_strdupv (native_lib_paths->dirs));
+	if (core_loader_data.native_lib_paths != NULL)
+		mono_set_pinvoke_search_directories (core_loader_data.native_lib_paths->dir_count, g_strdupv (core_loader_data.native_lib_paths->dirs));
 	// Our load hooks don't distinguish between normal, AOT'd, and satellite lookups the way CoreCLR's does.
 	// For now, just set assemblies_path with APP_PATHS and leave the rest.
-	if (app_paths != NULL)
-		mono_set_assemblies_path_direct (g_strdupv (app_paths->dirs));
+	if (core_loader_data.app_paths != NULL)
+		mono_set_assemblies_path_direct (g_strdupv (core_loader_data.app_paths->dirs));
 
 	/*
 	 * Don't use Mono's legacy assembly name matching behavior - respect
@@ -217,9 +264,10 @@ monovm_initialize_preparsed (MonoCoreRuntimeProperties *parsed_properties, int p
 {
 	mono_runtime_register_appctx_properties (propertyCount, propertyKeys, propertyValues);
 
-	trusted_platform_assemblies = parsed_properties->trusted_platform_assemblies;
-	app_paths = parsed_properties->app_paths;
-	native_lib_paths = parsed_properties->native_dll_search_directories;
+	core_loader_data.trusted_platform_assemblies = parsed_properties->trusted_platform_assemblies;
+	core_loader_data.tpa_has_exe = check_tpa_has_exe(core_loader_data.trusted_platform_assemblies);
+	core_loader_data.app_paths = parsed_properties->app_paths;
+	core_loader_data.native_lib_paths = parsed_properties->native_dll_search_directories;
 	mono_loader_install_pinvoke_override (parsed_properties->pinvoke_override);
 
 	finish_initialization ();
