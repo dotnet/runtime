@@ -30,47 +30,7 @@ extern MonoObject* mono_wasm_web_socket_send (int webSocket_js_handle, void* buf
 extern MonoObject* mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception);
 extern MonoObject* mono_wasm_web_socket_close (int webSocket_js_handle, int code, MonoString * reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception);
 extern MonoString* mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception);
-
-// Compiles a JavaScript function from the function data passed.
-// Note: code snippet is not a function definition. Instead it must create and return a function instance.
-EM_JS(MonoObject*, compile_function, (int snippet_ptr, int len, int *is_exception), {
-	try {
-		var data = INTERNAL.string_decoder.decode (snippet_ptr, snippet_ptr + len);
-		var wrapper = '(function () { ' + data + ' })';
-		var funcFactory = eval(wrapper);
-		var func = funcFactory();
-		if (typeof func !== 'function') {
-			throw new Error('Code must return an instance of a JavaScript function. '
-				+ 'Please use `return` statement to return a function.');
-		}
-		setValue (is_exception, 0, "i32");
-		return BINDING.js_to_mono_obj (func, true);	
-	}
-	catch (e)
-	{
-		res = e.toString ();
-		setValue (is_exception, 1, "i32");
-		if (res === null || res === undefined)
-			res = "unknown exception";
-		return BINDING.js_to_mono_obj (res, true);
-	}
-});
-
-static MonoObject*
-mono_wasm_compile_function (MonoString *str, int *is_exception)
-{
-	if (str == NULL)
-	 	return NULL;
-	//char *native_val = mono_string_to_utf8 (str);
-	mono_unichar2 *native_val = mono_string_chars (str);
-	int native_len = mono_string_length (str) * 2;
-
-	MonoObject* native_res =  compile_function((int)native_val, native_len, is_exception);
-	mono_free (native_val);
-	if (native_res == NULL)
-	 	return NULL;
-	return native_res;
-}
+extern MonoObject* mono_wasm_compile_function (MonoString *str, int *is_exception);
 
 void core_initialize_internals ()
 {

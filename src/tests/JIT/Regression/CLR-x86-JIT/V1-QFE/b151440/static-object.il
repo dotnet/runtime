@@ -35,7 +35,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_static_object
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main(string[] args) cil managed noinlining

@@ -286,13 +286,33 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 //
 // Notes:
 //
-//    A       B          A     B
-//     \     /           |     |
-//      \   /            |     |
-//      block     ==>    |     |
-//      /   \            |     |
-//     /     \           |     |
-//    C       D          C     D
+// Conceptually this just transforms flow as follows:
+//
+//     domBlock           domBlock
+//    /       |          /       |
+//    Ts      Fs         Ts      Fs    True/False successor
+//   ....    ....       ....    ....
+//    Tp      Fp         Tp      Fp    True/False pred
+//     \     /           |       |
+//      \   /            |       |
+//      block     ==>    |       |
+//      /   \            |       |
+//     /     \           |       |
+//    Tt     Ft          Tt      Ft    True/false target
+//
+// However we may try to re-purpose block, and so end up producing flow more like this:
+//
+//     domBlock           domBlock
+//    /       |          /       |
+//    Ts      Fs         Ts      Fs    True/False successor
+//   ....    ....       ....    ....
+//    Tp      Fp         Tp      Fp    True/False pred
+//     \     /           |       |
+//      \   /            |       |
+//      block     ==>    |      block   (repurposed)
+//      /   \            |       |
+//     /     \           |       |
+//    Tt     Ft          Tt      Ft    True/false target
 //
 bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop)
 {
@@ -415,11 +435,35 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // * It's also possible that the pred is a switch; we will treat switch
     // preds as ambiguous as well.
     //
-    // For true preds and false preds we can reroute flow. It may turn out that
-    // one of the preds falls through to block. We would prefer not to introduce
-    // a new block to allow changing that fall through to a jump, so if we have
-    // both a pred that is not a true pred, and a fall through, we defer optimizing
-    // the fall through pred as well.
+    // * We note if there is an un-ambiguous pred that falls through to block.
+    // This is the "fall through pred", and the (true/false) pred set it belongs to
+    // is the "fall through set".
+    //
+    // Now for some case analysis.
+    //
+    // (1) If we have both an ambiguous pred and a fall through pred, we treat
+    // the fall through pred as an ambiguous pred (we can't reroute its flow to
+    // avoid block, and we need to keep block intact), and jump thread the other
+    // preds per (2) below.
+    //
+    // (2) If we have an ambiguous pred and no fall through, we reroute the true and
+    // false preds to branch to the true and false successors, respectively.
+    //
+    // (3) If we don't have an ambiguous pred and don't have a fall through pred,
+    // we choose one of the pred sets to be treated as if it was the fall through set.
+    // For now the choice is arbitrary, so we chose the true preds, and proceed
+    // per (4) below.
+    //
+    // (4) If we don't have an ambiguous pred, and we have a fall through, we leave
+    // all preds in the fall through set alone -- they continue branching to block.
+    // We modify block to branch to the appropriate successor for the fall through set.
+    // Note block will be empty other than phis and the branch, so this is ok.
+    // The preds in the other set target the other successor.
+    //
+    // The goal of the above is to maximize the number of cases where we jump thread,
+    // and to maximize the number of jump threads that reuse the original block. This
+    // latter should prove useful in subsequent work, where we aim to enable jump
+    // threading in cases where block has side effects.
     //
     int               numPreds          = 0;
     int               numAmbiguousPreds = 0;
@@ -522,23 +566,73 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
 
     if ((numAmbiguousPreds > 0) && (fallThroughPred != nullptr))
     {
-        JITDUMP(FMT_BB " has both ambiguous preds and a fall through pred, not optimizing\n", block->bbNum);
-        return false;
+        // Treat the fall through pred as an ambiguous pred.
+        JITDUMP(FMT_BB " has both ambiguous preds and a fall through pred\n", block->bbNum);
+        JITDUMP("Treating fall through pred " FMT_BB " as an ambiguous pred\n", fallThroughPred->bbNum);
+
+        if (BlockSetOps::IsMember(this, truePreds, fallThroughPred->bbNum))
+        {
+            BlockSetOps::RemoveElemD(this, truePreds, fallThroughPred->bbNum);
+            assert(numTruePreds > 0);
+            numTruePreds--;
+        }
+        else
+        {
+            assert(numFalsePreds > 0);
+            numFalsePreds--;
+        }
+
+        assert(!(BlockSetOps::IsMember(this, ambiguousPreds, fallThroughPred->bbNum)));
+        BlockSetOps::AddElemD(this, ambiguousPreds, fallThroughPred->bbNum);
+        numAmbiguousPreds++;
+        fallThroughPred = nullptr;
     }
+
+    // Determine if either set of preds will route via block.
+    //
+    bool truePredsWillReuseBlock  = false;
+    bool falsePredsWillReuseBlock = false;
+
+    if (fallThroughPred != nullptr)
+    {
+        assert(numAmbiguousPreds == 0);
+        truePredsWillReuseBlock  = BlockSetOps::IsMember(this, truePreds, fallThroughPred->bbNum);
+        falsePredsWillReuseBlock = !truePredsWillReuseBlock;
+    }
+    else if (numAmbiguousPreds == 0)
+    {
+        truePredsWillReuseBlock  = true;
+        falsePredsWillReuseBlock = !truePredsWillReuseBlock;
+    }
+
+    assert(!(truePredsWillReuseBlock && falsePredsWillReuseBlock));
 
     // We should be good to go
     //
     JITDUMP("Optimizing via jump threading\n");
 
+    // Fix block, if we're reusing it.
+    //
+    if (truePredsWillReuseBlock)
+    {
+        Statement* lastStmt = block->lastStmt();
+        fgRemoveStmt(block, lastStmt);
+        JITDUMP("  repurposing " FMT_BB " to always jump to " FMT_BB "\n", block->bbNum, trueTarget->bbNum);
+        fgRemoveRefPred(block->bbNext, block);
+        block->bbJumpKind = BBJ_ALWAYS;
+    }
+    else if (falsePredsWillReuseBlock)
+    {
+        Statement* lastStmt = block->lastStmt();
+        fgRemoveStmt(block, lastStmt);
+        JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", block->bbNum, falseTarget->bbNum);
+        fgRemoveRefPred(block->bbJumpDest, block);
+        block->bbJumpKind = BBJ_NONE;
+    }
+
     // Now reroute the flow from the predecessors.
-    //
-    // If there is a fall through pred, modify block by deleting the terminal
-    // jump statement, and update it to jump or fall through to the appropriate successor.
-    // Note this is just a refinement of pre-existing flow so no EH check is needed.
-    //
-    // All other predecessors must reach block via a jump. So we can update their
-    // flow directly by changing their jump targets to the appropriate successor,
-    // provided it's a permissable flow in our EH model.
+    // If this pred is in the set that will reuse block, do nothing.
+    // Else revise pred to branch directly to the appropriate successor of block.
     //
     for (BasicBlock* const predBlock : block->PredBlocks())
     {
@@ -551,63 +645,43 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
 
         const bool isTruePred = BlockSetOps::IsMember(this, truePreds, predBlock->bbNum);
 
-        // Is this the one and only unambiguous fall through pred?
+        // Do we need to alter flow from this pred?
         //
-        if (predBlock->bbNext == block)
+        if ((isTruePred && truePredsWillReuseBlock) || (!isTruePred && falsePredsWillReuseBlock))
         {
-            assert(predBlock == fallThroughPred);
-
-            // No other pred can safely pass control through block.
+            // No, we can leave as is.
             //
-            assert(numAmbiguousPreds == 0);
+            JITDUMP("%s pred " FMT_BB " will continue to target " FMT_BB "\n", isTruePred ? "true" : "false",
+                    predBlock->bbNum, block->bbNum);
+            continue;
+        }
 
-            // Clean out the terminal branch statement; we are going to repurpose this block
-            //
-            Statement* lastStmt = block->lastStmt();
-            fgRemoveStmt(block, lastStmt);
+        // Yes, we need to jump to the appropriate successor.
+        // Note we should not be altering flow for the fall-through pred.
+        //
+        assert(predBlock != fallThroughPred);
+        assert(predBlock->bbNext != block);
 
-            if (isTruePred)
-            {
-                JITDUMP("Fall through flow from pred " FMT_BB " -> " FMT_BB " implies predicate true\n",
-                        predBlock->bbNum, block->bbNum);
-                JITDUMP("  repurposing " FMT_BB " to always jump to " FMT_BB "\n", block->bbNum, trueTarget->bbNum);
-                fgRemoveRefPred(block->bbNext, block);
-                block->bbJumpKind = BBJ_ALWAYS;
-            }
-            else
-            {
-                JITDUMP("Fall through flow from pred " FMT_BB " -> " FMT_BB " implies predicate false\n",
-                        predBlock->bbNum, block->bbNum);
-                JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", block->bbNum,
-                        falseTarget->bbNum);
-                fgRemoveRefPred(block->bbJumpDest, block);
-                block->bbJumpKind = BBJ_NONE;
-            }
+        if (isTruePred)
+        {
+            assert(!optReachable(falseSuccessor, predBlock, domBlock));
+            JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
+                    " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
+                    predBlock->bbNum, block->bbNum, predBlock->bbNum, trueTarget->bbNum);
+
+            fgRemoveRefPred(block, predBlock);
+            fgReplaceJumpTarget(predBlock, trueTarget, block);
+            fgAddRefPred(trueTarget, predBlock);
         }
         else
         {
-            assert(predBlock->bbNext != block);
-            if (isTruePred)
-            {
-                assert(!optReachable(falseSuccessor, predBlock, domBlock));
-                JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
-                        " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
-                        predBlock->bbNum, block->bbNum, predBlock->bbNum, trueTarget->bbNum);
+            JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
+                    " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
+                    predBlock->bbNum, block->bbNum, predBlock->bbNum, falseTarget->bbNum);
 
-                fgRemoveRefPred(block, predBlock);
-                fgReplaceJumpTarget(predBlock, trueTarget, block);
-                fgAddRefPred(trueTarget, predBlock);
-            }
-            else
-            {
-                JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
-                        " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
-                        predBlock->bbNum, block->bbNum, predBlock->bbNum, falseTarget->bbNum);
-
-                fgRemoveRefPred(block, predBlock);
-                fgReplaceJumpTarget(predBlock, falseTarget, block);
-                fgAddRefPred(falseTarget, predBlock);
-            }
+            fgRemoveRefPred(block, predBlock);
+            fgReplaceJumpTarget(predBlock, falseTarget, block);
+            fgAddRefPred(falseTarget, predBlock);
         }
     }
 

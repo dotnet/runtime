@@ -1401,7 +1401,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     // the prolog/epilog placeholder groups ARE generated in order, and are
     // re-used. But generating additional groups would not work.
     if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 1) && emitCurIGinsCnt && !emitIGisInProlog(emitCurIG) &&
-        !emitIGisInEpilog(emitCurIG)
+        !emitIGisInEpilog(emitCurIG) && !emitCurIG->isLoopAlign()
 #if defined(FEATURE_EH_FUNCLETS)
         && !emitIGisInFuncletProlog(emitCurIG) && !emitIGisInFuncletEpilog(emitCurIG)
 #endif // FEATURE_EH_FUNCLETS
@@ -4797,6 +4797,25 @@ AGAIN:
 #if FEATURE_LOOP_ALIGN
 
 //-----------------------------------------------------------------------------
+//  emitCheckAlignFitInCurIG: Check if adding current align instruction will
+//    create new 'ig'. For multi align instructions, this sets `emitForceNewIG` so
+//    so all 'align' instructions are under same IG.
+//
+//  Arguments:
+//       nAlignInstr - Number of align instructions about to be added.
+//
+void emitter::emitCheckAlignFitInCurIG(unsigned short nAlignInstr)
+{
+    unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
+
+    // Ensure that all align instructions fall in same IG.
+    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
+    {
+        emitForceNewIG = true;
+    }
+}
+
+//-----------------------------------------------------------------------------
 //
 //  The next instruction will be a loop head entry point
 //  So insert an alignment instruction here to ensure that
@@ -4804,9 +4823,32 @@ AGAIN:
 //
 void emitter::emitLoopAlign(unsigned short paddingBytes)
 {
+    // Determine if 'align' instruction about to be generated will
+    // fall in current IG or next.
+    bool alignInstrInNewIG = emitForceNewIG;
+
+    if (!alignInstrInNewIG)
+    {
+        // If align fits in current IG, then mark that it contains alignment
+        // instruction in the end.
+        emitCurIG->igFlags |= IGF_LOOP_ALIGN;
+    }
+
     /* Insert a pseudo-instruction to ensure that we align
        the next instruction properly */
     instrDescAlign* id = emitNewInstrAlign();
+
+    if (alignInstrInNewIG)
+    {
+        // Mark this IG has alignment in the end, so during emitter we can check the instruction count
+        // heuristics of all IGs that follows this IG that participate in a loop.
+        emitCurIG->igFlags |= IGF_LOOP_ALIGN;
+    }
+    else
+    {
+        // Otherwise, make sure it was already marked such.
+        assert(emitCurIG->isLoopAlign());
+    }
 
 #if defined(TARGET_XARCH)
     assert(paddingBytes <= MAX_ENCODED_SIZE);
@@ -4849,13 +4891,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
     unsigned short paddingBytes  = INSTR_ENCODED_SIZE;
 #endif
 
-    unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
-
-    // Ensure that all align instructions fall in same IG.
-    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
-    {
-        emitForceNewIG = true;
-    }
+    emitCheckAlignFitInCurIG(nAlignInstr);
 
     /* Insert a pseudo-instruction to ensure that we align
     the next instruction properly */
@@ -4890,6 +4926,7 @@ void emitter::emitLoopAlignment()
     }
     else
     {
+        emitCheckAlignFitInCurIG(1);
         paddingBytes = MAX_ENCODED_SIZE;
         emitLoopAlign(paddingBytes);
     }
@@ -4906,10 +4943,6 @@ void emitter::emitLoopAlignment()
     }
     emitLongLoopAlign(paddingBytes);
 #endif
-
-    // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
-    // all IGs that follows this IG and participate in a loop.
-    emitCurIG->igFlags |= IGF_LOOP_ALIGN;
 
     JITDUMP("Adding 'align' instruction of %d bytes in %s.\n", paddingBytes, emitLabelString(emitCurIG));
 

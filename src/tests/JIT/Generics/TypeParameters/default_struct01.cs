@@ -39,7 +39,7 @@ public struct Gen<T>
     }
 }
 
-public class Test
+public class Test_default_struct01
 {
     public static int counter = 0;
     public static bool result = true;

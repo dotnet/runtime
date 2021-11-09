@@ -94,7 +94,7 @@
   <ItemGroup>
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The CoreCLR runtime, LinuxDac, CoreLib (+ native), tools and packages." />
-    <SubsetName Include="Clr.DacTools" Description="Managed tools that support building a runtime that supports debugging (such as DacTableGen)." />
+    <SubsetName Include="Clr.NativePrereqs" Description="Managed tools that support building the native components of the runtime (such as DacTableGen)." />
     <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools." />
@@ -164,12 +164,6 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'windows' and ($(_subset.Contains('+clr.dactools+')) or $(_subset.Contains('+clr.runtime+')) or $(_subset.Contains('+clr.native+')))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)ToolBox\SOS\DacTableGen\DacTableGen.csproj;
-                             $(CoreClrProjectRoot)ToolBox\SOS\DIALib\DIALib.ilproj"
-                    Category="clr"/>
-  </ItemGroup>
-
   <PropertyGroup Condition="$(_subset.Contains('+clr.runtime+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrRuntimeSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
@@ -193,6 +187,10 @@
   <PropertyGroup Condition="$(_subset.Contains('+clr.iltools+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrILToolsSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.nativeprereqs+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime-prereqs.proj" Category="clr" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
     <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)" Category="clr" />

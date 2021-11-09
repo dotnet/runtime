@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+
+using Microsoft.CodeAnalysis;
 using Xunit;
+
 using static Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportAnalyzer;
 
 using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportAnalyzer>;
@@ -47,6 +50,7 @@ namespace DllImportGenerator.UnitTests
         [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60909", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
@@ -147,6 +151,40 @@ partial class Test
         {
             string source = DllImportWithType(type.FullName!);
             await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [ConditionalFact]
+        public async Task GeneratedDllImport_NoDiagnostic()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method();
+}}
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern partial void Method();
+}}
+";
+            // Only this test case needs the ancillary reference, so it creates/runs the test directly
+            // instead of going through VerifyAnalyzerAsync
+            (_, MetadataReference ancillary) = TestUtils.GetReferenceAssemblies();
+            var test = new VerifyCS.Test()
+            {
+                TestCode = source
+            };
+            test.SolutionTransforms.Add((solution, projectId) =>
+            {
+                Project project = solution.GetProject(projectId)!;
+                var refs = new List<MetadataReference>(project.MetadataReferences.Count + 1);
+                refs.AddRange(project.MetadataReferences);
+                refs.Add(ancillary);
+                return solution.WithProjectMetadataReferences(projectId, refs);
+            });
+            await test.RunAsync(default);
         }
 
         [ConditionalFact]

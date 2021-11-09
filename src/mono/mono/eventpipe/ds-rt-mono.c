@@ -158,7 +158,7 @@ ipc_get_process_id_disambiguation_key (
 
 	// All the format specifiers for the fields in the stat file are provided by 'man proc'.
 	int result_sscanf = sscanf (scan_start_position,
-		"%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+		"%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
 		&start_time);
 
 	if (result_sscanf != 1) {

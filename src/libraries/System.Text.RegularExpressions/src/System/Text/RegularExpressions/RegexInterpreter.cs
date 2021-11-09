@@ -45,9 +45,11 @@ namespace System.Text.RegularExpressions
                     (_, true) => FindFirstCharMode.LeadingAnchor_RightToLeft_EndZ,
                 };
             }
-            else if (code.BoyerMoorePrefix is not null)
+            else if (code.BoyerMoorePrefix is RegexBoyerMoore rbm)
             {
-                _findFirstCharMode = FindFirstCharMode.BoyerMoore;
+                _findFirstCharMode = rbm.PatternSupportsIndexOf ?
+                    FindFirstCharMode.IndexOf :
+                    FindFirstCharMode.BoyerMoore;
             }
             else if (code.LeadingCharClasses is not null)
             {
@@ -382,6 +384,7 @@ namespace System.Text.RegularExpressions
             LeadingAnchor_RightToLeft_EndZ,
             LeadingAnchor_RightToLeft_End,
 
+            IndexOf,
             BoyerMoore,
 
             LeadingCharClass_LeftToRight_CaseSensitive_Singleton,
@@ -507,7 +510,19 @@ namespace System.Text.RegularExpressions
                     }
                     return NoPrefixOrPrefixMatches();
 
-                // There were no anchors, but there was a Boyer-Moore prefix.  Scan for it.
+                // There was a prefix.  Scan for it.
+
+                case FindFirstCharMode.IndexOf:
+                    {
+                        int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(_code.BoyerMoorePrefix!.Pattern);
+                        if (i >= 0)
+                        {
+                            runtextpos += i;
+                            return true;
+                        }
+                        runtextpos = runtextend;
+                        return false;
+                    }
 
                 case FindFirstCharMode.BoyerMoore:
                     runtextpos = _code.BoyerMoorePrefix!.Scan(runtext!, runtextpos, runtextbeg, runtextend);

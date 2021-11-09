@@ -13477,7 +13477,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 if (lsl > 0)
                 {
                     // Then load/store dataReg from/to [memBase + index*scale]
-                    emitIns_R_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum(), lsl, INS_OPTS_LSL);
+                    emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum(), INS_OPTS_LSL, lsl);
                 }
                 else // no scale
                 {
@@ -13596,6 +13596,44 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         assert(!src1->isContained());
         // src2 can only be a reg
         assert(!src2->isContained());
+    }
+    else if ((src1->OperIs(GT_MUL) && src1->isContained()) || (src2->OperIs(GT_MUL) && src2->isContained()))
+    {
+        assert(ins == INS_add);
+
+        GenTree* mul;
+        GenTree* c;
+        if (src1->OperIs(GT_MUL))
+        {
+            mul = src1;
+            c   = src2;
+        }
+        else
+        {
+            mul = src2;
+            c   = src1;
+        }
+
+        GenTree* a = mul->gtGetOp1();
+        GenTree* b = mul->gtGetOp2();
+
+        assert(varTypeIsIntegral(mul) && !mul->gtOverflow());
+
+        bool msub = false;
+        if (a->OperIs(GT_NEG) && a->isContained())
+        {
+            a    = a->gtGetOp1();
+            msub = true;
+        }
+        if (b->OperIs(GT_NEG) && b->isContained())
+        {
+            b    = b->gtGetOp1();
+            msub = !msub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
+        }
+
+        emitIns_R_R_R_R(msub ? INS_msub : INS_madd, attr, dst->GetRegNum(), a->GetRegNum(), b->GetRegNum(),
+                        c->GetRegNum());
+        return dst->GetRegNum();
     }
     else // not floating point
     {

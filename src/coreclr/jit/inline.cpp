@@ -396,6 +396,7 @@ void InlineContext::Dump(unsigned indent)
     else
     {
         // Inline attempt.
+        const char* inlineTarget  = InlGetTargetString(m_Observation);
         const char* inlineReason  = InlGetObservationString(m_Observation);
         const char* inlineResult  = m_Success ? "" : "FAILED: ";
         const char* devirtualized = m_Devirtualized ? " devirt" : "";
@@ -404,14 +405,14 @@ void InlineContext::Dump(unsigned indent)
 
         if (m_Offset == BAD_IL_OFFSET)
         {
-            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
-                   inlineResult, inlineReason, guarded, devirtualized, unboxed, calleeName);
+            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
+                   inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed, calleeName);
         }
         else
         {
             IL_OFFSET offset = jitGetILoffs(m_Offset);
-            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s%s%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID,
-                   calleeToken, inlineResult, inlineReason, guarded, devirtualized, unboxed, calleeName);
+            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID,
+                   calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed, calleeName);
         }
     }
 

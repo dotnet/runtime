@@ -76,7 +76,7 @@
 
 } // end of class InterfaceImplementation
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_GitHub_17585
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  CallInterfaceMethod(class Interface iface) cil managed noinlining
@@ -114,15 +114,15 @@
     IL_0000:  newobj     instance void InterfaceImplementation::.ctor()
     IL_0005:  stloc.0
     IL_0006:  ldloc.0
-    IL_0007:  call       int32 Test::CallInterfaceMethod(class Interface)
+    IL_0007:  call       int32 Test_GitHub_17585::CallInterfaceMethod(class Interface)
     IL_000c:  pop
     IL_000d:  ldloc.0
-    IL_000e:  call       int32 Test::CallInterfaceMethod(class Interface)
+    IL_000e:  call       int32 Test_GitHub_17585::CallInterfaceMethod(class Interface)
     IL_0013:  pop
     .try
     {
       IL_0014:  ldnull
-      IL_0015:  call       int32 Test::CallInterfaceMethod(class Interface)
+      IL_0015:  call       int32 Test_GitHub_17585::CallInterfaceMethod(class Interface)
       IL_001a:  pop
       IL_001b:  leave.s    IL_0020
 

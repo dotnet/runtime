@@ -36,7 +36,7 @@
 
 } // end of class LargeStruct
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_GitHub_5164
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
@@ -64,7 +64,7 @@
     IL_0016:  ldc.i4.0
     IL_0017:  ldloc.0
     IL_0018:  ldloc.1
-    IL_0019:  call       valuetype LargeStruct Test::A(int32,
+    IL_0019:  call       valuetype LargeStruct Test_GitHub_5164::A(int32,
                                                        valuetype LargeStruct,
                                                        valuetype LargeStruct)
     IL_001e:  stloc.2
@@ -109,7 +109,7 @@
     IL_002d:  starg.s    count
     IL_002f:  ldloc.0
     IL_0030:  tail.
-    IL_0032:  call       valuetype LargeStruct Test::B(int32,
+    IL_0032:  call       valuetype LargeStruct Test_GitHub_5164::B(int32,
                                                        valuetype LargeStruct)
     IL_0037:  ret
 
@@ -139,7 +139,7 @@
     IL_0012:  ldloc.0
     IL_0013:  ldarg.1
     IL_0014:  tail.
-    IL_0016:  call       valuetype LargeStruct Test::A(int32,
+    IL_0016:  call       valuetype LargeStruct Test_GitHub_5164::A(int32,
                                                        valuetype LargeStruct,
                                                        valuetype LargeStruct)
     IL_001b:  ret

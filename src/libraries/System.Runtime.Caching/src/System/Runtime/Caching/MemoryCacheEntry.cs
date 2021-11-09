@@ -240,6 +240,10 @@ namespace System.Runtime.Caching
         {
             if (State == EntryState.AddedToCache)
             {
+                // This is a callback - not directly called by the user. We don't want
+                // to throw potentially unhandled "disposed" exceptions in this case.
+                // However, RemoveEntry sidesteps 'throwOnDispose' so we don't need to
+                // worry about a try/catch here.
                 _fields._cache.RemoveEntry(this.Key, this, CacheEntryRemovedReason.ChangeMonitorChanged);
             }
         }

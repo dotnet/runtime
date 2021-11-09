@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography.Pal.Native;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -56,11 +57,11 @@ namespace Internal.Cryptography.Pal
             {
                 SafeCertContextHandle existingCertContext = ((CertificatePal)certificate).CertContext;
                 SafeCertContextHandle? enumCertContext = null;
-                CERT_CONTEXT* pCertContext = existingCertContext.CertContext;
+                Interop.Crypt32.CERT_CONTEXT* pCertContext = existingCertContext.CertContext;
                 if (!Interop.crypt32.CertFindCertificateInStore(_certStore, CertFindType.CERT_FIND_EXISTING, pCertContext, ref enumCertContext))
                     return; // The certificate is not present in the store, simply return.
 
-                CERT_CONTEXT* pCertContextToDelete = enumCertContext.Disconnect();  // CertDeleteCertificateFromContext always frees the context (even on error)
+                Interop.Crypt32.CERT_CONTEXT* pCertContextToDelete = enumCertContext.Disconnect();  // CertDeleteCertificateFromContext always frees the context (even on error)
                 if (!Interop.crypt32.CertDeleteCertificateFromStore(pCertContextToDelete))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 

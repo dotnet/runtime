@@ -1385,6 +1385,7 @@ protected:
         insGroup*       idaIG;   // containing group
     };
 
+    void emitCheckAlignFitInCurIG(unsigned short nAlignInstr);
     void emitLoopAlign(unsigned short paddingBytes);
     void emitLongLoopAlign(unsigned short alignmentBoundary);
 

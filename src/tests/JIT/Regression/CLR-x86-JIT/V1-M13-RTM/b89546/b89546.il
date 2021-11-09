@@ -34,7 +34,7 @@
 } // end of class RangeTest
 
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_b89546
        extends [mscorlib]System.Object
 {
 .method public hidebysig specialname rtspecialname 

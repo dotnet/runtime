@@ -125,7 +125,7 @@ export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
 
 function _zero_region(byteOffset: VoidPtr, sizeBytes: number) {
     if (((<any>byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
-        Module.HEAP32.fill(0, <any>byteOffset / 4, sizeBytes / 4);
+        Module.HEAP32.fill(0, <any>byteOffset >>> 2, sizeBytes >>> 2);
     else
         Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
 }
@@ -170,7 +170,7 @@ export class WasmRootBuffer {
         const capacityBytes = capacity * 4;
 
         this.__offset = offset;
-        this.__offset32 = (<number><any>offset / 4) | 0;
+        this.__offset32 = <number><any>offset >>> 2;
         this.__count = capacity;
         this.length = capacity;
         this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || "noname");
@@ -278,6 +278,9 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     release(): void {
+        if (!this.__buffer)
+            throw new Error("No buffer");
+
         const maxPooledInstances = 128;
         if (_scratch_root_free_instances.length > maxPooledInstances) {
             _mono_wasm_release_scratch_index(this.__index);

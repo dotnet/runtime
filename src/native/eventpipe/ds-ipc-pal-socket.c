@@ -460,8 +460,8 @@ ipc_poll_fds (
 	result_poll = WSAPoll (fds, (ULONG)nfds, (INT)timeout);
 #else
 #ifndef EP_NO_RT_DEPENDENCY
-	int64_t start;
-	int64_t stop;
+	int64_t start = 0;
+	int64_t stop = 0;
 	bool retry_poll = false;
 	do {
 		if (timeout != EP_INFINITE_WAIT)

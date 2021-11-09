@@ -4,7 +4,8 @@
 import { mono_wasm_new_root, WasmRoot } from "./roots";
 import {
     GCHandle, Int32Ptr, JSHandleDisposed, MonoArray,
-    MonoArrayNull, MonoObject, MonoObjectNull, MonoString
+    MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
+    MonoType, MonoTypeNull
 } from "./types";
 import { Module, runtimeHelpers } from "./modules";
 import { conv_string } from "./strings";
@@ -14,6 +15,49 @@ import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_
 import { mono_method_get_call_signature, call_method, wrap_error } from "./method-calls";
 import { _js_to_mono_obj } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
+
+// see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
+export enum MarshalType {
+    NULL = 0,
+    INT = 1,
+    FP64 = 2,
+    STRING = 3,
+    VT = 4,
+    DELEGATE = 5,
+    TASK = 6,
+    OBJECT = 7,
+    BOOL = 8,
+    ENUM = 9,
+    URI = 22,
+    SAFEHANDLE = 23,
+    ARRAY_BYTE = 10,
+    ARRAY_UBYTE = 11,
+    ARRAY_UBYTE_C = 12,
+    ARRAY_SHORT = 13,
+    ARRAY_USHORT = 14,
+    ARRAY_INT = 15,
+    ARRAY_UINT = 16,
+    ARRAY_FLOAT = 17,
+    ARRAY_DOUBLE = 18,
+    FP32 = 24,
+    UINT32 = 25,
+    INT64 = 26,
+    UINT64 = 27,
+    CHAR = 28,
+    STRING_INTERNED = 29,
+    VOID = 30,
+    ENUM64 = 31,
+    POINTER = 32
+}
+
+// see src/mono/wasm/driver.c MARSHAL_ERROR_xxx and Runtime.cs
+export enum MarshalError {
+    BUFFER_TOO_SMALL = 512,
+    NULL_CLASS_POINTER = 513,
+    NULL_TYPE_POINTER = 514,
+    UNSUPPORTED_TYPE = 515,
+    FIRST = BUFFER_TOO_SMALL
+}
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
@@ -38,72 +82,90 @@ function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     return js_obj;
 }
 
-export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: number): any {
-    if (root.value === undefined)
-        throw new Error(`Expected a root but got ${root}`);
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<any>, type: MarshalType, typePtr: MonoType, unbox_buffer: VoidPtr): any {
     //See MARSHAL_TYPE_ defines in driver.c
     switch (type) {
-        case 26: // int64
-        case 27: // uint64
+        case MarshalType.INT64:
+        case MarshalType.UINT64:
             // TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
             throw new Error("int64 not available");
-        case 3: // string
-        case 29: // interned string
+        case MarshalType.STRING:
+        case MarshalType.STRING_INTERNED:
             return conv_string(root.value);
-        case 4: //vts
+        case MarshalType.VT:
             throw new Error("no idea on how to unbox value types");
-        case 5: // delegate
+        case MarshalType.DELEGATE:
             return _wrap_delegate_root_as_function(root);
-        case 6: // Task
+        case MarshalType.TASK:
             return _unbox_task_root_as_promise(root);
-        case 7: // ref type
+        case MarshalType.OBJECT:
             return _unbox_ref_type_root_as_js_object(root);
-        case 10: // arrays
-        case 11:
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-        case 16:
-        case 17:
-        case 18:
+        case MarshalType.ARRAY_BYTE:
+        case MarshalType.ARRAY_UBYTE:
+        case MarshalType.ARRAY_UBYTE_C:
+        case MarshalType.ARRAY_SHORT:
+        case MarshalType.ARRAY_USHORT:
+        case MarshalType.ARRAY_INT:
+        case MarshalType.ARRAY_UINT:
+        case MarshalType.ARRAY_FLOAT:
+        case MarshalType.ARRAY_DOUBLE:
             throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
-        case 20: // clr .NET DateTime
+        case <MarshalType>20: // clr .NET DateTime
             return new Date(corebindings._get_date_value(root.value));
-        case 21: // clr .NET DateTimeOffset
+        case <MarshalType>21: // clr .NET DateTimeOffset
             return corebindings._object_to_string(root.value);
-        case 22: // clr .NET Uri
+        case MarshalType.URI:
             return corebindings._object_to_string(root.value);
-        case 23: // clr .NET SafeHandle/JSObject
+        case MarshalType.SAFEHANDLE:
             return _unbox_cs_owned_root_as_js_object(root);
-        case 30:
+        case MarshalType.VOID:
             return undefined;
         default:
-            throw new Error(`no idea on how to unbox object kind ${type} at offset ${root.value} (root address is ${root.get_address()})`);
+            throw new Error(`no idea on how to unbox object of MarshalType ${type} at offset ${root.value} (root address is ${root.get_address()})`);
     }
+}
+
+export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr): any {
+    if (type >= MarshalError.FIRST)
+        throw new Error(`Got marshaling error ${type} when attempting to unbox object at address ${root.value} (root located at ${root.get_address()})`);
+
+    let typePtr = MonoTypeNull;
+    if ((type === MarshalType.VT) || (type == MarshalType.OBJECT)) {
+        typePtr = <MonoType><any>Module.HEAPU32[<any>unbox_buffer >>> 2];
+        if (<number><any>typePtr < 1024)
+            throw new Error(`Got invalid MonoType ${typePtr} for object at address ${root.value} (root located at ${root.get_address()})`);
+    }
+
+    return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
 }
 
 export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
     if (root.value === 0)
         return undefined;
 
-    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type(root.value, runtimeHelpers._unbox_buffer);
+    const unbox_buffer = runtimeHelpers._unbox_buffer;
+    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type(root.value, unbox_buffer, runtimeHelpers._unbox_buffer_size);
     switch (type) {
-        case 1: // int
-            return Module.HEAP32[<any>runtimeHelpers._unbox_buffer / 4];
-        case 25: // uint32
-            return Module.HEAPU32[<any>runtimeHelpers._unbox_buffer / 4];
-        case 24: // float32
-            return Module.HEAPF32[<any>runtimeHelpers._unbox_buffer / 4];
-        case 2: // float64
-            return Module.HEAPF64[<any>runtimeHelpers._unbox_buffer / 8];
-        case 8: // boolean
-            return (Module.HEAP32[<any>runtimeHelpers._unbox_buffer / 4]) !== 0;
-        case 28: // char
-            return String.fromCharCode(Module.HEAP32[<any>runtimeHelpers._unbox_buffer / 4]);
+        case MarshalType.INT:
+            return Module.HEAP32[<any>unbox_buffer >>> 2];
+        case MarshalType.UINT32:
+            return Module.HEAPU32[<any>unbox_buffer >>> 2];
+        case MarshalType.POINTER:
+            // FIXME: Is this right?
+            return Module.HEAPU32[<any>unbox_buffer >>> 2];
+        case MarshalType.FP32:
+            return Module.HEAPF32[<any>unbox_buffer >>> 2];
+        case MarshalType.FP64:
+            return Module.HEAPF64[<any>unbox_buffer >>> 3];
+        case MarshalType.BOOL:
+            return (Module.HEAP32[<any>unbox_buffer >>> 2]) !== 0;
+        case MarshalType.CHAR:
+            return String.fromCharCode(Module.HEAP32[<any>unbox_buffer >>> 2]);
+        case MarshalType.NULL:
+            return null;
         default:
-            return _unbox_mono_obj_root_with_known_nonprimitive_type(root, type);
+            return _unbox_mono_obj_root_with_known_nonprimitive_type(root, type, unbox_buffer);
     }
 }
 
@@ -289,7 +351,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
     return result;
 }
 
-function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>) {
+export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): any {
 
     if (root.value === MonoObjectNull)
         return null;

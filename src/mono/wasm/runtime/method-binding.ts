@@ -1,16 +1,41 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { WasmRootBuffer } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, VoidPtr } from "./types";
-import { BINDING, MONO, runtimeHelpers } from "./modules";
+import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
+import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, VoidPtr, MonoType } from "./types";
+import { BINDING, runtimeHelpers } from "./modules";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
+import { MarshalType, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
+import { _create_temp_frame } from "./memory";
+import {
+    _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
+    _handle_exception_for_call, _teardown_after_call
+} from "./method-calls";
 import cwraps from "./cwraps";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
 const _method_descriptions = new Map<MonoMethod, string>();
+
+
+export function _get_type_name(typePtr: MonoType): string {
+    if (!typePtr)
+        return "<null>";
+    return cwraps.mono_wasm_get_type_name(typePtr);
+}
+
+export function _get_type_aqn(typePtr: MonoType): string {
+    if (!typePtr)
+        return "<null>";
+    return cwraps.mono_wasm_get_type_aqn(typePtr);
+}
+
+export function _get_class_name(classPtr: MonoClass): string {
+    if (!classPtr)
+        return "<null>";
+    return cwraps.mono_wasm_get_type_name(cwraps.mono_wasm_class_get_type(classPtr));
+}
 
 export function find_method(klass: MonoClass, name: string, n: number): MonoMethod {
     const result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
@@ -33,7 +58,8 @@ export function bind_runtime_method(method_name: string, signature: ArgsMarshalS
 }
 
 
-function _create_named_function(name: string, argumentNames: string[], body: string, closure: any) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function _create_named_function(name: string, argumentNames: string[], body: string, closure: any): Function {
     let result = null;
     let closureArgumentList: any[] | null = null;
     let closureArgumentNames = null;
@@ -52,7 +78,7 @@ function _create_named_function(name: string, argumentNames: string[], body: str
     return result;
 }
 
-function _create_rebindable_named_function(name: string, argumentNames: string[], body: string, closureArgNames: string[] | null) {
+export function _create_rebindable_named_function(name: string, argumentNames: string[], body: string, closureArgNames: string[] | null): Function {
     const strictPrefix = "\"use strict\";\r\n";
     let uriPrefix = "", escapedFunctionIdentifier = "";
 
@@ -139,17 +165,17 @@ function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): 
         if (conv.needs_root)
             needs_root_buffer = true;
         localStep.needs_root = conv.needs_root;
-        localStep.key = args_marshal[i];
+        localStep.key = key;
         steps.push(localStep);
         size += conv.size;
     }
 
     return {
-        steps: steps, size: size, args_marshal: args_marshal,
-        is_result_definitely_unmarshaled: is_result_definitely_unmarshaled,
-        is_result_possibly_unmarshaled: is_result_possibly_unmarshaled,
-        result_unmarshaled_if_argc: result_unmarshaled_if_argc,
-        needs_root_buffer: needs_root_buffer
+        steps, size, args_marshal,
+        is_result_definitely_unmarshaled,
+        is_result_possibly_unmarshaled,
+        result_unmarshaled_if_argc,
+        needs_root_buffer
     };
 }
 
@@ -183,14 +209,19 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
     // ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
     const indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
-    let closure: any = {};
+    const closure: any = {
+        Module,
+        _malloc: Module._malloc,
+        mono_wasm_unbox_rooted: cwraps.mono_wasm_unbox_rooted,
+    };
     let indirectLocalOffset = 0;
 
     body.push(
-        `if (!buffer) buffer = Module._malloc (${bufferSizeBytes});`,
-        `var indirectStart = buffer + ${indirectBaseOffset};`,
-        "var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;",
-        "var buffer32 = (buffer / 4) | 0;",
+        "if (!method) throw new Error('no method provided');",
+        `if (!buffer) buffer = _malloc (${bufferSizeBytes});`,
+        `let indirectStart = buffer + ${indirectBaseOffset};`,
+        "let indirect32 = indirectStart >>> 2, indirect64 = indirectStart >>> 3;",
+        "let buffer32 = buffer >>> 2;",
         ""
     );
 
@@ -204,13 +235,22 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
 
         if (step.convert) {
             closure[closureKey] = step.convert;
-            body.push(`var ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
+            body.push(`let ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
         } else {
-            body.push(`var ${valueKey} = ${argKey};`);
+            body.push(`let ${valueKey} = ${argKey};`);
         }
 
-        if (step.needs_root)
+        if (step.needs_root) {
+            body.push("if (!rootBuffer) throw new Error('no root buffer provided');");
             body.push(`rootBuffer.set (${i}, ${valueKey});`);
+        }
+
+        // HACK: needs_unbox indicates that we were passed a pointer to a managed object, and either
+        //  it was already rooted by our caller or (needs_root = true) by us. Now we can unbox it and
+        //  pass the raw address of its boxed value into the callee.
+        // FIXME: I don't think this is GC safe
+        if (step.needs_unbox)
+            body.push(`${valueKey} = mono_wasm_unbox_rooted (${valueKey});`);
 
         if (step.indirect) {
             let heapArrayName = null;
@@ -226,7 +266,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
                     heapArrayName = "HEAPF32";
                     break;
                 case "double":
-                    body.push(`Module.HEAPF64[indirect64 + ${(indirectLocalOffset / 8)}] = ${valueKey};`);
+                    body.push(`Module.HEAPF64[indirect64 + ${(indirectLocalOffset >>> 3)}] = ${valueKey};`);
                     break;
                 case "i64":
                     body.push(`Module.setValue (indirectStart + ${indirectLocalOffset}, ${valueKey}, 'i64');`);
@@ -236,7 +276,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
             }
 
             if (heapArrayName)
-                body.push(`Module.${heapArrayName}[indirect32 + ${(indirectLocalOffset / 4)}] = ${valueKey};`);
+                body.push(`Module.${heapArrayName}[indirect32 + ${(indirectLocalOffset >>> 2)}] = ${valueKey};`);
 
             body.push(`Module.HEAP32[buffer32 + ${i}] = indirectStart + ${indirectLocalOffset};`, "");
             indirectLocalOffset += step.size!;
@@ -253,13 +293,14 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
         compiledFunction = _create_named_function("converter_" + converterName, argumentNames, bodyJs, closure);
         converter.compiled_function = compiledFunction;
     } catch (exc) {
-        converter.compiled_function = undefined;
+        converter.compiled_function = null;
         console.warn("compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
+
     argumentNames = ["existingBuffer", "rootBuffer", "method", "args"];
-    closure = {
+    const variadicClosure = {
         converter: compiledFunction
     };
     body = [
@@ -282,15 +323,15 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
 
     bodyJs = body.join("\r\n");
     try {
-        compiledVariadicFunction = _create_named_function("variadic_converter_" + converterName, argumentNames, bodyJs, closure);
+        compiledVariadicFunction = _create_named_function("variadic_converter_" + converterName, argumentNames, bodyJs, variadicClosure);
         converter.compiled_variadic_function = compiledVariadicFunction;
     } catch (exc) {
-        converter.compiled_variadic_function = undefined;
+        converter.compiled_variadic_function = null;
         console.warn("compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
-    converter.scratchRootBuffer = undefined;
+    converter.scratchRootBuffer = null;
     converter.scratchBuffer = VoidPtrNull;
 
     return converter;
@@ -331,32 +372,63 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     this_arg = coerceNull(this_arg);
 
     let converter: Converter | null = null;
+    if (typeof (args_marshal) === "string") {
+        converter = _compile_converter_for_marshal_string(args_marshal);
+    }
 
-    converter = _compile_converter_for_marshal_string(args_marshal);
+    // FIXME
+    const unbox_buffer_size = 8192;
+    const unbox_buffer = Module._malloc(unbox_buffer_size);
 
+    const token: BoundMethodToken = {
+        friendlyName: friendly_name,
+        method,
+        converter,
+        scratchRootBuffer: null,
+        scratchBuffer: VoidPtrNull,
+        scratchResultRoot: mono_wasm_new_root(),
+        scratchExceptionRoot: mono_wasm_new_root()
+    };
     const closure: any = {
-        library_mono: MONO,
-        binding_support: BINDING,
-        method: method,
-        this_arg: this_arg
+        Module,
+        mono_wasm_new_root,
+        _create_temp_frame,
+        _get_args_root_buffer_for_method_call,
+        _get_buffer_for_method_call,
+        _handle_exception_for_call,
+        _teardown_after_call,
+        mono_wasm_try_unbox_primitive_and_get_type: cwraps.mono_wasm_try_unbox_primitive_and_get_type,
+        _unbox_mono_obj_root_with_known_nonprimitive_type,
+        invoke_method: cwraps.mono_wasm_invoke_method,
+        method,
+        this_arg,
+        token,
+        unbox_buffer,
+        unbox_buffer_size
     };
 
-    const converterKey = "converter_" + converter.name;
-
+    const converterKey = converter ? "converter_" + converter.name : "";
     if (converter)
         closure[converterKey] = converter;
 
     const argumentNames = [];
     const body = [
-        "var resultRoot = library_mono.mono_wasm_new_root (), exceptionRoot = library_mono.mono_wasm_new_root ();",
+        "_create_temp_frame();",
+        "let resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot;",
+        "token.scratchResultRoot = null;",
+        "token.scratchExceptionRoot = null;",
+        "if (resultRoot === null)",
+        "	resultRoot = mono_wasm_new_root ();",
+        "if (exceptionRoot === null)",
+        "	exceptionRoot = mono_wasm_new_root ();",
         ""
     ];
 
     if (converter) {
         body.push(
-            `var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (${converterKey});`,
-            `var scratchBuffer = binding_support._get_buffer_for_method_call (${converterKey});`,
-            `var buffer = ${converterKey}.compiled_function (`,
+            `let argsRootBuffer = _get_args_root_buffer_for_method_call(${converterKey}, token);`,
+            `let scratchBuffer = _get_buffer_for_method_call(${converterKey}, token);`,
+            `let buffer = ${converterKey}.compiled_function(`,
             "    scratchBuffer, argsRootBuffer, method,"
         );
 
@@ -376,15 +448,15 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         body.push(");");
 
     } else {
-        body.push("var argsRootBuffer = null, buffer = 0;");
+        body.push("let argsRootBuffer = null, buffer = 0;");
     }
 
-    if (converter.is_result_definitely_unmarshaled) {
-        body.push("var is_result_marshaled = false;");
-    } else if (converter.is_result_possibly_unmarshaled) {
-        body.push(`var is_result_marshaled = arguments.length !== ${converter.result_unmarshaled_if_argc};`);
+    if (converter && converter.is_result_definitely_unmarshaled) {
+        body.push("let is_result_marshaled = false;");
+    } else if (converter && converter.is_result_possibly_unmarshaled) {
+        body.push(`let is_result_marshaled = arguments.length !== ${converter.result_unmarshaled_if_argc};`);
     } else {
-        body.push("var is_result_marshaled = true;");
+        body.push("let is_result_marshaled = true;");
     }
 
     // We inline a bunch of the invoke and marshaling logic here in order to eliminate the GC pressure normally
@@ -398,53 +470,70 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     // The end result is that bound method invocations don't always allocate, so no more nursery GCs. Yay! -kg
     body.push(
         "",
-        "resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
-        `binding_support._handle_exception_for_call (${converterKey}, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
+        "resultRoot.value = invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
+        `_handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
         "",
-        "var result = undefined;",
-        "if (!is_result_marshaled) ",
-        "    result = resultRoot.value;",
-        "else if (resultRoot.value !== 0) {",
-        // For the common scenario where the return type is a primitive, we want to try and unbox it directly
-        //  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
-        //  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
-        //  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-        "    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultRoot.value, buffer);",
-        "    switch (resultType) {",
-        "    case 1:", // int
-        "        result = Module.HEAP32[buffer / 4]; break;",
-        "    case 25:", // uint32
-        "        result = Module.HEAPU32[buffer / 4]; break;",
-        "    case 24:", // float32
-        "        result = Module.HEAPF32[buffer / 4]; break;",
-        "    case 2:", // float64
-        "        result = Module.HEAPF64[buffer / 8]; break;",
-        "    case 8:", // boolean
-        "        result = (Module.HEAP32[buffer / 4]) !== 0; break;",
-        "    case 28:", // char
-        "        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
-        "    default:",
-        "        result = binding_support._unbox_mono_obj_root_with_known_nonprimitive_type (resultRoot, resultType); break;",
-        "    }",
-        "}",
-        "",
-        `binding_support._teardown_after_call (${converterKey}, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
+        "let resultPtr = resultRoot.value, result = undefined;"
+    );
+
+    if (converter) {
+        if (converter.is_result_possibly_unmarshaled)
+            body.push("if (!is_result_marshaled) ");
+
+        if (converter.is_result_definitely_unmarshaled || converter.is_result_possibly_unmarshaled)
+            body.push("    result = resultPtr;");
+
+        if (!converter.is_result_definitely_unmarshaled)
+            body.push(
+                "if (is_result_marshaled && (resultPtr !== 0)) {",
+                // For the common scenario where the return type is a primitive, we want to try and unbox it directly
+                //  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
+                //  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
+                //  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
+                "    let resultType = mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, unbox_buffer_size);",
+                "    switch (resultType) {",
+                `    case ${MarshalType.INT}:`,
+                "        result = Module.HEAP32[unbox_buffer >>> 2]; break;",
+                `    case ${MarshalType.POINTER}:`, // FIXME: Is this right?
+                `    case ${MarshalType.UINT32}:`,
+                "        result = Module.HEAPU32[unbox_buffer >>> 2]; break;",
+                `    case ${MarshalType.FP32}:`,
+                "        result = Module.HEAPF32[unbox_buffer >>> 2]; break;",
+                `    case ${MarshalType.FP64}:`,
+                "        result = Module.HEAPF64[unbox_buffer >>> 3]; break;",
+                `    case ${MarshalType.BOOL}:`,
+                "        result = (Module.HEAP32[unbox_buffer >>> 2]) !== 0; break;",
+                `    case ${MarshalType.CHAR}:`,
+                "        result = String.fromCharCode(Module.HEAP32[unbox_buffer >>> 2]); break;",
+                "    default:",
+                "        result = _unbox_mono_obj_root_with_known_nonprimitive_type (resultRoot, resultType, unbox_buffer); break;",
+                "    }",
+                "}"
+            );
+    } else {
+        throw new Error("No converter");
+    }
+
+    if (friendly_name) {
+        const escapeRE = /[^A-Za-z0-9_$]/g;
+        friendly_name = friendly_name.replace(escapeRE, "_");
+    }
+
+    let displayName = friendly_name || ("clr_" + method);
+
+    if (this_arg)
+        displayName += "_this" + this_arg;
+
+    body.push(
+        `_teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
         "return result;"
     );
 
     const bodyJs = body.join("\r\n");
 
-    if (friendly_name) {
-        const escapeRE = /[^A-Za-z0-9_]/g;
-        friendly_name = friendly_name.replace(escapeRE, "_");
-    }
+    const result = _create_named_function(displayName, argumentNames, bodyJs, closure);
 
-    let displayName = "managed_" + (friendly_name || method);
-
-    if (this_arg)
-        displayName += "_with_this_" + this_arg;
-
-    return _create_named_function(displayName, argumentNames, bodyJs, closure);
+    return result;
 }
 
 declare const enum ArgsMarshal {
@@ -479,6 +568,7 @@ export type Converter = {
     steps: {
         convert?: boolean | Function;
         needs_root?: boolean;
+        needs_unbox?: boolean;
         indirect?: ConverterStepIndirects;
         size?: number;
     }[];
@@ -488,11 +578,25 @@ export type Converter = {
     is_result_possibly_unmarshaled?: boolean;
     result_unmarshaled_if_argc?: number;
     needs_root_buffer?: boolean;
+    key?: string;
     name?: string;
     needs_root?: boolean;
-    compiled_variadic_function?: Function;
-    compiled_function?: Function;
-    scratchRootBuffer?: WasmRootBuffer;
+    needs_unbox?: boolean;
+    compiled_variadic_function?: Function | null;
+    compiled_function?: Function | null;
+    scratchRootBuffer?: WasmRootBuffer | null;
     scratchBuffer?: VoidPtr;
     has_warned_about_signature?: boolean;
+    convert?: Function | null;
+    method?: MonoMethod | null;
+}
+
+export type BoundMethodToken = {
+    friendlyName: string;
+    method: MonoMethod;
+    converter: Converter | null;
+    scratchRootBuffer: WasmRootBuffer | null;
+    scratchBuffer: VoidPtr;
+    scratchResultRoot: WasmRoot<MonoObject>;
+    scratchExceptionRoot: WasmRoot<MonoObject>;
 }

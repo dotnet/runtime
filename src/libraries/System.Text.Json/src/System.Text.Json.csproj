@@ -16,7 +16,11 @@ System.Text.Json.JsonSerializer
 System.Text.Json.JsonDocument
 System.Text.Json.JsonElement
 System.Text.Json.Utf8JsonWriter
-System.Text.Json.Utf8JsonReader</PackageDescription>
+System.Text.Json.Utf8JsonReader
+System.Text.Json.Nodes.JsonNode
+System.Text.Json.Nodes.JsonArray
+System.Text.Json.Nodes.JsonObject
+System.Text.Json.Nodes.JsonValue</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

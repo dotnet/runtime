@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Internal.Cryptography.Pal.Native;
-
+using Microsoft.Win32.SafeHandles;
 using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
@@ -49,7 +49,7 @@ namespace Internal.Cryptography.Pal
         {
             fixed (byte* pThumbPrint = thumbPrint)
             {
-                CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(thumbPrint.Length, pThumbPrint);
+                DATA_BLOB blob = new DATA_BLOB(new IntPtr(pThumbPrint), (uint)thumbPrint.Length);
                 FindCore<object>(CertFindType.CERT_FIND_HASH, &blob);
             }
         }
@@ -149,9 +149,9 @@ namespace Internal.Cryptography.Pal
                     // An example of Template Name can be "ClientAuth".
 
                     bool foundMatch = false;
-                    CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
+                    Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
                     {
-                        CERT_EXTENSION* pV1Template = Interop.crypt32.CertFindExtension(Oids.EnrollCertTypeExtension,
+                        Interop.Crypt32.CERT_EXTENSION* pV1Template = Interop.crypt32.CertFindExtension(Oids.EnrollCertTypeExtension,
                             pCertInfo->cExtension, pCertInfo->rgExtension);
                         if (pV1Template != null)
                         {
@@ -162,7 +162,7 @@ namespace Internal.Cryptography.Pal
                                 {
                                     Debug.Assert(cbDecoded >= sizeof(CERT_NAME_VALUE));
                                     CERT_NAME_VALUE* pNameValue = (CERT_NAME_VALUE*)pvDecoded;
-                                    string? actual = Marshal.PtrToStringUni(new IntPtr(pNameValue->Value.pbData));
+                                    string? actual = Marshal.PtrToStringUni(pNameValue->Value.pbData);
                                     if (templateName.Equals(actual, StringComparison.OrdinalIgnoreCase))
                                         foundMatch = true;
                                 }))
@@ -174,7 +174,7 @@ namespace Internal.Cryptography.Pal
 
                     if (!foundMatch)
                     {
-                        CERT_EXTENSION* pV2Template = Interop.crypt32.CertFindExtension(Oids.CertificateTemplate,
+                        Interop.Crypt32.CERT_EXTENSION* pV2Template = Interop.crypt32.CertFindExtension(Oids.CertificateTemplate,
                             pCertInfo->cExtension, pCertInfo->rgExtension);
                         if (pV2Template != null)
                         {
@@ -243,8 +243,8 @@ namespace Internal.Cryptography.Pal
                 oidValue,
                 static (oidValue, pCertContext) =>
                 {
-                    CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
-                    CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(Oids.CertPolicies,
+                    Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
+                    Interop.Crypt32.CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(Oids.CertPolicies,
                         pCertInfo->cExtension, pCertInfo->rgExtension);
                     if (pCertExtension == null)
                         return false;
@@ -284,8 +284,8 @@ namespace Internal.Cryptography.Pal
                 oidValue,
                 static (oidValue, pCertContext) =>
                 {
-                    CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
-                    CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(oidValue, pCertInfo->cExtension, pCertInfo->rgExtension);
+                    Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
+                    Interop.Crypt32.CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(oidValue, pCertInfo->cExtension, pCertInfo->rgExtension);
                     GC.KeepAlive(pCertContext);
                     return pCertExtension != null;
                 });
@@ -297,9 +297,9 @@ namespace Internal.Cryptography.Pal
                 keyUsage,
                 static (keyUsage, pCertContext) =>
                 {
-                    CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
+                    Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
                     X509KeyUsageFlags actual;
-                    if (!Interop.crypt32.CertGetIntendedKeyUsage(CertEncodingType.All, pCertInfo, out actual, sizeof(X509KeyUsageFlags)))
+                    if (!Interop.crypt32.CertGetIntendedKeyUsage(Interop.Crypt32.CertEncodingType.All, pCertInfo, out actual, sizeof(X509KeyUsageFlags)))
                         return true;  // no key usage means it is valid for all key usages.
                     GC.KeepAlive(pCertContext);
                     return (actual & keyUsage) == keyUsage;
@@ -313,11 +313,11 @@ namespace Internal.Cryptography.Pal
                 static (keyIdentifier, pCertContext) =>
                 {
                     int cbData = 0;
-                    if (!Interop.crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
+                    if (!CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
                         return false;
 
                     byte[] actual = new byte[cbData];
-                    if (!Interop.crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, actual, ref cbData))
+                    if (!CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, actual, ref cbData))
                         return false;
 
                     return keyIdentifier.ContentsEqual(actual);

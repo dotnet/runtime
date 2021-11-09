@@ -856,10 +856,11 @@ static int ccount = 0;
         if (cfg->cbb->last_ins && MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins) && !cfg->cbb->last_ins->inst_false_bb) { \
             cfg->cbb->last_ins->inst_false_bb = (bblock); \
             mono_link_bblock ((cfg), (cfg)->cbb, (bblock)); \
-        } else if (! (cfg->cbb->last_ins && ((cfg->cbb->last_ins->opcode == OP_BR) || (cfg->cbb->last_ins->opcode == OP_BR_REG) || MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins)))) \
+        } else if (! (cfg->cbb->last_ins && ((cfg->cbb->last_ins->opcode == OP_BR) || (cfg->cbb->last_ins->opcode == OP_BR_REG) || MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins)))) { \
             mono_link_bblock ((cfg), (cfg)->cbb, (bblock)); \
-	    (cfg)->cbb->next_bb = (bblock); \
-	    (cfg)->cbb = (bblock); \
+	} \
+	(cfg)->cbb->next_bb = (bblock); \
+	(cfg)->cbb = (bblock); \
     } while (0)
 
 /* This marks a place in code where an implicit exception could be thrown */

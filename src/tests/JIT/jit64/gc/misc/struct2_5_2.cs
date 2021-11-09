@@ -130,7 +130,7 @@ struct T
     }
 }
 
-class Test
+class Test_struct2_5_2
 {
     public static void c(S s1, S s2)
     {

@@ -7,7 +7,7 @@ using System.Security;
 using System.Runtime.InteropServices;
 using TestLibrary;
 
-public class Test
+public class Test_DelegatePInvokeTest
 {
     const int iNative = 11;//the value passed from Native side to Managed side
     const int iManaged = 10;//The value passed from Managed side to Native sid
