@@ -303,7 +303,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
 
     do
     {
-        DWORD cBuckets = (DWORD)dac_cast<size_t>(curBuckets[0]);
+        DWORD cBuckets = (DWORD)dac_cast<TADDR>(curBuckets[0]);
 
         // Compute which bucket the entry belongs in based on the hash.
         // +2 to skip "length" and "next" slots
@@ -434,7 +434,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMe
     DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(FINAL_CLASS));
 
     auto curBuckets = GetBuckets();
-    DWORD cBuckets = (DWORD)dac_cast<size_t>(curBuckets[0]);
+    DWORD cBuckets = (DWORD)dac_cast<TADDR>(curBuckets[0]);
 
     // Save the bucket list.
     DacEnumMemoryRegion(dac_cast<TADDR>(curBuckets), cBuckets * sizeof(VolatileEntry*));
@@ -495,7 +495,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     CONTRACTL_END;
 
     auto curBuckets = m_pTable->GetBuckets();
-    DWORD cBuckets = (DWORD)dac_cast<size_t>(curBuckets[0]);
+    DWORD cBuckets = (DWORD)dac_cast<TADDR>(curBuckets[0]);
 
     while (m_dwBucket < cBuckets)
     {
