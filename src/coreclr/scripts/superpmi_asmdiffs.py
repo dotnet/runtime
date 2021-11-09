@@ -160,15 +160,23 @@ def main(main_args):
 
     # If there are asm diffs, and jit-analyze ran, we'll get a diff_summary.md file in the spmi_location directory.
     # We make sure the file doesn't exist before we run diffs, so we don't need to worry about superpmi.py creating
-    # a unique, numbered file.
+    # a unique, numbered file. If there are no diffs, we still want to create this file and indicate there were no diffs.
 
+    overall_md_summary_file_target = os.path.join(log_directory, "superpmi_diff_summary_{}_{}.md".format(platform_name, arch_name))
     if os.path.isfile(overall_md_summary_file):
         try:
-            overall_md_summary_file_target = os.path.join(log_directory, "superpmi_diff_summary_{}_{}.md".format(platform_name, arch_name))
             print("Copying summary file {} -> {}".format(overall_md_summary_file, overall_md_summary_file_target))
             shutil.copy2(overall_md_summary_file, overall_md_summary_file_target)
         except PermissionError as pe_error:
             print('Ignoring PermissionError: {0}'.format(pe_error))
+    else:
+        # Write a basic summary file. Ideally, we should not generate a summary.md file. However, currently I'm seeing
+        # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
+        # upload to be conditional, or otherwise not error.
+        with open(overall_md_summary_file_target, "a") as f:
+            f.write("""\
+No diffs found
+""")
 
     # TODO: the superpmi.py asmdiffs command returns a failure code if there are MISSING data even if there are
     # no asm diffs. We should probably only fail if there are actual failures (not MISSING or asm diffs).

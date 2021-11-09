@@ -31,7 +31,7 @@
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_asmdiffs.py -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
-    <WorkItemTimeout>3:15</WorkItemTimeout>
+    <WorkItemTimeout>1:45</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup>

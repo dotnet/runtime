@@ -5,7 +5,6 @@ pr:
   paths:
     include:
     - src/coreclr/jit/*
-    - src/coreclr/inc/jiteeversionguid.h
 
 jobs:
 
