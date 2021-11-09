@@ -385,17 +385,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             HasError = hasError;
         }
 
-        internal static unsafe void PutBytesBE (byte *dest, byte *src, int count)
+        internal static void SwapForBE(Span<byte> dest, Span<byte> src)
         {
-            int i = 0;
-
-            if (BitConverter.IsLittleEndian){
-                dest += count;
-                for (; i < count; i++)
-                    *(--dest) = *src++;
-            } else {
-                for (; i < count; i++)
-                    *dest++ = *src++;
+            // SDB is big endian
+            if (BitConverter.IsLittleEndian)
+            {
+                for (int i = 0; i < src.Length; i++)
+                    dest [src.Length - i - 1] = src [i];
+            }
+            else
+            {
+                src.CopyTo(dest);
             }
         }
 
@@ -409,105 +409,71 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         public unsafe long ReadLong()
         {
-            byte[] data = new byte[8];
-            Read(data, 0, 8);
+            Span<byte> data = stackalloc byte[8];
+            Read(data);
 
             long ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 8);
-            }
-
+            SwapForBE(new Span<byte>(&ret, 8), data);
             return ret;
         }
-        public override unsafe sbyte ReadSByte()
-        {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
 
-            int ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
-            return (sbyte)ret;
-        }
-
-        public unsafe byte ReadUByte()
-        {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
-
-            int ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
-            return (byte)ret;
-        }
+        // SDB encodes these as 4 bytes
+        public override sbyte ReadSByte() => (sbyte)ReadInt32();
+        public byte ReadUByte() => (byte)ReadUInt32();
+        public ushort ReadUShort() => (ushort)ReadUInt32();
 
         public override unsafe int ReadInt32()
         {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
+            Span<byte> data = stackalloc byte[4];
+            Read(data);
+
             int ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
+            SwapForBE(new Span<byte>(&ret, 4), data);
             return ret;
         }
 
         public override unsafe double ReadDouble()
         {
-            byte[] data = new byte[8];
-            Read(data, 0, 8);
+            Span<byte> data = stackalloc byte[8];
+            Read(data);
 
             double ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 8);
-            }
+            SwapForBE(new Span<byte>(&ret, 8), data);
             return ret;
         }
 
         public override unsafe uint ReadUInt32()
         {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
+            Span<byte> data = stackalloc byte[4];
+            Read(data);
 
             uint ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
+            SwapForBE(new Span<byte>(&ret, 4), data);
             return ret;
-        }
-        public unsafe ushort ReadUShort()
-        {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
-
-            uint ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
-            return (ushort)ret;
         }
     }
 
     internal class MonoBinaryWriter : BinaryWriter
     {
         public MonoBinaryWriter(Stream stream) : base(stream) {}
+
         public void WriteString(string val)
         {
+            var bytes = Encoding.UTF8.GetBytes(val);
             Write(val.Length);
             Write(val.ToCharArray());
         }
-        public void WriteLong(long val)
+        public unsafe void WriteLong(long val)
         {
-            Write((int)((val >> 32) & 0xffffffff));
-            Write((int)((val >> 0) & 0xffffffff));
+            long ret;
+            MonoBinaryReader.SwapForBE(new Span<byte>(&ret, sizeof(long)), new Span<byte>(&val, sizeof(long)));
+            base.Write(ret);
         }
-        public override void Write(int val)
+        public override unsafe void Write(int val)
         {
-            byte[] bytes = BitConverter.GetBytes(val);
-            Array.Reverse(bytes, 0, bytes.Length);
-            Write(bytes);
+            int ret;
+            MonoBinaryReader.SwapForBE(new Span<byte>(&ret, sizeof(int)), new Span<byte>(&val, sizeof(int)));
+            base.Write(ret);
         }
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
