@@ -4178,8 +4178,8 @@ InitializeCrashDump()
 
 bool GenerateDump(
     LPCWSTR dumpName,
-    int dumpType,
-    bool diag)
+    INT dumpType,
+    ULONG32 flags)
 {
 #ifdef TARGET_UNIX
     MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
@@ -4189,10 +4189,10 @@ bool GenerateDump(
     }
     else
     {
-        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, diag);
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags);
     }
 #else // TARGET_UNIX
-    return GenerateCrashDump(dumpName, dumpType, diag);
+    return GenerateCrashDump(dumpName, dumpType, flags & GenerateDumpFlagsLoggingEnabled);
 #endif // TARGET_UNIX
 }
 
