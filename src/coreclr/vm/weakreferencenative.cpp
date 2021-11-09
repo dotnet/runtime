@@ -108,6 +108,7 @@ private:
 //
 // In order to qualify to be used with a HNDTYPE_WEAK_NATIVE_COM, the incoming object must:
 //  * be an RCW
+//  * not be an aggregated RCW
 //  * respond to a QI for IWeakReferenceSource
 //  * succeed when asked for an IWeakReference*
 //
@@ -149,7 +150,14 @@ NativeComWeakHandleInfo* GetComWeakReferenceInfo(OBJECTREF* pObject)
 #endif
     {
 #ifdef FEATURE_COMWRAPPERS
-        pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(pObject, IID_IWeakReferenceSource, &wrapperId));
+        bool isAggregated = false;
+        pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(pObject, IID_IWeakReferenceSource, &wrapperId, &isAggregated));
+        if (isAggregated)
+        {
+            // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown as the outer IUnknown wraps the managed object.
+            // In this case, don't create a weak reference backed by a COM weak reference.
+            pWeakReferenceSource = nullptr;
+        }
 #endif
     }
 
@@ -448,7 +456,7 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
     _ASSERTE(gc.pThis->GetMethodTable()->CanCastToClass(pWeakReferenceMT));
 
     // Create the handle.
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) 
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     NativeComWeakHandleInfo *comWeakHandleInfo = nullptr;
     if (gc.pTarget != NULL)
     {
@@ -690,7 +698,7 @@ FCIMPL1(Object *, WeakReferenceNative::GetTarget, WeakReferenceObject * pThisUNS
 
     OBJECTREF pTarget = GetWeakReferenceTarget(pThis);
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) 
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     // If we found an object, or we're not a native COM weak reference, then we're done.  Othewrise
     // we can try to create a new RCW to the underlying native COM object if it's still alive.
     if (pTarget != NULL || !IsNativeComWeakReferenceHandle(pThis->m_Handle))
@@ -718,7 +726,7 @@ FCIMPL1(Object *, WeakReferenceOfTNative::GetTarget, WeakReferenceObject * pThis
     OBJECTREF pTarget = GetWeakReferenceTarget(pThis);
 
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) 
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     // If we found an object, or we're not a native COM weak reference, then we're done.  Othewrise
     // we can try to create a new RCW to the underlying native COM object if it's still alive.
     if (pTarget != NULL || !IsNativeComWeakReferenceHandle(pThis->m_Handle))
