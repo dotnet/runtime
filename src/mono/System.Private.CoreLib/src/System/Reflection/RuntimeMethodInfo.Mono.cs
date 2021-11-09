@@ -374,7 +374,7 @@ namespace System.Reflection
         internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> parameters)
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> parameters)
         {
             Exception? exc;
             object? o = null;
@@ -862,21 +862,21 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
+        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return InternalInvoke(obj, arguments, wrapExceptions);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object InvokeCtorWorker(BindingFlags invokeAttr, in Span<object?> arguments)
+        internal object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return InternalInvoke(null, arguments, wrapExceptions)!;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object InvokeArrayCtorWorker(in Span<int> arguments)
+        internal object InvokeArrayCtorWorker(Span<object?> arguments)
         {
             return InternalInvokeArrayCtor(in arguments);
         }
@@ -889,7 +889,7 @@ namespace System.Reflection
         internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern object InternalInvokeArrayCtor(in Span<int> arguments);
+        private extern object InternalInvokeArrayCtor(in Span<object?> arguments);
 
         private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
         {

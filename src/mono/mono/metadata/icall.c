@@ -3410,23 +3410,23 @@ exit:
 }
 
 MonoObjectHandle
-ves_icall_InternalInvokeArrayCtor (MonoReflectionMethodHandle method_handle, MonoSpanOfInts *params_span,
+ves_icall_InternalInvokeArrayCtor (MonoReflectionMethodHandle method_handle, MonoSpanOfObjects *params_span,
 			MonoError *error)
 {
 	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
 	g_assert (params_span != NULL);
 
-	int32_t i;
+	uint32_t i;
 	MonoArray *arr = NULL;
 	MonoMethod *m = method->method;
 	MonoMethodSignature* const sig = mono_method_signature_internal (m);
 	g_assert (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor"));
 
-	int32_t pcount = mono_span_length (params_span);
+	uint32_t pcount = mono_span_length (params_span);
 	uintptr_t * const lengths = g_newa (uintptr_t, pcount);
 	/* Note: the synthetized array .ctors have int32 as argument type */
 	for (i = 0; i < pcount; ++i)
-		lengths [i] = mono_span_get (params_span, int32_t, i);
+		lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, i) + sizeof (MonoObject));
 
 	if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
 		/* This is a ctor for jagged arrays. MS creates an array of arrays. */
@@ -3455,8 +3455,8 @@ ves_icall_InternalInvokeArrayCtor (MonoReflectionMethodHandle method_handle, Mon
 		intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
 
 		for (i = 0; i < pcount / 2; ++i) {
-			lower_bounds [i] = mono_span_get (params_span, int32_t, (i * 2));
-			lengths [i] = mono_span_get (params_span, int32_t, (i * 2) + 1);
+			lower_bounds [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
+			lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
 		}
 
 		arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);

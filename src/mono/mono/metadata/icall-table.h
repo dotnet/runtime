@@ -70,7 +70,6 @@ typedef unsigned *unsigned_ptr;
 typedef mono_unichar2 *mono_unichar2_ptr;
 typedef mono_unichar4 *mono_unichar4_ptr;
 typedef MonoSpanOfObjects *MonoSpanOfObjects_ref;
-typedef MonoSpanOfInts *MonoSpanOfInts_ref;
 
 typedef char **char_ptr_ref;
 typedef gint32  *gint32_ref;
@@ -176,7 +175,6 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_guint8_ptr_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoResolveTokenError_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoSpanOfObjects_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
-#define MONO_HANDLE_TYPE_WRAP_MonoSpanOfInts_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 
 // HANDLE is not used just to avoid duplicate typedef warnings with some compilers.
 // gpointer == void* == HANDLE == FILE_HANDLE == PROCESS_HANDLE.
