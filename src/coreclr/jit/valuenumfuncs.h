@@ -12,7 +12,6 @@ ValueNumFuncDef(MapSelect, 2, false, false, false)  // Args: 0: map, 1: key.
 
 ValueNumFuncDef(FieldSeq, 2, false, false, false)   // Sequence (VN of null == empty) of (VN's of) field handles.
 ValueNumFuncDef(NotAField, 0, false, false, false)  // Value number function for FieldSeqStore::NotAField.
-ValueNumFuncDef(ZeroMap, 0, false, false, false)    // The "ZeroMap": indexing at any index yields "zero of the desired type".
 
 ValueNumFuncDef(PtrToLoc, 2, false, false, false)           // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: FieldSeq.
@@ -22,6 +21,7 @@ ValueNumFuncDef(Phi, 2, false, false, false)        // A phi function.  Only occ
 ValueNumFuncDef(PhiDef, 3, false, false, false)     // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
 // Wouldn't need this if I'd made memory a regular local variable...
 ValueNumFuncDef(PhiMemoryDef, 2, false, false, false) // Args: 0: VN for basic block pointer, 1: VN of definition
+ValueNumFuncDef(ZeroObj, 1, false, false, false)    // Zero-initialized struct. Args: 0: VN of the class handle.
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
 
 
