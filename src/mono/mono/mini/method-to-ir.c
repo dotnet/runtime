@@ -2800,6 +2800,9 @@ emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 		case MONO_RGCTX_INFO_METHOD_FTNDESC:
 			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHOD_FTNDESC, cmethod);
 			return ins;
+		case MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY:
+			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY, cmethod);
+			return ins;
 		default:
 			g_assert_not_reached ();
 		}
@@ -5903,8 +5906,6 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 	MonoInst **iargs;
 	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
 
-	iargs = g_newa (MonoInst*, sig->param_count + 1);
-	iargs [0] = emit_get_rgctx_method (cfg, -1, cfg->method, MONO_RGCTX_INFO_METHOD);
 	MonoInst *ftndesc;
 
 	cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
@@ -5915,21 +5916,55 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 	 * entry/exit bblocks.
 	 */
 	g_assert (cfg->cbb == cfg->bb_init);
-	/* Obtain the interp entry function */
-	ftndesc = mono_emit_jit_icall_id (cfg, MONO_JIT_ICALL_mini_llvmonly_get_interp_entry, iargs);
-
-	/* Call it */
-	for (int i = 0; i < sig->param_count + sig->hasthis; ++i)
-		EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
 
 	if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (sig)) {
-		MonoInst *wrapper_ins = emit_get_rgctx_method (cfg, -1, cfg->method, MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT);
+		/*
+		 * Would have to generate a gsharedvt out wrapper which calls the interp entry wrapper, but
+		 * the gsharedvt out wrapper might not exist if the caller is also a gsharedvt method since
+		 * the concrete signature of the call might not exist in the program.
+		 * So transition directly to the interpreter without the wrappers.
+		 */
+		MonoInst *args_ins;
+		MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+		ins->dreg = alloc_preg (cfg);
+		ins->inst_imm = sig->param_count * sizeof (target_mgreg_t);
+		MONO_ADD_INS (cfg->cbb, ins);
+		args_ins = ins;
 
-		MonoInst *call_target;
-		int addr_reg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, wrapper_ins->dreg, 0);
-		ins = mini_emit_extra_arg_calli (cfg, sig, iargs, ftndesc->dreg, call_target);
+		for (int i = 0; i < sig->hasthis + sig->param_count; ++i) {
+			MonoInst *arg_addr_ins;
+			EMIT_NEW_VARLOADA ((cfg), arg_addr_ins, cfg->args [i], cfg->arg_types [i]);
+			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args_ins->dreg, i * sizeof (target_mgreg_t), arg_addr_ins->dreg);
+		}
+
+		MonoInst *ret_var = NULL;
+		MonoInst *ret_arg_ins;
+		if (!MONO_TYPE_IS_VOID (sig->ret)) {
+			ret_var = mono_compile_create_var (cfg, sig->ret, OP_LOCAL);
+			EMIT_NEW_VARLOADA (cfg, ret_arg_ins, ret_var, sig->ret);
+		} else {
+			EMIT_NEW_PCONST (cfg, ret_arg_ins, NULL);
+		}
+
+		iargs = g_newa (MonoInst*, 3);
+		iargs [0] = emit_get_rgctx_method (cfg, -1, cfg->method, MONO_RGCTX_INFO_INTERP_METHOD);
+		iargs [1] = ret_arg_ins;
+		iargs [2] = args_ins;
+		mono_emit_jit_icall_id (cfg, MONO_JIT_ICALL_mini_llvmonly_interp_entry_gsharedvt, iargs);
+
+		if (!MONO_TYPE_IS_VOID (sig->ret))
+			EMIT_NEW_VARLOAD (cfg, ins, ret_var, sig->ret);
+		else
+			ins = NULL;
 	} else {
+		/* Obtain the interp entry function */
+		ftndesc = emit_get_rgctx_method (cfg, -1, cfg->method, MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY);
+
+		/* Call it */
+		iargs = g_newa (MonoInst*, sig->param_count + 1);
+		for (int i = 0; i < sig->param_count + sig->hasthis; ++i)
+			EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
+
 		ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
 	}
 

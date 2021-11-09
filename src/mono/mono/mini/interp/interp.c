@@ -2842,6 +2842,23 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 
 #endif /* MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE */
 
+static void
+interp_entry_llvmonly (gpointer res, gpointer *args, gpointer imethod_untyped)
+{
+	InterpMethod *imethod = (InterpMethod*)imethod_untyped;
+
+	if (imethod->hasthis)
+		interp_entry_general (*(gpointer*)(args [0]), res, args + 1, imethod);
+	else
+		interp_entry_general (NULL, res, args, imethod);
+}
+
+static gpointer
+interp_get_interp_method (MonoMethod *method, MonoError *error)
+{
+    return mono_interp_get_imethod (method, error);
+}
+
 static InterpMethod*
 lookup_method_pointer (gpointer addr)
 {

@@ -956,12 +956,8 @@ mini_llvmonly_pop_lmf (MonoLMF *lmf)
 		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
 }
 
-gpointer
-mini_llvmonly_get_interp_entry (MonoMethod *method)
+void
+mini_llvmonly_interp_entry_gsharedvt (gpointer imethod, gpointer res, gpointer *args)
 {
-	ERROR_DECL (error);
-
-	MonoFtnDesc *desc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, FALSE, error);
-	mono_error_assert_ok (error);
-	return desc;
+	mini_get_interp_callbacks ()->entry_llvmonly (res, args, imethod);
 }

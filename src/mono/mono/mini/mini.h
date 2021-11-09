@@ -1064,8 +1064,10 @@ typedef enum {
 	MONO_RGCTX_INFO_METHOD_FTNDESC                = 33,
 	/* mono_type_size () for a class */
 	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34,
-	/* A gsharedvt_out wrapper for a method */
-	MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT    = 35
+	/* The InterpMethod for a method */
+	MONO_RGCTX_INFO_INTERP_METHOD                 = 35,
+	/* The llvmonly interp entry for a method */
+	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */
