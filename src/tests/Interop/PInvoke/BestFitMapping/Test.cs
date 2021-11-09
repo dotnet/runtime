@@ -10,7 +10,7 @@ using static TestData;
 
 internal unsafe class Test
 {
-    internal record DataContext<T, U>(T Invalid, T Valid, Func<T, U> GetValueToCompare);
+    internal record DataContext<T, U>(T Invalid, T Unmappable, T Valid, Func<T, U> GetValueToCompare);
 
     internal readonly struct Functions<T>
     {
@@ -57,6 +57,30 @@ internal unsafe class Test
             Assert.NotEqual(data.GetValueToCompare(data.Invalid), data.GetValueToCompare(invalid));
         }
 
+        T unmappable = data.Unmappable;
+        if (throwOnUnmappableChar)
+        {
+            Assert.Throws<ArgumentException>(() => funcs.In(unmappable));
+
+            unmappable = data.Unmappable;
+            Assert.Throws<ArgumentException>(() => funcs.InByRef(ref unmappable));
+
+            unmappable = data.Unmappable;
+            Assert.Throws<ArgumentException>(() => funcs.InOutByRef(ref unmappable));
+        }
+        else
+        {
+            Assert.True(funcs.In(unmappable));
+
+            unmappable = data.Unmappable;
+            Assert.True(funcs.InByRef(ref unmappable));
+            Assert.Equal(data.GetValueToCompare(data.Unmappable), data.GetValueToCompare(unmappable));
+
+            unmappable = data.Unmappable;
+            Assert.True(funcs.InOutByRef(ref unmappable));
+            Assert.NotEqual(data.GetValueToCompare(data.Unmappable), data.GetValueToCompare(unmappable));
+        }
+
         T valid = data.Valid;
         Assert.True(funcs.In(valid));
 
@@ -71,25 +95,25 @@ internal unsafe class Test
 
     public static void ValidateChar(bool bestFitMapping, bool throwOnUnmappableChar, Functions<char> funcs)
     {
-        var context = new DataContext<char, char>(GetInvalidChar(), GetValidChar(), (char c) => c);
+        var context = new DataContext<char, char>(InvalidChar, UnmappableChar, ValidChar, (char c) => c);
         Validate(bestFitMapping, throwOnUnmappableChar, funcs, context);
     }
 
     public static void ValidateString(bool bestFitMapping, bool throwOnUnmappableChar, Functions<string> funcs)
     {
-        var context = new DataContext<string, string>(GetInvalidString(), GetValidString(), (string s) => s);
+        var context = new DataContext<string, string>(InvalidString, UnmappableString, ValidString, (string s) => s);
         Validate(bestFitMapping, throwOnUnmappableChar, funcs, context);
     }
 
     public static void ValidateStringBuilder(bool bestFitMapping, bool throwOnUnmappableChar, Functions<StringBuilder> funcs)
     {
-        var context = new DataContext<StringBuilder, string>(GetInvalidStringBuilder(), GetValidStringBuilder(), (StringBuilder s) => s.ToString());
+        var context = new DataContext<StringBuilder, string>(InvalidStringBuilder, UnmappableStringBuilder, ValidStringBuilder, (StringBuilder s) => s.ToString());
         Validate(bestFitMapping, throwOnUnmappableChar, funcs, context);
     }
 
     public static void ValidateStringArray(bool bestFitMapping, bool throwOnUnmappableChar, Functions<string[]> funcs)
     {
-        var context = new DataContext<string[], string>(GetInvalidStringArray(), GetValidStringArray(), (string[] s) => s[0]);
+        var context = new DataContext<string[], string>(InvalidStringArray, UnmappableStringArray, ValidStringArray, (string[] s) => s[0]);
         Validate(bestFitMapping, throwOnUnmappableChar, funcs, context);
     }
 }

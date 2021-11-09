@@ -79,10 +79,9 @@ public class PInvoke_True_False
     [DllImport("LPStr_BestFitMappingNative", BestFitMapping = false, ThrowOnUnmappableChar = true)]
     public static extern bool LPStrBuffer_InOutByRef_Array_Struct([In, Out][MarshalAs(UnmanagedType.LPArray)]ref LPStrTestStruct[] structArray);
 
-    private static LPStrTestStruct GetInvalidStruct() => new LPStrTestStruct() { str = GetInvalidString() };
-
-    private static LPStrTestStruct GetValidStruct() => new LPStrTestStruct() { str = GetValidString() };
-
+    private static LPStrTestStruct GetInvalidStruct() => new LPStrTestStruct() { str = InvalidString };
+    private static LPStrTestStruct GetUnmappableStruct() => new LPStrTestStruct() { str = UnmappableString };
+    private static LPStrTestStruct GetValidStruct() => new LPStrTestStruct() { str = ValidString };
     public static unsafe void RunTest()
     {
         Console.WriteLine(" -- Validate P/Invokes: BestFitMapping=true, ThrowOnUnmappableChar=false");
@@ -123,6 +122,7 @@ public class PInvoke_True_False
                 &LPStrBuffer_InOutByRef_Struct_String),
             new Test.DataContext<LPStrTestStruct, string>(
                 GetInvalidStruct(),
+                GetUnmappableStruct(),
                 GetValidStruct(),
                 (LPStrTestStruct s) => s.str));
 
@@ -134,8 +134,9 @@ public class PInvoke_True_False
                 &LPStrBuffer_InByRef_Class_String,
                 &LPStrBuffer_InOutByRef_Class_String),
             new Test.DataContext<LPStrTestClass, string>(
-                new LPStrTestClass() { str = GetInvalidString() },
-                new LPStrTestClass() { str = GetValidString() },
+                new LPStrTestClass() { str = InvalidString },
+                new LPStrTestClass() { str = UnmappableString },
+                new LPStrTestClass() { str = ValidString },
                 (LPStrTestClass s) => s.str));
 
         Test.Validate(
@@ -147,6 +148,7 @@ public class PInvoke_True_False
                 &LPStrBuffer_InOutByRef_Array_Struct),
             new Test.DataContext<LPStrTestStruct[], string>(
                 new LPStrTestStruct[] { GetInvalidStruct(), GetInvalidStruct() },
+                new LPStrTestStruct[] { GetUnmappableStruct(), GetUnmappableStruct() },
                 new LPStrTestStruct[] { GetValidStruct(), GetValidStruct() },
                 (LPStrTestStruct[] s) => s[0].str));
     }

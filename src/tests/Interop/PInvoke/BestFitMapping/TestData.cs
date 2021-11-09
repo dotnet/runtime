@@ -5,91 +5,26 @@ using System.Text;
 
 public static class TestData
 {
-    public static string GetInvalidString()
-    {
-        return GetInvalidStringBuilder().ToString();
-    }
+    public const char InvalidChar = (char)0x2216;
+    public const char UnmappableChar = '火';
+    public const char ValidChar = 'c';
 
-    public static string GetUnmappableString()
-    {
-        return GetUnmappableStringBuilder().ToString();
-    }
-
-    public static string GetValidString()
-    {
-        return GetValidStringBuilder().ToString();
-    }
-
-    public static StringBuilder GetInvalidStringBuilder()
-    {
-        StringBuilder sbl = new StringBuilder();
-        sbl.Append((char)0x2216);
-        sbl.Append((char)0x2044);
-        sbl.Append((char)0x2215);
-        sbl.Append((char)0x0589);
-        sbl.Append((char)0x2236);
-        return sbl;
-    }
-
-    public static StringBuilder GetUnmappableStringBuilder()
-    {
-        StringBuilder sbl = new StringBuilder();
-        sbl.Append('乀');
-        sbl.Append('Ω');
-        sbl.Append('火');
-        return sbl;
-    }
-
-    public static StringBuilder GetValidStringBuilder()
-    {
-        return new StringBuilder("This is the initial test string.");
-    }
-
-    public static char GetInvalidChar()
-    {
-        return (char)0x2216;
-    }
-
-    public static char GetValidChar()
-    {
-        return 'c';
-    }
-
-    public static char GetUnmappableChar()
-    {
-        return '火';
-    }
-
-    public static string[] GetInvalidStringArray()
-    {
-        string invalid = GetInvalidString();
-        return new string[]
+    public static readonly string InvalidString = new string(new char[]
         {
-            invalid,
-            invalid,
-            invalid
-        };
-    }
+            (char)0x2216,
+            (char)0x2044,
+            (char)0x2215,
+            (char)0x0589,
+            (char)0x2236
+        });
+    public static readonly string UnmappableString = new string(new char[] { '乀', 'Ω', '火' });
+    public static readonly string ValidString = "This is the initial test string.";
 
-    public static string[] GetUnmappableStringArray()
-    {
-        string unmappable = GetUnmappableString();
-        return new string[]
-        {
-            unmappable,
-            unmappable,
-            unmappable
-        };
-    }
+    public static readonly StringBuilder InvalidStringBuilder = new StringBuilder(InvalidString);
+    public static readonly StringBuilder UnmappableStringBuilder = new StringBuilder(UnmappableString);
+    public static readonly StringBuilder ValidStringBuilder = new StringBuilder(ValidString);
 
-    public static string[] GetValidStringArray()
-    {
-        string valid = GetValidString();
-        return new string[]
-        {
-            valid,
-            valid,
-            valid
-        };
-    }
+    public static readonly string[] InvalidStringArray = new string[] { InvalidString, InvalidString, InvalidString };
+    public static readonly string[] UnmappableStringArray = new string[] { UnmappableString, UnmappableString, UnmappableString };
+    public static readonly string[] ValidStringArray = new string[] { ValidString, ValidString, ValidString };
 }
