@@ -517,8 +517,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - ${{ if eq(variables['isFullMatrix'], true) }}:
-       - Browser_wasm_win
+    - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
