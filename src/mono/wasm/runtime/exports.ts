@@ -56,6 +56,7 @@ import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 import { ArgsMarshalString } from "./method-binding";
+import { __AllAccessors__ } from "./memory";
 
 export const MONO: MONO = <any>{
     // current "public" MONO API
@@ -252,6 +253,8 @@ export const INTERNAL: any = {
     mono_wasm_raise_debug_event,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
 };
+// Expose all the get/set methods via INTERNAL
+Object.assign(INTERNAL, __AllAccessors__);
 
 // this represents visibility in the javascript
 // like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
