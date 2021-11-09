@@ -427,9 +427,9 @@ namespace DebuggerTests
         public static string StaticPropertyWithError => throw new Exception("not implemented");
 
         private int HelperMethod()
-	    {
-		    return 5;
-	    }
+        {
+            return 5;
+        }
 
         public async void run()
         {
