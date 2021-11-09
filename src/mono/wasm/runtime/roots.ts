@@ -198,11 +198,13 @@ export class WasmRootBuffer {
 
     get(index: number): ManagedPointer {
         this._check_in_range(index);
-        return <any>Module.HEAP32[this.get_address_32(index)];
+        const offset = this.get_address_32(index);
+        return <any>Module.HEAP32[offset];
     }
 
     set(index: number, value: ManagedPointer): ManagedPointer {
-        Module.HEAP32[this.get_address_32(index)] = <any>value;
+        const offset = this.get_address_32(index);
+        Module.HEAP32[offset] = <any>value;
         return value;
     }
 
