@@ -15,14 +15,11 @@ namespace Microsoft.Interop
     public enum DllImportMember
     {
         None = 0,
-        BestFitMapping = 1 << 0,
-        CallingConvention = 1 << 1,
-        CharSet = 1 << 2,
-        EntryPoint = 1 << 3,
-        ExactSpelling = 1 << 4,
-        PreserveSig = 1 << 5,
-        SetLastError = 1 << 6,
-        ThrowOnUnmappableChar = 1 << 7,
+        CharSet = 1 << 0,
+        EntryPoint = 1 << 1,
+        ExactSpelling = 1 << 2,
+        PreserveSig = 1 << 3,
+        SetLastError = 1 << 4,
         All = ~None
     }
 
@@ -39,13 +36,10 @@ namespace Microsoft.Interop
         /// Value set by the user on the original declaration.
         /// </summary>
         public DllImportMember IsUserDefined { get; init; }
-        public bool BestFitMapping { get; init; }
-        public CallingConvention CallingConvention { get; init; }
         public CharSet CharSet { get; init; }
         public string? EntryPoint { get; init; }
         public bool ExactSpelling { get; init; }
         public bool PreserveSig { get; init; }
         public bool SetLastError { get; init; }
-        public bool ThrowOnUnmappableChar { get; init; }
     }
 }

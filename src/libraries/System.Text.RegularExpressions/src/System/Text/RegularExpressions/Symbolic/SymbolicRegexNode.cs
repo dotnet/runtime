@@ -1222,10 +1222,6 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             var predicates = new HashSet<S>();
             CollectPredicates_helper(predicates);
-            if (predicates.Count == 0)
-            {
-                predicates.Add(_builder._solver.True);
-            }
             return predicates;
         }
 
@@ -1311,17 +1307,7 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(typeof(S).IsAssignableTo(typeof(IComparable)));
 
             HashSet<S> predicates = GetPredicates();
-            Debug.Assert(predicates.Count != 0);
-
-            S[] predicatesArray = new S[predicates.Count];
-            int i = 0;
-            foreach (S s in predicates)
-            {
-                predicatesArray[i++] = s;
-            }
-            Debug.Assert(i == predicatesArray.Length);
-
-            List<S> mt = _builder._solver.GenerateMinterms(predicatesArray);
+            List<S> mt = _builder._solver.GenerateMinterms(predicates);
             mt.Sort();
             return mt.ToArray();
         }

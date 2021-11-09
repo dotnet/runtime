@@ -47,6 +47,7 @@ namespace Microsoft.Interop
                 NativeMarshallingAttributeInfo marshalInfo => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
                 BlittableTypeAttributeInfo => s_blittable,
                 GeneratedNativeMarshallingAttributeInfo => s_forwarder,
+                MissingSupportMarshallingInfo => s_forwarder,
                 _ => _innerMarshallingGenerator.Create(info, context)
             };
         }

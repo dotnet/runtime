@@ -2359,67 +2359,6 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
-
-private:
-    //-----------------------------------------------------------
-    // Static BINDER_SPACE::Assembly -> DomainAssembly mapping functions.
-    // This map does not maintain a reference count to either key or value.
-    // PEAssembly maintains a reference count on the BINDER_SPACE::Assembly through its code:PEAssembly::m_pHostAssembly field.
-    // It is removed from this hash table by code:DomainAssembly::~DomainAssembly.
-    struct HostAssemblyHashTraits : public DefaultSHashTraits<PTR_DomainAssembly>
-    {
-    public:
-        typedef PTR_BINDER_SPACE_Assembly key_t;
-
-        static key_t GetKey(element_t const & elem)
-        {
-            STATIC_CONTRACT_WRAPPER;
-            return elem->GetPEAssembly()->GetHostAssembly();
-        }
-
-        static BOOL Equals(key_t key1, key_t key2)
-        {
-            LIMITED_METHOD_CONTRACT;
-            return dac_cast<TADDR>(key1) == dac_cast<TADDR>(key2);
-        }
-
-        static count_t Hash(key_t key)
-        {
-            STATIC_CONTRACT_LIMITED_METHOD;
-            //return reinterpret_cast<count_t>(dac_cast<TADDR>(key));
-            return (count_t)(dac_cast<TADDR>(key));
-        }
-
-        static element_t Null() { return NULL; }
-        static element_t Deleted() { return (element_t)(TADDR)-1; }
-        static bool IsNull(const element_t & e) { return e == NULL; }
-        static bool IsDeleted(const element_t & e) { return dac_cast<TADDR>(e) == (TADDR)-1; }
-    };
-
-    typedef SHash<HostAssemblyHashTraits> HostAssemblyMap;
-    HostAssemblyMap   m_hostAssemblyMap;
-    CrstExplicitInit  m_crstHostAssemblyMap;
-    // Lock to serialize all Add operations (in addition to the "read-lock" above)
-    CrstExplicitInit  m_crstHostAssemblyMapAdd;
-
-public:
-    // Returns DomainAssembly.
-    PTR_DomainAssembly FindAssembly(PTR_BINDER_SPACE_Assembly pHostAssembly);
-
-#ifndef DACCESS_COMPILE
-private:
-    friend void DomainAssembly::Allocate();
-    friend DomainAssembly::~DomainAssembly();
-
-    // Called from DomainAssembly::Begin.
-    void PublishHostedAssembly(
-        DomainAssembly* pAssembly);
-
-    // Called from DomainAssembly::~DomainAssembly
-    void UnPublishHostedAssembly(
-        DomainAssembly* pAssembly);
-#endif // DACCESS_COMPILE
-
 };  // class AppDomain
 
 // Just a ref holder
