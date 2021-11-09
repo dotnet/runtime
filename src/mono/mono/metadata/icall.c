@@ -3370,8 +3370,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	 * greater flexibility.
 	 */
 	MonoMethod *m = method->method;
-	MonoMethodSignature* const sig = mono_method_signature_internal (m);
-	int pcount = 0;
 	void *obj = this_arg;
 	MonoObject *result = NULL;
 	MonoException *exception = NULL;

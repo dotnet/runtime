@@ -288,7 +288,7 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 
 #define mono_span_length(span) (span->_length)
 
-#define mono_span_get(span,type,idx) (type)(!span->_pointer ? NULL : span->_pointer[idx])
+#define mono_span_get(span,type,idx) (type)(!span->_pointer ? (type)0 : span->_pointer[idx])
 
 #define mono_span_addr(span,type,idx) (type*)(span->_pointer + idx)
 
