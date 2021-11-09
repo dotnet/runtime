@@ -2886,6 +2886,19 @@ GenTree* Compiler::impCloneExpr(GenTree*             tree,
     return gtNewLclvNode(temp, type);
 }
 
+
+//------------------------------------------------------------------------
+// impCreateDIWithCurrentStackInfo: Create a DebugInfo instance with the
+// specified IL offset and 'is call' bit, using the current stack to determine
+// whether to set the 'stack empty' bit.
+//
+// Arguments:
+//    offs   - the IL offset for the DebugInfo
+//    isCall - whether the created DebugInfo should have the IsCall bit set
+//
+// Return Value:
+//    The DebugInfo instance.
+//
 DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
 {
     assert(offs != BAD_IL_OFFSET);
@@ -2894,11 +2907,20 @@ DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
     return DebugInfo(compInlineContext, ILLocation(offs, isStackEmpty, isCall));
 }
 
-/*****************************************************************************
- * Remember the IL offset (including stack-empty info) for the trees we will
- * generate next.
- */
-
+//------------------------------------------------------------------------
+// impCurStmtOffsSet: Set the "current debug info" to attach to statements that
+// we are generating next.
+//
+// Arguments:
+//    offs - the IL offset
+//
+// Remarks:
+//    This function will be called in the main IL processing loop when it is
+//    determined that we have reached a location in the IL stream for which we
+//    want to report debug information. This is the main way we determine which
+//    statements to report debug info for to the EE: for other statements, they
+//    will have no debug information attached.
+//
 inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
 {
     if (offs == BAD_IL_OFFSET)

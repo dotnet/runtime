@@ -10780,12 +10780,12 @@ void CodeGen::genIPmappingGen()
             if ((block->bbRefs > 1) && (stmt != nullptr))
             {
                 bool found = false;
-                if (stmt->GetDebugInfo() != BAD_IL_OFFSET)
+                DebugInfo rootInfo = stmt->GetDebugInfo().GetRoot();
+                if (rootInfo.IsValid())
                 {
-                    IL_OFFSET ilOffs = jitGetILoffs(stmt->GetDebugInfo());
-                    for (unsigned i = 0; i < eeBoundariesCount; ++i)
+                    for (unsigned i = 0; i < compiler->eeBoundariesCount; ++i)
                     {
-                        if (eeBoundaries[i].ilOffset == ilOffs)
+                        if (compiler->eeBoundaries[i].ilOffset == rootInfo.GetLocation().GetOffset())
                         {
                             found = true;
                             break;

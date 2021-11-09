@@ -27,6 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitstd.h"
 #include "jithashtable.h"
 #include "gentree.h"
+#include "debuginfo.h"
 #include "lir.h"
 #include "block.h"
 #include "inline.h"
