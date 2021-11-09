@@ -869,10 +869,16 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
+        internal object InvokeCtorWorker(BindingFlags invokeAttr, in Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return InternalInvoke(null, arguments, wrapExceptions)!;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object InvokeArrayCtorWorker(in Span<int> arguments)
+        {
+            return InternalInvokeArrayCtor(in arguments);
         }
 
         /*
@@ -881,6 +887,9 @@ namespace System.Reflection
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private extern object InternalInvokeArrayCtor(in Span<int> arguments);
 
         private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
         {

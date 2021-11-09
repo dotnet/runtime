@@ -3373,11 +3373,7 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	MonoMethodSignature* const sig = mono_method_signature_internal (m);
 	int pcount = 0;
 	void *obj = this_arg;
-	char *this_name = NULL;
-	char *target_name = NULL;
-	char *msg = NULL;
 	MonoObject *result = NULL;
-	MonoArray *arr = NULL;
 	MonoException *exception = NULL;
 
 	*MONO_HANDLE_REF (exception_out) = NULL;
@@ -3403,65 +3399,76 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		}
 	}
 
-	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
-		int i;
-		pcount = mono_span_length (params_span);
-		uintptr_t * const lengths = g_newa (uintptr_t, pcount);
-		/* Note: the synthetized array .ctors have int32 as argument type */
-		for (i = 0; i < pcount; ++i)
-			lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, i) + sizeof (MonoObject));
-
-		if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
-			/* This is a ctor for jagged arrays. MS creates an array of arrays. */
-			arr = mono_array_new_full_checked (m->klass, lengths, NULL, error);
-			goto_if_nok (error, return_null);
-
-			MonoArrayHandle subarray_handle = MONO_HANDLE_NEW (MonoArray, NULL);
-
-			for (i = 0; i < mono_array_length_internal (arr); ++i) {
-				MonoArray *subarray = mono_array_new_full_checked (m_class_get_element_class (m->klass), &lengths [1], NULL, error);
-				goto_if_nok (error, return_null);
-				MONO_HANDLE_ASSIGN_RAW (subarray_handle, subarray); // FIXME? Overkill?
-				mono_array_setref_fast (arr, i, subarray);
-			}
-			goto exit;
-		}
-
-		if (m_class_get_rank (m->klass) == pcount) {
-			/* Only lengths provided. */
-			arr = mono_array_new_full_checked (m->klass, lengths, NULL, error);
-			goto_if_nok (error, return_null);
-			goto exit;
-		} else {
-			g_assert (pcount == (m_class_get_rank (m->klass) * 2));
-			/* The arguments are lower-bound-length pairs */
-			intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
-
-			for (i = 0; i < pcount / 2; ++i) {
-				lower_bounds [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
-				lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
-			}
-
-			arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);
-			goto_if_nok (error, return_null);
-			goto exit;
-		}
-	}
 	result = mono_runtime_invoke_span_checked (m, obj, params_span, error);
 	goto exit;
 return_null:
 	result = NULL;
-	arr = NULL;
 exit:
 	if (exception) {
 		MONO_HANDLE_NEW (MonoException, exception); // FIXME? overkill?
 		mono_gc_wbarrier_generic_store_internal (MONO_HANDLE_REF (exception_out), (MonoObject*)exception);
 	}
-	g_free (target_name);
-	g_free (this_name);
-	g_free (msg);
-	g_assert (!result || !arr); // only one, or neither, should be set
-	return result ? MONO_HANDLE_NEW (MonoObject, result) : arr ? MONO_HANDLE_NEW (MonoObject, (MonoObject*)arr) : NULL_HANDLE;
+	return result ? MONO_HANDLE_NEW (MonoObject, result) : NULL_HANDLE;
+}
+
+MonoObjectHandle
+ves_icall_InternalInvokeArrayCtor (MonoReflectionMethodHandle method_handle, MonoSpanOfInts *params_span,
+			MonoError *error)
+{
+	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
+	g_assert (params_span != NULL);
+
+	int32_t i;
+	MonoArray *arr = NULL;
+	MonoMethod *m = method->method;
+	MonoMethodSignature* const sig = mono_method_signature_internal (m);
+	g_assert (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor"));
+
+	int32_t pcount = mono_span_length (params_span);
+	uintptr_t * const lengths = g_newa (uintptr_t, pcount);
+	/* Note: the synthetized array .ctors have int32 as argument type */
+	for (i = 0; i < pcount; ++i)
+		lengths [i] = mono_span_get (params_span, int32_t, i);
+
+	if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
+		/* This is a ctor for jagged arrays. MS creates an array of arrays. */
+		arr = mono_array_new_full_checked (m->klass, lengths, NULL, error);
+		goto_if_nok (error, return_null);
+
+		MonoArrayHandle subarray_handle = MONO_HANDLE_NEW (MonoArray, NULL);
+
+		for (i = 0; i < mono_array_length_internal (arr); ++i) {
+			MonoArray *subarray = mono_array_new_full_checked (m_class_get_element_class (m->klass), &lengths [1], NULL, error);
+			goto_if_nok (error, return_null);
+			MONO_HANDLE_ASSIGN_RAW (subarray_handle, subarray); // FIXME? Overkill?
+			mono_array_setref_fast (arr, i, subarray);
+		}
+		goto exit;
+	}
+
+	if (m_class_get_rank (m->klass) == pcount) {
+		/* Only lengths provided. */
+		arr = mono_array_new_full_checked (m->klass, lengths, NULL, error);
+		goto_if_nok (error, return_null);
+		goto exit;
+	} else {
+		g_assert (pcount == (m_class_get_rank (m->klass) * 2));
+		/* The arguments are lower-bound-length pairs */
+		intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
+
+		for (i = 0; i < pcount / 2; ++i) {
+			lower_bounds [i] = mono_span_get (params_span, int32_t, (i * 2));
+			lengths [i] = mono_span_get (params_span, int32_t, (i * 2) + 1);
+		}
+
+		arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);
+		goto_if_nok (error, return_null);
+		goto exit;
+	}
+return_null:
+	arr = NULL;
+exit:
+	return arr ? MONO_HANDLE_NEW (MonoObject, (MonoObject*)arr) : NULL_HANDLE;
 }
 
 static guint64

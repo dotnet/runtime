@@ -176,10 +176,14 @@ struct _MonoArray {
 };
 
 /* match the layout of the managed definition of Span<T> */
-typedef struct {
-	MonoObject** _pointer;
-	int32_t _length;
-} MonoSpanOfObjects;
+#define MONO_DEFINE_SPAN_OF_T(name, type)	\
+	typedef struct {	\
+		type* _pointer;	\
+		uint32_t _length;	\
+	} name;
+
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfObjects, MonoObject*)
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfInts, int)
 
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
