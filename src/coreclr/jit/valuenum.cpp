@@ -4557,18 +4557,25 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //    vrk - whether the new vn should swap, reverse, or both
 //
 // Returns:
-//    vn for reversed/swapped comparsion, or NoVN.
+//    vn for related comparsion, or NoVN.
 //
 // Note:
 //    If "vn" corresponds to (x > y), the resulting VN corresponds to
+//    VRK_Same               (x > y)
 //    VRK_Swap               (y < x)
 //    VRK_Reverse            (x <= y)
 //    VRK_SwapReverse        (y >= x)
 //
-//    Will return NoVN for all float comparisons.
+//    VRK_Same will always return the VN passed in.
+//    For other relations, this method will return NoVN for all float comparisons.
 //
 ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 {
+    if (vrk == VN_RELATION_KIND::VRK_Same)
+    {
+        return vn;
+    }
+
     if (vn == NoVN)
     {
         return NoVN;
@@ -4688,6 +4695,25 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 
     return result;
 }
+
+#ifdef DEBUG
+const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
+{
+    switch (vrk)
+    {
+        case VN_RELATION_KIND::VRK_Same:
+            return "same";
+        case VN_RELATION_KIND::VRK_Reverse:
+            return "reversed";
+        case VN_RELATION_KIND::VRK_Swap:
+            return "swapped";
+        case VN_RELATION_KIND::VRK_SwapReverse:
+            return "swapped and reversed";
+        default:
+            return "unknown vn relation";
+    }
+}
+#endif
 
 bool ValueNumStore::IsVNRelop(ValueNum vn)
 {
