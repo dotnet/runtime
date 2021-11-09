@@ -902,6 +902,26 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     }
 }
 
+// Map a block into its schema key we will use for storing basic blocks.
+//
+static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
+{
+    static const int IS_INTERNAL_BLOCK = (int32_t)0x80000000;
+    int32_t          key               = (int32_t)block->bbCodeOffs;
+    // We may see empty BBJ_NONE BBF_INTERNAL blocks that were added
+    // by fgNormalizeEH.
+    //
+    // We'll use their bbNum in place of IL offset, and set
+    // a high bit as a "flag"
+    //
+    if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
+    {
+        key = block->bbNum | IS_INTERNAL_BLOCK;
+    }
+
+    return key;
+}
+
 //------------------------------------------------------------------------
 // EfficientEdgeCountInstrumentor: instrumentor that adds a counter to
 //   selective edges.
@@ -1086,35 +1106,19 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         assert(probe->schemaIndex == -1);
         probe->schemaIndex = (int)schema.size();
 
-        // Assign the current block's IL offset into the profile data.
-        // Use the "other" field to hold the target block IL offset.
+        // Normally we use the the offset of the block in the schema, but for certain
+        // blocks we do not have any information we can use and need to use internal BB numbers.
         //
-        int32_t sourceOffset = (int32_t)block->bbCodeOffs;
-        int32_t targetOffset = (int32_t)target->bbCodeOffs;
-
-        // We may see empty BBJ_NONE BBF_INTERNAL blocks that were added
-        // by fgNormalizeEH.
-        //
-        // We'll use their bbNum in place of IL offset, and set
-        // a high bit as a "flag"
-        //
-        if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
-        {
-            sourceOffset = block->bbNum | IL_OFFSETX_CALLINSTRUCTIONBIT;
-        }
-
-        if ((target->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
-        {
-            targetOffset = target->bbNum | IL_OFFSETX_CALLINSTRUCTIONBIT;
-        }
+        int32_t sourceKey = EfficientEdgeCountBlockToKey(block);
+        int32_t targetKey = EfficientEdgeCountBlockToKey(target);
 
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count               = 1;
-        schemaElem.Other               = targetOffset;
+        schemaElem.Other               = targetKey;
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
-        schemaElem.ILOffset = sourceOffset;
+        schemaElem.ILOffset = sourceKey;
         schemaElem.Offset   = 0;
 
         schema.push_back(schemaElem);
@@ -1287,7 +1291,7 @@ public:
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
                                              ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
-        schemaElem.ILOffset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+        schemaElem.ILOffset = (int32_t)call->gtClassProfileCandidateInfo->ilOffset;
         schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
@@ -1988,19 +1992,6 @@ private:
     unsigned      m_unknownEdges;
     unsigned      m_zeroEdges;
 
-    // Map a block into its schema key.
-    //
-    static int32_t BlockToKey(BasicBlock* block)
-    {
-        int32_t key = (int32_t)block->bbCodeOffs;
-        if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
-        {
-            key = block->bbNum | IL_OFFSETX_CALLINSTRUCTIONBIT;
-        }
-
-        return key;
-    }
-
     // Map correlating block keys to blocks.
     //
     typedef JitHashTable<int32_t, JitSmallPrimitiveKeyFuncs<int32_t>, BasicBlock*> KeyToBlockMap;
@@ -2018,7 +2009,8 @@ private:
         }
 
         EdgeKey(BasicBlock* sourceBlock, BasicBlock* targetBlock)
-            : m_sourceKey(BlockToKey(sourceBlock)), m_targetKey(BlockToKey(targetBlock))
+            : m_sourceKey(EfficientEdgeCountBlockToKey(sourceBlock))
+            , m_targetKey(EfficientEdgeCountBlockToKey(targetBlock))
         {
         }
 
@@ -2241,7 +2233,7 @@ void EfficientEdgeCountReconstructor::Prepare()
     //
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        m_keyToBlockMap.Set(BlockToKey(block), block);
+        m_keyToBlockMap.Set(EfficientEdgeCountBlockToKey(block), block);
         BlockInfo* const info = new (m_allocator) BlockInfo();
         SetBlockInfo(block, info);
 
