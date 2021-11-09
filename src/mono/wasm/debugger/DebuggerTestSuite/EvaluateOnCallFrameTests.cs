@@ -692,7 +692,6 @@ namespace DebuggerTests
 
                 var frame = pause_location["callFrames"][0];
 
-                await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass", expect_ok: true);
                 await EvaluateOnCallFrameAndCheck(id,
                     ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
@@ -711,7 +710,6 @@ namespace DebuggerTests
 
                 var frame = pause_location["callFrames"][0];
 
-                await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass", expect_ok: true);
                 await EvaluateOnCallFrameAndCheck(id,
                     ("EvaluateStaticClass.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
@@ -738,7 +736,6 @@ namespace DebuggerTests
 
                 var frame = pause_location["callFrames"][0];
 
-                await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass", expect_ok: true);
                 await EvaluateOnCallFrameAndCheck(id,
                     ("EvaluateStaticClass.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
@@ -755,15 +752,17 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateNonStaticClassWithStaticFields() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            "DebuggerTests.EvaluateMethodTestsClass", "EvaluateAsyncMethods", 3, "EvaluateAsyncMethods",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var frame = pause_location["callFrames"][0];
 
-                await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateNonStaticClassWithStaticFields", expect_ok: true);
+                await EvaluateOnCallFrame(id, "staticClass", expect_ok: true);
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("staticClass", TObject("DebuggerTests.EvaluateNonStaticClassWithStaticFields", is_null: false)));
                 await EvaluateOnCallFrameAndCheck(id,
                     ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)));
                 await EvaluateOnCallFrameAndCheck(id,
