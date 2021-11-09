@@ -46,8 +46,11 @@ DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModu
     S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * S_SIZE_T(cInitialBuckets + 2);
 
     m_cEntries = 0;
-    m_pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
-    ((size_t*)m_pBuckets)[0] = cInitialBuckets;
+    PTR_VolatileEntry* pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
+    ((size_t*)pBuckets)[0] = cInitialBuckets;
+
+    // publish after setting the length
+    VolatileStore(&m_pBuckets, pBuckets);
 
     // Note: Memory allocated on loader heap is zero filled
 }
@@ -175,17 +178,19 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     //                   slot [1] will contain the next version of the table if it resizes
     S_SIZE_T cbNewBuckets = S_SIZE_T(cNewBuckets + 2) * S_SIZE_T(sizeof(PTR_VolatileEntry));
 
+    // REVIEW: I need a temp array here, relatively small (under 1K elements typically), is this the right heap for that?
     AllocMemHolder<PTR_VolatileEntry> pTails(GetHeap()->AllocMem_NoThrow(cbNewBuckets));
+    if (pTails == NULL)
+        return;
 
     PTR_VolatileEntry *pNewBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem_NoThrow(cbNewBuckets);
     if (!pNewBuckets)
         return;
 
-    ((size_t*)pNewBuckets)[0] = cNewBuckets;            // element 0 stores the length of the table
-    ((PTR_VolatileEntry**)curBuckets)[1] = pNewBuckets; // element 1 stores the next version of the table
-
-    // the new buckets must be published before we start moving entries.
-    MemoryBarrier();
+    // element 0 stores the length of the table
+    ((size_t*)pNewBuckets)[0] = cNewBuckets;
+    // element 1 stores the next version of the table (after length is written)
+    VolatileStore(&((PTR_VolatileEntry**)curBuckets)[1], pNewBuckets);
 
     // All buckets are initially empty.
     // Note: Memory allocated on loader heap is zero filled
@@ -327,6 +332,9 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
             pEntry = pEntry->m_pNextEntry;
         }
 
+        // in a case if resize is in progress, look in the new table as well.
+        // if existing entry is ot in the old table, it must be in the new
+        // since we unlink it from old only after linking into the new.
         curBuckets = (DPTR(PTR_VolatileEntry))dac_cast<TADDR>(curBuckets[1]);
     } while (curBuckets != nullptr);
 
@@ -371,9 +379,10 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
         }
     }
 
-    // check for next buckets must hapen after we looked through current
-    MemoryBarrier();
+    // check for next table must hapen after we looked through the current.
+    VolatileLoadBarrier();
 
+    // in a case if resize is in progress, look in the new table as well.
     auto nextBuckets = ((DPTR(PTR_VolatileEntry)*)pContext->m_curTable)[1];
     if (nextBuckets != nullptr)
     {
