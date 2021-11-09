@@ -161,12 +161,7 @@ namespace System.Reflection
             // Array construction is a special case.
             if (DeclaringType is not null && DeclaringType.IsArray)
             {
-                Span<int> args = stackalloc int[actualCount];
-                for (int i = 0; i < actualCount; ++i)
-                {
-                    args[i] = (int)parameters![i]!;
-                }
-                return InvokeArrayCtorWorker(in args);
+                return InvokeArrayCtorWorker(parameters!);
             }
 
             StackAllocedArguments stackArgs = default;
@@ -176,7 +171,7 @@ namespace System.Reflection
                 arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, ArgumentTypes);
             }
 
-            object retValue = InvokeCtorWorker(invokeAttr, in arguments);
+            object retValue = InvokeCtorWorker(invokeAttr, arguments);
 
             // copy out. This should be made only if ByRef are present.
             // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
