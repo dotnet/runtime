@@ -186,8 +186,12 @@ install_assembly_loader_hooks (void)
 static gboolean
 check_tpa_has_exe (MonoCoreTrustedPlatformAssemblies *tpa)
 {
+	const char *ext = ".exe";
+	const size_t ext_len = strlen (ext);
 	for (int i = 0; i < tpa->assembly_count; ++i) {
-		if (strcasestr (tpa->basenames[i], ".exe") != NULL)
+		/* Does the basename end with .exe ? */
+		const char* endp = tpa->basenames[i] + tpa->basename_lens[i] - ext_len;
+		if (!g_strcasecmp (endp, ext))
 			return TRUE;
 	}
 	return FALSE;
