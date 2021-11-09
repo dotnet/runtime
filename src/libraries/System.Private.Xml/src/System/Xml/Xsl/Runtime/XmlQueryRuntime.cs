@@ -786,7 +786,7 @@ namespace System.Xml.Xsl.Runtime
                     break;
             }
 
-            Debug.Fail("XmlTypeCode " + code + " was not fully handled.");
+            Debug.Fail($"XmlTypeCode {code} was not fully handled.");
             return false;
         }
 
