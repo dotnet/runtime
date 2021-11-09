@@ -231,7 +231,7 @@ jobs:
     # Build libs.native, host.native and mono with gcc
     - ${{ if eq(parameters.compilerName, 'gcc') }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) libs.native+host.native+mono $(compilerArg) $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
-        displayName: Build mono+libs.native+host.native
+        displayName: Build libs.native+host.native+mono
 
     # Sign and add entitlements to these MacOS binaries
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
