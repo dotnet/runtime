@@ -1434,7 +1434,7 @@ namespace System.Reflection.Metadata.Ecma335
             // GenericParam             Owner, Number                       No**
             // GenericParamConstraint   Owner                               No**
             // ImplMap                  MemberForwarded                     No*
-            // InterfaceImpl            Class, Interface                    No**
+            // InterfaceImpl            Class                               No**
             // MethodImpl               Class                               No*
             // MethodSemantics          Association                         Yes
             // NestedClass              NestedClass                         No*
@@ -1551,27 +1551,12 @@ namespace System.Reflection.Metadata.Ecma335
 
         private void ValidateInterfaceImplTable()
         {
-            if (_interfaceImplTable.Count == 0)
+            for (int i = 1; i < _interfaceImplTable.Count; i++)
             {
-                return;
-            }
-
-            InterfaceImplRow current, previous = _interfaceImplTable[0];
-            for (int i = 1; i < _interfaceImplTable.Count; i++, previous = current)
-            {
-                current = _interfaceImplTable[i];
-
-                if (current.Class > previous.Class)
+                if (_interfaceImplTable[i - 1].Class > _interfaceImplTable[i].Class)
                 {
-                    continue;
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.InterfaceImpl);
                 }
-
-                if (previous.Class == current.Class && current.Interface > previous.Interface)
-                {
-                    continue;
-                }
-
-                Throw.InvalidOperation_TableNotSorted(TableIndex.InterfaceImpl);
             }
         }
 

@@ -8,13 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "GetSecurityInfo", ExactSpelling = true)]
         internal static unsafe partial uint GetSecurityInfoByHandle(
-#else
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "GetSecurityInfo", ExactSpelling = true)]
-        internal static unsafe extern /*DWORD*/ uint GetSecurityInfoByHandle(
-#endif
             SafeHandle handle,
             /*DWORD*/ uint objectType,
             /*DWORD*/ uint securityInformation,

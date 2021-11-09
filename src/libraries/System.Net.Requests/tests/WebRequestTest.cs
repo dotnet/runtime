@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Net.Cache;
+using System.Net.Test.Common;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -184,6 +188,65 @@ namespace System.Net.Tests
             Assert.True(success);
             success = WebRequest.RegisterPrefix("stb:", new FakeRequestFactory());
             Assert.False(success);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(RequestCacheLevel.NoCacheNoStore, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
+        [InlineData(RequestCacheLevel.Reload, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
+        public void SendGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
+            RequestCacheLevel requestCacheLevel, string[] expectedHeaders)
+        {
+            RemoteExecutor.Invoke(async (reqCacheLevel, eh0, eh1) =>
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    WebRequest.DefaultCachePolicy = new RequestCachePolicy(Enum.Parse<RequestCacheLevel>(reqCacheLevel));
+                    WebRequest request = WebRequest.Create(uri);
+                    Task<WebResponse> getResponse = request.GetResponseAsync();
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                        Assert.Contains(eh0, headers);
+                        Assert.Contains(eh1, headers);
+                    });
+
+                    using (var response = (HttpWebResponse)await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+                });
+            }, requestCacheLevel.ToString(), expectedHeaders[0], expectedHeaders[1]).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SendGetRequest_WithGlobalCachePolicyBypassCache_DoNotAddCacheHeaders()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    WebRequest.DefaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+                    WebRequest request = WebRequest.Create(uri);
+                    Task<WebResponse> getResponse = request.GetResponseAsync();
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+
+                        foreach(string header in headers)
+                        {
+                            Assert.DoesNotContain("Pragma", header);
+                            Assert.DoesNotContain("Cache-Control", header);
+                        }
+                    });
+
+                    using (var response = (HttpWebResponse)await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+                });
+            }).Dispose();
         }
 
         private class FakeRequest : WebRequest

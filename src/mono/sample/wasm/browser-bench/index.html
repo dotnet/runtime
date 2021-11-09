@@ -41,10 +41,9 @@
         promise.then(ret => {
           document.getElementById("out").innerHTML += ret;
           if (ret.length > 0) {
-              document.getElementById("out").innerHTML += "<br>";
               setTimeout(function () { yieldBench(); }, 0);
           } else {
-              document.getElementById("out").innerHTML += "<br>Finished";
+              document.getElementById("out").innerHTML += "Finished";
           }
         });
       }

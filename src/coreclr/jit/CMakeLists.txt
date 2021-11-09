@@ -80,6 +80,7 @@ set( JIT_SOURCES
   codegenlinear.cpp
   compiler.cpp
   copyprop.cpp
+  debuginfo.cpp
   disasm.cpp
   earlyprop.cpp
   ee_il_dll.cpp
@@ -178,6 +179,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     compmemkind.h
     compphases.h
     dataflow.h
+    debuginfo.h
     decomposelongs.h
     disasm.h
     emit.h
