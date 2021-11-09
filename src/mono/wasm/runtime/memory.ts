@@ -85,9 +85,9 @@ export function setI32 (offset: _MemOffset, value: number) {
     Module.HEAP32[<any>offset >>> 2] = value;
 }
 
-export function setI64 (offset: _MemOffset, value: BigInt) {
-    // FIXME: Incorrect TS typeinfo?
-    Module.setValue(<VoidPtr><any>offset, <number><any>value, "i64");
+// NOTE: Accepts a number, not a BigInt, so values over Number.MAX_SAFE_INTEGER will be corrupted
+export function setI64 (offset: _MemOffset, value: number) {
+    Module.setValue(<VoidPtr><any>offset, value, "i64");
 }
 
 export function setF32 (offset: _MemOffset, value: number) {
@@ -123,6 +123,7 @@ export function getI32 (offset: _MemOffset) {
     return Module.HEAP32[<any>offset >>> 2];
 }
 
+// NOTE: Returns a number, not a BigInt. This means values over Number.MAX_SAFE_INTEGER will be corrupted
 export function getI64 (offset: _MemOffset) {
     return Module.getValue(<number><any>offset, "i64");
 }
