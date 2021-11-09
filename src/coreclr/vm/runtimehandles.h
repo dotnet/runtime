@@ -224,7 +224,7 @@ public:
 
     static FCDECL5(Object*, InvokeMethod, Object *target, Span<OBJECTREF>* objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions);
 
-    static FCDECL2(Object*, InvokeArrayCtor, Span<int>* args, SignatureNative* pSig);
+    static FCDECL2(Object*, InvokeArrayCtor, Span<OBJECTREF>* objs, SignatureNative* pSig);
 
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a

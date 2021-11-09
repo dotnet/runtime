@@ -1103,7 +1103,7 @@ FCIMPLEND
 
 
 FCIMPL2(Object*, RuntimeMethodHandle::InvokeArrayCtor,
-    Span<int>* args,
+    Span<OBJECTREF>* objs,
     SignatureNative* pSigUNSAFE)
 {
     FCALL_CONTRACT;
@@ -1126,7 +1126,29 @@ FCIMPL2(Object*, RuntimeMethodHandle::InvokeArrayCtor,
     _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
              th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 
-    gc.retVal = AllocateArrayEx(th, static_cast<int*>(*args), argCnt);
+    // Validate all of the parameters.  These all typed as integers
+    int allocSize = 0;
+    if (!ClrSafeInt<int>::multiply(sizeof(INT32), argCnt, allocSize))
+        COMPlusThrow(kArgumentException, IDS_EE_SIGTOOCOMPLEX);
+
+    INT32* indexes = (INT32*) _alloca((size_t)allocSize);
+    ZeroMemory(indexes, allocSize);
+
+    for (DWORD i = 0; i < (DWORD)argCnt; i++)
+    {
+        if (!objs->GetAt(i))
+            COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
+
+        MethodTable* pMT = objs->GetAt(i)->GetMethodTable();
+        CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
+
+        if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
+            COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
+
+        memcpy(&indexes[i], objs->GetAt(i)->UnBox(), pMT->GetNumInstanceFieldBytes());
+    }
+
+    gc.retVal = AllocateArrayEx(th, indexes, argCnt);
 
     HELPER_METHOD_FRAME_END();
 

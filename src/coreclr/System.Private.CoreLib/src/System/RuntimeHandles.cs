@@ -985,7 +985,7 @@ namespace System
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeArrayCtor(in Span<int> arguments, Signature sig);
+        internal static extern object InvokeArrayCtor(in Span<object?> arguments, Signature sig);
 
         [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static extern void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);

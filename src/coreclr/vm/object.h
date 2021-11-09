@@ -770,12 +770,6 @@ public:
     {
         return _length;
     }
-
-    // Get at the underlying pointer value.
-    explicit operator KIND*() const
-    {
-        return _pointer;
-    }
 };
 
 /* a TypedByRef is a structure that is used to implement VB's BYREF variants.
