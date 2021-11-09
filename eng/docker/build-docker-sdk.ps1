@@ -7,7 +7,6 @@ Param(
   [string][Alias('t')]$imageName = "dotnet-sdk-libs-current",
   [string][Alias('c')]$configuration = "Release",
   [switch][Alias('w')]$buildWindowsContainers,
-  [switch][Alias('pa')]$privateAspNetCore,
   [switch][Alias('ds')]$dailySdk
 )
 
@@ -17,10 +16,6 @@ $REPO_ROOT_DIR=$(git -C "$PSScriptRoot" rev-parse --show-toplevel)
 
 $dockerFilePrefix="$PSScriptRoot/libraries-sdk"
 
-if ($privateAspNetCore)
-{
-  $dockerFilePrefix="$PSScriptRoot/libraries-sdk-aspnetcore"
-}
 if ($dailySdk)
 {
   $dockerFilePrefix="$PSScriptRoot/libraries-sdk-daily"
@@ -38,14 +33,30 @@ if ($buildWindowsContainers)
   #   exit $LASTEXITCODE
   # }
 
-  $dockerFile="$dockerFilePrefix.windows.Dockerfile"
-  echo Get-ChildItem $dockerFile
+  $dockerFile="$dockerFilePrefix-daily.windows.Dockerfile"
+  
+  ## Collect the following artifacts under to a special folder that and copy it to the container,
+  ## so projects can build and test against the live-built runtime:
+  ## 1. Reference assembly pack (microsoft.netcore.app.ref)
+  ## 2. Runtime pack (microsoft.netcore.app.runtime.linux-x64)
+  ## 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
+  ## 4. testhost
+  $binArtifacts = "$REPO_ROOT_DIR\artifacts\bin"
+  $dockerArtifacts = "$REPO_ROOT_DIR\artifacts\docker-context"
 
+  if (Test-Path $dockerArtifacts) {
+      Remove-Item -Recurse -Force $dockerArtifacts
+  }
+
+  Copy-Item -Recurse -Destination $dockerArtifacts\microsoft.netcore.app.ref -Path $binArtifacts\microsoft.netcore.app.ref
+  Copy-Item -Recurse -Destination $dockerArtifacts\microsoft.netcore.app.runtime.win-x64 -Path $binArtifacts\microsoft.netcore.app.runtime.win-x64
+  Copy-Item -Recurse -Destination $dockerArtifacts\testhost -Path $binArtifacts\testhost
+  Copy-Item -Recurse -Destination $dockerArtifacts\targetingpacks.targets -Path $REPO_ROOT_DIR\eng\targetingpacks.targets
+  
   docker build --tag $imageName `
     --build-arg CONFIGURATION=$configuration `
-    --build-arg TESTHOST_LOCATION=. `
     --file $dockerFile `
-    "$REPO_ROOT_DIR/artifacts/bin/testhost"
+    $dockerArtifacts
 }
 else
 {
