@@ -106,7 +106,7 @@ namespace System.Xml.Schema
                         }
                         else
                         {
-                            typeCodeString = "List of " + TypeCodeToString(typeCode);
+                            typeCodeString = $"List of {TypeCodeToString(typeCode)}";
                         }
                         break;
 

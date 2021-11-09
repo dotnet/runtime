@@ -1805,9 +1805,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/div_r8/**">
             <Issue>https://github.com/dotnet/runtime/issues/54375</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/tailcall/tailcall/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54374</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/deep/_il_reldeep1/**">
             <Issue>needs triage</Issue>
         </ExcludeList>

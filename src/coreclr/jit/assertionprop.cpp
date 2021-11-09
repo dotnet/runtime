@@ -5605,8 +5605,9 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
             break;
 
         case GT_LCL_VAR:
+        case GT_LCL_FLD:
             // Make sure the local variable is an R-value.
-            if ((tree->gtFlags & (GTF_VAR_DEF | GTF_DONT_CSE)))
+            if ((tree->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF | GTF_DONT_CSE)) != GTF_EMPTY)
             {
                 return WALK_CONTINUE;
             }
