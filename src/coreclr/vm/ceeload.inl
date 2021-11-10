@@ -35,7 +35,6 @@ void LookupMap<TYPE>::SetValueAt(PTR_TADDR pValue, TYPE value, TADDR flags)
 
     value = dac_cast<TYPE>((dac_cast<TADDR>(value) | flags));
 
-    // REVIEW: why this is not VolatileStore? What guarantees that we do not have concurrent readers?
     *(dac_cast<DPTR(TYPE)>(pValue)) = value;
 }
 
