@@ -420,13 +420,6 @@ public:
         return ValueNum(SRC_Null);
     }
 
-    // The zero map is the map that returns a zero "for the appropriate type" when indexed at any index.
-    static ValueNum VNForZeroMap()
-    {
-        // We reserve Chunk 0 for "special" VNs.  Let SRC_ZeroMap (== 1) be the zero map.
-        return ValueNum(SRC_ZeroMap);
-    }
-
     // The ROH map is the map for the "read-only heap".  We assume that this is never mutated, and always
     // has the same value number.
     static ValueNum VNForROH()
@@ -463,9 +456,17 @@ public:
     // It has an unreached() for a "typ" that has no zero value, such as TYP_VOID.
     ValueNum VNZeroForType(var_types typ);
 
+    // Returns the value number for a zero-initialized struct.
+    ValueNum VNForZeroObj(CORINFO_CLASS_HANDLE structHnd);
+
     // Returns the value number for one of the given "typ".
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
     ValueNum VNOneForType(var_types typ);
+
+#ifdef FEATURE_SIMD
+    // A helper function for constructing VNF_SimdType VNs.
+    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+#endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set
     // for the the exception value "x".
@@ -1030,6 +1031,9 @@ public:
     // Prints the cast's representation mirroring GT_CAST's dump format.
     void vnDumpCast(Compiler* comp, ValueNum castVN);
 
+    // Requires "zeroObj" to be a VNF_ZeroObj. Prints its representation.
+    void vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj);
+
     // Returns the string name of "vnf".
     static const char* VNFuncName(VNFunc vnf);
     // Used in the implementation of the above.
@@ -1458,7 +1462,6 @@ private:
     enum SpecialRefConsts
     {
         SRC_Null,
-        SRC_ZeroMap,
         SRC_ReadOnlyHeap,
         SRC_Void,
         SRC_EmptyExcSet,

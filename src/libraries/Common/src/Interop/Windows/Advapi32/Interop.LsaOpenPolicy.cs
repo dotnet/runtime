@@ -9,13 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-#if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "LsaOpenPolicy", SetLastError = true)]
         private static partial uint LsaOpenPolicy(
-#else
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern uint LsaOpenPolicy(
-#endif
             ref UNICODE_STRING SystemName,
             ref OBJECT_ATTRIBUTES ObjectAttributes,
             int AccessMask,

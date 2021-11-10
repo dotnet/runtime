@@ -244,17 +244,17 @@ namespace System.Xml.Serialization
             {
                 if (!string.IsNullOrEmpty(type.Assembly.Location))
                 {
-                    path = Path.Combine(Path.GetDirectoryName(type.Assembly.Location)!, assemblyName + ".dll");
+                    path = Path.Combine(Path.GetDirectoryName(type.Assembly.Location)!, $"{assemblyName}.dll");
                 }
 
                 if ((string.IsNullOrEmpty(path) || !File.Exists(path)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly()?.Location))
                 {
-                    path = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, assemblyName + ".dll");
+                    path = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, $"{assemblyName}.dll");
                 }
 
                 if ((string.IsNullOrEmpty(path) || !File.Exists(path)) && !string.IsNullOrEmpty(AppContext.BaseDirectory))
                 {
-                    path = Path.Combine(Path.GetDirectoryName(AppContext.BaseDirectory)!, assemblyName + ".dll");
+                    path = Path.Combine(Path.GetDirectoryName(AppContext.BaseDirectory)!, $"{assemblyName}.dll");
                 }
 
                 if (!string.IsNullOrEmpty(path))
@@ -397,11 +397,11 @@ namespace System.Xml.Serialization
                     }
                 }
 
-                writer.WriteLine("namespace " + GeneratedAssemblyNamespace + " {");
+                writer.WriteLine($"namespace {GeneratedAssemblyNamespace} {{");
                 writer.Indent++;
                 writer.WriteLine();
 
-                string writerClass = "XmlSerializationWriter" + suffix;
+                string writerClass = $"XmlSerializationWriter{suffix}";
                 writerClass = classes.AddUnique(writerClass, writerClass);
                 var writerCodeGen = new XmlSerializationWriterCodeGen(writer, scopes, "public", writerClass);
                 writerCodeGen.GenerateBegin();
@@ -415,7 +415,7 @@ namespace System.Xml.Serialization
                 writerCodeGen.GenerateEnd();
                 writer.WriteLine();
 
-                string readerClass = "XmlSerializationReader" + suffix;
+                string readerClass = $"XmlSerializationReader{suffix}";
                 readerClass = classes.AddUnique(readerClass, readerClass);
                 var readerCodeGen = new XmlSerializationReaderCodeGen(writer, scopes, "public", readerClass);
                 readerCodeGen.GenerateBegin();
@@ -499,10 +499,10 @@ namespace System.Xml.Serialization
 
                 ModuleBuilder moduleBuilder = CodeGenerator.CreateModuleBuilder(assemblyBuilder, assemblyName);
 
-                string writerClass = "XmlSerializationWriter" + suffix;
-                writerClass = classes.AddUnique(writerClass, writerClass);
-                XmlSerializationWriterILGen writerCodeGen = new XmlSerializationWriterILGen(scopes, "public", writerClass);
-                writerCodeGen.ModuleBuilder = moduleBuilder;
+            string writerClass = $"XmlSerializationWriter{suffix}";
+            writerClass = classes.AddUnique(writerClass, writerClass);
+            XmlSerializationWriterILGen writerCodeGen = new XmlSerializationWriterILGen(scopes, "public", writerClass);
+            writerCodeGen.ModuleBuilder = moduleBuilder;
 
                 writerCodeGen.GenerateBegin();
                 string[] writeMethodNames = new string[xmlMappings.Length];
@@ -513,9 +513,9 @@ namespace System.Xml.Serialization
                 }
                 Type writerType = writerCodeGen.GenerateEnd();
 
-                string readerClass = "XmlSerializationReader" + suffix;
-                readerClass = classes.AddUnique(readerClass, readerClass);
-                XmlSerializationReaderILGen readerCodeGen = new XmlSerializationReaderILGen(scopes, "public", readerClass);
+            string readerClass = $"XmlSerializationReader{suffix}";
+            readerClass = classes.AddUnique(readerClass, readerClass);
+            XmlSerializationReaderILGen readerCodeGen = new XmlSerializationReaderILGen(scopes, "public", readerClass);
 
                 readerCodeGen.ModuleBuilder = moduleBuilder;
                 readerCodeGen.CreatedTypes.Add(writerType.Name, writerType);
@@ -551,14 +551,14 @@ namespace System.Xml.Serialization
                 return method;
 
             // Not support pregen.  Workaround SecurityCritical required for assembly.CodeBase api.
-            MissingMethodException missingMethod = new MissingMethodException(type.FullName + "::" + methodName);
+            MissingMethodException missingMethod = new MissingMethodException($"{type.FullName}::{methodName}");
             throw missingMethod;
         }
 
         [RequiresUnreferencedCode("calls GetType")]
         internal static Type GetTypeFromAssembly(Assembly assembly, string typeName)
         {
-            typeName = GeneratedAssemblyNamespace + "." + typeName;
+            typeName = $"{GeneratedAssemblyNamespace}.{typeName}";
             Type? type = assembly.GetType(typeName);
             if (type == null)
                 throw new InvalidOperationException(SR.Format(SR.XmlMissingType, typeName, assembly.FullName));
