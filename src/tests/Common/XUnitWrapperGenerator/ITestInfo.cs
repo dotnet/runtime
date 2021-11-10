@@ -236,6 +236,6 @@ class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", stopwatch.Elapsed - testStart, string.Empty);";
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", TimeSpan.Zero, string.Empty);";
     }
 }

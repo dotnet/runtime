@@ -15,6 +15,7 @@
     <Compile Include="Utilities.cs" />
     <Compile Include="HostPolicyMock.cs" />
     <Compile Include="XPlatformUtils.cs" />
+    <Compile Include="CoreClrConfigurationDetection.cs" />
   </ItemGroup>
 
   <ItemGroup>

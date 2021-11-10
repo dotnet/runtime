@@ -12,9 +12,9 @@ internal static class SymbolExtensions
 {
     public static IEnumerable<AttributeData> GetAttributesOnSelfAndContainingSymbols(this ISymbol symbol)
     {
-        for (ISymbol? containing = symbol; containing is not null; containing = symbol.ContainingSymbol)
+        for (ISymbol? containing = symbol; containing is not null; containing = containing.ContainingSymbol)
         {
-            foreach (var attr in symbol.GetAttributes())
+            foreach (var attr in containing.GetAttributes())
             {
                 yield return attr;
             }

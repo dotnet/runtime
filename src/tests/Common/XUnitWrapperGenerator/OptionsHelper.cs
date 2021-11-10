@@ -9,6 +9,7 @@ public static class OptionsHelper
     public const string ReferenceSystemPrivateCoreLibOption = "build_property.ReferenceSystemPrivateCoreLib";
     public const string IsMergedTestRunnerAssemblyOption = "build_property.IsMergedTestRunnerAssembly";
     public const string PriorityOption = "build_property.Priority";
+    public const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
 
     private static bool GetBoolOption(this AnalyzerConfigOptions options, string key)
     {
@@ -29,4 +30,6 @@ public static class OptionsHelper
     internal static bool IsMergedTestRunnerAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsMergedTestRunnerAssemblyOption);
 
     internal static int? Priority(this AnalyzerConfigOptions options) => options.GetIntOption(PriorityOption);
+
+    internal static string RuntimeFlavor(this AnalyzerConfigOptions options) => options.TryGetValue(RuntimeFlavorOption, out string? flavor) ? flavor : "CoreCLR";
 }

@@ -190,6 +190,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.PlatformSpecificAttribute":
                 case "Xunit.SkipOnMonoAttribute":
                 case "Xunit.SkipOnTargetFrameworkAttribute":
+                case "Xunit.SkipOnCoreClrAttribute":
                     filterAttributes.Add(attr);
                     break;
                 case "Xunit.InlineDataAttribute":
@@ -302,10 +303,117 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.SkipOnTargetFrameworkAttribute":
                     testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[0].Value!);
                     break;
+                case "Xunit.SkipOnCoreClrAttribute":
+                    if (options.GlobalOptions.RuntimeFlavor() == "Mono")
+                    {
+                        // If we're building tests for Mono, we can skip handling the specifics of the SkipOnCoreClrAttribute.
+                        testInfos = ImmutableArray<ITestInfo>.Empty;
+                        break;
+                    }
+
+                    Xunit.TestPlatforms skippedTestPlatforms = 0;
+                    Xunit.RuntimeConfiguration skippedConfigurations = 0;
+                    Xunit.RuntimeTestModes skippedTestModes = 0;
+
+                    for (int i = 1; i < filterAttribute.AttributeConstructor!.Parameters.Length; i++)
+                    {
+                        ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(filterAttribute, i);
+                    }
+
+                    void ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(AttributeData filterAttribute, int argumentIndex)
+                    {
+                        int argumentValue = (int)filterAttribute.ConstructorArguments[argumentIndex].Value!;
+                        switch (filterAttribute.AttributeConstructor!.Parameters[argumentIndex].Type.ToDisplayString())
+                        {
+                            case "Xunit.TestPlatforms":
+                                skippedTestPlatforms = (Xunit.TestPlatforms)argumentValue;
+                                break;
+                            case "Xunit.RuntimeTestModes":
+                                skippedTestModes = (Xunit.RuntimeTestModes)argumentValue;
+                                break;
+                            case "Xunit.RuntimeConfiguration":
+                                skippedConfigurations = (Xunit.RuntimeConfiguration)argumentValue;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    if (skippedTestModes == Xunit.RuntimeTestModes.Any)
+                    {
+                        testInfos = FilterForSkippedRuntime(testInfos, (int)Xunit.TestRuntimes.CoreCLR, options);
+                    }
+                    testInfos = DecorateWithSkipOnPlatform(testInfos, (int)skippedTestPlatforms, options);
+                    testInfos = DecorateWithSkipOnCoreClrConfiguration(testInfos, skippedTestModes, skippedConfigurations);
+
+                    break;
             }
         }
 
         return testInfos;
+    }
+
+    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations)
+    {
+        const string ConditionClass = "TestLibrary.CoreClrConfigurationDetection";
+        List<string> conditions = new();
+        if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Debug | Xunit.RuntimeConfiguration.Checked | Xunit.RuntimeConfiguration.Release))
+        {
+            // If all configurations are skipped, just skip the test as a whole
+            return ImmutableArray<ITestInfo>.Empty;
+        }
+
+        if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Debug))
+        {
+            conditions.Add($"!{ConditionClass}.IsDebugRuntime");
+        }
+        if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Checked))
+        {
+            conditions.Add($"!{ConditionClass}.IsCheckedRuntime");
+        }
+        if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Release))
+        {
+            conditions.Add($"!{ConditionClass}.IsReleaseRuntime");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.RegularRun))
+        {
+            conditions.Add($"{ConditionClass}.IsStressTest");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.JitStress))
+        {
+            conditions.Add($"!{ConditionClass}.IsJitStress");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.JitStressRegs))
+        {
+            conditions.Add($"!{ConditionClass}.IsJitStressRegs");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.JitMinOpts))
+        {
+            conditions.Add($"!{ConditionClass}.IsJitMinOpts");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TailcallStress))
+        {
+            conditions.Add($"!{ConditionClass}.IsTailcallStress");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.ZapDisable))
+        {
+            conditions.Add($"!{ConditionClass}.IsZapDisable");
+        }
+
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.AnyGCStress))
+        {
+            conditions.Add($"!{ConditionClass}.IsGCStress");
+        }
+        else if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.GCStress3))
+        {
+            conditions.Add($"!{ConditionClass}.IsGCStress3");
+        }
+        else if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.GCStressC))
+        {
+            conditions.Add($"!{ConditionClass}.IsGCStressC");
+        }
+
+        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions))));
     }
 
     private static ImmutableArray<ITestInfo> FilterForSkippedTargetFrameworkMonikers(ImmutableArray<ITestInfo> testInfos, int v)
@@ -369,10 +477,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return testCasesBuilder.ToImmutable();
     }
 
-    private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options)
+    private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options)
     {
-        Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)v;
-        options.GlobalOptions.TryGetValue("build_property.RuntimeFlavor", out string? runtimeFlavor);
+        Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
+        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor();
         if (runtimeFlavor == "Mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
         {
             return ImmutableArray<ITestInfo>.Empty;
