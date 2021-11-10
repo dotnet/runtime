@@ -3948,10 +3948,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 * 2;
                     break;
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS)
                 case GT_HWINTRINSIC:
                 {
-                    if (tree->AsHWIntrinsic()->OperIsMemoryLoadOrStore())
+                    GenTreeHWIntrinsic* hwTree = tree->AsHWIntrinsic();
+#if defined(TARGET_XARCH)
+                    if (hwTree->OperIsMemoryLoadOrStore())
                     {
                         costEx = IND_COST_EX;
                         costSz = 2;
@@ -3964,9 +3966,32 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             goto DONE;
                         }
                     }
+#endif
+
+                    switch (hwTree->gtHWIntrinsicId)
+                    {
+#if defined(TARGET_XARCH)
+                        case NI_Vector128_Create:
+                        case NI_Vector256_Create:
+#elif defined(TARGET_ARM64)
+                        case NI_Vector64_Create:
+                        case NI_Vector128_Create:
+#endif
+                        {
+                            if (hwTree->gtGetOp1()->OperIsConst() && (hwTree->gtGetOp2() == nullptr))
+                            {
+                                // Vector.Create(cns) is cheap but not that cheap to be (1,1)
+                                costEx = 2;
+                                costSz = 2;
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                    }
                 }
                 break;
-#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS
 
                 case GT_BLK:
                 case GT_IND:
