@@ -208,6 +208,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 // emit diagnostic
             }
+            else if (method.IsStatic && method.ReturnType.SpecialType == SpecialType.System_Int32)
+            {
+                // Support the old executable-based test design where an int return of 100 is success.
+                testInfos = ImmutableArray.Create((ITestInfo)new LegacyStandaloneEntryPointTestMethod(method, aliasMap[method.ContainingAssembly.MetadataName]));
+            }
             else
             {
                 testInfos = ImmutableArray.Create((ITestInfo)new BasicTestMethod(method, aliasMap[method.ContainingAssembly.MetadataName]));

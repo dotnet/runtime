@@ -58,7 +58,35 @@ sealed class BasicTestMethod : ITestInfo
         return obj is BasicTestMethod other
             && TestNameExpression == other.TestNameExpression
             && Method == other.Method
-            && ContainingType == other.ContainingType;;
+            && ContainingType == other.ContainingType; ;
+    }
+}
+sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
+{
+    public LegacyStandaloneEntryPointTestMethod(IMethodSymbol method, string externAlias)
+    {
+        ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
+        Method = method.Name;
+        TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}()\"";
+        ExecutionStatement = $"Assert.Equal(100, {externAlias}::{ContainingType}.{Method}());";
+    }
+
+    public string TestNameExpression { get; }
+    public string Method { get; }
+    public string ContainingType { get; }
+    private string ExecutionStatement { get; }
+
+    public string GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
+    {
+        return testReporterWrapper.WrapTestExecutionWithReporting(ExecutionStatement, this);
+    }
+
+    public override bool Equals(object obj)
+    {
+        return obj is LegacyStandaloneEntryPointTestMethod other
+            && TestNameExpression == other.TestNameExpression
+            && Method == other.Method
+            && ContainingType == other.ContainingType; ;
     }
 }
 
