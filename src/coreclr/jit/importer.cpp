@@ -548,8 +548,8 @@ inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
         /* If the statement being appended has any side-effects, check the stack
            to see if anything needs to be spilled to preserve correct ordering. */
 
-        GenTree* expr  = stmt->GetRootNode();
-        unsigned flags = expr->gtFlags & GTF_GLOB_EFFECT;
+        GenTree*     expr  = stmt->GetRootNode();
+        GenTreeFlags flags = expr->gtFlags & GTF_GLOB_EFFECT;
 
         // Assignment to (unaliased) locals don't count as a side-effect as
         // we handle them specially using impSpillLclRefs(). Temp locals should
@@ -558,7 +558,7 @@ inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
         if ((expr->gtOper == GT_ASG) && (expr->AsOp()->gtOp1->gtOper == GT_LCL_VAR) &&
             ((expr->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) == 0) && !gtHasLocalsWithAddrOp(expr->AsOp()->gtOp2))
         {
-            unsigned op2Flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
+            GenTreeFlags op2Flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
             assert(flags == (op2Flags | GTF_ASG));
             flags = op2Flags;
         }
@@ -2617,7 +2617,7 @@ inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLev
 
     assert(chkLevel <= verCurrentState.esStackDepth);
 
-    unsigned spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
+    GenTreeFlags spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
 
     for (unsigned i = 0; i < chkLevel; i++)
     {
@@ -20732,7 +20732,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*      
 
     for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
     {
-        unsigned stackTreeFlags = verCurrentState.esStack[level].val->gtFlags;
+        GenTreeFlags stackTreeFlags = verCurrentState.esStack[level].val->gtFlags;
         if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stackTreeFlags))
         {
             return false;
@@ -22230,6 +22230,17 @@ void Compiler::considerGuardedDevirtualization(
         return;
     }
 
+    uint32_t const likelyClassAttribs = info.compCompHnd->getClassAttribs(likelyClass);
+
+    if ((likelyClassAttribs & CORINFO_FLG_ABSTRACT) != 0)
+    {
+        // We may see an abstract likely class, if we have a stale profile.
+        // No point guessing for this.
+        //
+        JITDUMP("Not guessing for class; abstract (stale profile)\n");
+        return;
+    }
+
     // Figure out which method will be called.
     //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
@@ -22253,7 +22264,6 @@ void Compiler::considerGuardedDevirtualization(
     // Add this as a potential candidate.
     //
     uint32_t const likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
-    uint32_t const likelyClassAttribs  = info.compCompHnd->getClassAttribs(likelyClass);
     addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyMethodAttribs, likelyClassAttribs,
                                         likelihood);
 }

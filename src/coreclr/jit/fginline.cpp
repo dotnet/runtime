@@ -226,7 +226,7 @@ PhaseStatus Compiler::fgInline()
     {
         JITDUMP("**************** Inline Tree");
         printf("\n");
-        m_inlineStrategy->Dump(verbose);
+        m_inlineStrategy->Dump(verbose || JitConfig.JitPrintInlinedMethodsVerbose());
     }
 
 #endif // DEBUG

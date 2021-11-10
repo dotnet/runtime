@@ -5,11 +5,8 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Text;
 using System.Diagnostics;
-using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
 using Internal.Cryptography.Pal.Native;
 
 using System.Security.Cryptography;
@@ -280,7 +277,7 @@ namespace Internal.Cryptography.Pal
                 {
                     Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
                     Interop.Crypt32.DATA_BLOB* pValue = value ? &blob : (Interop.Crypt32.DATA_BLOB*)null;
-                    if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_ARCHIVED_PROP_ID, CertSetPropertyFlags.None, pValue))
+                    if (!Interop.Crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_ARCHIVED_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.None, pValue))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
             }
@@ -293,14 +290,14 @@ namespace Internal.Cryptography.Pal
                 unsafe
                 {
                     int cbData = 0;
-                    if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, null, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextPropertyString(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, null, ref cbData))
                         return string.Empty;
 
                     int spanLength = (cbData + 1) / 2;
                     Span<char> buffer = spanLength <= 256 ? stackalloc char[spanLength] : new char[spanLength];
                     fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
                     {
-                        if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, (byte*)ptr, ref cbData))
+                        if (!Interop.Crypt32.CertGetCertificateContextPropertyString(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, (byte*)ptr, ref cbData))
                             return string.Empty;
                     }
 
@@ -317,7 +314,7 @@ namespace Internal.Cryptography.Pal
                     try
                     {
                         Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(pFriendlyName, checked(2 * ((uint)friendlyName.Length + 1)));
-                        if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, CertSetPropertyFlags.None, &blob))
+                        if (!Interop.Crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.None, &blob))
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
                     }
                     finally
@@ -390,8 +387,8 @@ namespace Internal.Cryptography.Pal
             Interop.crypt32.CertGetNameString(
                 _certContext,
                 MapNameType(nameType),
-                forIssuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None,
-                CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
+                forIssuer ? Interop.Crypt32.CertNameFlags.CERT_NAME_ISSUER_FLAG : Interop.Crypt32.CertNameFlags.None,
+                Interop.Crypt32.CertNameStringType.CERT_X500_NAME_STR | Interop.Crypt32.CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
@@ -481,25 +478,25 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static CertNameType MapNameType(X509NameType nameType)
+        private static Interop.Crypt32.CertNameType MapNameType(X509NameType nameType)
         {
             switch (nameType)
             {
                 case X509NameType.SimpleName:
-                    return CertNameType.CERT_NAME_SIMPLE_DISPLAY_TYPE;
+                    return Interop.Crypt32.CertNameType.CERT_NAME_SIMPLE_DISPLAY_TYPE;
 
                 case X509NameType.EmailName:
-                    return CertNameType.CERT_NAME_EMAIL_TYPE;
+                    return Interop.Crypt32.CertNameType.CERT_NAME_EMAIL_TYPE;
 
                 case X509NameType.UpnName:
-                    return CertNameType.CERT_NAME_UPN_TYPE;
+                    return Interop.Crypt32.CertNameType.CERT_NAME_UPN_TYPE;
 
                 case X509NameType.DnsName:
                 case X509NameType.DnsFromAlternativeName:
-                    return CertNameType.CERT_NAME_DNS_TYPE;
+                    return Interop.Crypt32.CertNameType.CERT_NAME_DNS_TYPE;
 
                 case X509NameType.UrlName:
-                    return CertNameType.CERT_NAME_URL_TYPE;
+                    return Interop.Crypt32.CertNameType.CERT_NAME_URL_TYPE;
 
                 default:
                     throw new ArgumentException(SR.Argument_InvalidNameType);
@@ -509,9 +506,9 @@ namespace Internal.Cryptography.Pal
         private unsafe string GetIssuerOrSubject(bool issuer, bool reverse) =>
             Interop.crypt32.CertGetNameString(
                 _certContext,
-                CertNameType.CERT_NAME_RDN_TYPE,
-                issuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None,
-                CertNameStringType.CERT_X500_NAME_STR | (reverse ? CertNameStringType.CERT_NAME_STR_REVERSE_FLAG : 0));
+                Interop.Crypt32.CertNameType.CERT_NAME_RDN_TYPE,
+                issuer ? Interop.Crypt32.CertNameFlags.CERT_NAME_ISSUER_FLAG : Interop.Crypt32.CertNameFlags.None,
+                Interop.Crypt32.CertNameStringType.CERT_X500_NAME_STR | (reverse ? Interop.Crypt32.CertNameStringType.CERT_NAME_STR_REVERSE_FLAG : 0));
 
         private CertificatePal(CertificatePal copyFrom)
         {
@@ -527,7 +524,7 @@ namespace Internal.Cryptography.Pal
                 // We need to delete any associated key container upon disposition. Thus, replace the safehandle we got with a safehandle whose
                 // Release() method performs the key container deletion.
                 SafeCertContextHandle oldCertContext = certContext;
-                certContext = Interop.crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
+                certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
                 GC.KeepAlive(oldCertContext);
             }
             _certContext = certContext;
