@@ -386,20 +386,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             HasError = hasError;
         }
 
-        internal static void SwapForBE(Span<byte> dest, Span<byte> src)
-        {
-            // SDB is big endian
-            if (BitConverter.IsLittleEndian)
-            {
-                for (int i = 0; i < src.Length; i++)
-                    dest [src.Length - i - 1] = src [i];
-            }
-            else
-            {
-                src.CopyTo(dest);
-            }
-        }
-
         public override string ReadString()
         {
             var valueLen = ReadInt32();
@@ -413,20 +399,24 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override sbyte ReadSByte() => (sbyte)ReadInt32();
         public byte ReadUByte() => (byte)ReadUInt32();
         public ushort ReadUShort() => (ushort)ReadUInt32();
-        public override unsafe int ReadInt32() => Read<int>();
+        public override int ReadInt32() => ReadBigEndian<int>();
 
-        public override unsafe double ReadDouble() => Read<double>();
-        public override unsafe uint ReadUInt32() => Read<uint>();
-        public override unsafe float ReadSingle() => Read<float>();
-        public override unsafe ulong ReadUInt64() => Read<ulong>();
-        public override unsafe long ReadInt64() => Read<long>();
+        public override double ReadDouble() => ReadBigEndian<double>();
+        public override uint ReadUInt32() => ReadBigEndian<uint>();
+        public override float ReadSingle() => ReadBigEndian<float>();
+        public override ulong ReadUInt64() => ReadBigEndian<ulong>();
+        public override long ReadInt64() => ReadBigEndian<long>();
 
-        protected unsafe T Read<T>() where T : struct
+        protected unsafe T ReadBigEndian<T>() where T : struct
         {
             Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
             T ret = default;
             Read(data);
-            SwapForBE(new Span<byte>(Unsafe.AsPointer(ref ret), data.Length), data);
+            if (BitConverter.IsLittleEndian)
+            {
+                data.Reverse();
+            }
+            data.CopyTo(new Span<byte>(Unsafe.AsPointer(ref ret), data.Length));
             return ret;
         }
     }
@@ -435,20 +425,24 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public MonoBinaryWriter(Stream stream) : base(stream) {}
 
-        public void WriteString(string val)
+        public override void Write(string val)
         {
             var bytes = Encoding.UTF8.GetBytes(val);
             Write(bytes.Length);
             Write(bytes);
         }
 
-        public override unsafe void Write(long val) => WriteType<long>(val);
-        public override unsafe void Write(int val) => WriteType<int>(val);
+        public override void Write(long val) => WriteBigEndian<long>(val);
+        public override void Write(int val) => WriteBigEndian<int>(val);
 
-        protected unsafe void WriteType<T>(T val) where T : struct
+        protected unsafe void WriteBigEndian<T>(T val) where T : struct
         {
             Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
-            MonoBinaryReader.SwapForBE(data, new Span<byte>(Unsafe.AsPointer(ref val), data.Length));
+            new Span<byte>(Unsafe.AsPointer(ref val), data.Length).CopyTo(data);
+            if (BitConverter.IsLittleEndian)
+            {
+                data.Reverse();
+            }
             base.Write(data);
         }
 
@@ -821,7 +815,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdAppDomain>(sessionId, CmdAppDomain.GetRootDomain, commandParams, token);
             var root_domain = retDebuggerCmdReader.ReadInt32();
             commandParamsWriter.Write(root_domain);
-            commandParamsWriter.WriteString(value);
+            commandParamsWriter.Write(value);
             retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdAppDomain>(sessionId, CmdAppDomain.CreateString, commandParams, token);
             return retDebuggerCmdReader.ReadInt32();
         }
@@ -932,7 +926,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.WriteString(asm_name);
+            commandParamsWriter.Write(asm_name);
 
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.GetAssemblyByName, commandParams, token);
             return retDebuggerCmdReader.ReadInt32();
@@ -1452,7 +1446,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write((int)type_id);
-            commandParamsWriter.WriteString(method_name);
+            commandParamsWriter.Write(method_name);
             commandParamsWriter.Write((int)(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             commandParamsWriter.Write((int)1); //case sensitive
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetMethodsByNameFlags, commandParams, token);
@@ -2198,7 +2192,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.WriteString(typeToSearch);
+            commandParamsWriter.Write(typeToSearch);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.GetTypes, commandParams, token);
             var count = retDebuggerCmdReader.ReadInt32(); //count ret
             return retDebuggerCmdReader.ReadInt32();
