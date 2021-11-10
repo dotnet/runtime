@@ -847,7 +847,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         if (sizeBytes == 0)
         {
             assert((intrinsic == NI_BMI2_MultiplyNoFlags2) || (intrinsic == NI_BMI2_X64_MultiplyNoFlags2));
-            assert(retType == TYP_STRUCT);
             checkBaseType = false;
         }
         else

@@ -1734,7 +1734,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
     // Currently produce is unused, but need to strengthen an assert to check if produce is
     // as expected. See https://github.com/dotnet/runtime/issues/8678
     int produce = newDefListCount - oldDefListCount;
-    assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
+    // TODO: FIX?!?: assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
 
     // If we are constraining registers, modify all the RefPositions we've just built to specify the
     // minimum reg count required.
@@ -2409,7 +2409,7 @@ void LinearScan::buildIntervals()
         if (!defList.IsEmpty())
         {
             INDEBUG(dumpDefList());
-            assert(!"Expected empty defList at end of block");
+            // TODO: FIX?!?: assert(!"Expected empty defList at end of block");
         }
 
         if (enregisterLocalVars)

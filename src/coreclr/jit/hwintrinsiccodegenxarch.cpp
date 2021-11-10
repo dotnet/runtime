@@ -2037,22 +2037,19 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_BMI2_X64_MultiplyNoFlags:
         case NI_BMI2_X64_MultiplyNoFlags2:
         {
-            int numArgs = HWIntrinsicInfo::lookupNumArgs(node);
-            assert(numArgs == 2);
+            assert(HWIntrinsicInfo::lookupNumArgs(node) == 2);
 
-            regNumber op1Reg  = REG_NA;
-            regNumber op2Reg  = REG_NA;
+            regNumber op1Reg  = op1->GetRegNum();
+            regNumber op2Reg  = op2->GetRegNum();
             regNumber lowReg  = targetReg;
             regNumber highReg = targetReg;
 
-            op1Reg = op1->GetRegNum();
-            op2Reg = op2->GetRegNum();
             if ((intrinsicId == NI_BMI2_MultiplyNoFlags2) || (intrinsicId == NI_BMI2_X64_MultiplyNoFlags2))
             {
                 highReg = node->AsHWIntrinsic()->GetOtherReg();
             }
 
-            emitAttr attr = emitTypeSize(targetType);
+            emitAttr attr        = emitTypeSize(targetType);
             GenTree* explicitSrc = op2;
 
             if (op2Reg == REG_EDX)
