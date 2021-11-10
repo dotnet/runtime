@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -164,7 +165,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         bool theoryAttribute = false;
         List<AttributeData> theoryDataAttributes = new();
         List<AttributeData> filterAttributes = new();
-        foreach (var attr in method.GetAttributes())
+        foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
         {
             switch (attr.AttributeClass?.ToDisplayString())
             {
@@ -182,8 +183,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.TheoryAttribute":
                     theoryAttribute = true;
                     break;
+                case "Xunit.ConditionalClassAttribute":
                 case "Xunit.SkipOnPlatformAttribute":
                 case "Xunit.ActiveIssueAttribute":
+                case "Xunit.OuterloopAttribute":
+                case "Xunit.PlatformSpecificAttribute":
+                case "Xunit.SkipOnMonoAttribute":
+                case "Xunit.SkipOnTargetFrameworkAttribute":
                     filterAttributes.Add(attr);
                     break;
                 case "Xunit.InlineDataAttribute":
@@ -217,15 +223,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 case "Xunit.ConditionalFactAttribute":
                 case "Xunit.ConditionalTheoryAttribute":
+                case "Xunit.ConditionalClassAttribute":
                     {
-                        ITypeSymbol conditionType = (ITypeSymbol)filterAttribute.ConstructorArguments[0].Value!;
+                        ITypeSymbol conditionType;
+                        ImmutableArray<TypedConstant> conditionMembers;
+                        if (filterAttribute.AttributeConstructor!.Parameters.Length == 1)
+                        {
+                            conditionType = method.ContainingType;
+                            conditionMembers = filterAttribute.ConstructorArguments[0].Values;
+                        }
+                        else
+                        {
+                            Debug.Assert(filterAttribute.AttributeConstructor!.Parameters.Length == 2);
+                            conditionType = (ITypeSymbol)filterAttribute.ConstructorArguments[0].Value!;
+                            conditionMembers = filterAttribute.ConstructorArguments[1].Values;
+                        }
                         testInfos = DecorateWithUserDefinedCondition(
                             testInfos,
                             conditionType,
-                            filterAttribute.ConstructorArguments[1].Values,
+                            conditionMembers,
                             aliasMap[conditionType.ContainingAssembly.MetadataName]);
                         break;
                     }
+                case "Xunit.OuterloopAttribute":
+                    if (options.GlobalOptions.Priority() == 0)
+                    {
+                        // If we aren't building the outerloop/Pri 1 test suite, then this attribute acts like an
+                        // [ActiveIssue] attribute (it has the same shape).
+                        goto case "Xunit.ActiveIssueAttribute";
+                    }
+                    break;
                 case "Xunit.ActiveIssueAttribute":
                     if (filterAttribute.AttributeConstructor!.Parameters.Length == 3)
                     {
@@ -263,8 +290,17 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         }
                     }
                     break;
+                case "Xunit.SkipOnMonoAttribute":
+                    testInfos = DecorateWithSkipOnPlatform(FilterForSkippedRuntime(testInfos, (int)Xunit.TestRuntimes.Mono, options), (int)filterAttribute.ConstructorArguments[0].Value!, options);
+                    break;
                 case "Xunit.SkipOnPlatformAttribute":
                     testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[0].Value!, options);
+                    break;
+                case "Xunit.PlatformSpecificAttribute":
+                    testInfos = DecorateWithSkipOnPlatform(testInfos, ~(int)filterAttribute.ConstructorArguments[0].Value!, options);
+                    break;
+                case "Xunit.SkipOnTargetFrameworkAttribute":
+                    testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[0].Value!);
                     break;
             }
         }

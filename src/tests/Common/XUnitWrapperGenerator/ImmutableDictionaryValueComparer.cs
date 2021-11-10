@@ -6,35 +6,34 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 
-namespace XUnitWrapperGenerator
-{
-    internal class ImmutableDictionaryValueComparer<TKey, TValue> : IEqualityComparer<ImmutableDictionary<TKey, TValue>>
-        where TKey : notnull
-    {
-        private readonly IEqualityComparer<TValue> _valueComparer;
+namespace XUnitWrapperGenerator;
 
-        public ImmutableDictionaryValueComparer(IEqualityComparer<TValue> valueComparer)
+internal class ImmutableDictionaryValueComparer<TKey, TValue> : IEqualityComparer<ImmutableDictionary<TKey, TValue>>
+    where TKey : notnull
+{
+    private readonly IEqualityComparer<TValue> _valueComparer;
+
+    public ImmutableDictionaryValueComparer(IEqualityComparer<TValue> valueComparer)
+    {
+        _valueComparer = valueComparer;
+    }
+
+    public bool Equals(ImmutableDictionary<TKey, TValue> x, ImmutableDictionary<TKey, TValue> y)
+    {
+        if (x.Count != y.Count)
         {
-            _valueComparer = valueComparer;
+            return false;
         }
 
-        public bool Equals(ImmutableDictionary<TKey, TValue> x, ImmutableDictionary<TKey, TValue> y)
+        foreach (var pair in x)
         {
-            if (x.Count != y.Count)
+            if (!y.TryGetValue(pair.Key, out TValue? value) || !_valueComparer.Equals(value, pair.Value))
             {
                 return false;
             }
-
-            foreach (var pair in x)
-            {
-                if (!y.TryGetValue(pair.Key, out TValue? value) || !_valueComparer.Equals(value, pair.Value))
-                {
-                    return false;
-                }
-            }
-            return true;
         }
-
-        public int GetHashCode(ImmutableDictionary<TKey, TValue> obj) => throw new NotImplementedException();
+        return true;
     }
+
+    public int GetHashCode(ImmutableDictionary<TKey, TValue> obj) => throw new NotImplementedException();
 }

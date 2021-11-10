@@ -8,6 +8,7 @@ public static class OptionsHelper
 {
     public const string ReferenceSystemPrivateCoreLibOption = "build_property.ReferenceSystemPrivateCoreLib";
     public const string IsMergedTestRunnerAssemblyOption = "build_property.IsMergedTestRunnerAssembly";
+    public const string PriorityOption = "build_property.Priority";
 
     private static bool GetBoolOption(this AnalyzerConfigOptions options, string key)
     {
@@ -16,7 +17,16 @@ public static class OptionsHelper
             && result;
     }
 
+    private static int? GetIntOption(this AnalyzerConfigOptions options, string key)
+    {
+        return options.TryGetValue(key, out string? value)
+            && int.TryParse(value, out int result)
+                ? result : 0;
+    }
+
     internal static bool ReferenceSystemPrivateCoreLib(this AnalyzerConfigOptions options) => options.GetBoolOption(ReferenceSystemPrivateCoreLibOption);
 
     internal static bool IsMergedTestRunnerAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsMergedTestRunnerAssemblyOption);
+
+    internal static int? Priority(this AnalyzerConfigOptions options) => options.GetIntOption(PriorityOption);
 }
