@@ -443,7 +443,7 @@ namespace System.Net.Sockets.Tests
         {
             using (var c = new UdpClient())
             {
-                await c.Client.ConnectAsync("114.114.114.114", 53);
+                await c.Client.ConnectAsync("1.1.1.1", 53);
             }
         }
 
@@ -452,7 +452,7 @@ namespace System.Net.Sockets.Tests
         {
             using (var c = new UdpClient())
             {
-                await c.Client.ConnectAsync(IPAddress.Parse("114.114.114.114"), 53);
+                await c.Client.ConnectAsync(IPAddress.Parse("1.1.1.1"), 53);
             }
         }
 
@@ -461,7 +461,7 @@ namespace System.Net.Sockets.Tests
         {
             using (var c = new UdpClient())
             {
-                c.Client.Connect("114.114.114.114", 53);
+                c.Client.Connect("1.1.1.1", 53);
             }
         }
 
@@ -470,7 +470,7 @@ namespace System.Net.Sockets.Tests
         {
             using (var c = new UdpClient())
             {
-                c.Client.Connect(IPAddress.Parse("114.114.114.114"), 53);
+                c.Client.Connect(IPAddress.Parse("1.1.1.1"), 53);
             }
         }
 
