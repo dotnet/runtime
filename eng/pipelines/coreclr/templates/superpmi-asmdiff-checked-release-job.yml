@@ -13,8 +13,8 @@ parameters:
 jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
-    jobName: ${{ format('superpmi_asmdiff_checked_release_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
-    displayName: ${{ format('SuperPMI asmdiff checked release {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    jobName: ${{ format('superpmi_asmdiff_checked_release_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    displayName: ${{ format('SuperPMI asmdiff checked release {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
