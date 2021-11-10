@@ -1598,8 +1598,12 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeAddress(tree->AsHWIntrinsic()->Op(1));
             if (category == HW_Category_MemoryStore)
             {
-                assert((numArgs == 2) && !tree->AsHWIntrinsic()->Op(2)->isContained());
-                genConsumeReg(tree->AsHWIntrinsic()->Op(2));
+                assert(numArgs == 2);
+
+                GenTree* op2 = tree->AsHWIntrinsic()->Op(2);
+                assert(op2->isContained());
+
+                genConsumeReg(op2);
             }
             else
             {
