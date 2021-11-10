@@ -18,8 +18,6 @@ namespace System.IO
     // routines such as Delete, etc.
     public static partial class File
     {
-        // Don't use Array.MaxLength. MS.IO.Redist targets .NET Framework.
-        private const int MaxByteArrayLength = 0x7FFFFFC7;
         private static Encoding? s_UTF8NoBOM;
 
         // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.
@@ -537,9 +535,9 @@ namespace System.IO
                     if (bytesRead == rentedArray.Length)
                     {
                         uint newLength = (uint)rentedArray.Length * 2;
-                        if (newLength > MaxByteArrayLength)
+                        if (newLength > Array.MaxLength)
                         {
-                            newLength = (uint)Math.Max(MaxByteArrayLength, rentedArray.Length + 1);
+                            newLength = (uint)Math.Max(Array.MaxLength, rentedArray.Length + 1);
                         }
 
                         byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
