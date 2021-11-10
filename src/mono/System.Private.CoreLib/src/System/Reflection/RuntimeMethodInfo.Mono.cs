@@ -875,21 +875,12 @@ namespace System.Reflection
             return InternalInvoke(null, arguments, wrapExceptions)!;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object InvokeArrayCtorWorker(Span<object?> arguments)
-        {
-            return InternalInvokeArrayCtor(in arguments);
-        }
-
         /*
          * InternalInvoke() receives the parameters correctly converted by the binder
          * to match the types of the method signature.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern object InternalInvokeArrayCtor(in Span<object?> arguments);
 
         private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
         {
