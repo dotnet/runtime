@@ -27,6 +27,10 @@
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
   </PropertyGroup>
 
+  <ItemGroup>
+    <UpToDateCheckInput Include="@(NativeFileReference)" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
     <_MonoComponent Include="hot_reload;debugger" />
   </ItemGroup>
