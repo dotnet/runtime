@@ -1,38 +1,9 @@
-# Setting batch to true, triggers one build at a time.
-# if there is a push while a build in progress, it will wait,
-# until the running build finishes, and produce a build with all the changes
-# that happened during the last build.
-trigger:
-  batch: true
-  branches:
-    include:
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    exclude:
-    - eng/Version.Details.xml
-    - .github/*
-    - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
-
-pr: none
+trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
 
 jobs:
-#
-# Evaluate paths
-#
-- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-  - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
 # iOS/tvOS interp - requires AOT Compilation and Interp flags
@@ -61,23 +32,12 @@ jobs:
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot
         interpreter: true
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        condition: >-
-          or(
-          eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true),
-          eq(variables['isFullMatrix'], true))
 
 #
 # MacCatalyst interp - requires AOT Compilation and Interp flags
