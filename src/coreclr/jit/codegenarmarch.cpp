@@ -1879,6 +1879,368 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
     }
 }
 
+#ifdef TARGET_ARM64
+
+class CountingStream
+{
+public:
+    CountingStream()
+    {
+        instrCount = 0;
+    }
+
+    void LoadPairRegs(int offset, int regSizeBytes)
+    {
+        instrCount++;
+    }
+
+    void StorePairRegs(int offset, int regSizeBytes)
+    {
+        instrCount++;
+    }
+
+    void LoadReg(int offset, int regSizeBytes)
+    {
+        instrCount++;
+    }
+
+    void StoreReg(int offset, int regSizeBytes)
+    {
+        instrCount++;
+    }
+
+    int InstructionCount() const
+    {
+        return instrCount;
+    }
+
+private:
+    int instrCount;
+};
+
+class StoreBlockUnrollHelper
+{
+public:
+    static int AlignUp(int offset, int alignment)
+    {
+        assert(((alignment - 1) & alignment) == 0);
+        return (offset + alignment - 1) & (-alignment);
+    }
+
+    static int GetRegSizeAtLeastBytes(int byteCount)
+    {
+        assert(byteCount > 0);
+        assert(byteCount < 16);
+
+        int regSizeBytes = byteCount;
+
+        if (byteCount > 8)
+        {
+            regSizeBytes = 16;
+        }
+        else if (byteCount > 4)
+        {
+            regSizeBytes = 8;
+        }
+        else if (byteCount > 2)
+        {
+            regSizeBytes = 4;
+        }
+
+        return regSizeBytes;
+    }
+};
+
+class VerifyingStream
+{
+public:
+    VerifyingStream()
+    {
+        canEncodeAllLoads  = true;
+        canEncodeAllStores = true;
+    }
+
+    void LoadPairRegs(int offset, int regSizeBytes)
+    {
+        canEncodeAllLoads = canEncodeAllLoads && CanEncodeLoadOrStorePairRegs(offset, regSizeBytes);
+    }
+
+    void StorePairRegs(int offset, int regSizeBytes)
+    {
+        canEncodeAllStores = canEncodeAllStores && CanEncodeLoadOrStorePairRegs(offset, regSizeBytes);
+    }
+
+    void LoadReg(int offset, int regSizeBytes)
+    {
+        canEncodeAllLoads = canEncodeAllLoads && CanEncodeLoadOrStoreReg(offset, regSizeBytes);
+    }
+
+    void StoreReg(int offset, int regSizeBytes)
+    {
+        canEncodeAllStores = canEncodeAllStores && CanEncodeLoadOrStoreReg(offset, regSizeBytes);
+    }
+
+    bool CanEncodeAllLoads() const
+    {
+        return canEncodeAllLoads;
+    }
+
+    bool CanEncodeAllStores() const
+    {
+        return canEncodeAllStores;
+    }
+
+private:
+    static bool CanEncodeLoadOrStorePairRegs(int offset, int regSizeBytes)
+    {
+        const bool canEncodeWithSignedOffset =
+            (offset % regSizeBytes == 0) && (offset >= -64 * regSizeBytes) && (offset < 64 * regSizeBytes);
+        return canEncodeWithSignedOffset;
+    }
+
+    static bool CanEncodeLoadOrStoreReg(int offset, int regSizeBytes)
+    {
+        const bool canEncodeWithUnsignedOffset =
+            (offset % regSizeBytes == 0) && (offset >= 0) && (offset < regSizeBytes * 4096);
+        const bool canEncodeWithUnscaledOffset = (offset >= -256) && (offset <= 255);
+
+        return canEncodeWithUnsignedOffset || canEncodeWithUnscaledOffset;
+    }
+
+    bool canEncodeAllLoads;
+    bool canEncodeAllStores;
+};
+
+class ProducingStream
+{
+public:
+    ProducingStream(regNumber intReg1,
+                    regNumber intReg2,
+                    regNumber simdReg1,
+                    regNumber simdReg2,
+                    regNumber addrReg,
+                    emitter*  emitter)
+        : intReg1(intReg1), intReg2(intReg2), simdReg1(simdReg1), simdReg2(simdReg2), addrReg(addrReg), emitter(emitter)
+    {
+    }
+
+    void LoadPairRegs(int offset, int regSizeBytes)
+    {
+        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+
+        regNumber tempReg1;
+        regNumber tempReg2;
+
+        if ((regSizeBytes == 16) || (intReg2 == REG_NA))
+        {
+            tempReg1 = simdReg1;
+            tempReg2 = simdReg2;
+        }
+        else
+        {
+            tempReg1 = intReg1;
+            tempReg2 = intReg2;
+        }
+
+        emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), tempReg1, tempReg2, addrReg, offset);
+    }
+
+    void StorePairRegs(int offset, int regSizeBytes)
+    {
+        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+
+        regNumber tempReg1;
+        regNumber tempReg2;
+
+        if ((regSizeBytes == 16) || (intReg2 == REG_NA))
+        {
+            tempReg1 = simdReg1;
+            tempReg2 = simdReg2;
+        }
+        else
+        {
+            tempReg1 = intReg1;
+            tempReg2 = intReg2;
+        }
+
+        emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), tempReg1, tempReg2, addrReg, offset);
+    }
+
+    void LoadReg(int offset, int regSizeBytes)
+    {
+        instruction ins     = INS_ldr;
+        regNumber   tempReg = intReg1;
+
+        if ((intReg1 == REG_NA) || (regSizeBytes == 16))
+        {
+            tempReg = simdReg1;
+        }
+        else if (regSizeBytes == 1)
+        {
+            ins = INS_ldrb;
+        }
+        else if (regSizeBytes == 2)
+        {
+            ins = INS_ldrh;
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
+    }
+
+    void StoreReg(int offset, int regSizeBytes)
+    {
+        instruction ins     = INS_str;
+        regNumber   tempReg = intReg1;
+
+        if ((intReg1 == REG_NA) || (regSizeBytes == 16))
+        {
+            tempReg = simdReg1;
+        }
+        else if (regSizeBytes == 1)
+        {
+            ins = INS_strb;
+        }
+        else if (regSizeBytes == 2)
+        {
+            ins = INS_strh;
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
+    }
+
+private:
+    const regNumber intReg1;
+    const regNumber intReg2;
+    const regNumber simdReg1;
+    const regNumber simdReg2;
+    const regNumber addrReg;
+    emitter* const  emitter;
+};
+
+class InitBlockUnrollHelper
+{
+public:
+    InitBlockUnrollHelper(int dstOffset, int byteCount) : dstStartOffset(dstOffset), byteCount(byteCount)
+    {
+    }
+
+    int GetDstOffset() const
+    {
+        return dstStartOffset;
+    }
+
+    void SetDstOffset(int dstOffset)
+    {
+        dstStartOffset = dstOffset;
+    }
+
+    bool CanEncodeAllOffsets(int regSizeBytes) const
+    {
+        VerifyingStream instrStream;
+        UnrollInitBlock(instrStream, regSizeBytes);
+
+        return instrStream.CanEncodeAllStores();
+    }
+
+    int InstructionCount(int regSizeBytes) const
+    {
+        CountingStream instrStream;
+        UnrollInitBlock(instrStream, regSizeBytes);
+
+        return instrStream.InstructionCount();
+    }
+
+    void Unroll(int regSizeBytes, regNumber intReg, regNumber simdReg, regNumber addrReg, emitter* emitter) const
+    {
+        ProducingStream instrStream(intReg, intReg, simdReg, simdReg, addrReg, emitter);
+        UnrollInitBlock(instrStream, regSizeBytes);
+    }
+
+private:
+    template <class InstructionStream>
+    void UnrollInitBlock(InstructionStream& instrStream, int regSizeBytes) const
+    {
+        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+
+        int       offset    = dstStartOffset;
+        const int endOffset = offset + byteCount;
+
+        const int storePairRegsAlignment   = regSizeBytes;
+        const int storePairRegsWritesBytes = 2 * regSizeBytes;
+
+        const int offsetAligned           = StoreBlockUnrollHelper::AlignUp(offset, storePairRegsAlignment);
+        const int storePairRegsInstrCount = (endOffset - offsetAligned) / storePairRegsWritesBytes;
+
+        if (storePairRegsInstrCount > 0)
+        {
+            if (offset != offsetAligned)
+            {
+                const int firstRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(offsetAligned - offset);
+                instrStream.StoreReg(offset, firstRegSizeBytes);
+                offset = offsetAligned;
+            }
+
+            while (endOffset - offset >= storePairRegsWritesBytes)
+            {
+                instrStream.StorePairRegs(offset, regSizeBytes);
+                offset += storePairRegsWritesBytes;
+            }
+
+            if (endOffset - offset >= regSizeBytes)
+            {
+                instrStream.StoreReg(offset, regSizeBytes);
+                offset += regSizeBytes;
+            }
+
+            if (offset != endOffset)
+            {
+                const int lastRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(endOffset - offset);
+                instrStream.StoreReg(endOffset - lastRegSizeBytes, lastRegSizeBytes);
+            }
+        }
+        else
+        {
+            bool isSafeToWriteBehind = false;
+
+            while (endOffset - offset >= regSizeBytes)
+            {
+                instrStream.StoreReg(offset, regSizeBytes);
+                offset += regSizeBytes;
+                isSafeToWriteBehind = true;
+            }
+
+            assert(endOffset - offset < regSizeBytes);
+
+            while (offset != endOffset)
+            {
+                if (isSafeToWriteBehind)
+                {
+                    assert(endOffset - offset < regSizeBytes);
+                    const int lastRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(endOffset - offset);
+                    instrStream.StoreReg(endOffset - lastRegSizeBytes, lastRegSizeBytes);
+                    break;
+                }
+
+                if (offset + regSizeBytes > endOffset)
+                {
+                    regSizeBytes = regSizeBytes / 2;
+                }
+                else
+                {
+                    instrStream.StoreReg(offset, regSizeBytes);
+                    offset += regSizeBytes;
+                    isSafeToWriteBehind = true;
+                }
+            }
+        }
+    }
+
+    int       dstStartOffset;
+    const int byteCount;
+};
+
+#endif // TARGET_ARM64
+
 //----------------------------------------------------------------------------------
 // genCodeForInitBlkUnroll: Generate unrolled block initialization code.
 //
@@ -1947,19 +2309,70 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
 #ifdef TARGET_ARM64
-    for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
-    {
-        if (dstLclNum != BAD_VAR_NUM)
-        {
-            emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, srcReg, srcReg, dstLclNum, dstOffset);
-        }
-        else
-        {
-            emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, srcReg, srcReg, dstAddrBaseReg, dstOffset);
-        }
-    }
-#endif
+    InitBlockUnrollHelper helper(dstOffset, size);
 
+    regNumber dstReg              = dstAddrBaseReg;
+    int       dstRegAddrAlignment = -1;
+
+    if (dstLclNum != BAD_VAR_NUM)
+    {
+        bool      FPbased;
+        const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &FPbased);
+
+        dstReg              = FPbased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment = FPbased ? (genSPtoFPdelta() % 16) : 0;
+
+        helper.SetDstOffset(baseAddr + dstOffset);
+    }
+
+    if (!helper.CanEncodeAllOffsets(REGSIZE_BYTES))
+    {
+        const regNumber tempReg = rsGetRsvdReg();
+
+        int dstOffsetAdj = helper.GetDstOffset();
+
+        if (dstRegAddrAlignment != -1)
+        {
+            dstOffsetAdj        = helper.GetDstOffset() - dstRegAddrAlignment;
+            dstRegAddrAlignment = 0;
+        }
+
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdj, tempReg);
+        dstReg = tempReg;
+
+        helper.SetDstOffset(helper.GetDstOffset() - dstOffsetAdj);
+    }
+
+    const bool hasAvailableSimdReg    = (node->AvailableTempRegCount(RBM_ALLFLOAT) != 0);
+    const bool canUse16ByteWideInstrs = hasAvailableSimdReg && helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES);
+
+    bool shouldUse16ByteWideInstrs = false;
+
+    // Store operations that cross a 16-byte boundary reduce bandwidth or incur additional latency.
+    if (canUse16ByteWideInstrs && (dstRegAddrAlignment != -1) &&
+        (((dstRegAddrAlignment + helper.GetDstOffset()) % 16) == 0))
+    {
+        shouldUse16ByteWideInstrs =
+            ((helper.InstructionCount(FP_REGSIZE_BYTES) + 1) < helper.InstructionCount(REGSIZE_BYTES));
+    }
+
+    const regNumber intReg       = srcReg;
+    regNumber       simdReg      = REG_NA;
+    int             regSizeBytes = REGSIZE_BYTES;
+
+    if (shouldUse16ByteWideInstrs)
+    {
+        simdReg      = node->GetSingleTempReg(RBM_ALLFLOAT);
+        regSizeBytes = FP_REGSIZE_BYTES;
+
+        const int initValue = (src->AsIntCon()->IconValue() & 0xFF);
+        emit->emitIns_R_I(INS_movi, EA_16BYTE, simdReg, initValue, INS_OPTS_16B);
+    }
+
+    helper.Unroll(regSizeBytes, intReg, simdReg, dstReg, GetEmitter());
+#endif // TARGET_ARM64
+
+#ifdef TARGET_ARM
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
     {
         while (regSize > size)
@@ -1981,9 +2394,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 attr     = EA_4BYTE;
                 break;
             case 4:
-#ifdef TARGET_ARM64
-            case 8:
-#endif
                 storeIns = INS_str;
                 attr     = EA_ATTR(regSize);
                 break;
@@ -2000,6 +2410,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             emit->emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset);
         }
     }
+#endif // TARGET_ARM
 }
 
 //----------------------------------------------------------------------------------

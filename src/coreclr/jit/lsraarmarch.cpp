@@ -619,6 +619,12 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         switch (blkNode->gtBlkOpKind)
         {
             case GenTreeBlk::BlkOpKindUnroll:
+#ifdef TARGET_ARM64
+                if (size > 2 * FP_REGSIZE_BYTES)
+                {
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                }
+#endif // TARGET_ARM64
                 break;
 
             case GenTreeBlk::BlkOpKindHelper:
