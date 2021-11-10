@@ -475,7 +475,7 @@ internal static partial class Interop
             string password,
             out SafeSspiAuthDataHandle authData);
 
-        // TODO: Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
         [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern SECURITY_STATUS SetCredentialsAttributesW(
             in CredHandle handlePtr,
