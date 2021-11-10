@@ -235,17 +235,32 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             conditionType,
                             filterAttribute.ConstructorArguments[2].Values,
                             aliasMap[conditionType.ContainingAssembly.MetadataName]);
+                        break;
                     }
-                    switch (filterAttribute.AttributeConstructor.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                    else if (filterAttribute.AttributeConstructor.Parameters.Length == 4)
                     {
-                        case "global::Xunit.TestPlatforms":
-                            testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
-                            break;
-                        case "global::Xunit.TestRuntimes":
-                            testInfos = FilterForSkippedRuntime(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
-                            break;
-                        default:
-                            break;
+                        testInfos = FilterForSkippedRuntime(
+                            FilterForSkippedTargetFrameworkMonikers(
+                                DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options),
+                                (int)filterAttribute.ConstructorArguments[2].Value!),
+                            (int)filterAttribute.ConstructorArguments[3].Value!, options);
+                    }
+                    else
+                    {
+                        switch (filterAttribute.AttributeConstructor.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                        {
+                            case "global::Xunit.TestPlatforms":
+                                testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
+                                break;
+                            case "global::Xunit.TestRuntimes":
+                                testInfos = FilterForSkippedRuntime(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
+                                break;
+                            case "global::Xunit.TargetFrameworkMonikers":
+                                testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     break;
                 case "Xunit.SkipOnPlatformAttribute":
@@ -255,6 +270,20 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
 
         return testInfos;
+    }
+
+    private static ImmutableArray<ITestInfo> FilterForSkippedTargetFrameworkMonikers(ImmutableArray<ITestInfo> testInfos, int v)
+    {
+        var tfm = (Xunit.TargetFrameworkMonikers)v;
+
+        if (tfm.HasFlag(Xunit.TargetFrameworkMonikers.Netcoreapp))
+        {
+            return ImmutableArray<ITestInfo>.Empty;
+        }
+        else
+        {
+            return testInfos;
+        }
     }
 
     private static ImmutableArray<ITestInfo> CreateTestCases(IMethodSymbol method, List<AttributeData> theoryDataAttributes, string alias)
