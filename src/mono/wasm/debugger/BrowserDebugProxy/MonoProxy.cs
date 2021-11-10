@@ -584,8 +584,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (res.Value?["result"]?["value"]?["type"] == null) //it means that is not a buffer returned from the debugger-agent
             {
                 byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
-                var retDebuggerCmd = new MemoryStream(newBytes);
-                var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
+                var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
                 retDebuggerCmdReader.ReadByte(); //number of objects returned.
                 var obj = await SdbHelper.CreateJObjectForVariableValue(id, retDebuggerCmdReader, "ret", false, -1, false, token);
                 /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
@@ -737,12 +736,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var callFrames = new List<object>();
             var frames = new List<Frame>();
-            var commandParams = new MemoryStream();
-            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(thread_id);
             commandParamsWriter.Write(0);
             commandParamsWriter.Write(-1);
-            var retDebuggerCmdReader = await SdbHelper.SendDebuggerAgentCommand<CmdThread>(sessionId, CmdThread.GetFrameInfo, commandParams, token);
+            using var retDebuggerCmdReader = await SdbHelper.SendDebuggerAgentCommand(sessionId, CmdThread.GetFrameInfo, commandParamsWriter.GetParameterString(), token);
             var frame_count = retDebuggerCmdReader.ReadInt32();
             //Console.WriteLine("frame_count - " + frame_count);
             for (int j = 0; j < frame_count; j++) {
@@ -839,8 +837,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             ExecutionContext context = GetContext(sessionId);
             byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
-            var retDebuggerCmd = new MemoryStream(newBytes);
-            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
+            using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
             retDebuggerCmdReader.ReadBytes(11); //skip HEADER_LEN
             retDebuggerCmdReader.ReadByte(); //suspend_policy
             var number_of_events = retDebuggerCmdReader.ReadInt32(); //number of events -> should be always one
@@ -1217,8 +1214,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
                 return await context.ready.Task;
 
-            var commandParams = new MemoryStream();
-            await SdbHelper.SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.ClearAllBreakpoints, commandParams, token);
+            await SdbHelper.SendDebuggerAgentCommand(sessionId, CmdEventRequest.ClearAllBreakpoints, "", token);
 
             if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
                 await SdbHelper.EnableExceptions(sessionId, context.PauseOnExceptions, token);

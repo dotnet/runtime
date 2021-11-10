@@ -70,10 +70,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (DotnetObjectId.TryParse(objRet?["get"]?["objectIdValue"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var commandParams = new MemoryStream();
-                    var commandParamsWriter = new MonoBinaryWriter(commandParams);
+                    using var commandParamsWriter = new MonoBinaryWriter();
                     commandParamsWriter.WriteObj(objectId, sdbHelper);
-                    var ret = await sdbHelper.InvokeMethod(sessionId, commandParams.ToArray(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
+                    var ret = await sdbHelper.InvokeMethod(sessionId, commandParamsWriter.GetParameterBuffer(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
                     return await GetValueFromObject(ret, token);
                 }
 
@@ -110,10 +109,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var methodId = await sdbHelper.GetPropertyMethodIdByName(sessionId, typeId, part.Trim(), token);
                     if (methodId != -1)
                     {
-                        var commandParamsObj = new MemoryStream();
-                        var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                        using var commandParamsObjWriter = new MonoBinaryWriter();
                         commandParamsObjWriter.Write(0); //param count
-                        var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
+                        var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
                     }
                 }
@@ -272,10 +270,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "object":
                                 var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
                                 int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], "ToArray", token);
-                                var commandParamsObj = new MemoryStream();
-                                var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                                var commandParamsObjWriter = new MonoBinaryWriter();
                                 commandParamsObjWriter.WriteObj(objectId, sdbHelper);
-                                var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, elementAccess.Expression.ToString(), token);
+                                var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObjWriter.GetParameterBuffer(), methodId, elementAccess.Expression.ToString(), token);
                                 rootObject = await GetValueFromObject(toArrayRetMethod, token);
                                 DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
                                 rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(arrayObjectId.Value), token);
@@ -343,8 +340,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var typeName = await sdbHelper.GetTypeName(sessionId, typeIds[0], token);
                         throw new Exception($"Method '{methodName}' not found in type '{typeName}'");
                     }
-                    var commandParamsObj = new MemoryStream();
-                    var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                    using var commandParamsObjWriter = new MonoBinaryWriter();
                     if (isTryingLinq == 0)
                         commandParamsObjWriter.WriteObj(objectId, sdbHelper);
                     if (method.ArgumentList != null)
@@ -366,7 +362,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     return null;
                             }
                         }
-                        var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
+                        var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
                     }
                 }
