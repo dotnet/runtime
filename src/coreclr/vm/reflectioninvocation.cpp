@@ -1148,11 +1148,9 @@ FCIMPL2(Object*, RuntimeMethodHandle::InvokeArrayCtor,
         if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
             COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
 
-        InvokeUtil::CreatePrimitiveValue(
-            ELEMENT_TYPE_I4,
-            oType,
-            objs->GetAt(i),
-            (ARG_SLOT*)(indexes + i));
+        ARG_SLOT value;
+        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, oType, objs->GetAt(i), &value);
+        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
     }
 
     gc.retVal = AllocateArrayEx(th, indexes, argCnt);
