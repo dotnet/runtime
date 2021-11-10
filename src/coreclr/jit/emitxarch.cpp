@@ -163,7 +163,7 @@ bool emitter::HasSBit(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// HasSBit: check if the instruction has the 'w' bit required to use the
+// HasWBit: check if the instruction has the 'w' bit required to use the
 //          full operand size.
 //
 // Arguments:
