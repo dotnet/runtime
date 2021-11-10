@@ -749,6 +749,8 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 {
     // TODO-XArch-CQ: Make this more accurate.
     // For now, We assume that most binary operators are of the RMW form.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef FEATURE_HW_INTRINSICS
     assert(tree->OperIsBinary() || (tree->OperIsMultiOp() && (tree->AsMultiOp()->GetOperandCount() <= 2)));
 #else
