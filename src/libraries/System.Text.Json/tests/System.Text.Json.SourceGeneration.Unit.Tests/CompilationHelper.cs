@@ -11,6 +11,7 @@ using System.Runtime.Serialization;
 using System.Text.Encodings.Web;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
@@ -336,22 +337,28 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-        internal static void CheckDiagnosticMessages(ImmutableArray<Diagnostic> diagnostics, DiagnosticSeverity level, string[] expectedMessages)
+        internal static void CheckDiagnosticMessages(
+            DiagnosticSeverity level,
+            ImmutableArray<Diagnostic> diagnostics,
+            (TextSpan Location, string Message)[] expectedDiags)
         {
-            string[] actualMessages = diagnostics.Where(diagnostic => diagnostic.Severity == level).Select(diagnostic => diagnostic.GetMessage()).ToArray();
+            (TextSpan Location, string Message)[] actualDiags = diagnostics
+                .Where(diagnostic => diagnostic.Severity == level)
+                .Select(diagnostic => (diagnostic.Location.SourceSpan, diagnostic.GetMessage()))
+                .ToArray();
 
             // Can't depend on reflection order when generating type metadata.
-            Array.Sort(actualMessages);
-            Array.Sort(expectedMessages);
+            Array.Sort(actualDiags);
+            Array.Sort(expectedDiags);
 
             if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
             {
-                Assert.Equal(expectedMessages, actualMessages);
+                Assert.Equal(expectedDiags, actualDiags);
             }
             else
             {
                 // for non-English runs, just compare the number of messages are the same
-                Assert.Equal(expectedMessages.Length, actualMessages.Length);
+                Assert.Equal(expectedDiags.Length, actualDiags.Length);
             }
         }
     }
