@@ -81,6 +81,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         StringBuilder builder = new();
+        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary");
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
 
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
@@ -88,19 +89,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         foreach (ITestInfo test in testInfos)
         {
-            builder.AppendLine("{");
-
-            builder.AppendLine($"TimeSpan testStart = stopwatch.Elapsed;");
-            builder.AppendLine("try {");
-            builder.AppendLine($"bool {Constants.TestResultReportedIdentifier} = false;");
-            builder.AppendLine(test.ExecutionStatement);
-            builder.AppendLine($"if (!{Constants.TestResultReportedIdentifier}) summary.ReportPassedTest(null, null, null, stopwatch.Elapsed - testStart);");
-            builder.AppendLine("}");
-            builder.AppendLine("catch (System.Exception ex) {");
-            builder.AppendLine($"summary.ReportFailedTest(null, null, null, stopwatch.Elapsed - testStart, ex);");
-            builder.AppendLine("}");
-
-            builder.AppendLine("}");
+            builder.AppendLine(test.GenerateTestExecution(reporter));
         }
 
         builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput());");
@@ -111,10 +100,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string consoleType)
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
+        ITestReporterWrapper reporter = new NoTestReporting();
         StringBuilder builder = new();
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("try {");
-        builder.AppendLine(string.Join("\n", testInfos.Select(m => m.ExecutionStatement)));
+        builder.AppendLine(string.Join("\n", testInfos.Select(m => m.GenerateTestExecution(reporter))));
         builder.AppendLine($"}} catch(System.Exception ex) {{ {consoleType}.WriteLine(ex.ToString()); return 101; }}");
         builder.AppendLine("return 100;");
         return builder.ToString();
@@ -300,10 +290,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             // Emit diagnostic
                             continue;
                         }
-                        int numArguments = method.Parameters.Length;
                         const string argumentVariableIdentifier = "testArguments";
-                        var argsAsCode = Enumerable.Range(0, numArguments).Select(i => $"{argumentVariableIdentifier}[{i}]").ToImmutableArray();
-                        testCasesBuilder.Add(new MemberDataTest(membersByName[0], new BasicTestMethod(method, alias, argsAsCode), alias, argumentVariableIdentifier));
+                        // The display name for the test is an interpolated string that includes the arguments.
+                        string displayNameOverride = $@"$""{alias}::{method.ContainingType.ToDisplayString(FullyQualifiedWithoutGlobalNamespace)}.{method.Name}({{string.Join("","", {argumentVariableIdentifier})}})""";
+                        var argsAsCode = method.Parameters.Select((p, i) => $"({p.Type.ToDisplayString()}){argumentVariableIdentifier}[{i}]").ToImmutableArray();
+                        testCasesBuilder.Add(new MemberDataTest(membersByName[0], new BasicTestMethod(method, alias, argsAsCode, displayNameOverride), alias, argumentVariableIdentifier));
                         break;
                     }
                 default:
@@ -344,7 +335,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             // If our target platform encompases one or more of the skipped platforms,
             // emit a runtime platform check here.
             Xunit.TestPlatforms platformsToEnableTest = targetPlatform & ~platformsToSkip;
-            return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new PlatformSpecificTest(t, platformsToEnableTest)));
+            return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, platformsToEnableTest)));
         }
         else
         {

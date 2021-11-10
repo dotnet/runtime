@@ -4,57 +4,102 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace XUnitWrapperGenerator;
 
 interface ITestInfo
 {
-    string ExecutionStatement { get; }
+    string TestNameExpression { get; }
+    string Method { get; }
+    string ContainingType { get; }
+
+    string GenerateTestExecution(ITestReporterWrapper testReporterWrapper);
+}
+
+interface ITestReporterWrapper
+{
+    string WrapTestExecutionWithReporting(string testExecution, ITestInfo test);
+
+    string GenerateSkippedTestReporting(ITestInfo skippedTest);
 }
 
 sealed class BasicTestMethod : ITestInfo
 {
-    public BasicTestMethod(IMethodSymbol method, string externAlias, ImmutableArray<string> arguments = default)
+    public BasicTestMethod(IMethodSymbol method, string externAlias, ImmutableArray<string> arguments = default, string? displayNameExpression = null)
     {
         var args = arguments.IsDefaultOrEmpty ? "" : string.Join(", ", arguments);
-        string containingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
+        ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
+        Method = method.Name;
+        TestNameExpression = displayNameExpression ?? $"\"{externAlias}::{ContainingType}.{Method}({args})\"";
         if (method.IsStatic)
         {
-            ExecutionStatement = $"{externAlias}::{containingType}.{method.Name}({args});";
+            ExecutionStatement = $"{externAlias}::{ContainingType}.{Method}({args});";
         }
         else
         {
-            ExecutionStatement = $"using ({externAlias}::{containingType} obj = new()) obj.{method.Name}({args});";
+            ExecutionStatement = $"using ({externAlias}::{ContainingType} obj = new()) obj.{Method}({args});";
         }
     }
 
-    public string ExecutionStatement { get; }
+    public string TestNameExpression { get; }
+    public string Method { get; }
+    public string ContainingType { get; }
+    private string ExecutionStatement { get; }
+
+    public string GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
+    {
+        return testReporterWrapper.WrapTestExecutionWithReporting(ExecutionStatement, this);
+    }
 
     public override bool Equals(object obj)
     {
-        return obj is BasicTestMethod other && ExecutionStatement == other.ExecutionStatement;
+        return obj is BasicTestMethod other
+            && TestNameExpression == other.TestNameExpression
+            && Method == other.Method
+            && ContainingType == other.ContainingType;;
     }
 }
 
 sealed class ConditionalTest : ITestInfo
 {
+    private ITestInfo _innerTest;
+    private string _condition;
     public ConditionalTest(ITestInfo innerTest, string condition)
     {
-        ExecutionStatement = $"if ({condition}) {{ {innerTest.ExecutionStatement} }}";
+        _innerTest = innerTest;
+        _condition = condition;
+        TestNameExpression = innerTest.TestNameExpression;
+        Method = innerTest.Method;
+        ContainingType = innerTest.ContainingType;
     }
 
-    public string ExecutionStatement { get; }
+    public ConditionalTest(ITestInfo innerTest, Xunit.TestPlatforms platform)
+        : this(innerTest, GetPlatformConditionFromTestPlatform(platform))
+    {
+    }
+
+    public string TestNameExpression { get; }
+    public string Method { get; }
+    public string ContainingType { get; }
+
+    public string GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
+    {
+        return $"if ({_condition}) {{ {_innerTest.GenerateTestExecution(testReporterWrapper)} }} else {{ {testReporterWrapper.GenerateSkippedTestReporting(_innerTest)} }}";
+    }
 
     public override bool Equals(object obj)
     {
-        return obj is ConditionalTest other && ExecutionStatement == other.ExecutionStatement;
+        return obj is ConditionalTest other
+            && TestNameExpression == other.TestNameExpression
+            && Method == other.Method
+            && ContainingType == other.ContainingType
+            && _condition == other._condition
+            && _innerTest.Equals(other._innerTest);
     }
-}
 
-sealed class PlatformSpecificTest : ITestInfo
-{
-    public PlatformSpecificTest(ITestInfo innerTest, Xunit.TestPlatforms platform)
+    private static string GetPlatformConditionFromTestPlatform(Xunit.TestPlatforms platform)
     {
         List<string> platformCheckConditions = new();
         if (platform.HasFlag(Xunit.TestPlatforms.Windows))
@@ -105,35 +150,92 @@ sealed class PlatformSpecificTest : ITestInfo
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""NetBSD"")");
         }
-        ExecutionStatement = $"if ({string.Join(" || ", platformCheckConditions)}) {{ {innerTest.ExecutionStatement} }}";
-    }
-
-    public string ExecutionStatement { get; }
-
-    public override bool Equals(object obj)
-    {
-        return obj is PlatformSpecificTest other && ExecutionStatement == other.ExecutionStatement;
+        return string.Join(" || ", platformCheckConditions);
     }
 }
 
 sealed class MemberDataTest : ITestInfo
 {
+    private ITestInfo _innerTest;
+    private string _memberInvocation;
+    private string _loopVarIdentifier;
     public MemberDataTest(ISymbol referencedMember, ITestInfo innerTest, string externAlias, string argumentLoopVarIdentifier)
     {
+        TestNameExpression = innerTest.TestNameExpression;
+        Method = innerTest.Method;
+        ContainingType = innerTest.ContainingType;
+        _innerTest = innerTest;
+        _loopVarIdentifier = argumentLoopVarIdentifier;
+
         string containingType = referencedMember.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
-        string memberInvocation = referencedMember switch
+        _memberInvocation = referencedMember switch
         {
             IPropertySymbol { IsStatic: true } => $"{externAlias}::{containingType}.{referencedMember.Name}",
             IMethodSymbol { IsStatic: true, Parameters: { Length: 0 } } => $"{externAlias}::{containingType}.{referencedMember.Name}()",
             _ => throw new ArgumentException()
         };
-        ExecutionStatement = $@"
-foreach (object[] {argumentLoopVarIdentifier} in {memberInvocation})
+    }
+
+    public string TestNameExpression { get; }
+    public string Method { get; }
+    public string ContainingType { get; }
+
+    public string GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
+    {
+        return $@"
+foreach (object[] {_loopVarIdentifier} in {_memberInvocation})
 {{
-    {innerTest.ExecutionStatement}
+    {_innerTest.GenerateTestExecution(testReporterWrapper)}
 }}
 ";
     }
 
-    public string ExecutionStatement { get; }
+    public override bool Equals(object obj)
+    {
+        return obj is MemberDataTest other
+            && TestNameExpression == other.TestNameExpression
+            && Method == other.Method
+            && ContainingType == other.ContainingType
+            && _innerTest.Equals(other._innerTest);
+    }
+}
+
+class NoTestReporting : ITestReporterWrapper
+{
+    public string WrapTestExecutionWithReporting(string testExecution, ITestInfo test) => testExecution;
+
+    public string GenerateSkippedTestReporting(ITestInfo skippedTest) => string.Empty;
+}
+
+class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
+{
+    private string _summaryLocalIdentifier;
+
+    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier)
+    {
+        _summaryLocalIdentifier = summaryLocalIdentifier;
+    }
+
+    public string WrapTestExecutionWithReporting(string testExecutionExpression, ITestInfo test)
+    {
+        StringBuilder builder = new();
+        builder.AppendLine("{");
+
+        builder.AppendLine($"TimeSpan testStart = stopwatch.Elapsed;");
+        builder.AppendLine("try {");
+        builder.AppendLine(testExecutionExpression);
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", \"{test.Method}\", stopwatch.Elapsed - testStart);");
+        builder.AppendLine("}");
+        builder.AppendLine("catch (System.Exception ex) {");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", \"{test.Method}\", stopwatch.Elapsed - testStart, ex);");
+        builder.AppendLine("}");
+
+        builder.AppendLine("}");
+        return builder.ToString();
+    }
+
+    public string GenerateSkippedTestReporting(ITestInfo skippedTest)
+    {
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", stopwatch.Elapsed - testStart, string.Empty);";
+    }
 }
