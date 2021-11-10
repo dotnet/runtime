@@ -1,5 +1,13 @@
 <?xml version="1.0" ?>
 <Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <!-- Issues that were or are blocking CI -->
+    <ItemGroup>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/*"
+            Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetOs)' == 'Android'">
+            <Issue>https://github.com/dotnet/runtime/issues/61322</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <!-- All OS/Arch/Runtime excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/DynamicMethodGCStress/DynamicMethodGCStress/*">

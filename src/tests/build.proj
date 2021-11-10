@@ -99,11 +99,10 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(__ActiveIssuesList)" Condition="'$(__ActiveIssuesList)' != '' AND '$(XunitTestBinBase)' != ''" />
   <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" />
   <PropertyGroup>
     <HaveExcludes>False</HaveExcludes>
-    <HaveExcludes Condition="'$(__ActiveIssuesList)' != '' or '$(__Exclude)' != ''">True</HaveExcludes>
+    <HaveExcludes Condition="'$(__Exclude)' != ''">True</HaveExcludes>
   </PropertyGroup>
 
 
