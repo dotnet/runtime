@@ -72,7 +72,7 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicui18n.a
 
 EMCC_DEBUG_FLAGS =-g -Os -s -DDEBUG=1
-EMCC_RELEASE_FLAGS=-Oz
+EMCC_RELEASE_FLAGS=-O2
 
 ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
