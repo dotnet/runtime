@@ -4941,19 +4941,10 @@ void emitter::emitConnectAlignInstrWithCurIG()
     // Since we never align overlapping instructions, it is always guaranteed that
     // the emitRecentFirstAlign points to the loop that is in process of getting aligned.
 
-    if (emitCurIGsize == 0)
-    {
-        // However, if current IG is still empty (e.g. codegen didn't generate moves if they were redundant)
-        // in that case, loop will start in emitCurIG itself. For such cases, make sure that targetIG is
-        // pointing to previous IG.
-        assert(emitPrevIG != emitCurIG);
+    emitAlignLastGroup->idaTargetIG = emitCurIG;
 
-        emitAlignLastGroup->idaTargetIG = emitPrevIG;
-    }
-    else
-    {
-        emitAlignLastGroup->idaTargetIG = emitCurIG;
-    }
+    // For a new IG to ensure that loop doesn't start from IG that idaTargetIG points to.
+    emitNxtIG();
 }
 
 //-----------------------------------------------------------------------------
@@ -5033,12 +5024,10 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
     for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
     {
         loopSize += igInLoop->igSize;
-        if (igInLoop->endsWithAlignInstr() /*|| igInLoop->isAlignInstrRemoved()*/)
+        if (igInLoop->endsWithAlignInstr())
         {
-            //assert(false);
-            // If igInLoop can be in one of the following state:
-            // IGF_HAS_ALIGN - igInLoop contains align instruction at the end, for next IG or some future IG.
-            // IGF_REMOVED_ALIGN - igInLoop had align instruction at the end, but was removed.
+            // If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
+            // for next IG or some future IG.
             //
             // For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
             //
@@ -8426,12 +8415,6 @@ insGroup* emitter::emitAllocAndLinkIG()
     /* Propagate some IG flags from the current group to the new group */
 
     ig->igFlags |= (emitCurIG->igFlags & IGF_PROPAGATE_MASK);
-
-#ifdef FEATURE_LOOP_ALIGN
-    /* Save the prev IG */
-
-    emitPrevIG = emitCurIG;
-#endif
 
     /* Set the new IG as the current IG */
 

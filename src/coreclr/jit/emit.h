@@ -275,10 +275,7 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_REMOVED_ALIGN 0x0400  // this group had alignment instruction(s) at the end, but they were marked unused.
-                                  // Useful in a scenario where an IG that is part of a loop also contains align instruction
-                                  // for a different loop and later, we decide to not align that different loop.
-#define IGF_HAS_ALIGN 0x0800      // this group contains an alignment instruction(s) at the end to align either the next
+#define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
@@ -350,11 +347,6 @@ struct insGroup
         ptr -= sizeof(unsigned);
 
         return *(unsigned*)ptr;
-    }
-
-    bool isAlignInstrRemoved() const
-    {
-        return (igFlags & IGF_REMOVED_ALIGN) != 0;
     }
 
     bool endsWithAlignInstr() const
@@ -1399,7 +1391,6 @@ protected:
 
         void removeAlignFlags()
         {
-            idaIG->igFlags |= IGF_REMOVED_ALIGN;
             idaIG->igFlags &= ~IGF_HAS_ALIGN;
         }
     };
@@ -1739,9 +1730,6 @@ public:
     bool emitChkAlign; // perform some alignment checks
 #endif
 
-#ifdef FEATURE_LOOP_ALIGN
-    insGroup* emitPrevIG;
-#endif
     insGroup* emitCurIG;
 
     void emitSetShortJump(instrDescJmp* id);
