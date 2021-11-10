@@ -2203,6 +2203,40 @@ direct_icalls_enabled (MonoCompile *cfg, MonoMethod *method)
 	return FALSE;
 }
 
+/*
+ * Returns TRUE if we should defer class initialization, until constructor
+ * invocation at run-time.  The goal is to speed up JITing by only initializing
+ * classes on the execution path, not ones that just happen to be used in the
+ * body of the method that is currently being JITed.
+ */
+static gboolean
+mini_use_icall_for_newobj (MonoCompile *cfg, MonoMethod *cmethod)
+{
+	if (cfg->compile_aot)
+		return FALSE;
+
+	if (cfg->gshared)
+		return FALSE;
+
+	if (m_class_get_image (cmethod->klass) == mono_defaults.corlib)
+		return FALSE;
+
+	if (m_class_is_inited (cmethod->klass))
+		return FALSE;
+
+	if (m_class_is_valuetype (cmethod->klass))
+		return FALSE;
+
+#if 0
+	if (m_class_has_special_jit_flags (cmethod->klass) &&
+	    ((mono_class_get_special_jit_flags (cmethod->klass) & MONO_SPECIAL_JIT_DEFER_CLASS_INIT_TO_CTOR) != 0))
+		return TRUE;
+	return FALSE;
+#else
+	return TRUE;
+#endif
+}
+
 MonoInst*
 mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *info, MonoInst **args)
 {
@@ -8796,8 +8830,8 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			use_icall_for_alloc = !cfg->compile_aot && m_class_has_special_jit_flags (cmethod->klass) &&
-				((mono_class_get_special_jit_flags (cmethod->klass) & MONO_SPECIAL_JIT_DEFER_CLASS_INIT_TO_CTOR) != 0);
+			/* Maybe delay initializing the class, if it's not already initialized.*/
+			use_icall_for_alloc = mini_use_icall_for_newobj (cfg, cmethod);
 
 			if (G_LIKELY (!use_icall_for_alloc))
 				if (!mono_class_init_internal (cmethod->klass))
@@ -8821,7 +8855,7 @@ calli_end:
 					emit_method_access_failure (cfg, method, cil_method);
 			}
 
-			if (cfg->gshared && cmethod && cmethod->klass != method->klass && mono_class_is_ginst (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
+			if (cfg->gshared && cmethod && !use_icall_for_alloc && cmethod->klass != method->klass && mono_class_is_ginst (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
 				emit_class_init (cfg, cmethod->klass);
 				CHECK_TYPELOAD (cmethod->klass);
 			}
