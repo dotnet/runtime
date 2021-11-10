@@ -3239,17 +3239,15 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
-    Statement* lastStmt  = target->lastStmt();
-    Statement* firstStmt = target->FirstNonPhiDef();
+    Statement* const lastStmt  = target->lastStmt();
+    Statement* const firstStmt = target->FirstNonPhiDef();
 
     // We currently allow just one statement aside from the branch.
     //
-    if ((firstStmt != lastStmt) && (firstStmt->GetNextStmt() != lastStmt))
+    if ((firstStmt != lastStmt) && (firstStmt != lastStmt->GetPrevStmt()))
     {
         return false;
     }
-
-    JITDUMP("*** first stmt in " FMT_BB "\n", target->bbNum);
 
     // Verify the branch is just a simple local compare.
     //
@@ -3325,13 +3323,10 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     // If there's no second statement, we're good.
     //
-    if (lastStmt == firstStmt)
+    if (firstStmt == lastStmt)
     {
-        JITDUMP("--- yea\n");
         return true;
     }
-
-    JITDUMP("*** second stmt in " FMT_BB "\n", target->bbNum);
 
     // Otherwise check the first stmt.
     // Verify the branch is just a simple local compare.
@@ -3340,21 +3335,18 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     if (firstTree->gtOper != GT_ASG)
     {
-        JITDUMP("--- not asg\n");
         return false;
     }
 
     GenTree* const lhs = firstTree->AsOp()->gtOp1;
     if (!lhs->OperIs(GT_LCL_VAR))
     {
-        JITDUMP("--- not asg lcl\n");
         return false;
     }
 
     const unsigned lhsLcl = lhs->AsLclVarCommon()->GetLclNum();
     if (lhsLcl != *lclNum)
     {
-        JITDUMP("--- not asg V%02u = binop\n", *lclNum);
         return false;
     }
 
@@ -3363,7 +3355,6 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     GenTree* const rhs = firstTree->AsOp()->gtOp2;
     if (!rhs->OperIsBinary())
     {
-        JITDUMP("--- not asg lcl = binop\n");
         return false;
     }
 
@@ -3377,7 +3368,6 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     if (!op1->IsLocal() && !op1->OperIsConst())
     {
-        JITDUMP("--- not asg lcl = binop(lcl/cns, ...)\n");
         return false;
     }
 
@@ -3391,7 +3381,6 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     if (!op2->IsLocal() && !op2->OperIsConst())
     {
-        JITDUMP("--- not asg lcl = binop(lcl/cns, lcl/cns)\n");
         return false;
     }
 
@@ -3426,8 +3415,6 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     {
         return false;
     }
-
-    JITDUMP(" -- yeah, new lcl is V%02u\n", *lclNum);
 
     return true;
 }
