@@ -4809,14 +4809,13 @@ AGAIN:
 //
 void emitter::emitCheckAlignFitInCurIG(unsigned nAlignInstr)
 {
-    //unsigned instrDescSize = nAlignInstr * sizeof(instrDescAlign);
+    unsigned instrDescSize = nAlignInstr * sizeof(instrDescAlign);
 
-    //// Ensure that all align instructions fall in same IG.
-    //if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
-    //{
-    //    emitForceNewIG = true;
-    //}
-    emitForceNewIG = true;
+    // Ensure that all align instructions fall in same IG.
+    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
+    {
+        emitForceNewIG = true;
+    }
 }
 
 //-----------------------------------------------------------------------------
