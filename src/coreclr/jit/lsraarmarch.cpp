@@ -681,11 +681,14 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 case GenTreeBlk::BlkOpKindUnroll:
                     buildInternalIntRegisterDefForNode(blkNode);
 #ifdef TARGET_ARM64
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+
                     if (size >= 2 * REGSIZE_BYTES)
                     {
                         // We will use ldp/stp to reduce code size and improve performance
                         // so we need to reserve an extra internal register
                         buildInternalIntRegisterDefForNode(blkNode);
+                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                     }
 #endif
                     break;

@@ -2239,6 +2239,185 @@ private:
     const int byteCount;
 };
 
+class CopyBlockUnrollHelper
+{
+public:
+    CopyBlockUnrollHelper(int srcOffset, int dstOffset, int byteCount)
+        : srcStartOffset(srcOffset), dstStartOffset(dstOffset), byteCount(byteCount)
+    {
+    }
+
+    int GetSrcOffset() const
+    {
+        return srcStartOffset;
+    }
+
+    int GetDstOffset() const
+    {
+        return dstStartOffset;
+    }
+
+    void SetSrcOffset(int srcOffset)
+    {
+        srcStartOffset = srcOffset;
+    }
+
+    void SetDstOffset(int dstOffset)
+    {
+        dstStartOffset = dstOffset;
+    }
+
+    int InstructionCount(int regSizeBytes) const
+    {
+        CountingStream instrStream;
+        UnrollCopyBlock(instrStream, instrStream, regSizeBytes);
+
+        return instrStream.InstructionCount();
+    }
+
+    bool CanEncodeAllOffsets(int regSizeBytes) const
+    {
+        bool canEncodeAllLoads  = true;
+        bool canEncodeAllStores = true;
+
+        TryEncodeAllOffsets(regSizeBytes, &canEncodeAllLoads, &canEncodeAllStores);
+        return canEncodeAllLoads && canEncodeAllStores;
+    }
+
+    void TryEncodeAllOffsets(int regSizeBytes, bool* pCanEncodeAllLoads, bool* pCanEncodeAllStores) const
+    {
+        assert(pCanEncodeAllLoads != nullptr);
+        assert(pCanEncodeAllStores != nullptr);
+
+        VerifyingStream instrStream;
+        UnrollCopyBlock(instrStream, instrStream, regSizeBytes);
+
+        *pCanEncodeAllLoads  = instrStream.CanEncodeAllLoads();
+        *pCanEncodeAllStores = instrStream.CanEncodeAllStores();
+    }
+
+    void Unroll(int       regSizeBytes,
+                regNumber intReg1,
+                regNumber intReg2,
+                regNumber simdReg1,
+                regNumber simdReg2,
+                regNumber srcAddrReg,
+                regNumber dstAddrReg,
+                emitter*  emitter) const
+    {
+        ProducingStream loadStream(intReg1, intReg2, simdReg1, simdReg2, srcAddrReg, emitter);
+        ProducingStream storeStream(intReg1, intReg2, simdReg1, simdReg2, dstAddrReg, emitter);
+        UnrollCopyBlock(loadStream, storeStream, regSizeBytes);
+    }
+
+private:
+    template <class InstructionStream>
+    void UnrollCopyBlock(InstructionStream& loadStream, InstructionStream& storeStream, int regSizeBytes) const
+    {
+        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+
+        int srcOffset = srcStartOffset;
+        int dstOffset = dstStartOffset;
+
+        const int endSrcOffset = srcOffset + byteCount;
+        const int endDstOffset = dstOffset + byteCount;
+
+        const int storePairRegsAlignment   = regSizeBytes;
+        const int storePairRegsWritesBytes = 2 * regSizeBytes;
+
+        const int dstOffsetAligned = StoreBlockUnrollHelper::AlignUp(dstOffset, storePairRegsAlignment);
+
+        if (endDstOffset - dstOffsetAligned >= storePairRegsWritesBytes)
+        {
+            const int dstBytesToAlign = dstOffsetAligned - dstOffset;
+
+            if (dstBytesToAlign != 0)
+            {
+                const int firstRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(dstBytesToAlign);
+
+                loadStream.LoadReg(srcOffset, firstRegSizeBytes);
+                storeStream.StoreReg(dstOffset, firstRegSizeBytes);
+
+                srcOffset = srcOffset + dstBytesToAlign;
+                dstOffset = dstOffsetAligned;
+            }
+
+            while (endDstOffset - dstOffset >= storePairRegsWritesBytes)
+            {
+                loadStream.LoadPairRegs(srcOffset, regSizeBytes);
+                storeStream.StorePairRegs(dstOffset, regSizeBytes);
+
+                srcOffset += storePairRegsWritesBytes;
+                dstOffset += storePairRegsWritesBytes;
+            }
+
+            if (endDstOffset - dstOffset >= regSizeBytes)
+            {
+                loadStream.LoadReg(srcOffset, regSizeBytes);
+                storeStream.StoreReg(dstOffset, regSizeBytes);
+
+                srcOffset += regSizeBytes;
+                dstOffset += regSizeBytes;
+            }
+
+            if (dstOffset != endDstOffset)
+            {
+                const int lastRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(endDstOffset - dstOffset);
+
+                loadStream.LoadReg(endSrcOffset - lastRegSizeBytes, lastRegSizeBytes);
+                storeStream.StoreReg(endDstOffset - lastRegSizeBytes, lastRegSizeBytes);
+            }
+        }
+        else
+        {
+            bool isSafeToWriteBehind = false;
+
+            while (endDstOffset - dstOffset >= regSizeBytes)
+            {
+                loadStream.LoadReg(srcOffset, regSizeBytes);
+                storeStream.StoreReg(dstOffset, regSizeBytes);
+
+                srcOffset += regSizeBytes;
+                dstOffset += regSizeBytes;
+                isSafeToWriteBehind = true;
+            }
+
+            assert(endSrcOffset - srcOffset < regSizeBytes);
+
+            while (dstOffset != endDstOffset)
+            {
+                if (isSafeToWriteBehind)
+                {
+                    const int lastRegSizeBytes =
+                        StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(endDstOffset - dstOffset);
+
+                    loadStream.LoadReg(endSrcOffset - lastRegSizeBytes, lastRegSizeBytes);
+                    storeStream.StoreReg(endDstOffset - lastRegSizeBytes, lastRegSizeBytes);
+                    break;
+                }
+
+                if (dstOffset + regSizeBytes > endDstOffset)
+                {
+                    regSizeBytes = regSizeBytes / 2;
+                }
+                else
+                {
+                    loadStream.LoadReg(srcOffset, regSizeBytes);
+                    storeStream.StoreReg(dstOffset, regSizeBytes);
+
+                    srcOffset += regSizeBytes;
+                    dstOffset += regSizeBytes;
+                    isSafeToWriteBehind = true;
+                }
+            }
+        }
+    }
+
+    int       srcStartOffset;
+    int       dstStartOffset;
+    const int byteCount;
+};
+
 #endif // TARGET_ARM64
 
 //----------------------------------------------------------------------------------
@@ -2441,15 +2620,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        // TODO-ARM-CQ: If the local frame offset is too large to be encoded, the emitter automatically
-        // loads the offset into a reserved register (see CodeGen::rsGetRsvdReg()). If we generate
-        // multiple store instructions we'll also generate multiple offset loading instructions.
-        // We could try to detect such cases, compute the base destination address in this reserved
-        // and use it in all store instructions we generate. This would effectively undo the effect
-        // of local address containment done by lowering.
-        //
-        // The same issue also occurs in source address case below and in genCodeForInitBlkUnroll.
-
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
@@ -2505,34 +2675,202 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
 
 #ifdef TARGET_ARM64
-    if (size >= 2 * REGSIZE_BYTES)
+    CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
+
+    regNumber srcReg              = srcAddrBaseReg;
+    int       srcRegAddrAlignment = -1;
+
+    if (srcLclNum != BAD_VAR_NUM)
     {
-        regNumber tempReg2 = node->ExtractTempReg(RBM_ALLINT);
+        bool      FPbased;
+        const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &FPbased);
 
-        for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize;
-             size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        srcReg              = FPbased ? REG_FPBASE : REG_SPBASE;
+        srcRegAddrAlignment = FPbased ? (genSPtoFPdelta() % 16) : 0;
+
+        helper.SetSrcOffset(baseAddr + srcOffset);
+    }
+
+    regNumber dstReg              = dstAddrBaseReg;
+    int       dstRegAddrAlignment = -1;
+
+    if (dstLclNum != BAD_VAR_NUM)
+    {
+        bool      FPbased;
+        const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &FPbased);
+
+        dstReg              = FPbased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment = FPbased ? (genSPtoFPdelta() % 16) : 0;
+
+        helper.SetDstOffset(baseAddr + dstOffset);
+    }
+
+    bool canEncodeAllLoads  = true;
+    bool canEncodeAllStores = true;
+    helper.TryEncodeAllOffsets(REGSIZE_BYTES, &canEncodeAllLoads, &canEncodeAllStores);
+
+    srcOffset = helper.GetSrcOffset();
+    dstOffset = helper.GetDstOffset();
+
+    int srcOffsetAdj = 0;
+    int dstOffsetAdj = 0;
+
+    if (!canEncodeAllLoads && !canEncodeAllStores)
+    {
+        srcOffsetAdj = srcOffset;
+        dstOffsetAdj = dstOffset;
+    }
+    else if (!canEncodeAllLoads)
+    {
+        srcOffsetAdj = srcOffset - dstOffset;
+    }
+    else if (!canEncodeAllStores)
+    {
+        dstOffsetAdj = dstOffset - srcOffset;
+    }
+
+    helper.SetSrcOffset(srcOffset - srcOffsetAdj);
+    helper.SetDstOffset(dstOffset - dstOffsetAdj);
+
+    bool shouldUse16ByteWideInstrs = false;
+
+    // Quad-word load operations that are not 16-byte aligned, and store operations that cross a 16-byte boundary
+    // can reduce bandwidth or incur additional latency.
+    // Therefore, the JIT would attempt to use 16-byte variants of such instructions when both conditions are met:
+    //   1) the base address stored in dstReg has known alignment (modulo 16 bytes) and
+    //   2) the base address stored in srcReg has the same alignment as the address in dstReg.
+    //
+    // When both addresses are 16-byte aligned the CopyBlock instruction sequence looks like
+    //
+    // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset]
+    // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset]
+    // ldp Q_simdReg1, Q_simdReg2, [srcReg, #dstOffset+32]
+    // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+32]
+    // ...
+    //
+    // When both addresses are not 16-byte aligned the CopyBlock instruction sequence starts with padding
+    // str instruction. For example, when both addresses are 8-byte aligned the instruction sequence looks like
+    //
+    // ldr D_simdReg1, [srcReg, #srcOffset]
+    // str D_simdReg1, [dstReg, #dstOffset]
+    // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset+8]
+    // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+8]
+    // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset+40]
+    // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+40]
+    // ...
+
+    if ((dstRegAddrAlignment != -1) && (srcRegAddrAlignment == dstRegAddrAlignment))
+    {
+        bool canEncodeAll16ByteWideLoads  = false;
+        bool canEncodeAll16ByteWideStores = false;
+        helper.TryEncodeAllOffsets(FP_REGSIZE_BYTES, &canEncodeAll16ByteWideLoads, &canEncodeAll16ByteWideStores);
+
+        if (canEncodeAll16ByteWideLoads && canEncodeAll16ByteWideStores)
         {
-            if (srcLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_R_R_S_S(INS_ldp, EA_8BYTE, EA_8BYTE, tempReg, tempReg2, srcLclNum, srcOffset);
-            }
-            else
-            {
-                emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tempReg, tempReg2, srcAddrBaseReg, srcOffset);
-            }
+            // No further adjustments for srcOffset and dstOffset are needed.
+            // The JIT should use 16-byte loads and stores when the resulting sequence has fewer number of instructions.
 
-            if (dstLclNum != BAD_VAR_NUM)
+            shouldUse16ByteWideInstrs =
+                (helper.InstructionCount(FP_REGSIZE_BYTES) < helper.InstructionCount(REGSIZE_BYTES));
+        }
+        else if (canEncodeAllLoads && canEncodeAllStores &&
+                 (canEncodeAll16ByteWideLoads || canEncodeAll16ByteWideStores))
+        {
+            // In order to use 16-byte instructions the JIT needs to adjust either srcOffset or dstOffset.
+            // The JIT should use 16-byte loads and stores when the resulting sequence (incl. an additional add
+            // instruction)
+            // has fewer number of instructions.
+
+            if (helper.InstructionCount(FP_REGSIZE_BYTES) + 1 < helper.InstructionCount(REGSIZE_BYTES))
             {
-                emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, tempReg, tempReg2, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tempReg, tempReg2, dstAddrBaseReg, dstOffset);
+                shouldUse16ByteWideInstrs = true;
+
+                if (!canEncodeAll16ByteWideLoads)
+                {
+                    srcOffsetAdj = srcOffset - dstOffset;
+                }
+                else
+                {
+                    dstOffsetAdj = dstOffset - srcOffset;
+                }
+
+                helper.SetSrcOffset(srcOffset - srcOffsetAdj);
+                helper.SetDstOffset(dstOffset - dstOffsetAdj);
             }
         }
     }
+
+#ifdef DEBUG
+    if (shouldUse16ByteWideInstrs)
+    {
+        assert(helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES));
+    }
+    else
+    {
+        assert(helper.CanEncodeAllOffsets(REGSIZE_BYTES));
+    }
 #endif
 
+    regNumber intReg1 = REG_NA;
+    regNumber intReg2 = REG_NA;
+
+    // On Arm64 an internal integer register is always allocated for a CopyBlock node
+    // in addition to a reserved register.
+    // However, if it is determined that both srcOffset and dstOffset need adjustments
+    // than both registers will be used for storing the adjusted addresses.
+    // In that case, the JIT uses SIMD register(s) and instructions for copying.
+
+    const regNumber tempReg1 = rsGetRsvdReg();
+    const regNumber tempReg2 = tempReg;
+
+    if ((srcOffsetAdj != 0) && (dstOffsetAdj != 0))
+    {
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdj, tempReg1);
+        srcReg = tempReg1;
+
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg2, dstReg, dstOffsetAdj, tempReg2);
+        dstReg = tempReg2;
+
+        if (size >= 2 * REGSIZE_BYTES)
+        {
+            intReg1 = node->ExtractTempReg(RBM_ALLINT);
+        }
+    }
+    else
+    {
+        if (srcOffsetAdj != 0)
+        {
+            genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdj, tempReg1);
+            srcReg = tempReg1;
+        }
+        else if (dstOffsetAdj != 0)
+        {
+            genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, dstReg, dstOffsetAdj, tempReg1);
+            dstReg = tempReg1;
+        }
+
+        intReg1 = tempReg2;
+
+        if (size >= 2 * REGSIZE_BYTES)
+        {
+            intReg2 = node->ExtractTempReg(RBM_ALLINT);
+        }
+    }
+
+    const regNumber simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
+    regNumber       simdReg2 = REG_NA;
+
+    if (size >= FP_REGSIZE_BYTES)
+    {
+        simdReg2 = node->ExtractTempReg(RBM_ALLFLOAT);
+    }
+
+    const int regSizeBytes = shouldUse16ByteWideInstrs ? FP_REGSIZE_BYTES : REGSIZE_BYTES;
+
+    helper.Unroll(regSizeBytes, intReg1, intReg2, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
+#endif // TARGET_ARM64
+
+#ifdef TARGET_ARM
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
     {
         while (regSize > size)
@@ -2557,9 +2895,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                 attr     = EA_4BYTE;
                 break;
             case 4:
-#ifdef TARGET_ARM64
-            case 8:
-#endif
                 loadIns  = INS_ldr;
                 storeIns = INS_str;
                 attr     = EA_ATTR(regSize);
@@ -2586,6 +2921,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             emit->emitIns_R_R_I(storeIns, attr, tempReg, dstAddrBaseReg, dstOffset);
         }
     }
+#endif // TARGET_ARM
 
     if (node->IsVolatile())
     {
