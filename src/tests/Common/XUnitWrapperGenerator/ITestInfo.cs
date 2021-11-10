@@ -68,7 +68,7 @@ sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
         ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
         Method = method.Name;
         TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}()\"";
-        ExecutionStatement = $"Assert.Equal(100, {externAlias}::{ContainingType}.{Method}());";
+        ExecutionStatement = $"Xunit.Assert.Equal(100, {externAlias}::{ContainingType}.{Method}());";
     }
 
     public string TestNameExpression { get; }

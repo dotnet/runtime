@@ -206,7 +206,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             if (!method.Parameters.IsEmpty)
             {
-                // emit diagnostic
+                // todo: emit diagnostic
             }
             else if (method.IsStatic && method.ReturnType.SpecialType == SpecialType.System_Int32)
             {
