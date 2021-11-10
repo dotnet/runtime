@@ -441,18 +441,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             Write(bytes.Length);
             Write(bytes);
         }
-        public unsafe void WriteLong(long val)
+
+        public override unsafe void Write(long val) => WriteType<long>(val);
+        public override unsafe void Write(int val) => WriteType<int>(val);
+
+        protected unsafe void WriteType<T>(T val) where T : struct
         {
-            long ret;
-            MonoBinaryReader.SwapForBE(new Span<byte>(&ret, sizeof(long)), new Span<byte>(&val, sizeof(long)));
-            base.Write(ret);
+            Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
+            MonoBinaryReader.SwapForBE(data, new Span<byte>(Unsafe.AsPointer(ref val), data.Length));
+            base.Write(data);
         }
-        public override unsafe void Write(int val)
-        {
-            int ret;
-            MonoBinaryReader.SwapForBE(new Span<byte>(&ret, sizeof(int)), new Span<byte>(&val, sizeof(int)));
-            base.Write(ret);
-        }
+
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
             if (objectId.Scheme == "object")
@@ -1068,7 +1067,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)1);
             commandParamsWriter.Write((byte)ModifierKind.LocationOnly);
             commandParamsWriter.Write(methodId);
-            commandParamsWriter.WriteLong(il_offset);
+            commandParamsWriter.Write(il_offset);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.Set, commandParams, token);
             return retDebuggerCmdReader.ReadInt32();
         }
@@ -1589,7 +1588,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var ret = new List<string>();
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.WriteLong(pointerValues[pointerId].address);
+            commandParamsWriter.Write(pointerValues[pointerId].address);
             commandParamsWriter.Write(pointerValues[pointerId].typeId);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdPointer>(sessionId, CmdPointer.GetValue, commandParams, token);
             var varName = pointerValues[pointerId].varName;
