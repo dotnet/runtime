@@ -1,4 +1,0 @@
-<?xml version="1.0" ?>
-<!-- Tracks ci-blocking issues -->
-<Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-</Project>
