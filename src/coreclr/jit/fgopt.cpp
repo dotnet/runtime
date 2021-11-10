@@ -3374,6 +3374,14 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     // op2 must be some combinations of casts of local or constant
     // (or unary)
     op2 = rhs->AsOp()->gtOp2;
+
+    // A binop may not actually have an op2.
+    //
+    if (op2 == nullptr)
+    {
+        return false;
+    }
+
     while (op2->gtOper == GT_CAST)
     {
         op2 = op2->AsOp()->gtOp1;
