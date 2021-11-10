@@ -332,6 +332,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int IsAsync { get; set; }
         public bool IsHiddenFromDebugger { get; }
         public TypeInfo TypeInfo { get; }
+
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
             this.IsAsync = -1;
@@ -478,6 +479,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private List<MethodInfo> methods;
         internal int Token { get; }
         internal string Namespace { get; }
+
         public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
         {
             this.assembly = assembly;
@@ -486,7 +488,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.type = type;
             methods = new List<MethodInfo>();
             Name = metadataReader.GetString(type.Name);
-            Namespace = "";
             if (type.IsNested)
             {
                 var declaringType = metadataReader.GetTypeDefinition(type.GetDeclaringType());
