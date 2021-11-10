@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
@@ -44,6 +45,27 @@ namespace System.Text.Json.Reflection
             }
 
             return false;
+        }
+
+        public static Location? GetDiagnosticLocation(this Type type)
+        {
+            TypeWrapper? typeWrapper = type as TypeWrapper;
+            Debug.Assert(typeWrapper != null);
+            return typeWrapper.Location;
+        }
+
+        public static Location? GetDiagnosticLocation(this PropertyInfo propertyInfo)
+        {
+            PropertyInfoWrapper? propertyInfoWrapper = propertyInfo as PropertyInfoWrapper;
+            Debug.Assert(propertyInfoWrapper != null);
+            return propertyInfoWrapper.Location;
+        }
+
+        public static Location? GetDiagnosticLocation(this FieldInfo fieldInfo)
+        {
+            FieldInfoWrapper? fieldInfoWrapper = fieldInfo as FieldInfoWrapper;
+            Debug.Assert(fieldInfoWrapper != null);
+            return fieldInfoWrapper.Location;
         }
     }
 }
