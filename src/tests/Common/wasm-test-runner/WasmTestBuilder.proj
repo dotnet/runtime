@@ -1,0 +1,18 @@
+<Project  DefaultTargets="PublishTest" Sdk="Microsoft.NET.Sdk">
+      <ItemGroup>
+        <TrimmerRootAssembly Include="$(MSBuildProjectName)" />
+        <TrimmerRootAssembly Include="System.Private.Corelib" />
+        <TrimmerRootAssembly Include="mscorlib" />
+      </ItemGroup>
+
+      <ItemGroup>
+	<ProjectReference Include="$(TestProject)" />
+      </ItemGroup>
+
+      <PropertyGroup>
+        <TrimmerSingleWarn>false</TrimmerSingleWarn>
+        <PublishTrimmed>true</PublishTrimmed>
+	<SelfContained>true</SelfContained>
+	<RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+      </PropertyGroup>
+</Project>
