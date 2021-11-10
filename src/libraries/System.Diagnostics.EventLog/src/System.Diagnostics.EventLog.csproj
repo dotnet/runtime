@@ -7,6 +7,7 @@
             CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'
             CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
     <NoWarn>$(NoWarn);CA1845;CA1846</NoWarn>
+    <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.
 
