@@ -776,6 +776,28 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 }
 FCIMPLEND
 
+MethodDesc* QCALLTYPE DebugStackTrace::GetMethodDescFromNativeIP(LPVOID ip)
+{
+    QCALL_CONTRACT;
+
+    MethodDesc* pResult = nullptr;
+
+    BEGIN_QCALL;
+
+    // TODO: There is a race for dynamic and collectible methods here between getting
+    // the MethodDesc here and when the managed wrapper converts it into a MethodBase
+    // where the method could be collected.
+    EECodeInfo codeInfo((PCODE)ip);
+    if (codeInfo.IsValid())
+    {
+        pResult = codeInfo.GetMethodDesc();
+    }
+
+    END_QCALL;
+
+    return pResult;
+}
+
 FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, NULL> StrongHandleHolder;
 
