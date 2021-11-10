@@ -4809,13 +4809,14 @@ AGAIN:
 //
 void emitter::emitCheckAlignFitInCurIG(unsigned nAlignInstr)
 {
-    unsigned instrDescSize = nAlignInstr * sizeof(instrDescAlign);
+    //unsigned instrDescSize = nAlignInstr * sizeof(instrDescAlign);
 
-    // Ensure that all align instructions fall in same IG.
-    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
-    {
-        emitForceNewIG = true;
-    }
+    //// Ensure that all align instructions fall in same IG.
+    //if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
+    //{
+    //    emitForceNewIG = true;
+    //}
+    emitForceNewIG = true;
 }
 
 //-----------------------------------------------------------------------------
@@ -5032,8 +5033,9 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
     for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
     {
         loopSize += igInLoop->igSize;
-        if (igInLoop->endsWithAlignInstr() || igInLoop->isAlignInstrRemoved())
+        if (igInLoop->endsWithAlignInstr() /*|| igInLoop->isAlignInstrRemoved()*/)
         {
+            //assert(false);
             // If igInLoop can be in one of the following state:
             // IGF_HAS_ALIGN - igInLoop contains align instruction at the end, for next IG or some future IG.
             // IGF_REMOVED_ALIGN - igInLoop had align instruction at the end, but was removed.
