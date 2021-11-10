@@ -18,6 +18,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Reflection;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -407,48 +408,25 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return new string(Encoding.UTF8.GetChars(value, 0, valueLen));
         }
-        public unsafe long ReadLong()
-        {
-            Span<byte> data = stackalloc byte[8];
-            Read(data);
-
-            long ret;
-            SwapForBE(new Span<byte>(&ret, 8), data);
-            return ret;
-        }
 
         // SDB encodes these as 4 bytes
         public override sbyte ReadSByte() => (sbyte)ReadInt32();
         public byte ReadUByte() => (byte)ReadUInt32();
         public ushort ReadUShort() => (ushort)ReadUInt32();
+        public override unsafe int ReadInt32() => Read<int>();
 
-        public override unsafe int ReadInt32()
+        public override unsafe double ReadDouble() => Read<double>();
+        public override unsafe uint ReadUInt32() => Read<uint>();
+        public override unsafe float ReadSingle() => Read<float>();
+        public override unsafe ulong ReadUInt64() => Read<ulong>();
+        public override unsafe long ReadInt64() => Read<long>();
+
+        protected unsafe T Read<T>() where T : struct
         {
-            Span<byte> data = stackalloc byte[4];
+            Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
+            T ret = default;
             Read(data);
-
-            int ret;
-            SwapForBE(new Span<byte>(&ret, 4), data);
-            return ret;
-        }
-
-        public override unsafe double ReadDouble()
-        {
-            Span<byte> data = stackalloc byte[8];
-            Read(data);
-
-            double ret;
-            SwapForBE(new Span<byte>(&ret, 8), data);
-            return ret;
-        }
-
-        public override unsafe uint ReadUInt32()
-        {
-            Span<byte> data = stackalloc byte[4];
-            Read(data);
-
-            uint ret;
-            SwapForBE(new Span<byte>(&ret, 4), data);
+            SwapForBE(new Span<byte>(Unsafe.AsPointer(ref ret), data.Length), data);
             return ret;
         }
     }
@@ -1710,7 +1688,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string type;
             string value;
-            long valueAddress = retDebuggerCmdReader.ReadLong();
+            long valueAddress = retDebuggerCmdReader.ReadInt64();
             var typeId = retDebuggerCmdReader.ReadInt32();
             var className = "";
             if (etype == ElementType.FnPtr)
@@ -1921,7 +1899,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 case ElementType.R4:
                 {
-                    float value = BitConverter.Int32BitsToSingle(retDebuggerCmdReader.ReadInt32());
+                    float value = retDebuggerCmdReader.ReadSingle();
                     ret = CreateJObjectForNumber<float>(value);
                     break;
                 }
@@ -1933,15 +1911,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 case ElementType.I8:
                 {
-                    long value = retDebuggerCmdReader.ReadLong();
+                    long value = retDebuggerCmdReader.ReadInt64();
                     ret = CreateJObjectForNumber<long>(value);
                     break;
                 }
                 case ElementType.U8:
                 {
-                    ulong high = (ulong) retDebuggerCmdReader.ReadInt32();
-                    ulong low = (ulong) retDebuggerCmdReader.ReadInt32();
-                    var value = ((high << 32) | low);
+                    ulong value = retDebuggerCmdReader.ReadUInt64();
                     ret = CreateJObjectForNumber<ulong>(value);
                     break;
                 }
