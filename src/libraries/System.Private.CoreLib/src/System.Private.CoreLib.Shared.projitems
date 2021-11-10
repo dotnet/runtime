@@ -417,7 +417,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileAccess.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileInfo.netcoreapp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileLoadException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileNotFoundException.cs" />
