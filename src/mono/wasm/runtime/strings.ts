@@ -6,6 +6,7 @@ import { CharPtr, MonoString, MonoStringNull, NativePointer } from "./types";
 import { Module } from "./modules";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
+import { getI32 } from "./memory";
 
 export class StringDecoder {
 
@@ -31,9 +32,9 @@ export class StringDecoder {
         cwraps.mono_wasm_string_get_data(mono_string, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = mono_wasm_empty_string;
-        const lengthBytes = Module.HEAP32[pLengthBytes >>> 2],
-            pChars = Module.HEAP32[ppChars >>> 2],
-            isInterned = Module.HEAP32[pIsInterned >>> 2];
+        const lengthBytes = getI32(pLengthBytes),
+            pChars = getI32(ppChars),
+            isInterned = getI32(pIsInterned);
 
         if (pLengthBytes && pChars) {
             if (
