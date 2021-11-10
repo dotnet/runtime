@@ -915,7 +915,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         emitAlignLast = last;
         // Point to the first instruction of most recent
         // align instruction(s) added.
-        emitRecentFirstAlign = list;
+        emitAlignLastGroup = list;
     }
 
 #endif
@@ -1074,7 +1074,7 @@ void emitter::emitBegFN(bool hasFramePtr
 #if FEATURE_LOOP_ALIGN
     /* We don't have any align instructions */
 
-    emitAlignList = emitRecentFirstAlign = emitAlignLast = nullptr;
+    emitAlignList = emitAlignLastGroup = emitAlignLast = nullptr;
     emitCurIGAlignList                                   = nullptr;
 #endif
 
@@ -4867,7 +4867,7 @@ void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign)
         // For multiple align instructions, set the targetIG only for the
         // first align instruction
         id->idaTargetIG      = emitCurIG;
-        emitRecentFirstAlign = id;
+        emitAlignLastGroup = id;
     }
     else
     {
@@ -4935,7 +4935,7 @@ void emitter::emitLongLoopAlign(unsigned alignmentBoundary)
 //
 void emitter::emitConnectAlignInstrWithCurIG()
 {
-    JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u\n", emitRecentFirstAlign->idaIG->igNum,
+    JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u\n", emitAlignLastGroup->idaIG->igNum,
             emitCurIG->igNum);
     // Since we never align overlapping instructions, it is always guaranteed that
     // the emitRecentFirstAlign points to the loop that is in process of getting aligned.
@@ -4947,11 +4947,11 @@ void emitter::emitConnectAlignInstrWithCurIG()
         // pointing to previous IG.
         assert(emitPrevIG != emitCurIG);
 
-        emitRecentFirstAlign->idaTargetIG = emitPrevIG;
+        emitAlignLastGroup->idaTargetIG = emitPrevIG;
     }
     else
     {
-        emitRecentFirstAlign->idaTargetIG = emitCurIG;
+        emitAlignLastGroup->idaTargetIG = emitCurIG;
     }
 }
 
@@ -5582,24 +5582,21 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     return paddingToAdd;
 }
 
-// emitAlignInNextIG: On xarch, for adaptive alignment, this will usually point to next instruction in
+// emitAlignInNextIG: On xarch, for adaptive alignment, this will usually return the next instruction in
 //                    'emitAlignList'. But for arm64 or non-adaptive alignment on xarch, where multiple
 //                    align instructions are emitted, this method will skip the 'align' instruction present
 //                    in the same IG and return the first instruction that is present in next IG.
+//  Arguments:
+//      alignInstr - Current 'align' instruction for which next IG's first 'align' should be returned. 
 //
 emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
 {
-#if defined(TARGET_XARCH)
-    if (!emitComp->opts.compJitAlignLoopAdaptive)
-#endif
+    // If there are multiple align instructions, skip the align instructions after
+    // the first align instruction and fast forward to the next IG
+    insGroup* alignIG = alignInstr->idaIG;
+    while ((alignInstr != nullptr) && (alignInstr->idaNext != nullptr) && (alignInstr->idaNext->idaIG == alignIG))
     {
-        // If there are multiple align instructions, skip the align instructions after
-        // the first align instruction and fast forward to the next IG
-        insGroup* alignIG = alignInstr->idaIG;
-        while ((alignInstr != nullptr) && (alignInstr->idaNext != nullptr) && (alignInstr->idaNext->idaIG == alignIG))
-        {
-            alignInstr = alignInstr->idaNext;
-        }
+        alignInstr = alignInstr->idaNext;
     }
     return alignInstr != nullptr ? alignInstr->idaNext : nullptr;
 }

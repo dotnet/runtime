@@ -1801,7 +1801,7 @@ private:
 
     // Points to the most recent added align instruction. If there are multiple align instructions like in arm64 or
     // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
-    instrDescAlign* emitRecentFirstAlign;
+    instrDescAlign* emitAlignLastGroup;
 
     unsigned getLoopSize(insGroup* igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size

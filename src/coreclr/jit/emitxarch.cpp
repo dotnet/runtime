@@ -10066,7 +10066,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 
 #ifdef DEBUG
     // Under STRESS_EMITTER, if this is the 'align' before the 'jmp' instruction,
-    // then add "int3" instruction. Sinc int3 takes 1 byte, we would only add
+    // then add "int3" instruction. Since int3 takes 1 byte, we would only add
     // it if paddingToAdd >= 1 byte.
 
     if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && !validatePadding && paddingToAdd >= 1)

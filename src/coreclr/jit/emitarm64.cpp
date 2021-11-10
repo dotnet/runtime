@@ -11459,10 +11459,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // then add "bkpt" instruction.
                 instrDescAlign* alignInstr = (instrDescAlign*)id;
 
-                if (/*emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&*/
+                if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
                     (alignInstr->idaIG != alignInstr->idaTargetIG) && !skipIns)
                 {
-                    // There is no good way to squeeze in "int3" as well as display it
+                    // There is no good way to squeeze in "bkpt" as well as display it
                     // in the disassembly because there is no corresponding instrDesc for
                     // it. As such, leave it as is, the "0xD43E0000" bytecode will be seen
                     // next to the nop instruction in disasm.
