@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
@@ -50,5 +52,22 @@ namespace System.Diagnostics
         }
 
         private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
+
+        /// <summary>
+        /// Returns the MethodBase instance for the managed code IP address.
+        ///
+        /// Warning: The implementation of this method has race for dynamic and collectible methods.
+        /// </summary>
+        /// <param name="ip">code address</param>
+        /// <returns>MethodBase instance for the method or null if IP not found</returns>
+        internal static MethodBase? GetMethodFromNativeIP(IntPtr ip)
+        {
+            RuntimeMethodHandleInternal method = StackTrace.GetMethodDescFromNativeIP(ip);
+
+            if (method.Value == IntPtr.Zero)
+                return null;
+
+            return RuntimeType.GetMethodBase(null, method);
+        }
     }
 }
