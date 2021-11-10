@@ -28,6 +28,7 @@ namespace HttpStress
 
         public static async Task<int> Main(string[] args)
         {
+            Console.WriteLine("Does it work?");
             if (!TryParseCli(args, out Configuration? config))
             {
                 return (int)ExitCode.CliError;
