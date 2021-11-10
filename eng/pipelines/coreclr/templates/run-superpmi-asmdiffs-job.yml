@@ -65,19 +65,13 @@ jobs:
     steps:
     - ${{ parameters.steps }}
 
-    - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: |
-          mkdir -p $(SpmiCollectionLocation)
-          mkdir -p $(SpmiLogsLocation)
-        displayName: Create directories
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: |
-          mkdir $(SpmiCollectionLocation)
-          mkdir $(SpmiLogsLocation)
-        displayName: Create directories
+    - script: |
+        mkdir $(SpmiCollectionLocation)
+        mkdir $(SpmiLogsLocation)
+      displayName: Create directories
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
-      displayName: ${{ format('SuperPMI asmdiffs setup ({0}{1} {2})', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+      displayName: ${{ format('SuperPMI asmdiffs setup ({0})', parameters.archType) }}
 
       # Run superpmi asmdiffs in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
@@ -114,8 +108,8 @@ jobs:
         targetFolder: '$(SpmiLogsLocation)'
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiLogsLocation) -arch $(archType) -platform $(osGroup)$(osSubgroup)
-      displayName: ${{ format('Summarize ({0}{1} {2})', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiLogsLocation) -arch $(archType)
+      displayName: ${{ format('Summarize ({0})', parameters.archType) }}
       condition: always()
 
     - task: PublishPipelineArtifact@1
