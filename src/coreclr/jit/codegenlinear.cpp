@@ -432,7 +432,7 @@ void CodeGen::genCodeForBBlist()
             if (node->OperGet() == GT_IL_OFFSET)
             {
                 GenTreeILOffset* ilOffset = node->AsILOffset();
-                DebugInfo rootDI = ilOffset->gtStmtDI.GetRoot();
+                DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
                 if (rootDI.IsValid())
                 {
                     genEnsureCodeEmitted(currentDI);
