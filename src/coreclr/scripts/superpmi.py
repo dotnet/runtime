@@ -1471,7 +1471,7 @@ class SuperPMICollect:
 ################################################################################
 
 
-def print_superpmi_failure_code(return_code, coreclr_args):
+def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics):
     """ Print a description of a superpmi return (error) code. If the return code is
         zero, meaning success, don't print anything.
         Note that Python treats process return codes (at least on Windows) as
@@ -1479,8 +1479,7 @@ def print_superpmi_failure_code(return_code, coreclr_args):
         those return codes.
     """
     if return_code == 0:
-        # Don't print anything if the code is zero, which is success.
-        pass
+        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Successful compiles"]))
     elif return_code == -1 or return_code == 4294967295:
         logging.error("General fatal error")
     elif return_code == -2 or return_code == 4294967294:
@@ -1490,7 +1489,15 @@ def print_superpmi_failure_code(return_code, coreclr_args):
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
-        logging.warning("SuperPMI missing data encountered")
+        missing_base = int(base_metrics["Missing compiles"])
+        total_contexts = int(base_metrics["Successful compiles"]) + int(base_metrics["Failing compiles"])
+
+        if diff_metrics is None:
+            logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
+        else:
+            missing_diff = int(diff_metrics["Missing compiles"])
+            logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
+
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
     else:
@@ -1636,16 +1643,20 @@ class SuperPMIReplay:
                 flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
+                metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_metrics.csv")
+
                 flags += [
-                    "-f", fail_mcl_file  # Failing mc List
+                    "-f", fail_mcl_file,  # Failing mc List
+                    "-metricsSummary", metrics_summary_file
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 return_code = run_and_log(command)
-                print_superpmi_failure_code(return_code, self.coreclr_args)
-                if return_code == 0:
-                    logging.info("Clean SuperPMI replay")
-                else:
+
+                metrics = read_csv_metrics(metrics_summary_file)
+
+                print_superpmi_result(return_code, self.coreclr_args, metrics, None)
+                if return_code != 0:
                     result = False
                     # Don't report as replay failure missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
@@ -1859,16 +1870,19 @@ class SuperPMIReplayAsmDiffs:
                     with ChangeDir(self.coreclr_args.core_root):
                         command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                         return_code = run_and_log(command)
-                        print_superpmi_failure_code(return_code, self.coreclr_args)
-                        if return_code == 0:
-                            logging.info("Clean SuperPMI diff")
-                        else:
-                            result = False
-                            # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
-                            # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
-                            # reported as a replay failure.
-                            if return_code != 2 and return_code != 3:
-                                files_with_replay_failures.append(mch_file)
+
+                    base_metrics = read_csv_metrics(base_metrics_summary_file)
+                    diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+
+                    print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
+
+                    if return_code != 0:
+                        result = False
+                        # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
+                        # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
+                        # reported as a replay failure.
+                        if return_code != 2 and return_code != 3:
+                            files_with_replay_failures.append(mch_file)
 
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
@@ -1983,16 +1997,13 @@ class SuperPMIReplayAsmDiffs:
                         logging.debug(item)
                     logging.debug("")
 
-                    base_metrics = read_csv_metrics(base_metrics_summary_file)
-                    diff_metrics = read_csv_metrics(diff_metrics_summary_file)
-
-                    if base_metrics is not None and "Code bytes" in base_metrics and diff_metrics is not None and "Code bytes" in diff_metrics:
-                        base_bytes = int(base_metrics["Code bytes"])
-                        diff_bytes = int(diff_metrics["Code bytes"])
-                        logging.info("Total Code bytes of base: {}".format(base_bytes))
-                        logging.info("Total Code bytes of diff: {}".format(diff_bytes))
+                    if base_metrics is not None and diff_metrics is not None:
+                        base_bytes = int(base_metrics["Diffed code bytes"])
+                        diff_bytes = int(diff_metrics["Diffed code bytes"])
+                        logging.info("Total bytes of base: {}".format(base_bytes))
+                        logging.info("Total bytes of diff: {}".format(diff_bytes))
                         delta_bytes = diff_bytes - base_bytes
-                        logging.info("Total Code bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+                        logging.info("Total bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
 
                     try:
                         current_text_diff = text_differences.get_nowait()
@@ -2043,6 +2054,15 @@ class SuperPMIReplayAsmDiffs:
                             logging.info("Textual differences found in generated JitDump.")
                         else:
                             logging.warning("No textual differences found in generated JitDump. Is this an issue with coredistools?")
+
+                    if base_metrics is not None and diff_metrics is not None:
+                        missing_base = int(base_metrics["Missing compiles"])
+                        missing_diff = int(diff_metrics["Missing compiles"])
+                        total_contexts = int(base_metrics["Successful compiles"]) + int(base_metrics["Failing compiles"])
+
+                        if missing_base > 0 or missing_diff > 0:
+                            logging.warning("Warning: SuperPMI encountered missing data during the diff. The diff summary printed above may be misleading.")
+                            logging.warning("Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
 
                 ################################################################################################ end of processing asm diffs (if is_nonzero_length_file(diff_mcl_file)...
 

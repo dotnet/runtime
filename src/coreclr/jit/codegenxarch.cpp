@@ -5505,11 +5505,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     // We don't want tail call helper calls that were converted from normal calls to get a record,
     // so we skip this hash table lookup logic in that case.
 
-    IL_OFFSETX ilOffset = BAD_IL_OFFSET;
+    DebugInfo di;
 
-    if (compiler->opts.compDbgInfo && compiler->genCallSite2ILOffsetMap != nullptr && !call->IsTailCall())
+    if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
     {
-        (void)compiler->genCallSite2ILOffsetMap->Lookup(call, &ilOffset);
+        (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
     }
 
     CORINFO_SIG_INFO* sigInfo = nullptr;
@@ -5561,7 +5561,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
-                                       ilOffset, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
+                                       di, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
             // clang-format on
         }
         else
@@ -5582,7 +5582,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                             X86_ARG(argSizeForEmitter),
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                            ilOffset,
+                            di,
                             REG_NA,
                             call->IsFastTailCall());
                 // clang-format on
@@ -5604,7 +5604,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                                  X86_ARG(argSizeForEmitter),
                                  retSize
                                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                 ilOffset,
+                                 di,
                                  call->IsFastTailCall());
                 // clang-format on
             }
@@ -5630,7 +5630,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        ilOffset,
+                        di,
                         target->GetRegNum(),
                         call->IsFastTailCall());
             // clang-format on
@@ -5660,7 +5660,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 gcInfo.gcVarPtrSetCur,
                 gcInfo.gcRegGCrefSetCur,
                 gcInfo.gcRegByrefSetCur,
-                ilOffset, indirCellReg, REG_NA, 0, 0,
+                di, indirCellReg, REG_NA, 0, 0,
                 call->IsFastTailCall());
             // clang-format on
         }
@@ -5677,7 +5677,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        ilOffset,
+                        di,
                         REG_NA,
                         call->IsFastTailCall());
             // clang-format on
@@ -5717,7 +5717,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        ilOffset,
+                        di,
                         REG_NA,
                         call->IsFastTailCall());
             // clang-format on
@@ -8407,7 +8407,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               BAD_IL_OFFSET, // IL offset
+                               DebugInfo(),
                                callTarget,    // ireg
                                REG_NA, 0, 0,  // xreg, xmul, disp
                                false         // isJump

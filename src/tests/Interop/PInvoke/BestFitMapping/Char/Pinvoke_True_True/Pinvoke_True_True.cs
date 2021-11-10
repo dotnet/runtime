@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 public class BFM_CharMarshaler
 {
@@ -82,71 +82,71 @@ public class BFM_CharMarshaler
 
     static void testChar()
     {
-        Assert.IsTrue(Char_In(GetInvalidChar()), "[Error] Location tc1");
+        Assert.True(Char_In(GetInvalidChar()));
 
-        Assert.IsTrue(Char_In(GetValidChar()), "[Error] Location tc2");
+        Assert.True(Char_In(GetValidChar()));
 
         char cTemp = GetInvalidChar();
         char cTempClone = GetInvalidChar();
-        Assert.IsTrue(Char_InByRef(ref cTemp), "[Error] Location tc3");
+        Assert.True(Char_InByRef(ref cTemp));
 
         cTemp = GetValidChar();
         cTempClone = cTemp;
-        Assert.IsTrue(Char_InByRef(ref cTemp), "[Error] Location tc4");
+        Assert.True(Char_InByRef(ref cTemp));
 
         cTemp = GetInvalidChar();
         cTempClone = cTemp;
-        Assert.IsTrue(Char_InOutByRef(ref cTemp), "[Error] Location t5");
+        Assert.True(Char_InOutByRef(ref cTemp));
 
         cTemp = GetValidChar();
         cTempClone = cTemp;
-        Assert.IsTrue(Char_InOutByRef(ref cTemp), "[Error] Location tc6");
+        Assert.True(Char_InOutByRef(ref cTemp));
     }
 
     static void testCharBufferString()
     {
-        Assert.IsTrue(CharBuffer_In_String(GetInvalidString()), "[Error] Location tcbs1");
+        Assert.True(CharBuffer_In_String(GetInvalidString()));
 
-        Assert.IsTrue(CharBuffer_In_String(GetValidString()), "[Error] Location tcbs2");
+        Assert.True(CharBuffer_In_String(GetValidString()));
 
         String cTemp = GetInvalidString();
         String cTempClone = GetInvalidString();
-        Assert.IsTrue(CharBuffer_InByRef_String(ref cTemp), "[Error] Location tcbs3");
+        Assert.True(CharBuffer_InByRef_String(ref cTemp));
 
         cTemp = GetValidString();
         cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InByRef_String(ref cTemp), "[Error] Location tcbs4");
+        Assert.True(CharBuffer_InByRef_String(ref cTemp));
 
         cTemp = GetInvalidString();
         cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InOutByRef_String(ref cTemp), "[Error] Location tcbs5");
+        Assert.True(CharBuffer_InOutByRef_String(ref cTemp));
 
         cTemp = GetValidString();
         cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InOutByRef_String(ref cTemp), "[Error] Location tcbs6");
+        Assert.True(CharBuffer_InOutByRef_String(ref cTemp));
     }
 
     static void testCharBufferStringBuilder()
     {
-        Assert.IsTrue(CharBuffer_In_StringBuilder(GetInvalidStringBuilder()), "[Error] Location tcbsb1");
+        Assert.True(CharBuffer_In_StringBuilder(GetInvalidStringBuilder()));
 
-        Assert.IsTrue(CharBuffer_In_StringBuilder(GetValidStringBuilder()), "[Error] Location tcbsb2");
+        Assert.True(CharBuffer_In_StringBuilder(GetValidStringBuilder()));
 
         StringBuilder cTemp = GetInvalidStringBuilder();
         StringBuilder cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InByRef_StringBuilder(ref cTemp), "[Error] Location tcbsb3");
+        Assert.True(CharBuffer_InByRef_StringBuilder(ref cTemp));
 
         cTemp = GetValidStringBuilder();
         cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InByRef_StringBuilder(ref cTemp), "[Error] Location tcbsb4");
+        Assert.True(CharBuffer_InByRef_StringBuilder(ref cTemp));
 
         cTemp = GetInvalidStringBuilder();
         cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InOutByRef_StringBuilder(ref cTemp), "[Error] Location tcbsb5");
+        Assert.True(CharBuffer_InOutByRef_StringBuilder(ref cTemp));
 
         cTemp = GetValidStringBuilder();
         cTempClone = cTemp;
-        Assert.IsTrue(CharBuffer_InOutByRef_StringBuilder(ref cTemp), "[Error] Location tcbsb6");
+        Assert.True(CharBuffer_InOutByRef_StringBuilder(ref cTemp));
     }
 
     static void runTest()
@@ -171,8 +171,8 @@ public class BFM_CharMarshaler
             runTest();
             return 100;
         } catch (Exception e){
-            Console.WriteLine($"Test Failure: {e}"); 
-            return 101; 
+            Console.WriteLine($"Test Failure: {e}");
+            return 101;
         }
     }
 }

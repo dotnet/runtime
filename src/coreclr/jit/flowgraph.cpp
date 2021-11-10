@@ -278,7 +278,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             if (nextStmt != nullptr)
             {
                 // Is it possible for gtNextStmt to be NULL?
-                newStmt->SetILOffsetX(nextStmt->GetILOffsetX());
+                newStmt->SetDebugInfo(nextStmt->GetDebugInfo());
             }
         }
 

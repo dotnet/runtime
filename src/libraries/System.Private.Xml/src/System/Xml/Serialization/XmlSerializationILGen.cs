@@ -168,7 +168,7 @@ namespace System.Xml.Serialization
 
             ilg.BeginMethod(
                 typeof(Hashtable),
-                "get_" + publicName,
+                $"get_{publicName}",
                 Type.EmptyTypes,
                 Array.Empty<string>(),
                 CodeGenerator.PublicOverrideMethodAttributes | MethodAttributes.SpecialName);
@@ -325,7 +325,7 @@ namespace System.Xml.Serialization
         internal string GenerateTypedSerializer(string readMethod, string writeMethod, XmlMapping mapping, CodeIdentifiers classes, string baseSerializer, string readerClass, string writerClass)
         {
             string serializerName = CodeIdentifier.MakeValid(Accessor.UnescapeName(mapping.Accessor.Mapping!.TypeDesc!.Name));
-            serializerName = classes.AddUnique(serializerName + "Serializer", mapping);
+            serializerName = classes.AddUnique($"{serializerName}Serializer", mapping);
 
             TypeBuilder typedSerializerTypeBuilder = CodeGenerator.CreateTypeBuilder(
                 _moduleBuilder!,

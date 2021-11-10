@@ -376,7 +376,7 @@ void CodeGen::genCodeForBBlist()
             !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
                                              // emit a NO_MAPPING entry, immediately after the prolog.
         {
-            genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::NO_MAPPING, true);
+            genIPmappingAdd(IPmappingDscKind::NoMapping, DebugInfo(), true);
         }
 
         bool firstMapping = true;
@@ -425,16 +425,16 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
-        IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
+        DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))
         {
             // Do we have a new IL offset?
             if (node->OperGet() == GT_IL_OFFSET)
             {
                 GenTreeILOffset* ilOffset = node->AsILOffset();
-                genEnsureCodeEmitted(currentILOffset);
-                currentILOffset = ilOffset->gtStmtILoffsx;
-                genIPmappingAdd(currentILOffset, firstMapping);
+                genEnsureCodeEmitted(currentDI);
+                currentDI = ilOffset->gtStmtDI;
+                genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
                 firstMapping = false;
 #ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
@@ -529,7 +529,7 @@ void CodeGen::genCodeForBBlist()
         //
         // This can lead to problems when debugging the generated code. To prevent these issues, make sure
         // we've generated code for the last IL offset we saw in the block.
-        genEnsureCodeEmitted(currentILOffset);
+        genEnsureCodeEmitted(currentDI);
 
         /* Is this the last block, and are there any open scopes left ? */
 
@@ -1574,6 +1574,15 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree);
         }
+#ifdef TARGET_ARM64
+        else if (tree->OperIs(GT_BFIZ))
+        {
+            // Can be contained as part of LEA on ARM64
+            GenTreeCast* cast = tree->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+            genConsumeAddress(cast->CastOp());
+        }
+#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -2276,7 +2285,7 @@ void CodeGen::genEmitCall(int                   callType,
                           X86_ARG(int argSize),
                           emitAttr              retSize
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          IL_OFFSETX            ilOffset,
+                          const DebugInfo& di,
                           regNumber             base,
                           bool                  isJump)
 {
@@ -2298,7 +2307,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               ilOffset, base, REG_NA, 0, 0, isJump);
+                               di, base, REG_NA, 0, 0, isJump);
 }
 // clang-format on
 
@@ -2314,7 +2323,7 @@ void CodeGen::genEmitCallIndir(int                   callType,
                                X86_ARG(int argSize),
                                emitAttr              retSize
                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                               IL_OFFSETX            ilOffset,
+                               const DebugInfo&      di,
                                bool                  isJump)
 {
 #if !defined(TARGET_X86)
@@ -2339,7 +2348,7 @@ void CodeGen::genEmitCallIndir(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               ilOffset,
+                               di,
                                iReg,
                                xReg,
                                indir->Scale(),

@@ -7,10 +7,12 @@
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <Compile Remove="Console/Console.cs" />
   </ItemGroup>
 
   <PropertyGroup>
     <_SampleProject>Wasm.Browser.Bench.Sample.csproj</_SampleProject>
+    <_SampleAssembly> Wasm.Browser.Bench.Sample.dll</_SampleAssembly>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />

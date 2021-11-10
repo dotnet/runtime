@@ -1817,7 +1817,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, OR and XOR
+// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR and XOR
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
@@ -1826,8 +1826,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     var_types        targetType = treeNode->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(oper == GT_ADD || oper == GT_SUB || oper == GT_MUL || oper == GT_DIV || oper == GT_UDIV || oper == GT_AND ||
-           oper == GT_OR || oper == GT_XOR);
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
@@ -1845,6 +1844,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
                 break;
             case GT_AND:
                 ins = INS_ands;
+                break;
+            case GT_AND_NOT:
+                ins = INS_bics;
                 break;
             default:
                 noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
@@ -3119,6 +3121,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             case GT_AND:
                 ins = INS_and;
                 break;
+            case GT_AND_NOT:
+                ins = INS_bic;
+                break;
             case GT_DIV:
                 ins = INS_sdiv;
                 break;
@@ -3841,10 +3846,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     GetEmitter()->emitIns_Call(callType, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) addr, argSize,
                                retSize, EA_UNKNOWN, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur, BAD_IL_OFFSET, /* IL offset */
-                               callTarget,                             /* ireg */
-                               REG_NA, 0, 0,                           /* xreg, xmul, disp */
-                               false                                   /* isJump */
+                               gcInfo.gcRegByrefSetCur, DebugInfo(), callTarget, /* ireg */
+                               REG_NA, 0, 0,                                     /* xreg, xmul, disp */
+                               false                                             /* isJump */
                                );
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);

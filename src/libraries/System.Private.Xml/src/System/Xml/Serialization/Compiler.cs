@@ -92,7 +92,9 @@ namespace System.Xml.Serialization
 
         internal static string GetTempAssemblyName(AssemblyName parent, string? ns)
         {
-            return parent.Name + ".XmlSerializers" + (string.IsNullOrEmpty(ns) ? "" : $".{GetPersistentHashCode(ns)}");
+            return string.IsNullOrEmpty(ns) ?
+                $"{parent.Name}.XmlSerializers" :
+                $"{parent.Name}.XmlSerializers.{GetPersistentHashCode(ns)}";
         }
 
         private static uint GetPersistentHashCode(string value)

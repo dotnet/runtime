@@ -6985,6 +6985,14 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
     {
         shiftAmount = insOptsLSL(opt) ? scale : 0;
     }
+
+    // If target reg is ZR - it means we're doing an implicit nullcheck
+    // where target type was ignored and set to TYP_INT.
+    if ((reg1 == REG_ZR) && (shiftAmount > 0))
+    {
+        shiftAmount = scale;
+    }
+
     assert((shiftAmount == scale) || (shiftAmount == 0));
 
     reg2 = encodingSPtoZR(reg2);
@@ -8520,7 +8528,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
                            regMaskTP        byrefRegs,
-                           IL_OFFSETX       ilOffset /* = BAD_IL_OFFSET */,
+                           const DebugInfo& di /* = DebugInfo() */,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
@@ -8561,9 +8569,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
+    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -13481,8 +13489,23 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 }
                 else // no scale
                 {
-                    // Then load/store dataReg from/to [memBase + index]
-                    emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
+                    if (index->OperIs(GT_BFIZ) && index->isContained())
+                    {
+                        // Then load/store dataReg from/to [memBase + index*scale with sign/zero extension]
+                        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+
+                        // For now, this code only supports extensions from i32/u32
+                        assert(cast->isContained() && varTypeIsInt(cast->CastFromType()));
+
+                        emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
+                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW,
+                                          (int)index->gtGetOp2()->AsIntCon()->IconValue());
+                    }
+                    else
+                    {
+                        // Then load/store dataReg from/to [memBase + index]
+                        emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
+                    }
                 }
             }
         }

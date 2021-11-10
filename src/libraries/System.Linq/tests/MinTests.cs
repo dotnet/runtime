@@ -868,27 +868,27 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public static void MinBy_Generic_StructSourceAllKeysAreNull_ReturnsLastElement()
+        public static void MinBy_Generic_StructSourceAllKeysAreNull_ReturnsFirstElement()
         {
-            Assert.Equal(4, Enumerable.Range(0, 5).MinBy(x => default(string)));
-            Assert.Equal(4, Enumerable.Range(0, 5).MinBy(x => default(string), comparer: null));
-            Assert.Equal(4, Enumerable.Range(0, 5).MinBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+            Assert.Equal(0, Enumerable.Range(0, 5).MinBy(x => default(string)));
+            Assert.Equal(0, Enumerable.Range(0, 5).MinBy(x => default(string), comparer: null));
+            Assert.Equal(0, Enumerable.Range(0, 5).MinBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
         }
 
         [Fact]
-        public static void MinBy_Generic_NullableSourceAllKeysAreNull_ReturnsLastElement()
+        public static void MinBy_Generic_NullableSourceAllKeysAreNull_ReturnsFirstElement()
         {
-            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?)));
-            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?), comparer: null));
-            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?), Comparer<int?>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+            Assert.Equal(0, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?)));
+            Assert.Equal(0, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?), comparer: null));
+            Assert.Equal(0, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?), Comparer<int?>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
         }
 
         [Fact]
-        public static void MinBy_Generic_ReferenceSourceAllKeysAreNull_ReturnsLastElement()
+        public static void MinBy_Generic_ReferenceSourceAllKeysAreNull_ReturnsFirstElement()
         {
-            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string)));
-            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string), comparer: null));
-            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+            Assert.Equal("0", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string)));
+            Assert.Equal("0", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string), comparer: null));
+            Assert.Equal("0", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
         }
 
         [Theory]
