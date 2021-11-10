@@ -1214,7 +1214,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
                 return await context.ready.Task;
 
-            await SdbHelper.SendDebuggerAgentCommand(sessionId, CmdEventRequest.ClearAllBreakpoints, "", token);
+            await SdbHelper.SendDebuggerAgentCommand(sessionId, CmdEventRequest.ClearAllBreakpoints, string.Empty, token);
 
             if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
                 await SdbHelper.EnableExceptions(sessionId, context.PauseOnExceptions, token);
