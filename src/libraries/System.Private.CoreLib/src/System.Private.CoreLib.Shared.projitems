@@ -414,7 +414,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EnumerationOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EndOfStreamException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.netcoreapp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileAccess.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileInfo.cs" />
