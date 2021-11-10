@@ -1122,6 +1122,9 @@ FCIMPL2(Object*, RuntimeMethodHandle::InvokeArrayCtor,
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
+    if (th.IsSharedByGenericInstantiations())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+
     // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
     _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
              th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
@@ -1145,7 +1148,11 @@ FCIMPL2(Object*, RuntimeMethodHandle::InvokeArrayCtor,
         if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
             COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
 
-        memcpy(&indexes[i], objs->GetAt(i)->UnBox(), pMT->GetNumInstanceFieldBytes());
+        InvokeUtil::CreatePrimitiveValue(
+            ELEMENT_TYPE_I4,
+            oType,
+            objs->GetAt(i),
+            (ARG_SLOT*)(indexes + i));
     }
 
     gc.retVal = AllocateArrayEx(th, indexes, argCnt);

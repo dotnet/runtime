@@ -405,19 +405,31 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,CorElementType srcT
     }
 
     // Copy the data and return
+    int dstSize = 0;
     switch (dstType) {
     case ELEMENT_TYPE_BOOLEAN:
     case ELEMENT_TYPE_I1:
     case ELEMENT_TYPE_U1:
+        dstSize = 1;
+        goto SIZE_SET_LABEL;
     case ELEMENT_TYPE_CHAR:
     case ELEMENT_TYPE_I2:
     case ELEMENT_TYPE_U2:
+        dstSize = 2;
+        goto SIZE_SET_LABEL;
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
+        dstSize = 4;
+        goto SIZE_SET_LABEL;
     case ELEMENT_TYPE_I:
     case ELEMENT_TYPE_U:
+        dstSize = sizeof(void*);
+        goto SIZE_SET_LABEL;
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
+        dstSize = 8;
+        goto SIZE_SET_LABEL;
+    SIZE_SET_LABEL:
         switch (srcType) {
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_I1:
@@ -431,7 +443,7 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,CorElementType srcT
         case ELEMENT_TYPE_U:
         case ELEMENT_TYPE_I8:
         case ELEMENT_TYPE_U8:
-            *pDst = data;
+            memcpy(pDst, &data, dstSize);
             break;
         case ELEMENT_TYPE_R4:
             *pDst = (I8)(*(R4*)pSrc);
