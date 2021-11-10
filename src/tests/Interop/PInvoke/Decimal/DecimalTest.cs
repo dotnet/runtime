@@ -5,35 +5,6 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace Xunit
-{
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public class SkipOnPlatformAttribute : Attribute
-    {
-        internal SkipOnPlatformAttribute() { }
-        public SkipOnPlatformAttribute(TestPlatforms testPlatforms, string reason) { }
-    }
-
-    [Flags]
-    public enum TestPlatforms
-    {
-        Windows = 1,
-        Linux = 2,
-        OSX = 4,
-        FreeBSD = 8,
-        NetBSD = 16,
-        illumos= 32,
-        Solaris = 64,
-        iOS = 128,
-        tvOS = 256,
-        Android = 512,
-        Browser = 1024,
-        MacCatalyst = 2048,
-        AnyUnix = FreeBSD | Linux | NetBSD | OSX | illumos | Solaris | iOS | tvOS | MacCatalyst | Android | Browser,
-        Any = ~0
-    }
-}
-
 public class DecimalTest
 {
     private const int StartingIntValue = 42;
