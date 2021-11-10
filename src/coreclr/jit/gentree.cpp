@@ -11478,6 +11478,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_IL_OFFSET:
+            printf(" ");
             tree->AsILOffset()->gtStmtDI.Dump(true);
             break;
 
