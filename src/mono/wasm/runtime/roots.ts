@@ -196,6 +196,9 @@ export class WasmRootBuffer {
         return this.__offset32 + index;
     }
 
+    // NOTE: These functions do not use the helpers from memory.ts because WasmRoot.get and WasmRoot.set
+    //  are hot-spots when you profile any application that uses the bindings extensively.
+
     get(index: number): ManagedPointer {
         this._check_in_range(index);
         const offset = this.get_address_32(index);

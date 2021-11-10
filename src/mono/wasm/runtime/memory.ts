@@ -2,36 +2,6 @@ import { Module } from "./modules";
 
 const _temp_mallocs: Array<Array<VoidPtr> | null> = [];
 
-export const __AllSetters__ = {
-    setI8,
-    setI16,
-    setI32,
-    setI64,
-    setU8,
-    setU16,
-    setU32,
-    // setU64,
-    setF32,
-    setF64
-};
-
-export const __AllGetters__ = {
-    getI8,
-    getI16,
-    getI32,
-    getI64,
-    getU8,
-    getU16,
-    getU32,
-    // getU64,
-    getF32,
-    getF64
-};
-
-export const __AllAccessors__ = {};
-Object.assign(__AllAccessors__, __AllGetters__);
-Object.assign(__AllAccessors__, __AllSetters__);
-
 export function temp_malloc(size: number): VoidPtr {
     if (!_temp_mallocs || !_temp_mallocs.length)
         throw new Error("No temp frames have been created at this point");
