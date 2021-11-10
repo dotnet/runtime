@@ -17,7 +17,7 @@ internal static partial class Interop
         internal static partial int RegEnumValue(
             SafeRegistryHandle hKey,
             int dwIndex,
-            char[] lpValueName,
+            [Out] char[] lpValueName,
             ref int lpcbValueName,
             IntPtr lpReserved_MustBeZero,
             int[]? lpType,
