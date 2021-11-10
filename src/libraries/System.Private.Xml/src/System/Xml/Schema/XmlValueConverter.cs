@@ -264,7 +264,7 @@ namespace System.Xml.Schema
                     break;
 
                 default:
-                    Debug.Fail("Type code " + typeCode + " is not supported.");
+                    Debug.Fail($"Type code {typeCode} is not supported.");
                     break;
             }
 
@@ -475,15 +475,15 @@ namespace System.Xml.Schema
             }
             else if (name.Namespace == XmlReservedNs.NsXs)
             {
-                return "xs:" + name.Name;
+                return $"xs:{name.Name}";
             }
             else if (name.Namespace == XmlReservedNs.NsXQueryDataType)
             {
-                return "xdt:" + name.Name;
+                return $"xdt:{name.Name}";
             }
             else
             {
-                return "{" + name.Namespace + "}" + name.Name;
+                return $"{{{name.Namespace}}}{name.Name}";
             }
         }
 
@@ -745,13 +745,13 @@ namespace System.Xml.Schema
             string? prefix;
 
             if (nsResolver == null)
-                return string.Concat("{", qname.Namespace, "}", qname.Name);
+                return $"{{{qname.Namespace}}}{qname.Name}";
 
             prefix = nsResolver.LookupPrefix(qname.Namespace);
             if (prefix == null)
                 throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoPrefix, qname, qname.Namespace));
 
-            return (prefix.Length != 0) ? string.Concat(prefix, ":", qname.Name) : qname.Name;
+            return (prefix.Length != 0) ? $"{prefix}:{qname.Name}" : qname.Name;
         }
 
         protected static string TimeToString(DateTime value)

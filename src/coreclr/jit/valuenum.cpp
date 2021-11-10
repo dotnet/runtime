@@ -464,11 +464,9 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     {
         m_VNsForSmallIntConsts[i] = NoVN;
     }
-    // We will reserve chunk 0 to hold some special constants, like the constant NULL, the "exception" value, and the
-    // "zero map."
+    // We will reserve chunk 0 to hold some special constants.
     Chunk* specialConstChunk = new (m_alloc) Chunk(m_alloc, &m_nextChunkBase, TYP_REF, CEA_Const);
-    specialConstChunk->m_numUsed +=
-        SRC_NumSpecialRefConsts; // Implicitly allocate 0 ==> NULL, and 1 ==> Exception, 2 ==> ZeroMap.
+    specialConstChunk->m_numUsed += SRC_NumSpecialRefConsts;
     ChunkNum cn = m_chunks.Push(specialConstChunk);
     assert(cn == 0);
 
@@ -1787,8 +1785,6 @@ ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
     }
 }
 
-// Returns the value number for zero of the given "typ".
-// It has an unreached() for a "typ" that has no zero value, such as TYP_VOID.
 ValueNum ValueNumStore::VNZeroForType(var_types typ)
 {
     switch (typ)
@@ -1812,21 +1808,34 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
             return VNForNull();
         case TYP_BYREF:
             return VNForByrefCon(0);
-        case TYP_STRUCT:
-            return VNForZeroMap(); // Recursion!
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
-            return VNForLongCon(0);
+            // We do not have the base type - a "fake" one will have to do. Note that we cannot
+            // use the HWIntrinsic "get_Zero" VNFunc here. This is because they only represent
+            // "fully zeroed" vectors, and here we may be loading one from memory, leaving upper
+            // bits undefined. So using "SIMD_Init" is "the next best thing", so to speak, and
+            // TYP_FLOAT is one of the more popular base types, so that's why we use it here.
+            return VNForFunc(typ, VNF_SIMD_Init, VNForFloatCon(0), VNForSimdType(genTypeSize(typ), TYP_FLOAT));
 #endif // FEATURE_SIMD
 
         // These should be unreached.
         default:
             unreached(); // Should handle all types.
     }
+}
+
+ValueNum ValueNumStore::VNForZeroObj(CORINFO_CLASS_HANDLE structHnd)
+{
+    assert(structHnd != NO_CLASS_HANDLE);
+
+    ValueNum structHndVN = VNForHandle(ssize_t(structHnd), GTF_ICON_CLASS_HDL);
+    ValueNum zeroObjVN   = VNForFunc(TYP_STRUCT, VNF_ZeroObj, structHndVN);
+
+    return zeroObjVN;
 }
 
 // Returns the value number for one of the given "typ".
@@ -1855,6 +1864,17 @@ ValueNum ValueNumStore::VNOneForType(var_types typ)
             return NoVN;
     }
 }
+
+#ifdef FEATURE_SIMD
+ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType)
+{
+    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseType));
+    ValueNum sizeVN     = VNForIntCon(simdSize);
+    ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
+
+    return simdTypeVN;
+}
+#endif // FEATURE_SIMD
 
 class Object* ValueNumStore::s_specialRefConsts[] = {nullptr, nullptr, nullptr};
 
@@ -2317,14 +2337,9 @@ TailCall:
             return RecursiveVN;
         }
 
-        if (map == VNForZeroMap())
+        VNFuncApp funcApp;
+        if (GetVNFunc(map, &funcApp))
         {
-            return VNZeroForType(type);
-        }
-        else if (IsVNFunc(map))
-        {
-            VNFuncApp funcApp;
-            GetVNFunc(map, &funcApp);
             if (funcApp.m_func == VNF_MapStore)
             {
                 // select(store(m, i, v), i) == v
@@ -2475,6 +2490,22 @@ TailCall:
                     assert(FixedPointMapSelsTopHasValue(map, index));
                     m_fixedPointMapSels.Pop();
                 }
+            }
+            else if (funcApp.m_func == VNF_ZeroObj)
+            {
+                // For structs, we need to extract the handle from the selector.
+                if (type == TYP_STRUCT)
+                {
+                    // We only expect field selectors here.
+                    assert(GetHandleFlags(index) == GTF_ICON_FIELD_HDL);
+                    CORINFO_FIELD_HANDLE fieldHnd  = CORINFO_FIELD_HANDLE(ConstantValue<ssize_t>(index));
+                    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
+                    m_pComp->eeGetFieldType(fieldHnd, &structHnd);
+
+                    return VNForZeroObj(structHnd);
+                }
+
+                return VNZeroForType(type);
             }
         }
 
@@ -4557,18 +4588,25 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //    vrk - whether the new vn should swap, reverse, or both
 //
 // Returns:
-//    vn for reversed/swapped comparsion, or NoVN.
+//    vn for related comparsion, or NoVN.
 //
 // Note:
 //    If "vn" corresponds to (x > y), the resulting VN corresponds to
+//    VRK_Same               (x > y)
 //    VRK_Swap               (y < x)
 //    VRK_Reverse            (x <= y)
 //    VRK_SwapReverse        (y >= x)
 //
-//    Will return NoVN for all float comparisons.
+//    VRK_Same will always return the VN passed in.
+//    For other relations, this method will return NoVN for all float comparisons.
 //
 ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 {
+    if (vrk == VN_RELATION_KIND::VRK_Same)
+    {
+        return vn;
+    }
+
     if (vn == NoVN)
     {
         return NoVN;
@@ -4688,6 +4726,25 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 
     return result;
 }
+
+#ifdef DEBUG
+const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
+{
+    switch (vrk)
+    {
+        case VN_RELATION_KIND::VRK_Same:
+            return "same";
+        case VN_RELATION_KIND::VRK_Reverse:
+            return "reversed";
+        case VN_RELATION_KIND::VRK_Swap:
+            return "swapped";
+        case VN_RELATION_KIND::VRK_SwapReverse:
+            return "swapped and reversed";
+        default:
+            return "unknown vn relation";
+    }
+}
+#endif
 
 bool ValueNumStore::IsVNRelop(ValueNum vn)
 {
@@ -5801,11 +5858,6 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 {
                     printf("void");
                 }
-                else
-                {
-                    assert(vn == VNForZeroMap());
-                    printf("zeroMap");
-                }
                 break;
             case TYP_BYREF:
                 printf("byrefVal");
@@ -5876,6 +5928,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case VNF_Cast:
             case VNF_CastOvf:
                 vnDumpCast(comp, vn);
+                break;
+            case VNF_ZeroObj:
+                vnDumpZeroObj(comp, &funcApp);
                 break;
 
             default:
@@ -6098,6 +6153,12 @@ void ValueNumStore::vnDumpCast(Compiler* comp, ValueNum castVN)
     }
 }
 
+void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
+{
+    printf("ZeroObj(");
+    comp->vnPrint(zeroObj->m_args[0], 0);
+    printf(": %s)", comp->eeGetClassName(CORINFO_CLASS_HANDLE(ConstantValue<ssize_t>(zeroObj->m_args[0]))));
+}
 #endif // DEBUG
 
 // Static fields, methods.
@@ -6261,10 +6322,9 @@ static const char* s_reservedNameArr[] = {
     "$VN.Recursive",    // -2  RecursiveVN
     "$VN.No",           // -1  NoVN
     "$VN.Null",         //  0  VNForNull()
-    "$VN.ZeroMap",      //  1  VNForZeroMap()
-    "$VN.ReadOnlyHeap", //  2  VNForROH()
-    "$VN.Void",         //  3  VNForVoid()
-    "$VN.EmptyExcSet"   //  4  VNForEmptyExcSet()
+    "$VN.ReadOnlyHeap", //  1  VNForROH()
+    "$VN.Void",         //  2  VNForVoid()
+    "$VN.EmptyExcSet"   //  3  VNForEmptyExcSet()
 };
 
 // Returns the string name of "vn" when it is a reserved value number, nullptr otherwise
@@ -6689,7 +6749,8 @@ void Compiler::fgValueNumber()
                     if (isZeroed)
                     {
                         // By default we will zero init these LclVars
-                        initVal = vnStore->VNZeroForType(typ);
+                        initVal = (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetStructHnd())
+                                                      : vnStore->VNZeroForType(typ);
                     }
                     else
                     {
@@ -7949,39 +8010,38 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             // Should not have been recorded as updating the GC heap.
             assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
 
-            unsigned lclNum = lclVarTree->GetLclNum();
-
             unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
+
             // Ignore vars that we excluded from SSA (for example, because they're address-exposed). They don't have
             // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
-            if (lvaInSsa(lclNum) && lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+            if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
             {
+                LclVarDsc* lclVarDsc = lvaGetDesc(lclVarTree);
+
                 // Should not have been recorded as updating ByrefExposed.
                 assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree));
 
-                ValueNum initBlkVN = ValueNumStore::NoVN;
-                GenTree* initConst = rhs;
-                if (isEntire && initConst->OperGet() == GT_CNS_INT)
+                ValueNum lclVarVN = ValueNumStore::NoVN;
+                if (isEntire && rhs->IsIntegralConst(0))
                 {
-                    unsigned initVal = 0xFF & (unsigned)initConst->AsIntConCommon()->IconValue();
-                    if (initVal == 0)
-                    {
-                        initBlkVN = vnStore->VNZeroForType(lclVarTree->TypeGet());
-                    }
+                    // Note that it is possible to see pretty much any kind of type for the local
+                    // (not just TYP_STRUCT) here because of the ASG(BLK(ADDR(LCL_VAR/FLD)), 0) form.
+                    lclVarVN = (lclVarDsc->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(lclVarDsc->GetStructHnd())
+                                                                    : vnStore->VNZeroForType(lclVarDsc->TypeGet());
                 }
-                ValueNum lclVarVN = (initBlkVN != ValueNumStore::NoVN)
-                                        ? initBlkVN
-                                        : vnStore->VNForExpr(compCurBB, var_types(lvaTable[lclNum].lvType));
+                else
+                {
+                    // Non-zero block init is very rare so we'll use a simple, unique VN here.
+                    lclVarVN = vnStore->VNForExpr(compCurBB, lclVarDsc->TypeGet());
+                }
 
-                lvaTable[lclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair.SetBoth(lclVarVN);
+                lclVarDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair.SetBoth(lclVarVN);
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("N%03u ", tree->gtSeqNum);
+                    printf("Tree ");
                     Compiler::printTreeID(tree);
-                    printf(" ");
-                    gtDispNodeName(tree);
-                    printf(" V%02u/%d => ", lclNum, lclDefSsaNum);
+                    printf(" assigned VN to local var V%02u/%d: ", lclVarTree->GetLclNum(), lclDefSsaNum);
                     vnPrint(lclVarVN, 1);
                     printf("\n");
                 }
@@ -9499,9 +9559,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
 
         if (encodeResultType)
         {
-            ValueNum vnSize     = vnStore->VNForIntCon(simdNode->GetSimdSize());
-            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->GetSimdBaseType()));
-            ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
+            ValueNum simdTypeVN = vnStore->VNForSimdType(simdNode->GetSimdSize(), simdNode->GetSimdBaseType());
             resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -9616,9 +9674,8 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 
     if (encodeResultType)
     {
-        ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->GetSimdSize());
-        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->GetSimdBaseType()));
-        ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
+        ValueNum simdTypeVN =
+            vnStore->VNForSimdType(hwIntrinsicNode->GetSimdSize(), hwIntrinsicNode->GetSimdBaseType());
         resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG

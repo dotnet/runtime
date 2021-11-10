@@ -890,27 +890,27 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public static void MaxBy_Generic_StructSourceAllKeysAreNull_ReturnsLastElement()
+        public static void MaxBy_Generic_StructSourceAllKeysAreNull_ReturnsFirstElement()
         {
-            Assert.Equal(4, Enumerable.Range(0, 5).MaxBy(x => default(string)));
-            Assert.Equal(4, Enumerable.Range(0, 5).MaxBy(x => default(string), comparer: null));
-            Assert.Equal(4, Enumerable.Range(0, 5).MaxBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+            Assert.Equal(0, Enumerable.Range(0, 5).MaxBy(x => default(string)));
+            Assert.Equal(0, Enumerable.Range(0, 5).MaxBy(x => default(string), comparer: null));
+            Assert.Equal(0, Enumerable.Range(0, 5).MaxBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
         }
 
         [Fact]
-        public static void MaxBy_Generic_NullableSourceAllKeysAreNull_ReturnsLastElement()
+        public static void MaxBy_Generic_NullableSourceAllKeysAreNull_ReturnsFirstElement()
         {
-            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?)));
-            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?), comparer: null));
-            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?), Comparer<int?>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+            Assert.Equal(0, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?)));
+            Assert.Equal(0, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?), comparer: null));
+            Assert.Equal(0, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?), Comparer<int?>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
         }
 
         [Fact]
-        public static void MaxBy_Generic_ReferenceSourceAllKeysAreNull_ReturnsLastElement()
+        public static void MaxBy_Generic_ReferenceSourceAllKeysAreNull_ReturnsFirstElement()
         {
-            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string)));
-            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string), comparer: null));
-            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+            Assert.Equal("0", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string)));
+            Assert.Equal("0", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string), comparer: null));
+            Assert.Equal("0", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
         }
 
         [Theory]

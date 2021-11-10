@@ -3634,7 +3634,7 @@ retry:
     }
     EX_HOOK
     {
-        LOG((LF_CLASSLOADER, LL_INFO10, "Caught an exception loading: %x, %0x (Module)\n", pTypeKey->IsConstructed() ? pTypeKey->ComputeHash() : pTypeKey->GetTypeToken(), pTypeKey->GetModule()));
+        LOG((LF_CLASSLOADER, LL_INFO10, "Caught an exception loading: %x, %0x (Module)\n", pTypeKey->IsConstructed() ? HashTypeKey(pTypeKey) : pTypeKey->GetTypeToken(), pTypeKey->GetModule()));
 
         if (!GetThread()->HasThreadStateNC(Thread::TSNC_LoadsTypeViolation))
         {

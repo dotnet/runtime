@@ -375,7 +375,7 @@ namespace System.Xml.Serialization
 
             if (_nullableTypeDesc == null)
             {
-                _nullableTypeDesc = new TypeDesc("NullableOf" + _name, "System.Nullable`1[" + _fullName + "]", null, TypeKind.Struct, this, _flags | TypeFlags.OptionalValue, _formatterName);
+                _nullableTypeDesc = new TypeDesc($"NullableOf{_name}", $"System.Nullable`1[{_fullName}]", null, TypeKind.Struct, this, _flags | TypeFlags.OptionalValue, _formatterName);
                 _nullableTypeDesc._type = type;
             }
 
@@ -423,7 +423,7 @@ namespace System.Xml.Serialization
         internal TypeDesc CreateArrayTypeDesc()
         {
             if (_arrayTypeDesc == null)
-                _arrayTypeDesc = new TypeDesc(null, _name + "[]", _fullName + "[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
+                _arrayTypeDesc = new TypeDesc(null, $"{_name}[]", $"{_fullName}[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
             return _arrayTypeDesc;
         }
 
@@ -849,7 +849,7 @@ namespace System.Xml.Serialization
             else if (typeof(ICollection).IsAssignableFrom(type) && !IsArraySegment(type))
             {
                 kind = TypeKind.Collection;
-                arrayElementType = GetCollectionElementType(type, memberInfo == null ? null : memberInfo.DeclaringType!.FullName + "." + memberInfo.Name);
+                arrayElementType = GetCollectionElementType(type, memberInfo == null ? null : $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}");
                 flags |= GetConstructorFlags(type, ref exception);
             }
             else if (type == typeof(XmlQualifiedName))
@@ -922,7 +922,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        exception = new NotSupportedException(SR.Format(SR.XmlUnsupportedInterfaceDetails, memberInfo.DeclaringType!.FullName + "." + memberInfo.Name, type.FullName));
+                        exception = new NotSupportedException(SR.Format(SR.XmlUnsupportedInterfaceDetails, $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}", type.FullName));
                     }
                 }
             }
@@ -1016,7 +1016,7 @@ namespace System.Xml.Serialization
         {
             if (t.IsArray)
             {
-                return "ArrayOf" + TypeName(t.GetElementType()!);
+                return $"ArrayOf{TypeName(t.GetElementType()!)}";
             }
             else if (t.IsGenericType)
             {
@@ -1152,7 +1152,7 @@ namespace System.Xml.Serialization
                 if (mappings[i].ChoiceIdentifier != null)
                     memberInfos[mappings[i].ChoiceIdentifier!.MemberName!] = mappings[i].ChoiceIdentifier!.MemberInfo!;
                 if (mappings[i].CheckSpecifiedMemberInfo != null)
-                    memberInfos[mappings[i].Name + "Specified"] = mappings[i].CheckSpecifiedMemberInfo!;
+                    memberInfos[$"{mappings[i].Name}Specified"] = mappings[i].CheckSpecifiedMemberInfo!;
             }
 
             // The scenario here is that user has one base class A and one derived class B and wants to serialize/deserialize an object of B.
