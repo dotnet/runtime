@@ -6,6 +6,7 @@ build_Tests()
 
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
+    __ActiveIssuesList="$__RepoRootDir/src/tests/activeissues.targets"
     __Exclude="$__RepoRootDir/src/tests/issues.targets"
 
     if [[ -f  "${__TestWorkingDir}/build_info.json" ]]; then
@@ -110,6 +111,7 @@ build_Tests()
     export __MonoBinDir
     export __MsgPrefix
     export __ErrMsgPrefix
+    export __ActiveIssuesList
     export __Exclude
 
     # Generate build command

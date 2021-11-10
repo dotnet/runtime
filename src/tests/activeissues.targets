@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<!-- Tracks ci-blocking issues -->
+<Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/*"
+        Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetOs)' == 'Android'">
+        <Issue>https://github.com/dotnet/runtime/issues/61322</Issue>
+    </ExcludeList>
+</Project>
