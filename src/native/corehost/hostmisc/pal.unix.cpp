@@ -533,48 +533,47 @@ pal::string_t pal::get_current_os_rid_platform()
     pal::string_t ridOS;
 
     char str[256];
-
-    // There is no good way to get the visible version of OSX (i.e. something like 10.x.y) as
-    // certain APIs work till 10.9 and have been deprecated and others require linking against
-    // UI frameworks to get the data.
-    //
-    // We will, instead, use kern.osrelease and use its major version number
-    // as a means to formulate the OSX 10.X RID.
-    //
     size_t size = sizeof(str);
-    int ret = sysctlbyname("kern.osrelease", str, &size, nullptr, 0);
+
+    // returns something like 10.5.2 or 11.6
+    int ret = sysctlbyname("kern.osproductversion", str, &size, nullptr, 0);
     if (ret == 0)
     {
-        std::string release(str, size);
-        size_t pos = release.find('.');
-        if (pos != std::string::npos)
-        {
-            int majorVersion = stoi(release.substr(0, pos));
-            // compat path with 10.x
-            if (majorVersion < 20)
-            {
-                // Extract the major version and subtract 4 from it
-                // to get the Minor version used in OSX versioning scheme.
-                // That is, given a version 10.X.Y, we will get X below.
-                //
-                // macOS Cataline 10.15.5 has kernel 19.5.0
-                int minorVersion = majorVersion - 4;
-                if (minorVersion < 10)
-                {
-                    // On OSX, our minimum supported RID is 10.12.
-                    minorVersion = 12;
-                }
+        // the value _should_ be null terminated but let's make sure
+        str[size - 1] = 0;
 
-                ridOS.append(_X("osx.10."));
-                ridOS.append(pal::to_string(minorVersion));
+        char* pos = strchr(str, '.');
+        if (pos != NULL)
+        {
+            int major = atoi(str);
+            if (major > 11)
+            {
+                // starting with 12.0 we track only major release
+                *pos = 0;
+
+            }
+            else if (major == 11)
+            {
+                // for 11.x we publish RID as 11.0
+                // if we return anything else, it would break the RID graph processing
+                strcpy(str, "11.0");
             }
             else
             {
-                // 11.0 shipped with kernel 20.0
-                ridOS.append(_X("osx.11."));
-                ridOS.append(pal::to_string(majorVersion - 20));
+                // for 10.x the significant releases are actually the second digit
+                pos = strchr(pos + 1, '.');
+
+                if (pos != NULL)
+                {
+                    // strip anything after second dot and return something like 10.5
+                    *pos = 0;
+                }
             }
         }
+
+        std::string release(str, strlen(str));
+        ridOS.append(_X("osx."));
+        ridOS.append(release);
     }
 
     return ridOS;
