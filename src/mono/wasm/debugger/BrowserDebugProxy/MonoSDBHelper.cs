@@ -438,8 +438,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public void WriteString(string val)
         {
             var bytes = Encoding.UTF8.GetBytes(val);
-            Write(val.Length);
-            Write(val.ToCharArray());
+            Write(bytes.Length);
+            Write(bytes);
         }
         public unsafe void WriteLong(long val)
         {
