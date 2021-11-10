@@ -11478,15 +11478,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_IL_OFFSET:
-            printf(" IL offset: ");
-            if (!tree->AsILOffset()->gtStmtDI.IsValid())
-            {
-                printf("???");
-            }
-            else
-            {
-                printf("0x%x", tree->AsILOffset()->gtStmtDI.GetLocation().GetOffset());
-            }
+            tree->AsILOffset()->gtStmtDI.Dump(true);
             break;
 
         case GT_JCC:

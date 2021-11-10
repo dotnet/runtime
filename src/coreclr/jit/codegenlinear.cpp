@@ -432,10 +432,14 @@ void CodeGen::genCodeForBBlist()
             if (node->OperGet() == GT_IL_OFFSET)
             {
                 GenTreeILOffset* ilOffset = node->AsILOffset();
-                genEnsureCodeEmitted(currentDI);
-                currentDI = ilOffset->gtStmtDI;
-                genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
-                firstMapping = false;
+                DebugInfo rootDI = ilOffset->gtStmtDI.GetRoot();
+                if (rootDI.IsValid())
+                {
+                    genEnsureCodeEmitted(currentDI);
+                    currentDI = rootDI;
+                    genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
+                    firstMapping = false;
+                }
 #ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
