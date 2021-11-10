@@ -780,16 +780,10 @@ namespace DebuggerTests
                 var frame = pause_location["callFrames"][0];
 
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("EvaluateStaticClass.StaticField1", TNumber(10)));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
-                await EvaluateOnCallFrameAndCheck(id,
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")),
+                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
                     ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
@@ -806,16 +800,11 @@ namespace DebuggerTests
                 var frame = pause_location["callFrames"][0];
 
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("EvaluateStaticClass.StaticField1", TNumber(10)));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
-                await EvaluateOnCallFrameAndCheck(id,
+                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")),
+                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
                     ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
@@ -830,16 +819,11 @@ namespace DebuggerTests
                 var frame = pause_location["callFrames"][0];
 
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")));
-                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)),
+                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")),
+                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")),
+                    ("EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)),
+                    ("EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")),
                     ("EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
            
