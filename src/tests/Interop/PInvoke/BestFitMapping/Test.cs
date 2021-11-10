@@ -31,6 +31,8 @@ internal unsafe class Test
 
     public static void Validate<T, U>(bool bestFitMapping, bool throwOnUnmappableChar, Functions<T> funcs, DataContext<T, U> data)
     {
+        Console.WriteLine($" ---- Marshal {typeof(T).Name}");
+
         bool shouldThrowOnInvalid = !bestFitMapping && throwOnUnmappableChar;
 
         T invalid = data.Invalid;

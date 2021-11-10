@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 
 using static TestData;
 
+namespace LPStr;
+
 public class PInvoke_False_True
 {
     [StructLayout(LayoutKind.Sequential)]

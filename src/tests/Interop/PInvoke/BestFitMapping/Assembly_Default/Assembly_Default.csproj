@@ -7,7 +7,4 @@
   <ItemGroup>
     <Compile Include="*.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CMakeLists.txt" />
-  </ItemGroup>
 </Project>

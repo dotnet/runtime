@@ -5,6 +5,8 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
+namespace Char;
+
 public class PInvoke_True_False
 {
     [DllImport("Char_BestFitMappingNative", BestFitMapping = true, ThrowOnUnmappableChar = false)]

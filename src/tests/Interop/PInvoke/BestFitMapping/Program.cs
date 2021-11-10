@@ -20,11 +20,19 @@ public class Program
 
         try
         {
-            PInvoke_Default.RunTest();
-            PInvoke_False_False.RunTest();
-            PInvoke_False_True.RunTest();
-            PInvoke_True_False.RunTest();
-            PInvoke_True_True.RunTest();
+            Console.WriteLine("Validating char marshalling...");
+            Char.PInvoke_Default.RunTest();
+            Char.PInvoke_False_False.RunTest();
+            Char.PInvoke_False_True.RunTest();
+            Char.PInvoke_True_False.RunTest();
+            Char.PInvoke_True_True.RunTest();
+
+            Console.WriteLine("Validating LPStr marshalling...");
+            LPStr.PInvoke_Default.RunTest();
+            LPStr.PInvoke_False_False.RunTest();
+            LPStr.PInvoke_False_True.RunTest();
+            LPStr.PInvoke_True_False.RunTest();
+            LPStr.PInvoke_True_True.RunTest();
             return 100;
         } catch (Exception e){
             Console.WriteLine($"Test Failure: {e}");
