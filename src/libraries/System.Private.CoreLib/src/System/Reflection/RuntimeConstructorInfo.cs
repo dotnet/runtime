@@ -165,13 +165,17 @@ namespace System.Reflection
                 arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, ArgumentTypes);
             }
 
+            object retValue;
+
             // Array construction is a special case.
             if (DeclaringType is not null && DeclaringType.IsArray)
             {
-                return InvokeArrayCtorWorker(arguments);
+                retValue = InvokeArrayCtorWorker(arguments);
             }
-
-            object retValue = InvokeCtorWorker(invokeAttr, arguments);
+            else
+            {
+                retValue = InvokeCtorWorker(invokeAttr, arguments);
+            }
 
             // copy out. This should be made only if ByRef are present.
             // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])

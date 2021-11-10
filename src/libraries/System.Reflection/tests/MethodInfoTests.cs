@@ -385,7 +385,10 @@ namespace System.Reflection.Tests
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArguments()
         {
             MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
-            Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToIntBinder(), new object[] { "10", "100" }, null));
+            var args = new object[] { "10", "100" };
+            Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToIntBinder(), args, null));
+            Assert.True(args[0] is int);
+            Assert.True(args[1] is int);
         }
 
         [Theory]
