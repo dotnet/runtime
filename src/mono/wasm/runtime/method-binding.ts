@@ -7,7 +7,11 @@ import { BINDING, runtimeHelpers } from "./modules";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
 import { MarshalType, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
-import { _create_temp_frame } from "./memory";
+import { 
+    _create_temp_frame, 
+    getI32, getU32, getF32, getF64, 
+    setI32, setU32, setF32, setF64, setI64,
+} from "./memory";
 import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
@@ -213,6 +217,11 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
         Module,
         _malloc: Module._malloc,
         mono_wasm_unbox_rooted: cwraps.mono_wasm_unbox_rooted,
+        setI32,
+        setU32,
+        setF32,
+        setF64,
+        setI64
     };
     let indirectLocalOffset = 0;
 
@@ -220,8 +229,6 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
         "if (!method) throw new Error('no method provided');",
         `if (!buffer) buffer = _malloc (${bufferSizeBytes});`,
         `let indirectStart = buffer + ${indirectBaseOffset};`,
-        "let indirect32 = indirectStart >>> 2, indirect64 = indirectStart >>> 3;",
-        "let buffer32 = buffer >>> 2;",
         ""
     );
 
@@ -253,37 +260,35 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
             body.push(`${valueKey} = mono_wasm_unbox_rooted (${valueKey});`);
 
         if (step.indirect) {
-            let heapArrayName = null;
+            const offsetText = `(indirectStart + ${indirectLocalOffset})`;
 
             switch (step.indirect) {
                 case "u32":
-                    heapArrayName = "HEAPU32";
+                    body.push(`setU32(${offsetText}, ${valueKey});`);
                     break;
                 case "i32":
-                    heapArrayName = "HEAP32";
+                    body.push(`setI32(${offsetText}, ${valueKey});`);
                     break;
                 case "float":
-                    heapArrayName = "HEAPF32";
+                    body.push(`setF32(${offsetText}, ${valueKey});`);
                     break;
                 case "double":
-                    body.push(`Module.HEAPF64[indirect64 + ${(indirectLocalOffset >>> 3)}] = ${valueKey};`);
+                    body.push(`setF64(${offsetText}, ${valueKey});`);
                     break;
                 case "i64":
-                    body.push(`Module.setValue (indirectStart + ${indirectLocalOffset}, ${valueKey}, 'i64');`);
+                    body.push(`setI64(${offsetText}, ${valueKey});`);
                     break;
                 default:
                     throw new Error("Unimplemented indirect type: " + step.indirect);
             }
 
-            if (heapArrayName)
-                body.push(`Module.${heapArrayName}[indirect32 + ${(indirectLocalOffset >>> 2)}] = ${valueKey};`);
-
-            body.push(`Module.HEAP32[buffer32 + ${i}] = indirectStart + ${indirectLocalOffset};`, "");
+            body.push(`setU32(buffer + (${i} * 4), ${offsetText});`);
             indirectLocalOffset += step.size!;
         } else {
-            body.push(`Module.HEAP32[buffer32 + ${i}] = ${valueKey};`, "");
+            body.push(`setI32(buffer + (${i} * 4), ${valueKey});`);
             indirectLocalOffset += 4;
         }
+        body.push("");
     }
 
     body.push("return buffer;");
@@ -404,7 +409,11 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         this_arg,
         token,
         unbox_buffer,
-        unbox_buffer_size
+        unbox_buffer_size,
+        getI32,
+        getU32,
+        getF32,
+        getF64
     };
 
     const converterKey = converter ? "converter_" + converter.name : "";
@@ -493,18 +502,18 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
                 "    let resultType = mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, unbox_buffer_size);",
                 "    switch (resultType) {",
                 `    case ${MarshalType.INT}:`,
-                "        result = Module.HEAP32[unbox_buffer >>> 2]; break;",
+                "        result = getI32(unbox_buffer); break;",
                 `    case ${MarshalType.POINTER}:`, // FIXME: Is this right?
                 `    case ${MarshalType.UINT32}:`,
-                "        result = Module.HEAPU32[unbox_buffer >>> 2]; break;",
+                "        result = getU32(unbox_buffer); break;",
                 `    case ${MarshalType.FP32}:`,
-                "        result = Module.HEAPF32[unbox_buffer >>> 2]; break;",
+                "        result = getF32(unbox_buffer); break;",
                 `    case ${MarshalType.FP64}:`,
-                "        result = Module.HEAPF64[unbox_buffer >>> 3]; break;",
+                "        result = getF64(unbox_buffer); break;",
                 `    case ${MarshalType.BOOL}:`,
-                "        result = (Module.HEAP32[unbox_buffer >>> 2]) !== 0; break;",
+                "        result = getI32(unbox_buffer) !== 0; break;",
                 `    case ${MarshalType.CHAR}:`,
-                "        result = String.fromCharCode(Module.HEAP32[unbox_buffer >>> 2]); break;",
+                "        result = String.fromCharCode(getI32(unbox_buffer)); break;",
                 "    default:",
                 "        result = _unbox_mono_obj_root_with_known_nonprimitive_type (resultRoot, resultType, unbox_buffer); break;",
                 "    }",

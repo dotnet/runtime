@@ -365,9 +365,16 @@ public class WasmAppBuilder : Task
         }
 
         Log.LogMessage(MessageImportance.Low, $"Copying file from '{src}' to '{dst}'");
-        File.Copy(src, dst, true);
-        _fileWrites.Add(dst);
+        try
+        {
+            File.Copy(src, dst, true);
+            _fileWrites.Add(dst);
 
-        return true;
+            return true;
+        }
+        catch (IOException ioex)
+        {
+            throw new LogAsErrorException($"{label} Failed to copy {src} to {dst} because {ioex.Message}");
+        }
     }
 }
