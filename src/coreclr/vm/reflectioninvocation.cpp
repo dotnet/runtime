@@ -478,6 +478,46 @@ static void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Fra
     PAL_ENDTRY
 } // CallDescrWorkerReflectionWrapper
 
+static OBJECTREF InvokeArrayConstructor(TypeHandle th, Span<OBJECTREF>* objs, int argCnt)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
+    _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
+             th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+
+    // Validate all of the parameters.  These all typed as integers
+    int allocSize = 0;
+    if (!ClrSafeInt<int>::multiply(sizeof(INT32), argCnt, allocSize))
+        COMPlusThrow(kArgumentException, IDS_EE_SIGTOOCOMPLEX);
+
+    INT32* indexes = (INT32*) _alloca((size_t)allocSize);
+    ZeroMemory(indexes, allocSize);
+
+    for (DWORD i=0; i<(DWORD)argCnt; i++)
+    {
+        if (!objs->GetAt(i))
+            COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
+
+        MethodTable* pMT = objs->GetAt(i)->GetMethodTable();
+        CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
+
+        if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
+            COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
+
+        ARG_SLOT value;
+        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, oType, objs->GetAt(i), &value);
+        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
+    }
+
+    return AllocateArrayEx(th, indexes, argCnt);
+}
+
 static BOOL IsActivationNeededForMethodInvoke(MethodDesc * pMD)
 {
     CONTRACTL {
@@ -731,8 +771,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    Assembly *pAssem = pMeth->GetAssembly();
-
     if (ownerType.IsSharedByGenericInstantiations())
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
 
@@ -747,13 +785,21 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     if (fConstructor)
     {
-        MethodTable * pMT = ownerType.AsMethodTable();
-
-        {
-            fCtorOfVariableSizedObject = pMT->HasComponentSize();
-            if (!fCtorOfVariableSizedObject)
-                gc.retVal = pMT->Allocate();
+        // If we are invoking a constructor on an array then we must
+        // handle this specially.
+        if (ownerType.IsArray()) {
+            gc.retVal = InvokeArrayConstructor(ownerType,
+                                               objs,
+                                               gc.pSig->NumFixedArgs());
+            goto Done;
         }
+
+        // Variable sized objects, like String instances, allocate themselves
+        // so they are a special case.
+        MethodTable * pMT = ownerType.AsMethodTable();
+        fCtorOfVariableSizedObject = pMT->HasComponentSize();
+        if (!fCtorOfVariableSizedObject)
+            gc.retVal = pMT->Allocate();
     }
 
     {
@@ -1095,66 +1141,8 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     }
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.retVal);
-}
-FCIMPLEND
-
-
-FCIMPL2(Object*, RuntimeMethodHandle::InvokeArrayCtor,
-    Span<OBJECTREF>* objs,
-    SignatureNative* pSigUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct
-    {
-        SIGNATURENATIVEREF pSig;
-        OBJECTREF retVal;
-    } gc;
-
-    gc.pSig = (SIGNATURENATIVEREF)pSigUNSAFE;
-    gc.retVal = NULL;
-
-    TypeHandle th = gc.pSig->GetDeclaringType();
-    int argCnt = gc.pSig->NumFixedArgs();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    if (th.IsSharedByGenericInstantiations())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
-
-    // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
-    _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
-             th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
-
-    // Validate all of the parameters.  These all typed as integers
-    int allocSize = 0;
-    if (!ClrSafeInt<int>::multiply(sizeof(INT32), argCnt, allocSize))
-        COMPlusThrow(kArgumentException, IDS_EE_SIGTOOCOMPLEX);
-
-    INT32* indexes = (INT32*) _alloca((size_t)allocSize);
-    ZeroMemory(indexes, allocSize);
-
-    for (DWORD i = 0; i < (DWORD)argCnt; i++)
-    {
-        if (!objs->GetAt(i))
-            COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
-
-        MethodTable* pMT = objs->GetAt(i)->GetMethodTable();
-        CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
-
-        if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
-            COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
-
-        ARG_SLOT value;
-        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, oType, objs->GetAt(i), &value);
-        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
-    }
-
-    gc.retVal = AllocateArrayEx(th, indexes, argCnt);
-
+Done:
+    ;
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.retVal);

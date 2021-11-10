@@ -219,17 +219,10 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object InvokeCtorWorker(BindingFlags invokeAttr, in Span<object?> arguments)
+        private object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return RuntimeMethodHandle.InvokeMethod(null, in arguments, Signature, true, wrapExceptions)!;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object InvokeArrayCtorWorker(Span<object?> arguments)
-        {
-            Debug.Assert(m_declaringType.IsArray);
-            return RuntimeMethodHandle.InvokeArrayCtor(in arguments, Signature);
         }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
