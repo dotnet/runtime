@@ -80,7 +80,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(pTemplateMD));
-        PRECONDITION(pTemplateMD->IsRestored());
         PRECONDITION(pMT->IsRestored_NoLogging());
         PRECONDITION(pTemplateMD->GetMethodTable()->GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable());
     }
@@ -132,7 +131,7 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     pMD->m_pszDebugMethodSignature = "<generic method signature>";
     pMD->m_pszDebugClassName  = "<generic method class name>";
     pMD->m_pszDebugMethodName = "<generic method name>";
-    pMD->m_pDebugMethodTable.SetValue(pMT);
+    pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 
     return pMD;
@@ -305,12 +304,9 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pExactMT));
         PRECONDITION(CheckPointer(pGenericMDescInRepMT));
-        PRECONDITION(pGenericMDescInRepMT->IsRestored());
-        PRECONDITION(pWrappedMD == NULL || pWrappedMD->IsRestored());
         PRECONDITION(methodInst.IsEmpty() || pGenericMDescInRepMT->IsGenericMethodDefinition());
         PRECONDITION(methodInst.GetNumArgs() == pGenericMDescInRepMT->GetNumGenericMethodArgs());
         POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->IsRestored());
         POSTCONDITION(getWrappedCode == RETVAL->IsSharedByGenericInstantiations());
         POSTCONDITION(methodInst.IsEmpty() || RETVAL->HasMethodInstantiation());
     }
@@ -588,7 +584,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
 
         // All wrapped method descriptors (except BoxedEntryPointStubs, which don't use this path) take an inst arg.
         // The only ones that don't should have been found in the type's meth table.
-        POSTCONDITION(!getWrappedCode || !RETVAL || !RETVAL->IsRestored() || RETVAL->RequiresInstArg());
+        POSTCONDITION(!getWrappedCode || !RETVAL || RETVAL->RequiresInstArg());
     }
     CONTRACT_END
 
@@ -606,24 +602,6 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
 
     if (resultMD != NULL)
        RETURN((InstantiatedMethodDesc*) resultMD);
-
-#ifdef FEATURE_PREJIT
-    // Next look in the preferred zap module
-    Module *pPreferredZapModule = Module::ComputePreferredZapModule(pExactOrRepMT->GetModule(),
-                                                                    pExactOrRepMT->GetInstantiation(),
-                                                                    methodInst);
-    if (pPreferredZapModule->HasNativeImage())
-    {
-        resultMD = pPreferredZapModule->GetInstMethodHashTable()->FindMethodDesc(TypeHandle(pExactOrRepMT),
-                                                                                 methodDef,
-                                                                                 FALSE /* not forceBoxedEntryPoint */,
-                                                                                 methodInst,
-                                                                                 getWrappedCode);
-
-       if (resultMD != NULL)
-           RETURN((InstantiatedMethodDesc*) resultMD);
-    }
-#endif // FEATURE_PREJIT
 
     RETURN(NULL);
 }
@@ -755,7 +733,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         PRECONDITION(CheckPointer(pDefMD));
         PRECONDITION(CheckPointer(pExactMT));
-        PRECONDITION(pDefMD->IsRestored_NoLogging());
         PRECONDITION(pExactMT->IsRestored_NoLogging());
 
         // If the method descriptor belongs to a generic type then
@@ -773,7 +750,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         PRECONDITION(!forceRemotableMethod || !allowInstParam);
 
         POSTCONDITION(((RETVAL == NULL) && !allowCreate) || CheckPointer(RETVAL));
-        POSTCONDITION(((RETVAL == NULL) && !allowCreate) || RETVAL->IsRestored());
         POSTCONDITION(((RETVAL == NULL) && !allowCreate) || forceBoxedEntryPoint || !RETVAL->IsUnboxingStub());
         POSTCONDITION(((RETVAL == NULL) && !allowCreate) || allowInstParam || !RETVAL->RequiresInstArg());
     }
@@ -824,9 +800,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         pMDescInCanonMT = pExactMT->GetCanonicalMethodTable()->GetParallelMethodDesc(pDefMD);
 
-        if (!allowCreate && (!pMDescInCanonMT->IsRestored() ||
-                              !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded()))
-
+        if (!allowCreate && !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded())
         {
             RETURN(NULL);
         }
@@ -884,7 +858,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
             if (pResultMD != NULL)
             {
-                _ASSERTE(pResultMD->IsRestored() && pResultMD->GetMethodTable()->IsFullyLoaded());
+                _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
                 g_IBCLogger.LogMethodDescAccess(pResultMD);
                 RETURN(pResultMD);
             }
@@ -1032,7 +1006,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         }
         _ASSERTE(pResultMD);
 
-        if (!allowCreate && (!pResultMD->IsRestored() || !pResultMD->GetMethodTable()->IsFullyLoaded()))
+        if (!allowCreate && !pResultMD->GetMethodTable()->IsFullyLoaded())
         {
             RETURN(NULL);
         }
@@ -1081,7 +1055,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
             if (pResultMD != NULL)
                             {
-                _ASSERTE(pResultMD->IsRestored() && pResultMD->GetMethodTable()->IsFullyLoaded());
+                _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
 
                 g_IBCLogger.LogMethodDescAccess(pResultMD);
 
@@ -1180,7 +1154,10 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                           pExactMT->GetCanonicalMethodTable(),
                                                                           FALSE,
                                                                           Instantiation(repInst, methodInst.GetNumArgs()),
-                                                                          TRUE);
+                                                                          /* allowInstParam */ TRUE,
+                                                                          /* forceRemotableMethod */ FALSE,
+                                                                          /* allowCreate */ TRUE,
+                                                                          /* level */ level);
 
                 _ASSERTE(pWrappedMD->IsSharedByGenericInstantiations());
                 _ASSERTE(!methodInst.IsEmpty() || !pWrappedMD->IsSharedByGenericMethodInstantiations());
@@ -1219,7 +1196,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         }
         _ASSERTE(pInstMD);
 
-        if (!allowCreate && (!pInstMD->IsRestored() || !pInstMD->GetMethodTable()->IsFullyLoaded()))
+        if (!allowCreate && !pInstMD->GetMethodTable()->IsFullyLoaded())
         {
             RETURN(NULL);
         }
@@ -1434,7 +1411,7 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
     S_SIZE_T dwAllocSize = S_SIZE_T(numTyPars) * S_SIZE_T(sizeof(TypeHandle));
 
     // the memory allocated for m_pMethInst will be freed if the declaring type fails to load
-    m_pPerInstInfo.SetValue((Dictionary *) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize)));
+    m_pPerInstInfo = (Dictionary *) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
 
     TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionaryNonNull();
 
@@ -1474,9 +1451,9 @@ void InstantiatedMethodDesc::SetupWrapperStubWithInstantiations(MethodDesc* wrap
 
     //_ASSERTE(sharedMD->IMD_IsSharedByGenericMethodInstantiations());
 
-    m_pWrappedMethodDesc.SetValue(wrappedMD);
+    m_pWrappedMethodDesc = wrappedMD;
     m_wFlags2 = WrapperStubWithInstantiations | (m_wFlags2 & ~KindMask);
-    m_pPerInstInfo.SetValueMaybeNull((Dictionary*)pInst);
+    m_pPerInstInfo = (Dictionary*)pInst;
 
     _ASSERTE(FitsIn<WORD>(numGenericArgs));
     m_wNumGenericArgs = static_cast<WORD>(numGenericArgs);
@@ -1494,12 +1471,12 @@ void InstantiatedMethodDesc::SetupSharedMethodInstantiation(DWORD numGenericArgs
     _ASSERTE(numGenericArgs != 0);
     // Initially the dictionary layout is empty
     m_wFlags2 = SharedMethodInstantiation | (m_wFlags2 & ~KindMask);
-    m_pPerInstInfo.SetValueMaybeNull((Dictionary *)pPerInstInfo);
+    m_pPerInstInfo = (Dictionary *)pPerInstInfo;
 
     _ASSERTE(FitsIn<WORD>(numGenericArgs));
     m_wNumGenericArgs = static_cast<WORD>(numGenericArgs);
 
-    m_pDictLayout.SetValueMaybeNull(pDL);
+    m_pDictLayout = pDL;
 
 
     _ASSERTE(IMD_IsSharedByGenericMethodInstantiations());
@@ -1512,7 +1489,7 @@ void InstantiatedMethodDesc::SetupUnsharedMethodInstantiation(DWORD numGenericAr
 
     // The first field is never used
     m_wFlags2 = UnsharedMethodInstantiation | (m_wFlags2 & ~KindMask);
-    m_pPerInstInfo.SetValueMaybeNull((Dictionary *)pInst);
+    m_pPerInstInfo = (Dictionary *)pInst;
 
     _ASSERTE(FitsIn<WORD>(numGenericArgs));
     m_wNumGenericArgs = static_cast<WORD>(numGenericArgs);
@@ -1621,22 +1598,6 @@ void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularCl
     return;
 }
 
-
-#ifdef FEATURE_PREJIT
-
-void MethodDesc::PrepopulateDictionary(DataImage * image, BOOL nonExpansive)
-{
-    STANDARD_VM_CONTRACT;
-
-     // Note the strong similarity to MethodTable::PrepopulateDictionary
-     if (GetMethodDictionary())
-     {
-         LOG((LF_JIT, LL_INFO10000, "GENERICS: Prepopulating dictionary for MD %s\n",  this));
-         GetMethodDictionary()->PrepopulateDictionary(this, NULL, nonExpansive);
-     }
-}
-
-#endif // FEATURE_PREJIT
 
 #ifndef DACCESS_COMPILE
 

@@ -163,8 +163,8 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::Equals, Object *pThisRef, Object *pCompareRef
         FC_RETURN_BOOL(FALSE);
 
     // Compare the contents (size - vtable - sync block index).
-    DWORD dwBaseSize = pThisRef->GetMethodTable()->GetBaseSize();
-    if(pThisRef->GetMethodTable() == g_pStringClass)
+    DWORD dwBaseSize = pThisMT->GetBaseSize();
+    if(pThisMT == g_pStringClass)
         dwBaseSize -= sizeof(WCHAR);
     BOOL ret = memcmp(
         (void *) (pThisRef+1),
@@ -321,7 +321,7 @@ FCIMPL1(FC_BOOL_RET, ObjectNative::IsLockHeld, Object* pThisUNSAFE)
 }
 FCIMPLEND
 
-INT64 QCALLTYPE ObjectNative::GetMonitorLockContentionCount()
+extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorLockContentionCount()
 {
     QCALL_CONTRACT;
 

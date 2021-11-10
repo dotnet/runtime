@@ -16,13 +16,13 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 
-gboolean mono_runtime_try_shutdown (void);
+MONO_COMPONENT_API gboolean mono_runtime_try_shutdown (void);
 
 void mono_runtime_init_tls (void);
 
 MONO_PROFILER_API char* mono_runtime_get_aotid (void);
 
-MonoAssembly* mono_runtime_get_entry_assembly (void);
+MONO_COMPONENT_API MonoAssembly* mono_runtime_get_entry_assembly (void);
 
 void mono_runtime_ensure_entry_assembly (MonoAssembly *assembly);
 

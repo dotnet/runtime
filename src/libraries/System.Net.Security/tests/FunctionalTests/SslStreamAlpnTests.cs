@@ -173,7 +173,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(ClientSupportsAlpn))]
         [MemberData(nameof(Http2Servers))]
         public async Task SslStream_Http2_Alpn_Success(Uri server)
@@ -211,8 +211,12 @@ namespace System.Net.Security.Tests
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
                 yield return new object[] { null, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol>(), null };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null, null };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol>(), new List<SslApplicationProtocol>(), null };
+                yield return new object[] { null, new List<SslApplicationProtocol>(), null };
+                yield return new object[] { new List<SslApplicationProtocol>(), null, null };
                 yield return new object[] { null, null, null };
             }
             else
@@ -221,7 +225,11 @@ namespace System.Net.Security.Tests
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, BackendSupportsAlpn ? SslApplicationProtocol.Http11 : default };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, BackendSupportsAlpn ? SslApplicationProtocol.Http11 : default };
                 yield return new object[] { null, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, default(SslApplicationProtocol) };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol>(), default(SslApplicationProtocol) };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null, default(SslApplicationProtocol) };
+                yield return new object[] { new List<SslApplicationProtocol>(), new List<SslApplicationProtocol>(), default(SslApplicationProtocol) };
+                yield return new object[] { null, new List<SslApplicationProtocol>(), default(SslApplicationProtocol) };
+                yield return new object[] { new List<SslApplicationProtocol>(), null, default(SslApplicationProtocol) };
                 yield return new object[] { null, null, default(SslApplicationProtocol) };
             }
         }

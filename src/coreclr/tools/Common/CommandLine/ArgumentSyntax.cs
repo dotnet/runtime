@@ -14,6 +14,8 @@ namespace Internal.CommandLine
         private readonly List<Argument> _options = new List<Argument>();
         private readonly List<Argument> _parameters = new List<Argument>();
 
+        private readonly List<string> _extraHelpParagraphs = new List<string>();
+
         private ArgumentParser _parser;
         private ArgumentCommand _definedCommand;
         private ArgumentCommand _activeCommand;
@@ -451,6 +453,19 @@ namespace Internal.CommandLine
         public string GetHelpText(int maxWidth)
         {
             return HelpTextGenerator.Generate(this, maxWidth);
+        }
+
+        public IReadOnlyList<string> ExtraHelpParagraphs
+        {
+            set
+            {
+                _extraHelpParagraphs.Clear();
+                _extraHelpParagraphs.AddRange(value);
+            }
+            get
+            {
+                return _extraHelpParagraphs.ToArray();
+            }
         }
     }
 }

@@ -80,6 +80,9 @@ struct rsa_st
     BIGNUM* dmp1;
     BIGNUM* dmq1;
     BIGNUM* iqmp;
+    struct crypto_ex_data_10_st ex_data;
+    int _ignored3;
+    int flags;
 };
 
 struct x509_cinf_st

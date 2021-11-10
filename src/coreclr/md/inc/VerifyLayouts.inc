@@ -156,6 +156,9 @@ FIELD(CLiteWeightStgdbRW, m_wszFileName, sizeof(void*))
 FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFT, 4)
 FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFS, 4)
 FIELD(CLiteWeightStgdbRW, m_pStgIO, sizeof(void*))
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+FIELD(CLiteWeightStgdbRW, m_pPdbHeap, sizeof(void*))
+#endif
 END_TYPE(CLiteWeightStgdbRW, 8)
 
 USING_ALIAS(CLiteWeightStgdb__CMiniMdRW__, CLiteWeightStgdb<CMiniMdRW>)
@@ -169,7 +172,6 @@ BEGIN_TYPE(CMiniMdRW, sizeof(CMiniMdTemplate<CMiniMdRW>))
 FIELD(CMiniMdRW, m_pMemberRefHash, sizeof(void*))
 FIELD(CMiniMdRW, m_pMemberDefHash, sizeof(void*))
 ALIGN_FIELD(CMiniMdRW, m_pLookUpHashs, sizeof(void*)*TBL_COUNT, sizeof(void*))
-ALIGN_FIELD(CMiniMdRW, m_StringPoolOffsetHash, sizeof(MapSHash<UINT32, UINT32>), 4)
 FIELD(CMiniMdRW, m_pNamedItemHash, sizeof(void*))
 FIELD(CMiniMdRW, m_maxRid, 4)
 FIELD(CMiniMdRW, m_limRid, 4)
@@ -264,15 +266,7 @@ BEGIN_TYPE(CGuidPoolHash, sizeof(CChainedHash<GUIDHASH>))
 FIELD(CGuidPoolHash, m_Pool, sizeof(void*))
 END_TYPE(CGuidPoolHash, sizeof(void*))
 
-
-USING_ALIAS(MetaData__HotHeap, MetaData::HotHeap)
-BEGIN_TYPE(MetaData__HotHeap, 0)
-FIELD(MetaData__HotHeap, m_pHotHeapHeader, sizeof(void*))
-END_TYPE(MetaData__HotHeap, sizeof(void*))
-
-
 BEGIN_TYPE(StgPoolReadOnly, sizeof(StgPoolSeg) + sizeof(void*))                   //vtable pointer
-ALIGN_FIELD(StgPoolReadOnly, m_HotHeap, sizeof(MetaData::HotHeap), sizeof(void*))
 END_TYPE(StgPoolReadOnly, sizeof(void*))
 
 USING_ALIAS(MapSHash__ULONG__ULONG, MapSHash<ULONG, ULONG>) // Create a using alias to avoid commas in the type name

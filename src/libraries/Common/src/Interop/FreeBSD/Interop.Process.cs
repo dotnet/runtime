@@ -65,7 +65,7 @@ internal static partial class Interop
             }
             finally
             {
-                Marshal.FreeHGlobal((IntPtr)entries);
+                NativeMemory.Free(entries);
             }
         }
 
@@ -87,7 +87,7 @@ internal static partial class Interop
             }
             finally
             {
-                Marshal.FreeHGlobal((IntPtr)pBuffer);
+                NativeMemory.Free(pBuffer);
             }
         }
 
@@ -107,9 +107,9 @@ internal static partial class Interop
                 throw new ArgumentOutOfRangeException(nameof(pid));
             }
 
-            kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
             ProcessInfo info;
 
+            kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
             try
             {
                 if (count < 1)
@@ -142,7 +142,7 @@ internal static partial class Interop
             }
             finally
             {
-                Marshal.FreeHGlobal((IntPtr)kinfo);
+                NativeMemory.Free(kinfo);
             }
 
             return info;
@@ -160,12 +160,11 @@ internal static partial class Interop
         public static unsafe proc_stats GetThreadInfo(int pid, int tid)
         {
             proc_stats ret = default;
-            kinfo_proc* info = null;
             int count;
 
+            kinfo_proc* info = GetProcInfo(pid, (tid != 0), out count);
             try
             {
-                info = GetProcInfo(pid, (tid != 0), out count);
                 if (info != null && count >= 1)
                 {
                     if (tid == 0)
@@ -194,7 +193,7 @@ internal static partial class Interop
             }
             finally
             {
-                Marshal.FreeHGlobal((IntPtr)info);
+                NativeMemory.Free(info);
             }
 
             return ret;

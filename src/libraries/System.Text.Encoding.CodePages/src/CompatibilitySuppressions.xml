@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>PKV006</DiagnosticId>
+    <Target>.NETFramework,Version=v4.6</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>PKV006</DiagnosticId>
+    <Target>.NETStandard,Version=v1.3</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>PKV007</DiagnosticId>
+    <Target>.NETStandard,Version=v1.3-win</Target>
+  </Suppression>
+</Suppressions>

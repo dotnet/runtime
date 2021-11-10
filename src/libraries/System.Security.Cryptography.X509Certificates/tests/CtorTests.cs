@@ -359,7 +359,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // TODO (3233): Test that Message is also set correctly
                 //Assert.Equal("Cannot find the requested object.", ex.Message);
             }
-            else if (OperatingSystem.IsMacOS())
+            else if (PlatformDetection.UsesAppleCrypto)
             {
                 Assert.Equal(-25257, ex.HResult);
             }

@@ -10,7 +10,7 @@ There should be no more than **1** project type per folder (i.e. a folder can co
 
 Ancillary source assets for all tests should be located in `Interop/common` and can be easily added to all managed tests via the `Interop.settings.targets` file or native tests via `Interop.cmake`.
 
-A common pattern for testing is using the `Assert` utilities. This class is part of the `CoreCLRTestLibrary` which is included in all test projects by the `Interop.settings.targets` import. In order to use, add the following `using TestLibrary;` in the relevant test file.
+A common pattern for testing is using xUnit's `Assert` utilities. These utilities can be referenced via `CoreCLRTestLibrary` which is included in all test projects by `Directory.Build.targets` in this directory. In order to use, add the following `using Xunit;` in the relevant test file.
 
 ### Managed
 

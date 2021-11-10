@@ -479,7 +479,7 @@ mono_thread_info_lookup (MonoNativeThreadId id);
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid);
 
-void
+MONO_COMPONENT_API void
 mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt_kernel, MonoSuspendThreadCallback callback, gpointer user_data);
 
 void
@@ -494,10 +494,10 @@ mono_thread_info_suspend_unlock (void);
 void
 mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);
 
-void
+MONO_COMPONENT_API void
 mono_thread_info_set_is_async_context (gboolean async_context);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_info_is_async_context (void);
 
 void
@@ -552,7 +552,7 @@ mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 int
 mono_thread_info_get_system_max_stack_size (void);
 
-MonoThreadHandle*
+MONO_COMPONENT_API MonoThreadHandle*
 mono_threads_open_thread_handle (MonoThreadHandle *handle);
 
 void

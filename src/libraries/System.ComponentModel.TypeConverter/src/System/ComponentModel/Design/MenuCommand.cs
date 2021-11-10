@@ -13,10 +13,10 @@ namespace System.ComponentModel.Design
     public class MenuCommand
     {
         // Events that we suface or call on
-        private readonly EventHandler _execHandler;
+        private readonly EventHandler? _execHandler;
 
         private int _status;
-        private IDictionary _properties;
+        private IDictionary? _properties;
 
         /// <summary>
         /// Indicates that the given command is enabled. An enabled command may
@@ -44,7 +44,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Initializes a new instance of <see cref='System.ComponentModel.Design.MenuCommand'/>.
         /// </summary>
-        public MenuCommand(EventHandler handler, CommandID command)
+        public MenuCommand(EventHandler? handler, CommandID? command)
         {
             _execHandler = handler;
             CommandID = command;
@@ -112,13 +112,13 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Occurs when the menu command changes.
         /// </summary>
-        public event EventHandler CommandChanged;
+        public event EventHandler? CommandChanged;
 
 
         /// <summary>
         /// Gets the <see cref='System.ComponentModel.Design.CommandID'/> associated with this menu command.
         /// </summary>
-        public virtual CommandID CommandID { get; }
+        public virtual CommandID? CommandID { get; }
 
         /// <summary>
         /// Invokes a menu item.

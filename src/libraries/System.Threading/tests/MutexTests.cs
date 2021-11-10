@@ -14,26 +14,215 @@ namespace System.Threading.Tests
     public class MutexTests : FileCleanupTestBase
     {
         [Fact]
-        public void Ctor_ConstructWaitRelease()
+        public void ConstructorAndDisposeTest()
         {
-            using (Mutex m = new Mutex())
-            {
-                m.CheckedWait();
-                m.ReleaseMutex();
-            }
+            var m = new Mutex();
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            m.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => m.ReleaseMutex());
+            Assert.Throws<ObjectDisposedException>(() => m.WaitOne(0));
 
-            using (Mutex m = new Mutex(false))
-            {
-                m.CheckedWait();
-                m.ReleaseMutex();
-            }
+            m = new Mutex(false);
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            m.Dispose();
 
-            using (Mutex m = new Mutex(true))
+            m = new Mutex(true);
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+            m.Dispose();
+
+            m = new Mutex(true);
+            Assert.True(m.WaitOne(0));
+            m.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => m.ReleaseMutex());
+            Assert.Throws<ObjectDisposedException>(() => m.WaitOne(0));
+        }
+
+        [Fact]
+        public void AcquireAndReleaseTest()
+        {
+            var m = new Mutex();
+            Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
+            Assert.True(m.WaitOne(0));
+            Assert.True(m.WaitOne(0));
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
+        }
+
+        [Fact]
+        public void WaitTest()
+        {
+            var m = new Mutex();
+            m.CheckedWait();
+            m.CheckedWait();
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+            Assert.True(m.WaitOne());
+            Assert.True(m.WaitOne());
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+        }
+
+        [Fact]
+        public void MultiWaitWithAllIndexesUnlockedTest()
+        {
+            var ms =
+                new Mutex[]
+                {
+                    new Mutex(),
+                    new Mutex(),
+                    new Mutex(),
+                    new Mutex()
+                };
+            Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
+            ms[0].ReleaseMutex();
+            for (int i = 1; i < ms.Length; ++i)
             {
-                m.CheckedWait();
-                m.ReleaseMutex();
-                m.ReleaseMutex();
+                Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
             }
+            Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            ms[0].ReleaseMutex();
+            for (int i = 1; i < ms.Length; ++i)
+            {
+                Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
+            }
+            Assert.Equal(0, WaitHandle.WaitAny(ms));
+            ms[0].ReleaseMutex();
+            for (int i = 1; i < ms.Length; ++i)
+            {
+                Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
+            }
+            Assert.True(WaitHandle.WaitAll(ms, 0));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+        }
+
+        [Fact]
+        public void MultiWaitWithOuterIndexesLockedTest()
+        {
+            var ms =
+                new Mutex[]
+                {
+                    new Mutex(true),
+                    new Mutex(),
+                    new Mutex(),
+                    new Mutex(true)
+                };
+            Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
+            ms[0].ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
+            Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
+            Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            ms[0].ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
+            Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
+            Assert.Equal(0, WaitHandle.WaitAny(ms));
+            ms[0].ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
+            Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
+            Assert.True(WaitHandle.WaitAll(ms, 0));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            ms[0].ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
+            Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
+            ms[3].ReleaseMutex();
+        }
+
+        [Fact]
+        public void MultiWaitWithAllIndexesLockedTest()
+        {
+            var ms =
+                new Mutex[]
+                {
+                    new Mutex(true),
+                    new Mutex(true),
+                    new Mutex(true),
+                    new Mutex(true)
+                };
+            Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
+            ms[0].ReleaseMutex();
+            Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            ms[0].ReleaseMutex();
+            Assert.Equal(0, WaitHandle.WaitAny(ms));
+            ms[0].ReleaseMutex();
+            Assert.True(WaitHandle.WaitAll(ms, 0));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+                Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void MutualExclusionTest()
+        {
+            var threadLocked = new AutoResetEvent(false);
+            var continueThread = new AutoResetEvent(false);
+            var m = new Mutex();
+            Thread t = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
+            {
+                Assert.True(m.WaitOne(0));
+                threadLocked.Set();
+                continueThread.CheckedWait();
+                m.ReleaseMutex();
+            });
+            t.IsBackground = true;
+            t.Start();
+            threadLocked.CheckedWait();
+            Assert.False(m.WaitOne(0));
+            Assert.False(m.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            continueThread.Set();
+            waitForThread();
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
         }
 
         [Fact]
@@ -45,7 +234,6 @@ namespace System.Threading.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(GetValidNames))]
         public void Ctor_ValidName(string name)
         {
@@ -97,7 +285,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(GetValidNames))]
         public void OpenExisting(string name)
         {
@@ -132,13 +319,18 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OpenExisting_UnavailableName()
         {
             string name = Guid.NewGuid().ToString("N");
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
-            Mutex ignored;
-            Assert.False(Mutex.TryOpenExisting(name, out ignored));
+            Mutex m;
+            Assert.False(Mutex.TryOpenExisting(name, out m));
+            Assert.Null(m);
+
+            using (m = new Mutex(false, name)) { }
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
+            Assert.False(Mutex.TryOpenExisting(name, out m));
+            Assert.Null(m);
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
@@ -228,7 +420,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(AbandonExisting_MemberData))]
         public void AbandonExisting(
             string name,
@@ -348,7 +539,7 @@ namespace System.Threading.Tests
                             }
                             else
                             {
-                                Assert.True(m2Index < notAbandonedWaitIndex);
+                                Assert.True(!isNotAbandonedWaitObjectSignaled || m2Index < notAbandonedWaitIndex);
                                 Assert.Equal(m2Index, ame.MutexIndex);
                             }
 
@@ -406,7 +597,6 @@ namespace System.Threading.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36307", TestRuntimes.Mono)]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
         {
             string fileName = GetTestFilePath();
@@ -470,7 +660,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -531,7 +720,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");

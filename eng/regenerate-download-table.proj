@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
 
   <!-- installer.tasks needs to be built in advance. -->
   <UsingTask TaskName="RegenerateDownloadTable" AssemblyFile="$(InstallerTasksAssemblyPath)" />

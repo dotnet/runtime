@@ -13,10 +13,6 @@
 #include "eeconfig.h"
 #include "olevariant.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif // FEATURE_PREJIT
-
 // Forward references
 class EEClassLayoutInfo;
 class FieldDesc;

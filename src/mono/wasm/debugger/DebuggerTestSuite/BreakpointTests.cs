@@ -8,6 +8,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
+using System.Threading;
 
 namespace DebuggerTests
 {
@@ -35,7 +36,7 @@ namespace DebuggerTests
         {
             // Test that js breakpoints get set correctly
             // 13 24
-            // 13 31
+            // 13 33
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -47,7 +48,7 @@ namespace DebuggerTests
             Assert.Equal(13, loc["lineNumber"]);
             Assert.Equal(24, loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -56,14 +57,14 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(31, loc2["columnNumber"]);
+            Assert.Equal(33, loc2["columnNumber"]);
         }
 
         [Fact]
         public async Task CreateJS0Breakpoint()
         {
             // 13 24
-            // 13 31
+            // 13 33
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -75,7 +76,7 @@ namespace DebuggerTests
             Assert.Equal(13, loc["lineNumber"]);
             Assert.Equal(24, loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -84,7 +85,7 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(31, loc2["columnNumber"]);
+            Assert.Equal(33, loc2["columnNumber"]);
         }
 
         [Theory]
@@ -130,11 +131,6 @@ namespace DebuggerTests
         public async Task CreateGoodBreakpointAndHit()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-            var eval_req = JObject.FromObject(new
-            {
-                expression = "window.setTimeout(function() { invoke_add(); }, 1);",
-            });
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
@@ -259,8 +255,37 @@ namespace DebuggerTests
         {
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
-                "BreakOnDebuggerBreakCommand");
+                "dotnet://debugger-test.dll/debugger-test2.cs", 58, 8,
+                "BreakOnDebuggerBreakCommand",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 59, 8, "BreakOnDebuggerBreakCommand",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 60, 8, "BreakOnDebuggerBreakCommand",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 20);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 61, 8, "BreakOnDebuggerBreakCommand",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 50);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 62, 4, "BreakOnDebuggerBreakCommand",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 100);
+                }
+            );
         }
 
         [Fact]
@@ -287,5 +312,351 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
+        [Fact]
+        public async Task DebugHotReloadMethodChangedUserBreak()
+        {
+            var pause_location = await LoadAssemblyAndTestHotReload(
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
+                    Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
+                    "MethodBody1", "StaticMethod1");
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 10);
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 16, "StaticMethod1");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "b", 15);
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 12, "StaticMethod1");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckBool(locals, "c", true);
+        }
+
+        [Fact]
+        public async Task DebugHotReloadMethodUnchanged()
+        {
+            var pause_location = await LoadAssemblyAndTestHotReload(
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
+                    Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
+                    "MethodBody2", "StaticMethod1");
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 10);
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "StaticMethod1");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 10);
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "StaticMethod1");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 10);
+        }
+
+        [Fact]
+        public async Task DebugHotReloadMethodAddBreakpoint()
+        {
+            int line = 30;
+            await SetBreakpoint(".*/MethodBody1.cs$", line, 12, use_regex: true);
+            var pause_location = await LoadAssemblyAndTestHotReload(
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
+                    Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
+                    "MethodBody3", "StaticMethod3");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 10);
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "StaticMethod3");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "b", 15);
+
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "StaticMethod3");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckBool(locals, "c", true);
+
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 31, 12, "StaticMethod3",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "d", 10);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 32, 12, "StaticMethod3",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "d", 10);
+                    CheckNumber(locals, "e", 20);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 33, 8, "StaticMethod3",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "d", 10);
+                    CheckNumber(locals, "e", 20);
+                    CheckNumber(locals, "f", 50);
+                }
+            );
+        }
+
+
+        [Fact]
+        public async Task DebugHotReloadMethodEmpty()
+        {
+            int line = 38;
+            await SetBreakpoint(".*/MethodBody1.cs$", line, 0, use_regex: true);
+            var pause_location = await LoadAssemblyAndTestHotReload(
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
+                    Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
+                    "MethodBody4", "StaticMethod4");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 12, "StaticMethod4");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 39, 12, "StaticMethod4",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 40, 12, "StaticMethod4",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 41, 12, "StaticMethod4",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 42, 12, "StaticMethod4",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 43, 8, "StaticMethod4",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                }
+            );
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == 3");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 3);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak");
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointInALoopStopMoreThanOnce()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i % 3 == 0");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 0);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 3);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 6);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 9);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak");
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointNoStopInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == \"10\"");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak"
+            );
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointNotBooleanInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i + 4");
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 0);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 1);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 2);
+                });
+        }
+
+        [Fact]
+        public async Task CreateGoodBreakpointAndHitGoToNonWasmPageComeBackAndHitAgain()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "IntAdd");
+            Assert.Equal("other", pause_location["reason"]?.Value<string>());
+            Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+            var top_frame = pause_location["callFrames"][0];
+            Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+            Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+
+            //now check the scope
+            var scope = top_frame["scopeChain"][0];
+            Assert.Equal("local", scope["type"]);
+            Assert.Equal("IntAdd", scope["name"]);
+
+            Assert.Equal("object", scope["object"]["type"]);
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+
+            await cli.SendCommand("Debugger.resume", null, token);
+
+            var run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { load_non_wasm_page(); }, 1);"
+            });
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            await Task.Delay(1000, token);
+
+            run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { reload_wasm_page(); }, 1);"
+            });
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            await insp.WaitFor(Inspector.READY);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "IntAdd",
+                wait_for_event_fn: (pause_location) =>
+                {
+                    Assert.Equal("other", pause_location["reason"]?.Value<string>());
+                    Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+                    var top_frame = pause_location["callFrames"][0];
+                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+
+                    //now check the scope
+                    var scope = top_frame["scopeChain"][0];
+                    Assert.Equal("local", scope["type"]);
+                    Assert.Equal("IntAdd", scope["name"]);
+
+                    Assert.Equal("object", scope["object"]["type"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+                    return Task.CompletedTask;
+                }
+            );
+        }
+        
+
+        [Fact]
+        public async Task DebuggerAttributeNoStopInDebuggerHidden()
+        {
+            var bp_hidden = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "HiddenMethod", 1);
+            var bp_visible = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "VisibleMethod", 1);
+            Assert.Empty(bp_hidden.Value["locations"]);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:VisibleMethod'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_visible.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_visible.Value["locations"][0]["columnNumber"].Value<int>(),
+                "VisibleMethod"
+            );
+        }
     }
 }

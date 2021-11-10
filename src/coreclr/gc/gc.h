@@ -94,14 +94,6 @@ enum gc_etw_segment_type
     gc_etw_segment_pinned_object_heap = 3
 };
 
-// Types of allocations, emitted by the GCAllocationTick ETW event.
-enum gc_etw_alloc_kind
-{
-    gc_etw_alloc_soh = 0,
-    gc_etw_alloc_loh = 1,
-    gc_etw_alloc_poh = 2
-};
-
 /* forward declerations */
 class CObjectHeader;
 class Object;

@@ -129,14 +129,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SharedMultilevelFxLookup_Must_Verify_Folders_in_the_Correct_Order()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multi-level lookup is only supported on Windows.
-                return;
-            }
-
             var fixture = SharedFxLookupPortableAppFixture
                 .Copy();
 
@@ -246,14 +241,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SharedMultilevelFxLookup_Must_Not_Roll_Forward_If_Framework_Version_Is_Specified_Through_Argument()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multi-level lookup is only supported on Windows.
-                return;
-            }
-
             var fixture = SharedFxLookupPortableAppFixture
                 .Copy();
 

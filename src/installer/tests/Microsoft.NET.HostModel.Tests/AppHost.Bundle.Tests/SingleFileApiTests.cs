@@ -6,8 +6,6 @@ using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
-[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/44657", TestPlatforms.Linux)]
-
 namespace AppHost.Bundle.Tests
 {
     public class SingleFileApiTests : BundleTestBase, IClassFixture<SingleFileSharedState>

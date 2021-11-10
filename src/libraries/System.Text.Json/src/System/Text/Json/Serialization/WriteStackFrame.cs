@@ -19,7 +19,7 @@ namespace System.Text.Json
         /// <summary>
         /// The enumerator for resumable async disposables.
         /// </summary>
-        public IAsyncDisposable? AsyncEnumerator;
+        public IAsyncDisposable? AsyncDisposable;
 
         /// <summary>
         /// The current stackframe has suspended serialization due to a pending task,
@@ -39,7 +39,7 @@ namespace System.Text.Json
         /// <summary>
         /// Used when processing extension data dictionaries.
         /// </summary>
-        public bool IgnoreDictionaryKeyPolicy;
+        public bool IsWritingExtensionDataProperty;
 
         /// <summary>
         /// The class (POCO or IEnumerable) that is being populated.
@@ -119,21 +119,6 @@ namespace System.Text.Json
             }
 
             return PolymorphicJsonPropertyInfo.ConverterBase;
-        }
-
-        public void Reset()
-        {
-            CollectionEnumerator = null;
-            EnumeratorIndex = 0;
-            AsyncEnumerator = null;
-            AsyncEnumeratorIsPendingCompletion = false;
-            IgnoreDictionaryKeyPolicy = false;
-            JsonTypeInfo = null!;
-            OriginalDepth = 0;
-            ProcessedStartToken = false;
-            ProcessedEndToken = false;
-
-            EndProperty();
         }
     }
 }

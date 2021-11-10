@@ -83,6 +83,11 @@ namespace System.IO.Pipelines
         public static void ThrowInvalidOperationException_InvalidZeroByteRead() => throw CreateInvalidOperationException_InvalidZeroByteRead();
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_InvalidZeroByteRead() => new InvalidOperationException(SR.InvalidZeroByteRead);
+
+        [DoesNotReturn]
+        public static void ThrowNotSupported_UnflushedBytes() => throw CreateNotSupportedException_UnflushedBytes();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Exception CreateNotSupportedException_UnflushedBytes() => new NotSupportedException(SR.UnflushedBytesNotSupported);
     }
 
     internal enum ExceptionArgument

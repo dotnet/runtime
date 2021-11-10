@@ -273,7 +273,7 @@ namespace StaticTestGenerator
             // Invalid command line arguments.
             Console.WriteLine("Usage: <output_directory> <helper_assemblies_directory> <test_assembly_path> <xunit_console_options>");
             Console.WriteLine("    Example:");
-            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\net6.0-windows-Debug-x64\shared\Microsoft.NETCore.App\6.0.0\ d:\repos\runtime\artifacts\bin\System.Runtime.Tests\net6.0-windows-Debug\System.Runtime.Tests.dll");
+            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\net7.0-windows-Debug-x64\shared\Microsoft.NETCore.App\7.0.0\ d:\repos\runtime\artifacts\bin\System.Runtime.Tests\net7.0-windows-Debug\System.Runtime.Tests.dll");
             testAssemblyPath = string.Empty;
             runtimeAssembliesPath = string.Empty;
             outputPath = string.Empty;
@@ -710,12 +710,12 @@ namespace StaticTestGenerator
 
             if (literal is IntPtr ptr)
             {
-                return $"new IntPtr(0x{((long)ptr).ToString("X")})";
+                return $"new IntPtr(0x{(long)ptr:X})";
             }
 
             if (literal is UIntPtr uptr)
             {
-                return $"new UIntPtr(0x{((ulong)uptr).ToString("X")})";
+                return $"new UIntPtr(0x{(ulong)uptr:X})";
             }
 
             string? result = null;
@@ -732,34 +732,34 @@ namespace StaticTestGenerator
                         result = ((bool)literal).ToString().ToLowerInvariant();
                         break;
                     case TypeCode.Char:
-                        result = $"'\\u{((int)(char)literal).ToString("X4")}'";
+                        result = $"'\\u{(int)(char)literal:X4}'";
                         break;
                     case TypeCode.SByte:
-                        result = $"(sbyte)({literal.ToString()})";
+                        result = $"(sbyte)({literal})";
                         break;
                     case TypeCode.Byte:
-                        result = $"(byte){literal.ToString()}";
+                        result = $"(byte){literal}";
                         break;
                     case TypeCode.Int16:
-                        result = $"(short)({literal.ToString()})";
+                        result = $"(short)({literal})";
                         break;
                     case TypeCode.UInt16:
-                        result = $"(ushort){literal.ToString()}";
+                        result = $"(ushort){literal}";
                         break;
                     case TypeCode.Int32:
-                        result = $"({literal.ToString()})";
+                        result = $"({literal})";
                         break;
                     case TypeCode.UInt32:
-                        result = $"{literal.ToString()}U";
+                        result = $"{literal}U";
                         break;
                     case TypeCode.Int64:
-                        result = $"({literal.ToString()}L)";
+                        result = $"({literal}L)";
                         break;
                     case TypeCode.UInt64:
-                        result = $"{literal.ToString()}UL";
+                        result = $"{literal}UL";
                         break;
                     case TypeCode.Decimal:
-                        result = $"({literal.ToString()}M)";
+                        result = $"({literal}M)";
                         break;
                     case TypeCode.Single:
                         result =

@@ -3660,6 +3660,7 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60582", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
         public void CreateWithFileAccessWrite()
         {
@@ -3695,6 +3696,7 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60582", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
         public void ZipPackage_CreateWithFileAccessWrite()
         {
@@ -3823,9 +3825,15 @@ namespace System.IO.Packaging.Tests
                         byte[] readBuffer = new byte[buffer.Length];
                         for (long i = 0; i < SizeInMb; i++)
                         {
-                            int actualRead = partStream.Read(readBuffer, 0, readBuffer.Length);
+                            int totalRead = 0;
+                            while (totalRead < readBuffer.Length)
+                            {
+                                int actualRead = partStream.Read(readBuffer, totalRead, readBuffer.Length - totalRead);
+                                Assert.InRange(actualRead, 1, readBuffer.Length - totalRead);
+                                totalRead += actualRead;
+                            }
 
-                            Assert.Equal(actualRead, readBuffer.Length);
+                            Assert.Equal(readBuffer.Length, totalRead);
                             Assert.True(buffer.AsSpan().SequenceEqual(readBuffer));
                         }
                     }

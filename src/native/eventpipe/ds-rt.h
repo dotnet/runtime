@@ -87,7 +87,7 @@ ds_rt_config_value_get_default_port_suspend (void);
 
 static
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsGenerateCoreDumpCommandPayload *payload);
+ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerateCoreDumpCommandPayload *payload);
 
 /*
  * DiagnosticsIpc.
@@ -134,6 +134,25 @@ DS_RT_DECLARE_ARRAY_REVERSE_ITERATOR (port_config_array, ds_rt_port_config_array
 static
 uint32_t
 ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload);
+
+static
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload);
+
+/*
+* Environment variables
+*/
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value);
+
+static
+uint32_t
+ds_rt_get_environment_variable (const ep_char16_t *name,
+								uint32_t valueBufferLength,
+								uint32_t *valueLengthOut,
+								ep_char16_t *valueBuffer);
 
 /*
 * DiagnosticServer.

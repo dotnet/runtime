@@ -66,7 +66,7 @@ namespace System.Text.Unicode
             // ARM64-intrinsicified code paths. ARM64 platforms may still use the vectorized
             // non-intrinsicified 'else' block below.
 
-            if (/* (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || */ Sse2.IsSupported)
+            if (/* (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || */ Sse41.IsSupported)
             {
                 if (inputLength >= Vector128<ushort>.Count)
                 {
@@ -96,25 +96,16 @@ namespace System.Text.Unicode
                         pInputBuffer += Vector128<ushort>.Count; // eagerly bump this now in preparation for next loop, will adjust later if necessary
                         Vector128<ushort> charIsNonAscii;
 
+                        // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
+                        // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
+
                         if (AdvSimd.Arm64.IsSupported)
                         {
-                            // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
-                            // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
                             charIsNonAscii = AdvSimd.Min(utf16Data, vector0080);
-                        }
-                        else if (Sse41.IsSupported)
-                        {
-                            // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
-                            // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
-                            charIsNonAscii = Sse41.Min(utf16Data, vector0080);
                         }
                         else
                         {
-                            // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
-                            // input was 0x0080 <= [value] <= 0x7FFF. The case where 0x8000 <= [value] will
-                            // be handled in a few lines.
-
-                            charIsNonAscii = Sse2.AndNot(Sse2.CompareGreaterThan(vector0080.AsInt16(), utf16Data.AsInt16()).AsUInt16(), vector0080);
+                            charIsNonAscii = Sse41.Min(utf16Data, vector0080);
                         }
 
 #if DEBUG
@@ -139,9 +130,8 @@ namespace System.Text.Unicode
 
                         // Since 3-byte elements have a value >= 0x0800, we'll perform a saturating add of 0x7800 in order to
                         // get all 3-byte elements to have their 0x8000 bits set. A saturating add will not set the 0x8000
-                        // bit for 1-byte or 2-byte elements. 2-byte and 3-byte elements MAY have their 0x0080 bits set,
-                        // but this is not required, and the 0x0080 bits (see 'charIsNonAscii' above) will be explicitly
-                        // set for such elements anyway by the immediately following OR instruction.
+                        // bit for 1-byte or 2-byte elements. The 0x0080 bit will already have been set for non-ASCII (2-byte
+                        // and 3-byte) elements.
 
                         if (AdvSimd.IsSupported)
                         {

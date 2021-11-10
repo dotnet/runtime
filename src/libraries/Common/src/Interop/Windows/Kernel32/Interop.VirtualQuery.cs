@@ -8,7 +8,15 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
-        internal static extern UIntPtr VirtualQuery(SafeHandle lpAddress, ref MEMORY_BASIC_INFORMATION lpBuffer, UIntPtr dwLength);
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
+        internal static partial UIntPtr VirtualQuery(
+#else
+        [DllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
+        internal static extern UIntPtr VirtualQuery(
+#endif
+            SafeHandle lpAddress,
+            ref MEMORY_BASIC_INFORMATION lpBuffer,
+            UIntPtr dwLength);
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -28,7 +29,7 @@ namespace System.Net.Http
         /// Empty header lines are skipped, as are malformed header lines that are missing a colon character.
         /// </summary>
         /// <returns>true if the next header was read successfully, or false if all characters have been read.</returns>
-        public bool ReadHeader(out string name, out string value)
+        public bool ReadHeader([NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? value)
         {
             int startIndex;
             int length;

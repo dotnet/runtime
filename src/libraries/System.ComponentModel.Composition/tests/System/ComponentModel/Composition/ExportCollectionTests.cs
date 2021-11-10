@@ -142,7 +142,6 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31792", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49365", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         [Trait("Type", "Integration")]
         public void ImportCollectionsFromContainerOnly()
         {

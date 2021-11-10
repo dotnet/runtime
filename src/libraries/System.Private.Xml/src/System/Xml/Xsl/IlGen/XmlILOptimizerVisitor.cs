@@ -5440,7 +5440,7 @@ namespace System.Xml.Xsl.IlGen
         {
             object litLeft, litRight;
             int cmp;
-            Debug.Assert(left.XmlType == right.XmlType, "Comparison is not defined between " + left.XmlType + " and " + right.XmlType);
+            Debug.Assert(left.XmlType == right.XmlType, $"Comparison is not defined between {left.XmlType} and {right.XmlType}");
 
             // Extract objects that represent each literal value
             litLeft = ExtractLiteralValue(left);

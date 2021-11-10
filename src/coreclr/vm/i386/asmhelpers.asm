@@ -60,11 +60,6 @@ endif
 
 EXTERN _ExternalMethodFixupWorker@16:PROC
 
-ifdef FEATURE_PREJIT
-EXTERN _VirtualMethodFixupWorker@8:PROC
-EXTERN _StubDispatchFixupWorker@16:PROC
-endif
-
 ifdef FEATURE_COMINTEROP
 EXTERN _ComPreStubWorker@8:PROC
 endif
@@ -1147,69 +1142,20 @@ _VarargPInvokeStub@0 endp
 ; Invoked for marshaling-required unmanaged CALLI calls as a stub.
 ; EAX       - the unmanaged target
 ; ECX, EDX  - arguments
-; [ESP + 4] - the VASigCookie
+; EBX       - the VASigCookie
 ;
 _GenericPInvokeCalliHelper@0 proc public
-    ; save the target
-    push    eax
 
-    ; EAX <- VASigCookie
-    mov     eax, [esp + 8]           ; skip target and retaddr
-
-    mov     eax, [eax + VASigCookie__StubOffset]
-    test    eax, eax
-
+    cmp     dword ptr [ebx + VASigCookie__StubOffset], 0
     jz      GoCallCalliWorker
-    ; ---------------------------------------
 
-    push    eax
-
-    ; stack layout at this point:
-    ;
-    ; |         ...          |
-    ; |   stack arguments    | ESP + 16
-    ; +----------------------+
-    ; |     VASigCookie*     | ESP + 12
-    ; +----------------------+
-    ; |    return address    | ESP + 8
-    ; +----------------------+
-    ; | CALLI target address | ESP + 4
-    ; +----------------------+
-    ; |   stub entry point   | ESP + 0
-    ; ------------------------
-
-    ; remove VASigCookie from the stack
-    mov     eax, [esp + 8]
-    mov     [esp + 12], eax
-
-    ; move stub entry point below the RA
-    mov     eax, [esp]
-    mov     [esp + 8], eax
-
-    ; load EAX with the target address
-    pop     eax
-    pop     eax
-
-    ; stack layout at this point:
-    ;
-    ; |         ...          |
-    ; |   stack arguments    | ESP + 8
-    ; +----------------------+
-    ; |    return address    | ESP + 4
-    ; +----------------------+
-    ; |   stub entry point   | ESP + 0
-    ; ------------------------
-
-    ; CALLI target address is in EAX
-    ret
+    ; Stub is already prepared, just jump to it
+    jmp     dword ptr [ebx + VASigCookie__StubOffset]
 
 GoCallCalliWorker:
-    ; the target is on the stack and will become m_Datum of PInvokeCalliFrame
-    ; call the stub generating worker
-    pop     eax
-
     ;
-    ; target ptr in EAX, VASigCookie ptr in EDX
+    ; call the stub generating worker
+    ; target ptr in EAX, VASigCookie ptr in EBX
     ;
 
     STUB_PROLOG
@@ -1220,7 +1166,7 @@ GoCallCalliWorker:
     push        eax
 
     push        eax                         ; unmanaged target
-    push        dword ptr [esi + 4*7]       ; pVaSigCookie (first stack argument)
+    push        ebx                         ; pVaSigCookie (first stack argument)
     push        esi                         ; pTransitionBlock
 
     call        _GenericPInvokeCalliStubWorker@12
@@ -1367,39 +1313,6 @@ _CopyCtorCallStub@0 endp
 
 endif ; !FEATURE_CORECLR
 
-ifdef FEATURE_PREJIT
-
-;==========================================================================
-_StubDispatchFixupStub@0 proc public
-
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    push        0
-    push        0
-
-    push        eax             ; siteAddrForRegisterIndirect (for tailcalls)
-    push        esi             ; pTransitionBlock
-
-    call        _StubDispatchFixupWorker@16
-
-    STUB_EPILOG
-
-_StubDispatchFixupPatchLabel@0:
-public _StubDispatchFixupPatchLabel@0
-
-    ; Tailcall target
-    jmp eax
-
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
-    ret
-
-_StubDispatchFixupStub@0 endp
-
-endif ; FEATURE_PREJIT
-
 ;==========================================================================
 _ExternalMethodFixupStub@0 proc public
 
@@ -1475,49 +1388,6 @@ _DelayLoad_MethodCall@0 proc public
     ret
 
 _DelayLoad_MethodCall@0 endp
-endif
-
-ifdef FEATURE_PREJIT
-;=======================================================================================
-; The call in softbound vtable slots initially points to this function.
-; The pupose of this function is to transfer the control to right target and
-; to optionally patch the target of the jump so that we do not take this slow path again.
-;
-_VirtualMethodFixupStub@0 proc public
-
-        pop     eax         ; Pop the return address. It points right after the call instruction in the thunk.
-        sub     eax,5       ; Calculate the address of the thunk
-
-        ; Push ebp frame to get good callstack under debugger
-        push    ebp
-        mov     ebp, esp
-
-        ; Preserve argument registers
-        push    ecx
-        push    edx
-
-        push    eax         ; address of the thunk
-        push    ecx         ; this ptr
-        call    _VirtualMethodFixupWorker@8
-
-        ; Restore argument registers
-        pop     edx
-        pop     ecx
-
-        ; Pop ebp frame
-        pop     ebp
-
-_VirtualMethodFixupPatchLabel@0:
-public _VirtualMethodFixupPatchLabel@0
-
-        ; Proceed to execute the actual method.
-        jmp     eax
-
-        ; This will never be executed. It is just to help out stack-walking logic
-        ; which disassembles the epilog to unwind the stack.
-        ret
-
-_VirtualMethodFixupStub@0 endp
 endif
 
 ;==========================================================================

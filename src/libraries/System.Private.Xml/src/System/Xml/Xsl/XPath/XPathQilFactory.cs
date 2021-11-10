@@ -168,7 +168,7 @@ namespace System.Xml.Xsl.XPath
         [Conditional("DEBUG")]
         private void ExpectAny(QilNode n)
         {
-            Debug.Assert(IsAnyType(n), "Unexpected expression type: " + n.XmlType!.ToString());
+            Debug.Assert(IsAnyType(n), $"Unexpected expression type: {n.XmlType}");
         }
 
         public QilNode ConvertToType(XmlTypeCode requiredType, QilNode n)
@@ -180,7 +180,7 @@ namespace System.Xml.Xsl.XPath
                 case XmlTypeCode.Boolean: return ConvertToBoolean(n);
                 case XmlTypeCode.Node: return EnsureNodeSet(n);
                 case XmlTypeCode.Item: return n;
-                default: Debug.Fail("Unexpected XmlTypeCode: " + requiredType); return null;
+                default: Debug.Fail($"Unexpected XmlTypeCode: {requiredType}"); return null;
             }
         }
 

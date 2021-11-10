@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Diagnostics.Tracing;
@@ -46,8 +47,11 @@ namespace System
         private int caught_in_unmanaged;
         #endregion
 
+        private bool HasBeenThrown => _traceIPs != null;
+
         public MethodBase? TargetSite
         {
+            [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
             get
             {
                 StackTrace st = new StackTrace(this, true);
@@ -56,21 +60,6 @@ namespace System
 
                 return null;
             }
-        }
-
-        public virtual string? StackTrace => GetStackTrace(true);
-
-        private string? GetStackTrace(bool needFileInfo)
-        {
-            string? stackTraceString = _stackTraceString;
-            string? remoteStackTraceString = _remoteStackTraceString;
-
-            if (stackTraceString != null)
-                return remoteStackTraceString + stackTraceString;
-            if (_traceIPs == null)
-                return remoteStackTraceString;
-
-            return remoteStackTraceString + new StackTrace(this, needFileInfo).ToString(Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         internal DispatchState CaptureDispatchState()
@@ -120,6 +109,8 @@ namespace System
             return true; // mono runtime doesn't have immutable agile exceptions, always return true
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The API will return null if the metadata for current method cannot be established.")]
         private string? CreateSourceName()
         {
             var st = new StackTrace(this, fNeedFileInfo: false);
@@ -127,8 +118,10 @@ namespace System
             {
                 StackFrame sf = st.GetFrame(0)!;
                 MethodBase? method = sf.GetMethod();
+                if (method == null)
+                    return null;
 
-                Module? module = method?.Module;
+                Module module = method.Module;
                 RuntimeModule? rtModule = module as RuntimeModule;
 
                 if (rtModule == null)
@@ -149,7 +142,5 @@ namespace System
         private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
 
         private static string? SerializationWatsonBuckets => null;
-        private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
-        private string? SerializationStackTraceString => GetStackTrace(true);
     }
 }

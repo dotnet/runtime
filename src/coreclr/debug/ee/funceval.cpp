@@ -1635,7 +1635,7 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
 #endif
             }
 #endif // TARGET_X86
-
+            FALLTHROUGH;
         default:
             //
             // Ignorable - no need to protect

@@ -1,0 +1,57 @@
+trigger: none
+
+schedules:
+- cron: "0 8 * * *"
+  displayName: Mon through Sun at 12:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+jobs:
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - OSX_arm64
+    - windows_arm
+    - windows_arm64
+    - windows_x64
+    - windows_x86
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: pgo
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: pgo
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - OSX_arm64
+    - windows_arm
+    - windows_arm64
+    - windows_x64
+    - windows_x86
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: pgo
+      liveLibrariesBuildConfig: Release

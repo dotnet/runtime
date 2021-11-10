@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -42,7 +40,8 @@ namespace System.Net.Http
         /// <summary>
         /// Gets a value that indicates whether the handler is supported on the current platform.
         /// </summary>
-        public static bool IsSupported => true;
+        [UnsupportedOSPlatformGuard("browser")]
+        public static bool IsSupported => !OperatingSystem.IsBrowser();
 
         public bool UseCookies
         {
@@ -285,6 +284,32 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Defines the initial HTTP2 stream receive window size for all connections opened by the this <see cref="SocketsHttpHandler"/>.
+        /// </summary>
+        /// <remarks>
+        /// Larger the values may lead to faster download speed, but potentially higher memory footprint.
+        /// The property must be set to a value between 65535 and the configured maximum window size, which is 16777216 by default.
+        /// </remarks>
+        public int InitialHttp2StreamWindowSize
+        {
+            get => _settings._initialHttp2StreamWindowSize;
+            set
+            {
+                if (value < HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize || value > GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize)
+                {
+                    string message = SR.Format(
+                        SR.net_http_http2_invalidinitialstreamwindowsize,
+                        HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize,
+                        GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize);
+
+                    throw new ArgumentOutOfRangeException(nameof(InitialHttp2StreamWindowSize), message);
+                }
+                CheckDisposedOrStarted();
+                _settings._initialHttp2StreamWindowSize = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
         /// doesn't receive any frames on a connection for this period of time. This property is used together with
         /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
@@ -394,20 +419,8 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Gets or sets the QUIC implementation to be used for HTTP3 requests.
+        /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
         /// </summary>
-        public QuicImplementationProvider? QuicImplementationProvider
-        {
-            // !!! NOTE !!!
-            // This is temporary and will not ship.
-            get => _settings._quicImplementationProvider;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._quicImplementationProvider = value;
-            }
-        }
-
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
@@ -436,6 +449,22 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._responseHeaderEncodingSelector = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="DistributedContextPropagator"/> to use when propagating the distributed trace and context.
+        /// Use <see langword="null"/> to disable propagation.
+        /// Defaults to <see cref="DistributedContextPropagator.Current"/>.
+        /// </summary>
+        [CLSCompliant(false)]
+        public DistributedContextPropagator? ActivityHeadersPropagator
+        {
+            get => _settings._activityHeadersPropagator;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._activityHeadersPropagator = value;
             }
         }
 
@@ -469,6 +498,12 @@ namespace System.Net.Http
                 handler = new HttpAuthenticatedConnectionHandler(poolManager);
             }
 
+            // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
+            if (DiagnosticsHandler.IsGloballyEnabled() && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
+            {
+                handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
+            }
+
             if (settings._allowAutoRedirect)
             {
                 // Just as with WinHttpHandler, for security reasons, we do not support authentication on redirects
@@ -499,6 +534,11 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
             if (request.Version.Major >= 2)
             {
                 throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
@@ -527,6 +567,11 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
             CheckDisposed();
 
             if (cancellationToken.IsCancellationRequested)
@@ -584,6 +629,17 @@ namespace System.Net.Http
                 {
                     request.Headers.ExpectContinue = false;
                 }
+            }
+
+            Uri? requestUri = request.RequestUri;
+            if (requestUri is null || !requestUri.IsAbsoluteUri)
+            {
+                return new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+            }
+
+            if (!HttpUtilities.IsSupportedScheme(requestUri.Scheme))
+            {
+                return new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
             }
 
             return null;

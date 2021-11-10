@@ -9,6 +9,10 @@ private:
     LONG m_ref;                         // reference count
     CrashInfo& m_crashInfo;
 
+    // no public copy constructor
+    DumpDataTarget(const DumpDataTarget&) = delete;
+    void operator=(const DumpDataTarget&) = delete;
+
 public:
     DumpDataTarget(CrashInfo& crashInfo);
     virtual ~DumpDataTarget();

@@ -429,9 +429,9 @@ public:
         m_TypeSpec = type;
 
         m_pbsBlob = new BinStr();
-        m_pbsBlob->appendInt16(VAL16(1));     // prolog 0x01 0x00
-        m_pbsBlob->appendInt32((int)action);  // 4-byte action
-        if(pbsPairs)                          // name-value pairs if any
+        m_pbsBlob->appendInt16(VAL16(1));           // prolog 0x01 0x00
+        m_pbsBlob->appendInt32(VAL32((int)action)); // 4-byte action
+        if(pbsPairs)                                // name-value pairs if any
         {
             if(pbsPairs->length() > 2)
                 m_pbsBlob->appendFrom(pbsPairs,2);

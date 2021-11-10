@@ -25,6 +25,9 @@ diagnostics_server_stub_pause_for_diagnostics_monitor (void);
 static void
 diagnostics_server_stub_disable (void);
 
+static MonoComponentDiagnosticsServer *
+component_diagnostics_server_stub_init (void);
+
 static MonoComponentDiagnosticsServer fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &diagnostics_server_stub_available },
 	&diagnostics_server_stub_init,
@@ -61,17 +64,15 @@ diagnostics_server_stub_disable (void)
 {
 }
 
-#ifdef STATIC_COMPONENTS
+static MonoComponentDiagnosticsServer *
+component_diagnostics_server_stub_init (void)
+{
+	return &fn_table;
+}
+
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_init (void)
 {
-	return mono_component_diagnostics_server_stub_init ();
-}
-#endif
-
-MonoComponentDiagnosticsServer *
-mono_component_diagnostics_server_stub_init (void)
-{
-	return &fn_table;
+	return component_diagnostics_server_stub_init ();
 }

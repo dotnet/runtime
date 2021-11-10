@@ -527,7 +527,7 @@ namespace System.Data.Odbc
                     }
                 }
             }
-            Debug.Assert((0 <= ccb) && (ccb < 0x3fffffff), "GetParameterSize: out of range " + ccb);
+            Debug.Assert((0 <= ccb) && (ccb < 0x3fffffff), $"GetParameterSize: out of range {ccb}");
             return ccb;
         }
 

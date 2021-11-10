@@ -14,8 +14,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
+    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
+    <_ILLinkDescriptorsFilePaths Condition="'$(TargetsWindows)' == 'true'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
+    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.Debug.xml"
+                                 Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
     <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
+    <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.EventSource.xml" />
   </ItemGroup>
 
   <!--

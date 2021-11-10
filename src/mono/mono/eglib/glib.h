@@ -26,11 +26,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <inttypes.h>
-#ifdef _MSC_VER
-#include <eglib-config.hw>
-#else
 #include <eglib-config.h>
-#endif
 
 // - Pointers should only be converted to or from pointer-sized integers.
 // - Any size integer can be converted to any other size integer.

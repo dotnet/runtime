@@ -16,7 +16,6 @@
 #error FEATURE_COMINTEROP is required for this file
 #endif // FEATURE_COMINTEROP
 
-#ifndef CROSSGEN_COMPILE
 
 #include "vars.hpp"
 #include "mlinfo.h"
@@ -220,5 +219,4 @@ private:
     VARTYPE                 m_vt;
 };
 
-#endif //#ifndef CROSSGEN_COMPILE
 #endif // _DISPPARAMMARSHALER_H

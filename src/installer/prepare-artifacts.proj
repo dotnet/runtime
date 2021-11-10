@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-
     <!-- Set IsStableBuild to mimic https://github.com/dotnet/arcade/blob/694d59f090b743f894779d04a7ffe11cbaf352e7/src/Microsoft.DotNet.Arcade.Sdk/tools/Publish.proj#L30-L31 -->
     <IsStableBuild>false</IsStableBuild>
     <IsStableBuild Condition="'$(DotNetFinalVersionKind)' == 'release'">true</IsStableBuild>
@@ -120,6 +118,14 @@
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
+      <ItemsToPush Include="@(WorkloadsVSInsertionFile)">
+        <RelativeBlobPath>$(InstallersRelativePath)workloads/$(SdkBandVersion)/%(Filename)%(Extension)</RelativeBlobPath>
+        <PublishFlatContainer>true</PublishFlatContainer>
+      </ItemsToPush>
+
+      <!-- Source build intermediated packages will be pushed and signed by the sourcebuild leg. -->
+      <ItemsToPush Remove="@(ItemsToPush)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
+      <ItemsToSignPostBuild Remove="@(ItemsToSignPostBuild)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
@@ -173,6 +179,7 @@
 
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
+      <DownloadedWorkloadsVSInsertionFile Include="$(DownloadDirectory)*\workloads-vs\**\*" />
       <DownloadedNupkgFile
         Include="$(DownloadDirectory)**\*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
@@ -180,7 +187,7 @@
       <!-- Add files that are not affected by filtering. -->
       <UploadToBlobStorageFile
         Include="@(DownloadedArtifactFile)"
-        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile)" />
+        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile);@(DownloadedWorkloadsVSInsertionFile)" />
 
       <!--
         Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
@@ -201,6 +208,12 @@
         Include="$(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
+      <!-- Workloads VS insertion artifacts produced by src/workloads/workloads.csproj -->
+      <WorkloadsVSInsertionFile
+        Include="
+          $(DownloadDirectory)*\workloads-vs\**\*.json;
+          $(DownloadDirectory)*\workloads-vs\**\*.msi" />
+
       <!--
         Runtime packages associated with some identity packages. Need to exclude "runtime.native.*"
         because Libraries produces some "runtime.native.Foo" packages with
@@ -218,7 +231,7 @@
       -->
       <RidAgnosticNupkgToPublishFile
         Include="
-          $(DownloadDirectory)**\Microsoft.NET.Sdk.Mono.Toolchain.Manifest.*.nupkg;
+          $(DownloadDirectory)**\Microsoft.NET.Workload.Mono.Toolchain.Manifest-*.nupkg;
           $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
           $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />

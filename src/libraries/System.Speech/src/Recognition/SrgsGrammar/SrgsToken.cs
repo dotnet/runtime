@@ -37,7 +37,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
                 // remove all spaces if any
                 string text = value.Trim(Helpers._achTrimChars);
-                if (string.IsNullOrEmpty(text) || text.IndexOf('\"') >= 0)
+                if (string.IsNullOrEmpty(text) || text.Contains('\"'))
                 {
                     throw new ArgumentException(SR.Get(SRID.InvalidTokenString), nameof(value));
                 }

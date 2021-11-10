@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class TripleDESCipherTests
+    public static partial class TripleDESCipherTests
     {
         [Fact]
         public static void TripleDESDefaults()
@@ -492,11 +492,14 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         {
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
+            byte[] liveOneShotDecryptBytes = null;
+            byte[] liveOneShotEncryptBytes = null;
 
             using (TripleDES tdes = TripleDESFactory.Create())
             {
                 tdes.Mode = cipherMode;
                 tdes.Padding = paddingMode;
+                tdes.Key = key;
 
                 if (feedbackSize.HasValue)
                 {
@@ -505,6 +508,32 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
                 liveEncryptBytes = TripleDESEncryptDirectKey(tdes, key, iv, plainBytes);
                 liveDecryptBytes = TripleDESDecryptDirectKey(tdes, key, iv, cipherBytes);
+
+                if (cipherMode == CipherMode.ECB)
+                {
+                    liveOneShotDecryptBytes = tdes.DecryptEcb(cipherBytes, paddingMode);
+                    liveOneShotEncryptBytes = tdes.EncryptEcb(plainBytes, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CBC)
+                {
+                    liveOneShotDecryptBytes = tdes.DecryptCbc(cipherBytes, iv, paddingMode);
+                    liveOneShotEncryptBytes = tdes.EncryptCbc(plainBytes, iv, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CFB)
+                {
+                    liveOneShotDecryptBytes = tdes.DecryptCfb(cipherBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                    liveOneShotEncryptBytes = tdes.EncryptCfb(plainBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                }
+
+                if (liveOneShotDecryptBytes is not null)
+                {
+                    Assert.Equal(plainBytes, liveOneShotDecryptBytes);
+                }
+
+                if (liveOneShotEncryptBytes is not null)
+                {
+                    Assert.Equal(cipherBytes, liveOneShotEncryptBytes);
+                }
             }
 
             Assert.Equal(cipherBytes, liveEncryptBytes);

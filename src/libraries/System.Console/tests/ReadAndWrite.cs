@@ -194,6 +194,25 @@ public class ReadAndWrite
         }
     }
 
+    [Fact]
+    [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+    public void TestConsoleWrite()
+    {
+        Stream s = new MemoryStream();
+        TextWriter w = new StreamWriter(s);
+        ((StreamWriter)w).AutoFlush = true;
+        TextReader r = new StreamReader(s);
+        Console.SetOut(w);
+
+        Console.Write("A");
+        Console.Write("B");
+        Console.Write("C");
+
+        s.Position = 0;
+        string line = r.ReadToEnd();
+        Assert.Equal("ABC", line);
+    }
+
     private static unsafe void ValidateConsoleEncoding(Encoding encoding)
     {
         Assert.NotNull(encoding);
@@ -258,7 +277,7 @@ public class ReadAndWrite
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static unsafe void OutputEncodingPreamble()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -281,7 +300,7 @@ public class ReadAndWrite
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static unsafe void OutputEncoding()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -349,7 +368,7 @@ public class ReadAndWrite
     };
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void ReadAndReadLine()
     {
         TextWriter savedStandardOutput = Console.Out;

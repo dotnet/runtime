@@ -750,7 +750,6 @@ namespace System.PrivateUri.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49932", TestPlatforms.Android)]
         public static void Uri_DoesNotLockOnString()
         {
             // Don't intern the string we lock on
@@ -777,6 +776,13 @@ namespace System.PrivateUri.Tests
 
             Assert.True(Monitor.TryEnter(uriString, TimeSpan.FromSeconds(10)));
             Assert.False(timedOut);
+        }
+
+        [Fact]
+        public static void UriWithUnicodeAndEmptyAuthority_ParsedCorrectly()
+        {
+            const string UriString = "custom:///\u00FC";
+            Assert.Equal(UriString, new Uri(UriString, UriKind.Absolute).ToString());
         }
 
         public static IEnumerable<object[]> FilePathHandlesNonAscii_TestData()

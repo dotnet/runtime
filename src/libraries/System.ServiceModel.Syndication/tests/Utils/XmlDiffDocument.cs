@@ -1612,7 +1612,7 @@ namespace System.ServiceModel.Syndication.Tests
                     w.WriteString(Value);
                     break;
                 default:
-                    Debug.Assert(false, "Wrong type for text-like node : " + _nodetype.ToString());
+                    Debug.Assert(false, $"Wrong type for text-like node : {_nodetype}");
                     break;
             }
         }

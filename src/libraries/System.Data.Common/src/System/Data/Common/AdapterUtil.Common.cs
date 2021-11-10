@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable nullability as part of annotation System.Data.{Odbc,OleDb}
-#nullable disable
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -266,7 +263,7 @@ namespace System.Data.Common
         //
         // DbConnectionOptions, DataAccess
         //
-        internal static ArgumentException InvalidKeyname(string parameterName)
+        internal static ArgumentException InvalidKeyname(string? parameterName)
         {
             return Argument(SR.ADP_InvalidKey, parameterName);
         }
@@ -286,7 +283,7 @@ namespace System.Data.Common
         //
         // Generic Data Provider Collection
         //
-        internal static Exception CollectionUniqueValue(Type itemType, string propertyName, string propertyValue)
+        internal static Exception CollectionUniqueValue(Type itemType, string propertyName, string? propertyValue)
         {
             return Argument(SR.Format(SR.ADP_CollectionUniqueValue, itemType.Name, propertyName, propertyValue));
         }
@@ -306,19 +303,19 @@ namespace System.Data.Common
         }
 
         // DataColumnMapping.GetDataColumnBySchemaAction
-        internal static InvalidOperationException ColumnSchemaExpression(string srcColumn, string cacheColumn)
+        internal static InvalidOperationException ColumnSchemaExpression(string? srcColumn, string cacheColumn)
         {
             return DataMapping(SR.Format(SR.ADP_ColumnSchemaExpression, srcColumn, cacheColumn));
         }
 
         // DataColumnMapping.GetDataColumnBySchemaAction
-        internal static InvalidOperationException ColumnSchemaMismatch(string srcColumn, Type srcType, DataColumn column)
+        internal static InvalidOperationException ColumnSchemaMismatch(string? srcColumn, Type srcType, DataColumn column)
         {
             return DataMapping(SR.Format(SR.ADP_ColumnSchemaMismatch, srcColumn, srcType.Name, column.ColumnName, column.DataType.Name));
         }
 
         // DataColumnMapping.GetDataColumnBySchemaAction
-        internal static InvalidOperationException ColumnSchemaMissing(string cacheColumn, string tableName, string srcColumn)
+        internal static InvalidOperationException ColumnSchemaMissing(string cacheColumn, string tableName, string? srcColumn)
         {
             if (string.IsNullOrEmpty(tableName))
             {
@@ -382,7 +379,7 @@ namespace System.Data.Common
         {
             return ParametersIsParent(typeof(DataColumnMapping), collection);
         }
-        internal static Exception ColumnsUniqueSourceColumn(string srcColumn)
+        internal static Exception ColumnsUniqueSourceColumn(string? srcColumn)
         {
             return CollectionUniqueValue(typeof(DataColumnMapping), ADP.SourceColumn, srcColumn);
         }
@@ -422,7 +419,7 @@ namespace System.Data.Common
         {
             return CollectionIndexString(typeof(DataTableMapping), ADP.SourceTable, srcTable, typeof(DataTableMappingCollection));
         }
-        internal static Exception TablesUniqueSourceTable(string srcTable)
+        internal static Exception TablesUniqueSourceTable(string? srcTable)
         {
             return CollectionUniqueValue(typeof(DataTableMapping), ADP.SourceTable, srcTable);
         }
@@ -840,6 +837,6 @@ namespace System.Data.Common
             return uniqueIndex;
         }
 
-        internal static int SrcCompare(string strA, string strB) => strA == strB ? 0 : 1;
+        internal static int SrcCompare(string? strA, string? strB) => strA == strB ? 0 : 1;
     }
 }

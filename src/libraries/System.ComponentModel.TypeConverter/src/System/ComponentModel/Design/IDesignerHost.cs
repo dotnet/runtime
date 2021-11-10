@@ -118,11 +118,11 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets the designer instance for the specified component.
         /// </summary>
-        IDesigner GetDesigner(IComponent component);
+        IDesigner? GetDesigner(IComponent component);
 
         /// <summary>
         /// Gets the type instance for the specified fully qualified type name <paramref name="typeName"/>.
         /// </summary>
-        Type GetType(string typeName);
+        Type? GetType(string typeName);
     }
 }

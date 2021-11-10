@@ -511,6 +511,16 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a subset of methods returned by <see cref="GetMethods"/> that are virtual.
+        /// </summary>
+        public virtual IEnumerable<MethodDesc> GetVirtualMethods()
+        {
+            foreach (MethodDesc method in GetMethods())
+                if (method.IsVirtual)
+                    yield return method;
+        }
+
+        /// <summary>
         /// Gets a named method on the type. This method only looks at methods defined
         /// in type's metadata. The <paramref name="signature"/> parameter can be null.
         /// If signature is not specified and there are multiple matches, the first one

@@ -7,11 +7,11 @@ namespace System.Xml.Serialization
     using System;
     using System.Xml.Schema;
     using System.Collections;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Globalization;
     using System.Threading;
     using System.Diagnostics;
-    using System.Collections.Generic;
     using System.Xml.Extensions;
     using System.Xml;
     using System.Xml.Serialization;
@@ -840,7 +840,7 @@ namespace System.Xml.Serialization
                     return false;
                 }
             }
-            ArrayList members = new ArrayList();
+            var members = new List<MemberMapping>();
             TextAccessor? textAccessor = null;
             bool hasElements = false;
             bool isSequence = false;
@@ -902,7 +902,7 @@ namespace System.Xml.Serialization
                 Hashtable ids = new Hashtable();
                 for (int i = 0; i < members.Count; i++)
                 {
-                    MemberMapping member = (MemberMapping)members[i]!;
+                    MemberMapping member = members[i]!;
                     if (!member.IsParticle)
                         continue;
                     if (member.IsSequence)
@@ -920,7 +920,7 @@ namespace System.Xml.Serialization
                 }
                 members.Sort(new MemberMappingComparer());
             }
-            mapping.Members = (MemberMapping[])members.ToArray(typeof(MemberMapping));
+            mapping.Members = members.ToArray();
 
             if (mapping.BaseMapping == null) mapping.BaseMapping = GetRootMapping();
 
@@ -975,7 +975,7 @@ namespace System.Xml.Serialization
 
                 for (int i = 0; i < names.Length; i++)
                 {
-                    string argument = "{" + names[i] + "}";
+                    string argument = $"{{{names[i]}}}";
                     if (typeName.Contains(argument))
                     {
                         typeName = typeName.Replace(argument, XsdTypeName(types[i]));
@@ -1054,7 +1054,7 @@ namespace System.Xml.Serialization
             else
             {
                 ns = defaultNs;
-                name = "Choice" + (_choiceNum++);
+                name = $"Choice{(_choiceNum++)}";
             }
 
             if (name == null)
@@ -1066,7 +1066,7 @@ namespace System.Xml.Serialization
             if (ns == null)
                 ns = defaultNs;
 
-            string uniqueName = name = generateTypeName ? "ArrayOf" + CodeIdentifier.MakePascal(name) : name;
+            string uniqueName = name = generateTypeName ? $"ArrayOf{CodeIdentifier.MakePascal(name)}" : name;
             int i = 1;
             TypeMapping? existingMapping = (TypeMapping?)_types[uniqueName, ns];
             while (existingMapping != null)
@@ -1211,7 +1211,7 @@ namespace System.Xml.Serialization
                     _types.Add(typeName, typeNs, mapping);
                 else
                     _anonymous[model.Type] = mapping;
-                ArrayList constants = new ArrayList();
+                var constants = new List<ConstantMapping>();
                 for (int i = 0; i < model.Constants.Length; i++)
                 {
                     ConstantMapping? constant = ImportConstantMapping(model.Constants[i]);
@@ -1221,7 +1221,7 @@ namespace System.Xml.Serialization
                 {
                     throw new InvalidOperationException(SR.Format(SR.XmlNoSerializableMembers, model.TypeDesc.FullName));
                 }
-                mapping.Constants = (ConstantMapping[])constants.ToArray(typeof(ConstantMapping));
+                mapping.Constants = constants.ToArray();
                 _typeScope.AddTypeMapping(mapping);
             }
             return mapping;
@@ -1397,7 +1397,7 @@ namespace System.Xml.Serialization
         internal static XmlReflectionMember? FindSpecifiedMember(string memberName, XmlReflectionMember[] reflectionMembers)
         {
             for (int i = 0; i < reflectionMembers.Length; i++)
-                if (string.Equals(reflectionMembers[i].MemberName, memberName + "Specified", StringComparison.Ordinal))
+                if (string.Equals(reflectionMembers[i].MemberName, $"{memberName}Specified", StringComparison.Ordinal))
                     return reflectionMembers[i];
             return null;
         }
@@ -1564,7 +1564,7 @@ namespace System.Xml.Serialization
 
             if (accessor.TypeDesc.IsArrayLike)
             {
-                Type arrayElementType = TypeScope.GetArrayElementType(accessorType, model.FieldTypeDesc.FullName + "." + model.Name)!;
+                Type arrayElementType = TypeScope.GetArrayElementType(accessorType, $"{model.FieldTypeDesc.FullName}.{model.Name}")!;
 
                 if ((flags & attrFlags) != 0)
                 {
@@ -2027,7 +2027,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            string id = element.Namespace != null && element.Namespace.Length > 0 ? element.Namespace + ":" + element.Name : element.Name;
+                            string id = element.Namespace != null && element.Namespace.Length > 0 ? $"{element.Namespace}:{element.Name}" : element.Name;
                             // Type {0} is missing value for '{1}'.
                             throw new InvalidOperationException(SR.Format(SR.XmlChoiceMissingValue, accessor.ChoiceIdentifier.Mapping!.TypeDesc!.FullName, id, element.Name, element.Namespace));
                         }

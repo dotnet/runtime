@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Internal.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
 using Console = Internal.Console;
 
@@ -26,9 +27,6 @@ namespace LoadIjwFromModuleHandle
             {
                 HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
 
-                // Load our fake mscoree to prevent .NET Framework from loading.
-                NativeLibrary.Load(Path.Combine(Environment.CurrentDirectory, "mscoree.dll"));
-
                 Console.WriteLine("Verify that we can load an IJW assembly from native code.");
                 string ijwModulePath = Path.Combine(Environment.CurrentDirectory, "IjwNativeCallingManagedDll.dll");
                 IntPtr ijwNativeHandle = NativeLibrary.Load(ijwModulePath);
@@ -42,10 +40,10 @@ namespace LoadIjwFromModuleHandle
                 {
                     InMemoryAssemblyLoader.LoadInMemoryAssembly(ijwNativeHandle, (IntPtr)path);
                 }
-                
+
                 NativeEntryPointDelegate nativeEntryPoint = Marshal.GetDelegateForFunctionPointer<NativeEntryPointDelegate>(NativeLibrary.GetExport(ijwNativeHandle, "NativeEntryPoint"));
 
-                Assert.AreEqual(100, nativeEntryPoint());
+                Assert.Equal(100, nativeEntryPoint());
 
                 Console.WriteLine("Test calls from managed to native to managed when an IJW assembly was first loaded via native.");
 
@@ -54,7 +52,7 @@ namespace LoadIjwFromModuleHandle
                 object testInstance = Activator.CreateInstance(testType);
                 MethodInfo testMethod = testType.GetMethod("ManagedEntryPoint");
 
-                Assert.AreEqual(100, (int)testMethod.Invoke(testInstance, null));
+                Assert.Equal(100, (int)testMethod.Invoke(testInstance, null));
 
                 MethodInfo changeReturnedValueMethod = testType.GetMethod("ChangeReturnedValue");
                 MethodInfo getReturnValueMethod = testType.GetMethod("GetReturnValue");
@@ -62,14 +60,14 @@ namespace LoadIjwFromModuleHandle
                 int newValue = 42;
                 changeReturnedValueMethod.Invoke(null, new object[] { newValue });
 
-                Assert.AreEqual(newValue, (int)getReturnValueMethod.Invoke(null, null));
-                
+                Assert.Equal(newValue, (int)getReturnValueMethod.Invoke(null, null));
+
                 // Native images are only loaded into memory once. As a result, the stubs in the vtfixup table
                 // will always point to JIT stubs that exist in the first ALC that the module was loaded into.
                 // As a result, if an IJW module is loaded into two different ALCs, or if the module is
                 // first loaded via a native call and then loaded via the managed loader, the call stack can change ALCs when
                 // jumping from managed->native->managed code within the IJW module.
-                Assert.AreEqual(100, (int)testMethod.Invoke(testInstance, null));
+                Assert.Equal(100, (int)testMethod.Invoke(testInstance, null));
                 return 100;
             }
             catch (Exception ex)

@@ -222,6 +222,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 }
 
 static BOOL s_FinalizerThreadOK = FALSE;
+static BOOL s_InitializedFinalizerThreadForPlatform = FALSE;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
@@ -273,20 +274,30 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         if (gcGenAnalysisState == GcGenAnalysisState::Done)
         {
             gcGenAnalysisState = GcGenAnalysisState::Disabled;
-            EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
+            if (gcGenAnalysisTrace)
+            {
+                EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
+#ifdef GEN_ANALYSIS_STRESS
+                GenAnalysis::EnableGenerationalAwareSession();
+#endif
+            }
             // Writing an empty file to indicate completion
             fclose(fopen(GENAWARE_COMPLETION_FILE_NAME,"w+"));
-#ifdef GEN_ANALYSIS_STRESS
-            {
-                GenAnalysis::EnableGenerationalAwareSession();
-            }
-#endif
         }
 
         if (!bPriorityBoosted)
         {
             if (GetFinalizerThread()->SetThreadPriority(THREAD_PRIORITY_HIGHEST))
                 bPriorityBoosted = TRUE;
+        }
+
+        // The Finalizer thread is started very early in EE startup. We deferred
+        // some initialization until a point we are sure the EE is up and running. At
+        // this point we make a single attempt and if it fails won't try again.
+        if (!s_InitializedFinalizerThreadForPlatform)
+        {
+            s_InitializedFinalizerThreadForPlatform = TRUE;
+            Thread::InitializationForManagedThreadInNative(GetFinalizerThread());
         }
 
         JitHost::Reclaim();
@@ -330,6 +341,9 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // acceptable.
         SignalFinalizationDone(TRUE);
     }
+
+    if (s_InitializedFinalizerThreadForPlatform)
+        Thread::CleanUpForManagedThreadInNative(GetFinalizerThread());
 }
 
 DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
@@ -364,11 +378,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         {
             GetFinalizerThread()->SetBackground(TRUE);
-
-            {
-                GCX_PREEMP();
-                EnsureYieldProcessorNormalizedInitialized();
-            }
 
             while (!fQuitFinalizer)
             {

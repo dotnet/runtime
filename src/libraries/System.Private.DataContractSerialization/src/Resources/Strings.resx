@@ -1167,4 +1167,7 @@
   <data name="ReadOnlyCollectionDeserialization" xml:space="preserve">
     <value>Collection type '{0}' cannot be deserialized since it</value>
   </data>
+  <data name="UnknownNullType" xml:space="preserve">
+    <value>Unknown Type for null value</value>
+  </data>
 </root>

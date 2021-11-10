@@ -19,6 +19,8 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal abstract partial class ObjectWithParameterizedConstructorConverter<T> : ObjectDefaultConverter<T> where T : notnull
     {
+        internal sealed override bool ConstructorIsParameterized => true;
+
         internal sealed override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             object obj;
@@ -32,7 +34,12 @@ namespace System.Text.Json.Serialization.Converters
 
                 ReadConstructorArguments(ref state, ref reader, options);
 
-                obj = CreateObject(ref state.Current);
+                obj = (T)CreateObject(ref state.Current);
+
+                if (obj is IJsonOnDeserializing onDeserializing)
+                {
+                    onDeserializing.OnDeserializing();
+                }
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -71,8 +78,9 @@ namespace System.Text.Json.Serialization.Converters
                         ReadPropertyValue(obj, ref state, ref tempReader, jsonPropertyInfo, useExtensionProperty);
                     }
 
-                    ArrayPool<FoundProperty>.Shared.Return(argumentState.FoundProperties!, clearArray: true);
+                    FoundProperty[] toReturn = argumentState.FoundProperties!;
                     argumentState.FoundProperties = null;
+                    ArrayPool<FoundProperty>.Shared.Return(toReturn, clearArray: true);
                 }
             }
             else
@@ -91,7 +99,12 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                obj = CreateObject(ref state.Current);
+                obj = (T)CreateObject(ref state.Current);
+
+                if (obj is IJsonOnDeserializing onDeserializing)
+                {
+                    onDeserializing.OnDeserializing();
+                }
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -123,10 +136,20 @@ namespace System.Text.Json.Serialization.Converters
                         }
                     }
 
-                    ArrayPool<FoundPropertyAsync>.Shared.Return(argumentState.FoundPropertiesAsync!, clearArray: true);
+                    FoundPropertyAsync[] toReturn = argumentState.FoundPropertiesAsync!;
                     argumentState.FoundPropertiesAsync = null;
+                    ArrayPool<FoundPropertyAsync>.Shared.Return(toReturn, clearArray: true);
                 }
             }
+
+            if (obj is IJsonOnDeserialized onDeserialized)
+            {
+                onDeserialized.OnDeserialized();
+            }
+
+            // Unbox
+            Debug.Assert(obj != null);
+            value = (T)obj;
 
             // Check if we are trying to build the sorted cache.
             if (state.Current.PropertyRefCache != null)
@@ -139,10 +162,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 state.Current.JsonTypeInfo.UpdateSortedParameterCache(ref state.Current);
             }
-
-            EndRead(ref state);
-
-            value = (T)obj;
 
             return true;
         }
@@ -221,9 +240,10 @@ namespace System.Text.Json.Serialization.Converters
 
                             argumentState.FoundProperties.CopyTo(newCache, 0);
 
-                            ArrayPool<FoundProperty>.Shared.Return(argumentState.FoundProperties, clearArray: true);
-
+                            FoundProperty[] toReturn = argumentState.FoundProperties;
                             argumentState.FoundProperties = newCache!;
+
+                            ArrayPool<FoundProperty>.Shared.Return(toReturn, clearArray: true);
                         }
 
                         argumentState.FoundProperties[argumentState.FoundPropertyCount++] = (
@@ -419,9 +439,10 @@ namespace System.Text.Json.Serialization.Converters
 
                 argumentState.FoundPropertiesAsync!.CopyTo(newCache, 0);
 
-                ArrayPool<FoundPropertyAsync>.Shared.Return(argumentState.FoundPropertiesAsync!, clearArray: true);
-
+                FoundPropertyAsync[] toReturn = argumentState.FoundPropertiesAsync!;
                 argumentState.FoundPropertiesAsync = newCache!;
+
+                ArrayPool<FoundPropertyAsync>.Shared.Return(toReturn, clearArray: true);
             }
 
             // Cache the property name and value.
@@ -444,7 +465,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (state.Current.JsonTypeInfo.ParameterCount != state.Current.JsonTypeInfo.ParameterCache!.Count)
             {
-                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo!, TypeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);
             }
 
             // Set current JsonPropertyInfo to null to avoid conflicts on push.
@@ -454,8 +475,6 @@ namespace System.Text.Json.Serialization.Converters
 
             InitializeConstructorArgumentCaches(ref state, options);
         }
-
-        protected virtual void EndRead(ref ReadStack state) { }
 
         /// <summary>
         /// Lookup the constructor parameter given its name in the reader.
@@ -487,7 +506,5 @@ namespace System.Text.Json.Serialization.Converters
 
             return jsonParameterInfo != null;
         }
-
-        internal override bool ConstructorIsParameterized => true;
     }
 }

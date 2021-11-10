@@ -82,7 +82,7 @@ namespace System.Net.NetworkInformation
 
             if (error == 0)
             {
-                error = Marshal.GetLastWin32Error();
+                error = Marshal.GetLastPInvokeError();
 
                 // Only skip Async IO Pending error value.
                 if (!isAsync || error != Interop.IpHlpApi.ERROR_IO_PENDING)

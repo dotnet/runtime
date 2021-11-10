@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
@@ -17,7 +19,7 @@ namespace Microsoft.Extensions.Hosting
     /// <summary>
     /// A program initialization utility.
     /// </summary>
-    public class HostBuilder : IHostBuilder
+    public partial class HostBuilder : IHostBuilder
     {
         private List<Action<IConfigurationBuilder>> _configureHostConfigActions = new List<Action<IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
@@ -127,13 +129,40 @@ namespace Microsoft.Extensions.Hosting
             }
             _hostBuilt = true;
 
+            // REVIEW: If we want to raise more events outside of these calls then we will need to
+            // stash this in a field.
+            using var diagnosticListener = new DiagnosticListener("Microsoft.Extensions.Hosting");
+            const string hostBuildingEventName = "HostBuilding";
+            const string hostBuiltEventName = "HostBuilt";
+
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(hostBuildingEventName))
+            {
+                Write(diagnosticListener, hostBuildingEventName, this);
+            }
+
             BuildHostConfiguration();
             CreateHostingEnvironment();
             CreateHostBuilderContext();
             BuildAppConfiguration();
             CreateServiceProvider();
 
-            return _appServices.GetRequiredService<IHost>();
+            var host = _appServices.GetRequiredService<IHost>();
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(hostBuiltEventName))
+            {
+                Write(diagnosticListener, hostBuiltEventName, host);
+            }
+
+            return host;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The values being passed into Write are being consumed by the application already.")]
+        private static void Write<T>(
+            DiagnosticSource diagnosticSource,
+            string name,
+            T value)
+        {
+            diagnosticSource.Write(name, value);
         }
 
         private void BuildHostConfiguration()
@@ -216,7 +245,9 @@ namespace Microsoft.Extensions.Hosting
             services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
-            services.AddSingleton<IHostLifetime, ConsoleLifetime>();
+
+            AddLifetime(services);
+
             services.AddSingleton<IHost>(_ =>
             {
                 return new Internal.Host(_appServices,

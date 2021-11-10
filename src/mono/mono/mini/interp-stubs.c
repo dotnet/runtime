@@ -80,11 +80,6 @@ stub_set_optimizations (guint32 i)
 }
 
 static void
-stub_metadata_update_init (MonoError *error)
-{
-}
-
-static void
 stub_invalidate_transformed (void)
 {
 }
@@ -160,7 +155,7 @@ stub_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 }
 
 static void
-stub_init_delegate (MonoDelegate *del, MonoError *error)
+stub_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **info, MonoError *error)
 {
 	g_assert_not_reached ();
 }
@@ -218,6 +213,17 @@ stub_free_context (gpointer context)
 static void
 stub_mark_stack (gpointer thread_data, GcScanFunc func, gpointer gc_data, gboolean precise)
 {
+}
+
+static void
+stub_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
+{
+}
+
+static gboolean
+stub_sufficient_stack (gsize size)
+{
+	g_assert_not_reached ();
 }
 
 #undef MONO_EE_CALLBACK

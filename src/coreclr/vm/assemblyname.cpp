@@ -56,13 +56,9 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
     // waiting for it to happen during HasNTHeaders. This allows us to
     // get the assembly name for images that contain native code for a
     // non-native platform.
-    PEImageLayoutHolder pLayout(pImage->GetLayout(PEImageLayout::LAYOUT_FLAT, PEImage::LAYOUT_CREATEIFNEEDED));
+    PEImageLayout* pLayout = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_FLAT);
 
-    // Allow AssemblyLoadContext.GetAssemblyName for native images on CoreCLR
-    if (pImage->HasNTHeaders() && pImage->HasCorHeader() && pImage->HasNativeHeader())
-        pImage->VerifyIsNIAssembly();
-    else
-        pImage->VerifyIsAssembly();
+    pImage->VerifyIsAssembly();
 
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(mdtAssembly,1),pImage->GetMDImport(),NULL);

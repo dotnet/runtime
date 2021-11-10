@@ -11,8 +11,8 @@ namespace System.Net.Sockets.Tests
     {
         [OuterLoop]
         [Theory]
-        [MemberData(nameof(Loopbacks))]
-        public async Task SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress loopbackAddress)
+        [MemberData(nameof(LoopbacksAndUseMemory))]
+        public async Task SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress loopbackAddress, bool useMemoryOverload)
         {
             IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
 
@@ -66,7 +66,7 @@ namespace System.Net.Sockets.Tests
                         random.NextBytes(sendBuffer);
                         sendBuffer[0] = (byte)sentDatagrams;
 
-                        int sent = await right.SendAsync(sendBuffer, DatagramSize, leftEndpoint);
+                        int sent = useMemoryOverload ? await right.SendAsync(new ReadOnlyMemory<byte>(sendBuffer), leftEndpoint) : await right.SendAsync(sendBuffer, DatagramSize, leftEndpoint);
 
                         Assert.True(receiverAck.Wait(AckTimeout));
                         receiverAck.Reset();
@@ -85,5 +85,13 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+
+        public static readonly object[][] LoopbacksAndUseMemory = new object[][]
+        {
+            new object[] { IPAddress.IPv6Loopback, true },
+            new object[] { IPAddress.IPv6Loopback, false },
+            new object[] { IPAddress.Loopback, true },
+            new object[] { IPAddress.Loopback, false },
+        };
     }
 }

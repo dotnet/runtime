@@ -1,7 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <PackageDescription>Composite file and directory providers for Microsoft.Extensions.FileProviders.</PackageDescription>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
-  </PropertyGroup>
-</Project>

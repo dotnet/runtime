@@ -112,6 +112,17 @@ static const UChar g_HalfFullHigherChars[] = {
 };
 static const int32_t g_HalfFullCharsLength = (sizeof(g_HalfFullHigherChars) / sizeof(UChar));
 
+// Hiragana without [semi-]voiced sound mark for custom collation rules
+// If Hiragana with [semi-]voiced sound mark is added to custom collation rules, there is a conflict
+// between the custom rule and some default rule.
+static const UChar g_HiraganaWithoutVoicedSoundMarkChars[] = {
+    0x3041, 0x3042, 0x3043, 0x3044, 0x3045, 0x3046, 0x3047, 0x3048, 0x3049, 0x304A, 0x304B, 0x304D, 0x304F, 0x3051, 0x3053,
+    0x3055, 0x3057, 0x3059, 0x305B, 0x305D, 0x305F, 0x3061, 0x3063, 0x3064, 0x3066, 0x3068, 0x306A, 0x306B, 0x306C, 0x306D,
+    0x306E, 0x306F, 0x3072, 0x3075, 0x3078, 0x307B, 0x307E, 0x307F, 0x3080, 0x3081, 0x3082, 0x3083, 0x3084, 0x3085, 0x3086,
+    0x3087, 0x3088, 0x3089, 0x308A, 0x308B, 0x308C, 0x308D, 0x308E, 0x308F, 0x3090, 0x3091, 0x3092, 0x3093, 0x3095, 0x3096, 0x309D,
+};
+static const int32_t g_HiraganaWithoutVoicedSoundMarkCharsLength = (sizeof(g_HiraganaWithoutVoicedSoundMarkChars) / sizeof(UChar));
+
 /*
 ICU collation rules reserve any punctuation and whitespace characters for use in the syntax.
 Thus, to use these characters in a rule, they need to be escaped.
@@ -150,22 +161,36 @@ custom rules in order to support IgnoreKanaType and IgnoreWidth CompareOptions c
 */
 static void FillIgnoreKanaRules(UChar* completeRules, int32_t* fillIndex, int32_t completeRulesLength, int32_t isIgnoreKanaType)
 {
-    UChar compareChar = isIgnoreKanaType ? '=' : '<';
-
     assert((*fillIndex) + (4 * (hiraganaEnd - hiraganaStart + 1)) <= completeRulesLength);
     if ((*fillIndex) + (4 * (hiraganaEnd - hiraganaStart + 1)) > completeRulesLength) // check the allocated the size
     {
         return;
     }
 
-    for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
+    if (isIgnoreKanaType)
     {
-        // Hiragana is the range 3041 to 3096 & 309D & 309E
-        if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
+        for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
         {
+            // Hiragana is the range 3041 to 3096 & 309D & 309E
+            if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
+            {
+                completeRules[*fillIndex] = '&';
+                completeRules[(*fillIndex) + 1] = hiraganaChar;
+                completeRules[(*fillIndex) + 2] = '=';
+                completeRules[(*fillIndex) + 3] = hiraganaChar + hiraganaToKatakanaOffset;
+                (*fillIndex) += 4;
+            }
+        }
+    }
+    else
+    {
+        // Avoid conflicts between default [semi-]voiced sound mark rules and custom rules
+        for (int i = 0; i < g_HiraganaWithoutVoicedSoundMarkCharsLength; i++)
+        {
+            UChar hiraganaChar = g_HiraganaWithoutVoicedSoundMarkChars[i];
             completeRules[*fillIndex] = '&';
             completeRules[(*fillIndex) + 1] = hiraganaChar;
-            completeRules[(*fillIndex) + 2] = compareChar;
+            completeRules[(*fillIndex) + 2] = '<';
             completeRules[(*fillIndex) + 3] = hiraganaChar + hiraganaToKatakanaOffset;
             (*fillIndex) += 4;
         }
@@ -340,6 +365,25 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     {
         ucol_setAttribute(pClonedCollator, UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, pErr);
 
+#if !defined(STATIC_ICU)
+    if (ucol_setMaxVariable_ptr != NULL)
+    {
+        // by default, ICU alternate shifted handling only ignores punctuation, but
+        // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
+        // to include all symbols and currency
+        ucol_setMaxVariable(pClonedCollator, UCOL_REORDER_CODE_CURRENCY, pErr);
+    }
+    else
+    {
+        assert(ucol_setVariableTop_ptr != NULL);
+        // 0xfdfc is the last currency character before the first digit character
+        // in http://source.icu-project.org/repos/icu/icu/tags/release-52-1/source/data/unidata/FractionalUCA.txt
+        const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
+        ucol_setVariableTop_ptr(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
+    }
+
+#else // !defined(STATIC_ICU)
+
         // by default, ICU alternate shifted handling only ignores punctuation, but
         // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
         // to include all symbols and currency
@@ -351,6 +395,8 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
         const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
         ucol_setVariableTop(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
 #endif
+
+#endif //!defined(STATIC_ICU)
     }
 
     ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);
@@ -392,7 +438,7 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
 
 static void CreateSortHandle(SortHandle** ppSortHandle)
 {
-    *ppSortHandle = (SortHandle*)malloc(sizeof(SortHandle));
+    *ppSortHandle = (SortHandle*)calloc(1, sizeof(SortHandle));
     if ((*ppSortHandle) == NULL)
     {
         return;
@@ -424,6 +470,150 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
     return GetResultCode(err);
 }
 
+static const char* BreakIteratorRuleOld =  // supported on ICU like versions 52
+                        "$CR          = [\\p{Grapheme_Cluster_Break = CR}]; \n" \
+                        "$LF          = [\\p{Grapheme_Cluster_Break = LF}]; \n" \
+                        "$Control     = [\\p{Grapheme_Cluster_Break = Control}]; \n" \
+                        "$Extend      = [\\p{Grapheme_Cluster_Break = Extend}]; \n" \
+                        "$SpacingMark = [\\p{Grapheme_Cluster_Break = SpacingMark}]; \n" \
+                        "$Regional_Indicator = [\\p{Grapheme_Cluster_Break = Regional_Indicator}]; \n" \
+                        "$L       = [\\p{Grapheme_Cluster_Break = L}]; \n" \
+                        "$V       = [\\p{Grapheme_Cluster_Break = V}]; \n" \
+                        "$T       = [\\p{Grapheme_Cluster_Break = T}]; \n" \
+                        "$LV      = [\\p{Grapheme_Cluster_Break = LV}]; \n" \
+                        "$LVT     = [\\p{Grapheme_Cluster_Break = LVT}]; \n" \
+                        "!!chain; \n" \
+                        "!!forward; \n" \
+                        "$L ($L | $V | $LV | $LVT); \n" \
+                        "($LV | $V) ($V | $T); \n" \
+                        "($LVT | $T) $T; \n" \
+                        "$Regional_Indicator $Regional_Indicator; \n" \
+                        "[^$Control $CR $LF] $Extend; \n" \
+                        "[^$Control $CR $LF] $SpacingMark; \n" \
+                        "!!reverse; \n" \
+                        "($L | $V | $LV | $LVT) $L; \n" \
+                        "($V | $T) ($LV | $V); \n" \
+                        "$T ($LVT | $T); \n" \
+                        "$Regional_Indicator $Regional_Indicator; \n" \
+                        "$Extend      [^$Control $CR $LF]; \n" \
+                        "$SpacingMark [^$Control $CR $LF]; \n" \
+                        "!!safe_reverse; \n" \
+                        "!!safe_forward; \n";
+
+static const char* BreakIteratorRuleNew =  // supported on newer ICU versions like 62 and up
+                        "!!quoted_literals_only; \n" \
+                        "$CR          = [\\p{Grapheme_Cluster_Break = CR}]; \n" \
+                        "$LF          = [\\p{Grapheme_Cluster_Break = LF}]; \n" \
+                        "$Control     = [[\\p{Grapheme_Cluster_Break = Control}]]; \n" \
+                        "$Extend      = [[\\p{Grapheme_Cluster_Break = Extend}]]; \n" \
+                        "$ZWJ         = [\\p{Grapheme_Cluster_Break = ZWJ}]; \n" \
+                        "$Regional_Indicator = [\\p{Grapheme_Cluster_Break = Regional_Indicator}]; \n" \
+                        "$Prepend     = [\\p{Grapheme_Cluster_Break = Prepend}]; \n" \
+                        "$SpacingMark = [\\p{Grapheme_Cluster_Break = SpacingMark}]; \n" \
+                        "$Virama      = [\\p{Gujr}\\p{sc=Telu}\\p{sc=Mlym}\\p{sc=Orya}\\p{sc=Beng}\\p{sc=Deva}&\\p{Indic_Syllabic_Category=Virama}]; \n" \
+                        "$LinkingConsonant = [\\p{Gujr}\\p{sc=Telu}\\p{sc=Mlym}\\p{sc=Orya}\\p{sc=Beng}\\p{sc=Deva}&\\p{Indic_Syllabic_Category=Consonant}]; \n" \
+                        "$ExtCccZwj   = [[\\p{gcb=Extend}-\\p{ccc=0}] \\p{gcb=ZWJ}]; \n" \
+                        "$L           = [\\p{Grapheme_Cluster_Break = L}]; \n" \
+                        "$V           = [\\p{Grapheme_Cluster_Break = V}]; \n" \
+                        "$T           = [\\p{Grapheme_Cluster_Break = T}]; \n" \
+                        "$LV          = [\\p{Grapheme_Cluster_Break = LV}]; \n" \
+                        "$LVT         = [\\p{Grapheme_Cluster_Break = LVT}]; \n" \
+                        "$Extended_Pict = [:ExtPict:]; \n" \
+                        "!!chain; \n" \
+                        "!!lookAheadHardBreak; \n" \
+                        "$L ($L | $V | $LV | $LVT); \n" \
+                        "($LV | $V) ($V | $T); \n" \
+                        "($LVT | $T) $T; \n" \
+                        "[^$Control $CR $LF] ($Extend | $ZWJ); \n" \
+                        "[^$Control $CR $LF] $SpacingMark; \n" \
+                        "$Prepend [^$Control $CR $LF]; \n" \
+                        "$LinkingConsonant $ExtCccZwj* $Virama $ExtCccZwj* $LinkingConsonant; \n" \
+                        "$Extended_Pict $Extend* $ZWJ $Extended_Pict; \n" \
+                        "^$Prepend* $Regional_Indicator $Regional_Indicator / $Regional_Indicator; \n" \
+                        "^$Prepend* $Regional_Indicator $Regional_Indicator; \n" \
+                        ".;";
+
+static UChar* s_breakIteratorRules = NULL;
+
+// When doing string search operations using ICU, it is internally using a break iterator which doesn't allow breaking between some characters according to
+// the Grapheme Cluster Boundary Rules specified in http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules.
+// Unfortunately, not all rules will have the desired behavior we need to get in .NET. For example, the rules don't allow breaking between CR '\r' and LF '\n' characters.
+// When searching for "\n" in a string like "\r\n", will get not found result.
+// We are customizing the break iterator to exclude the CRxLF rule which don't allow breaking between CR and LF.
+// The general rules syntax explained in the doc https://unicode-org.github.io/icu/userguide/boundaryanalysis/break-rules.html.
+// The ICU latest rules definition exist here https://github.com/unicode-org/icu/blob/main/icu4c/source/data/brkitr/rules/char.txt.
+static UBreakIterator* CreateCustomizedBreakIterator(void)
+{
+    static UChar emptyString[1];
+    UBreakIterator* breaker;
+
+    UErrorCode status = U_ZERO_ERROR;
+    if (s_breakIteratorRules != NULL)
+    {
+        breaker = ubrk_openRules(s_breakIteratorRules, -1, emptyString, 0, NULL, &status);
+        return U_FAILURE(status) ? NULL : breaker;
+    }
+
+    int32_t oldRulesLength = (int32_t)strlen(BreakIteratorRuleOld);
+    int32_t newRulesLength = (int32_t)strlen(BreakIteratorRuleNew);
+
+    int32_t breakIteratorRulesLength = newRulesLength > oldRulesLength ? newRulesLength : oldRulesLength;
+
+    UChar* rules = (UChar*)calloc((size_t)breakIteratorRulesLength + 1, sizeof(UChar));
+    if (rules == NULL)
+    {
+        return NULL;
+    }
+
+    u_uastrncpy(rules, BreakIteratorRuleNew, newRulesLength);
+    rules[newRulesLength] = '\0';
+
+    breaker = ubrk_openRules(rules, newRulesLength, emptyString, 0, NULL, &status);
+    if (U_FAILURE(status))
+    {
+        status = U_ZERO_ERROR;
+        u_uastrncpy(rules, BreakIteratorRuleOld, oldRulesLength);
+        rules[oldRulesLength] = '\0';
+        breaker = ubrk_openRules(rules, oldRulesLength, emptyString, 0, NULL, &status);
+    }
+
+    if (U_FAILURE(status))
+    {
+        free(rules);
+        return NULL;
+    }
+
+    UChar* pNull = NULL;
+    if (!pal_atomic_cas_ptr((void* volatile*)&s_breakIteratorRules, rules, pNull))
+    {
+        free(rules);
+        assert(s_breakIteratorRules != NULL);
+    }
+
+    return breaker;
+}
+
+static void CloseSearchIterator(UStringSearch* pSearch)
+{
+    assert(pSearch != NULL);
+
+#if !defined(TARGET_WINDOWS)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
+    UBreakIterator* breakIterator = (UBreakIterator*)usearch_getBreakIterator(pSearch);
+#if !defined(TARGET_WINDOWS)
+#pragma GCC diagnostic pop
+#endif
+
+    usearch_close(pSearch);
+
+    if (breakIterator != NULL)
+    {
+        ubrk_close(breakIterator);
+    }
+}
+
 void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
 {
     for (int i = 0; i <= CompareOptionsMask; i++)
@@ -435,7 +625,7 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
             {
                 if (pSearch != USED_STRING_SEARCH)
                 {
-                    usearch_close(pSearch);
+                    CloseSearchIterator(pSearch);
                 }
                 pSortHandle->searchIteratorList[i].searchIterator = NULL;
                 SearchIteratorNode* pNext = pSortHandle->searchIteratorList[i].next;
@@ -445,7 +635,7 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
                 {
                     if (pNext->searchIterator != NULL && pNext->searchIterator != USED_STRING_SEARCH)
                     {
-                        usearch_close(pNext->searchIterator);
+                        CloseSearchIterator(pNext->searchIterator);
                     }
                     SearchIteratorNode* pCurrent = pNext;
                     pNext = pCurrent->next;
@@ -493,7 +683,7 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
 // CreateNewSearchNode will create a new node in the linked list and mark this node search handle as borrowed handle.
 static inline int32_t CreateNewSearchNode(SortHandle* pSortHandle, int32_t options)
 {
-    SearchIteratorNode* node = (SearchIteratorNode*) malloc(sizeof(SearchIteratorNode));
+    SearchIteratorNode* node = (SearchIteratorNode*)calloc(1, sizeof(SearchIteratorNode));
     if (node == NULL)
     {
         return false;
@@ -556,9 +746,14 @@ static int32_t GetSearchIteratorUsingCollator(
 
     if (*pSearchIterator == NULL)
     {
-        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
+        UBreakIterator* breakIterator = CreateCustomizedBreakIterator();
+        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, breakIterator, &err);
         if (!U_SUCCESS(err))
         {
+            if (breakIterator != NULL)
+            {
+                ubrk_close(breakIterator);
+            }
             assert(false && "Couldn't open the search iterator.");
             return -1;
         }
@@ -568,7 +763,7 @@ static int32_t GetSearchIteratorUsingCollator(
         {
             if (!CreateNewSearchNode(pSortHandle, options))
             {
-                usearch_close(*pSearchIterator);
+                CloseSearchIterator(*pSearchIterator);
                 return -1;
             }
         }
@@ -594,16 +789,22 @@ static int32_t GetSearchIteratorUsingCollator(
 
     if (*pSearchIterator == NULL) // Couldn't find any available handle to borrow then create a new one.
     {
-        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
+        UBreakIterator* breakIterator = CreateCustomizedBreakIterator();
+        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, breakIterator, &err);
         if (!U_SUCCESS(err))
         {
+            if (breakIterator != NULL)
+            {
+                ubrk_close(breakIterator);
+            }
+
             assert(false && "Couldn't open a new search iterator.");
             return -1;
         }
 
         if (!CreateNewSearchNode(pSortHandle, options))
         {
-            usearch_close(*pSearchIterator);
+            CloseSearchIterator(*pSearchIterator);
             return -1;
         }
 
@@ -614,6 +815,7 @@ static int32_t GetSearchIteratorUsingCollator(
     if (!U_SUCCESS(err))
     {
         int32_t r;
+        (void)r;
         r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;
@@ -623,6 +825,7 @@ static int32_t GetSearchIteratorUsingCollator(
     if (!U_SUCCESS(err))
     {
         int32_t r;
+        (void)r;
         r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;
@@ -814,11 +1017,35 @@ int32_t GlobalizationNative_LastIndexOf(
 
     result = usearch_last(pSearch, &err);
 
-    // if the search was successful,
-    // we'll try to get the matched string length.
-    if (result != USEARCH_DONE && pMatchedLength != NULL)
+    // if the search was successful, we'll try to get the matched string length.
+    if (result != USEARCH_DONE)
     {
-        *pMatchedLength = usearch_getMatchedLength(pSearch);
+        int32_t matchLength = -1;
+
+        if (pMatchedLength != NULL)
+        {
+            matchLength = usearch_getMatchedLength(pSearch);
+            *pMatchedLength = matchLength;
+        }
+
+        // In case the search result is pointing at the last character (including Surrogate case) of the source string, we need to check if the target string
+        // was constructed with characters which have no sort weights. The way we do that is to check that the matched length is 0.
+        // We need to update the returned index to have consistent behavior with Ordinal and NLS operations, and satisfy the condition:
+        //      index = source.LastIndexOf(value, comparisonType);
+        //      originalString.Substring(index).StartsWith(value, comparisonType) == true.
+        // https://github.com/dotnet/runtime/issues/13383
+        if (result >= cwSourceLength - 2)
+        {
+            if (pMatchedLength == NULL)
+            {
+                matchLength = usearch_getMatchedLength(pSearch);
+            }
+
+            if (matchLength == 0)
+            {
+                result = cwSourceLength;
+            }
+        }
     }
 
     RestoreSearchHandle(pSortHandle, pSearch, searchCacheSlot);

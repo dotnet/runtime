@@ -1430,6 +1430,31 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 	return success;
 }
 
+#ifdef HOST_WASM
+void
+mono_set_string_interned_internal (MonoObject* obj)
+{
+	LockWord tmp;
+	tmp.sync = obj->synchronisation;
+	if (!lock_word_is_inflated (tmp)) {
+		mono_monitor_inflate (obj);
+		tmp.sync = obj->synchronisation;
+	}
+	lock_word_get_inflated_lock (tmp)->is_interned = 1;
+}
+
+gboolean
+mono_is_string_interned_internal (MonoObject* obj)
+{
+	LockWord tmp;
+	tmp.sync = obj->synchronisation;
+	if (!lock_word_is_inflated (tmp))
+		return 0;
+
+	return lock_word_get_inflated_lock (tmp)->is_interned;
+}
+#endif
+
 MonoBoolean
 ves_icall_System_Threading_Monitor_Monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_interruption, MonoError* error)
 {

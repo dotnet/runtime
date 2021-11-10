@@ -37,7 +37,7 @@ genTreeOps addrForm(genTreeOps loadForm)
 }
 
 // copy the flags determined by mask from src to dst
-void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
+void copyFlags(GenTree* dst, GenTree* src, GenTreeFlags mask)
 {
     dst->gtFlags &= ~mask;
     dst->gtFlags |= (src->gtFlags & mask);
@@ -84,7 +84,7 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
                     JITDUMP("Rewriting GT_IND(GT_ADD(LCL_VAR_ADDR,0)) to LCL_VAR\n");
                     lclVarNode->SetOper(GT_LCL_VAR);
                     lclVarNode->gtType = indir->TypeGet();
-                    use.ReplaceWith(comp, lclVarNode);
+                    use.ReplaceWith(lclVarNode);
                     BlockRange().Remove(addr);
                     BlockRange().Remove(addr->gtGetOp2());
                     BlockRange().Remove(indir);
@@ -139,7 +139,11 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         // replace the expression by GT_LCL_VAR or GT_LCL_FLD.
         BlockRange().Remove(indir);
 
-        var_types lclType = comp->lvaGetDesc(addr->AsLclVar())->TypeGet();
+        const GenTreeLclVar* lclAddr = addr->AsLclVar();
+        const unsigned       lclNum  = lclAddr->GetLclNum();
+        LclVarDsc*           varDsc  = comp->lvaGetDesc(lclNum);
+
+        var_types lclType = varDsc->TypeGet();
 
         if (lclType == simdType)
         {
@@ -156,11 +160,15 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
                 addr->gtFlags |= GTF_VAR_USEASG;
             }
 
-            comp->lvaSetVarDoNotEnregister(addr->AsLclFld()->GetLclNum() DEBUGARG(Compiler::DNER_LocalField));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+        }
+        if (varDsc->lvPromotedStruct())
+        {
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
         addr->gtType = simdType;
-        use.ReplaceWith(comp, addr);
+        use.ReplaceWith(addr);
     }
     else if (addr->OperIs(GT_ADDR) && addr->AsUnOp()->gtGetOp1()->OperIsSimdOrHWintrinsic())
     {
@@ -172,7 +180,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         BlockRange().Remove(indir);
         BlockRange().Remove(addr);
 
-        use.ReplaceWith(comp, addr->AsUnOp()->gtGetOp1());
+        use.ReplaceWith(addr->AsUnOp()->gtGetOp1());
     }
 #endif // FEATURE_SIMD
 }
@@ -193,7 +201,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                                      ArrayStack<GenTree*>& parents,
                                      CORINFO_METHOD_HANDLE callHnd,
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif
                                      GenTreeCall::Use* args)
@@ -213,7 +221,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     assert(JITtype2varType(sig.retType) == tree->gtType);
 #endif // DEBUG
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     call->AsCall()->setEntryPoint(entryPoint);
 #endif
 
@@ -277,7 +285,7 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
     }
 
     RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                       intrinsic->gtEntryPoint,
 #endif
                       args);
@@ -294,14 +302,13 @@ void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
 void Rationalizer::SanityCheck()
 {
     // TODO: assert(!IsLIR());
-    BasicBlock* block;
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* statement : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            ValidateStatement(statement, block);
+            ValidateStatement(stmt, block);
 
-            for (GenTree* tree = statement->GetTreeList(); tree; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 // QMARK and PUT_ARG_TYPE nodes should have been removed before this phase.
                 assert(!tree->OperIs(GT_QMARK, GT_PUTARG_TYPE));
@@ -398,23 +405,25 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
         {
-            if (location->OperGet() == GT_LCL_VAR)
+            if (location->OperIs(GT_LCL_VAR))
             {
                 var_types   simdType        = location->TypeGet();
                 GenTree*    initVal         = assignment->AsOp()->gtOp2;
                 CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
-                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
                 {
-                    GenTreeSIMD* simdTree = new (comp, GT_SIMD)
-                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
-                    assignment->AsOp()->gtOp2 = simdTree;
-                    value                     = simdTree;
-                    initVal->gtNext           = simdTree;
-                    simdTree->gtPrev          = initVal;
-
-                    simdTree->gtNext = location;
-                    location->gtPrev = simdTree;
+                    // Lie about the type if we don't know/have it.
+                    simdBaseJitType = CORINFO_TYPE_FLOAT;
                 }
+                GenTreeSIMD* simdTree =
+                    comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
+                assignment->AsOp()->gtOp2 = simdTree;
+                value                     = simdTree;
+                initVal->gtNext           = simdTree;
+                simdTree->gtPrev          = initVal;
+
+                simdTree->gtNext = location;
+                location->gtPrev = simdTree;
             }
         }
 #endif // FEATURE_SIMD
@@ -424,7 +433,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     {
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_PHI_ARG:
             RewriteAssignmentIntoStoreLclCore(assignment, location, value, locationOp);
             BlockRange().Remove(location);
             break;
@@ -442,7 +450,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             // Remove the GT_IND node and replace the assignment node with the store
             BlockRange().Remove(location);
             BlockRange().InsertBefore(assignment, store);
-            use.ReplaceWith(comp, store);
+            use.ReplaceWith(store);
             BlockRange().Remove(assignment);
         }
         break;
@@ -493,7 +501,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             // (now in its store form).
             BlockRange().Remove(storeBlk);
             BlockRange().InsertBefore(assignment, storeBlk);
-            use.ReplaceWith(comp, storeBlk);
+            use.ReplaceWith(storeBlk);
             BlockRange().Remove(assignment);
             DISPTREERANGE(BlockRange(), use.Def());
             JITDUMP("\n");
@@ -536,7 +544,7 @@ void Rationalizer::RewriteAddress(LIR::Use& use)
         location->gtType = TYP_BYREF;
         copyFlags(location, address, GTF_ALL_EFFECT);
 
-        use.ReplaceWith(comp, location);
+        use.ReplaceWith(location);
         BlockRange().Remove(address);
     }
     else if (locationOp == GT_CLS_VAR)
@@ -545,14 +553,14 @@ void Rationalizer::RewriteAddress(LIR::Use& use)
         location->gtType = TYP_BYREF;
         copyFlags(location, address, GTF_ALL_EFFECT);
 
-        use.ReplaceWith(comp, location);
+        use.ReplaceWith(location);
         BlockRange().Remove(address);
 
         JITDUMP("Rewriting GT_ADDR(GT_CLS_VAR) to GT_CLS_VAR_ADDR:\n");
     }
     else if (location->OperIsIndir())
     {
-        use.ReplaceWith(comp, location->gtGetOp1());
+        use.ReplaceWith(location->gtGetOp1());
         BlockRange().Remove(location);
         BlockRange().Remove(address);
 
@@ -613,7 +621,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
         case GT_BOX:
             // GT_BOX at this level just passes through so get rid of it
-            use.ReplaceWith(comp, node->gtGetOp1());
+            use.ReplaceWith(node->gtGetOp1());
             BlockRange().Remove(node);
             break;
 
@@ -633,7 +641,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // NOP.
             if (node->gtGetOp1() != nullptr)
             {
-                use.ReplaceWith(comp, node->gtGetOp1());
+                use.ReplaceWith(node->gtGetOp1());
                 BlockRange().Remove(node);
                 node = node->gtGetOp1();
             }
@@ -665,7 +673,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             GenTree* replacement = node->gtGetOp2();
             if (!use.IsDummyUse())
             {
-                use.ReplaceWith(comp, replacement);
+                use.ReplaceWith(replacement);
                 node = replacement;
             }
             else
@@ -694,8 +702,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
         case GT_ARGPLACE:
             // Remove argplace and list nodes from the execution order.
-            //
-            // TODO: remove phi args and phi nodes as well?
             BlockRange().Remove(node);
             break;
 
@@ -716,7 +722,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 node->gtType = TYP_BYREF;
 
                 BlockRange().InsertAfter(node, ind);
-                use.ReplaceWith(comp, ind);
+                use.ReplaceWith(ind);
 
                 // TODO: JIT dump
             }
@@ -758,7 +764,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
-                use.ReplaceWith(comp, ind);
+                use.ReplaceWith(ind);
                 BlockRange().Remove(simdNode);
 
                 DISPTREERANGE(BlockRange(), use.Def());
@@ -924,7 +930,7 @@ PhaseStatus Rationalizer::DoPhase()
     comp->fgOrder   = Compiler::FGOrderLinear;
 
     RationalizeVisitor visitor(*this);
-    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         comp->compCurBB = block;
         m_block         = block;
@@ -940,27 +946,33 @@ PhaseStatus Rationalizer::DoPhase()
             continue;
         }
 
-        for (Statement* statement : StatementList(firstStatement))
+        for (Statement* const statement : block->Statements())
         {
             assert(statement->GetTreeList() != nullptr);
             assert(statement->GetTreeList()->gtPrev == nullptr);
             assert(statement->GetRootNode() != nullptr);
             assert(statement->GetRootNode()->gtNext == nullptr);
 
-            BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
-
-            // If this statement has correct offset information, change it into an IL offset
-            // node and insert it into the LIR.
-            if (statement->GetILOffsetX() != BAD_IL_OFFSET)
+            if (!statement->IsPhiDefnStmt()) // Note that we get rid of PHI nodes here.
             {
-                assert(!statement->IsPhiDefnStmt());
-                GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                    GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
-                BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
-            }
+                BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 
-            m_block = block;
-            visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+                // If this statement has correct debug information, change it
+                // into a debug info node and insert it into the LIR. Currently
+                // we do not support describing IL offsets in inlinees in the
+                // emitter, so we normalize all debug info to be in the inline
+                // root here.
+                DebugInfo di = statement->GetDebugInfo().GetRoot();
+                if (di.IsValid())
+                {
+                    GenTreeILOffset* ilOffset =
+                        new (comp, GT_IL_OFFSET) GenTreeILOffset(di DEBUGARG(statement->GetLastILOffset()));
+                    BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
+                }
+
+                m_block = block;
+                visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+            }
         }
 
         block->bbStmtList = nullptr;

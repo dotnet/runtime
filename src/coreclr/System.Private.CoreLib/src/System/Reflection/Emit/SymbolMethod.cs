@@ -67,6 +67,8 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
+        public override int MetadataToken => m_token;
+
         public override Module Module => m_module;
 
         public override Type? ReflectedType => m_containingType;

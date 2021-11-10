@@ -8,7 +8,6 @@
   <assembly fullname="Castle.Core">
       <namespace fullname="Castle.DynamicProxy" />
       <type fullname="Castle.DynamicProxy.Internal.CompositionInvocation" />
-      <type fullname="Castle.DynamicProxy.Internal.AbstractInvocation" />
       <type fullname="Castle.DynamicProxy.Internal.InheritanceInvocation" />
   </assembly>
   <assembly fullname="Moq">

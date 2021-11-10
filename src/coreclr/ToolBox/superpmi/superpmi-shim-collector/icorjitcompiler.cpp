@@ -10,6 +10,12 @@
 
 #define fatMC                               // this is nice to have on so ildump works...
 
+void interceptor_ICJC::setTargetOS(CORINFO_OS os)
+{
+    currentOs = os;
+    original_ICorJitCompiler->setTargetOS(os);
+}
+
 CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,     /* IN */
                                              struct CORINFO_METHOD_INFO* info,     /* IN */
                                              unsigned /* code:CorJitFlag */ flags, /* IN */
@@ -21,15 +27,10 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     our_ICorJitInfo.original_ICorJitInfo = comp;
 
     auto* mc = new MethodContext();
-    if (g_ourJitHost != nullptr)
-    {
-        g_ourJitHost->setMethodContext(mc);
-    }
-
     our_ICorJitInfo.mc = mc;
     our_ICorJitInfo.mc->cr->recProcessName(GetCommandLineA());
 
-    our_ICorJitInfo.mc->recCompileMethod(info, flags);
+    our_ICorJitInfo.mc->recCompileMethod(info, flags, currentOs);
 
     // force some extra data into our tables..
     // data probably not needed with RyuJIT, but needed in 4.5 and 4.5.1 to help with catching cached values
@@ -73,11 +74,6 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     }
 
     delete mc;
-
-    if (g_ourJitHost != nullptr)
-    {
-        g_ourJitHost->setMethodContext(g_globalContext);
-    }
 
     return temp;
 }

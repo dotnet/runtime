@@ -1547,7 +1547,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestTagObjects()
         {
             Activity activity = new Activity("TagObjects");
@@ -1605,10 +1604,39 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Key, tagObjects[i].Key);
                 Assert.Equal(tags[i].Value, tagObjects[i].Value);
             }
+
+            // Test Deleting last tag
+            activity = new Activity("LastTagObjects");
+
+            activity.SetTag("hello1", "1");
+            activity.SetTag("hello2", "1");
+            activity.SetTag("hello2", null); // last tag get deleted
+            activity.SetTag("hello3", "2");
+            activity.SetTag("hello4", "3");
+
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(3, tagObjects.Length);
+            Assert.Equal("hello1", tagObjects[0].Key);
+            Assert.Equal("1", tagObjects[0].Value);
+            Assert.Equal("hello3", tagObjects[1].Key);
+            Assert.Equal("2", tagObjects[1].Value);
+            Assert.Equal("hello4", tagObjects[2].Key);
+            Assert.Equal("3", tagObjects[2].Value);
+
+            activity = new Activity("FirstLastTagObjects");
+            activity.SetTag("hello1", "1");
+            activity.SetTag("hello1", null); // Delete the first and last tag
+            activity.SetTag("hello2", "2");
+            activity.SetTag("hello3", "3");
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(2, tagObjects.Length);
+            Assert.Equal("hello2", tagObjects[0].Key);
+            Assert.Equal("2", tagObjects[0].Value);
+            Assert.Equal("hello3", tagObjects[1].Key);
+            Assert.Equal("3", tagObjects[1].Value);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestGetTagItem()
         {
             Activity a = new Activity("GetTagItem");
@@ -1765,7 +1793,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
-            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+            // Note: This test verifies the presence of the struct Enumerator on DiagLinkedList<T> used by customers dynamically to avoid allocations.
 
             Activity a = new Activity("TestActivity");
             a.AddEvent(new ActivityEvent());

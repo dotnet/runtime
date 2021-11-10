@@ -89,7 +89,11 @@ namespace System.Configuration
                 throw ExceptionUtil.ParameterNullOrEmpty(nameof(name));
 
             // prevent GetConfig from returning config not in this collection
-            if (name.IndexOf('/') >= 0) // string.Contains(char) is .NetCore2.1+ specific
+#if NETCOREAPP
+            if (name.Contains('/'))
+#else
+            if (name.IndexOf('/') >= 0)
+#endif
                 return null;
 
             // get the section group

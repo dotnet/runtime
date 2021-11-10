@@ -96,13 +96,13 @@ namespace TypeSystemTests
                 if (f.Name == "Lol")
                 {
                     // First field after base class, with offset 0 so it should lie on the byte count of 
-                    // the base class = 24
-                    Assert.Equal(24, f.Offset.AsInt);
+                    // the base class = 20
+                    Assert.Equal(20, f.Offset.AsInt);
                 }
                 else if (f.Name == "Omg")
                 {
-                    // Offset 20 from base class byte count = 44
-                    Assert.Equal(44, f.Offset.AsInt);
+                    // Offset 20 from base class byte count = 40
+                    Assert.Equal(40, f.Offset.AsInt);
                 }
                 else
                 {

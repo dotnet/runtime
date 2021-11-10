@@ -12,7 +12,16 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void CreateFromNull()
         {
+            Assert.Null(JsonValue.Create((bool?)null));
+            Assert.Null(JsonValue.Create((string)null));
+            Assert.Null(JsonValue.Create((JsonElement?)null));
+            Assert.Null(JsonValue.Create(JsonDocument.Parse("null").RootElement));
+
             Assert.Null(JsonValue.Create((object)null));
+            Assert.Null(JsonValue.Create((bool?)null));
+            Assert.Null(JsonValue.Create((string)null));
+            Assert.Null(JsonValue.Create((JsonElement?)null));
+            Assert.Null(JsonValue.Create(JsonDocument.Parse("null").RootElement));
         }
 
         [Fact]

@@ -72,5 +72,7 @@ namespace Internal.Cryptography
 
         // Releases any native resources and keys used by the HashProvider.
         public abstract void Dispose(bool disposing);
+
+        public abstract void Reset();
     }
 }

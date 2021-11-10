@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-
+[SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
 public class SyncTextReader
 {
     // NOTE: These tests test the underlying SyncTextReader by
@@ -78,7 +78,6 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public void ReadToEnd()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
@@ -93,7 +92,6 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public void ReadBlock()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -112,7 +110,6 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public void Read()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -131,7 +128,6 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public void Peek()
     {
         const string expected = "ABC";
@@ -145,7 +141,6 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public void ReadToEndAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
@@ -160,7 +155,6 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public void ReadBlockAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -185,7 +179,6 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public void ReadAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -210,7 +203,6 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public void ReadLineAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);

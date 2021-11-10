@@ -158,6 +158,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX, "On OSX, ProcessName returns the script interpreter.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void ProcessNameMatchesScriptName()
         {
             string scriptName = GetTestFileName();
@@ -182,6 +183,40 @@ namespace System.Diagnostics.Tests
                     process.WaitForExit();
                 }
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStart_SkipsNonExecutableFilesOnPATH()
+        {
+            const string ScriptName = "script";
+
+            // Create a directory named ScriptName.
+            string path1 = Path.Combine(TestDirectory, "Path1");
+            Directory.CreateDirectory(Path.Combine(path1, ScriptName));
+
+            // Create a non-executable file named ScriptName
+            string path2 = Path.Combine(TestDirectory, "Path2");
+            Directory.CreateDirectory(path2);
+            File.WriteAllText(Path.Combine(path2, ScriptName), "Not executable");
+
+            // Create an executable script named ScriptName
+            string path3 = Path.Combine(TestDirectory, "Path3");
+            Directory.CreateDirectory(path3);
+            string filename = WriteScriptFile(path3, ScriptName, returnValue: 42);
+
+            // Process.Start ScriptName with the above on PATH.
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = $"{path1}:{path2}:{path3}";
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var px = Process.Start(new ProcessStartInfo { FileName = ScriptName }))
+                {
+                    Assert.NotNull(px);
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                    Assert.Equal(42, px.ExitCode);
+                }
+            }, options).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -452,21 +487,12 @@ namespace System.Diagnostics.Tests
 
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
-
-            // https://github.com/dotnet/runtime/issues/24426 -- returns "-19" and not "19"
-            if (!PlatformDetection.IsWindowsSubsystemForLinux)
-            {
-                SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
-            }
+            SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
 
             try
             {
                 SetAndCheckBasePriority(ProcessPriorityClass.Normal, 0);
-                // https://github.com/dotnet/runtime/issues/24426 -- returns "11" and not "-11"
-                if (!PlatformDetection.IsWindowsSubsystemForLinux)
-                {
-                    SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
-                }
+                SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
                 _process.PriorityClass = originalPriority;
             }
             catch (Win32Exception ex)
@@ -476,6 +502,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();
@@ -487,6 +514,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void TestStartOnUnixWithBadFormat()
         {
             string path = GetTestFilePath();

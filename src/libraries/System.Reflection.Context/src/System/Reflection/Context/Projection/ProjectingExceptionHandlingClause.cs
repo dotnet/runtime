@@ -19,7 +19,7 @@ namespace System.Reflection.Context.Projection
             _projector = projector;
         }
 
-        public override Type CatchType
+        public override Type? CatchType
         {
             get { return _projector.ProjectType(base.CatchType); }
         }

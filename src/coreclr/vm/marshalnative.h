@@ -19,8 +19,6 @@
 class MarshalNative
 {
 public:
-    static VOID QCALLTYPE Prelink(MethodDesc * pMD);
-    static BOOL QCALLTYPE IsComSupported();
 
     //====================================================================
     // These methods convert between an HR and and a managed exception.
@@ -99,11 +97,6 @@ public:
     static FCDECL2(IUnknown*, CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE);
 
     //====================================================================
-    // check if the object is classic COM component
-    //====================================================================
-    static FCDECL1(FC_BOOL_RET, IsComObject, Object* objUNSAFE);
-
-    //====================================================================
     // free the COM component and zombie this object
     // further usage of this Object might throw an exception,
     //====================================================================
@@ -136,11 +129,6 @@ public:
 
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
 
-    //====================================================================
-    // Create type for given CLSID.
-    //====================================================================
-    static void QCALLTYPE GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
-
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
 #endif // FEATURE_COMINTEROP
@@ -149,5 +137,20 @@ private:
 // Check that the supplied object is valid to put in a pinned handle,
 // throwing an exception if not.
 void ValidatePinnedObject(OBJECTREF obj);
+
+extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
+extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
+
+#ifdef _DEBUG
+using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);
+extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGCModeFunctionPointer();
+#endif
+
+#ifdef FEATURE_COMINTEROP
+//====================================================================
+// Create type for given CLSID.
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+#endif
 
 #endif

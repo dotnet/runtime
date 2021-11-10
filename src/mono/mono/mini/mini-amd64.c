@@ -31,6 +31,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
@@ -44,7 +45,6 @@
 #include "ir-emit.h"
 #include "mini-amd64.h"
 #include "cpu-amd64.h"
-#include "debugger-agent.h"
 #include "mini-gc.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
@@ -2246,7 +2246,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		t = mini_get_underlying_type (t);
 		//XXX what about ArgGSharedVtOnStack here?
 		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t)) {
-			if (!t->byref) {
+			if (!m_type_is_byref (t)) {
 				if (t->type == MONO_TYPE_R4)
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
 				else if (t->type == MONO_TYPE_R8)
@@ -2632,7 +2632,7 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 		MonoType *t = sig->params [aindex];
 		ArgInfo *ainfo = &cinfo->args [aindex + sig->hasthis];
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			continue;
 
 		switch (t->type) {
@@ -2764,7 +2764,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			slot = general_param_reg_to_index [ainfo->reg];
 		}
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			p->regs [slot] = PTR_TO_GREG (*(arg));
 			continue;
 		}
@@ -4076,8 +4076,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_XEXTRACT_R4:
 		case OP_XEXTRACT_R8:
-		case OP_XEXTRACT_I32:
-		case OP_XEXTRACT_I64: {
+		case OP_XEXTRACT_I4:
+		case OP_XEXTRACT_I8: {
 			// TODO
 			g_assert_not_reached();
 			break;
@@ -7235,19 +7235,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_EXTRACT_I1:
-		case OP_EXTRACT_U1:
 			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			if (ins->inst_c0)
 				amd64_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I1, FALSE);
+			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I1, FALSE);
 			break;
 		case OP_EXTRACT_I2:
-		case OP_EXTRACT_U2:
 			/*amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			if (ins->inst_c0)
 				amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, 16, 4);*/
 			amd64_sse_pextrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I2, TRUE, 4);
+			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I2, TRUE, 4);
 			break;
 		case OP_EXTRACT_R8:
 			if (ins->inst_c0)
@@ -7909,7 +7907,7 @@ MONO_RESTORE_WARNING
 
 				/*
 				 * Save the original location of 'this',
-				 * get_generic_info_from_stack_frame () needs this to properly look up
+				 * mono_get_generic_info_from_stack_frame () needs this to properly look up
 				 * the argument value during the handling of async exceptions.
 				 */
 				if (i == 0 && sig->hasthis) {
@@ -8965,6 +8963,8 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 				ins->inst_c1 = MONO_TYPE_R8;
 				int dreg = alloc_freg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R8, dreg, xreg);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = MONO_TYPE_R8;
 				return ins;
 			}
 		}

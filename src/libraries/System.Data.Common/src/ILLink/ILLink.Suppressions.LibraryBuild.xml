@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Data.Common, PublicKeyToken=b03f5f7f11d50a3a">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.DataSet.System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader)</property>
+      <property name="Justification">DataSet.ReadXml is not trimming safe but developers cannot use it directly and have to go through the IXmlSerializable interface. Neither marking the interface nor constructors of DataSet as unsafe is a good solution so we rely on the fact that this method will be trimmed and warning will be shown only when both interface and DataSet is used in the same app which will reduce chance of seeing false positive warning.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.DataSet.System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter)</property>
+      <property name="Justification">DataSet.WriteXml is not trimming safe but developers cannot use it directly and have to go through the IXmlSerializable interface. Neither marking the interface nor constructors of DataSet as unsafe is a good solution so we rely on the fact that this method will be trimmed and warning will be shown only when both interface and DataSet is used in the same app which will reduce chance of seeing false positive warning.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.DataSet.System.Xml.Serialization.IXmlSerializable.GetSchema()</property>
+      <property name="Justification">DataSet.GetSchema is not trimming safe when used in derived types but developers cannot use it directly and have to go through the IXmlSerializable interface. Neither marking the interface nor constructors of DataSet as unsafe is a good solution so we rely on the fact that this method will be trimmed and warning will be shown only when both interface and DataSet is used in the same app which will reduce chance of seeing false positive warning.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.DataTable.System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader)</property>
+      <property name="Justification">DataTable.ReadXml is not trimming safe but developers cannot use it directly and have to go through the IXmlSerializable interface. Neither marking the interface nor constructors of DataTable as unsafe is a good solution so we rely on the fact that this method will be trimmed and warning will be shown only when both interface and DataTable is used in the same app which will reduce chance of seeing false positive warning.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.DataTable.System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter)</property>
+      <property name="Justification">DataTable.WriteXml is not trimming safe but developers cannot use it directly and have to go through the IXmlSerializable interface. Neither marking the interface nor constructors of DataTable as unsafe is a good solution so we rely on the fact that this method will be trimmed and warning will be shown only when both interface and DataTable is used in the same app which will reduce chance of seeing false positive warning.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.DataTable.System.Xml.Serialization.IXmlSerializable.GetSchema()</property>
+      <property name="Justification">DataTable.GetSchema is not trimming safe when used in derived types but developers cannot use it directly and have to go through the IXmlSerializable interface. Neither marking the interface nor constructors of DataTable as unsafe is a good solution so we rely on the fact that this method will be trimmed and warning will be shown only when both interface and DataTable is used in the same app which will reduce chance of seeing false positive warning.</property>
+    </attribute>
+  </assembly>
+</linker>

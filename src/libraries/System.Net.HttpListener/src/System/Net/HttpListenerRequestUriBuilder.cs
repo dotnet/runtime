@@ -119,8 +119,7 @@ namespace System.Net
 
         private static Encoding GetEncoding(EncodingType type)
         {
-            Debug.Assert((type == EncodingType.Primary) || (type == EncodingType.Secondary),
-                "Unknown 'EncodingType' value: " + type.ToString());
+            Debug.Assert((type == EncodingType.Primary) || (type == EncodingType.Secondary), $"Unknown 'EncodingType' value: {type}");
 
             if (type == EncodingType.Secondary)
             {
@@ -242,7 +241,7 @@ namespace System.Net
             // http.sys only supports %uXXXX (4 hex-digits), even though unicode code points could have up to
             // 6 hex digits. Therefore we parse always 4 characters after %u and convert them to an int.
             int codePointValue;
-            if (!int.TryParse(codePoint, NumberStyles.HexNumber, null, out codePointValue))
+            if (!int.TryParse(codePoint, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out codePointValue))
             {
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
@@ -274,7 +273,7 @@ namespace System.Net
         private bool AddPercentEncodedOctetToRawOctetsList(Encoding encoding, string escapedCharacter)
         {
             byte encodedValue;
-            if (!byte.TryParse(escapedCharacter, NumberStyles.HexNumber, null, out encodedValue))
+            if (!byte.TryParse(escapedCharacter, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out encodedValue))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, escapedCharacter));
                 return false;
@@ -330,8 +329,7 @@ namespace System.Net
         {
             foreach (byte octet in octets)
             {
-                target.Append('%');
-                target.Append(octet.ToString("X2", CultureInfo.InvariantCulture));
+                target.Append($"%{octet:X2}");
             }
         }
 
@@ -350,7 +348,7 @@ namespace System.Net
                 {
                     octetString.Append(' ');
                 }
-                octetString.Append(octet.ToString("X2", CultureInfo.InvariantCulture));
+                octetString.Append($"{octet:X2}");
             }
 
             return octetString.ToString();

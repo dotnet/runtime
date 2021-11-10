@@ -27,6 +27,7 @@ namespace System.Diagnostics
         private Assembly?[]? rgAssembly;
         private IntPtr[]? rgLoadedPeAddress;
         private int[]? rgiLoadedPeSize;
+        private bool[]? rgiIsFileLayout;
         private IntPtr[]? rgInMemoryPdbAddress;
         private int[]? rgiInMemoryPdbSize;
         // if rgiMethodToken[i] == 0, then don't attempt to get the portable PDB source/info
@@ -39,7 +40,7 @@ namespace System.Diagnostics
 #pragma warning restore 414
 
         private delegate void GetSourceLineInfoDelegate(Assembly? assembly, string assemblyPath, IntPtr loadedPeAddress,
-            int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
+            int loadedPeSize, bool isFileLayout, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn);
 
         private static GetSourceLineInfoDelegate? s_getSourceLineInfo;
@@ -58,6 +59,7 @@ namespace System.Diagnostics
             rgAssembly = null;
             rgLoadedPeAddress = null;
             rgiLoadedPeSize = null;
+            rgiIsFileLayout = null;
             rgInMemoryPdbAddress = null;
             rgiInMemoryPdbSize = null;
             dynamicMethods = null;
@@ -110,7 +112,7 @@ namespace System.Diagnostics
 
                     Type[] parameterTypes = new Type[]
                     {
-                        typeof(Assembly), typeof(string), typeof(IntPtr), typeof(int), typeof(IntPtr),
+                        typeof(Assembly), typeof(string), typeof(IntPtr), typeof(int), typeof(bool), typeof(IntPtr),
                         typeof(int), typeof(int), typeof(int),
                         typeof(string).MakeByRefType(), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()
                     };
@@ -137,7 +139,7 @@ namespace System.Diagnostics
                     // ENC or the source/line info was already retrieved, the method token is 0.
                     if (rgiMethodToken![index] != 0)
                     {
-                        s_getSourceLineInfo!(rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index],
+                        s_getSourceLineInfo!(rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
                             rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
                             rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
                     }

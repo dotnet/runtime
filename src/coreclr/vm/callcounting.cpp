@@ -251,10 +251,6 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     }
     CONTRACTL_END;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     LoaderHeap *heap = m_heap;
     if (heap == nullptr)
     {
@@ -281,7 +277,9 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
             if (CallCountingStubShort::CanUseFor(allocationAddressHolder, targetForMethod))
         #endif
             {
-                stub = new(allocationAddressHolder) CallCountingStubShort(remainingCallCountCell, targetForMethod);
+                ExecutableWriterHolder<void> writerHolder(allocationAddressHolder, sizeInBytes);
+                new(writerHolder.GetRW()) CallCountingStubShort((CallCountingStubShort*)(void*)allocationAddressHolder, remainingCallCountCell, targetForMethod);
+                stub = (CallCountingStub*)(void*)allocationAddressHolder;
                 allocationAddressHolder.SuppressRelease();
                 break;
             }
@@ -290,7 +288,9 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     #ifdef TARGET_AMD64
         sizeInBytes = sizeof(CallCountingStubLong);
         void *allocationAddress = (void *)heap->AllocAlignedMem(sizeInBytes, CallCountingStub::Alignment);
-        stub = new(allocationAddress) CallCountingStubLong(remainingCallCountCell, targetForMethod);
+        ExecutableWriterHolder<void> writerHolder(allocationAddress, sizeInBytes);
+        new(writerHolder.GetRW()) CallCountingStubLong(remainingCallCountCell, targetForMethod);
+        stub = (CallCountingStub*)allocationAddress;
     #else
         UNREACHABLE();
     #endif
@@ -715,14 +715,13 @@ extern "C" PCODE STDCALL OnCallCountThresholdReached(TransitionBlock *transition
 
 PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(transitionBlock));
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    PCODE codeEntryPoint;
+
+    BEGIN_PRESERVE_LAST_ERROR;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -739,8 +738,6 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     FrameWithCookie<CallCountingHelperFrame> frameWithCookie(transitionBlock, methodDesc);
     CallCountingHelperFrame *frame = &frameWithCookie;
     frame->Push(CURRENT_THREAD);
-
-    PCODE codeEntryPoint;
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -786,6 +783,9 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     frame->Pop(CURRENT_THREAD);
+
+    END_PRESERVE_LAST_ERROR;
+
     return codeEntryPoint;
 }
 

@@ -199,7 +199,7 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
   movsd                   real8 ptr [rsp + 0x70], xmm7    #      -- struct flt7 field
   mov                     [rsp + 0x78], r11     #                -- struct rdi field
   mov                     [rsp + 0x80], r11     #                -- struct rsi field
-  mov                     [rsp + 0x88], r11     #                -- struct rdx field
+  mov                     [rsp + 0x88], rdx     #                -- struct rdx field
   mov                     [rsp + 0x90], r11     #                -- struct rcx field
   mov                     [rsp + 0x98], r11     #                -- struct r8 field
   mov                     [rsp + 0xa0], r11    #                -- struct r9 field
@@ -273,7 +273,7 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   movsd                   real8 ptr [rsp + 0x70], xmm7    #      -- struct flt7 field
   mov                     [rsp + 0x78], r11     #                -- struct rdi field
   mov                     [rsp + 0x80], r11     #                -- struct rsi field
-  mov                     [rsp + 0x88], r11     #                -- struct rdx field
+  mov                     [rsp + 0x88], rdx     #                -- struct rdx field
   mov                     [rsp + 0x90], r11     #                -- struct rcx field
   mov                     [rsp + 0x98], r11     #                -- struct r8 field
   mov                     [rsp + 0xa0], r11     #                -- struct r9 field

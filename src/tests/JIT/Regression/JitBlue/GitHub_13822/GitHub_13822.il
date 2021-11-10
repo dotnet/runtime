@@ -42,7 +42,7 @@
   // This test verifies that the temp struct returned by newobj is zero-initialized
   // before calling the constructor on each iteration of the loop.
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_GitHub_13822
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
@@ -50,7 +50,7 @@
     .entrypoint
     .maxstack  8
               ldc.i4.0
-              call       int32 Test::A(int32)
+              call       int32 Test_GitHub_13822::A(int32)
               ret
   } // end of method Test::Main
 
@@ -58,7 +58,7 @@
   {
     .maxstack  2
     .locals init (int32 V_0)
-              call       int32 Test::GetZero()
+              call       int32 Test_GitHub_13822::GetZero()
               stloc.0
               ldarg.0
               ldc.i4.3
@@ -76,7 +76,7 @@
     L2:       ldarg.0
               ldc.i4.1
               add
-              call       int32 Test::A(int32)
+              call       int32 Test_GitHub_13822::A(int32)
               ret
   } // end of method Test::A
 

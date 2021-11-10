@@ -7,24 +7,6 @@ namespace System
 {
     public partial class String
     {
-#pragma warning disable CS8618 // compiler sees this non-nullable static string as uninitialized
-        [Intrinsic]
-        public static readonly string Empty;
-#pragma warning restore CS8618
-
-        public int Length
-        {
-            [Intrinsic]
-            get => _stringLength;
-        }
-
-        [IndexerName("Chars")]
-        public char this[int index]
-        {
-            [Intrinsic]
-            get => this[index];
-        }
-
         public static string Intern(string str)
         {
             if (str == null)

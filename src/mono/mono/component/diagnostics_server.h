@@ -23,10 +23,8 @@ typedef struct _MonoComponentDiagnosticsServer {
 	void (*disable) (void);
 } MonoComponentDiagnosticsServer;
 
-#ifdef STATIC_COMPONENTS
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_init (void);
-#endif
 
 #endif /*_MONO_COMPONENT_DIAGNOSTICS_SERVER_H*/

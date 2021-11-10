@@ -36,7 +36,7 @@ namespace System.Net.Http
         [NonEvent]
         public void RequestStart(HttpRequestMessage request)
         {
-            Debug.Assert(request.RequestUri != null);
+            Debug.Assert(request.RequestUri != null && request.RequestUri.IsAbsoluteUri);
 
             RequestStart(
                 request.RequestUri.Scheme,

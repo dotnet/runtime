@@ -432,13 +432,15 @@ endif ; _DEBUG
 NESTED_ENTRY OnHijackTripThread, _TEXT
 
         ; Don't fiddle with this unless you change HijackFrame::UpdateRegDisplay
-        ; and HijackObjectArgs
+        ; and HijackArgs
+        mov                 rdx, rsp
         push                rax ; make room for the real return address (Rip)
+        push                rdx
         PUSH_CALLEE_SAVED_REGISTERS
         push_vol_reg        rax
         mov                 rcx, rsp
 
-        alloc_stack         30h ; make extra room for xmm0
+        alloc_stack         38h ; make extra room for xmm0, argument home slots and align the SP
         save_xmm128_postrsp xmm0, 20h
 
 
@@ -448,9 +450,10 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 
         movdqa              xmm0, [rsp + 20h]
 
-        add                 rsp, 30h
+        add                 rsp, 38h
         pop                 rax
         POP_CALLEE_SAVED_REGISTERS
+        pop                 rdx
         ret                 ; return to the correct place, adjusted by our caller
 NESTED_END OnHijackTripThread, _TEXT
 

@@ -215,7 +215,7 @@ ClrDebugState *CLRInitDebugState()
 
 const NoThrow nothrow = { 0 };
 
-#ifdef HAS_ADDRESS_SANITIZER
+#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
 // use standard heap functions for address santizier
 #else
 
@@ -345,11 +345,11 @@ operator new[](size_t n)
     return result;
 };
 
-#endif // HAS_ADDRESS_SANITIZER
+#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 
 void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
 {
-#ifdef HAS_ADDRESS_SANITIZER
+#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
     // use standard heap functions for address santizier (which doesn't provide for NoThrow)
 	void * result = operator new(n);
 #else
@@ -361,14 +361,14 @@ void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     void* result = ClrMalloc(n);
-#endif // HAS_ADDRESS_SANITIZER
+#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 	TRASH_LASTERROR;
     return result;
 }
 
 void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
 {
-#ifdef HAS_ADDRESS_SANITIZER
+#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
     // use standard heap functions for address santizier (which doesn't provide for NoThrow)
 	void * result = operator new[](n);
 #else
@@ -380,12 +380,12 @@ void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     void* result = ClrMalloc(n);
-#endif // HAS_ADDRESS_SANITIZER
+#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 	TRASH_LASTERROR;
     return result;
 }
 
-#ifdef HAS_ADDRESS_SANITIZER
+#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
 // use standard heap functions for address santizier
 #else
 void __cdecl
@@ -411,7 +411,7 @@ operator delete[](void *p) NOEXCEPT
     TRASH_LASTERROR;
 }
 
-#endif // HAS_ADDRESS_SANITIZER
+#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
  * New operator overloading for the executable heap
@@ -541,10 +541,10 @@ void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
 // This is a DEBUG routing to verify that a memory region complies with executable requirements
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
 {
-#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
+#if defined(TARGET_UNIX)
     // No NX support on PAL or for crossgen compilations.
     return TRUE;
-#else // !(CROSSGEN_COMPILE || TARGET_UNIX)
+#else // !(TARGET_UNIX)
     BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, GetOsPageSize());
     BYTE *regionEnd = (BYTE*) ALIGN_UP((BYTE*)lpMem+length, GetOsPageSize());
     _ASSERTE(length > 0);
@@ -566,7 +566,7 @@ BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
     }
 
     return TRUE;
-#endif // CROSSGEN_COMPILE || TARGET_UNIX
+#endif // TARGET_UNIX
 }
 
 #endif //_DEBUG

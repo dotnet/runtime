@@ -12,10 +12,13 @@
 // Insert patchpoint checks into Tier0 methods, based on locations identified
 // during importation (see impImportBlockCode).
 //
-// Policy decisions implemented here:
+// There are now two diffrent types of patchpoints:
+//   * loop based: enable OSR transitions in loops
+//   * partial compilation: allows partial compilation of original method
 //
+// Loop patchpoint policy decisions implemented here:
 //   * One counter per stack frame, regardless of the number of patchpoints.
-//   * Shared counter value initialized to zero in prolog.
+//   * Shared counter value initialized to a constant in the prolog.
 //   * Patchpoint trees fully expanded into jit IR. Deferring expansion could
 //       lead to more compact code and lessen size overhead for Tier0.
 //
@@ -50,7 +53,7 @@ public:
         }
 
         int count = 0;
-        for (BasicBlock* block = compiler->fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->bbNext))
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
@@ -69,9 +72,23 @@ public:
                     continue;
                 }
 
-                JITDUMP("Patchpoint: instrumenting " FMT_BB "\n", block->bbNum);
+                JITDUMP("Patchpoint: loop patchpoint in " FMT_BB "\n", block->bbNum);
                 assert(block != compiler->fgFirstBB);
                 TransformBlock(block);
+                count++;
+            }
+            else if (block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT)
+            {
+                if (compiler->ehGetBlockHndDsc(block) != nullptr)
+                {
+                    JITDUMP("Patchpoint: skipping partial compilation patchpoint for " FMT_BB
+                            " as it is in a handler\n",
+                            block->bbNum);
+                    continue;
+                }
+
+                JITDUMP("Patchpoint: partial compilation patchpoint in " FMT_BB "\n", block->bbNum);
+                TransformPartialCompilation(block);
                 count++;
             }
         }
@@ -189,6 +206,49 @@ private:
 
         compiler->fgNewStmtNearEnd(block, ppCounterAsg);
     }
+
+    //------------------------------------------------------------------------
+    // TransformPartialCompilation: delete all the statements in the block and insert
+    //     a call to the partial compilation patchpoint helper
+    //
+    //  S0; S1; S2; ... SN;
+    //
+    //  ==>
+    //
+    //  ~~{ S0; ... SN; }~~ (deleted)
+    //  call JIT_PARTIAL_COMPILATION_PATCHPOINT(ilOffset)
+    //
+    // Note S0 -- SN are not forever lost -- they will appear in the OSR version
+    // of the method created when the patchpoint is hit. Also note the patchpoint
+    // helper call will not return control to this method.
+    //
+    void TransformPartialCompilation(BasicBlock* block)
+    {
+        // Capture the IL offset
+        IL_OFFSET ilOffset = block->bbCodeOffs;
+        assert(ilOffset != BAD_IL_OFFSET);
+
+        // Remove all statements from the block.
+        for (Statement* stmt : block->Statements())
+        {
+            compiler->fgRemoveStmt(block, stmt);
+        }
+
+        // Update flow
+        block->bbJumpKind = BBJ_THROW;
+        block->bbJumpDest = nullptr;
+
+        // Add helper call
+        //
+        // call PartialCompilationPatchpointHelper(ilOffset)
+        //
+        GenTree*          ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTreeCall::Use* helperArgs   = compiler->gtNewCallArgs(ilOffsetNode);
+        GenTreeCall*      helperCall =
+            compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, helperArgs);
+
+        compiler->fgNewStmtAtEnd(block, helperCall);
+    }
 };
 
 //------------------------------------------------------------------------
@@ -204,7 +264,7 @@ private:
 //
 PhaseStatus Compiler::fgTransformPatchpoints()
 {
-    if (!doesMethodHavePatchpoints())
+    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
     {
         JITDUMP("\n -- no patchpoints to transform\n");
         return PhaseStatus::MODIFIED_NOTHING;

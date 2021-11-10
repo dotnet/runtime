@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -31,12 +32,15 @@ namespace System.Globalization.Tests
 
             if (PlatformDetection.IsIcuGlobalization)
             {
-                yield return new object[] { "x\u0000X-Yy", "x" }; // Null byte
+                if (PlatformDetection.IsNotWindows)
+                {
+                    yield return new object[] { "x\u0000X-Yy", "x" }; // Null byte
+                    yield return new object[] { "zh-cmn", "zh-CMN" };
+                    yield return new object[] { "zh-CMN-HANS" };
+                    yield return new object[] { "zh-cmn-Hant", "zh-CMN-HANT" };
+                }
                 yield return new object[] { "sgn-BE-FR" };
                 yield return new object[] { "zh-min-nan", "nan" };
-                yield return new object[] { "zh-cmn", "zh-CMN" };
-                yield return new object[] { "zh-CMN-HANS" };
-                yield return new object[] { "zh-cmn-Hant", "zh-CMN-HANT" };
                 yield return new object[] { "zh-gan", "gan" };
                 yield return new object[] { "zh-Hans-CN" };
                 yield return new object[] { "zh-Hans-SG" };
@@ -55,6 +59,17 @@ namespace System.Globalization.Tests
                 yield return new object[] { "zh-Hant-MO", "zh-MO" };
                 yield return new object[] { "zh-Hant-TW", "zh-TW" };
             }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // Windows specific behavior
+        [InlineData("x\u0000X-Yy")]
+        [InlineData("zh-cmn")]
+        [InlineData("zh-CMN-HANS")]
+        [InlineData("zh-cmn-Hant")]
+        public void TestIvalidCultureNames(string cultureName)
+        {
+            Assert.Throws<CultureNotFoundException>(() => new CultureInfo(cultureName));
         }
 
         [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
@@ -138,6 +153,81 @@ namespace System.Globalization.Tests
                     Assert.Equal(culture, ci.Name);
                 }
             }, cultureName, predefinedCulturesOnlyEnvVar, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, true)]
+        public void TestAllowInvariantCultureOnly(bool enableInvariant, bool predefinedCulturesOnly, bool declarePredefinedCulturesOnly)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Clear();
+
+            if (enableInvariant)
+            {
+                psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true");
+            }
+
+            if (declarePredefinedCulturesOnly)
+            {
+                psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnly ? "true" : "false");
+            }
+
+            bool restricted = enableInvariant && (declarePredefinedCulturesOnly ? predefinedCulturesOnly : true);
+
+            RemoteExecutor.Invoke((invariantEnabled, isRestricted) =>
+            {
+                bool restrictedMode = bool.Parse(isRestricted);
+
+                // First ensure we can create the current cultures regardless of the mode we are in
+                Assert.NotNull(CultureInfo.CurrentCulture);
+                Assert.NotNull(CultureInfo.CurrentUICulture);
+
+                // Invariant culture should be valid all the time
+                Assert.Equal("", new CultureInfo("").Name);
+                Assert.Equal("", CultureInfo.InvariantCulture.Name);
+
+                if (restrictedMode)
+                {
+                    Assert.Equal("", CultureInfo.CurrentCulture.Name);
+                    Assert.Equal("", CultureInfo.CurrentUICulture.Name);
+
+                    // Throwing exception is testing accessing the resources in this restricted mode.
+                    // We should retrieve the resources from the neutral resources in the main assemblies.
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("en-US"));
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("en"));
+
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("ja-JP"));
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("es"));
+
+                    // Test throwing exceptions from non-core assemblies.
+                    Exception exception = Record.Exception(() => new ConcurrentBag<string>(null));
+                    Assert.NotNull(exception);
+                    Assert.IsType<ArgumentNullException>(exception);
+                    Assert.Equal("collection", (exception as ArgumentNullException).ParamName);
+                    Assert.Equal("The collection argument is null. (Parameter 'collection')", exception.Message);
+                }
+                else
+                {
+                    Assert.Equal("en-US", new CultureInfo("en-US").Name);
+                    Assert.Equal("ja-JP", new CultureInfo("ja-JP").Name);
+                    Assert.Equal("en", new CultureInfo("en").Name);
+                    Assert.Equal("es", new CultureInfo("es").Name);
+                }
+
+                // Ensure the Invariant Mode functionality still work
+                if (bool.Parse(invariantEnabled))
+                {
+                    Assert.True(CultureInfo.CurrentCulture.Calendar is GregorianCalendar);
+                    Assert.True("abcd".Equals("ABCD", StringComparison.CurrentCultureIgnoreCase));
+                    Assert.Equal("Invariant Language (Invariant Country)", CultureInfo.CurrentCulture.NativeName);
+                }
+
+            }, enableInvariant.ToString(), restricted.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

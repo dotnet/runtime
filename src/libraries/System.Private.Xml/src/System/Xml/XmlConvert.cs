@@ -237,13 +237,13 @@ namespace System.Xml
                         int x = name[0];
                         int y = name[1];
                         int u = XmlCharType.CombineSurrogateChar(y, x);
-                        bufBld.Append(u.ToString("X8", CultureInfo.InvariantCulture));
+                        bufBld.Append($"{u:X8}");
                         position++;
                         copyPosition = 2;
                     }
                     else
                     {
-                        bufBld.Append(((int)name[0]).ToString("X4", CultureInfo.InvariantCulture));
+                        bufBld.Append($"{(int)name[0]:X4}");
                         copyPosition = 1;
                     }
 
@@ -282,13 +282,13 @@ namespace System.Xml
                         int x = name[position];
                         int y = name[position + 1];
                         int u = XmlCharType.CombineSurrogateChar(y, x);
-                        bufBld.Append(u.ToString("X8", CultureInfo.InvariantCulture));
+                        bufBld.Append($"{u:X8}");
                         copyPosition = position + 2;
                         position++;
                     }
                     else
                     {
-                        bufBld.Append(((int)name[position]).ToString("X4", CultureInfo.InvariantCulture));
+                        bufBld.Append($"{(int)name[position]:X4}");
                         copyPosition = position + 1;
                     }
                     bufBld.Append('_');
@@ -751,7 +751,7 @@ namespace System.Xml
             return new XsdDuration(value).ToString();
         }
 
-        [Obsolete("Use XmlConvert.ToString() that takes in XmlDateTimeSerializationMode")]
+        [Obsolete("Use XmlConvert.ToString() that accepts an XmlDateTimeSerializationMode instead.")]
         public static string ToString(DateTime value)
         {
             return ToString(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz");
@@ -1246,7 +1246,7 @@ namespace System.Xml
             }
         }
 
-        [Obsolete("Use XmlConvert.ToDateTime() that takes in XmlDateTimeSerializationMode")]
+        [Obsolete("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
         public static DateTime ToDateTime(string s)
         {
             return ToDateTime(s, AllDateTimeFormats);

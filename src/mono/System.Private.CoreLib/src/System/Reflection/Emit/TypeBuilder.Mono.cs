@@ -583,6 +583,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return DefinePInvokeMethod(name, dllName, entryName, attributes,
@@ -590,6 +591,7 @@ namespace System.Reflection.Emit
                 null, null, nativeCallConv, nativeCharSet);
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(
                         string name,
                         string dllName,
@@ -633,6 +635,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return DefinePInvokeMethod(name, dllName, name, attributes, callingConvention, returnType, parameterTypes,
@@ -752,6 +755,10 @@ namespace System.Reflection.Emit
                 null);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2110:ReflectionToDynamicallyAccessedMembers",
+            Justification = "For instance member internal calls, the linker preserves all fields of the declaring type. " +
+            "The parent and created fields have DynamicallyAccessedMembersAttribute requirements, but creating the runtime class is safe " +
+            "because the annotations fully preserve the parent type, and the type created via Reflection.Emit is not subject to trimming.")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern TypeInfo create_runtime_class();
@@ -1083,12 +1090,15 @@ namespace System.Reflection.Emit
             return created!.GetFields(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
         {
             check_created();
             return created!.GetInterface(name, ignoreCase);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             if (is_created)
@@ -1391,6 +1401,7 @@ namespace System.Reflection.Emit
             return new ByRefType(this);
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {
             //return base.MakeGenericType (typeArguments);
@@ -1648,7 +1659,7 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (created == null)
                 throw new NotSupportedException("This method is not implemented for incomplete types.");
@@ -1834,25 +1845,21 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
-            /*FIXME I would expect the same checks of GetMethod here*/
-            if (type == null)
-                throw new ArgumentException("Type is not generic", nameof(type));
+            if (!IsValidGetMethodType(type))
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
-            if (!type.IsGenericType)
-                throw new ArgumentException("Type is not a generic type", nameof(type));
-
-            if (type.IsGenericTypeDefinition)
-                throw new ArgumentException("Type cannot be a generic type definition", nameof(type));
-
-            if (constructor == null)
-                throw new NullReferenceException(); //MS raises this instead of an ArgumentNullException
+            if (type is TypeBuilder && type.ContainsGenericParameters)
+                type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException("constructor declaring type is not a generic type definition", nameof(constructor));
+                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
+
             if (constructor.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("constructor declaring type is not the generic type definition of type", nameof(constructor));
+                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
             ConstructorInfo res = type.GetConstructor(constructor);
             if (res == null)
@@ -1863,6 +1870,9 @@ namespace System.Reflection.Emit
 
         private static bool IsValidGetMethodType(Type type)
         {
+            if (type == null)
+                return false;
+
             if (type is TypeBuilder || type is TypeBuilderInstantiation)
                 return true;
             /*GetMethod() must work with TypeBuilders after CreateType() was called.*/
@@ -1887,20 +1897,19 @@ namespace System.Reflection.Emit
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException("type is not TypeBuilder but " + type.GetType(), nameof(type));
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
-            if (!type.IsGenericType)
-                throw new ArgumentException("type is not a generic type", nameof(type));
+            if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
+                throw new ArgumentException(SR.Argument_NeedGenericMethodDefinition, nameof(method));
 
             if (!method.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException("method declaring type is not a generic type definition", nameof(method));
+                throw new ArgumentException(SR.Argument_MethodNeedGenericDeclaringType, nameof(method));
+
             if (method.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("method declaring type is not the generic type definition of type", nameof(method));
-            if (method == null)
-                throw new NullReferenceException(); //MS raises this instead of an ArgumentNullException
+                throw new ArgumentException(SR.Argument_InvalidMethodDeclaringType, nameof(type));
 
             MethodInfo res = type.GetMethod(method);
             if (res == null)
@@ -1909,19 +1918,24 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
-            if (!type.IsGenericType)
-                throw new ArgumentException("Type is not a generic type", nameof(type));
+            if (!IsValidGetMethodType(type))
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
-            if (type.IsGenericTypeDefinition)
-                throw new ArgumentException("Type cannot be a generic type definition", nameof(type));
+            if (type is TypeBuilder && type.ContainsGenericParameters)
+                type = type.MakeGenericType(type.GetGenericArguments());
+
+            if (!field.DeclaringType!.IsGenericTypeDefinition)
+                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
+
+            if (field.DeclaringType != type.GetGenericTypeDefinition())
+                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
             if (field is FieldOnTypeBuilderInst)
                 throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
-
-            if (field.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("field declaring type is not the generic type definition of type", nameof(field));
 
             FieldInfo res = type.GetField(field);
             if (res == null)

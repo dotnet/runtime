@@ -29,6 +29,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -42,6 +43,18 @@ namespace System.Drawing.Tests
             yield return new object[] { "16x16_one_entry_4bit.ico", 16, 16, PixelFormat.Format32bppArgb, ImageFormat.Icon };
             yield return new object[] { "bitmap_173x183_indexed_8bit.bmp", 173, 183, PixelFormat.Format8bppIndexed, ImageFormat.Bmp };
             yield return new object[] { "16x16_nonindexed_24bit.png", 16, 16, PixelFormat.Format24bppRgb, ImageFormat.Png };
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixSupportDisabledThrows()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppContext.SetSwitch("System.Drawing.EnableUnixSupport", false);
+                TypeInitializationException exception = Assert.Throws<TypeInitializationException>(() => new Bitmap(100, 100));
+                Assert.IsType<PlatformNotSupportedException>(exception.InnerException);
+            }).Dispose();
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]

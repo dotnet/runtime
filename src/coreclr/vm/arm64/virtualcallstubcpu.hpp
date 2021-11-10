@@ -46,7 +46,7 @@ private:
 public:
     static void InitializeStatic() { }
 
-    void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
+    void  Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken)
     {
         // adr x9, _resolveWorkerTarget
         // ldp x10, x12, [x9]
@@ -80,7 +80,7 @@ struct DispatchStub
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slotTypeRef != nullptr);
 
-        *slotTypeRef = EntryPointSlots::SlotType_Normal;
+        *slotTypeRef = EntryPointSlots::SlotType_Executable;
         return (TADDR)&_implTarget;
     }
 
@@ -106,7 +106,7 @@ struct DispatchHolder
         static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
     }
 
-    void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT)
+    void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
     {
         // ldr x13, [x0] ; methodTable from object in x0
         // adr x9, _expectedMT ; _expectedMT is at offset 28 from pc
@@ -180,7 +180,8 @@ struct ResolveHolder
 {
     static void  InitializeStatic() { }
 
-    void Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+    void Initialize(ResolveHolder* pResolveHolderRX,
+                    PCODE resolveWorkerTarget, PCODE patcherTarget,
                     size_t dispatchToken, UINT32 hashedToken,
                     void * cacheAddr, INT32 * counterAddr)
     {
@@ -507,7 +508,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 {
     unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
     unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == false /* TODO: NYI */);
 
     int indirectionsCodeSize = (offsetOfIndirection >= 0x8000 ? 8 : 4) + (offsetAfterIndirection >= 0x8000 ? 8 : 4);
     int indirectionsDataSize = (offsetOfIndirection >= 0x8000 ? 4 : 0) + (offsetAfterIndirection >= 0x8000 ? 4 : 0);

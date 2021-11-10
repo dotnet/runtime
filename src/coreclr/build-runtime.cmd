@@ -16,7 +16,7 @@ set __ThisScriptFull="%~f0"
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
-::      __BinDir            -- default: %__RootBinDir%\%__TargetOS%.%__BuildArch.%__BuildType%\
+::      __BinDir            -- default: %__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
 ::      __PackagesBinDir    -- default: %__BinDir%\.nuget
 ::
@@ -48,7 +48,7 @@ set __BuildTypeChecked=0
 set __BuildTypeRelease=0
 
 set __PgoInstrument=0
-set __PgoOptimize=1
+set __PgoOptimize=0
 set __EnforcePgo=0
 set __IbcTuning=
 set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
@@ -60,12 +60,10 @@ set __PassThroughArgs=
 REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:OfficialBuildId=value)
 set "__remainingArgs=%*"
 set __UnprocessedBuildArgs=
-set __CommonMSBuildArgs=
 
 set __BuildNative=1
 set __BuildCrossArchNative=0
 set __SkipCrossArchNative=0
-set __SkipGenerateVersion=0
 set __RestoreOptData=1
 set __CrossArch=
 set __CrossArch2=
@@ -138,14 +136,12 @@ if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "-skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_Loop)
-if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&shift&goto Arg_Loop)
-if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&shift&goto Arg_Loop)
 REM -ninja is a no-op option since Ninja is now the default generator on Windows.
 if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
-if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&shift&goto Arg_Loop)
+if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
@@ -154,14 +150,9 @@ if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&s
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
 if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_Loop)
-if /i "%1" == "skipgenerateversion" (set __SkipGenerateVersion=1&shift&goto Arg_Loop)
-if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
-if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 
-REM Preserve the equal sign for MSBuild properties
-if "!__remainingArgs:~0,1!" == "="  (set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1=%2"&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1"&shift&goto Arg_Loop
 
 :ArgsDone
@@ -210,8 +201,6 @@ if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
 
-set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch%
-
 if %__EnforcePgo%==1 (
     if %__BuildArchArm%==1 (
         echo NOTICE: enforcepgo does nothing on arm architecture
@@ -244,10 +233,6 @@ REM Set the remaining variables based upon the determined build configuration
 REM PGO optimization is only applied to release builds (see pgosupport.cmake). Disable PGO by default if not building release.
 if NOT "%__BuildType%"=="Release" (
     set __PgoOptimize=0
-)
-
-if %__PgoOptimize%==0 (
-    set __RestoreOptData=0
 )
 
 set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
@@ -286,13 +271,13 @@ REM Set the remaining variables based upon the determined build configuration
 
 echo %__MsgPrefix%Checking prerequisites
 
-set __CMakeNeeded=1
-if %__BuildNative%==0 if %__BuildCrossArchNative%==0 set __CMakeNeeded=0
-if %__CMakeNeeded%==1 (
-    REM Eval the output from set-cmake-path.ps1
-    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
-    echo %__MsgPrefix%Using CMake from !CMakePath!
-)
+if %__BuildNative%==0 if %__BuildCrossArchNative%==0 goto SkipLocateCMake
+
+REM Eval the output from set-cmake-path.ps1
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
+echo %__MsgPrefix%Using CMake from !CMakePath!
+
+:SkipLocateCMake
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step
@@ -314,64 +299,7 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-if %__SkipGenerateVersion% EQU 0 (
-    echo %__MsgPrefix%Generating native version headers
-    set "__BinLog=\"%__LogsDir%\GenerateVersionHeaders_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%__RepoRootDir%\eng\empty.csproj" /t:GenerateRuntimeVersionFile /restore^
-        /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
-        /p:RuntimeVersionFile="%__RootBinDir%\obj\coreclr\runtime_version.h"^
-        %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
-        goto ExitWithCode
-    )
-)
-
-REM =========================================================================================
-REM ===
-REM === Restore optimization profile data
-REM ===
-REM =========================================================================================
-
-set OptDataProjectFilePath=%__ProjectDir%\.nuget\optdata\optdata.csproj
-if %__RestoreOptData% EQU 1 (
-    echo %__MsgPrefix%Restoring the OptimizationData Package
-    set "__BinLog=\"%__LogsDir%\OptRestore_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%OptDataProjectFilePath%" /t:Restore^
-        %__CommonMSBuildArgs% %__UnprocessedBuildArgs%^
-        /nodereuse:false /bl:!__BinLog!
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to restore the optimization data package.
-        goto ExitWithCode
-    )
-)
-set __PgoOptDataPath=
-if %__PgoOptimize% EQU 1 (
-    set PgoDataPackagePathOutputFile=%__IntermediatesDir%\optdatapath.txt
-    set "__BinLog=\"%__LogsDir%\PgoVersionRead_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
-
-    REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath^
-        /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"^
-        %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
-
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%Failed to get PGO data package path.
-        goto ExitWithCode
-    )
-    if not exist "!PgoDataPackagePathOutputFile!" (
-        echo %__ErrMsgPrefix%Failed to get PGO data package path.
-        goto ExitWithError
-    )
-
-    set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
-)
+call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
 
 REM =========================================================================================
 REM ===
@@ -812,7 +740,6 @@ echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
 echo                     Allowed ^<name^>: jit alljits runtime paltests iltools
-echo -nopgooptimize: do not use profile guided optimizations.
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -cmakeargs: user-settable additional arguments passed to CMake.
@@ -820,8 +747,6 @@ echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).
 echo -skipcrossarchnative: skip building cross-architecture native components ^(default: components are built^).
-echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
-echo -skipgenerateversion: skip generating the native version headers.
 echo.
 echo Examples:
 echo     build-runtime

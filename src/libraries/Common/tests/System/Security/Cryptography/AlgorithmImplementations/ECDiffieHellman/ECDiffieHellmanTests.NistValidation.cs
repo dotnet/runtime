@@ -185,7 +185,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                             // represent the same curve.
                             //
                             // secp256r1 and secp521r1 both succeed this block, secp384r1 fails.
-                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                            if (OperatingSystem.IsWindows())
                             {
                                 throw;
                             }

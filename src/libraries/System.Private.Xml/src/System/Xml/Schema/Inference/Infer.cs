@@ -1613,8 +1613,7 @@ namespace System.Xml.Schema
                                     // Compare the float and double values. We can't do simple value comparison
                                     //   as conversion from float to double introduces imprecissions which cause problems.
                                     // Instead we will convert both back to string and compare the strings.
-                                    if (string.Compare(XmlConvert.ToString(flValue), XmlConvert.ToString(dbValue),
-                                        StringComparison.OrdinalIgnoreCase) == 0)
+                                    if (string.Equals(XmlConvert.ToString(flValue), XmlConvert.ToString(dbValue), StringComparison.OrdinalIgnoreCase))
                                     {
                                         // If we can convert the original string to the exact same value
                                         //   and it still fits into float then we treat it as float
@@ -1783,7 +1782,7 @@ namespace System.Xml.Schema
                 //else
                 case 'I':       //try to match "INF"
                 INF:
-                    if (s.Substring(i) == "INF")
+                    if (s.AsSpan(i).SequenceEqual("INF"))
                         return TF_float | TF_double | TF_string;
                     else return TF_string;
                 case '.':       //try to match ".9999"  decimal/float/double

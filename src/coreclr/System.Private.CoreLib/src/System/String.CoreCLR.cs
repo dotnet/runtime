@@ -9,42 +9,6 @@ namespace System
 {
     public partial class String
     {
-        // The Empty constant holds the empty string value. It is initialized by the EE during startup.
-        // It is treated as intrinsic by the JIT as so the static constructor would never run.
-        // Leaving it uninitialized would confuse debuggers.
-        //
-        // We need to call the String constructor so that the compiler doesn't mark this as a literal.
-        // Marking this as a literal would mean that it doesn't show up as a field which we can access
-        // from native.
-#pragma warning disable CS8618 // compiler sees this non-nullable static string as uninitialized
-        [Intrinsic]
-        public static readonly string Empty;
-#pragma warning restore CS8618
-
-        // Gets the character at a specified position.
-        //
-        [IndexerName("Chars")]
-        public extern char this[int index]
-        {
-            [Intrinsic]
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
-
-        // Gets the length of this string
-        //
-        // This is a EE implemented function so that the JIT can recognise it specially
-        // and eliminate checks on character fetches in a loop like:
-        //        for(int i = 0; i < str.Length; i++) str[i]
-        // The actual code generated for this will be one instruction and will be inlined.
-        //
-        public extern int Length
-        {
-            [Intrinsic]
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern string FastAllocateString(int length);
 

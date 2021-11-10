@@ -154,25 +154,19 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 #endif // FEATURE_COMINTEROP
 
 #define               Thread__m_fPreemptiveGCDisabled   0x08
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
-#endif // CROSSGEN_COMPILE
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
 
 #define               Thread__m_pFrame                  0x0C
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
-#endif // CROSSGEN_COMPILE
 #define Thread_m_pFrame Thread__m_pFrame
 
-#ifndef CROSSGEN_COMPILE
 #define               DomainLocalModule__m_pDataBlob                 0x18
 ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pDataBlob == offsetof(DomainLocalModule, m_pDataBlob));
 
 #define               DomainLocalModule__m_pGCStatics                 0x10
 ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pGCStatics == offsetof(DomainLocalModule, m_pGCStatics));
 
-#endif
 
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)

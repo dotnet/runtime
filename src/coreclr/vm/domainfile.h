@@ -19,7 +19,6 @@
 // --------------------------------------------------------------------------------
 class AppDomain;
 class DomainAssembly;
-class DomainModule;
 class Assembly;
 class Module;
 class DynamicMethodTable;
@@ -88,23 +87,16 @@ class DomainFile
         return m_pDomain;
     }
 
-    PEFile *GetFile()
+    PEAssembly *GetPEAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pFile;
+        return PTR_PEAssembly(m_pPEAssembly);
     }
-
-    PEFile *GetOriginalFile()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pOriginalFile!= NULL ? m_pOriginalFile : m_pFile;
-    }
-
 
     IMDInternalImport *GetMDImport()
     {
         WRAPPER_NO_CONTRACT;
-        return m_pFile->GetPersistentMDImport();
+        return m_pPEAssembly->GetMDImport();
     }
 
     OBJECTREF GetExposedModuleObjectIfExists()
@@ -121,20 +113,20 @@ class DomainFile
     BOOL IsSystem()
     {
         WRAPPER_NO_CONTRACT;
-        return GetFile()->IsSystem();
+        return GetPEAssembly()->IsSystem();
     }
 
     LPCUTF8 GetSimpleName()
     {
         WRAPPER_NO_CONTRACT;
-        return GetFile()->GetSimpleName();
+        return GetPEAssembly()->GetSimpleName();
     }
 
 #ifdef LOGGING
     LPCWSTR GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
-        return GetFile()->GetDebugName();
+        return GetPEAssembly()->GetDebugName();
     }
 #endif
 
@@ -253,22 +245,14 @@ class DomainFile
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    BOOL Equals(DomainFile *pFile) { WRAPPER_NO_CONTRACT; return GetFile()->Equals(pFile->GetFile()); }
-    BOOL Equals(PEFile *pFile) { WRAPPER_NO_CONTRACT; return GetFile()->Equals(pFile); }
+    BOOL Equals(DomainFile *pFile) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pFile->GetPEAssembly()); }
+    BOOL Equals(PEAssembly *pPEAssembly) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pPEAssembly); }
 #endif // DACCESS_COMPILE
 
     Module* GetCurrentModule();
     Module* GetLoadedModule();
     Module* GetModule();
 
-#ifdef FEATURE_PREJIT
-    BOOL IsZapRequired(); // Are we absolutely required to use a native image?
-#endif
-    // The format string is intentionally unicode to avoid globalization bugs
-#ifdef FEATURE_PREJIT
-    void ExternalLog(DWORD level, const WCHAR *fmt, ...);
-    void ExternalLog(DWORD level, const char *msg);
-#endif
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -288,7 +272,7 @@ class DomainFile
     friend class Module;
     friend class FileLoadLock;
 
-    DomainFile(AppDomain *pDomain, PEFile *pFile);
+    DomainFile(AppDomain *pDomain, PEAssembly *pPEAssembly);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
@@ -312,34 +296,16 @@ class DomainFile
     // This should be used to permanently set the load to fail. Do not use with transient conditions
     void SetError(Exception *ex);
 
-#ifdef FEATURE_PREJIT
-
-#ifndef DACCESS_COMPILE
-    virtual void FindNativeImage() = 0;
-#endif
-    void VerifyNativeImageDependencies(bool verifyOnly = FALSE);
-
-    // Are we absolutely required to use a native image?
-    void CheckZapRequired();
-
-    void ClearNativeImageStress();
-
-#endif // FEATURE_PREJIT
-
     void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|= PROFILER_NOTIFIED; }
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }
     void SetShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NEEDNOTIFICATION; }
-#ifndef DACCESS_COMPILE
-    void UpdatePEFileWorker(PTR_PEFile pFile);
-#endif
 
     // ------------------------------------------------------------
     // Instance data
     // ------------------------------------------------------------
 
     PTR_AppDomain               m_pDomain;
-    PTR_PEFile                  m_pFile;
-    PTR_PEFile                  m_pOriginalFile;  // keep file alive just in case someone is sitill using it. If this is not NULL then m_pFile contains reused file from the shared assembly
+    PTR_PEAssembly              m_pPEAssembly;
     PTR_Module                  m_pModule;
     FileLoadLevel               m_level;
     LOADERHANDLE                m_hExposedModuleObject;
@@ -409,14 +375,6 @@ class DomainFile
             m_pError->ConvertToHResult();
     };
 
-#ifdef FEATURE_PREJIT
-    // Lock-free enumeration of DomainFiles in an AppDomain.
-public:
-    DomainFile *FindNextDomainFileWithNativeImage();
-private:
-    void InsertIntoDomainFileWithNativeImageList();
-#endif // FEATURE_PREJIT
-
     DWORD                    m_notifyflags;
     BOOL                        m_loading;
     // m_pDynamicMethodTable is used by the light code generation to allow method
@@ -425,31 +383,6 @@ private:
     DynamicMethodTable          *m_pDynamicMethodTable;
     class UMThunkHash *m_pUMThunkHash;
     BOOL m_bDisableActivationCheck;
-
-    // This value is to make it easier to diagnose Assembly Loader "rejected native image" crashes.
-    // See Dev11 bug 358184 for more details
-public:
-    DWORD m_dwReasonForRejectingNativeImage; // See code:g_dwLoaderReasonForNotSharing in Assembly.cpp for a similar variable.
-private:
-
-#ifdef FEATURE_PREJIT
-    // This value is to allow lock-free enumeration of all native images in an AppDomain
-    Volatile<DomainFile *> m_pNextDomainFileWithNativeImage;
-#endif
-};
-
-// These will sometimes result in a crash with error code 0x80131506 COR_E_EXECUTIONENGINE
-// "An internal error happened in the Common Language Runtime's Execution Engine"
-// Cause: Incorrectly committed to using native image for <path to assembly>
-enum ReasonForRejectingNativeImage
-{
-    ReasonForRejectingNativeImage_NoNiForManifestModule = 0x101,
-    ReasonForRejectingNativeImage_DependencyNotNative = 0x102,
-    ReasonForRejectingNativeImage_CoreLibNotNative = 0x103,
-    ReasonForRejectingNativeImage_FailedSecurityCheck = 0x104,
-    ReasonForRejectingNativeImage_DependencyIdentityMismatch = 0x105,
-    ReasonForRejectingNativeImage_CannotShareNiAssemblyNotDomainNeutral = 0x106,
-    ReasonForRejectingNativeImage_NiAlreadyUsedInAnotherSharedAssembly = 0x107,
 };
 
 //---------------------------------------------------------------------------------------
@@ -481,20 +414,11 @@ public:
     // Public API
     // ------------------------------------------------------------
 
-    PEAssembly *GetFile()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return PTR_PEAssembly(m_pFile);
-    }
-
     LoaderAllocator *GetLoaderAllocator()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pLoaderAllocator;
     }
-
-    // Finds only loaded hmods
-    DomainFile *FindIJWModule(HMODULE hMod);
 
     void SetAssembly(Assembly* pAssembly);
 
@@ -601,26 +525,6 @@ public:
         return ModuleIterator::Create(this, moduleIterationOption);
     }
 
-    DomainFile *LookupDomainFile(DWORD index)
-    {
-        WRAPPER_NO_CONTRACT;
-        if (index >= m_Modules.GetCount())
-            return NULL;
-        else
-            return dac_cast<PTR_DomainFile>(m_Modules.Get(index));
-    }
-
-    Module *LookupModule(DWORD index)
-    {
-        WRAPPER_NO_CONTRACT;
-        DomainFile *pModule = LookupDomainFile(index);
-        if (pModule == NULL)
-            return NULL;
-        else
-            return pModule->GetModule();
-    }
-
-
     // ------------------------------------------------------------
     // Resource access
     // ------------------------------------------------------------
@@ -629,18 +533,6 @@ public:
                      PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
                      LPCSTR *szFileName, DWORD *dwLocation,
                      BOOL fSkipRaiseResolveEvent);
-
-#ifdef FEATURE_PREJIT
-    // ------------------------------------------------------------
-    // Prejitting API
-    // ------------------------------------------------------------
-
-    void GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pZapVersionInfo);
-
-    void GetOptimizedIdentitySignature(CORCOMPILE_ASSEMBLY_SIGNATURE *pSignature);
-    BOOL CheckZapDependencyIdentities(PEImage *pNativeImage);
-
-#endif // FEATURE_PREJIT
 
     // ------------------------------------------------------------
     // Debugger control API
@@ -678,38 +570,26 @@ public:
 
     friend class AppDomain;
     friend class Assembly;
-    friend class AssemblyNameNative;
 
 #ifndef DACCESS_COMPILE
 public:
     ~DomainAssembly();
 private:
-    DomainAssembly(AppDomain *pDomain, PEFile *pFile, LoaderAllocator *pLoaderAllocator);
+    DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, LoaderAllocator *pLoaderAllocator);
 #endif
 
     // ------------------------------------------------------------
     // Internal routines
     // ------------------------------------------------------------
 
-    void SetSecurityError(Exception *ex);
-
 #ifndef DACCESS_COMPILE
     void Begin();
     void Allocate();
-    void LoadSharers();
     void DeliverSyncEvents();
     void DeliverAsyncEvents();
+    void RegisterWithHostAssembly();
+    void UnRegisterFromHostAssembly();
 #endif
-
-    void UpdatePEFile(PTR_PEFile pFile);
-
-#ifdef FEATURE_PREJIT
-#ifndef DACCESS_COMPILE
-    void FindNativeImage();
-#endif
-#endif // FEATURE_PREJIT
-
-    BOOL IsInstrumented();
 
  public:
     ULONG HashIdentity();
@@ -744,7 +624,4 @@ private:
 
 typedef DomainAssembly::ModuleIterator DomainModuleIterator;
 
-// --------------------------------------------------------------------------------
-// DomainModule is a subclass of DomainFile which specifically represents a module.
-// --------------------------------------------------------------------------------
 #endif  // _DOMAINFILE_H_

@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Xml
             strBuilder.Append("<?");
             strBuilder.Append(Name);
             if ((Value != null) && (Value.Length > 0))
-                strBuilder.Append(" " + Value);
+                strBuilder.Append(' ').Append(Value);
             strBuilder.Append("?>");
             if (docPos == DocPosition.BeforeRootElement)
                 strBuilder.Append((char)10);

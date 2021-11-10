@@ -34,9 +34,19 @@ public class AndroidAppBuilderTask : Task
     public bool ForceAOT { get; set; }
 
     /// <summary>
-    /// List of components to static link, if available
+    /// Static linked runtime
     /// </summary>
-    public string? StaticLinkedComponentNames { get; set; } = ""!;
+    public bool StaticLinkedRuntime { get; set; }
+
+    /// <summary>
+    /// List of enabled runtime components
+    /// </summary>
+    public string? RuntimeComponents { get; set; } = ""!;
+
+    /// <summary>
+    /// Diagnostic ports configuration string
+    /// </summary>
+    public string? DiagnosticPorts { get; set; } = ""!;
 
     [Required]
     public string RuntimeIdentifier { get; set; } = ""!;
@@ -77,11 +87,9 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
-
         string abi = DetermineAbi();
 
-        var apkBuilder = new ApkBuilder();
+        var apkBuilder = new ApkBuilder(Log);
         apkBuilder.ProjectName = ProjectName;
         apkBuilder.AppDir = AppDir;
         apkBuilder.OutputDir = OutputDir;
@@ -95,7 +103,9 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.KeyStorePath = KeyStorePath;
         apkBuilder.ForceInterpreter = ForceInterpreter;
         apkBuilder.ForceAOT = ForceAOT;
-        apkBuilder.StaticLinkedComponentNames = StaticLinkedComponentNames;
+        apkBuilder.StaticLinkedRuntime = StaticLinkedRuntime;
+        apkBuilder.RuntimeComponents = RuntimeComponents;
+        apkBuilder.DiagnosticPorts = DiagnosticPorts;
         apkBuilder.Assemblies = Assemblies;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
 

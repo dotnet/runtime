@@ -324,24 +324,15 @@ namespace System.Globalization
 
         // Returns the hour part of the specified DateTime. The returned value is an
         // integer between 0 and 23.
-        public virtual int GetHour(DateTime time)
-        {
-            return (int)((time.Ticks / TicksPerHour) % 24);
-        }
+        public virtual int GetHour(DateTime time) => time.Hour;
 
         // Returns the millisecond part of the specified DateTime. The returned value
         // is an integer between 0 and 999.
-        public virtual double GetMilliseconds(DateTime time)
-        {
-            return (double)((time.Ticks / TicksPerMillisecond) % 1000);
-        }
+        public virtual double GetMilliseconds(DateTime time) => time.Millisecond;
 
         // Returns the minute part of the specified DateTime. The returned value is
         // an integer between 0 and 59.
-        public virtual int GetMinute(DateTime time)
-        {
-            return (int)((time.Ticks / TicksPerMinute) % 60);
-        }
+        public virtual int GetMinute(DateTime time) => time.Minute;
 
         // Returns the month part of the specified DateTime. The returned value is an
         // integer between 1 and 12.
@@ -358,10 +349,7 @@ namespace System.Globalization
 
         // Returns the second part of the specified DateTime. The returned value is
         // an integer between 0 and 59.
-        public virtual int GetSecond(DateTime time)
-        {
-            return (int)((time.Ticks / TicksPerSecond) % 60);
-        }
+        public virtual int GetSecond(DateTime time) => time.Second;
 
         /// <summary>
         /// Get the week of year using the FirstDay rule.
@@ -707,11 +695,11 @@ namespace System.Globalization
         /// </summary>
         internal static long TimeToTicks(int hour, int minute, int second, int millisecond)
         {
-            if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60 || second < 0 || second >= 60)
+            if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)second >= 60)
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
-            if (millisecond < 0 || millisecond >= MillisPerSecond)
+            if ((uint)millisecond >= MillisPerSecond)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(millisecond),
@@ -719,7 +707,8 @@ namespace System.Globalization
                     SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
             }
 
-            return InternalGlobalizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond;
+            int totalSeconds = hour * 3600 + minute * 60 + second;
+            return totalSeconds * TicksPerSecond + millisecond * TicksPerMillisecond;
         }
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)

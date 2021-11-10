@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Net.Mail;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -26,7 +25,7 @@ namespace System.Net.Http.Headers
         // Validator
         internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
-        internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
+        internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
 
@@ -126,7 +125,7 @@ namespace System.Net.Http.Headers
             destination.Append(HexConverter.ToCharUpper(c));
         }
 
-        internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
+        internal static double? GetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters)
         {
             Debug.Assert(parameters != null);
 
@@ -156,7 +155,7 @@ namespace System.Net.Http.Headers
 
             if (HttpRuleParser.GetTokenLength(value, 0) != value.Length)
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -171,7 +170,7 @@ namespace System.Net.Http.Headers
             if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -186,7 +185,7 @@ namespace System.Net.Http.Headers
             if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -318,7 +317,7 @@ namespace System.Net.Http.Headers
         }
 
         internal static bool TryParseInt32(string value, out int result) =>
-            int.TryParse(value, NumberStyles.None, provider: null, out result);
+            int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result);
 
         internal static bool TryParseInt32(string value, int offset, int length, out int result)
         {
@@ -328,7 +327,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
+            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
         internal static bool TryParseInt64(string value, int offset, int length, out long result)
@@ -339,7 +338,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
+            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
         internal static void DumpHeaders(StringBuilder sb, params HttpHeaders?[] headers)
@@ -357,7 +356,7 @@ namespace System.Net.Http.Headers
             {
                 if (headers[i] is HttpHeaders hh)
                 {
-                    foreach (KeyValuePair<string, string[]> header in hh.EnumerateWithoutValidation())
+                    foreach (KeyValuePair<string, HeaderStringValues> header in hh.NonValidated)
                     {
                         foreach (string headerValue in header.Value)
                         {
@@ -373,30 +372,17 @@ namespace System.Net.Http.Headers
             sb.Append('}');
         }
 
-        internal static bool IsValidEmailAddress(string value)
-        {
-            if (MailAddressParser.TryParseAddress(value, out ParseAddressInfo _, throwExceptionIfFail: false))
-            {
-                return true;
-            }
-            else
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value));
-                return false;
-            }
-        }
-
         private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)
         {
             CheckValidToken(value, "item");
         }
 
-        internal static ObjectCollection<NameValueHeaderValue>? Clone(this ObjectCollection<NameValueHeaderValue>? source)
+        internal static UnvalidatedObjectCollection<NameValueHeaderValue>? Clone(this UnvalidatedObjectCollection<NameValueHeaderValue>? source)
         {
             if (source == null)
                 return null;
 
-            var copy = new ObjectCollection<NameValueHeaderValue>();
+            var copy = new UnvalidatedObjectCollection<NameValueHeaderValue>();
             foreach (NameValueHeaderValue item in source)
             {
                 copy.Add(new NameValueHeaderValue(item));

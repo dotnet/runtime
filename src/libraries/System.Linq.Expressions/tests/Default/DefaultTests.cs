@@ -106,5 +106,50 @@ namespace System.Linq.Expressions.Tests
         {
             public int IntProperty { get; set; }
         }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StructTypeWithParameterlessConstructor(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructor>> lambda =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructor>>(
+                    Expression.Default(typeof(ValueTypeWithParameterlessConstructor)));
+            Func<ValueTypeWithParameterlessConstructor> func = lambda.Compile(useInterpreter);
+            ValueTypeWithParameterlessConstructor defaultValue = func();
+            Assert.False(defaultValue.ConstructorWasRun);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StructTypeWithParameterlessConstructorThatThrows(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructorThatThrows>> lambda =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructorThatThrows>>(
+                    Expression.Default(typeof(ValueTypeWithParameterlessConstructorThatThrows)));
+            Func<ValueTypeWithParameterlessConstructorThatThrows> func = lambda.Compile(useInterpreter);
+            ValueTypeWithParameterlessConstructorThatThrows defaultValue = func();
+            Assert.Null(defaultValue.Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void NullableStructTypeWithParameterlessConstructor(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructorThatThrows?>> lambda =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructorThatThrows?>>(
+                    Expression.Default(typeof(ValueTypeWithParameterlessConstructorThatThrows?)));
+            Func<ValueTypeWithParameterlessConstructorThatThrows?> func = lambda.Compile(useInterpreter);
+            ValueTypeWithParameterlessConstructorThatThrows? defaultValue = func();
+            Assert.Null(defaultValue);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void GetValueOrDefault(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructor?, ValueTypeWithParameterlessConstructor>> e =
+                (ValueTypeWithParameterlessConstructor? x) => x.GetValueOrDefault();
+
+            Func<ValueTypeWithParameterlessConstructor?, ValueTypeWithParameterlessConstructor> f = e.Compile(useInterpreter);
+            Assert.True(f(new ValueTypeWithParameterlessConstructor()).ConstructorWasRun);
+            Assert.False(f(null).ConstructorWasRun);
+        }
     }
 }

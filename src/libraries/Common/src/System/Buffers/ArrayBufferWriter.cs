@@ -16,6 +16,7 @@ namespace System.Buffers
     sealed class ArrayBufferWriter<T> : IBufferWriter<T>
     {
         // Copy of Array.MaxLength.
+        // Used by projects targeting .NET Framework.
         private const int ArrayMaxLength = 0x7FFFFFC7;
 
         private const int DefaultInitialBufferSize = 256;

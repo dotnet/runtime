@@ -45,7 +45,7 @@ DllTest2()
 
     PAL_TRY(VOID*, unused, NULL)
     {
-        volatile int* p = (volatile int *)0x22; // Invalid pointer
+        volatile int* p = (volatile int *)0x22000; // Invalid pointer
 
         bTry = TRUE;                            // Indicate we hit the PAL_TRY block
         FailingFunction(p);  // Throw in function to fool C++ runtime into handling
@@ -60,10 +60,10 @@ DllTest2()
             Fail("ERROR: PAL_EXCEPT was hit without PAL_TRY being hit.\n");
         }
 
-        // Validate that the faulting address is correct; the contents of "p" (0x22).
-        if (ex.GetExceptionRecord()->ExceptionInformation[1] != 0x22)
+        // Validate that the faulting address is correct; the contents of "p" (0x22000).
+        if (ex.GetExceptionRecord()->ExceptionInformation[1] != 0x22000)
         {
-            Fail("ERROR: PAL_EXCEPT ExceptionInformation[1] != 0x22\n");
+            Fail("ERROR: PAL_EXCEPT ExceptionInformation[1] != 0x22000\n");
         }
 
         bExcept = TRUE;                         // Indicate we hit the PAL_EXCEPT block

@@ -1,0 +1,29 @@
+parameters:
+  unpackFolder: ''
+  cleanUnpackFolder: true
+  artifactFileName: ''
+  artifactName: ''
+  displayName: ''
+
+steps:
+  # Download artifact
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download specific ${{ parameters.displayName }}'
+    inputs:
+      buildType: specific
+      project:  'public' # 'internal' or 'public'
+      pipeline: 'Antigen'
+      buildVersionToDownload: specific
+      branchName: 'refs/pull/59376/head'
+      buildId: '1387378'
+      downloadType: single
+      downloadPath: '$(Build.SourcesDirectory)/__download__'
+      artifactName: '${{ parameters.artifactName }}'
+
+  # Unzip artifact
+  - task: ExtractFiles@1
+    displayName: 'Unzip specific ${{ parameters.displayName }}'
+    inputs:
+      archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/${{ parameters.artifactFileName }}
+      destinationFolder: ${{ parameters.unpackFolder }}
+      cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}

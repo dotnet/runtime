@@ -1,0 +1,63 @@
+<Project>
+
+  <Target Name="ILLinkTrimOOBAssemblies"
+          AfterTargets="Build"
+          DependsOnTargets="PrepareForAssembliesTrim">
+
+    <Message Text="Trimming $(PackageRID) OOB assemblies with ILLinker..." Importance="high" />
+
+    <PropertyGroup>
+      <LibrariesTrimmedOOBArtifactsPath>$([MSBuild]::NormalizePath('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-oobs'))</LibrariesTrimmedOOBArtifactsPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+
+      <!-- The following is the list of all the OOBs we will ignore for now -->
+      <_OOBsToIgnore Include="System.CodeDom" />
+      <_OOBsToIgnore Include="System.ComponentModel.Composition" />
+      <_OOBsToIgnore Include="System.ComponentModel.Composition.Registration" />
+      <_OOBsToIgnore Include="System.Composition.AttributedModel" />
+      <_OOBsToIgnore Include="System.Composition.Convention" />
+      <_OOBsToIgnore Include="System.Composition.Hosting" />
+      <_OOBsToIgnore Include="System.Composition.Runtime" />
+      <_OOBsToIgnore Include="System.Composition.TypedParts" />
+      <_OOBsToIgnore Include="System.Configuration.ConfigurationManager" />
+      <_OOBsToIgnore Include="System.Speech" />
+
+      <_NetCoreAppRuntimeAssemblies Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll;$(NetCoreAppCurrentRuntimePath)*msquic.dll" />
+      <_RuntimePackTrimmedAssemblies Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+
+      <!-- Move previous items to FileName so that we can subtract them -->
+      <_NetCoreAppRuntimeAssembliesToFileName Include="@(_NetCoreAppRuntimeAssemblies -> '%(FileName)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_NetCoreAppRuntimeAssembliesToFileName>
+      <_RuntimePackAssembliesToFileName Include="@(_RuntimePackTrimmedAssemblies -> '%(FileName)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_RuntimePackAssembliesToFileName>
+
+      <_OOBsToTrimFileName Include="@(_NetCoreAppRuntimeAssembliesToFileName)" Exclude="@(_RuntimePackAssembliesToFileName);@(_OOBsToIgnore)" />
+      <_OOBReferencesFileName Include="@(_NetCoreAppRuntimeAssembliesToFileName)" Exclude="@(_OOBsToTrimFileName)" />
+      <_OOBsToTrim Include="@(_OOBsToTrimFileName -> '%(OriginalIdentity)')" />
+      <_OOBReferences Include="@(_OOBReferencesFileName -> '%(OriginalIdentity)')" />
+      <_OOBReferences Include="$(SystemPrivateCoreLibPath)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
+      <_OOBSuppressionsXmls Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
+    </ItemGroup>
+
+   <PropertyGroup>
+      <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(_OOBSuppressionsXmls)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(_OOBSuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
+    </PropertyGroup>
+
+    <ILLink AssemblyPaths=""
+        RootAssemblyNames="@(_OOBsToTrim)"
+        ReferenceAssemblyPaths="@(_OOBReferences)"
+        OutputDirectory="$(LibrariesTrimmedOOBArtifactsPath)"
+        ExtraArgs="$(OOBILLinkArgs)"
+        ToolExe="$(_DotNetHostFileName)"
+        ToolPath="$(_DotNetHostDirectory)" />
+  </Target>
+</Project>

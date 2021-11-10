@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+using Internal.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -104,6 +106,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ExportAsPfxWithPrivateKeyVerifyPassword()
         {
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
@@ -124,6 +127,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ExportAsPfxWithPrivateKey()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
@@ -290,6 +294,58 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     RSACng rsaCng = (RSACng)key;
                     return rsaCng.Key.IsEphemeral;
                 }
+            }
+        }
+
+        [Fact]
+        public static void TryExportCertificatePem_DestinationTooSmall()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.CertRfc7468Wrapped))
+            {
+                // Too small by one
+                Span<char> destination = new char[TestData.CertRfc7468Wrapped.Length - 1];
+                Assert.False(cert.TryExportCertificatePem(destination, out int charsWritten));
+                Assert.Equal(0, charsWritten);
+            }
+        }
+
+        [Fact]
+        public static void TryExportCertificatePem_DestinationJustRight()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.CertRfc7468Wrapped))
+            {
+                Span<char> destination = new char[TestData.CertRfc7468Wrapped.Length];
+                Assert.True(cert.TryExportCertificatePem(destination, out int charsWritten));
+                Assert.Equal(TestData.CertRfc7468Wrapped, new string(destination));
+            }
+        }
+
+        [Fact]
+        public static void TryExportCertificatePem_DestinationLarger()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.CertRfc7468Wrapped))
+            {
+                int padding = 10;
+                Span<char> destination = new char[TestData.CertRfc7468Wrapped.Length + padding * 2];
+                destination.Fill('!');
+                Assert.True(cert.TryExportCertificatePem(destination.Slice(padding), out int charsWritten));
+                Assert.Equal(TestData.CertRfc7468Wrapped, new string(destination.Slice(padding, charsWritten)));
+
+                // Assert front padding is unaltered
+                AssertExtensions.FilledWith('!', destination.Slice(0, padding));
+
+                // Assert trailing padding is unaltered
+                AssertExtensions.FilledWith('!', destination.Slice(charsWritten + padding));
+            }
+        }
+
+        [Fact]
+        public static void ExportCertificatePem()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.CertRfc7468Wrapped))
+            {
+                string pem = cert.ExportCertificatePem();
+                Assert.Equal(TestData.CertRfc7468Wrapped, pem);
             }
         }
     }

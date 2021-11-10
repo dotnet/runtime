@@ -1118,7 +1118,6 @@ namespace System.Tests
             Assert.NotNull(ex.Message);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49839", TestRuntimes.Mono)]
         [Fact]
         public static void CreateDelegate10_Nullable_Method()
         {
@@ -1130,7 +1129,6 @@ namespace System.Tests
             Assert.Equal(num.ToString(), s);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49839", TestRuntimes.Mono)]
         [Fact]
         public static void CreateDelegate10_Nullable_ClosedDelegate()
         {

@@ -23,63 +23,17 @@ using namespace clr::fs;
 
 namespace BINDER_SPACE
 {
-    STDMETHODIMP ApplicationContext::QueryInterface(REFIID   riid,
-                                                    void   **ppv)
-    {
-        HRESULT hr = S_OK;
-
-        if (ppv == NULL)
-        {
-            hr = E_POINTER;
-        }
-        else
-        {
-            if (IsEqualIID(riid, IID_IUnknown))
-            {
-                AddRef();
-                *ppv = static_cast<IUnknown *>(this);
-            }
-            else
-            {
-                *ppv = NULL;
-                hr = E_NOINTERFACE;
-            }
-        }
-
-        return hr;
-    }
-
-    STDMETHODIMP_(ULONG) ApplicationContext::AddRef()
-    {
-        return InterlockedIncrement(&m_cRef);
-    }
-
-    STDMETHODIMP_(ULONG) ApplicationContext::Release()
-    {
-        ULONG ulRef = InterlockedDecrement(&m_cRef);
-
-        if (ulRef == 0)
-        {
-            delete this;
-        }
-
-        return ulRef;
-    }
-
     ApplicationContext::ApplicationContext()
     {
-        m_cRef = 1;
-        m_dwAppDomainId = 0;
         m_pExecutionContext = NULL;
         m_pFailureCache = NULL;
         m_contextCS = NULL;
         m_pTrustedPlatformAssemblyMap = nullptr;
-        m_binderID = 0;
     }
 
     ApplicationContext::~ApplicationContext()
     {
-        SAFE_RELEASE(m_pExecutionContext);
+        SAFE_DELETE(m_pExecutionContext);
         SAFE_DELETE(m_pFailureCache);
 
         if (m_contextCS != NULL)
@@ -93,11 +47,11 @@ namespace BINDER_SPACE
         }
     }
 
-    HRESULT ApplicationContext::Init(UINT_PTR binderID)
+    HRESULT ApplicationContext::Init()
     {
         HRESULT hr = S_OK;
 
-        ReleaseHolder<ExecutionContext> pExecutionContext;
+        NewHolder<ExecutionContext> pExecutionContext;
 
         FailureCache *pFailureCache = NULL;
 
@@ -121,7 +75,6 @@ namespace BINDER_SPACE
             m_pFailureCache = pFailureCache;
         }
 
-        m_binderID = binderID;
     Exit:
         return hr;
     }
@@ -129,14 +82,11 @@ namespace BINDER_SPACE
     HRESULT ApplicationContext::SetupBindingPaths(SString &sTrustedPlatformAssemblies,
                                                   SString &sPlatformResourceRoots,
                                                   SString &sAppPaths,
-                                                  SString &sAppNiPaths,
                                                   BOOL     fAcquireLock)
     {
         HRESULT hr = S_OK;
 
-#ifndef CROSSGEN_COMPILE
         CRITSEC_Holder contextLock(fAcquireLock ? GetCriticalSectionCookie() : NULL);
-#endif
         if (m_pTrustedPlatformAssemblyMap != nullptr)
         {
             GO_WITH_HRESULT(S_OK);
@@ -231,12 +181,10 @@ namespace BINDER_SPACE
                 break;
             }
 
-#ifndef CROSSGEN_COMPILE
             if (Path::IsRelative(pathName))
             {
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
-#endif
 
             m_platformResourceRoots.Append(pathName);
         }
@@ -256,39 +204,12 @@ namespace BINDER_SPACE
                 break;
             }
 
-#ifndef CROSSGEN_COMPILE
             if (Path::IsRelative(pathName))
             {
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
-#endif
 
             m_appPaths.Append(pathName);
-        }
-
-        //
-        // Parse AppNiPaths
-        //
-        sAppNiPaths.Normalize();
-        for (SString::Iterator i = sAppNiPaths.Begin(); i != sAppNiPaths.End(); )
-        {
-            SString pathName;
-            HRESULT pathResult = S_OK;
-
-            IF_FAIL_GO(pathResult = GetNextPath(sAppNiPaths, i, pathName));
-            if (pathResult == S_FALSE)
-            {
-                break;
-            }
-
-#ifndef CROSSGEN_COMPILE
-            if (Path::IsRelative(pathName))
-            {
-                GO_WITH_HRESULT(E_INVALIDARG);
-            }
-#endif
-
-            m_appNiPaths.Append(pathName);
         }
 
     Exit:

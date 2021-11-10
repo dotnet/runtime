@@ -7,6 +7,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -20,106 +21,194 @@ namespace System.Net.Quic.Implementations.MsQuic
     {
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+        private const uint DefaultResetValue = 0xffffffff; // Arbitrary value unlikely to conflict with application protocols.
 
         // Delegate that wraps the static function that will be called when receiving an event.
         private static readonly ConnectionCallbackDelegate s_connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
 
         // TODO: remove this.
         // This is only used for client-initiated connections, and isn't needed even then once Connect() has been called.
-        private readonly SafeMsQuicConfigurationHandle? _configuration;
+        private SafeMsQuicConfigurationHandle? _configuration;
 
         private readonly State _state = new State();
-        private GCHandle _stateHandle;
-        private bool _disposed;
+        private int _disposed;
 
         private IPEndPoint? _localEndPoint;
         private readonly EndPoint _remoteEndPoint;
         private SslApplicationProtocol _negotiatedAlpnProtocol;
-        private bool _isServer;
-        private bool _remoteCertificateRequired;
-        private X509RevocationMode _revocationMode = X509RevocationMode.Offline;
-        private RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
 
-        private sealed class State
+        internal sealed class State
         {
             public SafeMsQuicConnectionHandle Handle = null!; // set inside of MsQuicConnection ctor.
+            public string TraceId = null!; // set inside of MsQuicConnection ctor.
+
+            public GCHandle StateGCHandle;
 
             // These exists to prevent GC of the MsQuicConnection in the middle of an async op (Connect or Shutdown).
             public MsQuicConnection? Connection;
+            public MsQuicListener.State? ListenerState;
 
-            // TODO: only allocate these when there is an outstanding connect/shutdown.
-            public readonly TaskCompletionSource<uint> ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
+            public TaskCompletionSource<uint>? ConnectTcs;
+            // TODO: only allocate these when there is an outstanding shutdown.
             public readonly TaskCompletionSource<uint> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Note that there's no such thing as resetable TCS, so we cannot reuse the same instance after we've set the result.
+            // We also cannot use solutions like ManualResetValueTaskSourceCore, since we can have multiple waiters on the same TCS.
+            // As a result, we allocate a new TCS when needed, which is when someone explicitely asks for them in WaitForAvailableStreamsAsync.
+            public TaskCompletionSource? NewUnidirectionalStreamsAvailable;
+            public TaskCompletionSource? NewBidirectionalStreamsAvailable;
 
             public bool Connected;
             public long AbortErrorCode = -1;
+            public int StreamCount;
+            private bool _closing;
+
+            // Certificate validation properties
+            public X509Certificate? RemoteCertificate;
+            public bool RemoteCertificateRequired;
+            public X509RevocationMode RevocationMode = X509RevocationMode.Offline;
+            public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
+            public bool IsServer;
+            public string? TargetHost;
 
             // Queue for accepted streams.
             // Backlog limit is managed by MsQuic so it can be unbounded here.
             public readonly Channel<MsQuicStream> AcceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions()
             {
-                SingleReader = true,
                 SingleWriter = true,
             });
+
+            public void RemoveStream(MsQuicStream? stream)
+            {
+                bool releaseHandles;
+                lock (this)
+                {
+                    StreamCount--;
+                    Debug.Assert(StreamCount >= 0);
+                    releaseHandles = _closing && StreamCount == 0;
+                }
+
+                if (releaseHandles)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId} releasing handle after last stream.");
+                    Handle?.Dispose();
+                }
+            }
+
+            public bool TryQueueNewStream(SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
+            {
+                var stream = new MsQuicStream(this, streamHandle, flags);
+                if (AcceptQueue.Writer.TryWrite(stream))
+                {
+                    return true;
+                }
+                else
+                {
+                    stream.Dispose();
+                    return false;
+                }
+            }
+
+            public bool TryAddStream(MsQuicStream stream)
+            {
+                lock (this)
+                {
+                    if (_closing)
+                    {
+                        return false;
+                    }
+
+                    StreamCount++;
+                    return true;
+                }
+            }
+
+            // This is called under lock from connection dispose
+            public void SetClosing()
+            {
+                lock (this)
+                {
+                    _closing = true;
+                }
+            }
         }
 
+        internal string TraceId() => _state.TraceId;
+
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, MsQuicListener.State listenerState, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null, ServerCertificateSelectionCallback? serverCertificateSelectionCallback = null)
         {
             _state.Handle = handle;
-            _state.Connected = true;
+            _state.StateGCHandle = GCHandle.Alloc(_state);
+            _state.RemoteCertificateRequired = remoteCertificateRequired;
+            _state.RevocationMode = revocationMode;
+            _state.RemoteCertificateValidationCallback = remoteCertificateValidationCallback;
+            _state.IsServer = true;
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
-            _remoteCertificateRequired = false;
-            _isServer = true;
-
-            _stateHandle = GCHandle.Alloc(_state);
 
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state));
                 MsQuicApi.Api.SetCallbackHandlerDelegate(
                     _state.Handle,
                     s_connectionDelegate,
-                    GCHandle.ToIntPtr(_stateHandle));
+                    GCHandle.ToIntPtr(_state.StateGCHandle));
             }
             catch
             {
-                _stateHandle.Free();
+                _state.StateGCHandle.Free();
                 throw;
+            }
+
+            _state.ListenerState = listenerState;
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"{TraceId()} Inbound connection created");
             }
         }
 
         // constructor for outbound connections
         public MsQuicConnection(QuicClientConnectionOptions options)
         {
-            _remoteEndPoint = options.RemoteEndPoint!;
-            _configuration = SafeMsQuicConfigurationHandle.Create(options);
-            _isServer = false;
-            _remoteCertificateRequired = true;
-            if (options.ClientAuthenticationOptions != null)
+            if (options.RemoteEndPoint == null)
             {
-                _revocationMode = options.ClientAuthenticationOptions.CertificateRevocationCheckMode;
-                _remoteCertificateValidationCallback = options.ClientAuthenticationOptions.RemoteCertificateValidationCallback;
+                throw new ArgumentNullException(nameof(options.RemoteEndPoint));
             }
 
-            _stateHandle = GCHandle.Alloc(_state);
+            _remoteEndPoint = options.RemoteEndPoint;
+            _configuration = SafeMsQuicConfigurationHandle.Create(options);
+            _state.RemoteCertificateRequired = true;
+            if (options.ClientAuthenticationOptions != null)
+            {
+                _state.RevocationMode = options.ClientAuthenticationOptions.CertificateRevocationCheckMode;
+                _state.RemoteCertificateValidationCallback = options.ClientAuthenticationOptions.RemoteCertificateValidationCallback;
+                _state.TargetHost = options.ClientAuthenticationOptions.TargetHost;
+            }
+
+            _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
-                // this handle is ref counted by MsQuic, so safe to dispose here.
-                using SafeMsQuicConfigurationHandle config = SafeMsQuicConfigurationHandle.Create(options);
-
+                Debug.Assert(!Monitor.IsEntered(_state));
                 uint status = MsQuicApi.Api.ConnectionOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_connectionDelegate,
-                    GCHandle.ToIntPtr(_stateHandle),
+                    GCHandle.ToIntPtr(_state.StateGCHandle),
                     out _state.Handle);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Could not open the connection.");
             }
             catch
             {
-                _stateHandle.Free();
+                _state.StateGCHandle.Free();
                 throw;
+            }
+
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"{TraceId()} Outbound connection created");
             }
         }
 
@@ -127,16 +216,45 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override EndPoint RemoteEndPoint => _remoteEndPoint;
 
+        internal override X509Certificate? RemoteCertificate => _state.RemoteCertificate;
+
         internal override SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedAlpnProtocol;
 
         internal override bool Connected => _state.Connected;
 
         private static uint HandleEventConnected(State state, ref ConnectionEvent connectionEvent)
         {
-            if (!state.Connected)
+            if (state.Connected)
+            {
+                return MsQuicStatusCodes.Success;
+            }
+
+            if (state.IsServer)
+            {
+                state.Connected = true;
+                MsQuicListener.State? listenerState = state.ListenerState;
+                state.ListenerState = null;
+
+                if (listenerState != null)
+                {
+                    if (listenerState.PendingConnections.TryRemove(state.Handle.DangerousGetHandle(), out MsQuicConnection? connection))
+                    {
+                        // Move connection from pending to Accept queue and hand it out.
+                        if (listenerState.AcceptConnectionQueue.Writer.TryWrite(connection))
+                        {
+                            return MsQuicStatusCodes.Success;
+                        }
+                        // Listener is closed
+                        connection.Dispose();
+                    }
+                }
+
+                return MsQuicStatusCodes.UserCanceled;
+            }
+            else
             {
                 // Connected will already be true for connections accepted from a listener.
-
+                Debug.Assert(!Monitor.IsEntered(state));
                 SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
 
                 Debug.Assert(state.Connection != null);
@@ -145,7 +263,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 state.Connection = null;
 
                 state.Connected = true;
-                state.ConnectTcs.SetResult(MsQuicStatusCodes.Success);
+                state.ConnectTcs!.SetResult(MsQuicStatusCodes.Success);
+                state.ConnectTcs = null;
             }
 
             return MsQuicStatusCodes.Success;
@@ -153,49 +272,121 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventShutdownInitiatedByTransport(State state, ref ConnectionEvent connectionEvent)
         {
-            if (!state.Connected)
+            if (!state.Connected && state.ConnectTcs != null)
             {
                 Debug.Assert(state.Connection != null);
                 state.Connection = null;
 
                 uint hresult = connectionEvent.Data.ShutdownInitiatedByTransport.Status;
                 Exception ex = QuicExceptionHelpers.CreateExceptionForHResult(hresult, "Connection has been shutdown by transport.");
-                state.ConnectTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
+                state.ConnectTcs!.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
+                state.ConnectTcs = null;
             }
 
-            state.AcceptQueue.Writer.Complete();
+            // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
+            // it wasn't our side who shutdown the connection.
+            // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
+            // See: https://github.com/dotnet/runtime/issues/60133
+            state.AbortErrorCode = 0;
+            state.AcceptQueue.Writer.TryComplete();
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventShutdownInitiatedByPeer(State state, ref ConnectionEvent connectionEvent)
         {
             state.AbortErrorCode = (long)connectionEvent.Data.ShutdownInitiatedByPeer.ErrorCode;
-            state.AcceptQueue.Writer.Complete();
+            state.AcceptQueue.Writer.TryComplete();
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventShutdownComplete(State state, ref ConnectionEvent connectionEvent)
         {
+            // This is the final event on the connection, so free the GCHandle used by the event callback.
+            state.StateGCHandle.Free();
+
+            if (state.ListenerState != null)
+            {
+                // This is inbound connection that never got connected - becasue of TLS validation or some other reason.
+                // Remove connection from pending queue and dispose it.
+                if (state.ListenerState.PendingConnections.TryRemove(state.Handle.DangerousGetHandle(), out MsQuicConnection? connection))
+                {
+                    connection.Dispose();
+                }
+
+                state.ListenerState = null;
+            }
+
             state.Connection = null;
 
             state.ShutdownTcs.SetResult(MsQuicStatusCodes.Success);
 
             // Stop accepting new streams.
-            state.AcceptQueue.Writer.Complete();
+            state.AcceptQueue.Writer.TryComplete();
+
+            // Stop notifying about available streams.
+            TaskCompletionSource? unidirectionalTcs = null;
+            TaskCompletionSource? bidirectionalTcs = null;
+            lock (state)
+            {
+                unidirectionalTcs = state.NewUnidirectionalStreamsAvailable;
+                bidirectionalTcs = state.NewBidirectionalStreamsAvailable;
+                state.NewUnidirectionalStreamsAvailable = null;
+                state.NewBidirectionalStreamsAvailable = null;
+            }
+
+            if (unidirectionalTcs is not null)
+            {
+                unidirectionalTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            }
+            if (bidirectionalTcs is not null)
+            {
+                bidirectionalTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            }
+
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventNewStream(State state, ref ConnectionEvent connectionEvent)
         {
             var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
-            var stream = new MsQuicStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags);
+            if (!state.TryQueueNewStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags))
+            {
+                // This will call StreamCloseDelegate and free the stream.
+                // We will return Success to the MsQuic to prevent double free.
+                streamHandle.Dispose();
+            }
 
-            state.AcceptQueue.Writer.TryWrite(stream);
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventStreamsAvailable(State state, ref ConnectionEvent connectionEvent)
         {
+            TaskCompletionSource? unidirectionalTcs = null;
+            TaskCompletionSource? bidirectionalTcs = null;
+            lock (state)
+            {
+                if (connectionEvent.Data.StreamsAvailable.UniDirectionalCount > 0)
+                {
+                    unidirectionalTcs = state.NewUnidirectionalStreamsAvailable;
+                    state.NewUnidirectionalStreamsAvailable = null;
+                }
+
+                if (connectionEvent.Data.StreamsAvailable.BiDirectionalCount > 0)
+                {
+                    bidirectionalTcs = state.NewBidirectionalStreamsAvailable;
+                    state.NewBidirectionalStreamsAvailable = null;
+                }
+            }
+
+            if (unidirectionalTcs is not null)
+            {
+                unidirectionalTcs.SetResult();
+            }
+            if (bidirectionalTcs is not null)
+            {
+                bidirectionalTcs.SetResult();
+            }
+
             return MsQuicStatusCodes.Success;
         }
 
@@ -205,12 +396,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             X509Chain? chain = null;
             X509Certificate2? certificate = null;
             X509Certificate2Collection? additionalCertificates = null;
-
-            MsQuicConnection? connection = state.Connection;
-            if (connection == null)
-            {
-                return MsQuicStatusCodes.InvalidState;
-            }
+            IntPtr certificateBuffer = IntPtr.Zero;
+            int certificateLength = 0;
 
             try
             {
@@ -224,26 +411,19 @@ namespace System.Net.Quic.Implementations.MsQuic
                     {
                         unsafe
                         {
-                            ReadOnlySpan<QuicBuffer> quicBuffer;
+                            ReadOnlySpan<QuicBuffer> quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle, sizeof(QuicBuffer));
+                            certificate = new X509Certificate2(new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length));
+                            certificateBuffer = (IntPtr)quicBuffer[0].Buffer;
+                            certificateLength = (int)quicBuffer[0].Length;
+
                             if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle != IntPtr.Zero)
                             {
                                 quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle, sizeof(QuicBuffer));
                                 if (quicBuffer[0].Length != 0 && quicBuffer[0].Buffer != null)
                                 {
-                                    ReadOnlySpan<byte> asn1 = new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length);
                                     additionalCertificates = new X509Certificate2Collection();
-                                    additionalCertificates.Import(asn1);
-                                    if (additionalCertificates.Count > 0)
-                                    {
-                                        certificate = additionalCertificates[0];
-                                    }
+                                    additionalCertificates.Import(new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length));
                                 }
-                            }
-                            else
-                            {
-                                 quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle, sizeof(QuicBuffer));
-                                 ReadOnlySpan<byte> asn1 = new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length);
-                                 certificate = new X509Certificate2(asn1);
                             }
                         }
                     }
@@ -251,54 +431,75 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (certificate == null)
                 {
-                    if (NetEventSource.Log.IsEnabled() && connection._remoteCertificateRequired) NetEventSource.Error(state.Connection, "Remote certificate required, but no remote certificate received");
+                    if (NetEventSource.Log.IsEnabled() && state.RemoteCertificateRequired) NetEventSource.Error(state, $"{state.TraceId} Remote certificate required, but no remote certificate received");
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
                 else
                 {
                     chain = new X509Chain();
-                    chain.ChainPolicy.RevocationMode = connection._revocationMode;
+                    chain.ChainPolicy.RevocationMode = state.RevocationMode;
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-                    chain.ChainPolicy.ApplicationPolicy.Add(connection._isServer ? s_clientAuthOid : s_serverAuthOid);
+                    chain.ChainPolicy.ApplicationPolicy.Add(state.IsServer ? s_clientAuthOid : s_serverAuthOid);
 
                     if (additionalCertificates != null && additionalCertificates.Count > 1)
                     {
-                        for (int i = 1; i < additionalCertificates.Count; i++)
-                        {
-                            chain.ChainPolicy.ExtraStore.Add(additionalCertificates[i]);
-                        }
+                        chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                     }
 
-                    if (!chain.Build(certificate))
-                    {
-                        sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                    }
+                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain, certificate, true, state.IsServer, state.TargetHost, certificateBuffer, certificateLength);
                 }
 
-                if (!connection._remoteCertificateRequired)
+                if (!state.RemoteCertificateRequired)
                 {
                     sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
 
-                if (connection._remoteCertificateValidationCallback != null)
+                state.RemoteCertificate = certificate;
+
+                if (state.RemoteCertificateValidationCallback != null)
                 {
-                    bool success = connection._remoteCertificateValidationCallback(connection, certificate, chain, sslPolicyErrors);
+                    bool success = state.RemoteCertificateValidationCallback(state, certificate, chain, sslPolicyErrors);
+                    // Unset the callback to prevent multiple invocations of the callback per a single connection.
+                    // Return the same value as the custom callback just did.
+                    state.RemoteCertificateValidationCallback = (_, _, _, _) => success;
+
                     if (!success && NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(state.Connection, "Remote certificate rejected by verification callback");
-                    return success ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
+                        NetEventSource.Error(state, $"{state.TraceId} Remote certificate rejected by verification callback");
+
+                    if (!success)
+                    {
+                        if (state.IsServer)
+                        {
+                            return MsQuicStatusCodes.UserCanceled;
+                        }
+
+                        throw new AuthenticationException(SR.net_quic_cert_custom_validation);
+                    }
+
+                    return MsQuicStatusCodes.Success;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Info(state.Connection, $"Certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
+                    NetEventSource.Info(state, $"{state.TraceId} Certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
 
-                return (sslPolicyErrors == SslPolicyErrors.None) ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
+
+                if (sslPolicyErrors != SslPolicyErrors.None)
+                {
+                    if (state.IsServer)
+                    {
+                        return MsQuicStatusCodes.HandshakeFailure;
+                    }
+
+                    throw new AuthenticationException(SR.Format(SR.net_quic_cert_chain_validation, sslPolicyErrors));
+                }
+
+                return MsQuicStatusCodes.Success;
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state.Connection, $"Certificate validation failed ${ex.Message}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"{state.TraceId} Certificate validation failed ${ex.Message}");
+                throw;
             }
-
-            return MsQuicStatusCodes.InternalError;
         }
 
         internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
@@ -313,35 +514,108 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (ChannelClosedException)
             {
-                throw _state.AbortErrorCode switch
-                {
-                    -1 => new QuicOperationAbortedException(), // Shutdown initiated by us.
-                    long err => new QuicConnectionAbortedException(err) // Shutdown initiated by peer.
-                };
+                throw ThrowHelper.GetConnectionAbortedException(_state.AbortErrorCode);
             }
 
             return stream;
         }
 
+        internal override ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        {
+            TaskCompletionSource? tcs = _state.NewUnidirectionalStreamsAvailable;
+            if (tcs is null)
+            {
+                // We need to avoid calling MsQuic under lock.
+                // This is not atomic but it won't be anyway as counts can change between when task is completed
+                // and before somebody may try to allocate new stream.
+                int count = GetRemoteAvailableUnidirectionalStreamCount();
+                lock (_state)
+                {
+                    if (_state.NewUnidirectionalStreamsAvailable is null)
+                    {
+                        if (_state.ShutdownTcs.Task.IsCompleted)
+                        {
+                            throw new QuicOperationAbortedException();
+                        }
+
+                        if (count > 0)
+                        {
+                            return ValueTask.CompletedTask;
+                        }
+
+                        _state.NewUnidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+
+                    tcs = _state.NewUnidirectionalStreamsAvailable;
+                }
+            }
+
+            return new ValueTask(tcs.Task.WaitAsync(cancellationToken));
+        }
+
+        internal override ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        {
+            TaskCompletionSource? tcs = _state.NewBidirectionalStreamsAvailable;
+            if (tcs is null)
+            {
+                // We need to avoid calling MsQuic under lock.
+                // This is not atomic but it won't be anyway as counts can change between when task is completed
+                // and before somebody may try to allocate new stream.
+                int count = GetRemoteAvailableBidirectionalStreamCount();
+                lock (_state)
+                {
+                    if (_state.NewBidirectionalStreamsAvailable is null)
+                    {
+                        if (_state.ShutdownTcs.Task.IsCompleted)
+                        {
+                            throw new QuicOperationAbortedException();
+                        }
+
+                        if (count > 0)
+                        {
+                            return ValueTask.CompletedTask;
+                        }
+
+                        _state.NewBidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                    tcs = _state.NewBidirectionalStreamsAvailable;
+                }
+            }
+
+            return new ValueTask(tcs.Task.WaitAsync(cancellationToken));
+        }
+
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+            if (!Connected)
+            {
+                throw new InvalidOperationException(SR.net_quic_not_connected);
+            }
+
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.NONE);
+            if (!Connected)
+            {
+                throw new InvalidOperationException(SR.net_quic_not_connected);
+            }
+
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.NONE);
         }
 
-        internal override long GetRemoteAvailableUnidirectionalStreamCount()
+        internal override int GetRemoteAvailableUnidirectionalStreamCount()
         {
+            Debug.Assert(!Monitor.IsEntered(_state));
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
         }
 
-        internal override long GetRemoteAvailableBidirectionalStreamCount()
+        internal override int GetRemoteAvailableBidirectionalStreamCount()
         {
+            Debug.Assert(!Monitor.IsEntered(_state));
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
         }
 
@@ -351,43 +625,95 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_configuration is null)
             {
-                throw new Exception($"{nameof(ConnectAsync)} must not be called on a connection obtained from a listener.");
+                throw new InvalidOperationException($"{nameof(ConnectAsync)} must not be called on a connection obtained from a listener.");
             }
-
-            (string address, int port) = _remoteEndPoint switch
-            {
-                DnsEndPoint dnsEp => (dnsEp.Host, dnsEp.Port),
-                IPEndPoint ipEp => (ipEp.Address.ToString(), ipEp.Port),
-                _ => throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.")
-            };
 
             QUIC_ADDRESS_FAMILY af = _remoteEndPoint.AddressFamily switch
             {
                 AddressFamily.Unspecified => QUIC_ADDRESS_FAMILY.UNSPEC,
                 AddressFamily.InterNetwork => QUIC_ADDRESS_FAMILY.INET,
                 AddressFamily.InterNetworkV6 => QUIC_ADDRESS_FAMILY.INET6,
-                _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
+                _ => throw new ArgumentException(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
+            Debug.Assert(_state.StateGCHandle.IsAllocated);
+
             _state.Connection = this;
+            uint status;
+            string targetHost;
+            int port;
+
+            if (_remoteEndPoint is IPEndPoint)
+            {
+                SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet((IPEndPoint)_remoteEndPoint);
+                unsafe
+                {
+                    Debug.Assert(!Monitor.IsEntered(_state));
+                    status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&address);
+                    QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
+                }
+
+                targetHost = _state.TargetHost ?? ((IPEndPoint)_remoteEndPoint).Address.ToString();
+                port = ((IPEndPoint)_remoteEndPoint).Port;
+
+            }
+            else if (_remoteEndPoint is DnsEndPoint)
+            {
+                port = ((DnsEndPoint)_remoteEndPoint).Port;
+                string dnsHost = ((DnsEndPoint)_remoteEndPoint).Host!;
+
+                // We don't have way how to set separate SNI and name for connection at this moment.
+                // If the name is actually IP address we can use it to make at least some cases work for people
+                // who want to bypass DNS but connect to specific virtual host.
+                if (!string.IsNullOrEmpty(_state.TargetHost) && !dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && IPAddress.TryParse(dnsHost, out IPAddress? address))
+                {
+                    // This is form of IPAddress and _state.TargetHost is set to different string
+                    SOCKADDR_INET quicAddress = MsQuicAddressHelpers.IPEndPointToINet(new IPEndPoint(address, port));
+                    unsafe
+                    {
+                        Debug.Assert(!Monitor.IsEntered(_state));
+                        status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&quicAddress);
+                        QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
+                    }
+                    targetHost = _state.TargetHost!;
+                }
+                else
+                {
+                    targetHost = dnsHost;
+                }
+            }
+            else
+            {
+                throw new ArgumentException($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.");
+            }
+
+            // We store TCS to local variable to avoid NRE if callbacks finish fast and set _state.ConnectTcs to null.
+            var tcs = _state.ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
+
             try
             {
-                uint status = MsQuicApi.Api.ConnectionStartDelegate(
+                Debug.Assert(!Monitor.IsEntered(_state));
+                status = MsQuicApi.Api.ConnectionStartDelegate(
                     _state.Handle,
                     _configuration,
                     af,
-                    address,
+                    targetHost,
                     (ushort)port);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
+
+                // this handle is ref counted by MsQuic, so safe to dispose here.
+                _configuration.Dispose();
+                _configuration = null;
             }
             catch
             {
+                _state.StateGCHandle.Free();
                 _state.Connection = null;
                 throw;
             }
 
-            return new ValueTask(_state.ConnectTcs.Task);
+            return new ValueTask(tcs.Task);
         }
 
         private ValueTask ShutdownAsync(
@@ -400,6 +726,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state));
                 MsQuicApi.Api.ConnectionShutdownDelegate(
                     _state.Handle,
                     Flags,
@@ -429,7 +756,16 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ConnectionEvent connectionEvent)
         {
-            var state = (State)GCHandle.FromIntPtr(context).Target!;
+            GCHandle gcHandle = GCHandle.FromIntPtr(context);
+            Debug.Assert(gcHandle.IsAllocated);
+            Debug.Assert(gcHandle.Target is not null);
+            var state = (State)gcHandle.Target;
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(state, $"{state.TraceId} Connection received event {connectionEvent.Type}");
+            }
+
             try
             {
                 switch (connectionEvent.Type)
@@ -456,11 +792,22 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"Exception occurred during connection callback: {ex.Message}");
+                    NetEventSource.Error(state, $"{state.TraceId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
+                }
+
+                if (state.ConnectTcs != null)
+                {
+                    // This is opportunistic if we get exception and have ability to propagate it to caller.
+                    state.ConnectTcs.TrySetException(ex);
+                    state.Connection = null;
+                    state.ConnectTcs = null;
+                }
+                else
+                {
+                    Debug.Fail($"{state.TraceId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
                 }
 
                 // TODO: trigger an exception on any outstanding async calls.
-
                 return MsQuicStatusCodes.InternalError;
             }
         }
@@ -476,30 +823,85 @@ namespace System.Net.Quic.Implementations.MsQuic
             Dispose(false);
         }
 
+        private async Task FlushAcceptQueue()
+        {
+            _state.AcceptQueue.Writer.TryComplete();
+            await foreach (MsQuicStream stream in _state.AcceptQueue.Reader.ReadAllAsync().ConfigureAwait(false))
+            {
+                if (stream.CanRead)
+                {
+                    stream.AbortRead(DefaultResetValue);
+                }
+                if (stream.CanWrite)
+                {
+                    stream.AbortWrite(DefaultResetValue);
+                }
+                stream.Dispose();
+            }
+        }
+
         private void Dispose(bool disposing)
         {
-            if (_disposed)
+            int disposed = Interlocked.Exchange(ref _disposed, 1);
+            if (disposed != 0)
             {
                 return;
             }
 
-            _state?.Handle?.Dispose();
-            if (_stateHandle.IsAllocated) _stateHandle.Free();
-            _disposed = true;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Connection disposing {disposing}");
+
+            // If we haven't already shutdown gracefully (via a successful CloseAsync call), then force an abortive shutdown.
+            if (_state.Handle != null && !_state.Handle.IsInvalid && !_state.Handle.IsClosed)
+            {
+                // Handle can be null if outbound constructor failed and we are called from finalizer.
+                Debug.Assert(!Monitor.IsEntered(_state));
+                MsQuicApi.Api.ConnectionShutdownDelegate(
+                    _state.Handle,
+                    QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
+                    0);
+            }
+
+            bool releaseHandles = false;
+            lock (_state)
+            {
+                _state.Connection = null;
+                if (_state.StreamCount == 0)
+                {
+                    releaseHandles = true;
+                }
+                else
+                {
+                    // We have pending streams so we need to defer cleanup until last one is gone.
+                    _state.SetClosing();
+                }
+            }
+
+            FlushAcceptQueue().GetAwaiter().GetResult();
+            _configuration?.Dispose();
+            if (releaseHandles)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Connection releasing handle");
+
+                // We may not be fully initialized if constructor fails.
+                _state.Handle?.Dispose();
+            }
         }
 
         // TODO: this appears abortive and will cause prior successfully shutdown and closed streams to drop data.
         // It's unclear how to gracefully wait for a connection to be 100% done.
         internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            if (_disposed == 1)
+            {
+                return default;
+            }
 
             return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE, errorCode);
         }
 
         private void ThrowIfDisposed()
         {
-            if (_disposed)
+            if (_disposed == 1)
             {
                 throw new ObjectDisposedException(nameof(MsQuicStream));
             }

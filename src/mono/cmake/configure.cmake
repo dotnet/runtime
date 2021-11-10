@@ -2,10 +2,12 @@
 # Configure checks
 #
 
-include(CheckTypeSize)
+include(CheckCCompilerFlag)
+include(CheckCSourceCompiles)
+include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
-include(CheckCCompilerFlag)
+include(CheckTypeSize)
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -14,6 +16,14 @@ include(CheckCCompilerFlag)
 check_c_compiler_flag("-Wunguarded-availability" "C_SUPPORTS_WUNGUARDED_AVAILABILITY")
 if(C_SUPPORTS_WUNGUARDED_AVAILABILITY)
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=unguarded-availability")
+endif()
+
+if(HOST_SOLARIS)
+  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2")
+endif()
+
+if(HOST_WASI)
+  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN")
 endif()
 
 function(ac_check_headers)
@@ -55,10 +65,10 @@ function(ac_check_type type suffix includes)
 endfunction()
 
 ac_check_headers (
-  sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h sys/sysctl.h
-  sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/user.h sys/poll.h sys/wait.h sts/auxv.h sys/resource.h
+  sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h
+  sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/poll.h sys/wait.h sts/auxv.h sys/resource.h
   sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
-  strings.h stdint.h unistd.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h
+  strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
   android/legacy_signal_inlines.h android/ndk-version.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h iconv.h alloca.h
@@ -66,14 +76,23 @@ ac_check_headers (
 
 ac_check_funcs (
   sigaction kill clock_nanosleep kqueue backtrace_symbols mkstemp mmap
-  madvise getrusage dladdr sysconf getrlimit prctl nl_langinfo
+  getrusage dladdr sysconf getrlimit prctl nl_langinfo
   sched_getaffinity sched_setaffinity getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
   shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
-  access inet_ntop Qp2getifaddrs)
+  access inet_ntop Qp2getifaddrs getpid mktemp)
+
+if (HOST_LINUX)
+  # sysctl is deprecated on Linux
+  set(HAVE_SYS_SYSCTL_H 0)
+else ()
+  check_include_files("sys/types.h;sys/sysctl.h" HAVE_SYS_SYSCTL_H)
+endif()
+
+check_include_files("sys/types.h;sys/user.h" HAVE_SYS_USER_H)
 
 if(NOT HOST_DARWIN)
   # getentropy was introduced in macOS 10.12 / iOS 10.0
@@ -89,11 +108,13 @@ ac_check_funcs(
   pthread_attr_setstacksize pthread_get_stackaddr_np
 )
 
+check_symbol_exists(madvise "sys/mman.h" HAVE_MADVISE)
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE "time.h" HAVE_CLOCK_MONOTONIC_COARSE)
 check_symbol_exists(sys_signame "signal.h" HAVE_SYSSIGNAME)
 check_symbol_exists(pthread_jit_write_protect_np "pthread.h" HAVE_PTHREAD_JIT_WRITE_PROTECT_NP)
+check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
 ac_check_type("struct sockaddr_in6" sockaddr_in6 "netinet/in.h")
 ac_check_type("struct timeval" timeval "sys/time.h;sys/types.h;utime.h")
@@ -114,20 +135,43 @@ check_type_size("long" SIZEOF_LONG)
 check_type_size("long long" SIZEOF_LONG_LONG)
 check_type_size("size_t" SIZEOF_SIZE_T)
 
+if (HOST_LINUX)
+  set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+endif()
+
+check_c_source_compiles(
+  "
+  #include <string.h>
+  int main(void)
+  {
+    char buffer[1];
+    char c = *strerror_r(0, buffer, 0);
+    return 0;
+  }
+  "
+  HAVE_GNU_STRERROR_R)
+
+check_c_source_compiles(
+  "
+  #include <sched.h>
+  int main(void)
+  {
+    CPU_COUNT((void *) 0);
+    return 0;
+  }
+  "
+  HAVE_GNU_CPU_COUNT)
+
+if (HOST_LINUX OR HOST_ANDROID)
+  set(CMAKE_REQUIRED_DEFINITIONS)
+endif()
+
 # ICONV
 set(ICONV_LIB)
 find_library(LIBICONV_FOUND iconv)
 if(NOT LIBICONV_FOUND STREQUAL "LIBICONV_FOUND-NOTFOUND")
   set(ICONV_LIB "iconv")
 endif()
-
-file(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c
-  "#include <sched.h>\n"
-  "void main () { CPU_COUNT((void *) 0); }\n"
-)
-try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c"
-    COMPILE_DEFINITIONS "-D_GNU_SOURCE")
-
 
 if(HOST_WIN32)
   # checking for this doesn't work for some reason, hardcode result
@@ -141,9 +185,7 @@ if(HOST_WIN32)
   set(HAVE_STRUCT_SOCKADDR_IN6 1)
   set(HAVE_STRTOK_R 1)
   set(HAVE_EXECVP 0)
-endif()
-
-if(HOST_IOS)
+elseif(HOST_IOS)
   set(HAVE_SYSTEM 0)
   set(HAVE_GETPWUID_R 0)
   set(HAVE_SYS_USER_H 0)
@@ -159,4 +201,19 @@ if(HOST_IOS)
   endif()
 elseif(HOST_MACCAT)
   set(HAVE_SYSTEM 0)
+elseif(HOST_BROWSER)
+  set(HAVE_FORK 0)
+elseif(HOST_SOLARIS)
+  set(HAVE_GETPROTOBYNAME 1)
+  set(HAVE_NETINET_TCP_H 1)
+  set(HAVE_GETADDRINFO 1)
+elseif(HOST_WASI)
+  # Redirected to errno.h
+  set(SYS_ERRNO_H 0)
+  # Some headers exist, but don't compile (wasi sdk 12.0)
+  set(HAVE_SYS_SOCKET_H 0)
+  set(HAVE_SYS_UN_H 0)
+  set(HAVE_NETINET_IN_H 0)
+  set(HAVE_NETINET_TCP_H 0)
+  set(HAVE_ARPA_INET_H 0)
 endif()

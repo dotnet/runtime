@@ -193,14 +193,14 @@ namespace System.Linq.Expressions
             }
             TypeUtils.ValidateType(type, nameof(type));
 
+            ConstructorInfo? ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParametersCached().Length == 0);
+            if (ci != null)
+            {
+                return New(ci);
+            }
             if (!type.IsValueType)
             {
-                ConstructorInfo? ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParametersCached().Length == 0);
-                if (ci == null)
-                {
-                    throw Error.TypeMissingDefaultConstructor(type, nameof(type));
-                }
-                return New(ci);
+                throw Error.TypeMissingDefaultConstructor(type, nameof(type));
             }
             return new NewValueTypeExpression(type, EmptyReadOnlyCollection<Expression>.Instance, null);
         }

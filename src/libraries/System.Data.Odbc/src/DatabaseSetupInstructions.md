@@ -17,8 +17,8 @@
 - followed [dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/master/src/debian/8.2/Dockerfile) instructions for debian 8.2
 - dependencies: libkrb5-dev, cmake
 
-Get the tag name from https://hub.docker.com/r/microsoft/dotnet-buildtools-prereqs/tags/ and use in docker run below
-- `docker run -it microsoft/dotnet-buildtools-prereqs:debian-8.2-SHA-YMD.. /bin/sh`
+Get the tag name from https://mcr.microsoft.com/v2/dotnet-buildtools/prereqs/tags/list and use in docker run below
+- `docker run -it mcr.microsoft.com/dotnet-buildtools/prereqs:debian-8.2-SHA-YMD.. /bin/sh`
 - `docker images` shows _id for Debian 8.2 to use in command below
 - `docker exec -it _id /bin/sh`
 

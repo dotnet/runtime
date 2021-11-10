@@ -34,7 +34,9 @@ namespace System.ComponentModel.Tests
             Assert.True(tracker.OperationDidComplete);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void Finalizer_OperationNotCompleted_CompletesOperation()
         {
             RemoteExecutor.Invoke(() =>

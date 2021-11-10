@@ -186,11 +186,7 @@ namespace System.Collections.Immutable
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowIfValueDifferent:
-#if !NETSTANDARD1_0
                             ref readonly var existingEntry = ref _additionalElements.ItemRef(keyCollisionIndex);
-#else
-                            var existingEntry = _additionalElements[keyCollisionIndex];
-#endif
                             if (!valueComparer.Equals(existingEntry.Value, value))
                             {
                                 throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
@@ -281,11 +277,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-#if !NETSTANDARD1_0
                 value = _additionalElements.ItemRef(index).Value;
-#else
-                value = _additionalElements[index].Value;
-#endif
                 return true;
             }
 
@@ -324,11 +316,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-#if !NETSTANDARD1_0
                 actualKey = _additionalElements.ItemRef(index).Key;
-#else
-                actualKey = _additionalElements[index].Key;
-#endif
                 return true;
             }
 

@@ -1,4 +1,5 @@
-﻿<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en-US" target-language="de" original="MICROSOFT.CSHARP/RESOURCES/STRINGS.RESX" tool-id="MultilingualAppToolkit" product-name="n/a" product-version="n/a" build-num="n/a">
     <header>
       <tool tool-id="MultilingualAppToolkit" tool-name="Multilingual App Toolkit" tool-version="4.0.1387.0" tool-company="Microsoft" />
@@ -7,351 +8,351 @@
       <group id="MICROSOFT.CSHARP/RESOURCES/STRINGS.RESX" datatype="resx">
         <trans-unit id="InternalCompilerError" translate="yes" xml:space="preserve">
           <source>An unexpected exception occurred while binding a dynamic operation</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Unerwartete Ausnahme beim Binden eines dynamischen Vorgangs</target>
+          <target state="translated" state-qualifier="tm-suggestion">Unerwartete Ausnahme beim Binden eines dynamischen Vorgangs</target>
         </trans-unit>
         <trans-unit id="BindRequireArguments" translate="yes" xml:space="preserve">
           <source>Cannot bind call with no calling object</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Ein Aufruf ohne aufrufendes Objekt kann nicht gebunden werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Ein Aufruf ohne aufrufendes Objekt kann nicht gebunden werden.</target>
         </trans-unit>
         <trans-unit id="BindCallFailedOverloadResolution" translate="yes" xml:space="preserve">
           <source>Overload resolution failed</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Fehler bei der Überladungsauflösung</target>
+          <target state="translated" state-qualifier="tm-suggestion">Fehler bei der Überladungsauflösung.</target>
         </trans-unit>
         <trans-unit id="BindBinaryOperatorRequireTwoArguments" translate="yes" xml:space="preserve">
           <source>Binary operators must be invoked with two arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Binäre Operatoren müssen mit zwei Argumenten aufgerufen werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Binäre Operatoren müssen mit zwei Argumenten aufgerufen werden.</target>
         </trans-unit>
         <trans-unit id="BindUnaryOperatorRequireOneArgument" translate="yes" xml:space="preserve">
           <source>Unary operators must be invoked with one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Unäre Operatoren müssen mit einem Argument aufgerufen werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Unäre Operatoren müssen mit einem Argument aufgerufen werden.</target>
         </trans-unit>
         <trans-unit id="BindPropertyFailedMethodGroup" translate="yes" xml:space="preserve">
           <source>The name '{0}' is bound to a method and cannot be used like a property</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Name "{0}" ist an eine Methode gebunden und kann nicht wie eine Eigenschaft verwendet werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Name "{0}" ist an eine Methode gebunden und kann nicht wie eine Eigenschaft verwendet werden.</target>
         </trans-unit>
         <trans-unit id="BindPropertyFailedEvent" translate="yes" xml:space="preserve">
           <source>The event '{0}' can only appear on the left hand side of +</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Das Ereignis "{0}" kann nur verwendet werden, auf der linken Seite des +</target>
+          <target state="translated" state-qualifier="mt-suggestion">Das Ereignis "{0}" kann nur links von "+" verwendet werden.</target>
         </trans-unit>
         <trans-unit id="BindInvokeFailedNonDelegate" translate="yes" xml:space="preserve">
           <source>Cannot invoke a non-delegate type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Ein Nichtdelegattyp kann nicht aufgerufen werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Ein Nichtdelegattyp kann nicht aufgerufen werden.</target>
         </trans-unit>
         <trans-unit id="BindBinaryAssignmentRequireTwoArguments" translate="yes" xml:space="preserve">
           <source>Binary operators cannot be invoked with one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Binäre Operatoren können nicht mit einem Argument aufgerufen werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Binäre Operatoren können nicht mit einem Argument aufgerufen werden.</target>
         </trans-unit>
         <trans-unit id="BindBinaryAssignmentFailedNullReference" translate="yes" xml:space="preserve">
           <source>Cannot perform member assignment on a null reference</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Für einen NULL-Verweis kann keine Memberzuweisung ausgeführt werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Für einen NULL-Verweis kann keine Memberzuweisung ausgeführt werden.</target>
         </trans-unit>
         <trans-unit id="NullReferenceOnMemberException" translate="yes" xml:space="preserve">
           <source>Cannot perform runtime binding on a null reference</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Laufzeitbindung kann für einen NULL-Verweis nicht ausgeführt werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Laufzeitbindung kann für einen NULL-Verweis nicht ausgeführt werden.</target>
         </trans-unit>
         <trans-unit id="BindCallToConditionalMethod" translate="yes" xml:space="preserve">
           <source>Cannot dynamically invoke method '{0}' because it has a Conditional attribute</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die {0}-Methode kann nicht dynamisch aufgerufen werden, da sie ein Conditional-Attribut enthält.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die {0}-Methode kann nicht dynamisch aufgerufen werden, da sie ein Conditional-Attribut enthält.</target>
         </trans-unit>
         <trans-unit id="BindToVoidMethodButExpectResult" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type 'void' to 'object'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Typ "void" kann nicht implizit in "object" konvertiert werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Typ "void" kann nicht implizit in "object" konvertiert werden.</target>
         </trans-unit>
         <trans-unit id="BadBinaryOps" translate="yes" xml:space="preserve">
           <source>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Operator kann nicht auf Operanden vom Typ "{1}" und "{2}" angewendet werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {0}-Operator kann nicht auf Operanden vom Typ "{1}" und "{2}" angewendet werden.</target>
         </trans-unit>
         <trans-unit id="BadIndexLHS" translate="yes" xml:space="preserve">
           <source>Cannot apply indexing with [] to an expression of type '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Eine Indizierung mit [] kann nicht auf einen Ausdruck vom Typ "{0}" angewendet werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Eine Indizierung mit [] kann nicht auf einen Ausdruck vom Typ "{0}" angewendet werden.</target>
         </trans-unit>
         <trans-unit id="BadIndexCount" translate="yes" xml:space="preserve">
           <source>Wrong number of indices inside []; expected '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Falsche Indexanzahl in []. {0} wurde erwartet</target>
+          <target state="translated" state-qualifier="tm-suggestion">Falsche Indexanzahl in []. {0} wurde erwartet</target>
         </trans-unit>
         <trans-unit id="BadUnaryOp" translate="yes" xml:space="preserve">
           <source>Operator '{0}' cannot be applied to operand of type '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Operator kann nicht auf einen Operanden vom Typ "{1}" angewendet werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {0}-Operator kann nicht auf einen Operanden vom Typ "{1}" angewendet werden.</target>
         </trans-unit>
         <trans-unit id="NoImplicitConv" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Typ kann nicht implizit in {1} konvertiert werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {0}-Typ kann nicht implizit in {1} konvertiert werden.</target>
         </trans-unit>
         <trans-unit id="NoExplicitConv" translate="yes" xml:space="preserve">
           <source>Cannot convert type '{0}' to '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Typ kann nicht in {1} konvertiert werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {0}-Typ kann nicht in {1} konvertiert werden.</target>
         </trans-unit>
         <trans-unit id="ConstOutOfRange" translate="yes" xml:space="preserve">
           <source>Constant value '{0}' cannot be converted to a '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Konstantenwert "{0}" kann nicht in {1} konvertiert werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Konstantenwert "{0}" kann nicht in {1} konvertiert werden.</target>
         </trans-unit>
         <trans-unit id="AmbigBinaryOps" translate="yes" xml:space="preserve">
           <source>Operator '{0}' is ambiguous on operands of type '{1}' and '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Operator ist bei Operanden vom Typ "{1}" und "{2}" mehrdeutig.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {0}-Operator ist bei Operanden vom Typ "{1}" und "{2}" mehrdeutig.</target>
         </trans-unit>
         <trans-unit id="AmbigUnaryOp" translate="yes" xml:space="preserve">
           <source>Operator '{0}' is ambiguous on an operand of type '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Operator ist für einen Operanden vom Typ "{1}" mehrdeutig.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {0}-Operator ist für einen Operanden vom Typ "{1}" mehrdeutig.</target>
         </trans-unit>
         <trans-unit id="ValueCantBeNull" translate="yes" xml:space="preserve">
           <source>Cannot convert null to '{0}' because it is a non-nullable value type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">NULL kann nicht in {0} konvertiert werden, da dieser Werttyp nicht auf NULL festgelegt werden kann.</target>
+          <target state="translated" state-qualifier="tm-suggestion">NULL kann nicht in {0} konvertiert werden, da dieser Werttyp nicht auf NULL festgelegt werden kann.</target>
         </trans-unit>
         <trans-unit id="WrongNestedThis" translate="yes" xml:space="preserve">
           <source>Cannot access a non-static member of outer type '{0}' via nested type '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Auf einen nicht statischen Member des äußeren {0}-Typs kann nicht über den geschachtelten {1}-Typ zugegriffen werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Auf einen nicht statischen Member des äußeren {0}-Typs kann nicht über den geschachtelten {1}-Typ zugegriffen werden.</target>
         </trans-unit>
         <trans-unit id="NoSuchMember" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a definition for '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} enthält keine Definition für {1}.</target>
+          <target state="translated" state-qualifier="tm-suggestion">"{0}" enthält keine Definition für "{1}".</target>
         </trans-unit>
         <trans-unit id="ObjectRequired" translate="yes" xml:space="preserve">
           <source>An object reference is required for the non-static field, method, or property '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Für das nicht statische Feld, die Methode oder die Eigenschaft "{0}" ist ein Objektverweis erforderlich.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Für das nicht statische Feld, die Methode oder die Eigenschaft "{0}" ist ein Objektverweis erforderlich.</target>
         </trans-unit>
         <trans-unit id="AmbigCall" translate="yes" xml:space="preserve">
           <source>The call is ambiguous between the following methods or properties: '{0}' and '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Aufruf unterscheidet nicht eindeutig zwischen den folgenden Methoden oder Eigenschaften: {0} und {1}</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Aufruf unterscheidet nicht eindeutig zwischen den folgenden Methoden oder Eigenschaften: {0} und {1}</target>
         </trans-unit>
         <trans-unit id="BadAccess" translate="yes" xml:space="preserve">
           <source>'{0}' is inaccessible due to its protection level</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Zugriff auf "{0}" ist aufgrund des Schutzgrads nicht möglich.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Zugriff auf "{0}" ist aufgrund des Schutzgrads nicht möglich.</target>
         </trans-unit>
         <trans-unit id="MethDelegateMismatch" translate="yes" xml:space="preserve">
           <source>No overload for '{0}' matches delegate '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Keine Überladung für {0} stimmt mit dem Delegaten "{1}" überein.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Keine Überladung für {0} stimmt mit dem Delegaten "{1}" überein.</target>
         </trans-unit>
         <trans-unit id="AssgLvalueExpected" translate="yes" xml:space="preserve">
           <source>The left-hand side of an assignment must be a variable, property or indexer</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die linke Seite einer Zuweisung muss eine Variable, eine Eigenschaft oder ein Indexer sein.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die linke Seite einer Zuweisung muss eine Variable, eine Eigenschaft oder ein Indexer sein.</target>
         </trans-unit>
         <trans-unit id="NoConstructors" translate="yes" xml:space="preserve">
           <source>The type '{0}' has no constructors defined</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Für den {0}-Typ sind keine Konstruktoren definiert.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Für den {0}-Typ sind keine Konstruktoren definiert.</target>
         </trans-unit>
         <trans-unit id="PropertyLacksGet" translate="yes" xml:space="preserve">
           <source>The property or indexer '{0}' cannot be used in this context because it lacks the get accessor</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, weil der get-Accessor fehlt.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, weil der get-Accessor fehlt.</target>
         </trans-unit>
         <trans-unit id="ObjectProhibited" translate="yes" xml:space="preserve">
           <source>Member '{0}' cannot be accessed with an instance reference; qualify it with a type name instead</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Auf den Member "{0}" kann nicht mit einem Instanzverweis zugegriffen werden. Qualifizieren Sie ihn stattdessen mit einem Typnamen.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Auf den Member "{0}" kann nicht mit einem Instanzverweis zugegriffen werden. Qualifizieren Sie ihn stattdessen mit einem Typnamen.</target>
         </trans-unit>
         <trans-unit id="AssgReadonly" translate="yes" xml:space="preserve">
           <source>A readonly field cannot be assigned to (except in a constructor or a variable initializer)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Einem schreibgeschützten Feld kann nichts zugewiesen werden (außer in einem Konstruktor oder Variableninitialisierer).</target>
+          <target state="translated" state-qualifier="tm-suggestion">Für ein schreibgeschütztes Feld ist eine Zuweisung nicht möglich (außer in einem Konstruktor oder Variableninitialisierer).</target>
         </trans-unit>
         <trans-unit id="RefReadonly" translate="yes" xml:space="preserve">
           <source>A readonly field cannot be passed ref or out (except in a constructor)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Einem schreibgeschützten Feld kann kein Verweis und keine Ausgabe übergeben werden (außer in einem Konstruktor).</target>
+          <target state="translated" state-qualifier="tm-suggestion">An ein schreibgeschütztes Feld können keine ref- oder out-Argumente übergeben werden (außer in einem Konstruktor).</target>
         </trans-unit>
         <trans-unit id="AssgReadonlyStatic" translate="yes" xml:space="preserve">
           <source>A static readonly field cannot be assigned to (except in a static constructor or a variable initializer)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Einem statischen, schreibgeschützten Feld kann nichts zugewiesen werden (außer in einem statischen Konstruktor oder einem Variableninitialisierer).</target>
+          <target state="translated" state-qualifier="tm-suggestion">Für ein statisches schreibgeschütztes Feld ist eine Zuweisung nicht möglich (außer in einem statischen Konstruktor oder einem Variableninitialisierer).</target>
         </trans-unit>
         <trans-unit id="RefReadonlyStatic" translate="yes" xml:space="preserve">
           <source>A static readonly field cannot be passed ref or out (except in a static constructor)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Einem statischen, schreibgeschützten Feld kann kein Verweis und keine Ausgabe übergeben werden (außer in einem statischen Konstruktor)</target>
+          <target state="translated" state-qualifier="tm-suggestion">An ein statisches schreibgeschütztes Feld können keine ref- oder out-Argumente übergeben werden (außer in einem Konstruktor).</target>
         </trans-unit>
         <trans-unit id="AssgReadonlyProp" translate="yes" xml:space="preserve">
           <source>Property or indexer '{0}' cannot be assigned to -- it is read only</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Für die Eigenschaft oder den Indexer "{0}" ist eine Zuweisung nicht möglich -- sie sind schreibgeschützt.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Für die Eigenschaft oder den Indexer "{0}" ist eine Zuweisung nicht möglich -- sie sind schreibgeschützt.</target>
         </trans-unit>
         <trans-unit id="RefProperty" translate="yes" xml:space="preserve">
           <source>A property or indexer may not be passed as an out or ref parameter</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Eine Eigenschaft oder ein Indexer kann nicht als out- oder ref-Parameter übergeben werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Eine Eigenschaft oder ein Indexer kann nicht als out- oder ref-Parameter übergeben werden.</target>
         </trans-unit>
         <trans-unit id="UnsafeNeeded" translate="yes" xml:space="preserve">
           <source>Dynamic calls cannot be used in conjunction with pointers</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Dynamische Aufrufe können nicht in Verbindung mit Zeigern verwendet werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Dynamische Aufrufe können nicht in Verbindung mit Zeigern verwendet werden.</target>
         </trans-unit>
         <trans-unit id="BadBoolOp" translate="yes" xml:space="preserve">
           <source>In order to be applicable as a short circuit operator a user-defined logical operator ('{0}') must have the same return type as the type of its 2 parameters</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Um als Kurzschlussoperator anwendbar zu sein, muss der Rückgabetyp eines benutzerdefinierten logischen Operators ({0}) mit dem Typ seiner zwei Parameter übereinstimmen.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Um als Kurzschlussoperator anwendbar zu sein, muss der Rückgabetyp eines benutzerdefinierten logischen Operators ({0}) mit dem Typ seiner zwei Parameter übereinstimmen.</target>
         </trans-unit>
         <trans-unit id="MustHaveOpTF" translate="yes" xml:space="preserve">
           <source>The type ('{0}') must contain declarations of operator true and operator false</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Typ ({0}) muss Deklarationen des True- und des False-Operators enthalten.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Typ ({0}) muss Deklarationen des True- und des False-Operators enthalten.</target>
         </trans-unit>
         <trans-unit id="ConstOutOfRangeChecked" translate="yes" xml:space="preserve">
           <source>Constant value '{0}' cannot be converted to a '{1}' (use 'unchecked' syntax to override)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Konstantenwert "{0}" kann nicht in {1} konvertiert werden (verwenden Sie zum Außerkraftsetzen die unchecked-Syntax).</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Konstantenwert "{0}" kann nicht in {1} konvertiert werden (verwenden Sie zum Außerkraftsetzen die unchecked-Syntax).</target>
         </trans-unit>
         <trans-unit id="AmbigMember" translate="yes" xml:space="preserve">
           <source>Ambiguity between '{0}' and '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Mehrdeutigkeit zwischen {0} und {1}</target>
+          <target state="translated" state-qualifier="tm-suggestion">Mehrdeutigkeit zwischen {0} und {1}</target>
         </trans-unit>
         <trans-unit id="NoImplicitConvCast" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Typ kann nicht implizit in {1} konvertiert werden. Es ist bereits eine explizite Konvertierung vorhanden (möglicherweise fehlt eine Umwandlung).</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {0}-Typ kann nicht implizit in {1} konvertiert werden. Es ist bereits eine explizite Konvertierung vorhanden (möglicherweise fehlt eine Umwandlung).</target>
         </trans-unit>
         <trans-unit id="InaccessibleGetter" translate="yes" xml:space="preserve">
           <source>The property or indexer '{0}' cannot be used in this context because the get accessor is inaccessible</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, da nicht auf den get-Accessor zugegriffen werden kann.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, da nicht auf den get-Accessor zugegriffen werden kann.</target>
         </trans-unit>
         <trans-unit id="InaccessibleSetter" translate="yes" xml:space="preserve">
           <source>The property or indexer '{0}' cannot be used in this context because the set accessor is inaccessible</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, da nicht auf den set-Accessor zugegriffen werden kann.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, da nicht auf den set-Accessor zugegriffen werden kann.</target>
         </trans-unit>
         <trans-unit id="BadArity" translate="yes" xml:space="preserve">
           <source>Using the generic {1} '{0}' requires '{2}' type arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Verwendung von {1} "{0}" (generisch) erfordert {2}-Typargumente.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Verwendung von {1} "{0}" (generisch) erfordert {2}-Typargumente.</target>
         </trans-unit>
         <trans-unit id="TypeArgsNotAllowed" translate="yes" xml:space="preserve">
           <source>The {1} '{0}' cannot be used with type arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{1} "{0}" kann nicht mit Typargumenten verwendet werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">{1} "{0}" kann nicht mit Typargumenten verwendet werden.</target>
         </trans-unit>
         <trans-unit id="HasNoTypeVars" translate="yes" xml:space="preserve">
           <source>The non-generic {1} '{0}' cannot be used with type arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{1} "{0}" ist nicht generisch und kann daher nicht mit Typargumenten verwendet werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">{1} "{0}" ist nicht generisch und kann daher nicht mit Typargumenten verwendet werden.</target>
         </trans-unit>
         <trans-unit id="NewConstraintNotSatisfied" translate="yes" xml:space="preserve">
           <source>'{2}' must be a non-abstract type with a public parameterless constructor in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{2} muss ein nicht abstrakter Typ mit einem öffentlichen parameterlosen Konstruktor sein, um im generischen Typ oder in der generischen {0}-Methode als {1}-Parameter verwendet werden zu können.</target>
+          <target state="translated" state-qualifier="tm-suggestion">"{2}" muss ein nicht abstrakter Typ mit einem öffentlichen parameterlosen Konstruktor sein, um im generischen Typ oder in der generischen {0}-Methode als {1}-Parameter verwendet werden zu können.</target>
         </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedRefType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no implicit reference conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine implizite Verweiskonvertierung von {3} in {1} vorhanden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine implizite Verweiskonvertierung von {3} in {1} vorhanden.</target>
         </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedNullableEnum" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Der {3}-Typ, der NULL-Werte zulässt, entspricht nicht der Einschränkung von {1}.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Der {3}-Typ, der NULL-Werte zulässt, entspricht nicht der Einschränkung von {1}.</target>
         </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedNullableInterface" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Der {3}-Typ, der NULL-Werte zulässt, entspricht nicht der Einschränkung von {1}. Typen, die NULL-Werte zulassen, können Schnittstelleneinschränkungen nicht entsprechen.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Der {3}-Typ, der NULL-Werte zulässt, entspricht nicht der Einschränkung von {1}. Typen, die NULL-Werte zulassen, können Schnittstelleneinschränkungen nicht entsprechen.</target>
         </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedValType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine Boxing-Konvertierung von {3} in {1} vorhanden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine Boxing-Konvertierung von {3} in {1} vorhanden.</target>
         </trans-unit>
         <trans-unit id="CantInferMethTypeArgs" translate="yes" xml:space="preserve">
           <source>The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Typargumente der {0}-Methode können nicht per Rückschluss aus der Syntax abgeleitet werden. Geben Sie die Typargumente explizit an.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Typargumente der {0}-Methode können nicht per Rückschluss aus der Syntax abgeleitet werden. Geben Sie die Typargumente explizit an.</target>
         </trans-unit>
         <trans-unit id="RefConstraintNotSatisfied" translate="yes" xml:space="preserve">
           <source>The type '{2}' must be a reference type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {2}-Typ muss ein Referenztyp sein, damit er als {1}-Parameter im generischen Typ oder in der generischen {0}-Methode verwendet werden kann.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {2}-Typ muss ein Referenztyp sein, damit er als {1}-Parameter im generischen Typ oder in der generischen {0}-Methode verwendet werden kann.</target>
         </trans-unit>
         <trans-unit id="ValConstraintNotSatisfied" translate="yes" xml:space="preserve">
           <source>The type '{2}' must be a non-nullable value type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {2}-Typ darf keine NULL-Werte zulassen, wenn er als {1}-Parameter im generischen Typ oder in der generischen {0}-Methode verwendet werden soll.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der {2}-Typ darf keine NULL-Werte zulassen, wenn er als {1}-Parameter im generischen Typ oder in der generischen {0}-Methode verwendet werden soll.</target>
         </trans-unit>
         <trans-unit id="AmbigUDConv" translate="yes" xml:space="preserve">
           <source>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Mehrdeutige benutzerdefinierte Konvertierungen von {0} und {1} bei der Konvertierung von {2} in {3}</target>
+          <target state="translated" state-qualifier="tm-suggestion">Mehrdeutige benutzerdefinierte Konvertierungen von {0} und {1} bei der Konvertierung von {2} in {3}</target>
         </trans-unit>
         <trans-unit id="BindToBogus" translate="yes" xml:space="preserve">
           <source>'{0}' is not supported by the language</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} wird von der Sprache nicht unterstützt.</target>
+          <target state="translated" state-qualifier="tm-suggestion">"{0}" wird von der Sprache nicht unterstützt.</target>
         </trans-unit>
         <trans-unit id="CantCallSpecialMethod" translate="yes" xml:space="preserve">
           <source>'{0}': cannot explicitly call operator or accessor</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0}: Der Operator oder Accessor kann nicht explizit aufgerufen werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">{0}: Der Operator oder Accessor kann nicht explizit aufgerufen werden.</target>
         </trans-unit>
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Konvertierung in den statischen {0}-Typ ist nicht möglich.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Konvertierung in den statischen {0}-Typ ist nicht möglich.</target>
         </trans-unit>
         <trans-unit id="IncrementLvalueExpected" translate="yes" xml:space="preserve">
           <source>The operand of an increment or decrement operator must be a variable, property or indexer</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Operand eines Inkrement- oder Dekrementoperators muss eine Variable, eine Eigenschaft oder ein Indexer sein.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Operand eines Inkrement- oder Dekrementoperators muss eine Variable, eine Eigenschaft oder ein Indexer sein.</target>
         </trans-unit>
         <trans-unit id="BadArgCount" translate="yes" xml:space="preserve">
           <source>No overload for method '{0}' takes '{1}' arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Keine Überladung für die {0}-Methode nimmt {1}-Argumente an.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Keine Überladung für die {0}-Methode nimmt {1}-Argumente an.</target>
         </trans-unit>
         <trans-unit id="BadArgTypes" translate="yes" xml:space="preserve">
           <source>The best overloaded method match for '{0}' has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die beste Übereinstimmung für die überladene {0}-Methode enthält einige ungültige Argumente.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die beste Übereinstimmung für die überladene {0}-Methode enthält einige ungültige Argumente.</target>
         </trans-unit>
         <trans-unit id="RefLvalueExpected" translate="yes" xml:space="preserve">
           <source>A ref or out argument must be an assignable variable</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Ein ref- oder out-Argument muss eine zuweisbare Variable sein.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Ein ref- oder out-Argument muss eine zuweisbare Variable sein.</target>
         </trans-unit>
         <trans-unit id="BadProtectedAccess" translate="yes" xml:space="preserve">
           <source>Cannot access protected member '{0}' via a qualifier of type '{1}'; the qualifier must be of type '{2}' (or derived from it)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Auf den geschützten Member "{0}" kann nicht über einen Qualifizierer vom Typ "{1}" zugegriffen werden. Der Qualifizierer muss vom Typ "{2}" (oder von ihm abgeleitet) sein.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Auf den geschützten Member "{0}" kann nicht über einen Qualifizierer vom Typ "{1}" zugegriffen werden. Der Qualifizierer muss vom Typ "{2}" (oder von ihm abgeleitet) sein.</target>
         </trans-unit>
         <trans-unit id="BindToBogusProp2" translate="yes" xml:space="preserve">
           <source>Property, indexer, or event '{0}' is not supported by the language; try directly calling accessor methods '{1}' or '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Eigenschaft, der Indexer oder das Ereignis "{0}" wird von der Sprache nicht unterstützt. Rufen Sie die {1}- oder {2}-Accessormethoden direkt auf.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Eigenschaft, der Indexer oder das Ereignis "{0}" wird von der Sprache nicht unterstützt. Rufen Sie die {1}- oder {2}-Accessormethoden direkt auf.</target>
         </trans-unit>
         <trans-unit id="BindToBogusProp1" translate="yes" xml:space="preserve">
           <source>Property, indexer, or event '{0}' is not supported by the language; try directly calling accessor method '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Eigenschaft, der Indexer oder das Ereignis "{0}" wird von der Sprache nicht unterstützt. Rufen Sie die {1}-Accessormethode direkt auf.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die Eigenschaft, der Indexer oder das Ereignis "{0}" wird von der Sprache nicht unterstützt. Rufen Sie die {1}-Accessormethode direkt auf.</target>
         </trans-unit>
         <trans-unit id="BadDelArgCount" translate="yes" xml:space="preserve">
           <source>Delegate '{0}' does not take '{1}' arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Delegat "{0}" akzeptiert {1}-Argumente nicht.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Delegat "{0}" akzeptiert {1}-Argumente nicht.</target>
         </trans-unit>
         <trans-unit id="BadDelArgTypes" translate="yes" xml:space="preserve">
           <source>Delegate '{0}' has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Delegat "{0}" enthält einige ungültige Argumente.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Delegat "{0}" enthält einige ungültige Argumente.</target>
         </trans-unit>
         <trans-unit id="AssgReadonlyLocal" translate="yes" xml:space="preserve">
           <source>Cannot assign to '{0}' because it is read-only</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} ist schreibgeschützt. Eine Zuweisung ist daher nicht möglich.</target>
+          <target state="translated" state-qualifier="tm-suggestion">{0} ist schreibgeschützt. Eine Zuweisung ist daher nicht möglich.</target>
         </trans-unit>
         <trans-unit id="RefReadonlyLocal" translate="yes" xml:space="preserve">
           <source>Cannot pass '{0}' as a ref or out argument because it is read-only</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} ist schreibgeschützt und kann daher nicht als ref- oder out-Argument übergeben werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">{0} ist schreibgeschützt und kann daher nicht als ref- oder out-Argument übergeben werden.</target>
         </trans-unit>
         <trans-unit id="ReturnNotLValue" translate="yes" xml:space="preserve">
           <source>Cannot modify the return value of '{0}' because it is not a variable</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Rückgabewert von {0} ist keine Variable und kann daher nicht geändert werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Rückgabewert von {0} ist keine Variable und kann daher nicht geändert werden.</target>
         </trans-unit>
         <trans-unit id="AssgReadonly2" translate="yes" xml:space="preserve">
           <source>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Member des schreibgeschützten Felds "{0}" können nicht geändert werden (außer in einem Konstruktor oder Variableninitialisierer).</target>
+          <target state="translated" state-qualifier="tm-suggestion">Member des schreibgeschützten Felds "{0}" können nicht geändert werden (außer in einem Konstruktor oder Variableninitialisierer).</target>
         </trans-unit>
         <trans-unit id="RefReadonly2" translate="yes" xml:space="preserve">
           <source>Members of readonly field '{0}' cannot be passed ref or out (except in a constructor)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">An Member des schreibgeschützten Felds "{0}" können keine ref- oder out-Argumente übergeben werden (außer in einem Konstruktor).</target>
+          <target state="translated" state-qualifier="tm-suggestion">An Member des schreibgeschützten Felds "{0}" können keine ref- oder out-Argumente übergeben werden (außer in einem Konstruktor).</target>
         </trans-unit>
         <trans-unit id="AssgReadonlyStatic2" translate="yes" xml:space="preserve">
           <source>Fields of static readonly field '{0}' cannot be assigned to (except in a static constructor or a variable initializer)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Für Felder eines statischen schreibgeschützten Felds "{0}" ist eine Zuweisung nicht möglich (außer in einem statischen Konstruktor oder einem Variableninitialisierer).</target>
+          <target state="translated" state-qualifier="tm-suggestion">Für Felder eines statischen schreibgeschützten Felds "{0}" ist eine Zuweisung nicht möglich (außer in einem statischen Konstruktor oder einem Variableninitialisierer).</target>
         </trans-unit>
         <trans-unit id="RefReadonlyStatic2" translate="yes" xml:space="preserve">
           <source>Fields of static readonly field '{0}' cannot be passed ref or out (except in a static constructor)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">An Felder des schreibgeschützten Felds "{0}" können keine ref- oder out-Argumente übergeben werden (außer in einem Konstruktor).</target>
+          <target state="translated" state-qualifier="tm-suggestion">An Felder des schreibgeschützten Felds "{0}" können keine ref- oder out-Argumente übergeben werden (außer in einem Konstruktor).</target>
         </trans-unit>
         <trans-unit id="AssgReadonlyLocalCause" translate="yes" xml:space="preserve">
           <source>Cannot assign to '{0}' because it is a '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} ist ein(e) {1}. Eine Zuweisung ist daher nicht möglich.</target>
+          <target state="translated" state-qualifier="tm-suggestion">{0} ist ein(e) {1}. Eine Zuweisung ist daher nicht möglich.</target>
         </trans-unit>
         <trans-unit id="RefReadonlyLocalCause" translate="yes" xml:space="preserve">
           <source>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} ist ein(e) {1} und kann daher nicht als ref- oder out-Argument übergeben werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">{0} ist ein(e) {1} und kann daher nicht als ref- oder out-Argument übergeben werden.</target>
         </trans-unit>
         <trans-unit id="BadCtorArgCount" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a constructor that takes '{1}' arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">"{0}" enthält keinen Konstruktor, der {1}-Argumente akzeptiert.</target>
+          <target state="translated" state-qualifier="tm-suggestion">"{0}" enthält keinen Konstruktor, der {1}-Argumente akzeptiert.</target>
         </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der nicht aufrufbare Member "{0}" kann nicht wie eine Methode verwendet werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der nicht aufrufbare Member "{0}" kann nicht wie eine Methode verwendet werden.</target>
         </trans-unit>
         <trans-unit id="NamedArgumentSpecificationBeforeFixedArgument" translate="yes" xml:space="preserve">
           <source>Named argument specifications must appear after all fixed arguments have been specified</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Spezifikationen für benannte Argumente müssen nach Angabe aller festen Argumente angezeigt werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Benannte Argumente müssen nach allen festen Argumenten angegeben werden.</target>
         </trans-unit>
         <trans-unit id="BadNamedArgument" translate="yes" xml:space="preserve">
           <source>The best overload for '{0}' does not have a parameter named '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die beste Überladung für {0} enthält keinen Parameter mit dem Namen "{1}".</target>
+          <target state="translated" state-qualifier="tm-suggestion">Die beste Überladung für {0} enthält keinen Parameter mit dem Namen "{1}".</target>
         </trans-unit>
         <trans-unit id="BadNamedArgumentForDelegateInvoke" translate="yes" xml:space="preserve">
           <source>The delegate '{0}' does not have a parameter named '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Delegat "{0}" enthält keinen Parameter mit dem Namen "{1}".</target>
+          <target state="translated" state-qualifier="tm-suggestion">Der Delegat "{0}" enthält keinen Parameter mit dem Namen "{1}".</target>
         </trans-unit>
         <trans-unit id="DuplicateNamedArgument" translate="yes" xml:space="preserve">
           <source>Named argument '{0}' cannot be specified multiple times</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Das benannte {0}-Argument kann nicht mehrmals angegeben werden.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Das benannte {0}-Argument kann nicht mehrmals angegeben werden.</target>
         </trans-unit>
         <trans-unit id="NamedArgumentUsedInPositional" translate="yes" xml:space="preserve">
           <source>Named argument '{0}' specifies a parameter for which a positional argument has already been given</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Das benannte {0}-Argument legt einen Parameter fest, für den bereits ein positionelles Argument angegeben wurde.</target>
+          <target state="translated" state-qualifier="tm-suggestion">Das benannte {0}-Argument legt einen Parameter fest, für den bereits ein positionelles Argument angegeben wurde.</target>
         </trans-unit>
       </group>
     </body>

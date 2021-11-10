@@ -1,6 +1,0 @@
-<Project>
-  <!--
-    MSBuild automatically imports this project into any projects in the current or child folders. The projects under this
-    folder directly import what they need, and this file exists just to prevent the auto-import.
-  -->
-</Project>

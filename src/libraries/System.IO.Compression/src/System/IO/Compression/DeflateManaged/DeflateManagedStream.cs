@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -97,19 +97,22 @@ namespace System.IO.Compression
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
+            return Read(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
             EnsureNotDisposed();
 
-            int bytesRead;
-            int currentOffset = offset;
-            int remainingCount = count;
+            int initialLength = buffer.Length;
 
+            int bytesRead;
             while (true)
             {
-                bytesRead = _inflater.Inflate(buffer, currentOffset, remainingCount);
-                currentOffset += bytesRead;
-                remainingCount -= bytesRead;
+                bytesRead = _inflater.Inflate(buffer);
+                buffer = buffer.Slice(bytesRead);
 
-                if (remainingCount == 0)
+                if (buffer.Length == 0)
                 {
                     break;
                 }
@@ -136,7 +139,13 @@ namespace System.IO.Compression
                 _inflater.SetInput(_buffer, 0, bytes);
             }
 
-            return count - remainingCount;
+            return initialLength - buffer.Length;
+        }
+
+        public override int ReadByte()
+        {
+            byte b = default;
+            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
         }
 
         private void EnsureNotDisposed()
@@ -169,7 +178,7 @@ namespace System.IO.Compression
             try
             {
                 // Try to read decompressed data in output buffer
-                int bytesRead = _inflater.Inflate(buffer);
+                int bytesRead = _inflater.Inflate(buffer.Span);
                 if (bytesRead != 0)
                 {
                     // If decompression output buffer is not empty, return immediately.
@@ -224,7 +233,7 @@ namespace System.IO.Compression
 
                     // Feed the data from base stream into decompression engine
                     _inflater.SetInput(_buffer, 0, bytesRead);
-                    bytesRead = _inflater.Inflate(buffer);
+                    bytesRead = _inflater.Inflate(buffer.Span);
 
                     if (bytesRead == 0 && !_inflater.Finished())
                     {

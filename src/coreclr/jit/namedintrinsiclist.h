@@ -52,8 +52,19 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_get_IsValueType,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
+    NI_System_Type_op_Equality,
+    NI_System_Type_op_Inequality,
+    NI_System_Type_GetTypeFromHandle,
     NI_System_Array_Clone,
+    NI_System_Array_GetLength,
+    NI_System_Array_GetLowerBound,
+    NI_System_Array_GetUpperBound,
     NI_System_Object_MemberwiseClone,
+
+    NI_System_String_get_Chars,
+    NI_System_String_get_Length,
+    NI_System_Span_get_Item,
+    NI_System_ReadOnlySpan_get_Item,
 
     // These are used by HWIntrinsics but are defined more generally
     // to allow dead code optimization and handle the recursion case
@@ -65,6 +76,11 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
+    NI_System_Threading_Interlocked_CompareExchange,
+    NI_System_Threading_Interlocked_Exchange,
+    NI_System_Threading_Interlocked_ExchangeAdd,
+    NI_System_Threading_Interlocked_MemoryBarrier,
+    NI_System_Threading_Interlocked_ReadMemoryBarrier,
 
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,

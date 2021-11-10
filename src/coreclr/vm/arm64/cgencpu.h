@@ -274,24 +274,19 @@ inline NEON128 GetSimdMem(PCODE ip)
 }
 
 #ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target);
+void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
 #endif // FEATURE_COMINTEROP
 
 inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 {
-#ifdef CROSSGEN_COMPILE
-    // The code won't be executed when we are cross-compiling so flush instruction cache is unnecessary
-    return TRUE;
-#else
     return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
-#endif
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBuffer, LPVOID target)
+inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
-    UINT32* pCode = (UINT32*)pBuffer;
+    UINT32* pCode = (UINT32*)pBufferRW;
 
     // We require 8-byte alignment so the LDR instruction is aligned properly
     _ASSERTE(((UINT_PTR)pCode & 7) == 0);
@@ -304,7 +299,7 @@ inline void emitJump(LPBYTE pBuffer, LPVOID target)
     pCode[1] = 0xD61F0200UL;   // br  x16
 
     // Ensure that the updated instructions get updated in the I-Cache
-    ClrFlushInstructionCache(pCode, 8);
+    ClrFlushInstructionCache(pBufferRX, 8);
 
     *((LPVOID *)(pCode + 2)) = target;   // 64-bit target address
 
@@ -341,10 +336,10 @@ inline BOOL isBackToBackJump(PCODE pBuffer)
 }
 
 //------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBuffer, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     WRAPPER_NO_CONTRACT;
-    emitJump(pBuffer, target);
+    emitJump(pBufferRX, pBufferRW, target);
 }
 
 //------------------------------------------------------------------------
@@ -422,18 +417,14 @@ const CondCode CondNv = CondCode(15);
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
 
-#ifdef CROSSGEN_COMPILE
-#define GetEEFuncEntryPoint(pfn) 0x1001
-#else
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
-#endif
 
 class StubLinkerCPU : public StubLinker
 {
 
 private:
     void EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Xn, int offset, BOOL isVec);
-    void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec);
+    void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec, int log2Size = 3);
 public:
 
     // BitFlags for EmitLoadStoreReg(Pair)Imm methods
@@ -484,7 +475,7 @@ public:
     void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
     void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
 
-    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0);
+    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0, int log2Size = 3);
     void EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset=0);
 
     void EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option);
@@ -515,7 +506,7 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
     TADDR       m_pTargetCode;
     TADDR       m_pvSecretParam;
 
-    void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
     void Poison();
 
     LPCBYTE GetEntryPoint() const
@@ -583,7 +574,7 @@ struct StubPrecode {
     TADDR   m_pTarget;
     TADDR   m_pMethodDesc;
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
     TADDR GetMethodDesc()
     {
@@ -597,6 +588,7 @@ struct StubPrecode {
         return m_pTarget;
     }
 
+#ifndef DACCESS_COMPILE
     void ResetTargetInterlocked()
     {
         CONTRACTL
@@ -606,7 +598,8 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        InterlockedExchange64((LONGLONG*)&m_pTarget, (TADDR)GetPreStubEntryPoint());
+        ExecutableWriterHolder<StubPrecode> precodeWriterHolder(this, sizeof(StubPrecode)); 
+        InterlockedExchange64((LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)GetPreStubEntryPoint());
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
@@ -618,13 +611,12 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<StubPrecode> precodeWriterHolder(this, sizeof(StubPrecode)); 
         return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
+            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
+#endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image);
-#endif
 };
 typedef DPTR(StubPrecode) PTR_StubPrecode;
 
@@ -643,7 +635,7 @@ struct NDirectImportPrecode {
     TADDR   m_pTarget;
     TADDR   m_pMethodDesc;
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
     TADDR GetMethodDesc()
     {
@@ -663,9 +655,6 @@ struct NDirectImportPrecode {
         return this;
     }
 
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image);
-#endif
 };
 typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
@@ -689,7 +678,7 @@ struct FixupPrecode {
     BYTE    m_PrecodeChunkIndex;
     TADDR   m_pTarget;
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex = 0, int iPrecodeChunkIndex = 0);
+    void Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex = 0, int iPrecodeChunkIndex = 0);
     void InitCommon()
     {
         WRAPPER_NO_CONTRACT;
@@ -713,6 +702,13 @@ struct FixupPrecode {
         return dac_cast<TADDR>(this) + (m_PrecodeChunkIndex + 1) * sizeof(FixupPrecode);
     }
 
+    size_t GetSizeRW()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return GetBase() + sizeof(void*) - dac_cast<TADDR>(this);
+    }
+
     TADDR GetMethodDesc();
 
     PCODE GetTarget()
@@ -721,6 +717,7 @@ struct FixupPrecode {
         return m_pTarget;
     }
 
+#ifndef DACCESS_COMPILE
     void ResetTargetInterlocked()
     {
         CONTRACTL
@@ -730,7 +727,8 @@ struct FixupPrecode {
         }
         CONTRACTL_END;
 
-        InterlockedExchange64((LONGLONG*)&m_pTarget, (TADDR)GetEEFuncEntryPoint(PrecodeFixupThunk));
+        ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
+        InterlockedExchange64((LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)GetEEFuncEntryPoint(PrecodeFixupThunk));
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
@@ -742,9 +740,11 @@ struct FixupPrecode {
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
         return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
+            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
+#endif // !DACCESS_COMPILE
 
     static BOOL IsFixupPrecodeByASM(PCODE addr)
     {
@@ -754,13 +754,6 @@ struct FixupPrecode {
             (pInstr[1] == 0x5800006B) &&
             (pInstr[2] == 0xD61F0160);
     }
-
-#ifdef FEATURE_PREJIT
-    // Partial initialization. Used to save regrouped chunks.
-    void InitForSave(int iPrecodeChunkIndex);
-
-    void Fixup(DataImage *image, MethodDesc * pMD);
-#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -793,6 +786,7 @@ struct ThisPtrRetBufPrecode {
         return m_pTarget;
     }
 
+#ifndef DACCESS_COMPILE
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
     {
         CONTRACTL
@@ -802,9 +796,11 @@ struct ThisPtrRetBufPrecode {
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode)); 
         return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
+            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
+#endif // !DACCESS_COMPILE
 };
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 
@@ -871,7 +867,7 @@ private:
 
 #ifndef DACCESS_COMPILE
 public:
-    CallCountingStubShort(CallCount *remainingCallCountCell, PCODE targetForMethod)
+    CallCountingStubShort(CallCountingStubShort* stubRX, CallCount *remainingCallCountCell, PCODE targetForMethod)
         : m_part0{  0x58000149,             //     ldr  x9, [pc, #(m_remainingCallCountCell)]
                     0x7940012a,             //     ldrh w10, [x9]
                     0x7100054a,             //     subs w10, w10, #1

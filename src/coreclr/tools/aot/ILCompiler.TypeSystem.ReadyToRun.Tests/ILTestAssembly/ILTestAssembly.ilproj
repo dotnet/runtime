@@ -18,6 +18,7 @@
     <Compile Include="VirtualFunctionOverride.il" />
     <Compile Include="Signature.il" />
     <Compile Include="MethodImplOverride1.il" />
+    <Compile Include="MDArrayFunctionResolution.il" />
   </ItemGroup>
 
 </Project>

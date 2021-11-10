@@ -7,6 +7,7 @@ using System.Dynamic.Utils;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions
 {
@@ -168,6 +169,7 @@ namespace System.Linq.Expressions
             Out(Flow.None, s, after);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private void Out(Flow before, string s, Flow after)
         {
             switch (GetFlow(before))

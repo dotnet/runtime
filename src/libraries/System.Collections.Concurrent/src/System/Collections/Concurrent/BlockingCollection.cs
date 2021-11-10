@@ -761,12 +761,7 @@ namespace System.Collections.Concurrent
                 }
             }
 
-#pragma warning disable CS8762
-            // https://github.com/dotnet/runtime/issues/36132
-            // Compiler can't automatically deduce that nullability constraints
-            // for 'item' are satisfied at this exit point.
             return waitForSemaphoreWasSuccessful;
-#pragma warning restore CS8762
         }
 
 

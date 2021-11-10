@@ -188,6 +188,34 @@ namespace System.Globalization
             throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
         }
 
+        // Exactly the same as GetDatePart, except computing all of
+        // year/month/day rather than just one of them. Used when all three
+        // are needed rather than redoing the computations for each.
+        internal void GetDate(long ticks, out int year, out int month, out int day)
+        {
+            CheckTicksRange(ticks);
+
+            // Get the absolute date. The absolute date is the number of days from January 1st, 1 A.D.
+            // 1/1/0001 is absolute date 1.
+            long numDays = ticks / GregorianCalendar.TicksPerDay + 1;
+
+            // Calculate the appromixate Persian Year.
+            long yearStart = CalendricalCalculationsHelper.PersianNewYearOnOrBefore(numDays);
+            year = (int)(Math.Floor(((yearStart - s_persianEpoch) / CalendricalCalculationsHelper.MeanTropicalYearInDays) + 0.5)) + 1;
+            Debug.Assert(year >= 1);
+
+            // Calculate the Persian Month.
+            int ordinalDay = (int)(numDays - CalendricalCalculationsHelper.GetNumberOfDays(this.ToDateTime(year, 1, 1, 0, 0, 0, 0, 1)));
+
+            month = MonthFromOrdinalDay(ordinalDay);
+            Debug.Assert(ordinalDay >= 1);
+            Debug.Assert(month >= 1 && month <= 12);
+
+            day = ordinalDay - DaysInPreviousMonths(month);
+            Debug.Assert(1 <= day);
+            Debug.Assert(day <= 31);
+        }
+
         public override DateTime AddMonths(DateTime time, int months)
         {
             if (months < -120000 || months > 120000)
@@ -199,9 +227,7 @@ namespace System.Globalization
             }
 
             // Get the date in Persian calendar.
-            int y = GetDatePart(time.Ticks, DatePartYear);
-            int m = GetDatePart(time.Ticks, DatePartMonth);
-            int d = GetDatePart(time.Ticks, DatePartDay);
+            GetDate(time.Ticks, out int y, out int m, out int d);
             int i = m - 1 + months;
             if (i >= 0)
             {
@@ -234,10 +260,7 @@ namespace System.Globalization
             return GetDatePart(time.Ticks, DatePartDay);
         }
 
-        public override DayOfWeek GetDayOfWeek(DateTime time)
-        {
-            return (DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7);
-        }
+        public override DayOfWeek GetDayOfWeek(DateTime time) => time.DayOfWeek;
 
         public override int GetDayOfYear(DateTime time)
         {

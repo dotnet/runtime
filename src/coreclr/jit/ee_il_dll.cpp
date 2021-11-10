@@ -300,6 +300,27 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
     memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
 }
 
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+bool TargetOS::OSSettingConfigured = false;
+bool TargetOS::IsWindows           = false;
+bool TargetOS::IsUnix              = false;
+bool TargetOS::IsMacOS             = false;
+#endif
+
+/*****************************************************************************
+ * Set the OS that this JIT should be generating code for. The contract with the VM
+ * is that this must be called before compileMethod is called.
+ */
+void CILJit::setTargetOS(CORINFO_OS os)
+{
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+    TargetOS::IsMacOS             = os == CORINFO_MACOS;
+    TargetOS::IsUnix              = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsWindows           = os == CORINFO_WINNT;
+    TargetOS::OSSettingConfigured = true;
+#endif
+}
+
 /*****************************************************************************
  * Determine the maximum length of SIMD vector supported by this JIT.
  */
@@ -418,15 +439,13 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
             if (structSize > (2 * TARGET_POINTER_SIZE))
             {
 
-#ifndef TARGET_UNIX
-                if (info.compIsVarArgs)
+                if (TargetOS::IsWindows && info.compIsVarArgs)
                 {
                     // Arm64 Varargs ABI requires passing in general purpose
                     // registers. Force the decision of whether this is an HFA
                     // to false to correctly pass as if it was not an HFA.
                     isHfa = false;
                 }
-#endif // TARGET_UNIX
                 if (!isHfa)
                 {
                     // This struct is passed by reference using a single 'slot'
@@ -471,22 +490,25 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 // static
 unsigned Compiler::eeGetArgAlignment(var_types type, bool isFloatHfa)
 {
-#if defined(OSX_ARM64_ABI)
-    if (isFloatHfa)
+    if (compMacOsArm64Abi())
     {
-        assert(varTypeIsStruct(type));
-        return sizeof(float);
+        if (isFloatHfa)
+        {
+            assert(varTypeIsStruct(type));
+            return sizeof(float);
+        }
+        if (varTypeIsStruct(type))
+        {
+            return TARGET_POINTER_SIZE;
+        }
+        const unsigned argSize = genTypeSize(type);
+        assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
+        return argSize;
     }
-    if (varTypeIsStruct(type))
+    else
     {
         return TARGET_POINTER_SIZE;
     }
-    const unsigned argSize = genTypeSize(type);
-    assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
-    return argSize;
-#else
-    return TARGET_POINTER_SIZE;
-#endif
 }
 
 /*****************************************************************************/
@@ -503,13 +525,14 @@ GenTree* Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig)
 //------------------------------------------------------------------------
 // eeGetArrayDataOffset: Gets the offset of a SDArray's first element
 //
-// Arguments:
-//    type - The array element type
-//
 // Return Value:
 //    The offset to the first array element.
-
-unsigned Compiler::eeGetArrayDataOffset(var_types type)
+//
+// Notes:
+//    See the comments at the definition of CORINFO_Array for a description of how arrays are laid out in memory.
+//
+// static
+unsigned Compiler::eeGetArrayDataOffset()
 {
     return OFFSETOF__CORINFO_Array__data;
 }
@@ -518,7 +541,6 @@ unsigned Compiler::eeGetArrayDataOffset(var_types type)
 // eeGetMDArrayDataOffset: Gets the offset of a MDArray's first element
 //
 // Arguments:
-//    type - The array element type
 //    rank - The array rank
 //
 // Return Value:
@@ -526,13 +548,56 @@ unsigned Compiler::eeGetArrayDataOffset(var_types type)
 //
 // Assumptions:
 //    The rank should be greater than 0.
-
-unsigned Compiler::eeGetMDArrayDataOffset(var_types type, unsigned rank)
+//
+// static
+unsigned Compiler::eeGetMDArrayDataOffset(unsigned rank)
 {
     assert(rank > 0);
     // Note that below we're specifically using genTypeSize(TYP_INT) because array
     // indices are not native int.
-    return eeGetArrayDataOffset(type) + 2 * genTypeSize(TYP_INT) * rank;
+    return eeGetArrayDataOffset() + 2 * genTypeSize(TYP_INT) * rank;
+}
+
+//------------------------------------------------------------------------
+// eeGetMDArrayLengthOffset: Returns the offset from the Array object to the
+//   size for the given dimension.
+//
+// Arguments:
+//    rank      - the rank of the array
+//    dimension - the dimension for which the lower bound offset will be returned.
+//
+// Return Value:
+//    The offset.
+//
+// static
+unsigned Compiler::eeGetMDArrayLengthOffset(unsigned rank, unsigned dimension)
+{
+    // Note that we don't actually need the `rank` value for this calculation, but we pass it anyway,
+    // to be consistent with other MD array functions.
+    assert(rank > 0);
+    assert(dimension < rank);
+    // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
+    return eeGetArrayDataOffset() + genTypeSize(TYP_INT) * dimension;
+}
+
+//------------------------------------------------------------------------
+// eeGetMDArrayLowerBoundOffset: Returns the offset from the Array object to the
+//   lower bound for the given dimension.
+//
+// Arguments:
+//    rank      - the rank of the array
+//    dimension - the dimension for which the lower bound offset will be returned.
+//
+// Return Value:
+//    The offset.
+//
+// static
+unsigned Compiler::eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension)
+{
+    assert(rank > 0);
+    assert(dimension < rank);
+    // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
+    return eeGetArrayDataOffset() + genTypeSize(TYP_INT) * (dimension + rank);
 }
 
 /*****************************************************************************/
@@ -543,7 +608,17 @@ void Compiler::eeGetStmtOffsets()
     uint32_t*                    offsets;
     ICorDebugInfo::BoundaryTypes offsetsImplicit;
 
-    info.compCompHnd->getBoundaries(info.compMethodHnd, &offsetsCount, &offsets, &offsetsImplicit);
+    if (compIsForInlining())
+    {
+        // We do not get explicit boundaries for inlinees, only implicit ones.
+        offsetsImplicit = impInlineRoot()->info.compStmtOffsetsImplicit;
+        offsetsCount    = 0;
+        offsets         = nullptr;
+    }
+    else
+    {
+        info.compCompHnd->getBoundaries(info.compMethodHnd, &offsetsCount, &offsets, &offsetsImplicit);
+    }
 
     /* Set the implicit boundaries */
 
@@ -810,11 +885,11 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             }
             break;
 
-#ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_REG:
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
             break;
 
+#ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_STK:
             if ((int)var->loc.vlRegStk.vlrsStk.vlrssBaseReg != (int)ICorDebugInfo::REGNUM_AMBIENT_SP)
             {
@@ -895,7 +970,8 @@ void Compiler::eeSetLIcount(unsigned count)
     eeBoundariesCount = count;
     if (eeBoundariesCount)
     {
-        eeBoundaries = (boundariesDsc*)info.compCompHnd->allocateArray(eeBoundariesCount * sizeof(eeBoundaries[0]));
+        eeBoundaries =
+            (ICorDebugInfo::OffsetMapping*)info.compCompHnd->allocateArray(eeBoundariesCount * sizeof(eeBoundaries[0]));
     }
     else
     {
@@ -903,19 +979,39 @@ void Compiler::eeSetLIcount(unsigned count)
     }
 }
 
-void Compiler::eeSetLIinfo(
-    unsigned which, UNATIVE_OFFSET nativeOffset, IL_OFFSET ilOffset, bool stkEmpty, bool callInstruction)
+void Compiler::eeSetLIinfo(unsigned which, UNATIVE_OFFSET nativeOffset, IPmappingDscKind kind, const ILLocation& loc)
 {
     assert(opts.compDbgInfo);
-    assert(eeBoundariesCount > 0);
+    assert(eeBoundariesCount > 0 && eeBoundaries != nullptr);
     assert(which < eeBoundariesCount);
 
-    if (eeBoundaries != nullptr)
+    eeBoundaries[which].nativeOffset = nativeOffset;
+    eeBoundaries[which].source       = (ICorDebugInfo::SourceTypes)0;
+
+    switch (kind)
     {
-        eeBoundaries[which].nativeIP     = nativeOffset;
-        eeBoundaries[which].ilOffset     = ilOffset;
-        eeBoundaries[which].sourceReason = stkEmpty ? ICorDebugInfo::STACK_EMPTY : 0;
-        eeBoundaries[which].sourceReason |= callInstruction ? ICorDebugInfo::CALL_INSTRUCTION : 0;
+        int source;
+
+        case IPmappingDscKind::Normal:
+            eeBoundaries[which].ilOffset = loc.GetOffset();
+            source                       = loc.IsStackEmpty() ? ICorDebugInfo::STACK_EMPTY : 0;
+            source |= loc.IsCall() ? ICorDebugInfo::CALL_INSTRUCTION : 0;
+            eeBoundaries[which].source = (ICorDebugInfo::SourceTypes)source;
+            break;
+        case IPmappingDscKind::Prolog:
+            eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;
+            eeBoundaries[which].source   = ICorDebugInfo::STACK_EMPTY;
+            break;
+        case IPmappingDscKind::Epilog:
+            eeBoundaries[which].ilOffset = ICorDebugInfo::EPILOG;
+            eeBoundaries[which].source   = ICorDebugInfo::STACK_EMPTY;
+            break;
+        case IPmappingDscKind::NoMapping:
+            eeBoundaries[which].ilOffset = ICorDebugInfo::NO_MAPPING;
+            eeBoundaries[which].source   = ICorDebugInfo::STACK_EMPTY;
+            break;
+        default:
+            unreached();
     }
 }
 
@@ -940,8 +1036,13 @@ void Compiler::eeSetLIdone()
 
 #if defined(DEBUG)
 
-/* static */
 void Compiler::eeDispILOffs(IL_OFFSET offs)
+{
+    printf("0x%04X", offs);
+}
+
+/* static */
+void Compiler::eeDispSourceMappingOffs(uint32_t offs)
 {
     const char* specialOffs[] = {"EPILOG", "PROLOG", "NO_MAP"};
 
@@ -957,33 +1058,34 @@ void Compiler::eeDispILOffs(IL_OFFSET offs)
             printf("%s", specialOffs[specialOffsNum]);
             break;
         default:
-            printf("0x%04X", offs);
+            eeDispILOffs(offs);
+            break;
     }
 }
 
 /* static */
-void Compiler::eeDispLineInfo(const boundariesDsc* line)
+void Compiler::eeDispLineInfo(const ICorDebugInfo::OffsetMapping* line)
 {
     printf("IL offs ");
 
-    eeDispILOffs(line->ilOffset);
+    eeDispSourceMappingOffs(line->ilOffset);
 
-    printf(" : 0x%08X", line->nativeIP);
-    if (line->sourceReason != 0)
+    printf(" : 0x%08X", line->nativeOffset);
+    if (line->source != 0)
     {
         // It seems like it should probably never be zero since ICorDebugInfo::SOURCE_TYPE_INVALID is zero.
         // However, the JIT has always generated this and printed "stack non-empty".
 
         printf(" ( ");
-        if ((line->sourceReason & ICorDebugInfo::STACK_EMPTY) != 0)
+        if ((line->source & ICorDebugInfo::STACK_EMPTY) != 0)
         {
             printf("STACK_EMPTY ");
         }
-        if ((line->sourceReason & ICorDebugInfo::CALL_INSTRUCTION) != 0)
+        if ((line->source & ICorDebugInfo::CALL_INSTRUCTION) != 0)
         {
             printf("CALL_INSTRUCTION ");
         }
-        if ((line->sourceReason & ICorDebugInfo::CALL_SITE) != 0)
+        if ((line->source & ICorDebugInfo::CALL_SITE) != 0)
         {
             printf("CALL_SITE ");
         }
@@ -992,7 +1094,7 @@ void Compiler::eeDispLineInfo(const boundariesDsc* line)
     printf("\n");
 
     // We don't expect to see any other bits.
-    assert((line->sourceReason & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION)) == 0);
+    assert((line->source & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION)) == 0);
 }
 
 void Compiler::eeDispLineInfos()
@@ -1015,13 +1117,13 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
-void Compiler::eeReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
+void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
 #ifdef DEBUG
     if (verbose)
     {
-        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "TRUE" : "FALSE",
-               isColdCode ? "TRUE" : "FALSE", unwindSize);
+        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "true" : "false",
+               isColdCode ? "true" : "false", unwindSize);
     }
 #endif // DEBUG
 
@@ -1235,6 +1337,11 @@ bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
     return info.compCompHnd->runWithErrorTrap(function, param);
 }
 
+bool Compiler::eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param)
+{
+    return info.compCompHnd->runWithSPMIErrorTrap(function, param);
+}
+
 /*****************************************************************************
  *
  *                      Utility functions
@@ -1268,19 +1375,6 @@ struct FilterSuperPMIExceptionsParam_ee_il
     const char*           fieldOrMethodOrClassNamePtr;
     EXCEPTION_POINTERS    exceptionPointers;
 };
-
-static LONG FilterSuperPMIExceptions_ee_il(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-    FilterSuperPMIExceptionsParam_ee_il* pSPMIEParam = (FilterSuperPMIExceptionsParam_ee_il*)lpvParam;
-    pSPMIEParam->exceptionPointers                   = *pExceptionPointers;
-
-    if (pSPMIEParam->pThis->IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode))
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
 
 const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char** classNamePtr)
 {
@@ -1320,12 +1414,14 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
     param.method       = method;
     param.classNamePtr = classNamePtr;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr =
-            pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr =
+                pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
+        },
+        &param);
+
+    if (!success)
     {
         if (param.classNamePtr != nullptr)
         {
@@ -1334,7 +1430,6 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
 
         param.fieldOrMethodOrClassNamePtr = "hackishMethodName";
     }
-    PAL_ENDTRY
 
     return param.fieldOrMethodOrClassNamePtr;
 }
@@ -1348,16 +1443,17 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
     param.field        = field;
     param.classNamePtr = classNamePtr;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr =
-            pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr =
+                pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
+        },
+        &param);
+
+    if (!success)
     {
         param.fieldOrMethodOrClassNamePtr = "hackishFieldName";
     }
-    PAL_ENDTRY
 
     return param.fieldOrMethodOrClassNamePtr;
 }
@@ -1370,15 +1466,16 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     param.pJitInfo = &info;
     param.clazz    = clsHnd;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
+        },
+        &param);
+
+    if (!success)
     {
         param.fieldOrMethodOrClassNamePtr = "hackishClassName";
     }
-    PAL_ENDTRY
     return param.fieldOrMethodOrClassNamePtr;
 }
 
@@ -1411,7 +1508,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
         return nullptr;
     }
 
-    return (asString->chars);
+    return (WCHAR*)(asString->chars);
 #endif // HOST_UNIX
 }
 

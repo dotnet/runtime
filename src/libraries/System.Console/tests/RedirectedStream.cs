@@ -11,7 +11,6 @@ using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
-[ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
 public class RedirectedStream
 {
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))] // the CI system redirects stdout, so we can only really test the redirected behavior.

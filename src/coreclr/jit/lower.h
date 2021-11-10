@@ -89,7 +89,7 @@ private:
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
-    void ContainCheckStoreIndir(GenTreeIndir* indirNode);
+    void ContainCheckStoreIndir(GenTreeStoreInd* indirNode);
     void ContainCheckMul(GenTreeOp* node);
     void ContainCheckShiftRotate(GenTreeOp* node);
     void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const;
@@ -217,9 +217,18 @@ private:
         GenTree* oldUseNode = use.Def();
         if ((oldUseNode->gtOper != GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
-            use.ReplaceWithLclVar(comp, tempNum);
+            GenTree* assign;
+            use.ReplaceWithLclVar(comp, tempNum, &assign);
+
             GenTree* newUseNode = use.Def();
             ContainCheckRange(oldUseNode->gtNext, newUseNode);
+
+            // We need to lower the LclVar and assignment since there may be certain
+            // types or scenarios, such as TYP_SIMD12, that need special handling
+
+            LowerNode(assign);
+            LowerNode(newUseNode);
+
             return newUseNode->AsLclVar();
         }
         return oldUseNode->AsLclVar();
@@ -283,10 +292,12 @@ private:
 #endif // defined(TARGET_XARCH)
 
     // Per tree node member functions
-    void LowerStoreIndirCommon(GenTreeIndir* ind);
+    void LowerStoreIndirCommon(GenTreeStoreInd* ind);
     void LowerIndir(GenTreeIndir* ind);
-    void LowerStoreIndir(GenTreeIndir* node);
+    void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
+    GenTree* LowerMul(GenTreeOp* mul);
+    GenTree* LowerBinaryArithmetic(GenTreeOp* node);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
@@ -295,7 +306,7 @@ private:
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
     void LowerPutArgStk(GenTreePutArgStk* tree);
 
-    bool TryCreateAddrMode(GenTree* addr, bool isContainable);
+    bool TryCreateAddrMode(GenTree* addr, bool isContainable, var_types targetType = TYP_UNDEF);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
 
@@ -330,6 +341,8 @@ private:
 #if defined(TARGET_XARCH)
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
@@ -590,7 +603,7 @@ private:
         if (varDsc->lvTracked && !varDsc->lvDoNotEnregister)
         {
             assert(!m_lsra->isRegCandidate(varDsc));
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(Compiler::DNER_LocalField));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
         }
     }
 

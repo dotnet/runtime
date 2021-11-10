@@ -183,6 +183,5 @@ namespace System.IO.Tests
                 base.Flush(flushToDisk);
             }
         }
-
     }
 }

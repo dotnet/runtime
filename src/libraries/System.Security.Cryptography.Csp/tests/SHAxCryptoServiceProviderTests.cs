@@ -81,6 +81,14 @@ namespace System.Security.Cryptography.Encryption.SHA1.Tests
 
                 actual = hash.Hash;
                 Assert.Equal(expectedBytes, actual);
+
+                hash.TransformBlock(inputBytes, 0, inputBytes.Length, inputBytes, 0);
+                hash.Initialize();
+                hash.TransformBlock(inputBytes, 0, inputBytes.Length, inputBytes, 0);
+                hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+
+                actual = hash.Hash;
+                Assert.Equal(expectedBytes, actual);
             }
         }
     }

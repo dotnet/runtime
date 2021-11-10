@@ -1,7 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
-  </PropertyGroup>
-</Project>

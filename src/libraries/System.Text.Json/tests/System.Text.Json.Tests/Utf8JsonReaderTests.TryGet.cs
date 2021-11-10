@@ -1335,7 +1335,7 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonGuidTestData.ValidGuidTests), MemberType = typeof(JsonGuidTestData))]
         public static void TryGetGuid_HasValueSequence_RetrievesGuid(string testString, string expectedString)
         {
-            static void test(string testString, string expectedString, bool isFinalBlock)
+            static void Test(string testString, string expectedString, bool isFinalBlock)
             {
                 byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
                 ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
@@ -1354,8 +1354,8 @@ namespace System.Text.Json.Tests
                 Assert.Equal(expected, json.GetGuid());
             }
 
-            test(testString, expectedString, isFinalBlock: true);
-            test(testString, expectedString, isFinalBlock: false);
+            Test(testString, expectedString, isFinalBlock: true);
+            Test(testString, expectedString, isFinalBlock: false);
         }
 
         [Theory]
@@ -1378,7 +1378,7 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonGuidTestData.InvalidGuidTests), MemberType = typeof(JsonGuidTestData))]
         public static void TryGetGuid_HasValueSequence_False(string testString)
         {
-            static void test(string testString, bool isFinalBlock)
+            static void Test(string testString, bool isFinalBlock)
             {
                 byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
                 ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
@@ -1395,8 +1395,8 @@ namespace System.Text.Json.Tests
                 JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetGuid());
             }
 
-            test(testString, isFinalBlock: true);
-            test(testString, isFinalBlock: false);
+            Test(testString, isFinalBlock: true);
+            Test(testString, isFinalBlock: false);
         }
     }
 }

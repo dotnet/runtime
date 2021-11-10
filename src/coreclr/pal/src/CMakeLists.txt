@@ -49,6 +49,8 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
+elseif(CLR_CMAKE_HOST_ARCH_S390X)
+  set(PAL_ARCH_SOURCES_DIR s390x)
 endif()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -74,7 +76,6 @@ endif(FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 add_definitions(-DLP64COMPATIBLE)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
-add_definitions(-D_FILE_OFFSET_BITS=64)
 
 if(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
   # Currently the _xstate is not available on Alpine Linux
@@ -112,11 +113,9 @@ if(CLR_CMAKE_HOST_ARCH_ARM)
   endif()
 endif(CLR_CMAKE_HOST_ARCH_ARM)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_I386))
   add_compile_options(-Wa,--divide)
 endif()
-
-include_directories("${CLR_SRC_NATIVE_DIR}/common")
 
 set(SOURCES
   cruntime/file.cpp

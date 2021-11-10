@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -116,14 +113,14 @@ namespace System.Net.Http.Tests
         public void Parse_SetOfValidValueStrings_ParsedCorrectly()
         {
             MediaTypeWithQualityHeaderValue expected = new MediaTypeWithQualityHeaderValue("text/plain");
-            CheckValidParse("\r\n text/plain  ", expected);
             CheckValidParse("text/plain", expected);
+            CheckValidParse(" text/plain  ", expected);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
             // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // media-type parser.
             expected.CharSet = "utf-8";
-            CheckValidParse("\r\n text   /  plain ;  charset =   utf-8 ", expected);
+            CheckValidParse(" text   /  plain ;  charset =   utf-8 ", expected);
             CheckValidParse("  text/plain;charset=utf-8", expected);
 
             MediaTypeWithQualityHeaderValue value1 = new MediaTypeWithQualityHeaderValue("text/plain");
@@ -136,7 +133,7 @@ namespace System.Net.Http.Tests
             value2.CharSet = "utf-8";
             value2.Quality = 0.5;
 
-            CheckValidParse("\r\n */xml; charset=utf-8; q=0.5", value2);
+            CheckValidParse(" */xml; charset=utf-8; q=0.5", value2);
         }
 
         [Fact]
@@ -152,56 +149,20 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("text/plain; charset=utf-8,");
             CheckInvalidParse("textplain");
             CheckInvalidParse("text/");
+            CheckInvalidParse(",, , ,,text/plain; charset=iso-8859-1; q=1.0, */xml; charset=utf-8; q=0.5,,,");
             CheckInvalidParse(",, , ,,text/plain; charset=iso-8859-1; q=1.0,\r\n */xml; charset=utf-8; q=0.5,,,");
             CheckInvalidParse("text/plain; charset=iso-8859-1; q=1.0, */xml; charset=utf-8; q=0.5");
             CheckInvalidParse(" , */xml; charset=utf-8; q=0.5 ");
             CheckInvalidParse("text/plain; charset=iso-8859-1; q=1.0 , ");
-        }
-
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            MediaTypeWithQualityHeaderValue expected = new MediaTypeWithQualityHeaderValue("text/plain");
-            CheckValidTryParse("\r\n text/plain  ", expected);
-            CheckValidTryParse("text/plain", expected);
-
-            // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a
-            // media-type parser.
-            expected.CharSet = "utf-8";
-            CheckValidTryParse("\r\n text   /  plain ;  charset =   utf-8 ", expected);
-            CheckValidTryParse("  text/plain;charset=utf-8", expected);
-
-            MediaTypeWithQualityHeaderValue value1 = new MediaTypeWithQualityHeaderValue("text/plain");
-            value1.CharSet = "iso-8859-1";
-            value1.Quality = 1.0;
-
-            CheckValidTryParse("text/plain; charset=iso-8859-1; q=1.0", value1);
-
-            MediaTypeWithQualityHeaderValue value2 = new MediaTypeWithQualityHeaderValue("*/xml");
-            value2.CharSet = "utf-8";
-            value2.Quality = 0.5;
-
-            CheckValidTryParse("\r\n */xml; charset=utf-8; q=0.5", value2);
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("");
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse("text/plain\u4F1A");
-            CheckInvalidTryParse("text/plain ,");
-            CheckInvalidTryParse("text/plain,");
-            CheckInvalidTryParse("text/plain; charset=utf-8 ,");
-            CheckInvalidTryParse("text/plain; charset=utf-8,");
-            CheckInvalidTryParse("textplain");
-            CheckInvalidTryParse("text/");
-            CheckInvalidTryParse(",, , ,,text/plain; charset=iso-8859-1; q=1.0,\r\n */xml; charset=utf-8; q=0.5,,,");
-            CheckInvalidTryParse("text/plain; charset=iso-8859-1; q=1.0, */xml; charset=utf-8; q=0.5");
-            CheckInvalidTryParse(" , */xml; charset=utf-8; q=0.5 ");
-            CheckInvalidTryParse("text/plain; charset=iso-8859-1; q=1.0 , ");
+            CheckInvalidParse("\r\n */xml; charset=utf-8; q=0.5");
+            CheckInvalidParse("text/plain\r");
+            CheckInvalidParse("text/plain\n");
+            CheckInvalidParse("text/plain\r\n");
+            CheckInvalidParse("text/plain\r\n ");
+            CheckInvalidParse("\r text/plain");
+            CheckInvalidParse("\n text/plain");
+            CheckInvalidParse("\ntext/plain");
+            CheckInvalidParse("\r\n text/plain");
         }
 
         #region Helper methods
@@ -210,22 +171,25 @@ namespace System.Net.Http.Tests
         {
             MediaTypeWithQualityHeaderValue result = MediaTypeWithQualityHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            result = null;
+            Assert.True(MediaTypeWithQualityHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
+
+            // New lines are never allowed
+            for (int i = 0; i < input.Length; i++)
+            {
+                CheckInvalidParse(input.Insert(i, "\r"));
+                CheckInvalidParse(input.Insert(i, "\n"));
+                CheckInvalidParse(input.Insert(i, "\r\n"));
+                CheckInvalidParse(input.Insert(i, "\r\n "));
+            }
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { MediaTypeWithQualityHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, MediaTypeWithQualityHeaderValue expectedResult)
-        {
-            MediaTypeWithQualityHeaderValue result = null;
-            Assert.True(MediaTypeWithQualityHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
             MediaTypeWithQualityHeaderValue result = null;
             Assert.False(MediaTypeWithQualityHeaderValue.TryParse(input, out result));
             Assert.Null(result);

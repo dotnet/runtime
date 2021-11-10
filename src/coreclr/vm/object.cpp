@@ -1034,6 +1034,41 @@ OBJECTREF::OBJECTREF(const OBJECTREF & objref)
 
 
 //-------------------------------------------------------------
+// VolatileLoadWithoutBarrier constructor
+//-------------------------------------------------------------
+OBJECTREF::OBJECTREF(const OBJECTREF *pObjref, tagVolatileLoadWithoutBarrier tag)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_FORBID_FAULT;
+
+    Object* objrefAsObj = VolatileLoadWithoutBarrier(&pObjref->m_asObj);
+    VALIDATEOBJECT(objrefAsObj);
+
+    // !!! If this assert is fired, there are two possibilities:
+    // !!! 1.  You are doing a type cast, e.g.  *(OBJECTREF*)pObj
+    // !!!     Instead, you should use ObjectToOBJECTREF(*(Object**)pObj),
+    // !!!                          or ObjectToSTRINGREF(*(StringObject**)pObj)
+    // !!! 2.  There is a real GC hole here.
+    // !!! Either way you need to fix the code.
+    _ASSERTE(Thread::IsObjRefValid(pObjref));
+    if ((objrefAsObj != 0) &&
+        ((IGCHeap*)GCHeapUtilities::GetGCHeap())->IsHeapPointer( (BYTE*)this ))
+    {
+        _ASSERTE(!"Write Barrier violation. Must use SetObjectReference() to assign OBJECTREF's into the GC heap!");
+    }
+    m_asObj = objrefAsObj;
+
+    if (m_asObj != 0) {
+        ENABLESTRESSHEAP();
+    }
+
+    Thread::ObjectRefNew(this);
+}
+
+
+//-------------------------------------------------------------
 // To allow NULL to be used as an OBJECTREF.
 //-------------------------------------------------------------
 OBJECTREF::OBJECTREF(TADDR nul)

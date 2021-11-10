@@ -111,28 +111,40 @@ namespace Internal.Cryptography
 
         public ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
-            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: true);
+            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: true, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
         public ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
-            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false);
+            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
         private ICryptoTransform CreateCryptoTransform(bool encrypting)
         {
             if (KeyInPlainText)
             {
-                return CreateCryptoTransform(_outer.BaseKey, _outer.IV, encrypting);
+                return CreateCryptoTransform(_outer.BaseKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
             }
 
-            return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting);
+            return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
-        private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
+        public UniversalCryptoTransform CreateCryptoTransform(byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
+        {
+            if (KeyInPlainText)
+            {
+                return CreateCryptoTransform(_outer.BaseKey, iv, encrypting, padding, mode, feedbackSizeInBits);
+            }
+
+            return CreatePersistedCryptoTransformCore(ProduceCngKey, iv, encrypting, padding, mode, feedbackSizeInBits);
+        }
+
+        private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             if (rgbKey == null)
                 throw new ArgumentNullException(nameof(rgbKey));
+
+            ValidateFeedbackSize(mode, feedbackSizeInBits);
 
             byte[] key = rgbKey.CloneByteArray();
 
@@ -148,39 +160,47 @@ namespace Internal.Cryptography
 
             // CloneByteArray is null-preserving. So even when GetCipherIv returns null the iv variable
             // is correct, and detached from the input parameter.
-            byte[]? iv = _outer.Mode.GetCipherIv(rgbIV).CloneByteArray();
+            byte[]? iv = mode.GetCipherIv(rgbIV).CloneByteArray();
 
             key = _outer.PreprocessKey(key);
 
-            return CreateEphemeralCryptoTransformCore(key, iv, encrypting);
+            return CreateEphemeralCryptoTransformCore(key, iv, encrypting, padding, mode, feedbackSizeInBits);
         }
 
-        private ICryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting)
+        private UniversalCryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
-            SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle();
+            SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle(mode, feedbackSizeInBits);
 
             BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(
                 algorithmModeHandle,
-                _outer.Mode,
+                mode,
                 blockSizeInBytes,
-                _outer.GetPaddingSize(),
+                _outer.GetPaddingSize(mode, feedbackSizeInBits),
                 key,
-                false,
+                ownsParentHandle: false,
                 iv,
                 encrypting);
 
-            return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
+            return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
-        private ICryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[] iv, bool encrypting)
+        private UniversalCryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             // note: iv is guaranteed to be cloned before this method, so no need to clone it again
 
+            ValidateFeedbackSize(mode, feedbackSizeInBits);
+            Debug.Assert(mode == CipherMode.CFB ? feedbackSizeInBits == 8 : true);
+
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
-            int feedbackSizeInBytes = _outer.FeedbackSize;
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting, feedbackSizeInBytes, _outer.GetPaddingSize());
-            return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(
+                cngKeyFactory,
+                mode,
+                blockSizeInBytes,
+                iv,
+                encrypting,
+                _outer.GetPaddingSize(mode, feedbackSizeInBits));
+            return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
         private CngKey ProduceCngKey()
@@ -193,6 +213,26 @@ namespace Internal.Cryptography
         private bool KeyInPlainText
         {
             get { return _keyName == null; }
+        }
+
+        private void ValidateFeedbackSize(CipherMode mode, int feedbackSizeInBits)
+        {
+            if (mode != CipherMode.CFB)
+                return;
+
+            if (KeyInPlainText)
+            {
+                if (!_outer.IsValidEphemeralFeedbackSize(feedbackSizeInBits))
+                {
+                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
+                }
+            }
+            else if (feedbackSizeInBits != 8)
+            {
+                // Persisted CNG keys in CFB mode always use CFB8 when in CFB mode,
+                // so require the feedback size to be set to 8.
+                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
+            }
         }
 
         private readonly ICngSymmetricAlgorithm _outer;

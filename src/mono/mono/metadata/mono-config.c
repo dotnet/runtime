@@ -52,10 +52,10 @@
 #endif
 
 #ifndef CONFIG_CPU
-#if defined(__i386__) || defined(TARGET_X86)
+#if defined(__i386__) || defined(_M_IX86) || defined(TARGET_X86)
 #define CONFIG_CPU "x86"
 #define CONFIG_WORDSIZE "32"
-#elif defined(__x86_64__) || defined(TARGET_AMD64)
+#elif defined(__x86_64__) || defined(_M_X64) || defined(TARGET_AMD64)
 #define CONFIG_CPU "x86-64"
 #define CONFIG_WORDSIZE "64"
 #elif defined(sparc) || defined(__sparc__)

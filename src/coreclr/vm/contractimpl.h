@@ -913,14 +913,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifdef FEATURE_PREJIT
-    //------------------------------------------------------------------------
-    void Save(DataImage *image);
-
-    //------------------------------------------------------------------------
-    void Fixup(DataImage *image);
-#endif //FEATURE_PREJIT
-
     //------------------------------------------------------------------------
     class EncodedMapIterator
     {

@@ -247,7 +247,7 @@ inline void SArray<ELEMENT, BITWISE_COPY>::Delete(const Iterator &i, COUNT_T cou
 }
 
 template <typename ELEMENT, BOOL BITWISE_COPY>
-inline void SArray<ELEMENT, BITWISE_COPY>:: Replace(const Iterator &i, COUNT_T deleteCount, COUNT_T insertCount)
+inline void SArray<ELEMENT, BITWISE_COPY>::Replace(const Iterator &i, COUNT_T deleteCount, COUNT_T insertCount)
 {
     WRAPPER_NO_CONTRACT;
     DestructBuffer(i, deleteCount);

@@ -9,22 +9,17 @@ using System.Net.Quic;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Security;
 
 namespace System.Net.Http
 {
-    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
-    internal sealed class Http3Connection : HttpConnectionBase, IDisposable
+    internal sealed class Http3Connection : HttpConnectionBase
     {
-        // TODO: once HTTP/3 is standardized, create APIs for this.
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol29 = new SslApplicationProtocol("h3-29");
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol30 = new SslApplicationProtocol("h3-30");
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol31 = new SslApplicationProtocol("h3-31");
-
         private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
@@ -48,11 +43,6 @@ namespace System.Net.Http
         private int _haveServerControlStream;
         private int _haveServerQpackDecodeStream;
         private int _haveServerQpackEncodeStream;
-
-        // Manages MAX_STREAM count from server.
-        private long _maximumRequestStreams;
-        private long _requestStreamsRemaining;
-        private readonly Queue<TaskCompletionSourceWithCancellation<bool>> _waitingRequests = new Queue<TaskCompletionSourceWithCancellation<bool>>();
 
         // A connection-level error will abort any future operations.
         private Exception? _abortException;
@@ -84,10 +74,8 @@ namespace System.Net.Http
             _connection = connection;
 
             bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
-            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : authority.IdnHost + ":" + authority.Port.ToString(Globalization.CultureInfo.InvariantCulture);
+            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : string.Create(CultureInfo.InvariantCulture, $"{authority.IdnHost}:{authority.Port}");
             _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
-
-            _maximumRequestStreams = _requestStreamsRemaining = connection.GetRemoteAvailableBidirectionalStreamCount();
 
             // Errors are observed via Abort().
             _ = SendSettingsAsync();
@@ -99,7 +87,7 @@ namespace System.Net.Http
         /// <summary>
         /// Starts shutting down the <see cref="Http3Connection"/>. Final cleanup will happen when there are no more active requests.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             lock (SyncObj)
             {
@@ -123,12 +111,6 @@ namespace System.Net.Http
             if (_activeRequests.Count != 0)
             {
                 return;
-            }
-
-            if (_clientControl != null)
-            {
-                _clientControl.Dispose();
-                _clientControl = null;
             }
 
             if (_connection != null)
@@ -158,53 +140,49 @@ namespace System.Net.Http
                     {
                         Trace($"{nameof(QuicConnection)} failed to dispose: {ex}");
                     }
+
+                    if (_clientControl != null)
+                    {
+                        _clientControl.Dispose();
+                        _clientControl = null;
+                    }
+
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
-        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(async);
 
-            // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
-
-            TaskCompletionSourceWithCancellation<bool>? waitForAvailableStreamTcs = null;
-
-            lock (SyncObj)
-            {
-                long remaining = _requestStreamsRemaining;
-
-                if (remaining > 0)
-                {
-                    _requestStreamsRemaining = remaining - 1;
-                }
-                else
-                {
-                    waitForAvailableStreamTcs = new TaskCompletionSourceWithCancellation<bool>();
-                    _waitingRequests.Enqueue(waitForAvailableStreamTcs);
-                }
-            }
-
-            if (waitForAvailableStreamTcs != null)
-            {
-                await waitForAvailableStreamTcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
-            }
-
             // Allocate an active request
-
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
+            ValueTask waitTask = default;
 
             try
             {
-                lock (SyncObj)
+                while (true)
                 {
-                    if (_connection != null)
+                    lock (SyncObj)
                     {
-                        quicStream = _connection.OpenBidirectionalStream();
-                        requestStream = new Http3RequestStream(request, this, quicStream);
-                        _activeRequests.Add(quicStream, requestStream);
+                        if (_connection == null)
+                        {
+                            break;
+                        }
+
+                        if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
+                        {
+                            quicStream = _connection.OpenBidirectionalStream();
+                            requestStream = new Http3RequestStream(request, this, quicStream);
+                            _activeRequests.Add(quicStream, requestStream);
+                            break;
+                        }
+                        waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
                     }
+
+                    // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
+                    await waitTask.ConfigureAwait(false);
                 }
 
                 if (quicStream == null)
@@ -212,8 +190,6 @@ namespace System.Net.Http
                     throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
-                // 0-byte write to force QUIC to allocate a stream ID.
-                await quicStream.WriteAsync(Array.Empty<byte>(), cancellationToken).ConfigureAwait(false);
                 requestStream!.StreamId = quicStream.StreamId;
 
                 bool goAway;
@@ -226,6 +202,8 @@ namespace System.Net.Http
                 {
                     throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);
 
@@ -243,76 +221,6 @@ namespace System.Net.Http
             finally
             {
                 requestStream?.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// Waits for MAX_STREAMS to be raised by the server.
-        /// </summary>
-        private Task WaitForAvailableRequestStreamAsync(CancellationToken cancellationToken)
-        {
-            TaskCompletionSourceWithCancellation<bool> tcs;
-
-            lock (SyncObj)
-            {
-                long remaining = _requestStreamsRemaining;
-
-                if (remaining > 0)
-                {
-                    _requestStreamsRemaining = remaining - 1;
-                    return Task.CompletedTask;
-                }
-
-                tcs = new TaskCompletionSourceWithCancellation<bool>();
-                _waitingRequests.Enqueue(tcs);
-            }
-
-            // Note: cancellation on connection shutdown is handled in CancelWaiters.
-            return tcs.WaitWithCancellationAsync(cancellationToken).AsTask();
-        }
-
-        /// <summary>
-        /// Cancels any waiting SendAsync calls.
-        /// </summary>
-        /// <remarks>Requires <see cref="SyncObj"/> to be held.</remarks>
-        private void CancelWaiters()
-        {
-            Debug.Assert(Monitor.IsEntered(SyncObj));
-
-            while (_waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
-            {
-                tcs.TrySetException(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure));
-            }
-        }
-
-        // TODO: how do we get this event? -> HandleEventStreamsAvailable reports currently available Uni/Bi streams
-        private void OnMaximumStreamCountIncrease(long newMaximumStreamCount)
-        {
-            lock (SyncObj)
-            {
-                if (newMaximumStreamCount <= _maximumRequestStreams)
-                {
-                    return;
-                }
-
-                IncreaseRemainingStreamCount(newMaximumStreamCount - _maximumRequestStreams);
-                _maximumRequestStreams = newMaximumStreamCount;
-            }
-        }
-
-        private void IncreaseRemainingStreamCount(long delta)
-        {
-            Debug.Assert(Monitor.IsEntered(SyncObj));
-            Debug.Assert(delta > 0);
-
-            _requestStreamsRemaining += delta;
-
-            while (_requestStreamsRemaining != 0 && _waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
-            {
-                if (tcs.TrySetResult(true))
-                {
-                    --_requestStreamsRemaining;
-                }
             }
         }
 
@@ -358,7 +266,6 @@ namespace System.Net.Http
                     _connectionClosedTask = _connection.CloseAsync((long)connectionResetErrorCode).AsTask();
                 }
 
-                CancelWaiters();
                 CheckForShutdown();
             }
 
@@ -374,7 +281,7 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                if (lastProcessedStreamId > _lastProcessedStreamId)
+                if (_lastProcessedStreamId != -1 && lastProcessedStreamId > _lastProcessedStreamId)
                 {
                     // Server can send multiple GOAWAY frames.
                     // Spec says a server MUST NOT increase the stream ID in subsequent GOAWAYs,
@@ -396,7 +303,6 @@ namespace System.Net.Http
                     }
                 }
 
-                CancelWaiters();
                 CheckForShutdown();
             }
 
@@ -414,14 +320,14 @@ namespace System.Net.Http
                 bool removed = _activeRequests.Remove(stream);
                 Debug.Assert(removed == true);
 
-                IncreaseRemainingStreamCount(1);
-
                 if (ShuttingDown)
                 {
                     CheckForShutdown();
                 }
             }
         }
+
+        public override long GetIdleTicks(long nowTicks) => throw new NotImplementedException("We aren't scavenging HTTP3 connections yet");
 
         public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             Trace(0, message, memberName);
@@ -663,7 +569,7 @@ namespace System.Net.Http
                     switch (frameType)
                     {
                         case Http3FrameType.GoAway:
-                            await ProcessGoAwayFameAsync(payloadLength).ConfigureAwait(false);
+                            await ProcessGoAwayFrameAsync(payloadLength).ConfigureAwait(false);
                             break;
                         case Http3FrameType.Settings:
                             // If an endpoint receives a second SETTINGS frame on the control stream, the endpoint MUST respond with a connection error of type H3_FRAME_UNEXPECTED.
@@ -780,12 +686,12 @@ namespace System.Net.Http
                 }
             }
 
-            async ValueTask ProcessGoAwayFameAsync(long goawayPayloadLength)
+            async ValueTask ProcessGoAwayFrameAsync(long goawayPayloadLength)
             {
                 long lastStreamId;
                 int bytesRead;
 
-                while (!VariableLengthIntegerHelper.TryRead(buffer.AvailableSpan, out lastStreamId, out bytesRead))
+                while (!VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out lastStreamId, out bytesRead))
                 {
                     buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
                     bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);

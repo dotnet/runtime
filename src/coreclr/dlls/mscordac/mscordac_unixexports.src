@@ -29,6 +29,7 @@ nativeStringResourceTable_mscorrc
 #PAL_free
 #PAL_fwprintf
 #PAL_GetLogicalCpuCountFromOS
+#PAL_GetTotalCpuCount
 #PAL_GetNumaProcessorNode
 #PAL_get_stdout
 #PAL_get_stderr

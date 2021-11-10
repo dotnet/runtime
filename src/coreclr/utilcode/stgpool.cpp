@@ -17,12 +17,9 @@
 #include <posterror.h>                  // Error handling.
 #include <safemath.h>                   // CLRSafeInt integer overflow checking
 #include "../md/inc/streamutil.h"
+#include "../md/errors_metadata.h"
 
 #include "ex.h"
-
-#ifdef FEATURE_PREJIT
-#include <corcompile.h>
-#endif
 
 using namespace StreamUtil;
 

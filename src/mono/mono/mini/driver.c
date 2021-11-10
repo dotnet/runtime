@@ -42,8 +42,6 @@
 #include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/security-manager.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/w32process.h>
@@ -56,6 +54,9 @@
 #include "mono/metadata/custom-attrs-internals.h"
 #include <mono/utils/w32subset.h>
 
+#include <mono/metadata/components.h>
+#include <mono/mini/debugger-agent-external.h>
+
 #include "mini.h"
 #include "jit.h"
 #include "aot-compiler.h"
@@ -66,7 +67,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#include "debugger-agent.h"
 #if TARGET_OSX
 #   include <sys/resource.h>
 #endif
@@ -214,9 +214,6 @@ parse_debug_options (const char* p)
 		} else if (!strncmp (p, "mdb-optimizations", 17)) {
 			opt->mdb_optimizations = TRUE;
 			p += 17;
-		} else if (!strncmp (p, "gdb", 3)) {
-			opt->gdb = TRUE;
-			p += 3;
 		} else if (!strncmp (p, "ignore", 6)) {
 			opt->enabled = FALSE;
 			p += 6;
@@ -711,7 +708,7 @@ mini_regression_list (int verbose, int count, char *images [])
 	total_run =  total = 0;
 	for (i = 0; i < count; ++i) {
 		MonoAssemblyOpenRequest req;
-		mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+		mono_assembly_request_prepare_open (&req, mono_alc_get_default ());
 		ass = mono_assembly_request_open (images [i], &req, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
@@ -854,7 +851,7 @@ mono_interp_regression_list (int verbose, int count, char *images [])
 	total_run = total = 0;
 	for (i = 0; i < count; ++i) {
 		MonoAssemblyOpenRequest req;
-		mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+		mono_assembly_request_prepare_open (&req, mono_alc_get_default ());
 		MonoAssembly *ass = mono_assembly_request_open (images [i], &req, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
@@ -1484,7 +1481,7 @@ load_agent (MonoDomain *domain, char *desc)
 	}
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+	mono_assembly_request_prepare_open (&req, mono_alc_get_default ());
 	agent_assembly = mono_assembly_request_open (agent, &req, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
@@ -1807,7 +1804,7 @@ mono_jit_parse_options (int argc, char * argv[])
 		if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
-			sdb_options = g_strdup (argv [i] + 17);
+			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (!strcmp (argv [i], "--soft-breakpoints")) {
@@ -2070,7 +2067,6 @@ mono_main (int argc, char* argv[])
 	MonoDomain *domain;
 	MonoImageOpenStatus open_status;
 	const char* aname, *mname = NULL;
-	char *config_file = NULL;
 	int i, count = 1;
 	guint32 opt, action = DO_EXEC, recompilation_times = 1;
 	MonoGraphOptions mono_graph_options = (MonoGraphOptions)0;
@@ -2221,7 +2217,7 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "error: --config requires a filename argument\n");
 				return 1;
 			}
-			config_file = argv [++i];
+			++i;
 #ifdef HOST_WIN32
 		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
 			mixed_mode = TRUE;
@@ -2382,7 +2378,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
-			sdb_options = g_strdup (argv [i] + 17);
+			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
@@ -2641,7 +2637,7 @@ mono_main (int argc, char* argv[])
 	}
 
 	MonoAssemblyOpenRequest open_req;
-	mono_assembly_request_prepare_open (&open_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+	mono_assembly_request_prepare_open (&open_req, mono_alc_get_default ());
 	assembly = mono_assembly_request_open (aname, &open_req, &open_status);
 	if (!assembly && !mono_compile_aot) {
 		fprintf (stderr, "Cannot open assembly '%s': %s.\n", aname, mono_image_strerror (open_status));
@@ -3259,4 +3255,10 @@ mono_parse_env_options (int *ref_argc, char **ref_argv [])
 		return;
 	fprintf (stderr, "%s", ret);
 	exit (1);
+}
+
+MonoDebugOptions *
+get_mini_debug_options (void)
+{
+	return &mini_debug_options;
 }

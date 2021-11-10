@@ -8,6 +8,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using System.Xml;
@@ -67,6 +69,44 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
             Assert.StrictEqual(utcTimeOjbect.Value, utcTimeRoundTrip.Value);
         }
+    }
+
+    [Fact]
+    public static void Xml_NamespaceTypeNameClashTest()
+    {
+        var serializer = new XmlSerializer(typeof(NamespaceTypeNameClashContainer));
+
+        Assert.NotNull(serializer);
+
+        var root = new NamespaceTypeNameClashContainer
+        {
+            A = new[] { new SerializationTypes.TypeNameClashA.TypeNameClash { Name = "N1" }, new SerializationTypes.TypeNameClashA.TypeNameClash { Name = "N2" } },
+            B = new[] { new SerializationTypes.TypeNameClashB.TypeNameClash { Name = "N3" } }
+        };
+
+        var xml = @"<?xml version=""1.0""?>
+        <Root xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+          <A>
+            <Name>N1</Name>
+          </A>
+          <A>
+            <Name>N2</Name>
+          </A>
+          <B>
+            <Name>N3</Name>
+          </B>
+        </Root>";
+
+        var actualRoot = SerializeAndDeserialize<NamespaceTypeNameClashContainer>(root, xml);
+
+        Assert.NotNull(actualRoot);
+        Assert.NotNull(actualRoot.A);
+        Assert.NotNull(actualRoot.B);
+        Assert.Equal(root.A.Length, actualRoot.A.Length);
+        Assert.Equal(root.B.Length, actualRoot.B.Length);
+        Assert.Equal(root.A[0].Name, actualRoot.A[0].Name);
+        Assert.Equal(root.A[1].Name, actualRoot.A[1].Name);
+        Assert.Equal(root.B[0].Name, actualRoot.B[0].Name);
     }
 
     [Fact]
@@ -199,6 +239,20 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(x.P1, y.P1);
     }
 
+#if !XMLSERIALIZERGENERATORTESTS
+    [Fact]
+    public static void Xml_EnumAsObject()
+    {
+        object o = MyEnum.Three;
+        object o2 = SerializeAndDeserialize<object>(o,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" p2:type=""q1:int"" xmlns:p2=""http://www.w3.org/2001/XMLSchema-instance"">2</anyType>");
+        Assert.NotNull(o2);
+        Assert.StrictEqual((int)o, o2);
+        Assert.Equal(MyEnum.Three, (MyEnum)o2);
+    }
+#endif
+
     [Fact]
     public static void Xml_DCClassWithEnumAndStruct()
     {
@@ -311,7 +365,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(value1, value2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public static void Xml_SerializeClassThatImplementsInteface()
     {
         ClassImplementsInterface value = new ClassImplementsInterface() { ClassID = "ClassID", DisplayName = "DisplayName", Id = "Id", IsLoaded = true };
@@ -710,6 +764,84 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         {
             TimeSpan deserializedObj = (TimeSpan)serializer.Deserialize(reader);
             Assert.Equal(default(TimeSpan), deserializedObj);
+        }
+    }
+
+    [Fact]
+    public static void Xml_TypeWithDateTimeOffsetProperty()
+    {
+        var now = new DateTimeOffset(DateTime.Now);
+        var defDTO = default(DateTimeOffset);
+        var obj = new TypeWithDateTimeOffsetProperties { DTO = now };
+        var deserializedObj = SerializeAndDeserialize(obj,
+@"<?xml version=""1.0""?>
+<TypeWithDateTimeOffsetProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <DTO>" + XmlConvert.ToString(now) + @"</DTO>
+  <DTO2>" + XmlConvert.ToString(defDTO) + @"</DTO2>
+  <NullableDTO xsi:nil=""true"" />
+  <NullableDefaultDTO xsi:nil=""true"" />
+</TypeWithDateTimeOffsetProperties>");
+        Assert.StrictEqual(obj.DTO, deserializedObj.DTO);
+        Assert.StrictEqual(obj.DTO2, deserializedObj.DTO2);
+        Assert.StrictEqual(defDTO, deserializedObj.DTO2);
+        Assert.StrictEqual(obj.DTOWithDefault, deserializedObj.DTOWithDefault);
+        Assert.StrictEqual(defDTO, deserializedObj.DTOWithDefault);
+        Assert.StrictEqual(obj.NullableDTO, deserializedObj.NullableDTO);
+        Assert.True(deserializedObj.NullableDTO == null);
+        Assert.StrictEqual(obj.NullableDTOWithDefault, deserializedObj.NullableDTOWithDefault);
+        Assert.True(deserializedObj.NullableDTOWithDefault == null);
+    }
+
+    [Fact]
+    public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
+    {
+        //var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
+        var defDTO = default(DateTimeOffset);
+        string xml = @"<?xml version=""1.0""?>
+            <TypeWithDateTimeOffsetProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+              <DTO />
+              <DTO2 />
+              <DTOWithDefault />
+              <NullableDefaultDTO />
+            </TypeWithDateTimeOffsetProperties>";
+        XmlSerializer serializer = new XmlSerializer(typeof(TypeWithDateTimeOffsetProperties));
+
+        using (StringReader reader = new StringReader(xml))
+        {
+            TypeWithDateTimeOffsetProperties deserializedObj = (TypeWithDateTimeOffsetProperties)serializer.Deserialize(reader);
+            Assert.NotNull(deserializedObj);
+            Assert.Equal(defDTO, deserializedObj.DTO);
+            Assert.Equal(defDTO, deserializedObj.DTO2);
+            Assert.Equal(defDTO, deserializedObj.DTOWithDefault);
+            Assert.True(deserializedObj.NullableDTO == null);
+            Assert.Equal(defDTO, deserializedObj.NullableDTOWithDefault);
+        }
+    }
+
+    [Fact]
+    public static void Xml_DeserializeDateTimeOffsetType()
+    {
+        var now = new DateTimeOffset(DateTime.Now);
+        string xml = @"<?xml version=""1.0""?><dateTimeOffset>" + now.ToString("o") + "</dateTimeOffset>";
+        XmlSerializer serializer = new XmlSerializer(typeof(DateTimeOffset));
+
+        using (StringReader reader = new StringReader(xml))
+        {
+            DateTimeOffset deserializedObj = (DateTimeOffset)serializer.Deserialize(reader);
+            Assert.Equal(now, deserializedObj);
+        }
+    }
+
+    [Fact]
+    public static void Xml_DeserializeEmptyDateTimeOffsetType()
+    {
+        string xml = @"<?xml version=""1.0""?><dateTimeOffset />";
+        XmlSerializer serializer = new XmlSerializer(typeof(DateTimeOffset));
+
+        using (StringReader reader = new StringReader(xml))
+        {
+            DateTimeOffset deserializedObj = (DateTimeOffset)serializer.Deserialize(reader);
+            Assert.Equal(default(DateTimeOffset), deserializedObj);
         }
     }
 
@@ -1726,6 +1858,17 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 
+    private static T DeserializeFromXmlString<T>(string xmlString)
+    {
+        XmlSerializer serializer = new XmlSerializer(typeof(T));
+        using (Stream ms = GenerateStreamFromString(xmlString))
+        {
+            T value = (T)serializer.Deserialize(ms);
+            return value;
+        }
+
+    }
+
     [Fact]
     public static void Xml_TypeWithMismatchBetweenAttributeAndPropertyType()
     {
@@ -1818,6 +1961,51 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.NotNull(y);
         Assert.Equal(x.Name, y.Name);
     }
+
+    [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
+    public static void Xml_TypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests", true, fullPath);
+        wref = new WeakReference(alc);
+
+        // Load assembly by path. By name, and it gets loaded in the default ALC.
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+
+        // Ensure the type loaded in the intended non-Default ALC
+        var type = asm.GetType(typename);
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(type.Assembly), alc);
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        // Round-Trip the instance
+        XmlSerializer serializer = new XmlSerializer(type);
+        var obj = Activator.CreateInstance(type);
+        var rtobj = SerializeAndDeserialize(obj, null, () => serializer, true);
+        Assert.NotNull(rtobj);
+        Assert.True(rtobj.Equals(obj));
+
+        alc.Unload();
+    }
+
 
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
@@ -1939,11 +2127,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
-        XmlSerializer serializer = new XmlSerializer(typeof(T));
-        if (serializerFactory != null)
-        {
-            serializer = serializerFactory();
-        }
+        XmlSerializer serializer = (serializerFactory != null) ? serializerFactory() : new XmlSerializer(typeof(T));
 
         using (MemoryStream ms = new MemoryStream())
         {

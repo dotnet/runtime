@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <dlfcn.h>
+#include <sys/stat.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/tokentype.h>
@@ -29,13 +30,14 @@
 void core_initialize_internals ();
 #endif
 
+extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
+
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
-// The following two are for back-compat and will eventually be removed
-extern void* mono_wasm_invoke_js_marshalled (MonoString **exceptionMessage, void *asyncHandleLongPtr, MonoString *funcName, MonoString *argsJson);
-extern void* mono_wasm_invoke_js_unmarshalled (MonoString **exceptionMessage, MonoString *funcName, void* arg0, void* arg1, void* arg2);
 
 void mono_wasm_enable_debugging (int);
+
+int mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type);
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
@@ -52,6 +54,46 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+
+#define MARSHAL_TYPE_NULL 0
+#define MARSHAL_TYPE_INT 1
+#define MARSHAL_TYPE_FP64 2
+#define MARSHAL_TYPE_STRING 3
+#define MARSHAL_TYPE_VT 4
+#define MARSHAL_TYPE_DELEGATE 5
+#define MARSHAL_TYPE_TASK 6
+#define MARSHAL_TYPE_OBJECT 7
+#define MARSHAL_TYPE_BOOL 8
+#define MARSHAL_TYPE_ENUM 9
+#define MARSHAL_TYPE_DATE 20
+#define MARSHAL_TYPE_DATEOFFSET 21
+#define MARSHAL_TYPE_URI 22
+#define MARSHAL_TYPE_SAFEHANDLE 23
+
+// typed array marshalling
+#define MARSHAL_ARRAY_BYTE 10
+#define MARSHAL_ARRAY_UBYTE 11
+#define MARSHAL_ARRAY_UBYTE_C 12
+#define MARSHAL_ARRAY_SHORT 13
+#define MARSHAL_ARRAY_USHORT 14
+#define MARSHAL_ARRAY_INT 15
+#define MARSHAL_ARRAY_UINT 16
+#define MARSHAL_ARRAY_FLOAT 17
+#define MARSHAL_ARRAY_DOUBLE 18
+
+#define MARSHAL_TYPE_FP32 24
+#define MARSHAL_TYPE_UINT32 25
+#define MARSHAL_TYPE_INT64 26
+#define MARSHAL_TYPE_UINT64 27
+#define MARSHAL_TYPE_CHAR 28
+#define MARSHAL_TYPE_STRING_INTERNED 29
+#define MARSHAL_TYPE_VOID 30
+#define MARSHAL_TYPE_POINTER 32
+
+// errors
+#define MARSHAL_ERROR_BUFFER_TOO_SMALL 512
+#define MARSHAL_ERROR_NULL_CLASS_POINTER 513
+#define MARSHAL_ERROR_NULL_TYPE_POINTER 514
 
 static MonoClass* datetime_class;
 static MonoClass* datetimeoffset_class;
@@ -78,6 +120,9 @@ typedef struct {
 	const char* (*lookup_icall_symbol) (void* func);
 } MonoIcallTableCallbacks;
 
+int
+mono_string_instance_is_interned (MonoString *str_raw);
+
 void
 mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 
@@ -89,54 +134,7 @@ void mono_trace_init (void);
 
 static MonoDomain *root_domain;
 
-static MonoString*
-mono_wasm_invoke_js (MonoString *str, int *is_exception)
-{
-	if (str == NULL)
-		return NULL;
-
-	mono_unichar2 *native_val = mono_string_chars (str);
-	int native_len = mono_string_length (str) * 2;
-	int native_res_len;
-	int *p_native_res_len = &native_res_len;
-
-	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var str = MONO.string_decoder.decode ($0, $0 + $1);
-		try {
-			var res = eval (str);
-			if (res === null || res == undefined)
-				return 0;
-			res = res.toString ();
-			setValue ($2, 0, "i32");
-		} catch (e) {
-			res = e.toString();
-			setValue ($2, 1, "i32");
-			if (res === null || res === undefined)
-				res = "unknown exception";
-
-			var stack = e.stack;
-			if (stack) {
-				// Some JS runtimes insert the error message at the top of the stack, some don't,
-				//  so normalize it by using the stack as the result if it already contains the error
-				if (stack.startsWith(res))
-					res = stack;
-				else
- 					res += "\n" + stack;
- 			}
-		}
-		var buff = Module._malloc((res.length + 1) * 2);
-		stringToUTF16 (res, buff, (res.length + 1) * 2);
-		setValue ($3, res.length, "i32");
-		return buff;
-	}, (int)native_val, native_len, is_exception, p_native_res_len);
-
-	if (native_res == NULL)
-		return NULL;
-
-	MonoString *res = mono_string_new_utf16 (mono_domain_get (), native_res, native_res_len);
-	free (native_res);
-	return res;
-}
+#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
 
 static void
 wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
@@ -148,8 +146,8 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 		var domain = Module.UTF8ToString ($3); // is this always Mono?
 		var dataPtr = $4;
 
-		if (MONO["logging"] && MONO.logging["trace"]) {
-			MONO.logging.trace(domain, log_level, message, isFatal, dataPtr);
+		if (INTERNAL["logging"] && INTERNAL.logging["trace"]) {
+			INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
 			return;
 		}
 
@@ -178,6 +176,9 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 				break;
 		}
 	}, log_level, message, fatal, log_domain, user_data);
+
+	if (fatal)
+		exit (1);
 }
 
 typedef uint32_t target_mword;
@@ -441,9 +442,6 @@ void mono_initialize_internals ()
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
-	// The following two are for back-compat and will eventually be removed
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSMarshalled", mono_wasm_invoke_js_marshalled);
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSUnmarshalled", mono_wasm_invoke_js_unmarshalled);
 
 #ifdef CORE_BINDINGS
 	core_initialize_internals();
@@ -470,6 +468,13 @@ mono_wasm_register_bundled_satellite_assemblies ()
 
 void mono_wasm_link_icu_shim (void);
 
+void
+cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
+{
+	free (args);
+	free (user_data);
+}
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
@@ -487,7 +492,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
-
+	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
+	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
 	const char *appctx_keys[2];
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
 	appctx_keys [1] = "RUNTIME_IDENTIFIER";
@@ -495,6 +501,23 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	const char *appctx_values[2];
 	appctx_values [0] = "/";
 	appctx_values [1] = "browser-wasm";
+
+	char *file_name = RUNTIMECONFIG_BIN_FILE;
+	int str_len = strlen (file_name) + 1; // +1 is for the "/"
+	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
+	int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);
+	struct stat buffer;
+
+	assert (num_char > 0 && num_char == str_len);
+
+	if (stat (file_path, &buffer) == 0) {
+		MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+		arg->kind = 0;
+		arg->runtimeconfig.name.path = file_path;
+		monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+	} else {
+		free (file_path);
+	}
 
 	monovm_initialize (2, appctx_keys, appctx_values);
 
@@ -577,10 +600,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
+	assert (name);
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (name);
-	if (!name)
-		return NULL;
 
 	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
 	mono_assembly_name_free (aname);
@@ -588,21 +610,23 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoClass* 
-mono_wasm_find_corlib_class (const char *namespace, const char *name)
+EMSCRIPTEN_KEEPALIVE MonoAssembly* 
+mono_wasm_get_corlib ()
 {
-	return mono_class_from_name (mono_get_corlib (), namespace, name);
+	return mono_image_get_assembly (mono_get_corlib());
 }
 
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
+	assert (assembly);
 	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
+	assert (klass);
 	return mono_class_get_method_from_name (klass, name, arguments);
 }
 
@@ -615,8 +639,7 @@ mono_wasm_get_delegate_invoke (MonoObject *delegate)
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 {
-	if (!klass)
-		return NULL;
+	assert (klass);
 
 	MonoType *type = mono_class_get_type (klass);
 	int alignment;
@@ -687,6 +710,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 			return method;
 
 		MonoClass *klass = mono_method_get_class (method);
+		assert(klass);
 		char *async_name = malloc (name_length + 2);
 		snprintf (async_name, name_length + 2, "%s$", name);
 
@@ -715,20 +739,6 @@ mono_wasm_string_get_utf8 (MonoString *str)
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_string_convert (MonoString *str)
-{
-	if (str == NULL)
-		return;
-
-	mono_unichar2 *native_val = mono_string_chars (str);
-	int native_len = mono_string_length (str) * 2;
-
-	EM_ASM ({
-		MONO.string_decoder.decode($0, $0 + $1, true);
-	}, (int)native_val, native_len);
-}
-
 EMSCRIPTEN_KEEPALIVE MonoString *
 mono_wasm_string_from_js (const char *str)
 {
@@ -752,6 +762,9 @@ mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
 static int
 class_is_task (MonoClass *klass)
 {
+	if (!klass)
+		return 0;
+
 	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
 		resolved_task_class = 1;
@@ -771,39 +784,6 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 	MonoClass* klass = mono_wasm_assembly_find_class(assembly, "System", "Uri");
 	return klass;
 }
-
-#define MARSHAL_TYPE_INT 1
-#define MARSHAL_TYPE_FP64 2
-#define MARSHAL_TYPE_STRING 3
-#define MARSHAL_TYPE_VT 4
-#define MARSHAL_TYPE_DELEGATE 5
-#define MARSHAL_TYPE_TASK 6
-#define MARSHAL_TYPE_OBJECT 7
-#define MARSHAL_TYPE_BOOL 8
-#define MARSHAL_TYPE_ENUM 9
-#define MARSHAL_TYPE_DATE 20
-#define MARSHAL_TYPE_DATEOFFSET 21
-#define MARSHAL_TYPE_URI 22
-#define MARSHAL_TYPE_SAFEHANDLE 23
-
-// typed array marshalling
-#define MARSHAL_ARRAY_BYTE 10
-#define MARSHAL_ARRAY_UBYTE 11
-#define MARSHAL_ARRAY_UBYTE_C 12
-#define MARSHAL_ARRAY_SHORT 13
-#define MARSHAL_ARRAY_USHORT 14
-#define MARSHAL_ARRAY_INT 15
-#define MARSHAL_ARRAY_UINT 16
-#define MARSHAL_ARRAY_FLOAT 17
-#define MARSHAL_ARRAY_DOUBLE 18
-
-#define MARSHAL_TYPE_FP32 24
-#define MARSHAL_TYPE_UINT32 25
-#define MARSHAL_TYPE_INT64 26
-#define MARSHAL_TYPE_UINT64 27
-#define MARSHAL_TYPE_CHAR 28
-#define MARSHAL_TYPE_STRING_INTERNED 29
-#define MARSHAL_TYPE_VOID 30
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -835,14 +815,18 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 {
 	switch (mono_type) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?
+	case MONO_TYPE_VOID:
+		return MARSHAL_TYPE_VOID;
 	case MONO_TYPE_BOOLEAN:
 		return MARSHAL_TYPE_BOOL;
+	case MONO_TYPE_I:	// IntPtr
+	case MONO_TYPE_PTR:
+		return MARSHAL_TYPE_POINTER;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
-	case MONO_TYPE_I:	// IntPtr
 		return MARSHAL_TYPE_INT;
 	case MONO_TYPE_CHAR:
 		return MARSHAL_TYPE_CHAR;
@@ -860,6 +844,7 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 	case MONO_TYPE_STRING:
 		return MARSHAL_TYPE_STRING;
 	case MONO_TYPE_SZARRAY:  { // simple zero based one-dim-array
+		if (klass) {
 		MonoClass *eklass = mono_class_get_element_class (klass);
 		MonoType *etype = mono_class_get_type (eklass);
 
@@ -883,10 +868,14 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 			default:
 				return MARSHAL_TYPE_OBJECT;
 		}
+		} else {
+			return MARSHAL_TYPE_OBJECT;
+		}
 	}
 	default:
 		mono_wasm_ensure_classes_resolved ();
 
+		if (klass) {
 		if (klass == datetime_class)
 			return MARSHAL_TYPE_DATE;
 		if (klass == datetimeoffset_class)
@@ -897,18 +886,27 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 			return MARSHAL_TYPE_VOID;
 		if (mono_class_is_enum (klass))
 			return MARSHAL_TYPE_ENUM;
-		if (!mono_type_is_reference (type)) //vt
+			if (type && !mono_type_is_reference (type)) //vt
 			return MARSHAL_TYPE_VT;
 		if (mono_class_is_delegate (klass))
 			return MARSHAL_TYPE_DELEGATE;
 		if (class_is_task(klass))
 			return MARSHAL_TYPE_TASK;
-		if (safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0))) {
+			if (safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0)))
 			return MARSHAL_TYPE_SAFEHANDLE;
 		}
 
 		return MARSHAL_TYPE_OBJECT;
 	}
+}
+
+EMSCRIPTEN_KEEPALIVE MonoClass *
+mono_wasm_get_obj_class (MonoObject *obj)
+{
+	if (!obj)
+		return NULL;
+
+	return mono_object_get_class (obj);
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -919,11 +917,15 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (!klass)
+		return MARSHAL_ERROR_NULL_CLASS_POINTER;
 	if ((klass == mono_get_string_class ()) &&
-		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj))
+		mono_string_instance_is_interned ((MonoString *)obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
+	if (!type)
+		return MARSHAL_ERROR_NULL_TYPE_POINTER;
 	obj = NULL;
 
 	int mono_type = mono_type_get_type (type);
@@ -932,32 +934,58 @@ mono_wasm_get_obj_type (MonoObject *obj)
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
+mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int result_capacity)
 {
+	void **resultP = result;
 	int *resultI = result;
 	int64_t *resultL = result;
 	float *resultF = result;
 	double *resultD = result;
 
-	if (!obj) {
+	if (result_capacity >= sizeof (int64_t))
 		*resultL = 0;
-		return 0;
-	}
+	else if (result_capacity >= sizeof (int))
+		*resultI = 0;
+
+	if (!result)
+		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
+
+	if (result_capacity < 16)
+		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
+
+	if (!obj)
+		return MARSHAL_TYPE_NULL;
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
-	if ((klass == mono_get_string_class ()) &&
-		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj)) {
-		*resultL = 0;
-		return MARSHAL_TYPE_STRING_INTERNED;
-	}
+	if (!klass)
+		return MARSHAL_ERROR_NULL_CLASS_POINTER;
 
 	MonoType *type = mono_class_get_type (klass), *original_type = type;
+	if (!type)
+		return MARSHAL_ERROR_NULL_TYPE_POINTER;
+	
+	if ((klass == mono_get_string_class ()) &&
+		mono_string_instance_is_interned ((MonoString *)obj)) {
+		*resultL = 0;
+		*resultP = type;
+		return MARSHAL_TYPE_STRING_INTERNED;
+	}
 
 	if (mono_class_is_enum (klass))
 		type = mono_type_get_underlying_type (type);
 	
+	if (!type)
+		return MARSHAL_ERROR_NULL_TYPE_POINTER;
+	
 	int mono_type = mono_type_get_type (type);
+	
+	if (mono_type == MONO_TYPE_GENERICINST) {
+		// HACK: While the 'any other type' fallback is valid for classes, it will do the 
+		//  wrong thing for structs, so we need to make sure the valuetype handler is used
+		if (mono_type_generic_inst_is_valuetype (type))
+			mono_type = MONO_TYPE_VALUETYPE;
+	}
 	
 	// FIXME: We would prefer to unbox once here but it will fail if the value isn't unboxable
 
@@ -990,59 +1018,58 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 		case MONO_TYPE_R8:
 			*resultD = *(double*)mono_object_unbox (obj);
 			break;
+		case MONO_TYPE_PTR:
+			*resultL = (int64_t)(*(void**)mono_object_unbox (obj));
+			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			// FIXME: At present the javascript side of things can't handle this,
 			//  but there's no reason not to future-proof this API
 			*resultL = *(int64_t*)mono_object_unbox (obj);
 			break;
+		case MONO_TYPE_VALUETYPE:
+			{
+				int obj_size = mono_object_get_size (obj), 
+					required_size = (sizeof (int)) + (sizeof (MonoType *)) + obj_size;
+
+				// Check whether this struct has special-case marshaling
+				// FIXME: Do we need to null out obj before this?
+				int marshal_type = mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+				if (marshal_type != MARSHAL_TYPE_VT)
+					return marshal_type;
+
+				// Check whether the result buffer is big enough for the struct and padding
+				if (result_capacity < required_size)
+					return MARSHAL_ERROR_BUFFER_TOO_SMALL;
+
+				// Store a header before the struct data with the size of the data and its MonoType
+				*resultP = type;
+				int * resultSize = (int *)(resultP + 1);
+				*resultSize = obj_size;
+				void * resultVoid = (resultP + 2);
+				void * unboxed = mono_object_unbox (obj);
+				memcpy (resultVoid, unboxed, obj_size);
+				return MARSHAL_TYPE_VT;
+			}
+			break;
 		default:
 			// If we failed to do a fast unboxing, return the original type information so
 			//  that the caller can do a proper, slow unboxing later
-			*resultL = 0;
+			// HACK: Store the class pointer into the result buffer so our caller doesn't
+			//  have to call back into the native runtime later to get it
+			*resultP = type;
 			obj = NULL;
-			return mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+			int fallbackResultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+			assert (fallbackResultType != MARSHAL_TYPE_VT);
+			return fallbackResultType;
 	}
 
 	// We successfully performed a fast unboxing here so use the type information
 	//  matching what we unboxed (i.e. an enum's underlying type instead of its type)
 	obj = NULL;
-	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
-}
-
-// FIXME: This function is retained specifically because runtime-test.js uses it
-EMSCRIPTEN_KEEPALIVE int
-mono_unbox_int (MonoObject *obj)
-{
-	if (!obj)
-		return 0;
-	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
-
-	void *ptr = mono_object_unbox (obj);
-	switch (mono_type_get_type (type)) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-		return *(signed char*)ptr;
-	case MONO_TYPE_U1:
-		return *(unsigned char*)ptr;
-	case MONO_TYPE_I2:
-		return *(short*)ptr;
-	case MONO_TYPE_U2:
-		return *(unsigned short*)ptr;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_I:
-		return *(int*)ptr;
-	case MONO_TYPE_U4:
-		return *(unsigned int*)ptr;
-	case MONO_TYPE_CHAR:
-		return *(short*)ptr;
-	// WASM doesn't support returning longs to JS
-	// case MONO_TYPE_I8:
-	// case MONO_TYPE_U8:
-	default:
-		printf ("Invalid type %d to mono_unbox_int\n", mono_type_get_type (type));
-		return 0;
-	}
+	int resultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+	assert (resultType != MARSHAL_TYPE_VT);
+	return resultType;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -1115,4 +1142,61 @@ EMSCRIPTEN_KEEPALIVE MonoString *
 mono_wasm_intern_string (MonoString *string) 
 {
 	return mono_string_intern (string);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	if (!string) {
+		if (outChars)
+			*outChars = 0;
+		if (outLengthBytes)
+			*outLengthBytes = 0;
+		if (outIsInterned)
+			*outIsInterned = 1;
+		return;
+	}
+
+	if (outChars)
+		*outChars = mono_string_chars (string);
+	if (outLengthBytes)
+		*outLengthBytes = mono_string_length (string) * 2;
+	if (outIsInterned)
+		*outIsInterned = mono_string_instance_is_interned (string);
+	return;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoType *
+mono_wasm_class_get_type (MonoClass *klass)
+{
+	if (!klass)
+		return NULL;
+	return mono_class_get_type (klass);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoClass *
+mono_wasm_type_get_class (MonoType *type)
+{
+	if (!type)
+		return NULL;
+	return mono_type_get_class (type);
+}
+
+EMSCRIPTEN_KEEPALIVE void *
+mono_wasm_unbox_rooted (MonoObject *obj)
+{
+	if (!obj)
+		return NULL;
+	return mono_object_unbox (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE char * 
+mono_wasm_get_type_name (MonoType * typePtr) {
+	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_REFLECTION);
+}
+
+EMSCRIPTEN_KEEPALIVE char * 
+mono_wasm_get_type_aqn (MonoType * typePtr) {
+	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }

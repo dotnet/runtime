@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -34,8 +30,8 @@ namespace System.Net.Http.Tests
             CheckValidParsedValue(" *  ,", 1, EntityTagHeaderValue.Any, 5, true);
             CheckValidParsedValue(" \"tag\" ", 0, new EntityTagHeaderValue("\"tag\""), 7, false);
             CheckValidParsedValue(" \"tag\" ,", 0, new EntityTagHeaderValue("\"tag\""), 8, true);
-            CheckValidParsedValue("\r\n \"tag\"\r\n ", 0, new EntityTagHeaderValue("\"tag\""), 11, false);
-            CheckValidParsedValue("\r\n \"tag\"\r\n ,  ", 0, new EntityTagHeaderValue("\"tag\""), 14, true);
+            CheckValidParsedValue(" \"tag\" ", 0, new EntityTagHeaderValue("\"tag\""), 7, false);
+            CheckValidParsedValue(" \"tag\" ,  ", 0, new EntityTagHeaderValue("\"tag\""), 10, true);
             CheckValidParsedValue("!\"tag\"", 1, new EntityTagHeaderValue("\"tag\""), 6, false);
             CheckValidParsedValue("!\"tag\"", 1, new EntityTagHeaderValue("\"tag\""), 6, true);
             CheckValidParsedValue("//\"tag\u4F1A\"", 2, new EntityTagHeaderValue("\"tag\u4F1A\""), 8, false);
@@ -62,6 +58,8 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("\"tag\" \"tag2\"", 0, false);
             CheckInvalidParsedValue("W/\"tag\"", 1, false);
             CheckInvalidParsedValue("*", 0, false); // "any" is not allowed as ETag value.
+            CheckInvalidParsedValue("\r\n \"tag\"\r\n ", 0, false);
+            CheckInvalidParsedValue("\r\n \"tag\"\r\n ,  ", 0, false);
         }
 
         #region Helper methods

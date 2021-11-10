@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography.Pal.Native;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -19,7 +20,7 @@ namespace Internal.Cryptography.Pal
             if (storeHandle == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(storeHandle));
 
-            SafeCertStoreHandle certStoreHandle = Interop.crypt32.CertDuplicateStore(storeHandle);
+            SafeCertStoreHandle certStoreHandle = Interop.Crypt32.CertDuplicateStore(storeHandle);
             if (certStoreHandle == null || certStoreHandle.IsInvalid)
                 throw new CryptographicException(SR.Cryptography_InvalidStoreHandle, nameof(storeHandle));
 
@@ -46,7 +47,7 @@ namespace Internal.Cryptography.Pal
 
         public void Add(ICertificatePal certificate)
         {
-            if (!Interop.crypt32.CertAddCertificateContextToStore(_certStore, ((CertificatePal)certificate).CertContext, CertStoreAddDisposition.CERT_STORE_ADD_REPLACE_EXISTING_INHERIT_PROPERTIES, IntPtr.Zero))
+            if (!Interop.Crypt32.CertAddCertificateContextToStore(_certStore, ((CertificatePal)certificate).CertContext, Interop.Crypt32.CertStoreAddDisposition.CERT_STORE_ADD_REPLACE_EXISTING_INHERIT_PROPERTIES, IntPtr.Zero))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
         }
 
@@ -56,11 +57,11 @@ namespace Internal.Cryptography.Pal
             {
                 SafeCertContextHandle existingCertContext = ((CertificatePal)certificate).CertContext;
                 SafeCertContextHandle? enumCertContext = null;
-                CERT_CONTEXT* pCertContext = existingCertContext.CertContext;
+                Interop.Crypt32.CERT_CONTEXT* pCertContext = existingCertContext.CertContext;
                 if (!Interop.crypt32.CertFindCertificateInStore(_certStore, CertFindType.CERT_FIND_EXISTING, pCertContext, ref enumCertContext))
                     return; // The certificate is not present in the store, simply return.
 
-                CERT_CONTEXT* pCertContextToDelete = enumCertContext.Disconnect();  // CertDeleteCertificateFromContext always frees the context (even on error)
+                Interop.Crypt32.CERT_CONTEXT* pCertContextToDelete = enumCertContext.Disconnect();  // CertDeleteCertificateFromContext always frees the context (even on error)
                 if (!Interop.crypt32.CertDeleteCertificateFromStore(pCertContextToDelete))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 

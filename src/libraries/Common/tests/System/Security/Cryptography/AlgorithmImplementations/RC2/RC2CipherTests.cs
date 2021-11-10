@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     [ConditionalClass(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
-    public static class RC2CipherTests
+    public static partial class RC2CipherTests
     {
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
         private static readonly string s_multiBlockString = new ASCIIEncoding().GetBytes(
@@ -161,6 +161,27 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 
                 byte[] decrypted = alg.Decrypt(cipher);
                 Assert.Equal<byte>(expectedDecryptedBytes, decrypted);
+
+                if (RC2Factory.OneShotSupported)
+                {
+                    byte[] oneShotEncrypt = cipherMode switch
+                    {
+                        CipherMode.ECB => alg.EncryptEcb(textHex.HexToByteArray(), paddingMode),
+                        CipherMode.CBC => alg.EncryptCbc(textHex.HexToByteArray(), iv.HexToByteArray(), paddingMode),
+                        _ => throw new NotImplementedException(),
+                    };
+
+                    Assert.Equal(expectedEncryptedBytes, oneShotEncrypt);
+
+                    byte[] oneShotDecrypt = cipherMode switch
+                    {
+                        CipherMode.ECB => alg.DecryptEcb(cipher, paddingMode),
+                        CipherMode.CBC => alg.DecryptCbc(cipher, iv.HexToByteArray(), paddingMode),
+                        _ => throw new NotImplementedException(),
+                    };
+
+                    Assert.Equal(expectedDecryptedBytes, oneShotDecrypt);
+                }
             }
         }
 

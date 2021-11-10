@@ -7,14 +7,17 @@ ASSEMBLY_NAME=$1
 TARGET_ARCH=$2
 TARGET_OS=$3
 TEST_NAME=$4
+CONFIGURATION=$5
 XHARNESS_CMD="test"
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 XCODE_PATH=$(xcode-select -p)/../..
 
-if [ -n "$5" ]; then
+if [ -n "$6" ]; then
     XHARNESS_CMD="run"
-    ADDITIONAL_ARGS=${@:5}
+    ADDITIONAL_ARGS=${@:6}
 fi
+
+if [[ "$CONFIGURATION" != "Debug" ]]; then $CONFIGURATION="Release"; fi
 
 if [[ "$TARGET_OS" == "maccatalyst" ]]; then TARGET=maccatalyst; fi
 
@@ -29,11 +32,13 @@ if [[ "$TARGET_OS" == "tvossimulator" && "$TARGET_ARCH" == "arm64" ]]; then TARG
 if [[ "$TARGET_OS" == "tvos" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=tvos-device; fi
 
 # "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
-if [[ "$TARGET" == "ios-simulator-"* ]]; then SCHEME_SDK=Release-iphonesimulator; fi
-if [[ "$TARGET" == "tvos-simulator" ]]; then SCHEME_SDK=Release-appletvsimulator; fi
-if [[ "$TARGET" == "ios-device" ]]; then SCHEME_SDK=Release-iphoneos; fi
-if [[ "$TARGET" == "tvos-device" ]]; then SCHEME_SDK=Release-appletvos; fi
-if [[ "$TARGET" == "maccatalyst" ]]; then SCHEME_SDK=Release-maccatalyst; fi
+if [[ "$TARGET" == "ios-simulator-"* ]]; then SCHEME_SDK=$CONFIGURATION-iphonesimulator; fi
+if [[ "$TARGET" == "tvos-simulator" ]]; then SCHEME_SDK=$CONFIGURATION-appletvsimulator; fi
+if [[ "$TARGET" == "ios-device" ]]; then SCHEME_SDK=$CONFIGURATION-iphoneos; fi
+if [[ "$TARGET" == "tvos-device" ]]; then SCHEME_SDK=$CONFIGURATION-appletvos; fi
+if [[ "$TARGET" == "maccatalyst" ]]; then SCHEME_SDK=$CONFIGURATION-maccatalyst; fi
+
+if [[ "$TARGET" == "ios-device" || "$TARGET" == "tvos-device" ]]; then SIGNAL_APP_END="--signal-app-end"; fi
 
 cd $EXECUTION_DIR
 
@@ -62,6 +67,7 @@ $HARNESS_RUNNER apple $XHARNESS_CMD    \
     --targets="$TARGET" \
     --xcode="$XCODE_PATH"   \
     --output-directory="$XHARNESS_OUT" \
+    $SIGNAL_APP_END \
     $ADDITIONAL_ARGS
 
 _exitCode=$?

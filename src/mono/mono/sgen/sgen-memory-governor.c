@@ -144,7 +144,8 @@ update_gc_info (mword used_slots_size)
 
 	sgen_gc_info.heap_size_bytes = major_size + sgen_los_memory_usage_total;
 	sgen_gc_info.fragmented_bytes = sgen_gc_info.heap_size_bytes - sgen_los_memory_usage - major_size_in_use;
-	sgen_gc_info.memory_load_bytes = mono_determine_physical_ram_available_size ();
+	guint64 physical_ram_size = mono_determine_physical_ram_size ();
+	sgen_gc_info.memory_load_bytes = physical_ram_size ? sgen_gc_info.total_available_memory_bytes - (guint64)(((double)sgen_gc_info.total_available_memory_bytes*mono_determine_physical_ram_available_size ())/physical_ram_size) : 0;
 	sgen_gc_info.total_committed_bytes = major_size_in_use + sgen_los_memory_usage;
 	sgen_gc_info.total_promoted_bytes = sgen_total_promoted_size - total_promoted_size_start;
 	sgen_gc_info.total_major_size_bytes = major_size;

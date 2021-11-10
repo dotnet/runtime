@@ -190,7 +190,6 @@ mono_gc_run_finalize (void *obj, void *data)
 #endif
 	MonoMethod* finalizer = NULL;
 	MonoDomain *caller_domain = mono_domain_get ();
-	MonoDomain *domain;
 
 	// This function is called from the innards of the GC, so our best alternative for now is to do polling here
 	mono_threads_safepoint ();
@@ -222,8 +221,6 @@ mono_gc_run_finalize (void *obj, void *data)
 
 	if (suspend_finalizers)
 		return;
-
-	domain = o->vtable->domain;
 
 #ifndef HAVE_SGEN_GC
 	finalizers_lock ();
@@ -856,6 +853,7 @@ static gsize WINAPI
 finalizer_thread (gpointer unused)
 {
 	gboolean wait = TRUE;
+	gboolean did_init_from_native = FALSE;
 
 	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "Finalizer", MonoSetThreadNameFlag_None);
 
@@ -878,6 +876,14 @@ finalizer_thread (gpointer unused)
 
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 
+		/* The Finalizer thread doesn't initialize during creation because base managed
+			libraries may not be loaded yet. However, the first time the Finalizer is
+			to run managed finalizer, we can take this opportunity to initialize. */
+		if (!did_init_from_native) {
+			did_init_from_native = TRUE;
+			mono_thread_init_from_native ();
+		}
+
 		mono_runtime_do_background_work ();
 
 		/* Avoid posting the pending done event until there are pending finalizers */
@@ -894,6 +900,11 @@ finalizer_thread (gpointer unused)
 			mono_coop_mutex_unlock (&pending_done_mutex);
 #endif
 		}
+	}
+
+	/* If the initialization from native was done, do the clean up */
+	if (did_init_from_native) {
+		mono_thread_cleanup_from_native ();
 	}
 
 	mono_finalizer_lock ();

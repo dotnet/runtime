@@ -232,3 +232,35 @@ g_get_tmp_dir (void)
 	}
 	return tmp_dir;
 }
+
+gchar *
+g_get_current_dir (void)
+{
+	gunichar2 *buffer = NULL;
+	gchar* val = NULL;
+	gint32 retval, buffer_size = MAX_PATH;
+
+	buffer = g_new (gunichar2, buffer_size);
+	retval = GetCurrentDirectoryW (buffer_size, buffer);
+
+	if (retval != 0) {
+		// the size might be larger than MAX_PATH
+		// https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=cmd
+		if (retval > buffer_size) {
+			buffer_size = retval;
+			buffer = g_realloc (buffer, buffer_size*sizeof(gunichar2));
+			retval = GetCurrentDirectoryW (buffer_size, buffer);
+		}
+
+		val = u16to8 (buffer);
+	} else {
+		if (GetLastError () != ERROR_ENVVAR_NOT_FOUND) {
+			val = g_malloc (1);
+			*val = 0;
+		}
+	}
+
+	g_free (buffer);
+
+	return val;
+}

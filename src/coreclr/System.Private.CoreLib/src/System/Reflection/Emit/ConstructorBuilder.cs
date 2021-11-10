@@ -160,17 +160,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        public Module GetModule()
-        {
-            return m_methodBuilder.GetModule();
-        }
-
         internal override Type GetReturnType()
         {
             return m_methodBuilder.ReturnType;
         }
-
-        public string Signature => m_methodBuilder.Signature;
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {

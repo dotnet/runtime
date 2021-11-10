@@ -25,8 +25,7 @@ namespace Internal.Cryptography
                 salt.ToArray(),
                 iterations,
                 hashAlgorithmName,
-                clearPassword: true,
-                requireMinimumSaltLength: false))
+                clearPassword: true))
             {
                 byte[] result = deriveBytes.GetBytes(destination.Length);
                 result.AsSpan().CopyTo(destination);

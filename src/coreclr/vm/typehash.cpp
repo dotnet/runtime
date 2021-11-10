@@ -14,11 +14,7 @@
 #include "typestring.h"
 #include "typedesc.h"
 #include "typekey.h"
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#include "compile.h"
-#endif
-#include "ngenhash.inl"
+#include "dacenumerablehash.inl"
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -66,7 +62,7 @@ LoaderAllocator *EETypeHashTable::GetLoaderAllocator()
     }
     else
     {
-        _ASSERTE(!m_pModule.IsNull());
+        _ASSERTE(m_pModule != NULL);
         return GetModule()->GetLoaderAllocator();
     }
 }
@@ -145,10 +141,10 @@ DWORD EETypeHashTable::GetCount()
     return BaseGetElementCount();
 }
 
-static DWORD HashTypeHandle(DWORD level, TypeHandle t);
+static DWORD HashTypeHandle(TypeHandle t);
 
 // Calculate hash value for a type def or instantiated type def
-static DWORD HashPossiblyInstantiatedType(DWORD level, mdTypeDef token, Instantiation inst)
+static DWORD HashPossiblyInstantiatedType(mdTypeDef token, Instantiation inst)
 {
     CONTRACTL
     {
@@ -165,17 +161,10 @@ static DWORD HashPossiblyInstantiatedType(DWORD level, mdTypeDef token, Instanti
     dwHash = ((dwHash << 5) + dwHash) ^ token;
     if (!inst.IsEmpty())
     {
-        dwHash = ((dwHash << 5) + dwHash) ^ inst.GetNumArgs();
-
-        // Hash two levels of the hiearchy. A simple nesting of generics instantiations is
-        // pretty common in generic collections, e.g.: ICollection<KeyValuePair<TKey, TValue>>
-        if (level < 2)
+        // Hash n type parameters
+        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
-            // Hash n type parameters
-            for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-            {
-                dwHash = ((dwHash << 5) + dwHash) ^ HashTypeHandle(level+1, inst[i]);
-            }
+            dwHash = ((dwHash << 5) + dwHash) ^ inst[i].AsTAddr();
         }
     }
 
@@ -183,7 +172,7 @@ static DWORD HashPossiblyInstantiatedType(DWORD level, mdTypeDef token, Instanti
 }
 
 // Calculate hash value for a function pointer type
-static DWORD HashFnPtrType(DWORD level, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes)
+static DWORD HashFnPtrType(BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -192,31 +181,29 @@ static DWORD HashFnPtrType(DWORD level, BYTE callConv, DWORD numArgs, TypeHandle
     dwHash = ((dwHash << 5) + dwHash) ^ ELEMENT_TYPE_FNPTR;
     dwHash = ((dwHash << 5) + dwHash) ^ callConv;
     dwHash = ((dwHash << 5) + dwHash) ^ numArgs;
-    if (level < 1)
+
+    for (DWORD i = 0; i <= numArgs; i++)
     {
-        for (DWORD i = 0; i <= numArgs; i++)
-        {
-            dwHash = ((dwHash << 5) + dwHash) ^ HashTypeHandle(level+1, retAndArgTypes[i]);
-        }
+        dwHash = ((dwHash << 5) + dwHash) ^ retAndArgTypes[i].AsTAddr();
     }
 
     return dwHash;
 }
 
 // Calculate hash value for an array/pointer/byref type
-static DWORD HashParamType(DWORD level, CorElementType kind, TypeHandle typeParam)
+static DWORD HashParamType(CorElementType kind, TypeHandle typeParam)
 {
     WRAPPER_NO_CONTRACT;
     INT_PTR dwHash = 5381;
 
     dwHash = ((dwHash << 5) + dwHash) ^ kind;
-    dwHash = ((dwHash << 5) + dwHash) ^ HashTypeHandle(level, typeParam);
+    dwHash = ((dwHash << 5) + dwHash) ^ typeParam.AsTAddr();
 
     return dwHash;
 }
 
 // Calculate hash value from type handle
-static DWORD HashTypeHandle(DWORD level, TypeHandle t)
+static DWORD HashTypeHandle(TypeHandle t)
 {
     CONTRACTL
     {
@@ -233,29 +220,30 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
 
     if (t.HasTypeParam())
     {
-        retVal = HashParamType(level, t.GetInternalCorElementType(), t.GetTypeParam());
-    }
-    else if (t.IsGenericVariable())
-    {
-        retVal = (dac_cast<PTR_TypeVarTypeDesc>(t.AsTypeDesc())->GetToken());
+        retVal = HashParamType(t.GetInternalCorElementType(), t.GetTypeParam());
     }
     else if (t.HasInstantiation())
     {
-        retVal = HashPossiblyInstantiatedType(level, t.GetCl(), t.GetInstantiation());
+        retVal = HashPossiblyInstantiatedType(t.GetCl(), t.GetInstantiation());
     }
     else if (t.IsFnPtrType())
     {
         FnPtrTypeDesc* pTD = t.AsFnPtrType();
-        retVal = HashFnPtrType(level, pTD->GetCallConv(), pTD->GetNumArgs(), pTD->GetRetAndArgTypesPointer());
+        retVal = HashFnPtrType(pTD->GetCallConv(), pTD->GetNumArgs(), pTD->GetRetAndArgTypesPointer());
+    }
+    else if (t.IsGenericVariable())
+    {
+        _ASSERTE(!"Generic variables are unexpected here.");
+        retVal = t.AsTAddr();
     }
     else
-        retVal = HashPossiblyInstantiatedType(level, t.GetCl(), Instantiation());
+        retVal = HashPossiblyInstantiatedType(t.GetCl(), Instantiation());
 
     return retVal;
 }
 
 // Calculate hash value from key
-static DWORD HashTypeKey(TypeKey* pKey)
+DWORD HashTypeKey(TypeKey* pKey)
 {
     CONTRACTL
     {
@@ -269,15 +257,15 @@ static DWORD HashTypeKey(TypeKey* pKey)
 
     if (pKey->GetKind() == ELEMENT_TYPE_CLASS)
     {
-        return HashPossiblyInstantiatedType(0, pKey->GetTypeToken(), pKey->GetInstantiation());
+        return HashPossiblyInstantiatedType(pKey->GetTypeToken(), pKey->GetInstantiation());
     }
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
-        return HashFnPtrType(0, pKey->GetCallConv(), pKey->GetNumArgs(), pKey->GetRetAndArgTypes());
+        return HashFnPtrType(pKey->GetCallConv(), pKey->GetNumArgs(), pKey->GetRetAndArgTypes());
     }
     else
     {
-        return HashParamType(0, pKey->GetKind(), pKey->GetElementType());
+        return HashParamType(pKey->GetKind(), pKey->GetElementType());
     }
 }
 
@@ -382,40 +370,6 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
             if (kind == ELEMENT_TYPE_ARRAY)
             {
                 TypeHandle th = pSearch->GetTypeHandle();
-#ifdef FEATURE_PREJIT
-                // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-                ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
-
-                TADDR fixup = dac_cast<TADDR>(th.GetMethodTable());
-                if (!CORCOMPILE_IS_POINTER_TAGGED(fixup))
-                {
-                    TADDR canonFixup = th.GetMethodTable()->GetCanonicalMethodTableFixup();
-                    if (CORCOMPILE_IS_POINTER_TAGGED(canonFixup))
-                        fixup = canonFixup;
-                }
-
-                if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
-                {
-                    Module *pDefiningModule;
-                    PCCOR_SIGNATURE pSig = GetModule()->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-                    if (pDefiningModule == NULL)
-                        break;
-
-                    _ASSERTE(*pSig == ELEMENT_TYPE_ARRAY);
-                    pSig++;
-                    SigPointer sp(pSig);
-                    if (FAILED(sp.SkipExactlyOne()))
-                        break; // return NULL;
-
-                    uint32_t data;
-                    if (FAILED(sp.GetData(&data)))
-                        break; // return NULL;
-
-                    if (data != pKey->GetRank())
-                        continue;
-                }
-                else
-#endif //FEATURE_PREJIT
                 {
                     if (th.GetRank() != pKey->GetRank())
                         continue;
@@ -454,38 +408,6 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     if (pMT->GetNumGenericArgs() != inst.GetNumArgs())
         return FALSE;
 
-#ifdef FEATURE_PREJIT
-    // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
-
-    TADDR fixup = pMT->GetCanonicalMethodTableFixup();
-
-    // The EEClass pointer is actually an encoding.
-    if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
-    {
-        Module *pDefiningModule;
-
-        PCCOR_SIGNATURE pSig = GetModule()->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-
-        // First check that the modules for the generic type defs match
-        if (dac_cast<TADDR>(pDefiningModule) !=
-            dac_cast<TADDR>(pModule))
-            return FALSE;
-
-        // Now crack the signature encoding, expected to be an instantiated type
-        _ASSERTE(*pSig == ELEMENT_TYPE_GENERICINST);
-        pSig++;
-        _ASSERTE(*pSig == ELEMENT_TYPE_CLASS || *pSig == ELEMENT_TYPE_VALUETYPE);
-        pSig++;
-
-        // Check that the tokens of the generic type def match
-        if (CorSigUncompressToken(pSig) != token)
-            return FALSE;
-    }
-
-    // The EEClass pointer is a real pointer
-    else
-#endif //FEATURE_PREJIT
     {
         // First check that the typedef tokens match
         if (pMT->GetCl() != token)
@@ -509,16 +431,7 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     // Now check the instantiations. Some type arguments might be encoded.
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
-#ifdef FEATURE_PREJIT
-        // Fetch the type handle as TADDR. It may be may be encoded fixup - TypeHandle debug-only validation
-        // asserts on encoded fixups.
-        DACCOP_IGNORE(CastOfMarshalledType, "Dual mode DAC problem, but since the size is the same, the cast is safe");
-        TADDR candidateArg = ((FixupPointer<TADDR> *)candidateInst.GetRawArgs())[i].GetValue();
-
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, inst[i]))
-#else
         if (candidateInst[i] != inst[i])
-#endif
         {
             return FALSE;
         }
@@ -545,10 +458,6 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
         return FALSE;
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_PREJIT
-    // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
-#endif
 
     FnPtrTypeDesc* pTD = t.AsFnPtrType();
 
@@ -559,12 +468,7 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
     TypeHandle *retAndArgTypes2 = pTD->GetRetAndArgTypesPointer();
     for (DWORD i = 0; i <= numArgs; i++)
     {
-#ifdef FEATURE_PREJIT
-        TADDR candidateArg = retAndArgTypes2[i].AsTAddr();
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, retAndArgTypes[i]))
-#else
         if (retAndArgTypes2[i] != retAndArgTypes[i])
-#endif
         {
             return FALSE;
         }
@@ -632,7 +536,7 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
         PRECONDITION(!data.IsEncodedFixup());
         PRECONDITION(!data.IsGenericTypeDefinition()); // Generic type defs live in typedef table (availableClasses)
         PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType()); // It's an instantiated type or an array/ptr/byref type
-        PRECONDITION(m_pModule.IsNull() || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
+        PRECONDITION(m_pModule == NULL || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
     }
     CONTRACTL_END
 
@@ -640,175 +544,12 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
 
     pNewEntry->SetTypeHandle(data);
 
-    BaseInsertEntry(HashTypeHandle(0, data), pNewEntry);
+    BaseInsertEntry(HashTypeHandle(data), pNewEntry);
 }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-
-#ifdef _DEBUG
-void EETypeHashTableSeal(EETypeHashTable * pTable) { WRAPPER_NO_CONTRACT; pTable->Seal(); }
-void EETypeHashTableUnseal(EETypeHashTable * pTable) { WRAPPER_NO_CONTRACT; pTable->Unseal(); }
-typedef  Wrapper<EETypeHashTable *, EETypeHashTableSeal, EETypeHashTableUnseal> EETypeHashTableSealHolder;
-#endif
-
-// Save the hash table and any type descriptors referenced by it
-// Method tables must be saved separately
-void EETypeHashTable::Save(DataImage *image, Module *module, CorProfileData *profileData)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(image->GetModule() == GetModule());
-    }
-    CONTRACTL_END;
-
-#ifdef _DEBUG
-    // The table should not change while we are walking the buckets
-    EETypeHashTableSealHolder h(this);
-#endif
-
-    // The base class will call us back for every entry to see if it's considered hot. To determine this we
-    // have to walk through the profiling data. It's very inefficient for us to do this every time. Instead
-    // we'll walk the data once just now and mark each hot entry as we find it.
-    CORBBTPROF_TOKEN_INFO * pTypeProfilingData = profileData ? profileData->GetTokenFlagsData(TypeProfilingData) : NULL;
-    DWORD                   cTypeProfilingData = profileData ? profileData->GetTokenFlagsCount(TypeProfilingData) : NULL;
-
-    for (unsigned int i = 0; i < cTypeProfilingData; i++)
-    {
-        CORBBTPROF_TOKEN_INFO *entry = &pTypeProfilingData[i];
-        mdToken token = entry->token;
-        DWORD   flags = entry->flags;
-
-        if (TypeFromToken(token) != ibcTypeSpec)
-            continue;
-
-        if ((flags & (1 << ReadTypeHashTable)) == 0)
-            continue;
-
-        CORBBTPROF_BLOB_ENTRY *pBlobEntry = profileData ? profileData->GetBlobStream() : NULL;
-        if (pBlobEntry)
-        {
-            while (pBlobEntry->TypeIsValid())
-            {
-                if (TypeFromToken(pBlobEntry->token) == ibcTypeSpec)
-                {
-                    _ASSERTE(pBlobEntry->type == ParamTypeSpec);
-
-                    CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry = (CORBBTPROF_BLOB_PARAM_SIG_ENTRY *) pBlobEntry;
-
-                    if (pBlobEntry->token == token)
-                    {
-                        if (flags & (1<<ReadTypeHashTable))
-                        {
-                            TypeHandle th = GetModule()->LoadIBCTypeHelper(image, pBlobSigEntry);
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-                            g_pConfig->DebugCheckAndForceIBCFailure(EEConfig::CallSite_8);
-#endif
-                            if (!th.IsNull())
-                            {
-                                // Found a hot type. See if we have it in our table.
-                                DWORD dwHash = HashTypeHandle(0, th);
-                                LookupContext sContext;
-                                EETypeHashEntry_t *pSearch = BaseFindFirstEntryByHash(dwHash, &sContext);
-                                while (pSearch)
-                                {
-                                    if (pSearch->GetTypeHandle() == th)
-                                    {
-                                        // Found the corresponding entry in the table. Mark it as hot.
-                                        pSearch->MarkAsHot();
-                                        break;
-                                    }
-
-                                    pSearch = BaseFindNextEntryByHash(&sContext);
-                                }
-                            }
-                        }
-                    }
-                }
-                pBlobEntry = pBlobEntry->GetNextEntry();
-            }
-        }
-    }
-
-    BaseSave(image, profileData);
-}
-
-bool EETypeHashTable::ShouldSave(DataImage *pImage, EETypeHashEntry_t *pEntry)
-{
-    STANDARD_VM_CONTRACT;
-
-    return !!pImage->GetPreloader()->IsTypeInTransitiveClosureOfInstantiations(CORINFO_CLASS_HANDLE(pEntry->GetTypeHandle().AsPtr()));
-}
-
-bool EETypeHashTable::IsHotEntry(EETypeHashEntry_t *pEntry, CorProfileData *pProfileData)
-{
-    STANDARD_VM_CONTRACT;
-
-    // EETypeHashTable::Save() will have marked the entry as hot if the profile data indicated this.
-    return pEntry->IsHot();
-}
-
-bool EETypeHashTable::SaveEntry(DataImage *pImage, CorProfileData *pProfileData, EETypeHashEntry_t *pOldEntry, EETypeHashEntry_t *pNewEntry, EntryMappingTable *pMap)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return false;
-}
-
-void EETypeHashTable::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    BaseFixup(image);
-
-    image->ZeroPointerField(this, offsetof(EETypeHashTable, m_pAllocator));
-
-#ifdef _DEBUG
-    // The persisted table should be unsealed.
-    EETypeHashTable *pNewTable = (EETypeHashTable*) image->GetImagePointer(this);
-    pNewTable->InitUnseal();
-#endif
-}
-
-void EETypeHashTable::FixupEntry(DataImage *pImage, EETypeHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset)
-{
-    STANDARD_VM_CONTRACT;
-
-    TypeHandle pType = pEntry->GetTypeHandle();
-    _ASSERTE(!pType.IsNull());
-
-    // Clear any hot entry marking in the data, it's not needed after the Save phase.
-    pEntry->SetTypeHandle(pType);
-
-    if (pType.IsTypeDesc())
-    {
-        pImage->FixupField(pFixupBase, cbFixupOffset + offsetof(EETypeHashEntry_t, m_data),
-                           pType.AsTypeDesc(), 2, IMAGE_REL_BASED_RelativePointer);
-
-        pType.AsTypeDesc()->Fixup(pImage);
-    }
-    else
-    {
-        pImage->FixupField(pFixupBase, cbFixupOffset + offsetof(EETypeHashEntry_t, m_data),
-                           pType.AsMethodTable(), 0, IMAGE_REL_BASED_RelativePointer);
-
-        pType.AsMethodTable()->Fixup(pImage);
-    }
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
-
-void
-EETypeHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    BaseEnumMemoryRegions(flags);
-}
-
 void EETypeHashTable::EnumMemoryRegionsForEntry(EETypeHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
@@ -834,32 +575,9 @@ void EETypeHashEntry::SetTypeHandle(TypeHandle handle)
 
     // We plan to steal the low-order bit of the handle for ngen purposes.
     _ASSERTE((handle.AsTAddr() & 0x1) == 0);
-    m_data.SetValueMaybeNull(handle.AsPtr());
+    m_data = handle.AsPtr();
 }
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-bool EETypeHashEntry::IsHot()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Low order bit of data field indicates a hot entry.
-    TADDR data = dac_cast<TADDR>(GetData());
-    return (data & 1) != 0;
-}
-
-#ifndef DACCESS_COMPILE
-void EETypeHashEntry::MarkAsHot()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Low order bit of data field indicates a hot entry.
-    TADDR data = dac_cast<TADDR>(GetData());
-    data |= 0x1;
-    m_data.SetValueMaybeNull(dac_cast<PTR_VOID>(data));
-}
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_PREJIT
 
 #ifdef _MSC_VER
 #pragma warning(pop)

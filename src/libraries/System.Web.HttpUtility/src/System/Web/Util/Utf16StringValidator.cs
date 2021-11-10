@@ -34,7 +34,7 @@ namespace System.Web.Util
             // slow case: surrogates exist, so we need to validate them
             return string.Create(input.Length, (input, idxOfFirstSurrogate), (chars, state) =>
             {
-                state.input.AsSpan().CopyTo(chars);
+                state.input.CopyTo(chars);
                 for (int i = state.idxOfFirstSurrogate; i < chars.Length; i++)
                 {
                     char thisChar = chars[i];

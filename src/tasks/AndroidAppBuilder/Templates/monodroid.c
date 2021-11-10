@@ -191,7 +191,7 @@ log_callback (const char *log_domain, const char *log_level, const char *message
     }
 }
 
-#if FORCE_AOT
+#if defined(FORCE_AOT) && defined(STATIC_AOT)
 void register_aot_modules (void);
 #endif
 
@@ -205,12 +205,20 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 int
 mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[])
 {
+    // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
+
     // uncomment for debug output:
     //
     //setenv ("XUNIT_VERBOSE", "true", true);
     //setenv ("MONO_LOG_LEVEL", "debug", true);
     //setenv ("MONO_LOG_MASK", "all", true);
-    // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
+
+    // build using DiagnosticPorts property in AndroidAppBuilder
+    // or set DOTNET_DiagnosticPorts env via adb, xharness when undefined.
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents=diagnostics_tracing
+#ifdef DIAGNOSTIC_PORTS
+    setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
+#endif
 
     bool wait_for_debugger = false;
     chdir (bundle_path);
@@ -226,19 +234,21 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     appctx_values[1] = bundle_path;
 
     char *file_name = RUNTIMECONFIG_BIN_FILE;
-    int str_len = strlen (bundle_path) + strlen (file_name) + 2;
-    char *file_path = (char *)malloc (sizeof (char) * str_len);
-    int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
+    int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
+    char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
+    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", bundle_path, file_name);
     struct stat buffer;
 
     LOG_INFO ("file_path: %s\n", file_path);
-    assert (num_char > 0 && num_char < str_len);
+    assert (num_char > 0 && num_char == str_len);
 
     if (stat (file_path, &buffer) == 0) {
         MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
         arg->kind = 0;
         arg->runtimeconfig.name.path = file_path;
         monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+    } else {
+        free (file_path);
     }
 
     monovm_initialize(2, appctx_keys, appctx_values);
@@ -260,18 +270,25 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     LOG_INFO("Interp Enabled");
     mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
 #elif FORCE_AOT
+    LOG_INFO("AOT Enabled");
+#if STATIC_AOT
     register_aot_modules();
+#endif
     mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
 #endif
 
-    mono_jit_init_version ("dotnet.android", "mobile");
+    MonoDomain *domain = mono_jit_init_version ("dotnet.android", "mobile");
+    assert (domain);
 
     MonoAssembly *assembly = mono_droid_load_assembly (executable, NULL);
     assert (assembly);
-    LOG_INFO ("Executable: %s", executable);
 
-    int res = mono_jit_exec (mono_domain_get (), assembly, managed_argc, managed_argv);
+    LOG_INFO ("Executable: %s", executable);
+    int res = mono_jit_exec (domain, assembly, managed_argc, managed_argv);
     LOG_INFO ("Exit code: %d.", res);
+
+    mono_jit_cleanup (domain);
+
     return res;
 }
 

@@ -26,6 +26,8 @@ internal static partial class Interop
             S_IROTH = 0x4,
             S_IWOTH = 0x2,
             S_IXOTH = 0x1,
+
+            S_IXUGO = S_IXUSR | S_IXGRP | S_IXOTH,
         }
     }
 }

@@ -3,16 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -51,7 +47,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
 
     // <summary>
-    // Extra json elements to add to mono-config.js
+    // Extra json elements to add to mono-config.json
     //
     // Metadata:
     // - Value: can be a number, bool, quoted string, or json string
@@ -64,7 +60,7 @@ public class WasmAppBuilder : Task
     // </summary>
     public ITaskItem[]? ExtraConfig { get; set; }
 
-    private class WasmAppConfig
+    private sealed class WasmAppConfig
     {
         [JsonPropertyName("assembly_root")]
         public string AssemblyRoot { get; set; } = "managed";
@@ -91,12 +87,12 @@ public class WasmAppBuilder : Task
         public string Name { get; init; }
     }
 
-    private class AssemblyEntry : AssetEntry
+    private sealed class AssemblyEntry : AssetEntry
     {
         public AssemblyEntry(string name) : base(name, "assembly") {}
     }
 
-    private class SatelliteAssemblyEntry : AssetEntry
+    private sealed class SatelliteAssemblyEntry : AssetEntry
     {
         public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
         {
@@ -107,14 +103,14 @@ public class WasmAppBuilder : Task
         public string CultureName { get; set; }
     }
 
-    private class VfsEntry : AssetEntry
+    private sealed class VfsEntry : AssetEntry
     {
         public VfsEntry(string name) : base(name, "vfs") {}
         [JsonPropertyName("virtual_path")]
         public string? VirtualPath { get; set; }
     }
 
-    private class IcuData : AssetEntry
+    private sealed class IcuData : AssetEntry
     {
         public IcuData(string name) : base(name, "icu") {}
         [JsonPropertyName("load_remote")]
@@ -123,10 +119,23 @@ public class WasmAppBuilder : Task
 
     public override bool Execute ()
     {
+        try
+        {
+            return ExecuteInternal();
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError(laee.Message);
+            return false;
+        }
+    }
+
+    private bool ExecuteInternal ()
+    {
         if (!File.Exists(MainJS))
-            throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
+            throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
-            throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+            throw new LogAsErrorException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
         if (Assemblies?.Length == 0)
         {
@@ -167,8 +176,12 @@ public class WasmAppBuilder : Task
         }
         FileCopyChecked(MainJS!, Path.Combine(AppDir, "runtime.js"), string.Empty);
 
-        var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
-        File.WriteAllText(Path.Combine(AppDir, "index.html"), html);
+        string indexHtmlPath = Path.Combine(AppDir, "index.html");
+        if (!File.Exists(indexHtmlPath))
+        {
+            var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+            File.WriteAllText(indexHtmlPath, html);
+        }
 
         foreach (var assembly in _assemblies)
         {
@@ -189,6 +202,13 @@ public class WasmAppBuilder : Task
             {
                 string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
                 string fullPath = assembly.GetMetadata("Identity");
+                if (string.IsNullOrEmpty(culture))
+                {
+                    Log.LogWarning($"Missing CultureName metadata for satellite assembly {fullPath}");
+                    continue;
+                }
+                // FIXME: validate the culture?
+
                 string name = Path.GetFileName(fullPath);
                 string directory = Path.Combine(AppDir, config.AssemblyRoot, culture);
                 Directory.CreateDirectory(directory);
@@ -203,6 +223,7 @@ public class WasmAppBuilder : Task
             Directory.CreateDirectory(supportFilesDir);
 
             var i = 0;
+            StringDictionary targetPathTable = new();
             foreach (var item in FilesToIncludeInFileSystem)
             {
                 string? targetPath = item.GetMetadata("TargetPath");
@@ -213,6 +234,21 @@ public class WasmAppBuilder : Task
 
                 // We normalize paths from `\` to `/` as MSBuild items could use `\`.
                 targetPath = targetPath.Replace('\\', '/');
+                if (targetPathTable.ContainsKey(targetPath))
+                {
+                    string firstPath = Path.GetFullPath(targetPathTable[targetPath]!);
+                    string secondPath = Path.GetFullPath(item.ItemSpec);
+
+                    if (firstPath == secondPath)
+                    {
+                        Log.LogWarning($"Found identical vfs mappings for target path: {targetPath}, source file: {firstPath}. Ignoring.");
+                        continue;
+                    }
+
+                    throw new LogAsErrorException($"Found more than one file mapping to the target VFS path: {targetPath}. Source files: {firstPath}, and {secondPath}");
+                }
+
+                targetPathTable[targetPath] = item.ItemSpec;
 
                 var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
 
@@ -246,12 +282,14 @@ public class WasmAppBuilder : Task
             config.Extra[name] = valueObject;
         }
 
-        string monoConfigPath = Path.Combine(AppDir, "mono-config.js");
-        using (var sw = File.CreateText(monoConfigPath))
+        string tmpMonoConfigPath = Path.GetTempFileName();
+        using (var sw = File.CreateText(tmpMonoConfigPath))
         {
             var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
-            sw.Write($"config = {json};");
+            sw.Write(json);
         }
+        string monoConfigPath = Path.Combine(AppDir, "mono-config.json");
+        Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
         if (ExtraFilesToDeploy != null)
@@ -327,9 +365,16 @@ public class WasmAppBuilder : Task
         }
 
         Log.LogMessage(MessageImportance.Low, $"Copying file from '{src}' to '{dst}'");
-        File.Copy(src, dst, true);
-        _fileWrites.Add(dst);
+        try
+        {
+            File.Copy(src, dst, true);
+            _fileWrites.Add(dst);
 
-        return true;
+            return true;
+        }
+        catch (IOException ioex)
+        {
+            throw new LogAsErrorException($"{label} Failed to copy {src} to {dst} because {ioex.Message}");
+        }
     }
 }

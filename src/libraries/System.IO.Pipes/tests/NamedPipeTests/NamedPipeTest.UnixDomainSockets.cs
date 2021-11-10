@@ -49,8 +49,7 @@ namespace System.IO.Pipes.Tests
                 }
             }
 
-            Assert.True(File.Exists(pipeName));
-            try { File.Delete(pipeName); } catch { }
+            Assert.False(File.Exists(pipeName));
         }
     }
 }

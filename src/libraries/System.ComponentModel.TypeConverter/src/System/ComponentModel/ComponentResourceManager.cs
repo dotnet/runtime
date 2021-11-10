@@ -17,8 +17,8 @@ namespace System.ComponentModel
     /// </summary>
     public class ComponentResourceManager : ResourceManager
     {
-        private Hashtable _resourceSets;
-        private CultureInfo _neutralResourcesCulture;
+        private Hashtable? _resourceSets;
+        private CultureInfo? _neutralResourcesCulture;
 
         public ComponentResourceManager()
         {
@@ -32,7 +32,7 @@ namespace System.ComponentModel
         /// The culture of the main assembly's neutral resources. If someone is asking for this culture's resources,
         /// we don't need to walk up the parent chain.
         /// </summary>
-        private CultureInfo NeutralResourcesCulture
+        private CultureInfo? NeutralResourcesCulture
         {
             get
             {
@@ -63,7 +63,7 @@ namespace System.ComponentModel
         /// property the resource will be ignored.
         /// </summary>
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
-        public virtual void ApplyResources(object value, string objectName, CultureInfo culture)
+        public virtual void ApplyResources(object value, string objectName, CultureInfo? culture)
         {
             if (value == null)
             {
@@ -89,20 +89,20 @@ namespace System.ComponentModel
 
             // The reason we use a SortedDictionary here is to ensure the resources are applied
             // in an order consistent with codedom deserialization.
-            SortedList<string, object> resources;
+            SortedList<string, object?>? resources;
 
             if (_resourceSets == null)
             {
                 _resourceSets = new Hashtable();
-                resources = FillResources(culture, out ResourceSet dummy);
+                resources = FillResources(culture, out ResourceSet? dummy);
                 _resourceSets[culture] = resources;
             }
             else
             {
-                resources = (SortedList<string, object>)_resourceSets[culture];
+                resources = (SortedList<string, object?>?)_resourceSets[culture];
                 if (resources == null || (resources.Comparer.Equals(StringComparer.OrdinalIgnoreCase) != IgnoreCase))
                 {
-                    resources = FillResources(culture, out ResourceSet dummy);
+                    resources = FillResources(culture, out ResourceSet? dummy);
                     _resourceSets[culture] = resources;
                 }
             }
@@ -116,14 +116,14 @@ namespace System.ComponentModel
             bool componentReflect = false;
             if (value is IComponent)
             {
-                ISite site = ((IComponent)value).Site;
+                ISite? site = ((IComponent)value).Site;
                 if (site != null && site.DesignMode)
                 {
                     componentReflect = true;
                 }
             }
 
-            foreach (KeyValuePair<string, object> kvp in resources)
+            foreach (KeyValuePair<string, object?> kvp in resources)
             {
                 // See if this key matches our object.
                 string key = kvp.Key;
@@ -156,7 +156,7 @@ namespace System.ComponentModel
 
                 if (componentReflect)
                 {
-                    PropertyDescriptor prop = TypeDescriptor.GetProperties(value).Find(propName, IgnoreCase);
+                    PropertyDescriptor? prop = TypeDescriptor.GetProperties(value).Find(propName, IgnoreCase);
 
                     if (prop != null && !prop.IsReadOnly && (kvp.Value == null || prop.PropertyType.IsInstanceOfType(kvp.Value)))
                     {
@@ -165,7 +165,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    PropertyInfo prop = null;
+                    PropertyInfo? prop = null;
 
                     try
                     {
@@ -175,7 +175,7 @@ namespace System.ComponentModel
                     {
                         // Looks like we ran into a conflict between a declared property and an inherited one.
                         // In such cases, we choose the most declared one.
-                        Type t = value.GetType();
+                        Type? t = value.GetType();
                         do
                         {
                             prop = t.GetProperty(propName, flags | BindingFlags.DeclaredOnly);
@@ -195,10 +195,10 @@ namespace System.ComponentModel
         /// Recursive routine that creates a resource hashtable populated with
         /// resources for culture and all parent cultures.
         /// </summary>
-        private SortedList<string, object> FillResources(CultureInfo culture, out ResourceSet resourceSet)
+        private SortedList<string, object?> FillResources(CultureInfo culture, out ResourceSet? resourceSet)
         {
-            SortedList<string, object> sd;
-            ResourceSet parentResourceSet = null;
+            SortedList<string, object?> sd;
+            ResourceSet? parentResourceSet = null;
 
             // Traverse parents first, so we always replace more
             // specific culture values with less specific.
@@ -211,11 +211,11 @@ namespace System.ComponentModel
                 // We're at the bottom, so create the sorted dictionary
                 if (IgnoreCase)
                 {
-                    sd = new SortedList<string, object>(StringComparer.OrdinalIgnoreCase);
+                    sd = new SortedList<string, object?>(StringComparer.OrdinalIgnoreCase);
                 }
                 else
                 {
-                    sd = new SortedList<string, object>(StringComparer.Ordinal);
+                    sd = new SortedList<string, object?>(StringComparer.Ordinal);
                 }
             }
 

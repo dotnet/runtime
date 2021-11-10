@@ -112,6 +112,7 @@ namespace R2RTest
                         line.StartsWith("EXEC : warning") ||
                         line.StartsWith("To repro,") ||
                         line.StartsWith("Emitting R2R PE file") ||
+                        line.StartsWith("Moving R2R PE file") ||
                         line.StartsWith("Warning: ") ||
                         line.StartsWith("Info: ") ||
                         line == "Assertion Failed")

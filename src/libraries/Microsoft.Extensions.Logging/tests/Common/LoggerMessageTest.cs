@@ -254,6 +254,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineMessage_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters()
         {
             // Arrange
@@ -275,6 +276,7 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(4)]
         [InlineData(5)]
         [InlineData(6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -319,6 +321,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineScope_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters()
         {
             // Arrange
@@ -340,6 +343,7 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(4)]
         [InlineData(5)]
         [InlineData(6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -426,13 +430,13 @@ namespace Microsoft.Extensions.Logging.Test
 
         public static IEnumerable<object[]> LogMessagesDataSkipEnabledCheck => new[]
         {
-            new object[] { LoggerMessage.Define(LogLevel.Error, 0, "Log ", skipEnabledCheck: true), 0 },
-            new object[] { LoggerMessage.Define<string>(LogLevel.Error, 1, "Log {P0}", skipEnabledCheck: true), 1 },
-            new object[] { LoggerMessage.Define<string, string>(LogLevel.Error, 2, "Log {P0} {P1}", skipEnabledCheck: true), 2 },
-            new object[] { LoggerMessage.Define<string, string, string>(LogLevel.Error, 3, "Log {P0} {P1} {P2}", skipEnabledCheck: true), 3 },
-            new object[] { LoggerMessage.Define<string, string, string, string>(LogLevel.Error, 4, "Log {P0} {P1} {P2} {P3}", skipEnabledCheck: true), 4 },
-            new object[] { LoggerMessage.Define<string, string, string, string, string>(LogLevel.Error, 5, "Log {P0} {P1} {P2} {P3} {P4}", skipEnabledCheck: true), 5 },
-            new object[] { LoggerMessage.Define<string, string, string, string, string, string>(LogLevel.Error, 6, "Log {P0} {P1} {P2} {P3} {P4} {P5}", skipEnabledCheck: true), 6 },
+            new object[] { LoggerMessage.Define(LogLevel.Error, 0, "Log ", options: new LogDefineOptions() { SkipEnabledCheck = true }), 0 },
+            new object[] { LoggerMessage.Define<string>(LogLevel.Error, 1, "Log {P0}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 1 },
+            new object[] { LoggerMessage.Define<string, string>(LogLevel.Error, 2, "Log {P0} {P1}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 2 },
+            new object[] { LoggerMessage.Define<string, string, string>(LogLevel.Error, 3, "Log {P0} {P1} {P2}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 3 },
+            new object[] { LoggerMessage.Define<string, string, string, string>(LogLevel.Error, 4, "Log {P0} {P1} {P2} {P3}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 4 },
+            new object[] { LoggerMessage.Define<string, string, string, string, string>(LogLevel.Error, 5, "Log {P0} {P1} {P2} {P3} {P4}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 5 },
+            new object[] { LoggerMessage.Define<string, string, string, string, string, string>(LogLevel.Error, 6, "Log {P0} {P1} {P2} {P3} {P4} {P5}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 6 },
         };
 
         private delegate Delegate Define(LogLevel logLevel, EventId eventId, string formatString);

@@ -9,12 +9,7 @@
 #include "sstring.h"
 #include "ex.h"
 
-// Config prefixes
-#define COMPLUS_PREFIX W("COMPlus_")
-#define LEN_OF_COMPLUS_PREFIX StrLen(COMPLUS_PREFIX)
-
-#define DOTNET_PREFIX W("DOTNET_")
-#define LEN_OF_DOTNET_PREFIX StrLen(DOTNET_PREFIX)
+#include "clrconfignocache.h"
 
 using ConfigDWORDInfo = CLRConfig::ConfigDWORDInfo;
 using ConfigStringInfo = CLRConfig::ConfigStringInfo;
@@ -199,7 +194,23 @@ namespace
             }
 
             if (len != 0)
+            {
                 ret = temp.GetCopyOfUnicodeString();
+
+#if defined(DEBUG) && !defined(SELF_NO_HOST)
+                // Validate the cache and no-cache logic result in the same answer
+                SString nameToConvert(name);
+                SString nameAsUTF8;
+                nameToConvert.ConvertToUTF8(nameAsUTF8);
+                SString valueAsUTF8;
+                temp.ConvertToUTF8(valueAsUTF8);
+
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameAsUTF8.GetUTF8NoConvert(), noPrefix);
+                LPCSTR valueNoCache = nonCache.AsString();
+
+                _ASSERTE(SString::_stricmp(valueNoCache, valueAsUTF8.GetUTF8NoConvert()) == 0);
+#endif // defined(DEBUG) && !defined(SELF_NO_HOST)
+            }
         }
         EX_CATCH_HRESULT(hr);
 
@@ -233,12 +244,16 @@ namespace
 
         FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
+        int radix = CheckLookupOption(options, LookupOptions::ParseIntegerAsBase10)
+            ? 10
+            : 16; // Parse as hex by default.
+
         NewArrayHolder<WCHAR> val = EnvGetString(name, options);
         if (val != NULL)
         {
             errno = 0;
             LPWSTR endPtr;
-            DWORD configMaybe = wcstoul(val, &endPtr, 16); // treat it has hex
+            DWORD configMaybe = wcstoul(val, &endPtr, radix);
             BOOL fSuccess = ((errno != ERANGE) && (endPtr != val));
             if (fSuccess)
             {
@@ -401,6 +416,13 @@ namespace
 #undef CONFIG_DWORD_INFO_EX
 #undef CONFIG_STRING_INFO_EX
 
+BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return IsConfigOptionSpecified(info.name);
+}
+
 //
 // Look up a DWORD config value.
 //
@@ -467,6 +489,8 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, DWORD defaultValue
 // static
 DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
 {
+    WRAPPER_NO_CONTRACT;
+
     bool unused;
     return GetConfigValue(info, &unused);
 }

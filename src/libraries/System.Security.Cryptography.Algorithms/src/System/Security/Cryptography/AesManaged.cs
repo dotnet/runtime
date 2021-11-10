@@ -6,6 +6,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [UnsupportedOSPlatform("browser")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class AesManaged : Aes

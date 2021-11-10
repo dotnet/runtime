@@ -80,7 +80,7 @@ jobs:
       - name: crossgen2location
         value: $(productDirectory)$(dir)$(targetFlavor)$(dir)x64$(dir)crossgen2$(dir)crossgen2.dll
     - name: librariesProductDllDir
-      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net6.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
+      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net7.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
 
     - ${{ parameters.variables }}
 
@@ -156,6 +156,7 @@ jobs:
             --result_dir  $(workItemDirectory)/log
             --target_os   $(target_crossgen2_os)
             --target_arch $(archType)
+            --compiler_arch_os $(target_crossgen2_os)_x64
         ${{ if eq(parameters.osGroup, 'windows') }}:
           arguments:
             crossgen_framework
@@ -165,6 +166,7 @@ jobs:
             --result_dir  $(workItemDirectory)\log
             --target_os   $(target_crossgen2_os)
             --target_arch $(archType)
+            --compiler_arch_os $(target_crossgen2_os)_x64
 
     - task: PublishPipelineArtifact@1
       displayName: Publish cross compiled component

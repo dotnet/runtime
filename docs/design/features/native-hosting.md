@@ -235,7 +235,7 @@ int hostfxr_initialize_for_dotnet_command_line(
 
 Initializes the hosting components for running a managed application.
 The command line is parsed to determine the app path. The app path will be used to locate the `.runtimeconfig.json` and the `.deps.json` which will be used to load the application and its dependent frameworks.
-* `argc` and `argv` - the command line for running a managed application. These represent the arguments which would have been passed to the muxer if the app was being run from the command line.
+* `argc` and `argv` - the command line for running a managed application. These represent the arguments which would have been passed to the muxer if the app was being run from the command line. These are the parameters which are valid for the runtime installation by itself - SDK/CLI commands are not supported. For example, the arguments could be `app.dll app_argument_1 app_argument_2`. This API specifically doesn't support the `dotnet run` SDK command.
 * `parameters` - additional parameters - see `hostfxr_initialize_parameters` for details. (Could be made optional potentially)
 * `host_context_handle` - output parameter. On success receives an opaque value which identifies the initialized host context. The handle should be closed by calling `hostfxr_close`.
 
@@ -537,7 +537,7 @@ params.dotnet_root = get_directory(get_directory(get_directory(hostfxr_path))); 
 hostfxr_handle host_context_handle;
 hostfxr_initialize_for_dotnet_command_line(
     _argc_,
-    _argv_,
+    _argv_,  // For example, 'app.dll app_argument_1 app_argument_2'
     &params,
     &host_context_handle);
 
@@ -592,3 +592,6 @@ hostfxr_close(host_context_handle);
 The exact impact on the `hostfxr`/`hostpolicy` interface needs to be investigated. The assumption is that new APIs will have to be added to `hostpolicy` to implement the proposed functionality.
 
 Part if this investigation will also be compatibility behavior. Currently "any" version of `hostfxr` needs to be able to use "any" version of `hostpolicy`. But the proposed functionality will need both new `hostfxr` and new `hostpolicy` to work. It is likely the proposed APIs will fail if the app resolves to a framework with old `hostpolicy` without the necessary new APIs. Part of the investigation will be if it's feasible to use the new `hostpolicy` APIs to implement existing old `hostfxr` APIs.
+
+## Incompatible with trimming
+Native hosting support on managed side is disabled by default on trimmed apps. Native hosting and trimming are incompatible since the trimmer cannot analyze methods that are called by native hosts. Native hosting support for trimming can be managed through the [feature switch](https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md) settings specific to each native host.

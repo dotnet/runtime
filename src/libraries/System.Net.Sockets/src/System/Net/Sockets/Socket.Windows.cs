@@ -235,7 +235,32 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, csep.IPEndPoint);
 
+            if (_socketType == SocketType.Stream && _protocolType == ProtocolType.Tcp)
+            {
+                EnableReuseUnicastPort();
+            }
+
             DoBind(csep.IPEndPoint, csep.SocketAddress);
+        }
+
+        private void EnableReuseUnicastPort()
+        {
+            // By enabling SO_REUSE_UNICASTPORT, we defer actual port allocation until the ConnectEx call,
+            // so it can bind to ports from the Windows auto-reuse port range, if configured by an admin.
+            // The socket option is supported on Windows 10+, we are ignoring the SocketError in case setsockopt fails.
+            int optionValue = 1;
+            SocketError error = Interop.Winsock.setsockopt(
+                _handle,
+                SocketOptionLevel.Socket,
+                SocketOptionName.ReuseUnicastPort,
+                ref optionValue,
+                sizeof(int));
+
+            if (NetEventSource.Log.IsEnabled() && error != SocketError.Success)
+            {
+                error = SocketPal.GetLastSocketError();
+                NetEventSource.Info($"Enabling SO_REUSE_UNICASTPORT failed with error code: {error}");
+            }
         }
 
         internal unsafe bool ConnectEx(SafeSocketHandle socketHandle,
@@ -372,14 +397,11 @@ namespace System.Net.Sockets
 
         private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
-            // Open the file, if any
-            FileStream? fileStream = OpenFile(fileName);
-
             SocketError errorCode;
-            using (fileStream)
-            {
-                SafeFileHandle? fileHandle = fileStream?.SafeFileHandle;
 
+            // Open the file, if any
+            using (SafeFileHandle? fileHandle = OpenFileHandle(fileName))
+            {
                 // This can throw ObjectDisposedException.
                 errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
             }
@@ -397,59 +419,6 @@ namespace System.Net.Sockets
             {
                 SetToDisconnected();
                 _remoteEndPoint = null;
-            }
-        }
-
-        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
-        {
-            FileStream? fileStream = OpenFile(fileName);
-
-            TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
-
-            SocketError errorCode = SocketPal.SendFileAsync(_handle, fileStream, preBuffer, postBuffer, flags, asyncResult);
-
-            // Check for synchronous exception
-            if (!CheckErrorAndUpdateStatus(errorCode))
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                throw new SocketException((int)errorCode);
-            }
-
-            asyncResult.FinishPostingAsyncOp();
-
-            return asyncResult;
-        }
-
-        private void EndSendFileInternal(IAsyncResult asyncResult)
-        {
-            TransmitFileAsyncResult? castedAsyncResult = asyncResult as TransmitFileAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSendFile"));
-            }
-
-            castedAsyncResult.InternalWaitForCompletion();
-            castedAsyncResult.EndCalled = true;
-
-            // If the user passed the Disconnect and/or ReuseSocket flags, then TransmitFile disconnected the socket.
-            // Update our state to reflect this.
-            if (castedAsyncResult.DoDisconnect)
-            {
-                SetToDisconnected();
-                _remoteEndPoint = null;
-            }
-
-            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-            if (errorCode != SocketError.Success)
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
         }
 

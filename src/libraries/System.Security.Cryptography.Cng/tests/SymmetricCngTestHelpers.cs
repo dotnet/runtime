@@ -18,7 +18,8 @@ namespace System.Security.Cryptography.Cng.Tests
             Func<string, SymmetricAlgorithm> persistedFunc,
             Func<SymmetricAlgorithm> ephemeralFunc,
             CipherMode cipherMode,
-            PaddingMode paddingMode)
+            PaddingMode paddingMode,
+            int feedbackSizeInBits)
         {
             string keyName = Guid.NewGuid().ToString();
             CngKeyCreationParameters creationParameters = new CngKeyCreationParameters
@@ -41,7 +42,8 @@ namespace System.Security.Cryptography.Cng.Tests
                     persistedFunc,
                     ephemeralFunc,
                     cipherMode,
-                    paddingMode);
+                    paddingMode,
+                    feedbackSizeInBits);
             }
             finally
             {
@@ -56,7 +58,8 @@ namespace System.Security.Cryptography.Cng.Tests
             Func<string, SymmetricAlgorithm> persistedFunc,
             Func<SymmetricAlgorithm> ephemeralFunc,
             CipherMode cipherMode,
-            PaddingMode paddingMode)
+            PaddingMode paddingMode,
+            int feedbackSizeInBits)
         {
             byte[] plainBytes = GenerateRandom(plainBytesCount);
 
@@ -65,6 +68,11 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 persisted.Mode = ephemeral.Mode = cipherMode;
                 persisted.Padding = ephemeral.Padding = paddingMode;
+
+                if (cipherMode == CipherMode.CFB)
+                {
+                    persisted.FeedbackSize = ephemeral.FeedbackSize = feedbackSizeInBits;
+                }
 
                 ephemeral.Key = persisted.Key;
                 ephemeral.GenerateIV();
@@ -99,6 +107,45 @@ namespace System.Security.Cryptography.Cng.Tests
                     }
 
                     Assert.Equal(expectedBytes, persistedDecrypted);
+                }
+
+                byte[] oneShotPersistedEncrypted = null;
+                byte[] oneShotEphemeralEncrypted = null;
+                byte[] oneShotPersistedDecrypted = null;
+
+                if (cipherMode == CipherMode.ECB)
+                {
+                    oneShotPersistedEncrypted = persisted.EncryptEcb(plainBytes, paddingMode);
+                    oneShotEphemeralEncrypted = ephemeral.EncryptEcb(plainBytes, paddingMode);
+                    oneShotPersistedDecrypted = persisted.DecryptEcb(oneShotEphemeralEncrypted, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CBC)
+                {
+                    oneShotPersistedEncrypted = persisted.EncryptCbc(plainBytes, persisted.IV, paddingMode);
+                    oneShotEphemeralEncrypted = ephemeral.EncryptCbc(plainBytes, ephemeral.IV, paddingMode);
+                    oneShotPersistedDecrypted = persisted.DecryptCbc(oneShotEphemeralEncrypted, persisted.IV, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CFB)
+                {
+                    oneShotPersistedEncrypted = persisted.EncryptCfb(plainBytes, persisted.IV, paddingMode, feedbackSizeInBits);
+                    oneShotEphemeralEncrypted = ephemeral.EncryptCfb(plainBytes, ephemeral.IV, paddingMode, feedbackSizeInBits);
+                    oneShotPersistedDecrypted = persisted.DecryptCfb(oneShotEphemeralEncrypted, persisted.IV, paddingMode, feedbackSizeInBits);
+                }
+
+                if (oneShotPersistedEncrypted is not null)
+                {
+                    Assert.Equal(oneShotEphemeralEncrypted, oneShotPersistedEncrypted);
+
+                    if (paddingMode == PaddingMode.Zeros)
+                    {
+                        byte[] plainPadded = new byte[oneShotPersistedDecrypted.Length];
+                        plainBytes.AsSpan().CopyTo(plainPadded);
+                        Assert.Equal(plainPadded, oneShotPersistedDecrypted);
+                    }
+                    else
+                    {
+                        Assert.Equal(plainBytes, oneShotPersistedDecrypted);
+                    }
                 }
             }
         }
@@ -247,11 +294,56 @@ namespace System.Security.Cryptography.Cng.Tests
                     persistedFunc,
                     ephemeralFunc,
                     CipherMode.CBC,
-                    PaddingMode.PKCS7);
+                    PaddingMode.PKCS7,
+                    feedbackSizeInBits: 0);
             }
             finally
             {
                 // Delete also Disposes the key, no using should be added here.
+                cngKey.Delete();
+            }
+        }
+
+        public static void VerifyCfbPersistedUnsupportedFeedbackSize(
+            CngAlgorithm algorithm,
+            Func<string, SymmetricAlgorithm> persistedFunc,
+            int notSupportedFeedbackSizeInBits)
+        {
+            string keyName = Guid.NewGuid().ToString();
+            string feedbackSizeString = notSupportedFeedbackSizeInBits.ToString();
+
+            // We try to delete the key later which will also dispose of it, so no need
+            // to put this in a using.
+            CngKey cngKey = CngKey.Create(algorithm, keyName);
+
+            try
+            {
+                using (SymmetricAlgorithm alg = persistedFunc(keyName))
+                {
+                    alg.Mode = CipherMode.CFB;
+                    alg.FeedbackSize = notSupportedFeedbackSizeInBits;
+                    alg.Padding = PaddingMode.None;
+
+                    byte[] destination = new byte[alg.BlockSize / 8];
+                    CryptographicException ce = Assert.ThrowsAny<CryptographicException>(() =>
+                        alg.EncryptCfb(Array.Empty<byte>(), destination, PaddingMode.None, notSupportedFeedbackSizeInBits));
+
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() =>
+                        alg.DecryptCfb(Array.Empty<byte>(), destination, PaddingMode.None, notSupportedFeedbackSizeInBits));
+
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() => alg.CreateDecryptor());
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() => alg.CreateEncryptor());
+                    Assert.Contains(feedbackSizeString, ce.Message);
+                }
+            }
+            finally
+            {
                 cngKey.Delete();
             }
         }

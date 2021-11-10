@@ -265,10 +265,10 @@ int LinearScan::BuildNode(GenTree* tree)
                 // everything is made explicit by adding casts.
                 assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
             }
-
             FALLTHROUGH;
 
         case GT_AND:
+        case GT_AND_NOT:
         case GT_OR:
         case GT_XOR:
         case GT_LSH:
@@ -277,6 +277,12 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_ROR:
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
+            BuildDef(tree);
+            break;
+
+        case GT_BFIZ:
+            assert(tree->gtGetOp1()->OperIs(GT_CAST));
+            srcCount = BuildOperandUses(tree->gtGetOp1()->gtGetOp1());
             BuildDef(tree);
             break;
 
@@ -308,6 +314,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_DIV:
         case GT_MULHI:
+        case GT_MUL_LONG:
         case GT_UDIV:
         {
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -484,7 +491,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
             dstCount = tree->AsPutArgSplit()->gtNumRegs;
             break;
-#endif // FEATURE _SPLIT_ARG
+#endif // FEATURE_ARG_SPLIT
 
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
@@ -618,8 +625,8 @@ int LinearScan::BuildNode(GenTree* tree)
             GenTreeBoundsChk* node = tree->AsBoundsChk();
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
-            srcCount = BuildOperandUses(node->gtIndex);
-            srcCount += BuildOperandUses(node->gtArrLen);
+            srcCount = BuildOperandUses(node->GetIndex());
+            srcCount += BuildOperandUses(node->GetArrayLength());
         }
         break;
 
@@ -682,7 +689,16 @@ int LinearScan::BuildNode(GenTree* tree)
             if (index != nullptr)
             {
                 srcCount++;
-                BuildUse(index);
+                if (index->OperIs(GT_BFIZ) && index->isContained())
+                {
+                    GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                    assert(cast->isContained() && (cns == 0));
+                    BuildUse(cast->CastOp());
+                }
+                else
+                {
+                    BuildUse(index);
+                }
             }
             assert(dstCount == 1);
 
@@ -809,44 +825,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // No special handling required.
             break;
 
-        case SIMDIntrinsicGetItem:
-        {
-            op1 = simdTree->gtGetOp1();
-            op2 = simdTree->gtGetOp2();
-
-            // We have an object and an index, either of which may be contained.
-            bool setOp2DelayFree = false;
-            if (!op2->IsCnsIntOrI() && (!op1->isContained() || op1->OperIsLocal()))
-            {
-                // If the index is not a constant and the object is not contained or is a local
-                // we will need a general purpose register to calculate the address
-                // internal register must not clobber input index
-                // TODO-Cleanup: An internal register will never clobber a source; this code actually
-                // ensures that the index (op2) doesn't interfere with the target.
-                buildInternalIntRegisterDefForNode(simdTree);
-                setOp2DelayFree = true;
-            }
-            srcCount += BuildOperandUses(op1);
-            if (!op2->isContained())
-            {
-                RefPosition* op2Use = BuildUse(op2);
-                if (setOp2DelayFree)
-                {
-                    setDelayFree(op2Use);
-                }
-                srcCount++;
-            }
-
-            if (!op2->IsCnsIntOrI() && (!op1->isContained()))
-            {
-                // If vector is not already in memory (contained) and the index is not a constant,
-                // we will use the SIMD temp location to store the vector.
-                compiler->getSIMDInitTempVarNum();
-            }
-            buildUses = false;
-        }
-        break;
-
         case SIMDIntrinsicSub:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
@@ -854,10 +832,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // No special handling required.
             break;
 
-        case SIMDIntrinsicSetX:
-        case SIMDIntrinsicSetY:
-        case SIMDIntrinsicSetZ:
-        case SIMDIntrinsicSetW:
         case SIMDIntrinsicNarrow:
         {
             // Op1 will write to dst before Op2 is free
@@ -904,10 +878,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicCopyToArray:
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
-        case SIMDIntrinsicGetX:
-        case SIMDIntrinsicGetY:
-        case SIMDIntrinsicGetZ:
-        case SIMDIntrinsicGetW:
         case SIMDIntrinsicHWAccel:
         case SIMDIntrinsicWiden:
         case SIMDIntrinsicInvalid:
@@ -1158,59 +1128,47 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
             // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
 
-            bool op2DelayFree = isRMW;
-            bool op3DelayFree = isRMW;
-            bool op4DelayFree = isRMW;
-
             assert(intrin.op1 != nullptr);
 
-            if (isRMW && intrin.op1->OperIs(GT_LCL_VAR))
+            bool forceOp2DelayFree = false;
+            if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
             {
-                unsigned int varNum1    = intrin.op1->AsLclVar()->GetLclNum();
-                bool         op1LastUse = false;
-
-                unsigned int varNum2 = BAD_VAR_NUM;
-                unsigned int varNum3 = BAD_VAR_NUM;
-                unsigned int varNum4 = BAD_VAR_NUM;
-
-                if (intrin.op2->OperIs(GT_LCL_VAR))
+                if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
                 {
-                    varNum2 = intrin.op2->AsLclVar()->GetLclNum();
-                    op1LastUse |= ((varNum1 == varNum2) && intrin.op2->HasLastUse());
+                    // If the index is not a constant and the object is not contained or is a local
+                    // we will need a general purpose register to calculate the address
+                    // internal register must not clobber input index
+                    // TODO-Cleanup: An internal register will never clobber a source; this code actually
+                    // ensures that the index (op2) doesn't interfere with the target.
+                    buildInternalIntRegisterDefForNode(intrinsicTree);
+                    forceOp2DelayFree = true;
                 }
 
-                if (intrin.op3 != nullptr)
+                if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
                 {
-                    if (intrin.op3->OperIs(GT_LCL_VAR))
-                    {
-                        varNum3 = intrin.op3->AsLclVar()->GetLclNum();
-                        op1LastUse |= ((varNum1 == varNum3) && intrin.op3->HasLastUse());
-                    }
-
-                    if ((intrin.op4 != nullptr) && intrin.op4->OperIs(GT_LCL_VAR))
-                    {
-                        varNum4 = intrin.op4->AsLclVar()->GetLclNum();
-                        op1LastUse |= ((varNum1 == varNum4) && intrin.op4->HasLastUse());
-                    }
-                }
-
-                if (op1LastUse)
-                {
-                    op2DelayFree = (varNum1 != varNum2);
-                    op3DelayFree = (varNum1 != varNum3);
-                    op4DelayFree = (varNum1 != varNum4);
+                    // If the index is not a constant or op1 is in register,
+                    // we will use the SIMD temp location to store the vector.
+                    var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
+                    compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
             }
 
-            srcCount += op2DelayFree ? BuildDelayFreeUses(intrin.op2) : BuildOperandUses(intrin.op2);
+            if (forceOp2DelayFree)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op2);
+            }
+            else
+            {
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+            }
 
             if (intrin.op3 != nullptr)
             {
-                srcCount += op3DelayFree ? BuildDelayFreeUses(intrin.op3) : BuildOperandUses(intrin.op3);
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
 
                 if (intrin.op4 != nullptr)
                 {
-                    srcCount += op4DelayFree ? BuildDelayFreeUses(intrin.op4) : BuildOperandUses(intrin.op4);
+                    srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
                 }
             }
         }

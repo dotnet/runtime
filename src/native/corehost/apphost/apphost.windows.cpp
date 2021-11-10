@@ -52,20 +52,16 @@ namespace
 
     void show_error_dialog(const pal::char_t *executable_name, int error_code)
     {
-        // Show message dialog for UI apps with actionable errors
-        if (error_code != StatusCode::CoreHostLibMissingFailure  // missing hostfxr
-            && error_code != StatusCode::FrameworkMissingFailure) // missing framework
-            return;
-
         pal::string_t gui_errors_disabled;
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
             return;
 
-        pal::string_t dialogMsg = _X("To run this application, you must install .NET.\n\n");
+        pal::string_t dialogMsg;
         pal::string_t url;
         const pal::string_t url_prefix = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
         if (error_code == StatusCode::CoreHostLibMissingFailure)
         {
+            dialogMsg = pal::string_t(_X("To run this application, you must install .NET Desktop Runtime ")) + _STRINGIFY(COMMON_HOST_PKG_VER) + _X(" (") + get_arch() + _X(").\n\n");
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n'))) {
@@ -81,6 +77,7 @@ namespace
         {
             // We don't have a great way of passing out different kinds of detailed error info across components, so
             // just match the expected error string. See fx_resolver.messages.cpp.
+            dialogMsg = pal::string_t(_X("To run this application, you must install missing frameworks for .NET.\n\n"));
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n'))){
@@ -106,6 +103,25 @@ namespace
                 }
             }
         }
+        else if (error_code == StatusCode::BundleExtractionFailure)
+        {
+            pal::string_t line;
+            pal::stringstream_t ss(g_buffered_errors);
+            while (std::getline(ss, line, _X('\n'))) {
+                if (starts_with(line, _X("Bundle header version compatibility check failed."), true))
+                {
+                    dialogMsg = pal::string_t(_X("To run this application, you must install .NET Desktop Runtime ")) + _STRINGIFY(COMMON_HOST_PKG_VER) + _X(" (") + get_arch() + _X(").\n\n");
+                    url = get_download_url();
+                    url.append(_X("&apphost_version="));
+                    url.append(_STRINGIFY(COMMON_HOST_PKG_VER));
+                }
+            }
+
+            if (dialogMsg.empty())
+                return;
+        }
+        else
+            return;
 
         dialogMsg.append(_X("Would you like to download it now?"));
 

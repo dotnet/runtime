@@ -399,7 +399,7 @@ namespace System.Text
                         if (bOutOfOrder)
                         {
                             Debug.Assert((arrayTemp.Length / 2) < 20,
-                                "[DBCSCodePageEncoding.ReadBestFitTable]Expected small best fit table < 20 for code page " + CodePage + ", not " + arrayTemp.Length / 2);
+                                $"[DBCSCodePageEncoding.ReadBestFitTable]Expected small best fit table < 20 for code page {CodePage}, not {arrayTemp.Length / 2}");
 
                             for (int i = 0; i < arrayTemp.Length - 2; i += 2)
                             {

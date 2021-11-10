@@ -445,6 +445,49 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             Assert.Throws<ObjectDisposedException>(() => hash.TryComputeHash(new byte[1], new byte[1], out int bytesWritten));
         }
 
+        [Fact]
+        public void Initialize_TransformBlock()
+        {
+            byte[] hashInput = new byte[] { 1, 2, 3, 4, 5 };
+            byte[] expectedDigest;
+
+            using (HashAlgorithm hash = Create())
+            {
+                expectedDigest = hash.ComputeHash(hashInput);
+            }
+
+            using (HashAlgorithm hash = Create())
+            {
+                hash.TransformBlock(hashInput, 0, hashInput.Length, hashInput, 0);
+                hash.Initialize();
+                hash.TransformBlock(hashInput, 0, hashInput.Length, hashInput, 0);
+                hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+
+                Assert.Equal(expectedDigest, hash.Hash);
+            }
+        }
+
+        [Fact]
+        public void Initialize_TransformBlock_Unused()
+        {
+            byte[] hashInput = new byte[] { 1, 2, 3, 4, 5 };
+            byte[] expectedDigest;
+
+            using (HashAlgorithm hash = Create())
+            {
+                expectedDigest = hash.ComputeHash(hashInput);
+            }
+
+            using (HashAlgorithm hash = Create())
+            {
+                hash.Initialize();
+                hash.TransformBlock(hashInput, 0, hashInput.Length, hashInput, 0);
+                hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+
+                Assert.Equal(expectedDigest, hash.Hash);
+            }
+        }
+
         protected class DataRepeatingStream : Stream
         {
             private int _remaining;

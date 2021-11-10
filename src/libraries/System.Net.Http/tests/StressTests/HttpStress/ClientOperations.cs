@@ -42,7 +42,8 @@ namespace HttpStress
         public int TaskNum { get; }
         public bool IsCancellationRequested { get; private set; }
 
-        public Version HttpVersion => _config.HttpVersion;
+        public Version HttpVersion => _client.DefaultRequestVersion;
+        public HttpVersionPolicy VersionPolicy => _client.DefaultVersionPolicy;
         public int MaxRequestParameters => _config.MaxParameters;
         public int MaxRequestUriSize => _config.MaxRequestUriSize;
         public int MaxRequestHeaderCount => _config.MaxRequestHeaderCount;
@@ -54,6 +55,7 @@ namespace HttpStress
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption httpCompletion = HttpCompletionOption.ResponseContentRead, CancellationToken? token = null)
         {
             request.Version = HttpVersion;
+            request.VersionPolicy = VersionPolicy;
 
             if (token != null)
             {
@@ -313,6 +315,32 @@ namespace HttpStress
                                         return;
                                     }
                                     break;
+                            }
+                        }
+
+                        if (ctx.HttpVersion == HttpVersion.Version30)
+                        {
+                            // HTTP/3 exception nesting:
+                            // HttpRequestException->IOException->HttpRequestException->QuicStreamAbortedException
+                            // HttpRequestException->QuicStreamAbortedException
+
+                            if (e is IOException && e.InnerException is HttpRequestException)
+                            {
+                                e = e.InnerException;
+                            }
+
+                            if (e is HttpRequestException)
+                            {
+                                string? name = e.InnerException?.GetType().Name;
+                                switch (name)
+                                {
+                                    case "QuicStreamAbortedException":
+                                        if (e.InnerException?.Message?.Equals("Stream aborted by peer (258).") ?? false) // 258 = H3_INTERNAL_ERROR (0x102)
+                                        {
+                                            return;
+                                        }
+                                        break;
+                                }
                             }
                         }
 

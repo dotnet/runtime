@@ -237,7 +237,7 @@ namespace
         StackSString ssDllName;
         if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
         {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
             IfFailRet(Clr::Util::Com::FindInprocServer32UsingCLSID(rclsid, ssDllName));
 
             EX_TRY
@@ -256,9 +256,9 @@ namespace
             IfFailRet(hr);
 
             wszDllPath = ssDllName.GetUnicode();
-#else // !TARGET_UNIX
+#else // HOST_WINDOWS
             return E_FAIL;
-#endif // !TARGET_UNIX
+#endif // HOST_WINDOWS
         }
         _ASSERTE(wszDllPath != nullptr);
 
@@ -350,168 +350,6 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     }
 
     return hr;
-}
-
-#if USE_UPPER_ADDRESS
-static BYTE * s_CodeMinAddr;        // Preferred region to allocate the code in.
-static BYTE * s_CodeMaxAddr;
-static BYTE * s_CodeAllocStart;
-static BYTE * s_CodeAllocHint;      // Next address to try to allocate for code in the preferred region.
-#endif
-
-//
-// Use this function to initialize the s_CodeAllocHint
-// during startup. base is runtime .dll base address,
-// size is runtime .dll virtual size.
-//
-void InitCodeAllocHint(SIZE_T base, SIZE_T size, int randomPageOffset)
-{
-#if USE_UPPER_ADDRESS
-
-#ifdef _DEBUG
-    // If GetForceRelocs is enabled we don't constrain the pMinAddr
-    if (PEDecoder::GetForceRelocs())
-        return;
-#endif
-
-//
-    // If we are using the UPPER_ADDRESS space (on Win64)
-    // then for any code heap that doesn't specify an address
-    // range using [pMinAddr..pMaxAddr] we place it in the
-    // upper address space
-    // This enables us to avoid having to use long JumpStubs
-    // to reach the code for our ngen-ed images.
-    // Which are also placed in the UPPER_ADDRESS space.
-    //
-    SIZE_T reach = 0x7FFF0000u;
-
-    // We will choose the preferred code region based on the address of clr.dll. The JIT helpers
-    // in clr.dll are the most heavily called functions.
-    s_CodeMinAddr = (base + size > reach) ? (BYTE *)(base + size - reach) : (BYTE *)0;
-    s_CodeMaxAddr = (base + reach > base) ? (BYTE *)(base + reach) : (BYTE *)-1;
-
-    BYTE * pStart;
-
-    if (s_CodeMinAddr <= (BYTE *)CODEHEAP_START_ADDRESS &&
-        (BYTE *)CODEHEAP_START_ADDRESS < s_CodeMaxAddr)
-    {
-        // clr.dll got loaded at its preferred base address? (OS without ASLR - pre-Vista)
-        // Use the code head start address that does not cause collisions with NGen images.
-        // This logic is coupled with scripts that we use to assign base addresses.
-        pStart = (BYTE *)CODEHEAP_START_ADDRESS;
-    }
-    else
-    if (base > UINT32_MAX)
-    {
-        // clr.dll got address assigned by ASLR?
-        // Try to occupy the space as far as possible to minimize collisions with other ASLR assigned
-        // addresses. Do not start at s_CodeMinAddr exactly so that we can also reach common native images
-        // that can be placed at higher addresses than clr.dll.
-        pStart = s_CodeMinAddr + (s_CodeMaxAddr - s_CodeMinAddr) / 8;
-    }
-    else
-    {
-        // clr.dll missed the base address?
-        // Try to occupy the space right after it.
-        pStart = (BYTE *)(base + size);
-    }
-
-    // Randomize the address space
-    pStart += GetOsPageSize() * randomPageOffset;
-
-    s_CodeAllocStart = pStart;
-    s_CodeAllocHint = pStart;
-#endif
-}
-
-//
-// Use this function to reset the s_CodeAllocHint
-// after unloading an AppDomain
-//
-void ResetCodeAllocHint()
-{
-    LIMITED_METHOD_CONTRACT;
-#if USE_UPPER_ADDRESS
-    s_CodeAllocHint = s_CodeAllocStart;
-#endif
-}
-
-//
-// Returns TRUE if p is located in near clr.dll that allows us
-// to use rel32 IP-relative addressing modes.
-//
-BOOL IsPreferredExecutableRange(void * p)
-{
-    LIMITED_METHOD_CONTRACT;
-#if USE_UPPER_ADDRESS
-    if (s_CodeMinAddr <= (BYTE *)p && (BYTE *)p < s_CodeMaxAddr)
-        return TRUE;
-#endif
-    return FALSE;
-}
-
-//
-// Allocate free memory that will be used for executable code
-// Handles the special requirements that we have on 64-bit platforms
-// where we want the executable memory to be located near clr.dll
-//
-BYTE * ClrVirtualAllocExecutable(SIZE_T dwSize,
-                                 DWORD flAllocationType,
-                                 DWORD flProtect)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-#if USE_UPPER_ADDRESS
-    //
-    // If we are using the UPPER_ADDRESS space (on Win64)
-    // then for any heap that will contain executable code
-    // we will place it in the upper address space
-    //
-    // This enables us to avoid having to use JumpStubs
-    // to reach the code for our ngen-ed images on x64,
-    // since they are also placed in the UPPER_ADDRESS space.
-    //
-    BYTE * pHint = s_CodeAllocHint;
-
-    if (dwSize <= (SIZE_T)(s_CodeMaxAddr - s_CodeMinAddr) && pHint != NULL)
-    {
-        // Try to allocate in the preferred region after the hint
-        BYTE * pResult = ClrVirtualAllocWithinRange(pHint, s_CodeMaxAddr, dwSize, flAllocationType, flProtect);
-
-        if (pResult != NULL)
-        {
-            s_CodeAllocHint = pResult + dwSize;
-            return pResult;
-        }
-
-        // Try to allocate in the preferred region before the hint
-        pResult = ClrVirtualAllocWithinRange(s_CodeMinAddr, pHint + dwSize, dwSize, flAllocationType, flProtect);
-
-        if (pResult != NULL)
-        {
-            s_CodeAllocHint = pResult + dwSize;
-            return pResult;
-        }
-
-        s_CodeAllocHint = NULL;
-    }
-
-    // Fall through to
-#endif // USE_UPPER_ADDRESS
-
-#ifdef HOST_UNIX
-    // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
-    // This will allow us to place JIT'ed code close to the coreclr library
-    // and thus improve performance by avoiding jump stubs in managed code.
-    flAllocationType |= MEM_RESERVE_EXECUTABLE;
-#endif // HOST_UNIX
-
-    return (BYTE *) ClrVirtualAlloc (NULL, dwSize, flAllocationType, flProtect);
-
 }
 
 //
@@ -989,9 +827,7 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL_END;
 
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    BOOL enableGCCPUGroups     = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
-    BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
-    BOOL threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
+    BOOL enableGCCPUGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
 
     if (!enableGCCPUGroups)
         return;
@@ -1008,17 +844,19 @@ DWORD LCM(DWORD u, DWORD v)
     m_initialGroup = groupAffinity.Group;
 
     // only enable CPU groups if more than one group exists
-    BOOL hasMultipleGroups = m_nGroups > 1;
-    m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
-    m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
-    m_threadAssignCpuGroups = threadAssignCpuGroups && hasMultipleGroups;
-#endif // TARGET_AMD64 || TARGET_ARM64
+    if (m_nGroups > 1)
+    {
+        m_enableGCCPUGroups = TRUE;
+        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
+        m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
+    }
+#endif
 }
 
 /*static*/ BOOL CPUGroupInfo::IsInitialized()
 {
     LIMITED_METHOD_CONTRACT;
-    return (m_initialization == -1);
+    return VolatileLoad(&m_initialization) == -1;
 }
 
 /*static*/ void CPUGroupInfo::EnsureInitialized()
@@ -1039,22 +877,21 @@ DWORD LCM(DWORD u, DWORD v)
     // Vast majority of time, CPUGroupInfo is initialized in case 1. or 2.
     // The chance of contention will be extremely small, so the following code should be fine
     //
-retry:
     if (IsInitialized())
         return;
 
     if (InterlockedCompareExchange(&m_initialization, 1, 0) == 0)
     {
         InitCPUGroupInfo();
-        m_initialization = -1;
+        VolatileStore(&m_initialization, -1L);
     }
-    else //some other thread started initialization, just wait until complete;
+    else
     {
-        while (m_initialization != -1)
+        // Some other thread started initialization, just wait until complete
+        while (VolatileLoad(&m_initialization) != -1)
         {
             SwitchToThread();
         }
-        goto retry;
     }
 }
 
@@ -1101,7 +938,6 @@ retry:
     CONTRACTL_END;
 
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
     PROCESSOR_NUMBER proc_no;
@@ -1154,7 +990,6 @@ retry:
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
-    // m_enableGCCPUGroups, m_threadUseAllCpuGroups, and m_threadAssignCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     for (i = 0; i < m_nGroups; i++)
@@ -1194,7 +1029,6 @@ found:
 {
     LIMITED_METHOD_CONTRACT;
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    // m_enableGCCPUGroups, m_threadUseAllCpuGroups, and m_threadAssignCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     WORD group = gf->Group;
@@ -1226,15 +1060,40 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 /*static*/ BOOL CPUGroupInfo::CanEnableThreadUseAllCpuGroups()
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(m_enableGCCPUGroups || !m_threadUseAllCpuGroups);
     return m_threadUseAllCpuGroups;
 }
 
 /*static*/ BOOL CPUGroupInfo::CanAssignCpuGroupsToThreads()
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(m_enableGCCPUGroups || !m_threadAssignCpuGroups);
     return m_threadAssignCpuGroups;
 }
 #endif // HOST_WINDOWS
+
+extern SYSTEM_INFO g_SystemInfo;
+
+int GetTotalProcessorCount()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef HOST_WINDOWS
+    if (CPUGroupInfo::CanEnableGCCPUGroups())
+    {
+        return CPUGroupInfo::GetNumActiveProcessors();
+    }
+    else
+    {
+        return g_SystemInfo.dwNumberOfProcessors;
+    }
+#else // HOST_WINDOWS
+    return PAL_GetTotalCpuCount();
+#endif // HOST_WINDOWS
+}
+
+// The cached number of CPUs available for the current process
+static DWORD g_currentProcessCpuCount = 0;
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -1248,50 +1107,99 @@ int GetCurrentProcessCpuCount()
     }
     CONTRACTL_END;
 
-    static int cCPUs = 0;
+    if (g_currentProcessCpuCount > 0)
+        return g_currentProcessCpuCount;
 
-    if (cCPUs != 0)
-        return cCPUs;
+    DWORD count;
 
-    unsigned int count = 0;
+    // If the configuration value has been set, it takes precedence. Otherwise, take into account
+    // process affinity and CPU quota limit.
 
-#ifdef HOST_WINDOWS
-    DWORD_PTR pmask, smask;
+    DWORD configValue = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ProcessorCount);
+    const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
 
-    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
-        count = 1;
+        count = configValue;
     }
     else
     {
-        pmask &= smask;
+#ifdef HOST_WINDOWS
+        CPUGroupInfo::EnsureInitialized();
 
-        while (pmask)
+        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
         {
-            pmask &= (pmask - 1);
-            count++;
+            count = CPUGroupInfo::GetNumActiveProcessors();
+        }
+        else
+        {
+            DWORD_PTR pmask, smask;
+
+            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+            {
+                count = 1;
+            }
+            else
+            {
+                pmask &= smask;
+                count = 0;
+
+                while (pmask)
+                {
+                    pmask &= (pmask - 1);
+                    count++;
+                }
+
+                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+                // than 64 processors, which would leave us with a count of 0.  Since the GC
+                // expects there to be at least one processor to run on (and thus at least one
+                // heap), we'll return 64 here if count is 0, since there are likely a ton of
+                // processors available in that case.
+                if (count == 0)
+                    count = 64;
+            }
         }
 
-        // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-        // than 64 processors, which would leave us with a count of 0.  Since the GC
-        // expects there to be at least one processor to run on (and thus at least one
-        // heap), we'll return 64 here if count is 0, since there are likely a ton of
-        // processors available in that case.  The GC also cannot (currently) handle
-        // the case where there are more than 64 processors, so we will return a
-        // maximum of 64 here.
-        if (count == 0 || count > 64)
-            count = 64;
-    }
+        JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
+
+        if (QueryInformationJobObject(NULL, JobObjectCpuRateControlInformation, &cpuRateControl,
+            sizeof(cpuRateControl), NULL))
+        {
+            const DWORD HardCapEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP;
+            const DWORD MinMaxRateEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE;
+            DWORD maxRate = 0;
+
+            if ((cpuRateControl.ControlFlags & HardCapEnabled) == HardCapEnabled)
+            {
+                maxRate = cpuRateControl.CpuRate;
+            }
+            else if ((cpuRateControl.ControlFlags & MinMaxRateEnabled) == MinMaxRateEnabled)
+            {
+                maxRate = cpuRateControl.MaxRate;
+            }
+
+            // The rate is the percentage times 100
+            const DWORD MAXIMUM_CPU_RATE = 10000;
+
+            if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
+            {
+                DWORD cpuLimit = (maxRate * GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                if (cpuLimit < count)
+                    count = cpuLimit;
+            }
+        }
 
 #else // HOST_WINDOWS
-    count = PAL_GetLogicalCpuCountFromOS();
+        count = PAL_GetLogicalCpuCountFromOS();
 
-    uint32_t cpuLimit;
-    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
-        count = cpuLimit;
+        uint32_t cpuLimit;
+        if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
 #endif // HOST_WINDOWS
+    }
 
-    cCPUs = count;
+    _ASSERTE(count > 0);
+    g_currentProcessCpuCount = count;
 
     return count;
 }

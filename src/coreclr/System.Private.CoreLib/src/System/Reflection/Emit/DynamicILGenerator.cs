@@ -406,15 +406,6 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
         }
 
-        public override void MarkSequencePoint(ISymbolDocumentWriter document,
-                                               int startLine,
-                                               int startColumn,
-                                               int endLine,
-                                               int endColumn)
-        {
-            throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
-        }
-
         public override void BeginScope()
         {
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
@@ -829,7 +820,7 @@ namespace System.Reflection.Emit
                 if (vaMeth.m_dynamicMethod == null)
                 {
                     methodHandle = vaMeth.m_method!.MethodHandle.Value;
-                    typeHandle = vaMeth.m_method.GetDeclaringTypeInternal().GetTypeHandleInternal().Value;
+                    typeHandle = vaMeth.m_method.GetDeclaringTypeInternal().TypeHandle.Value;
                 }
                 else
                 {

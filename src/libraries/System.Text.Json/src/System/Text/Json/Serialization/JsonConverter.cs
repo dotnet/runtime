@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Can the converter have $id metadata.
         /// </summary>
-        internal virtual bool CanHaveIdMetadata => true;
+        internal virtual bool CanHaveIdMetadata => false;
 
         internal bool CanBePolymorphic { get; set; }
 
@@ -105,16 +105,18 @@ namespace System.Text.Json.Serialization
         internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
         /// <summary>
-        /// Loosely-typed WriteWithQuotes() that forwards to strongly-typed WriteWithQuotes().
+        /// Loosely-typed WriteToPropertyName() that forwards to strongly-typed WriteToPropertyName().
         /// </summary>
-        internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
+        internal abstract void WriteAsPropertyNameCoreAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty);
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
 
-        internal virtual void Initialize(JsonSerializerOptions options) { }
+        internal virtual bool RequiresDynamicMemberAccessors { get; }
+
+        internal virtual void Initialize(JsonSerializerOptions options, JsonTypeInfo? jsonTypeInfo = null) { }
 
         /// <summary>
         /// Creates the instance and assigns it to state.Current.ReturnValue.

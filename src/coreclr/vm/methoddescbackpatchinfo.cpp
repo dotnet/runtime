@@ -7,9 +7,6 @@
 #include "log.h"
 #include "methoddescbackpatchinfo.h"
 
-#ifdef CROSSGEN_COMPILE
-    #error This file is not expected to be included into CrossGen
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // EntryPointSlots
@@ -28,10 +25,6 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
     _ASSERTE(entryPoint != NULL);
     _ASSERTE(IS_ALIGNED((SIZE_T)slot, GetRequiredSlotAlignment(slotType)));
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     switch (slotType)
     {
         case SlotType_Normal:
@@ -39,19 +32,25 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
             break;
 
         case SlotType_Vtable:
-            ((MethodTable::VTableIndir2_t *)slot)->SetValue(entryPoint);
+            *((MethodTable::VTableIndir2_t *)slot) = entryPoint;
             break;
 
         case SlotType_Executable:
-            *(PCODE *)slot = entryPoint;
+        {
+            ExecutableWriterHolder<void> slotWriterHolder((void*)slot, sizeof(PCODE*));
+            *(PCODE *)slotWriterHolder.GetRW() = entryPoint;
             goto Flush;
+        }
 
         case SlotType_ExecutableRel32:
+        {
             // A rel32 may require a jump stub on some architectures, and is currently not supported
             _ASSERTE(sizeof(void *) <= 4);
 
-            *(PCODE *)slot = entryPoint - ((PCODE)slot + sizeof(PCODE));
+            ExecutableWriterHolder<void> slotWriterHolder((void*)slot, sizeof(PCODE*));
+            *(PCODE *)slotWriterHolder.GetRW() = entryPoint - ((PCODE)slot + sizeof(PCODE));
             // fall through
+        }
 
         Flush:
             ClrFlushInstructionCache((LPCVOID)slot, sizeof(PCODE));

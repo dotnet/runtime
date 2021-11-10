@@ -2,12 +2,13 @@
 #ifndef __DIAGNOSTICS_RT_MONO_H__
 #define __DIAGNOSTICS_RT_MONO_H__
 
-#include "ds-rt-config.h"
+#include <eventpipe/ds-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
-#include "ds-profiler-protocol.h"
-#include "ds-dump-protocol.h"
+#include <eventpipe/ds-process-protocol.h>
+#include <eventpipe/ds-profiler-protocol.h>
+#include <eventpipe/ds-dump-protocol.h>
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -187,27 +188,23 @@ ds_rt_config_value_get_default_port_suspend (void)
 
 static
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsGenerateCoreDumpCommandPayload *payload)
+ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerateCoreDumpCommandPayload *payload)
 {
 	STATIC_CONTRACT_NOTHROW;
 
 	ds_ipc_result_t result = DS_IPC_E_FAIL;
 	EX_TRY
 	{
-#ifdef HOST_WIN32
-		if (GenerateCrashDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
-			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-			(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
-			result = DS_IPC_S_OK;
-#else
-		MAKE_UTF8PTR_FROMWIDE_NOTHROW (dump_name, reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)));
-		if (dump_name != nullptr) {
-			if (PAL_GenerateCoreDump (dump_name,
-				static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-				(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
-				result = DS_IPC_S_OK;
+		uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
+ 		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+ 		{
+ 			// For the old commmand, this payload field is a bool of whether to enable logging
+ 			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
 		}
-#endif
+		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
+			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
+			flags))
+			result = DS_IPC_S_OK;
 	}
 	EX_CATCH {}
 	EX_END_CATCH(SwallowAllExceptions);
@@ -268,11 +265,11 @@ DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR (port_config_array, ds_rt_port_config_array_
 /*
 * DiagnosticsProfiler.
 */
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+#ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
 
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
 static
 uint32_t
 ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
@@ -285,7 +282,7 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 	// Certain actions are only allowable during attach, and this flag is how we track it.
 	ClrFlsSetThreadType (ThreadType_ProfAPI_Attach);
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
 	EX_TRY {
 		hr = ProfilingAPIUtility::LoadProfilerForAttach (reinterpret_cast<const CLSID *>(ds_attach_profiler_command_payload_get_profiler_guid_cref (payload)),
 			reinterpret_cast<LPCWSTR>(ds_attach_profiler_command_payload_get_profiler_path (payload)),
@@ -301,6 +298,33 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 	return hr;
 }
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
+
+static
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	HRESULT hr = S_OK;
+	EX_TRY {
+		StoredProfilerNode *profilerData = new StoredProfilerNode();
+		profilerData->guid = *(reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)));
+		profilerData->path.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
+
+		g_profControlBlock.storedProfilers.InsertHead(profilerData);
+	}
+	EX_CATCH_HRESULT (hr);
+
+	return hr;
+}
+#endif // PROFILING_SUPPORTED
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
+{
+	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
 
 /*
 * DiagnosticServer.

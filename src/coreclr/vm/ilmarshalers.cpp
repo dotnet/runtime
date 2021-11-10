@@ -1906,11 +1906,8 @@ void ILFixedWSTRMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmi
     STANDARD_VM_CONTRACT;
 
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitDUP();
-    pslILEmit->EmitCALL(METHOD__STRING__WCSLEN, 1, 1);
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CHECK_STRING_LENGTH, 1, 0);
-
-    pslILEmit->EmitNEWOBJ(METHOD__STRING__CTOR_CHARPTR, 1);
+    pslILEmit->EmitLDC(m_pargs->fs.fixedStringLength);
+    pslILEmit->EmitCALL(METHOD__FIXEDWSTRMARSHALER__CONVERT_TO_MANAGED, 2, 1);
     EmitStoreManagedValue(pslILEmit);
 }
 
@@ -2496,10 +2493,14 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
 
 bool ILBlittablePtrMarshaler::CanMarshalViaPinning()
 {
+    // [COMPAT] For correctness, we can't marshal via pinning if we might need to marshal differently at runtime.
+    // See calls to EmitExactTypeCheck where we check the runtime type of the object being marshalled.
+    // However, we previously supported pinning non-sealed blittable classes, even though that could result
+    // in some data still being unmarshalled if a subclass is provided. This optimization is incorrect,
+    // but libraries like NAudio have taken a hard dependency on this incorrect behavior, so we need to preserve it.
     return IsCLRToNative(m_dwMarshalFlags) &&
         !IsByref(m_dwMarshalFlags) &&
-        !IsFieldMarshal(m_dwMarshalFlags) &&
-        m_pargs->m_pMT->IsSealed(); // We can't marshal via pinning if we might need to marshal differently at runtime. See calls to EmitExactTypeCheck where we check the runtime type of the object being marshalled.
+        !IsFieldMarshal(m_dwMarshalFlags);
 }
 
 void ILBlittablePtrMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
@@ -3663,7 +3664,7 @@ void ILArrayWithOffsetMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCo
     EmitLoadNativeValue(pslILEmit);                 // dest
 
     pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_ARRAY_DATA, 1, 1);
+    pslILEmit->EmitCALL(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_MDARRAY, 1, 1);
     pslILEmit->EmitCONV_I();
 
     EmitLoadManagedValue(pslILEmit);
@@ -3707,7 +3708,7 @@ void ILArrayWithOffsetMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* ps
     pslILEmit->EmitSTLOC(m_dwPinnedLocalNum);
 
     pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_ARRAY_DATA, 1, 1);
+    pslILEmit->EmitCALL(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_MDARRAY, 1, 1);
     pslILEmit->EmitCONV_I();
 
     pslILEmit->EmitLDLOC(m_dwOffsetLocalNum);
@@ -4303,7 +4304,6 @@ void ILNativeArrayMarshaler::EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit)
     pslILEmit->EmitSTLOC(m_dwSavedSizeArg);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL4(void, MngdNativeArrayMarshaler::CreateMarshaler, MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
@@ -4499,7 +4499,6 @@ void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* p
     }
 }
 
-#endif // CROSSGEN_COMPILE
 
 
 void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
@@ -4541,7 +4540,6 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     pslILEmit->EmitCALL(METHOD__MNGD_FIXED_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL5(void, MngdFixedArrayMarshaler::CreateMarshaler, MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler)
 {
@@ -4726,7 +4724,6 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ClearNativeContents, MngdFixedArrayMarsha
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE
 
 
 #ifdef FEATURE_COMINTEROP
@@ -4814,7 +4811,6 @@ void ILSafeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL5(void, MngdSafeArrayMarshaler::CreateMarshaler, MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
@@ -5015,7 +5011,6 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ClearNative, MngdSafeArrayMarshaler* pThis
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE
 #endif // FEATURE_COMINTEROP
 
 void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
@@ -5062,7 +5057,6 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL2(void, MngdRefCustomMarshaler::CreateMarshaler, MngdRefCustomMarshaler* pThis, void* pCMHelper)
 {
@@ -5145,4 +5139,3 @@ FCIMPL3(void, MngdRefCustomMarshaler::ClearManaged, MngdRefCustomMarshaler* pThi
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE

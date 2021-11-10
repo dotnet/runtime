@@ -242,6 +242,8 @@ namespace System
     internal static partial class Number
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
+        internal const string PreviewFeatureMessage = "Generic Math is in preview.";
+        internal const string PreviewFeatureUrl = "https://aka.ms/dotnet-warnings/generic-math-preview";
 
         // SinglePrecision and DoublePrecision represent the maximum number of digits required
         // to guarantee that any given Single or Double can roundtrip. Some numbers may require
@@ -2629,7 +2631,7 @@ namespace System
 
         private static ulong ExtractFractionAndBiasedExponent(double value, out int exponent)
         {
-            ulong bits = (ulong)(BitConverter.DoubleToInt64Bits(value));
+            ulong bits = BitConverter.DoubleToUInt64Bits(value);
             ulong fraction = (bits & 0xFFFFFFFFFFFFF);
             exponent = ((int)(bits >> 52) & 0x7FF);
 
@@ -2661,7 +2663,7 @@ namespace System
 
         private static ushort ExtractFractionAndBiasedExponent(Half value, out int exponent)
         {
-            ushort bits = (ushort)BitConverter.HalfToInt16Bits(value);
+            ushort bits = BitConverter.HalfToUInt16Bits(value);
             ushort fraction = (ushort)(bits & 0x3FF);
             exponent = ((int)(bits >> 10) & 0x1F);
 
@@ -2693,7 +2695,7 @@ namespace System
 
         private static uint ExtractFractionAndBiasedExponent(float value, out int exponent)
         {
-            uint bits = (uint)(BitConverter.SingleToInt32Bits(value));
+            uint bits = BitConverter.SingleToUInt32Bits(value);
             uint fraction = (bits & 0x7FFFFF);
             exponent = ((int)(bits >> 23) & 0xFF);
 

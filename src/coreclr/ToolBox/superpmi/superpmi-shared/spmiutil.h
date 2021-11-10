@@ -12,6 +12,9 @@
 bool BreakOnDebugBreakorAV();
 void SetBreakOnDebugBreakOrAV(bool value);
 
+bool BreakOnException();
+void SetBreakOnException(bool value);
+
 void DebugBreakorAV(int val); // Global(ish) error handler
 
 char* GetEnvironmentVariableWithDefaultA(const char* envVarName, const char* defaultValue = nullptr);

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace System.Collections.Specialized
 {
@@ -92,18 +92,6 @@ namespace System.Collections.Specialized
             }
         }
 
-        private static short CountBitsSet(short mask)
-        {
-            // We assume that the bits are always right aligned, with no holes (i.e. always 00000111, never 00100011)
-            short value = 0;
-            while ((mask & 0x1) != 0)
-            {
-                value++;
-                mask >>= 1;
-            }
-            return value;
-        }
-
         /// <devdoc>
         ///    <para> Creates the first mask in a series.</para>
         /// </devdoc>
@@ -131,29 +119,6 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///     Given a highValue, creates the mask
-        /// </devdoc>
-        private static short CreateMaskFromHighValue(short highValue)
-        {
-            short required = 16;
-            while ((highValue & 0x8000) == 0)
-            {
-                required--;
-                highValue <<= 1;
-            }
-
-            ushort value = 0;
-            while (required > 0)
-            {
-                required--;
-                value <<= 1;
-                value |= 0x1;
-            }
-
-            return unchecked((short)value);
-        }
-
-        /// <devdoc>
         ///    <para>Creates the first section in a series, with the specified maximum value.</para>
         /// </devdoc>
         public static Section CreateSection(short maxValue)
@@ -176,28 +141,19 @@ namespace System.Collections.Specialized
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidValue_TooSmall, nameof(maxValue), 1), nameof(maxValue));
             }
 
-            short offset = (short)(priorOffset + CountBitsSet(priorMask));
+            short offset = (short)(priorOffset + BitOperations.PopCount((uint)(ushort)priorMask));
             if (offset >= 32)
             {
                 throw new InvalidOperationException(SR.BitVectorFull);
             }
-            return new Section(CreateMaskFromHighValue(maxValue), offset);
+
+            short mask = (short)(BitOperations.RoundUpToPowerOf2((uint)(ushort)maxValue + 1) - 1);
+            return new Section(mask, offset);
         }
 
-        public override bool Equals(object? o)
-        {
-            if (!(o is BitVector32))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? o) => o is BitVector32 other && _data == other._data;
 
-            return _data == ((BitVector32)o)._data;
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => _data.GetHashCode();
 
         public static string ToString(BitVector32 value)
         {
@@ -237,29 +193,11 @@ namespace System.Collections.Specialized
                 _offset = offset;
             }
 
-            public short Mask
-            {
-                get
-                {
-                    return _mask;
-                }
-            }
+            public short Mask => _mask;
 
-            public short Offset
-            {
-                get
-                {
-                    return _offset;
-                }
-            }
+            public short Offset => _offset;
 
-            public override bool Equals(object? o)
-            {
-                if (o is Section)
-                    return Equals((Section)o);
-                else
-                    return false;
-            }
+            public override bool Equals([NotNullWhen(true)] object? o) => o is Section other && Equals(other);
 
             public bool Equals(Section obj)
             {
@@ -276,14 +214,11 @@ namespace System.Collections.Specialized
                 return !(a == b);
             }
 
-            public override int GetHashCode()
-            {
-                return base.GetHashCode();
-            }
+            public override int GetHashCode() => HashCode.Combine(_mask, _offset);
 
             public static string ToString(Section value)
             {
-                return "Section{0x" + Convert.ToString(value.Mask, 16) + ", 0x" + Convert.ToString(value.Offset, 16) + "}";
+                return $"Section{{0x{value.Mask:x}, 0x{value.Offset:x}}}";
             }
 
             public override string ToString()

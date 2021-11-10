@@ -92,7 +92,7 @@ HRESULT CordbFrameEnum::GetCount() {
             int il_offset = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
             int flags     = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
 
-            CordbNativeFrame* frame = new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, m_pThread);
+            CordbNativeFrame* frame = new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, m_pThread, i);
             frame->InternalAddRef();
             m_ppFrames[i] = frame;
         }
@@ -377,12 +377,13 @@ CordbNativeFrame::~CordbNativeFrame()
 }
 
 CordbNativeFrame::CordbNativeFrame(
-    Connection* conn, int frameid, int methodId, int il_offset, int flags, CordbThread* thread)
+    Connection* conn, int frameid, int methodId, int il_offset, int flags, CordbThread* thread, int posFrame)
     : CordbBaseMono(conn)
 {
     m_JITILFrame = new CordbJITILFrame(conn, frameid, methodId, il_offset, flags, thread);
     m_JITILFrame->InternalAddRef();
     this->m_pThread = thread;
+    this->m_nPosFrame = posFrame;
 }
 
 HRESULT STDMETHODCALLTYPE CordbNativeFrame::GetIP(ULONG32* pnOffset)

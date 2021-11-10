@@ -98,6 +98,7 @@ namespace System.Text.Json.Nodes
         /// <param name="value">
         ///   The object to be added to the end of the <see cref="JsonArray"/>.
         /// </param>
+        [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
         public void Add<T>(T? value)
         {
             if (value == null)
@@ -109,7 +110,7 @@ namespace System.Text.Json.Nodes
                 JsonNode? jNode = value as JsonNode;
                 if (jNode == null)
                 {
-                    jNode = new JsonValue<T>(value);
+                    jNode = new JsonValueNotTrimmable<T>(value);
                 }
 
                 // Call the IList.Add() implementation.
@@ -164,6 +165,7 @@ namespace System.Text.Json.Nodes
             }
             else
             {
+                CreateNodes();
                 Debug.Assert(_list != null);
 
                 options ??= JsonSerializerOptions.s_defaultOptions;
@@ -198,7 +200,9 @@ namespace System.Text.Json.Nodes
 
                     foreach (JsonElement element in jElement.EnumerateArray())
                     {
-                        list.Add(JsonNodeConverter.Create(element, Options));
+                        JsonNode? node = JsonNodeConverter.Create(element, Options);
+                        node?.AssignParent(this);
+                        list.Add(node);
                     }
 
                     // Clear since no longer needed.
@@ -210,7 +214,7 @@ namespace System.Text.Json.Nodes
         }
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
-        private class DebugView
+        private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             private JsonArray _node;

@@ -189,7 +189,7 @@ namespace System.SpanTests
                     arr.AsSpan(0, i).Fill(value);
                     Assert.Equal(Enumerable.Repeat(value, i), arr.Take(i)); // first i entries should've been populated with 'value'
                     Assert.Equal(Enumerable.Repeat(default(T), arr.Length - i), arr.Skip(i)); // remaining entries should contain default(T)
-                    Array.Clear(arr, 0, arr.Length);
+                    Array.Clear(arr);
                 }
             }
         }

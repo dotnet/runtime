@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.Design;
@@ -1179,7 +1180,7 @@ namespace System.Diagnostics
             EventLogInternal[] interestedComponents;
             lock (InternalSyncObject)
             {
-                interestedComponents = (EventLogInternal[])info.listeningComponents.ToArray(typeof(EventLogInternal));
+                interestedComponents = info.listeningComponents.ToArray();
             }
 
             for (int i = 0; i < interestedComponents.Length; i++)
@@ -1413,7 +1414,7 @@ namespace System.Diagnostics
             public EventLogInternal handleOwner;
             public RegisteredWaitHandle registeredWaitHandle;
             public WaitHandle waitHandle;
-            public ArrayList listeningComponents = new ArrayList();
+            public List<EventLogInternal> listeningComponents = new();
         }
     }
 }

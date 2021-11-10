@@ -187,10 +187,7 @@ namespace System.Drawing.Printing
             PrintController.OnEndPrint(this, printArgs);
         }
 
-        public override string ToString()
-        {
-            return "[PrintDocument " + this.DocumentName + "]";
-        }
+        public override string ToString() => $"[PrintDocument {this.DocumentName}]";
 
         // events
         protected virtual void OnBeginPrint(PrintEventArgs e)

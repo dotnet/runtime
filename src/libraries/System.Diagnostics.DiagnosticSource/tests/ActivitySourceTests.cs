@@ -247,6 +247,37 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EnsureRecordingTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity.ForceDefaultIdFormat = true;
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                ActivitySource aSource = new ActivitySource("EnsureRecordingTest");
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => true,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                    {
+                        // Access activityOptions.TraceId to ensure generating the non-default value.
+                        ActivityTraceId traceId = activityOptions.TraceId;
+                        Assert.NotEqual(default(ActivityTraceId), traceId);
+                        return ActivitySamplingResult.AllDataAndRecorded;
+                    }
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                Activity a = aSource.StartActivity("RecordedActivity");
+                Assert.NotNull(a);
+
+                Assert.True(a.Recorded);
+                Assert.True((a.Context.TraceFlags & ActivityTraceFlags.Recorded) != 0);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestExpectedListenersReturnValues()
         {
             RemoteExecutor.Invoke(() => {
@@ -449,7 +480,7 @@ namespace System.Diagnostics.Tests
             context = ActivityContext.Parse(w3cId, null);
             Assert.Null(context.TraceState);
 
-            Assert.Throws<ArgumentNullException>(() => ActivityContext.TryParse(null, "k=v", out context));
+            Assert.False(ActivityContext.TryParse(null, "k=v", out context));
             Assert.Throws<ArgumentNullException>(() => ActivityContext.Parse(null, null));
             Assert.Throws<ArgumentException>(() => ActivityContext.Parse("BadW3C", null));
 
@@ -947,7 +978,7 @@ namespace System.Diagnostics.Tests
                         Assert.Null(a3.Parent);
                         Assert.Equal("ParentId", a3.ParentId);
 
-                        ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
+                        ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded);
                         using (Activity a4 = aSource.CreateActivity("a4", ActivityKind.Internal, parentContext, tags, links))
                         {
                             Assert.NotNull(a4);

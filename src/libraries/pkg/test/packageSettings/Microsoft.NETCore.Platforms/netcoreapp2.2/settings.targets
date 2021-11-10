@@ -1,8 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <!-- This package will generate validation issues since we usually try to consume same-day packages from corefx that will have a higher
-         version than locally built packages. Validation will assume incorrectly that you are downgrading the reference which is why this error is flagged.
-         Since it isn't really an error, we will supress it in order to unblock same-day package ingestion. -->
-    <NoWarn>$(NoWarn);NU1605</NoWarn>
-  </PropertyGroup>
-</Project>

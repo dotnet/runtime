@@ -78,5 +78,22 @@ namespace System.IO.Tests
                 ExpectEvent(watcher, 0, action, cleanup, dir.Path);
             }
         }
+
+        [Fact]
+        public void FileSystemWatcher_Directory_Changed_SynchronizingObject()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            {
+                TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
+                watcher.SynchronizingObject = invoker;
+
+                Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+
+                ExpectEvent(watcher, WatcherChangeTypes.Changed, action, expectedPath: dir.Path);
+                Assert.True(invoker.BeginInvoke_Called);
+            }
+        }
     }
 }

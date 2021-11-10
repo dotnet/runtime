@@ -188,6 +188,9 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 EP_RT_DECLARE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DECLARE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 
+EP_RT_DECLARE_ARRAY (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+EP_RT_DECLARE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+
 static
 void
 ep_rt_init (void);
@@ -341,6 +344,11 @@ uint32_t
 ep_rt_config_value_get_circular_mb (void);
 
 static
+inline
+bool
+ep_rt_config_value_get_output_streaming (void);
+
+static
 bool
 ep_rt_config_value_get_use_portable_thread_pool (void);
 
@@ -476,7 +484,7 @@ ep_rt_is_running (void);
 
 static
 void
-ep_rt_execute_rundown (void);
+ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
 
 /*
  * Objects.
@@ -591,6 +599,14 @@ EP_RT_DECLARE_ARRAY_ITERATOR (env_array_utf16, ep_rt_env_array_utf16_t, ep_rt_en
 static
 void
 ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
+
+static
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void);
+
+static
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void);
 
 /*
 * Lock

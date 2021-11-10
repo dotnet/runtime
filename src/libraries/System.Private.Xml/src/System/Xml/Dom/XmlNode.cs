@@ -48,9 +48,17 @@ namespace System.Xml
         // Selects the first node that matches the xpath expression
         public XmlNode? SelectSingleNode(string xpath)
         {
-            XmlNodeList? list = SelectNodes(xpath);
-            // SelectNodes returns null for certain node types
-            return list != null ? list[0] : null;
+            if (CreateNavigator() is XPathNavigator navigator)
+            {
+                XPathNodeIterator nodeIterator = navigator.Select(xpath);
+                if (nodeIterator.MoveNext())
+                {
+                    Debug.Assert(nodeIterator.Current != null);
+                    return ((IHasXmlNode)nodeIterator.Current).GetNode();
+                }
+            }
+
+            return null;
         }
 
         // Selects the first node that matches the xpath expression and given namespace context.
@@ -1463,11 +1471,11 @@ namespace System.Xml
                 {
                     case XmlNodeType.Element:
                     case XmlNodeType.EntityReference:
-                        result += ", Name=\"" + _node.Name + "\"";
+                        result += $", Name=\"{_node.Name}\"";
                         break;
                     case XmlNodeType.Attribute:
                     case XmlNodeType.ProcessingInstruction:
-                        result += ", Name=\"" + _node.Name + "\", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!) + "\"";
+                        result += $", Name=\"{_node.Name}\", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!)}\"";
                         break;
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
@@ -1475,11 +1483,11 @@ namespace System.Xml
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
                     case XmlNodeType.XmlDeclaration:
-                        result += ", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!) + "\"";
+                        result += $", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!)}\"";
                         break;
                     case XmlNodeType.DocumentType:
                         XmlDocumentType documentType = (XmlDocumentType)_node;
-                        result += ", Name=\"" + documentType.Name + "\", SYSTEM=\"" + documentType.SystemId + "\", PUBLIC=\"" + documentType.PublicId + "\", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(documentType.InternalSubset!) + "\"";
+                        result += $", Name=\"{documentType.Name}\", SYSTEM=\"{documentType.SystemId}\", PUBLIC=\"{documentType.PublicId}\", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(documentType.InternalSubset!)}\"";
                         break;
                     default:
                         break;

@@ -42,10 +42,7 @@ HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR s
     m_emitter = NULL;
     m_importer = NULL;
     m_internalimport = NULL;
-    m_pCeeFileGen = NULL;
-    m_ceeFile = NULL;
     m_ulResourceSize = 0;
-    m_tkFile = mdFileNil;
 
     m_pCeeGen = pCeeGen;
     pCeeGen->AddRef();

@@ -4,18 +4,18 @@
 #ifndef __EVENTPIPE_ADAPTER_H__
 #define __EVENTPIPE_ADAPTER_H__
 
-#if defined(FEATURE_PERFTRACING) && !(CROSSGEN_COMPILE)
+#if defined(FEATURE_PERFTRACING)
 
-#include "ep.h"
-#include "ep-provider.h"
-#include "ep-config.h"
-#include "ep-event.h"
-#include "ep-event-instance.h"
-#include "ep-session.h"
-#include "ep-session-provider.h"
-#include "ep-metadata-generator.h"
-#include "ep-event-payload.h"
-#include "ep-buffer-manager.h"
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-provider.h>
+#include <eventpipe/ep-config.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-instance.h>
+#include <eventpipe/ep-session.h>
+#include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-metadata-generator.h>
+#include <eventpipe/ep-event-payload.h>
+#include <eventpipe/ep-buffer-manager.h>
 
 
 class EventPipeProviderConfigurationAdapter final
@@ -200,7 +200,8 @@ public:
 		EventPipeSerializationFormat format,
 		const bool rundownRequested,
 		IpcStream *const stream,
-		EventPipeSessionSynchronousCallback callback)
+		EventPipeSessionSynchronousCallback callback,
+		void *callbackAdditionalData)
 	{
 		CONTRACTL
 		{
@@ -222,7 +223,8 @@ public:
 			format,
 			rundownRequested,
 			stream,
-			callback);
+			callback,
+			callbackAdditionalData);
 		ep_rt_utf8_string_free (outputPathUTF8);
 		return result;
 	}
@@ -605,5 +607,5 @@ public:
 	}
 };
 
-#endif // FEATURE_PERFTRACING && !CROSSGEN_COMPILE
+#endif // FEATURE_PERFTRACING
 #endif // __EVENTPIPE_ADAPTER_H__

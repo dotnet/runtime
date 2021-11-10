@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
@@ -91,14 +90,24 @@ namespace System.Threading.Tasks.Sources
         [StackTraceHidden]
         public TResult GetResult(short token)
         {
-            ValidateToken(token);
-            if (!_completed)
+            if (token != _version || !_completed || _error is not null)
+            {
+                ThrowForFailedGetResult(token);
+            }
+
+            return _result!;
+        }
+
+        [StackTraceHidden]
+        private void ThrowForFailedGetResult(short token)
+        {
+            if (token != _version || !_completed)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
             _error?.Throw();
-            return _result!;
+            Debug.Fail($"{nameof(ThrowForFailedGetResult)} should never get here");
         }
 
         /// <summary>Schedules the continuation action for this operation.</summary>
@@ -241,8 +250,8 @@ namespace System.Threading.Tasks.Sources
             // for the surrounding code to become less efficent (stack spills etc)
             // and it is an uncommon path.
 
-            Debug.Assert(_continuation != null);
-            Debug.Assert(_executionContext != null);
+            Debug.Assert(_continuation != null, $"Null {nameof(_continuation)}");
+            Debug.Assert(_executionContext != null, $"Null {nameof(_executionContext)}");
 
             ExecutionContext? currentContext = ExecutionContext.CaptureForRestore();
             // Restore the captured ExecutionContext before executing anything.
@@ -312,8 +321,8 @@ namespace System.Threading.Tasks.Sources
         /// </summary>
         private void InvokeSchedulerContinuation()
         {
-            Debug.Assert(_capturedContext != null);
-            Debug.Assert(_continuation != null);
+            Debug.Assert(_capturedContext != null, $"Null {nameof(_capturedContext)}");
+            Debug.Assert(_continuation != null, $"Null {nameof(_continuation)}");
 
             switch (_capturedContext)
             {

@@ -38,6 +38,8 @@
       COMPlus_FeatureSIMD;
       COMPlus_ForceRelocs;
       COMPlus_GCStress;
+      COMPlus_GCName;
+      COMPlus_gcServer;
       COMPlus_HeapVerify;
       COMPlus_JITMinOpts;
       COMPlus_JitELTHookEnabled;
@@ -49,6 +51,7 @@
       COMPlus_TC_OnStackReplacement;
       COMPlus_TC_QuickJitForLoops;
       COMPlus_TC_OnStackReplacement_InitialCounter;
+      COMPlus_TC_PartialCompilation;
       COMPlus_OSR_HitLimit;
       COMPlus_TieredPGO;
       COMPlus_JitEnableGuardedDevirtualization;
@@ -57,6 +60,8 @@
       COMPlus_JitInlinePolicyProfile;
       COMPlus_JitClassProfiling;
       COMPlus_JitEdgeProfiling;
+      COMPlus_JitRandomGuardedDevirtualization;
+      COMPlus_JitRandomEdgeCounts;
       RunningIlasmRoundTrip
     </COMPlusVariables>
   </PropertyGroup>
@@ -107,6 +112,40 @@
     <TestEnvironment Include="jitstress_isas_x86_nosse41" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_x86_nosse42" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_x86_nossse3" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_noaes" JitStress="1" EnableAES="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_noavx" JitStress="1" EnableAVX="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_noavx2" JitStress="1" EnableAVX2="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nobmi1" JitStress="1" EnableBMI1="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nobmi2" JitStress="1" EnableBMI2="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nofma" JitStress="1" EnableFMA="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nohwintrinsic" JitStress="1" EnableBMI1="0" EnableBMI2="0" EnableLZCNT="0" EnableSSE="0" />
+    <TestEnvironment Include="jitstress_isas_1_x86_nolzcnt" JitStress="1" EnableLZCNT="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nopclmulqdq" JitStress="1" EnablePCLMULQDQ="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nopopcnt" JitStress="1" EnablePOPCNT="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nosse" JitStress="1" EnableSSE="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nosse2" JitStress="1" EnableSSE2="0" /> <!-- Depends on SSE -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nosse3" JitStress="1" EnableSSE3="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nosse3_4" JitStress="1" EnableSSE3_4="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nosse41" JitStress="1" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nosse42" JitStress="1" EnableSSE42="0" /> <!-- Depends on SSE41 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_nossse3" JitStress="1" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_noaes" JitStress="2" EnableAES="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_noavx" JitStress="2" EnableAVX="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_noavx2" JitStress="2" EnableAVX2="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nobmi1" JitStress="2" EnableBMI1="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nobmi2" JitStress="2" EnableBMI2="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nofma" JitStress="2" EnableFMA="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nohwintrinsic" JitStress="2" EnableBMI1="0" EnableBMI2="0" EnableLZCNT="0" EnableSSE="0" />
+    <TestEnvironment Include="jitstress_isas_2_x86_nolzcnt" JitStress="2" EnableLZCNT="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nopclmulqdq" JitStress="2" EnablePCLMULQDQ="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nopopcnt" JitStress="2" EnablePOPCNT="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nosse" JitStress="2" EnableSSE="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nosse2" JitStress="2" EnableSSE2="0" /> <!-- Depends on SSE -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nosse3" JitStress="2" EnableSSE3="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nosse3_4" JitStress="2" EnableSSE3_4="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nosse41" JitStress="2" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nosse42" JitStress="2" EnableSSE42="0" /> <!-- Depends on SSE41 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_nossse3" JitStress="2" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
     <TestEnvironment Include="jitstressregs1_x86_noavx" JitStressRegs="1" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs2_x86_noavx" JitStressRegs="2" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs3_x86_noavx" JitStressRegs="3" EnableAVX="0" />
@@ -148,12 +187,21 @@
     <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
     <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
-    <TestEnvironment Include="jitpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
-    <TestEnvironment Include="jitpgo_inline" TieredPGO="1" TieredCompilation="1" JitInlinePolicyProfile="1" TC_QuickJitForLoops="1" />
-    <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
+    <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
+    <TestEnvironment Include="nopgo" JitDisablePGO="1" TieredCompilation="1" />
+    <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />
+    <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
+    <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
+    <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1"/>
+    <TestEnvironment Include="fullpgo_random_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomEdgeCounts="1"/>
+    <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1"/>
+    <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
+    <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
+    <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>
+    <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' != 'true'" gcServer="1" GCName="libclrgc.so"/>
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
@@ -192,7 +240,7 @@
       <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
 
       <!-- Mono interpreter -->
-      <_TestEnvFileLine Include="set MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="set MONO_ENV_OPTIONS=--interpreter" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
@@ -207,7 +255,13 @@
       <_TestEnvFileLine Include="@(_COMPlusVariable->'export %(Identity)=%(Value)')"  />
 
       <!-- Mono interpreter -->
-      <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
+
+      <!-- Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
+
+      <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->

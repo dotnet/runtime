@@ -162,89 +162,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Attempts to resolve constrained call to <paramref name="interfaceMethod"/> into a concrete non-unboxing
-        /// method on <paramref name="constrainedType"/>.
-        /// The ability to resolve constraint methods is affected by the degree of code sharing we are performing
-        /// for generic code.
-        /// </summary>
-        /// <returns>The resolved method or null if the constraint couldn't be resolved.</returns>
-        public static MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
-        {
-            forceRuntimeLookup = false;
-
-            // We can't resolve constraint calls effectively for reference types, and there's
-            // not a lot of perf. benefit in doing it anyway.
-            if (!constrainedType.IsValueType)
-            {
-                return null;
-            }
-
-            // Non-virtual methods called through constraints simply resolve to the specified method without constraint resolution.
-            if (!interfaceMethod.IsVirtual)
-            {
-                return null;
-            }
-
-            MethodDesc method;
-
-            MethodDesc genInterfaceMethod = interfaceMethod.GetMethodDefinition();
-            if (genInterfaceMethod.OwningType.IsInterface)
-            {
-                // Sometimes (when compiling shared generic code)
-                // we don't have enough exact type information at JIT time
-                // even to decide whether we will be able to resolve to an unboxed entry point...
-                // To cope with this case we always go via the helper function if there's any
-                // chance of this happening by checking for all interfaces which might possibly
-                // be compatible with the call (verification will have ensured that
-                // at least one of them will be)
-
-                // Enumerate all potential interface instantiations
-
-                // TODO: this code assumes no shared generics
-                Debug.Assert(interfaceType == interfaceMethod.OwningType);
-
-                method = constrainedType.ResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod);
-            }
-            else if (genInterfaceMethod.IsVirtual)
-            {
-                method = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod);
-            }
-            else
-            {
-                // The method will be null if calling a non-virtual instance
-                // methods on System.Object, i.e. when these are used as a constraint.
-                method = null;
-            }
-
-            if (method == null)
-            {
-                // Fall back to VSD
-                return null;
-            }
-
-            //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-            // Only return a method if the value type itself declares the method,
-            // otherwise we might get a method from Object or System.ValueType
-            if (!method.OwningType.IsValueType)
-            {
-                // Fall back to VSD
-                return null;
-            }
-
-            // We've resolved the method, ignoring its generic method arguments
-            // If the method is a generic method then go and get the instantiated descriptor
-            if (interfaceMethod.HasInstantiation)
-            {
-                method = method.MakeInstantiatedMethod(interfaceMethod.Instantiation);
-            }
-
-            Debug.Assert(method != null);
-            //assert(!pMD->IsUnboxingStub());
-
-            return method;
-        }
-
-        /// <summary>
         /// Retrieves the namespace qualified name of a <see cref="DefType"/>.
         /// </summary>
         public static string GetFullName(this DefType metadataType)
@@ -259,6 +176,14 @@ namespace Internal.TypeSystem
         public static IEnumerable<MethodDesc> GetAllMethods(this TypeDesc type)
         {
             return type.Context.GetAllMethods(type);
+        }
+
+        /// <summary>
+        /// Retrieves all virtual methods on a type, including the ones injected by the type system context.
+        /// </summary>
+        public static IEnumerable<MethodDesc> GetAllVirtualMethods(this TypeDesc type)
+        {
+            return type.Context.GetAllVirtualMethods(type);
         }
 
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(this TypeDesc type)
@@ -278,6 +203,11 @@ namespace Internal.TypeSystem
         public static MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, type);
+        }
+
+        public static DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc implMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out implMethod);
         }
 
         /// <summary>
@@ -362,6 +292,26 @@ namespace Internal.TypeSystem
             do
             {
                 result = currentType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodToResolve);
+                currentType = currentType.BaseType;
+            }
+            while (result == null && currentType != null);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Scan the type and its base types for an implementation of an interface method. Returns null if no
+        /// implementation is found.
+        /// </summary>
+        public static MethodDesc ResolveInterfaceMethodTargetWithVariance(this TypeDesc thisType, MethodDesc interfaceMethodToResolve)
+        {
+            Debug.Assert(interfaceMethodToResolve.OwningType.IsInterface);
+
+            MethodDesc result = null;
+            TypeDesc currentType = thisType;
+            do
+            {
+                result = currentType.ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethodToResolve);
                 currentType = currentType.BaseType;
             }
             while (result == null && currentType != null);

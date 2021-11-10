@@ -701,14 +701,14 @@ void BaseBucketParamsManager::GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* 
         {
             // We only store the IL timestamp in the native image for the
             // manifest module.  We should consider fixing this for Orcas.
-            PTR_PEFile pFile = pModule->GetAssembly()->GetManifestModule()->GetFile();
+            PTR_PEAssembly pFile = pModule->GetAssembly()->GetManifestModule()->GetPEAssembly();
 
             // for dynamic modules use 0 as the time stamp
             ULONG ulTimeStamp = 0;
 
             if (!pFile->IsDynamic())
             {
-                ulTimeStamp = pFile->GetILImageTimeDateStamp();
+                ulTimeStamp = pFile->GetPEImageTimeDateStamp();
                 _ASSERTE(ulTimeStamp != 0);
             }
 
@@ -957,30 +957,13 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
 
     bool succeeded = false;
 
-    PEFile* pFile = pModule->GetFile();
-    if (pFile)
+    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly)
     {
-#ifdef FEATURE_PREJIT
-        // if we have a native imaged loaded for this module then get the version information from that.
-        if (pFile->IsNativeLoaded())
-        {
-            PEImage* pNativeImage = pFile->GetPersistentNativeImage();
-
-            if (pNativeImage)
-            {
-                LPCWSTR niPath = pNativeImage->GetPath().GetUnicode();
-                if (niPath != NULL && niPath != SString::Empty() && SUCCEEDED(DwGetFileVersionInfo(niPath, major, minor, build, revision)))
-                {
-                    succeeded = true;
-                }
-            }
-        }
-#endif
-
         // if we failed to get the version info from the native image then fall back to the IL image.
         if (!succeeded)
         {
-            LPCWSTR modulePath = pFile->GetPath().GetUnicode();
+            LPCWSTR modulePath = pPEAssembly->GetPath().GetUnicode();
             if (modulePath != NULL && modulePath != SString::Empty() && SUCCEEDED(DwGetFileVersionInfo(modulePath, major, minor, build, revision)))
             {
                 succeeded = true;

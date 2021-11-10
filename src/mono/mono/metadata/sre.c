@@ -31,8 +31,6 @@
 #include "mono/metadata/reflection-cache.h"
 #include "mono/metadata/sre-internals.h"
 #include "mono/metadata/custom-attrs-internals.h"
-#include "mono/metadata/security-manager.h"
-#include "mono/metadata/security-core-clr.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/abi-details.h"
@@ -759,7 +757,6 @@ is_field_on_gtd (MonoClassField *field)
 static guint32
 mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field)
 {
-	MonoType *type;
 	guint32 token;
 
 	g_assert (field);
@@ -769,12 +766,6 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field
 	if (token)
 		return token;
 
-	if (mono_class_is_ginst (field->parent) && mono_class_get_generic_class (field->parent)->container_class && mono_class_get_generic_class (field->parent)->container_class->fields) {
-		int index = field - field->parent->fields;
-		type = mono_field_get_type_internal (&mono_class_get_generic_class (field->parent)->container_class->fields [index]);
-	} else {
-		type = mono_field_get_type_internal (field);
-	}
 	token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (field->parent));
 	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
 	return token;
@@ -1263,10 +1254,12 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 			assembly->assembly.aname.revision = 0;
         }
 
-	/* SRE assemblies are loaded into the individual loading context, ie,
-	 * they only fire AssemblyResolve events, they don't cause probing for
-	 * referenced assemblies to happen. */
-	assembly->assembly.context.kind = MONO_ASMCTX_INDIVIDUAL;
+	if (assemblyb->public_key_token) {
+		for (int i = 0; i < 8 && i < mono_array_length_internal (assemblyb->public_key_token); i++) {
+			guint8 byte = mono_array_get_internal (assemblyb->public_key_token, guint8, i);
+			sprintf ((char*)(assembly->assembly.aname.public_key_token + 2 * i), "%02x", byte);
+		}
+	}
 
 	char *assembly_name = mono_string_to_utf8_checked_internal (assemblyb->name, error);
 	return_if_nok (error);

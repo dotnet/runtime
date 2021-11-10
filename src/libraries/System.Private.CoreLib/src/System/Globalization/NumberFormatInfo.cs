@@ -35,6 +35,7 @@ namespace System.Globalization
     public sealed class NumberFormatInfo : IFormatProvider, ICloneable
     {
         private static volatile NumberFormatInfo? s_invariantInfo;
+        internal static readonly string[] s_asciiDigits = new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
         internal int[] _numberGroupSizes = new int[] { 3 };
         internal int[] _currencyGroupSizes = new int[] { 3 };
@@ -733,9 +734,9 @@ namespace System.Globalization
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0
                 && (style & ~NumberStyles.HexNumber) != 0)
             {
-                throwInvalid(style);
+                ThrowInvalid(style);
 
-                void throwInvalid(NumberStyles value)
+                static void ThrowInvalid(NumberStyles value)
                 {
                     if ((value & InvalidNumberStyles) != 0)
                     {
@@ -752,9 +753,9 @@ namespace System.Globalization
             // Check for undefined flags or hex number
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
             {
-                throwInvalid(style);
+                ThrowInvalid(style);
 
-                void throwInvalid(NumberStyles value)
+                static void ThrowInvalid(NumberStyles value)
                 {
                     if ((value & InvalidNumberStyles) != 0)
                     {

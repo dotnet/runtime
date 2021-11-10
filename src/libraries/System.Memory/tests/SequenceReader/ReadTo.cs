@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Buffers;
 using Xunit;
 
@@ -105,6 +106,38 @@ namespace System.Memory.Tests.SequenceReader
                         ? copy.TryReadTo(out sequence, 6, 255, advancePastDelimiter)
                         : copy.TryReadTo(out sequence, 6, advancePastDelimiter));
             }
+        }
+
+        [Fact]
+        public void TryReadExact_Sequence()
+        {
+            ReadOnlySequence<int> data = SequenceFactory.Create(new int[][] {
+                new int[] { 0 },
+                new int[] { 1, 2 },
+                new int[] { },
+                new int[] { 3, 4 }
+            });
+
+            var sequenceReader = new SequenceReader<int>(data);
+
+            Assert.True(sequenceReader.TryReadExact(0, out ReadOnlySequence<int> sequence));
+            Assert.Equal(0, sequence.Length);
+
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.True(sequenceReader.TryReadExact(2, out sequence));
+                Assert.Equal(Enumerable.Range(i * 2, 2), sequence.ToArray());
+            }
+
+            // There is only 1 item in sequence reader
+            Assert.False(sequenceReader.TryReadExact(2, out _));
+
+            // The last 1 item was not advanced so still can be fetched
+            Assert.True(sequenceReader.TryReadExact(1, out sequence));
+            Assert.Equal(1, sequence.Length);
+            Assert.Equal(4, sequence.FirstSpan[0]);
+
+            Assert.True(sequenceReader.End);
         }
 
         [Theory,

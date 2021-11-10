@@ -1,20 +1,19 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Xml", "..\System.Private.Xml\src\System.Private.Xml.csproj", "{EF514C0C-ECA7-419A-BDED-A6735FEA16F9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{EAD93EEB-8431-45C4-B147-EAC2BA0576B2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{91E43C52-718D-46CE-B832-230A3730A32F}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlSerializer", "ref\System.Xml.XmlSerializer.csproj", "{A463D0F1-1814-4276-B7A9-59780C755D0A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlSerializer", "src\System.Xml.XmlSerializer.csproj", "{67D79968-DF22-4273-B2FA-D3EEC905095C}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8737C3AD-DAEC-43CA-935F-1211164262F1}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F0B2F254-B3E6-4BAA-8C92-2373990CF48B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{10671B07-C5EE-43EF-80A2-44124A196835}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{E0C34B2E-D8CC-4A13-9635-3FD9AF37EC9B}"
 EndProject
 Global
-	GlobalSection(NestedProjects) = preSolution
-		{EF514C0C-ECA7-419A-BDED-A6735FEA16F9} = {8737C3AD-DAEC-43CA-935F-1211164262F1}
-		{67D79968-DF22-4273-B2FA-D3EEC905095C} = {8737C3AD-DAEC-43CA-935F-1211164262F1}
-		{A463D0F1-1814-4276-B7A9-59780C755D0A} = {10671B07-C5EE-43EF-80A2-44124A196835}
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -24,6 +23,14 @@ Global
 		{EF514C0C-ECA7-419A-BDED-A6735FEA16F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF514C0C-ECA7-419A-BDED-A6735FEA16F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF514C0C-ECA7-419A-BDED-A6735FEA16F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAD93EEB-8431-45C4-B147-EAC2BA0576B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAD93EEB-8431-45C4-B147-EAC2BA0576B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAD93EEB-8431-45C4-B147-EAC2BA0576B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAD93EEB-8431-45C4-B147-EAC2BA0576B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91E43C52-718D-46CE-B832-230A3730A32F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91E43C52-718D-46CE-B832-230A3730A32F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91E43C52-718D-46CE-B832-230A3730A32F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91E43C52-718D-46CE-B832-230A3730A32F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A463D0F1-1814-4276-B7A9-59780C755D0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A463D0F1-1814-4276-B7A9-59780C755D0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A463D0F1-1814-4276-B7A9-59780C755D0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -35,6 +42,13 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EF514C0C-ECA7-419A-BDED-A6735FEA16F9} = {F0B2F254-B3E6-4BAA-8C92-2373990CF48B}
+		{EAD93EEB-8431-45C4-B147-EAC2BA0576B2} = {F0B2F254-B3E6-4BAA-8C92-2373990CF48B}
+		{91E43C52-718D-46CE-B832-230A3730A32F} = {F0B2F254-B3E6-4BAA-8C92-2373990CF48B}
+		{67D79968-DF22-4273-B2FA-D3EEC905095C} = {F0B2F254-B3E6-4BAA-8C92-2373990CF48B}
+		{A463D0F1-1814-4276-B7A9-59780C755D0A} = {E0C34B2E-D8CC-4A13-9635-3FD9AF37EC9B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {24AD78FE-B27D-46DE-B574-17F4CC6DF7CC}

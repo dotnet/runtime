@@ -36,7 +36,7 @@ namespace TestStructFields
 
         struct S4WW
         {
-            public S4W s4;
+            public S4W s4W;
         }
 
         struct S4Copy
@@ -142,18 +142,18 @@ namespace TestStructFields
         {
             S4 s1 = new S4();
             S4WW s2 = new S4WW();
-            s2.s4.s4.i = 1;
+            s2.s4W.s4.i = 1;
             if (s1.i != 0)
             {
                 return 101;
             }
-            s1 = s2.s4.s4;
-            s2.s4.s4.i = 2;
+            s1 = s2.s4W.s4;
+            s2.s4W.s4.i = 2;
             if (s1.i != 1)
             {
                 return 101;
             }
-            if (s2.s4.s4.i != 2)
+            if (s2.s4W.s4.i != 2)
             {
                 return 101;
             }
@@ -166,13 +166,13 @@ namespace TestStructFields
             S4WW s1 = new S4WW();
             S4 s2 = new S4();
             s2.i = 1;
-            if (s1.s4.s4.i != 0)
+            if (s1.s4W.s4.i != 0)
             {
                 return 101;
             }
-            s1.s4.s4 = s2;
+            s1.s4W.s4 = s2;
             s2.i = 2;
-            if (s1.s4.s4.i != 1)
+            if (s1.s4W.s4.i != 1)
             {
                 return 101;
             }
@@ -462,7 +462,7 @@ namespace TestStructFields
 
         struct S8WW
         {
-            public S8W s8;
+            public S8W s8W;
         }
 
         struct S8Copy
@@ -605,8 +605,8 @@ namespace TestStructFields
         {
             S8 s1 = new S8();
             S8WW s2 = new S8WW();
-            s2.s8.s8.i1 = 1;
-            s2.s8.s8.i2 = 2;
+            s2.s8W.s8.i1 = 1;
+            s2.s8W.s8.i2 = 2;
             if (s1.i1 != 0)
             {
                 return 101;
@@ -615,9 +615,9 @@ namespace TestStructFields
             {
                 return 101;
             }
-            s1 = s2.s8.s8;
-            s2.s8.s8.i1 = 3;
-            s2.s8.s8.i2 = 4;
+            s1 = s2.s8W.s8;
+            s2.s8W.s8.i1 = 3;
+            s2.s8W.s8.i2 = 4;
             if (s1.i1 != 1)
             {
                 return 101;
@@ -626,11 +626,11 @@ namespace TestStructFields
             {
                 return 101;
             }
-            if (s2.s8.s8.i1 != 3)
+            if (s2.s8W.s8.i1 != 3)
             {
                 return 101;
             }
-            if (s2.s8.s8.i2 != 4)
+            if (s2.s8W.s8.i2 != 4)
             {
                 return 101;
             }
@@ -644,22 +644,22 @@ namespace TestStructFields
             S8 s2 = new S8();
             s2.i1 = 1;
             s2.i2 = 2;
-            if (s1.s8.s8.i1 != 0)
+            if (s1.s8W.s8.i1 != 0)
             {
                 return 101;
             }
-            if (s1.s8.s8.i2 != 0)
+            if (s1.s8W.s8.i2 != 0)
             {
                 return 101;
             }
-            s1.s8.s8 = s2;
+            s1.s8W.s8 = s2;
             s2.i1 = 3;
             s2.i2 = 4;
-            if (s1.s8.s8.i1 != 1)
+            if (s1.s8W.s8.i1 != 1)
             {
                 return 101;
             }
-            if (s1.s8.s8.i2 != 2)
+            if (s1.s8W.s8.i2 != 2)
             {
                 return 101;
             }
@@ -989,7 +989,7 @@ namespace TestStructFields
 
         struct S16WW
         {
-            public S16W s16;
+            public S16W s16W;
         }
 
         struct S16Copy
@@ -1215,10 +1215,10 @@ namespace TestStructFields
         {
             S16 s1 = new S16();
             S16WW s2 = new S16WW();
-            s2.s16.s16.i1 = 1;
-            s2.s16.s16.i2 = 2;
-            s2.s16.s16.i3 = 3;
-            s2.s16.s16.i4 = 4;
+            s2.s16W.s16.i1 = 1;
+            s2.s16W.s16.i2 = 2;
+            s2.s16W.s16.i3 = 3;
+            s2.s16W.s16.i4 = 4;
             if (s1.i1 != 0)
             {
                 return 101;
@@ -1235,11 +1235,11 @@ namespace TestStructFields
             {
                 return 101;
             }
-            s1 = s2.s16.s16;
-            s2.s16.s16.i1 = 5;
-            s2.s16.s16.i2 = 6;
-            s2.s16.s16.i3 = 7;
-            s2.s16.s16.i4 = 8;
+            s1 = s2.s16W.s16;
+            s2.s16W.s16.i1 = 5;
+            s2.s16W.s16.i2 = 6;
+            s2.s16W.s16.i3 = 7;
+            s2.s16W.s16.i4 = 8;
 
             if (s1.i1 != 1)
             {
@@ -1258,19 +1258,19 @@ namespace TestStructFields
                 return 101;
             }
 
-            if (s2.s16.s16.i1 != 5)
+            if (s2.s16W.s16.i1 != 5)
             {
                 return 101;
             }
-            if (s2.s16.s16.i2 != 6)
+            if (s2.s16W.s16.i2 != 6)
             {
                 return 101;
             }
-            if (s2.s16.s16.i3 != 7)
+            if (s2.s16W.s16.i3 != 7)
             {
                 return 101;
             }
-            if (s2.s16.s16.i4 != 8)
+            if (s2.s16W.s16.i4 != 8)
             {
                 return 101;
             }
@@ -1286,41 +1286,41 @@ namespace TestStructFields
             s2.i2 = 2;
             s2.i3 = 3;
             s2.i4 = 4;
-            if (s1.s16.s16.i1 != 0)
+            if (s1.s16W.s16.i1 != 0)
             {
                 return 101;
             }
-            if (s1.s16.s16.i2 != 0)
+            if (s1.s16W.s16.i2 != 0)
             {
                 return 101;
             }
-            if (s1.s16.s16.i3 != 0)
+            if (s1.s16W.s16.i3 != 0)
             {
                 return 101;
             }
-            if (s1.s16.s16.i4 != 0)
+            if (s1.s16W.s16.i4 != 0)
             {
                 return 101;
             }
-            s1.s16.s16 = s2;
+            s1.s16W.s16 = s2;
             s2.i1 = 5;
             s2.i2 = 6;
             s2.i3 = 7;
             s2.i4 = 8;
 
-            if (s1.s16.s16.i1 != 1)
+            if (s1.s16W.s16.i1 != 1)
             {
                 return 101;
             }
-            if (s1.s16.s16.i2 != 2)
+            if (s1.s16W.s16.i2 != 2)
             {
                 return 101;
             }
-            if (s1.s16.s16.i3 != 3)
+            if (s1.s16W.s16.i3 != 3)
             {
                 return 101;
             }
-            if (s1.s16.s16.i4 != 4)
+            if (s1.s16W.s16.i4 != 4)
             {
                 return 101;
             }

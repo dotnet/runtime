@@ -41,7 +41,7 @@ bool inline IsTypeNameReservedChar(WCHAR ch)
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
-    ICLRPrivBinder * pPrivHostBinder,
+    AssemblyBinder * pBinder,
     BOOL       bThrowIfNotFound);
 
 class TypeName
@@ -269,15 +269,6 @@ public:
     virtual ~TypeName();
 
 public:
-#ifndef CROSSGEN_COMPILE
-    static void QCALLTYPE QCreateTypeNameParser (LPCWSTR wszTypeName, QCall::ObjectHandleOnStack pNames, BOOL throwOnError);
-    static void QCALLTYPE QReleaseTypeNameParser(TypeName * pTypeName);
-    static void QCALLTYPE QGetNames             (TypeName * pTypeName, QCall::ObjectHandleOnStack pNames);
-    static void QCALLTYPE QGetTypeArguments     (TypeName * pTypeName, QCall::ObjectHandleOnStack pTypeArguments);
-    static void QCALLTYPE QGetModifiers         (TypeName * pTypeName, QCall::ObjectHandleOnStack pModifiers);
-    static void QCALLTYPE QGetAssemblyName      (TypeName * pTypeName, QCall::StringHandleOnStack pAssemblyName);
-#endif //CROSSGEN_COMPILE
-
     //-------------------------------------------------------------------------------------------
     // Retrieves a type from an assembly. It requires the caller to know which assembly
     // the type is in.
@@ -330,11 +321,15 @@ public:
         BOOL bProhibitAssemblyQualifiedName,
         Assembly* pRequestingAssembly,
         OBJECTREF *pKeepAlive,
-        ICLRPrivBinder * pPrivHostBinder = nullptr);
+        AssemblyBinder * pBinder = nullptr);
 
 
 public:
     SString* GetAssembly() { WRAPPER_NO_CONTRACT; return &m_assembly; }
+    SArray<SString*>& GetNames() { WRAPPER_NO_CONTRACT; return m_names; }
+    SArray<TypeName*>& GetGenericArguments() { WRAPPER_NO_CONTRACT; return m_genericArguments; }
+    SArray<DWORD>& GetSignature() { WRAPPER_NO_CONTRACT; return m_signature; }
+    SAFEHANDLE GetSafeHandle();
 
 private:
     TypeName() : m_bIsGenericArgument(FALSE), m_count(0) { LIMITED_METHOD_CONTRACT; }
@@ -353,9 +348,6 @@ private:
         return m_names.AppendEx(m_nestNameFactory.Create());
     }
 
-    SArray<SString*>& GetNames() { WRAPPER_NO_CONTRACT; return m_names; }
-    SArray<TypeName*>& GetGenericArguments() { WRAPPER_NO_CONTRACT; return m_genericArguments; }
-    SArray<DWORD>& GetSignature() { WRAPPER_NO_CONTRACT; return m_signature; }
     void SetByRef() { WRAPPER_NO_CONTRACT; m_signature.Append(ELEMENT_TYPE_BYREF); }
     void SetPointer() { WRAPPER_NO_CONTRACT;  m_signature.Append(ELEMENT_TYPE_PTR); }
     void SetSzArray() { WRAPPER_NO_CONTRACT; m_signature.Append(ELEMENT_TYPE_SZARRAY); }
@@ -393,7 +385,7 @@ private:
         BOOL bProhibitAssemblyQualifiedName,
 
         Assembly* pRequestingAssembly,
-        ICLRPrivBinder * pPrivHostBinder,
+        AssemblyBinder * pBinder,
         OBJECTREF *pKeepAlive);
 
     //----------------------------------------------------------------------------------------------------------------
@@ -404,7 +396,6 @@ private:
         return GetTypeHaveAssemblyHelper(pAssembly, bThrowIfNotFound, bIgnoreCase, pKeepAlive, TRUE);
     }
     TypeHandle GetTypeHaveAssemblyHelper(Assembly* pAssembly, BOOL bThrowIfNotFound, BOOL bIgnoreCase, OBJECTREF *pKeepAlive, BOOL bRecurse);
-    SAFEHANDLE GetSafeHandle();
 
 private:
     BOOL m_bIsGenericArgument;
@@ -415,5 +406,12 @@ private:
     InlineSString<128> m_assembly;
     Factory<InlineSString<128> > m_nestNameFactory;
 };
+
+extern "C" void QCALLTYPE TypeName_CreateTypeNameParser (LPCWSTR wszTypeName, QCall::ObjectHandleOnStack pNames, BOOL throwOnError);
+extern "C" void QCALLTYPE TypeName_ReleaseTypeNameParser(TypeName * pTypeName);
+extern "C" void QCALLTYPE TypeName_GetNames             (TypeName * pTypeName, QCall::ObjectHandleOnStack pNames);
+extern "C" void QCALLTYPE TypeName_GetTypeArguments     (TypeName * pTypeName, QCall::ObjectHandleOnStack pTypeArguments);
+extern "C" void QCALLTYPE TypeName_GetModifiers         (TypeName * pTypeName, QCall::ObjectHandleOnStack pModifiers);
+extern "C" void QCALLTYPE TypeName_GetAssemblyName      (TypeName * pTypeName, QCall::StringHandleOnStack pAssemblyName);
 
 #endif

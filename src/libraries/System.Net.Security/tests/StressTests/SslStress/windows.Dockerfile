@@ -1,5 +1,5 @@
 # escape=`
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:5.0-nanoserver-1809
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-nanoserver-1809
 FROM $SDK_BASE_IMAGE
 
 # Use powershell as the default shell
@@ -10,7 +10,7 @@ RUN echo "DOTNET_VERSION="$env:DOTNET_VERSION
 
 WORKDIR /app
 COPY . .
-WORKDIR /app/System.Net.Security/tests/StressTests/SslStress 
+WORKDIR /app/System.Net.Security/tests/StressTests/SslStress
 
 ARG CONFIGURATION=Release
 RUN dotnet build -c $env:CONFIGURATION

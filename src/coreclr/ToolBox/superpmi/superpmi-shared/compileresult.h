@@ -211,5 +211,7 @@ private:
     MemoryTracker*          memoryTracker;
     Capture_AllocMemDetails allocMemDets;
     allocGCInfoDetails      allocGCInfoDets;
+
+    const bool recordCallSitesWithoutSig = false; // Set it to true if you want to use CallUtils::GetRecordedCallSiteInfo.
 };
 #endif

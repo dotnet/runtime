@@ -318,7 +318,7 @@ public:
     bool IsLargeStruct(CEEInfo* ceeInfo) const
     {
         intptr_t asInt = reinterpret_cast<intptr_t>(m_tp);
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
         if (asInt == CORINFO_TYPE_SHIFTED_REFANY)
         {
             return true;
@@ -998,7 +998,11 @@ private:
 #elif defined(HOST_ARM64)
         static const int MaxNumFPRegArgSlots = 8;
 #elif defined(HOST_AMD64)
+#if defined(UNIX_AMD64_ABI)
+        static const int MaxNumFPRegArgSlots = 8;
+#else
         static const int MaxNumFPRegArgSlots = 4;
+#endif
 #endif
 
         ~ArgState()
@@ -1090,7 +1094,7 @@ private:
     {
         if (!m_directCall)
         {
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) && !defined(UNIX_AMD64_ABI)
             // In AMD64, a reference to the struct is passed if its size exceeds the word size.
             // Dereference the arg to get to the ref of the struct.
             if (GetArgType(argNum).IsLargeStruct(&m_interpCeeInfo))
@@ -2047,8 +2051,15 @@ private:
 inline
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 2; }
 #elif  defined(HOST_AMD64)
-unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
-#elif  defined(HOST_ARM)
+unsigned short Interpreter::NumberOfIntegerRegArgs()
+{
+#if defined(UNIX_AMD64_ABI)
+    return 6;
+#else
+    return 4;
+#endif
+}
+#elif defined(HOST_ARM)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
 #elif defined(HOST_ARM64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }

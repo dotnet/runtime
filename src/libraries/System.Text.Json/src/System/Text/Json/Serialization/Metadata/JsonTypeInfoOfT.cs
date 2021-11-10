@@ -13,13 +13,33 @@ namespace System.Text.Json.Serialization.Metadata
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class JsonTypeInfo<T> : JsonTypeInfo
     {
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, ConverterStrategy converterStrategy) :
-            base(type, options, converterStrategy)
+        private Action<Utf8JsonWriter, T>? _serialize;
+
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options) :
+            base(type, options, dummy: false)
         { }
 
         internal JsonTypeInfo()
         {
             Debug.Assert(false, "This constructor should not be called.");
+        }
+
+        /// <summary>
+        /// Serializes an instance of <typeparamref name="T"/> using
+        /// <see cref="JsonSourceGenerationOptionsAttribute"/> values specified at design time.
+        /// </summary>
+        /// <remarks>The writer is not flushed after writing.</remarks>
+        public Action<Utf8JsonWriter, T>? SerializeHandler
+        {
+            get
+            {
+                return _serialize;
+            }
+            private protected set
+            {
+                _serialize = value;
+                HasSerialize = value != null;
+            }
         }
     }
 }

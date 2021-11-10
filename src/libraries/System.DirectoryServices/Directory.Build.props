@@ -7,16 +7,5 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides easy access to Active Directory Domain Services.
-
-Commonly Used Types:
-System.DirectoryServices.DirectoryEntry
-System.DirectoryServices.DirectorySearcher
-System.DirectoryServices.ActiveDirectory.ActiveDirectorySite
-System.DirectoryServices.ActiveDirectory.ApplicationPartition
-System.DirectoryServices.ActiveDirectory.DirectoryContext
-System.DirectoryServices.ActiveDirectory.DirectoryServer
-System.DirectoryServices.ActiveDirectory.Domain
-System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
   </PropertyGroup>
 </Project>

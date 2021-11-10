@@ -97,3 +97,6 @@ We will implement it similarly, by having CoreCLR call back into the IJW assembl
 #### Caveats
 
 Since native images can only be loaded into memory once on Windows, there is only one instance of the vtfixup table. As a result, the native code in an IJW assembly will always call into managed code from the first managed load of the assembly. As a result, if an IJW assembly is loaded into two different ALCs, then a call to managed code in an IJW assembly that calls into native code and back into managed within the IJW assembly may change ALCs within the stack if the call into the IJW assembly is in a different ALC than the IJW assembly was initially loaded into. We have a test that reproduces this behavior.
+
+## Incompatible with trimming
+.NET Core IJW Activation support on managed side is disabled by default on trimmed apps. .NET Core IJW Activation and trimming are incompatible since the trimmer cannot analyze methods that are called by the native side or doesn't even know about the assembly being loaded (and thus cannot analyze its dependencies). Native hosting support for trimming can be managed through the [feature switch](https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md) settings specific to each native host.

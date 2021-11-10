@@ -6,9 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
-    /// <summary>
-    /// This class implements a set of methods for retrieving
-    /// </summary>
+    /// <summary>Represents the result of mapping a string to its sort key.</summary>
     public sealed partial class SortKey
     {
         private readonly CompareInfo _compareInfo;
@@ -67,20 +65,11 @@ namespace System.Globalization
             return new ReadOnlySpan<byte>(key1Data).SequenceCompareTo(key2Data);
         }
 
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            return value is SortKey other
-                && new ReadOnlySpan<byte>(_keyData).SequenceEqual(other._keyData);
-        }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SortKey other && new ReadOnlySpan<byte>(_keyData).SequenceEqual(other._keyData);
 
-        public override int GetHashCode()
-        {
-            return _compareInfo.GetHashCode(_string, _options);
-        }
+        public override int GetHashCode() => _compareInfo.GetHashCode(_string, _options);
 
-        public override string ToString()
-        {
-            return "SortKey - " + _compareInfo.Name + ", " + _options + ", " + _string;
-        }
+        public override string ToString() => $"SortKey - {_compareInfo.Name}, {_options}, {_string}";
     }
 }

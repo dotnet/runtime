@@ -10,6 +10,7 @@ namespace Activator
     using System.Runtime.InteropServices;
 
     using TestLibrary;
+    using Xunit;
 
     using Console = Internal.Console;
 
@@ -28,16 +29,14 @@ namespace Activator
                         InterfaceId = notIClassFactory
                     };
                     ComActivator.GetClassFactoryForType(cxt);
-                },
-                "Non-IClassFactory request should fail");
+                });
         }
 
-        static void NonrootedAssemblyPath()
+        static void NonrootedAssemblyPath(bool builtInComDisabled)
         {
             Console.WriteLine($"Running {nameof(NonrootedAssemblyPath)}...");
 
-            ArgumentException e = Assert.Throws<ArgumentException>(
-                () =>
+            Action action = () =>
                 {
                     var cxt = new ComActivationContext()
                     {
@@ -45,16 +44,23 @@ namespace Activator
                         AssemblyPath = "foo.dll"
                     };
                     ComActivator.GetClassFactoryForType(cxt);
-                },
-                "Non-root assembly path should not be valid");
+                };
+
+            if (!builtInComDisabled)
+            {
+                Assert.Throws<ArgumentException>(action);
+            }
+            else
+            {
+                Assert.Throws<NotSupportedException>(action);
+            }
         }
 
-        static void ClassNotRegistered()
+        static void ClassNotRegistered(bool builtInComDisabled)
         {
             Console.WriteLine($"Running {nameof(ClassNotRegistered)}...");
 
-            COMException e = Assert.Throws<COMException>(
-                () =>
+            Action action = () =>
                 {
                     var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
                     var cxt = new ComActivationContext()
@@ -64,14 +70,21 @@ namespace Activator
                         AssemblyPath = @"C:\foo.dll"
                     };
                     ComActivator.GetClassFactoryForType(cxt);
-                },
-                "Class should not be found");
+                };
 
-            const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
-            Assert.AreEqual(CLASS_E_CLASSNOTAVAILABLE, e.HResult, "Unexpected HRESULT");
+            if (!builtInComDisabled)
+            {
+                COMException e = Assert.Throws<COMException>(action);
+                const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
+                Assert.Equal(CLASS_E_CLASSNOTAVAILABLE, e.HResult);
+            }
+            else
+            {
+                Assert.Throws<NotSupportedException>(action);
+            }
         }
 
-        static void ValidateAssemblyIsolation()
+        static void ValidateAssemblyIsolation(bool builtInComDisabled)
         {
             Console.WriteLine($"Running {nameof(ValidateAssemblyIsolation)}...");
 
@@ -102,6 +115,13 @@ namespace Activator
                     AssemblyName = "AssemblyA",
                     TypeName = "ClassFromA"
                 };
+
+                if (builtInComDisabled)
+                {
+                    Assert.Throws<NotSupportedException>(
+                        () => ComActivator.GetClassFactoryForType(cxt));
+                    return;
+                }
 
                 var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
 
@@ -136,7 +156,7 @@ namespace Activator
                 typeCFromAssemblyB = (Type)svr.GetTypeFromC();
             }
 
-            Assert.AreNotEqual(typeCFromAssemblyA, typeCFromAssemblyB, "Types should be from different AssemblyLoadContexts");
+            Assert.NotEqual(typeCFromAssemblyA, typeCFromAssemblyB);
         }
 
         static void ValidateUserDefinedRegistrationCallbacks()
@@ -188,15 +208,15 @@ namespace Activator
                     Marshal.Release(svrRaw);
 
                     var inst = (IValidateRegistrationCallbacks)svr;
-                    Assert.IsFalse(inst.DidRegister());
-                    Assert.IsFalse(inst.DidUnregister());
+                    Assert.False(inst.DidRegister());
+                    Assert.False(inst.DidUnregister());
 
                     cxt.InterfaceId = Guid.Empty;
                     ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
                     ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
 
-                    Assert.IsTrue(inst.DidRegister(), $"User-defined register function should have been called.");
-                    Assert.IsTrue(inst.DidUnregister(), $"User-defined unregister function should have been called.");
+                    Assert.True(inst.DidRegister(), $"User-defined register function should have been called.");
+                    Assert.True(inst.DidUnregister(), $"User-defined unregister function should have been called.");
                 }
             }
 
@@ -238,7 +258,7 @@ namespace Activator
                         exceptionThrown = true;
                     }
 
-                    Assert.IsTrue(exceptionThrown || !inst.DidRegister());
+                    Assert.True(exceptionThrown || !inst.DidRegister());
 
                     exceptionThrown = false;
                     try
@@ -250,7 +270,7 @@ namespace Activator
                         exceptionThrown = true;
                     }
 
-                    Assert.IsTrue(exceptionThrown || !inst.DidUnregister());
+                    Assert.True(exceptionThrown || !inst.DidUnregister());
                 }
             }
         }
@@ -259,11 +279,23 @@ namespace Activator
         {
             try
             {
+                bool builtInComDisabled = false;
+                var comConfig = AppContext.GetData("System.Runtime.InteropServices.BuiltInComInterop.IsSupported");
+                if (comConfig != null && !bool.Parse(comConfig.ToString()))
+                {
+                    builtInComDisabled = true;
+                }
+                Console.WriteLine($"Built-in COM Disabled?: {builtInComDisabled}");
+
                 InvalidInterfaceRequest();
-                ClassNotRegistered();
-                NonrootedAssemblyPath();
-                ValidateAssemblyIsolation();
-                ValidateUserDefinedRegistrationCallbacks();
+                ClassNotRegistered(builtInComDisabled);
+                NonrootedAssemblyPath(builtInComDisabled);
+                ValidateAssemblyIsolation(builtInComDisabled);
+                if (!builtInComDisabled)
+                {
+                    // We don't test this scenario with builtInComDisabled since it is covered by ValidateAssemblyIsolation() above
+                    ValidateUserDefinedRegistrationCallbacks();
+                }
             }
             catch (Exception e)
             {

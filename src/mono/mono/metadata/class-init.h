@@ -25,10 +25,10 @@ mono_class_create_generic_inst (MonoGenericClass *gclass);
 MonoClass *
 mono_class_create_bounded_array (MonoClass *element_class, uint32_t rank, mono_bool bounded);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_create_array (MonoClass *element_class, uint32_t rank);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_create_generic_parameter (MonoGenericParam *param);
 
 MonoClass *
@@ -49,7 +49,7 @@ mono_class_setup_basic_field_info (MonoClass *klass);
 void
 mono_class_setup_fields (MonoClass *klass);
 
-void
+MONO_COMPONENT_API void
 mono_class_setup_methods (MonoClass *klass);
 
 void
@@ -64,7 +64,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 void
 mono_class_setup_interface_offsets (MonoClass *klass);
 
-void
+MONO_COMPONENT_API void
 mono_class_setup_vtable (MonoClass *klass);
 
 void

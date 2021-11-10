@@ -70,6 +70,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void SignCmsUsingExplicitDSAKey()
         {
             using (X509Certificate2 cert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
@@ -100,6 +101,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void CounterSignCmsUsingExplicitRSAKeyForFirstSignerAndDSAForCounterSignature()
         {
             using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
@@ -112,6 +114,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void CounterSignCmsUsingExplicitDSAKeyForFirstSignerAndECDsaForCounterSignature()
         {
             using (X509Certificate2 cert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
@@ -202,7 +205,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "Creating DSA keys is not supported on OSX")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "Creating DSA keys is not supported on OSX")]
         public static void SignCmsUsingDSACertWithNotMatchingKeyThrows()
         {
             byte[] content = { 9, 8, 7, 6, 5 };
@@ -374,6 +377,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void AddSigner_RSA_EphemeralKey()
         {
             using (RSA rsa = RSA.Create())
@@ -401,6 +405,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void AddSigner_DSA_EphemeralKey()
         {
             using (DSA dsa = DSA.Create())
@@ -431,6 +436,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void AddSigner_ECDSA_EphemeralKey()
         {
             using (ECDsa ecdsa = ECDsa.Create())
@@ -470,6 +476,124 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 Assert.Throws<CryptographicException>(() => {
                     cms.ComputeSignature(signer);
                 });
+            }
+        }
+
+        [Theory]
+        [InlineData(Oids.Sha256, true)]
+        [InlineData(Oids.Sha384, true)]
+        [InlineData(Oids.Sha512, true)]
+        [InlineData(Oids.Sha1, true)]
+        [InlineData(Oids.Sha256, false)]
+        [InlineData(Oids.Sha384, false)]
+        [InlineData(Oids.Sha512, false)]
+        [InlineData(Oids.Sha1, false)]
+        public static void CreateSignature_RsaPss(string digestOid, bool assignByConstructor)
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+            byte[] cmsBytes;
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer;
+
+                if (assignByConstructor)
+                {
+                    signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.Pss);
+                }
+                else
+                {
+                    signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                    signer.SignaturePadding = RSASignaturePadding.Pss;
+                }
+
+                signer.DigestAlgorithm = new Oid(digestOid, null);
+                cms.ComputeSignature(signer);
+                cmsBytes = cms.Encode();
+            }
+
+            cms = new SignedCms();
+            cms.Decode(cmsBytes);
+            cms.CheckSignature(true); // Assert.NoThrow
+            Assert.Single(cms.SignerInfos);
+
+            SignerInfo signerInfo = cms.SignerInfos[0];
+            Assert.Equal(Oids.RsaPss, signerInfo.SignatureAlgorithm.Value);
+        }
+
+        [Fact]
+        public static void CreateSignature_RsaPss_SeparateKey()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+            byte[] cmsBytes;
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 pubOnly = new X509Certificate2(cert.RawDataMemory.Span))
+            using (RSA rsa = cert.GetRSAPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, pubOnly, rsa, RSASignaturePadding.Pss);
+                cms.ComputeSignature(signer);
+                cmsBytes = cms.Encode();
+            }
+
+            cms = new SignedCms();
+            cms.Decode(cmsBytes);
+            cms.CheckSignature(true); // Assert.NoThrow
+            Assert.Single(cms.SignerInfos);
+
+            SignerInfo signerInfo = cms.SignerInfos[0];
+            Assert.Equal(Oids.RsaPss, signerInfo.SignatureAlgorithm.Value);
+        }
+
+        [Fact]
+        public static void CreateSignature_RsaPss_Md5NotSupported()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.Pss);
+                signer.DigestAlgorithm = new Oid(Oids.Md5, null);
+                Assert.ThrowsAny<CryptographicException>(() => cms.ComputeSignature(signer));
+            }
+        }
+
+        [Fact]
+        public static void CreateSignature_RsaPadding_DefaultToPkcs1()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+            byte[] cmsBytes;
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, null);
+                cms.ComputeSignature(signer);
+                cmsBytes = cms.Encode();
+            }
+
+            cms = new SignedCms();
+            cms.Decode(cmsBytes);
+            cms.CheckSignature(true); // Assert.NoThrow
+            Assert.Single(cms.SignerInfos);
+
+            SignerInfo signerInfo = cms.SignerInfos[0];
+            Assert.Equal(Oids.Rsa, signerInfo.SignatureAlgorithm.Value);
+        }
+
+        [Fact]
+        public static void CreateSignature_Ecdsa_ThrowsWithRsaSignaturePadding()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.Pss);
+                Assert.ThrowsAny<CryptographicException>(() => cms.ComputeSignature(signer));
             }
         }
 

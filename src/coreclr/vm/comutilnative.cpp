@@ -569,7 +569,7 @@ FCIMPLEND
 // our locks within CER's to avoid this problem - just use the CLR's
 // unmanaged resources.
 //
-void QCALLTYPE ExceptionNative::GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg)
+extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg)
 {
     QCALL_CONTRACT;
 
@@ -580,21 +580,21 @@ void QCALLTYPE ExceptionNative::GetMessageFromNativeResources(ExceptionMessageKi
     const WCHAR * wszFallbackString = NULL;
 
     switch(kind) {
-    case ThreadAbort:
+    case ExceptionMessageKind::ThreadAbort:
         hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_THREAD_ABORT);
         if (FAILED(hr)) {
             wszFallbackString = W("Thread was being aborted.");
         }
         break;
 
-    case ThreadInterrupted:
+    case ExceptionMessageKind::ThreadInterrupted:
         hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_THREAD_INTERRUPTED);
         if (FAILED(hr)) {
             wszFallbackString = W("Thread was interrupted from a waiting state.");
         }
         break;
 
-    case OutOfMemory:
+    case ExceptionMessageKind::OutOfMemory:
         hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_OUT_OF_MEMORY);
         if (FAILED(hr)) {
             wszFallbackString = W("Insufficient memory to continue the execution of the program.");
@@ -616,7 +616,7 @@ void QCALLTYPE ExceptionNative::GetMessageFromNativeResources(ExceptionMessageKi
     END_QCALL;
 }
 
-void QCALLTYPE Buffer::Clear(void *dst, size_t length)
+extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;
 
@@ -656,7 +656,7 @@ FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byt
 }
 FCIMPLEND
 
-void QCALLTYPE Buffer::MemMove(void *dst, void *src, size_t length)
+extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length)
 {
     QCALL_CONTRACT;
 
@@ -886,7 +886,7 @@ FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCC
 }
 FCIMPLEND
 
-int QCALLTYPE GCInterface::StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC)
+extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC)
 {
     QCALL_CONTRACT;
 
@@ -906,7 +906,7 @@ int QCALLTYPE GCInterface::StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, I
     return retVal;
 }
 
-int QCALLTYPE GCInterface::EndNoGCRegion()
+extern "C" int QCALLTYPE GCInterface_EndNoGCRegion()
 {
     QCALL_CONTRACT;
 
@@ -970,7 +970,7 @@ FCIMPLEND
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-INT64 QCALLTYPE GCInterface::GetTotalMemory()
+extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory()
 {
     QCALL_CONTRACT;
 
@@ -992,7 +992,7 @@ INT64 QCALLTYPE GCInterface::GetTotalMemory()
 **Arguments: args->generation:  The maximum generation to collect
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-void QCALLTYPE GCInterface::Collect(INT32 generation, INT32 mode)
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
 {
     QCALL_CONTRACT;
 
@@ -1015,7 +1015,7 @@ void QCALLTYPE GCInterface::Collect(INT32 generation, INT32 mode)
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-void QCALLTYPE GCInterface::WaitForPendingFinalizers()
+extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers()
 {
     QCALL_CONTRACT;
 
@@ -1156,7 +1156,7 @@ FCIMPLEND;
 **Arguments: args-> pointer to section, size of section
 **Exceptions: None
 ==============================================================================*/
-void* QCALLTYPE GCInterface::RegisterFrozenSegment(void* pSection, SIZE_T sizeSection)
+extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void* pSection, SIZE_T sizeSection)
 {
     QCALL_CONTRACT;
 
@@ -1189,7 +1189,7 @@ void* QCALLTYPE GCInterface::RegisterFrozenSegment(void* pSection, SIZE_T sizeSe
 **Arguments: args-> segment handle
 **Exceptions: None
 ==============================================================================*/
-void QCALLTYPE GCInterface::UnregisterFrozenSegment(void* segment)
+extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
 {
     QCALL_CONTRACT;
 
@@ -1290,12 +1290,12 @@ FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahe
     return newMemValue;
 }
 
-void QCALLTYPE GCInterface::_AddMemoryPressure(UINT64 bytesAllocated)
+extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    AddMemoryPressure(bytesAllocated);
+    GCInterface::AddMemoryPressure(bytesAllocated);
     END_QCALL;
 }
 
@@ -1422,12 +1422,12 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     }
 }
 
-void QCALLTYPE GCInterface::_RemoveMemoryPressure(UINT64 bytesAllocated)
+extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    RemoveMemoryPressure(bytesAllocated);
+    GCInterface::RemoveMemoryPressure(bytesAllocated);
     END_QCALL;
 }
 
@@ -1691,7 +1691,7 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-void QCALLTYPE COMInterlocked::MemoryBarrierProcessWide()
+extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 {
     QCALL_CONTRACT;
 
@@ -1718,14 +1718,11 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
         return FALSE;
     }
 
-    if (!classMT->IsZapped())
+    // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+    // to detect match reliably
+    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
     {
-        // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
-        // to detect match reliably
-        if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
-        {
-            return FALSE;
-        }
+        return FALSE;
     }
 
     return TRUE;
@@ -2084,13 +2081,10 @@ static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
     if (actual == base)
         return false;
 
-    if (!g_pStreamMT->IsZapped())
-    {
-        // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
-        // to detect match reliably
-        if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
-            return false;
-    }
+    // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+    // to detect match reliably
+    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+        return false;
 
     return true;
 }

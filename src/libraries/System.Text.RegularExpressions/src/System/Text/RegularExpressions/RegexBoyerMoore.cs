@@ -218,6 +218,14 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        // TODO: We should be able to avoid producing the RegexBoyerMoore instance
+        // entirely if we're going to go down the code path of using IndexOf. That will
+        // require some refactoring, though.
+
+        /// <summary>Gets whether IndexOf could be used to perform the match.</summary>
+        public bool PatternSupportsIndexOf =>
+            !RightToLeft && (!CaseInsensitive || !RegexCharClass.ParticipatesInCaseConversion(Pattern));
+
         /// <summary>
         /// When a regex is anchored, we can do a quick IsMatch test instead of a Scan
         /// </summary>
@@ -359,10 +367,10 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         /// <summary>Used when dumping for debugging.</summary>
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         public override string ToString() => Dump(string.Empty);
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         public string Dump(string indent)
         {
             var sb = new StringBuilder();

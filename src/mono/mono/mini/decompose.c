@@ -36,7 +36,10 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 
 	switch (ins->opcode) {
 	case OP_LCONV_TO_I4:
-		ins->opcode = OP_SEXT_I4;
+		if (TARGET_SIZEOF_VOID_P == 4)
+			;
+		else
+			ins->opcode = OP_SEXT_I4;
 		break;
 	case OP_LCONV_TO_I8:
 	case OP_LCONV_TO_U8:
@@ -47,19 +50,15 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		break;
 	case OP_LCONV_TO_I:
 		if (TARGET_SIZEOF_VOID_P == 4)
-			/* OP_LCONV_TO_I4 */
-			ins->opcode = OP_SEXT_I4;
+			ins->opcode = OP_LCONV_TO_I4;
 		else
 			ins->opcode = OP_MOVE;
 		break;
 	case OP_LCONV_TO_U:
-		if (TARGET_SIZEOF_VOID_P == 4) {
-			/* OP_LCONV_TO_U4 */
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, ins->dreg, ins->sreg1, 0);
-			NULLIFY_INS (ins);
-		} else {
+		if (TARGET_SIZEOF_VOID_P == 4)
+			;
+		else
 			ins->opcode = OP_MOVE;
-		}
 		break;
 	case OP_ICONV_TO_I8:
 		ins->opcode = OP_SEXT_I4;
@@ -1561,6 +1560,17 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, ins->dreg,
 														 ins->sreg1, MONO_STRUCT_OFFSET (MonoString, length), ins->flags | MONO_INST_INVARIANT_LOAD);
 					break;
+				case OP_RTTYPE: {
+					MonoClass *tclass = (MonoClass*)ins->inst_p0;
+					int dreg = ins->dreg;
+					int context_used = mini_class_check_context_used (cfg, tclass);
+
+					g_assert (context_used);
+					MonoInst *fetch = mini_emit_get_rgctx_klass (cfg, context_used,
+																 tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
+					EMIT_NEW_UNALU (cfg, dest, OP_MOVE, dreg, fetch->dreg);
+					break;
+				}
 				default:
 					break;
 				}

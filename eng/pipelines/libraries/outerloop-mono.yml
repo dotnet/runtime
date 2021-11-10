@@ -38,6 +38,8 @@ jobs:
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/libraries/helix.yml
         extraStepsParameters:
+          scenarios:
+          - wasmtestonbrowser
           testScope: outerloop
           creator: dotnet-bot
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)

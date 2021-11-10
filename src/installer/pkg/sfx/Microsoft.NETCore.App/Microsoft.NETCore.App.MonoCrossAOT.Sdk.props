@@ -1,6 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <MonoAotCrossCompilerPath>$(MSBuildThisFileDirectory)..\tools\mono-aot-cross</MonoAotCrossCompilerPath>
-    <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
-  </PropertyGroup>
-</Project>

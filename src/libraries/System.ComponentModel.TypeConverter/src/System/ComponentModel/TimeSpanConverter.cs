@@ -18,7 +18,7 @@ namespace System.ComponentModel
         /// convert an object in the given source type to a <see cref='System.TimeSpan'/> object using the
         /// specified context.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
@@ -27,7 +27,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object to the given
         /// destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
@@ -36,7 +36,7 @@ namespace System.ComponentModel
         /// Converts the given object to a <see cref='System.TimeSpan'/>
         /// object.
         /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
             {
@@ -61,13 +61,13 @@ namespace System.ComponentModel
         /// type is string. If this cannot convert to the destination type, this will
         /// throw a NotSupportedException.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(InstanceDescriptor) && value is TimeSpan)
             {
                 return new InstanceDescriptor(
                     typeof(TimeSpan).GetMethod(nameof(TimeSpan.Parse), new Type[] { typeof(string) }),
-                    new object[] { value.ToString() }
+                    new object?[] { value.ToString() }
                 );
             }
 

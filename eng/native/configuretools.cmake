@@ -53,7 +53,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
     if(CLR_CMAKE_TARGET_ANDROID)
       set(TOOLSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
     elseif(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm))
+       CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm OR CMAKE_SYSTEM_PROCESSOR STREQUAL s390x))
       set(TOOLSET_PREFIX "${TOOLCHAIN}-")
     else()
       set(TOOLSET_PREFIX "")
@@ -65,16 +65,18 @@ endif()
 
 if (NOT CLR_CMAKE_HOST_WIN32)
   # detect linker
-  set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
+  separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${CMAKE_SHARED_LINKER_FLAGS} -Wl,--version")
   execute_process(COMMAND ${ldVersion}
     ERROR_QUIET
     OUTPUT_VARIABLE ldVersionOutput)
 
-  if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
+  if("${ldVersionOutput}" MATCHES "LLD")
+    set(LD_LLVM 1)
+  elseif("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
     set(LD_GNU 1)
   elseif("${ldVersionOutput}" MATCHES "Solaris Link")
     set(LD_SOLARIS 1)
-  else(CLR_CMAKE_HOST_OSX)
+  else(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     set(LD_OSX 1)
   endif()
 endif()

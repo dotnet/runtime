@@ -1160,24 +1160,6 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc)
 #endif
 }
 
-MonoStringHandle
-ves_icall_Mono_Runtime_GetNativeStackTrace (MonoExceptionHandle exc, MonoError *error)
-{
-	char *trace;
-	MonoStringHandle res;
-	error_init (error);
-
-	if (MONO_HANDLE_IS_NULL (exc)) {
-		mono_error_set_argument_null (error, "exception", "");
-		return NULL_HANDLE_STRING;
-	}
-
-	trace = mono_exception_handle_get_native_backtrace (exc);
-	res = mono_string_new_handle (trace, error);
-	g_free (trace);
-	return res;
-}
-
 /**
  * mono_error_raise_exception_deprecated:
  * \param target_error the exception to raise

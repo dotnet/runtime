@@ -28,12 +28,12 @@
 #include "mini.h"
 #include "mini-amd64.h"
 #include "mini-runtime.h"
-#include "debugger-agent.h"
 
 #ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
 #include "mono/utils/mono-tls-inline.h"
+#include <mono/metadata/components.h>
 
 #ifdef MONO_ARCH_CODE_EXEC_ONLY
 #include "aot-runtime.h"
@@ -963,9 +963,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context));
 	} else {
 		if (single_step)
-			amd64_mov_reg_imm (code, AMD64_R11, mini_get_dbg_callbacks ()->single_step_from_context);
+			amd64_mov_reg_imm (code, AMD64_R11, mono_component_debugger ()->single_step_from_context);
 		else
-			amd64_mov_reg_imm (code, AMD64_R11, mini_get_dbg_callbacks ()->breakpoint_from_context);
+			amd64_mov_reg_imm (code, AMD64_R11, mono_component_debugger ()->breakpoint_from_context);
 	}	
 	amd64_call_reg (code, AMD64_R11);
 

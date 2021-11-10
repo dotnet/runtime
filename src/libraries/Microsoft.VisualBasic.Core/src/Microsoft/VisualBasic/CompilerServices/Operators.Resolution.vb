@@ -244,7 +244,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <ObsoleteAttribute("do not use this method", True)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Calls InvokeObjectUserDefinedOperator")>
+        <RequiresUnreferencedCode("The object types cannot be statically analyzed so their operators may be trimmed")>
         Public Shared Function FallbackInvokeUserDefinedOperator(
                 ByVal vbOp As Object,
                 ByVal arguments As Object()) As Object

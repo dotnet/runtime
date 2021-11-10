@@ -125,21 +125,26 @@ void GCToCLREventSink::FireGCJoin_V2(uint32_t heap, uint32_t joinTime, uint32_t 
     FireEtwGCJoin_V2(heap, joinTime, joinType, GetClrInstanceId(), joinId);
 }
 
-void GCToCLREventSink::FireGCGlobalHeapHistory_V3(uint64_t finalYoungestDesired,
-        int32_t numHeaps,
-        uint32_t condemnedGeneration,
-        uint32_t gen0reductionCount,
-        uint32_t reason,
-        uint32_t globalMechanisms,
-        uint32_t pauseMode,
-        uint32_t memoryPressure,
-        uint32_t condemnReasons0,
-        uint32_t condemnReasons1)
+void GCToCLREventSink::FireGCGlobalHeapHistory_V4(uint64_t finalYoungestDesired,
+                                                  int32_t numHeaps,
+                                                  uint32_t condemnedGeneration,
+                                                  uint32_t gen0reductionCount,
+                                                  uint32_t reason,
+                                                  uint32_t globalMechanisms,
+                                                  uint32_t pauseMode,
+                                                  uint32_t memoryPressure,
+                                                  uint32_t condemnReasons0,
+                                                  uint32_t condemnReasons1,
+                                                  uint32_t count,
+                                                  uint32_t valuesLen,
+                                                  void *values)
+
 {
     LIMITED_METHOD_CONTRACT;
 
-    FireEtwGCGlobalHeapHistory_V3(finalYoungestDesired, numHeaps, condemnedGeneration, gen0reductionCount, reason,
-        globalMechanisms, GetClrInstanceId(), pauseMode, memoryPressure, condemnReasons0, condemnReasons1);
+    FireEtwGCGlobalHeapHistory_V4(finalYoungestDesired, numHeaps, condemnedGeneration, gen0reductionCount, reason,
+        globalMechanisms, GetClrInstanceId(), pauseMode, memoryPressure, condemnReasons0, condemnReasons1,
+        count, valuesLen, values);
 }
 
 void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind)
@@ -149,7 +154,11 @@ void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount, uint32
     FireEtwGCAllocationTick_V1(allocationAmount, allocationKind, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireGCAllocationTick_V3(uint64_t allocationAmount, uint32_t allocationKind, uint32_t heapIndex, void* objectAddress)
+void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount, 
+                                               uint32_t allocationKind, 
+                                               uint32_t heapIndex, 
+                                               void* objectAddress, 
+                                               uint64_t objectSize)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -172,14 +181,15 @@ void GCToCLREventSink::FireGCAllocationTick_V3(uint64_t allocationAmount, uint32
 
     if (typeId != nullptr)
     {
-        FireEtwGCAllocationTick_V3(static_cast<uint32_t>(allocationAmount),
+        FireEtwGCAllocationTick_V4((uint32_t)allocationAmount,
             allocationKind,
             GetClrInstanceId(),
             allocationAmount,
             typeId,
             name,
             heapIndex,
-            objectAddress);
+            objectAddress,
+            objectSize);
     }
 }
 
@@ -253,7 +263,19 @@ void GCToCLREventSink::FireGCPerHeapHistory_V3(void *freeListAllocated,
                                values);
 }
 
+void GCToCLREventSink::FireGCLOHCompact(uint16_t count, uint32_t valuesLen, void *values)
+{
+    FireEtwGCLOHCompact(GetClrInstanceId(), count, valuesLen, values);
+}
 
+void GCToCLREventSink::FireGCFitBucketInfo(uint16_t bucketKind, 
+                                           size_t size, 
+                                           uint16_t count, 
+                                           uint32_t valuesLen, 
+                                           void *values)
+{
+    FireEtwGCFitBucketInfo(GetClrInstanceId(), bucketKind, size, count, valuesLen, values);
+}
 
 void GCToCLREventSink::FireBGCBegin()
 {

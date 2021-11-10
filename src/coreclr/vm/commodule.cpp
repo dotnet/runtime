@@ -11,138 +11,7 @@
 #include <cor.h>
 #include "typeparse.h"
 #include "typekey.h"
-#include "ildbsymlib.h"
 
-
-//===============================================================================================
-// CreateISymWriterforDynamicModule:
-//    Helper to create a ISymUnmanagedWriter instance and hook it up to a newly created dynamic
-//    module.  This object is used to capture debugging information (source line info, etc.)
-//    for the dynamic module.  This function determines the appropriate symbol format type
-//    (ILDB or PDB), and in the case of PDB (Windows desktop only) loads diasymreader.dll.
-//
-// Arguments:
-//   mod - The ReflectionModule for the new dynamic module
-//   filenameTemp - the filename at which the module may be saved (ignored if no save access)
-//
-// Return value:
-//   The address where the new writer instance has been stored
-//===============================================================================================
-static ISymUnmanagedWriter **CreateISymWriterForDynamicModule(ReflectionModule *mod, const WCHAR *wszFilename)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(mod->IsReflection());
-
-    // Determine which symbol format to use. For Silverlight 2.0 RTM we use ILDB mode to address security
-    // and portability issues with diasymreader.
-    //
-    // For desktop builds we'll eventually want to make ILDB is the default, but we need to emit PDB format if
-    // the symbols can be saved to disk to preserve back compat.
-    //
-    ESymbolFormat symFormatToUse = eSymbolFormatILDB;
-
-
-    static ConfigDWORD dbgForcePDBSymbols;
-    if(dbgForcePDBSymbols.val(CLRConfig::INTERNAL_DbgForcePDBSymbols) == 1)
-    {
-        symFormatToUse = eSymbolFormatPDB;
-    }
-
-    // Create a stream for the symbols to be emitted into. This
-    // lives on the Module for the life of the Module.
-    SafeComHolder<CGrowableStream> pStream(new CGrowableStream());
-
-    mod->SetInMemorySymbolStream(pStream, symFormatToUse);
-
-    // Create an ISymUnmanagedWriter and initialize it with the
-    // stream and the proper file name. This symbol writer will be
-    // replaced with new ones periodically as the symbols get
-    // retrieved by the debugger.
-    SafeComHolder<ISymUnmanagedWriter> pWriter;
-
-    HRESULT hr;
-    if (symFormatToUse == eSymbolFormatILDB)
-    {
-        // Create an ILDB symbol writer from the ildbsymbols library statically linked in
-        hr = IldbSymbolsCreateInstance(CLSID_CorSymWriter_SxS,
-                                          IID_ISymUnmanagedWriter,
-                                          (void**)&pWriter);
-    }
-    else
-    {
-        _ASSERTE(symFormatToUse == eSymbolFormatPDB);
-        hr = FakeCoCreateInstanceEx(CLSID_CorSymWriter_SxS,
-                                    GetInternalSystemDirectory(),
-                                    IID_ISymUnmanagedWriter,
-                                    (void**)&pWriter,
-                                    NULL);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        {
-            GCX_PREEMP();
-
-            // The other reference is given to the Sym Writer
-            // But, the writer takes it's own reference.
-            hr = pWriter->Initialize(mod->GetEmitter(),
-                                     wszFilename,
-                                     (IStream*)pStream,
-                                     TRUE);
-        }
-        if (SUCCEEDED(hr))
-        {
-            mod->GetReflectionModule()->SetISymUnmanagedWriter(pWriter.Extract());
-
-            // Return the address of where we've got our
-            // ISymUnmanagedWriter stored so we can pass it over
-            // to the managed symbol writer object that most of
-            // reflection emit will use to write symbols.
-            return mod->GetISymUnmanagedWriterAddr();
-        }
-        else
-        {
-            COMPlusThrowHR(hr);
-        }
-    }
-    else
-    {
-        COMPlusThrowHR(hr);
-    }
-}
-
-//===============================================================================================
-// Attaches an unmanaged symwriter to a newly created dynamic module.
-//===============================================================================================
-FCIMPL2(LPVOID, COMModule::nCreateISymWriterForDynamicModule, ReflectModuleBaseObject* reflectionModuleUNSAFE, StringObject* filenameUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(reflectionModuleUNSAFE);
-
-    ReflectionModule *mod = (ReflectionModule*)refModule->GetModule();
-    STRINGREF filename = (STRINGREF)filenameUNSAFE;
-
-    LPVOID pInternalSymWriter = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(filename, refModule);
-
-    SString name;
-    if (filename != NULL)
-    {
-        filename->GetSString(name);
-    }
-
-    GCX_PREEMP();
-    pInternalSymWriter = CreateISymWriterForDynamicModule(mod, name.GetUnicode());
-
-    HELPER_METHOD_FRAME_END();
-
-    return pInternalSymWriter;
-
-} // COMModule::nCreateISymWriterForDynamicModule
-FCIMPLEND
 
 //**************************************************
 // GetTypeRef
@@ -152,7 +21,7 @@ FCIMPLEND
 // wszFullName is escaped (TYPE_NAME_RESERVED_CHAR). It should not be byref or contain enclosing type name,
 // assembly name, and generic argument list.
 //**************************************************
-mdTypeRef QCALLTYPE COMModule::GetTypeRef(QCall::ModuleHandle pModule,
+extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                           LPCWSTR wszFullName,
                                           QCall::ModuleHandle pRefedModule,
                                           LPCWSTR wszRefedModuleFileName,
@@ -266,7 +135,7 @@ mdTypeRef QCALLTYPE COMModule::GetTypeRef(QCall::ModuleHandle pModule,
 **           int            tkTypeSpec
 **Exceptions:
 ==============================================================================*/
-INT32 QCALLTYPE COMModule::GetArrayMethodToken(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCall::ModuleHandle pModule,
                                                INT32 tkTypeSpec,
                                                LPCWSTR wszMethodName,
                                                LPCBYTE pSignature,
@@ -298,6 +167,46 @@ INT32 QCALLTYPE COMModule::GetArrayMethodToken(QCall::ModuleHandle pModule,
     return (INT32)memberRefE;
 }
 
+namespace
+{
+    //******************************************************************************
+    //
+    // Return a TypeRef token given a TypeDef token from the same emit scope
+    //
+    //******************************************************************************
+    void DefineTypeRefHelper(
+        IMetaDataEmit       *pEmit,         // given emit scope
+        mdTypeDef           td,             // given typedef in the emit scope
+        mdTypeRef           *ptr)           // return typeref
+    {
+        CONTRACTL  {
+            STANDARD_VM_CHECK;
+
+            PRECONDITION(CheckPointer(pEmit));
+            PRECONDITION(CheckPointer(ptr));
+        }
+        CONTRACTL_END;
+
+        CQuickBytes qb;
+        WCHAR* szTypeDef = (WCHAR*) qb.AllocThrows((MAX_CLASSNAME_LENGTH+1) * sizeof(WCHAR));
+        mdToken             rs;             // resolution scope
+        DWORD               dwFlags;
+
+        SafeComHolder<IMetaDataImport> pImport;
+        IfFailThrow( pEmit->QueryInterface(IID_IMetaDataImport, (void **)&pImport) );
+        IfFailThrow( pImport->GetTypeDefProps(td, szTypeDef, MAX_CLASSNAME_LENGTH, NULL, &dwFlags, NULL) );
+        if ( IsTdNested(dwFlags) )
+        {
+            mdToken         tdNested;
+            IfFailThrow( pImport->GetNestedClassProps(td, &tdNested) );
+            DefineTypeRefHelper( pEmit, tdNested, &rs);
+        }
+        else
+            rs = TokenFromRid( 1, mdtModule );
+
+        IfFailThrow( pEmit->DefineTypeRefByName( rs, szTypeDef, ptr) );
+    }   // DefineTypeRefHelper
+}
 
 //******************************************************************************
 //
@@ -305,7 +214,7 @@ INT32 QCALLTYPE COMModule::GetArrayMethodToken(QCall::ModuleHandle pModule,
 // This function will return a MemberRef token given a MethodDef token and the module where the MethodDef/FieldDef is defined.
 //
 //******************************************************************************
-INT32 QCALLTYPE COMModule::GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token)
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token)
 {
     QCALL_CONTRACT;
 
@@ -381,52 +290,12 @@ INT32 QCALLTYPE COMModule::GetMemberRef(QCall::ModuleHandle pModule, QCall::Modu
     return (INT32)memberRefE;
 }
 
-
-//******************************************************************************
-//
-// Return a TypeRef token given a TypeDef token from the same emit scope
-//
-//******************************************************************************
-void COMModule::DefineTypeRefHelper(
-    IMetaDataEmit       *pEmit,         // given emit scope
-    mdTypeDef           td,             // given typedef in the emit scope
-    mdTypeRef           *ptr)           // return typeref
-{
-    CONTRACTL  {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(CheckPointer(pEmit));
-        PRECONDITION(CheckPointer(ptr));
-    }
-    CONTRACTL_END;
-
-    CQuickBytes qb;
-    WCHAR* szTypeDef = (WCHAR*) qb.AllocThrows((MAX_CLASSNAME_LENGTH+1) * sizeof(WCHAR));
-    mdToken             rs;             // resolution scope
-    DWORD               dwFlags;
-
-    SafeComHolder<IMetaDataImport> pImport;
-    IfFailThrow( pEmit->QueryInterface(IID_IMetaDataImport, (void **)&pImport) );
-    IfFailThrow( pImport->GetTypeDefProps(td, szTypeDef, MAX_CLASSNAME_LENGTH, NULL, &dwFlags, NULL) );
-    if ( IsTdNested(dwFlags) )
-    {
-        mdToken         tdNested;
-        IfFailThrow( pImport->GetNestedClassProps(td, &tdNested) );
-        DefineTypeRefHelper( pEmit, tdNested, &rs);
-    }
-    else
-        rs = TokenFromRid( 1, mdtModule );
-
-    IfFailThrow( pEmit->DefineTypeRefByName( rs, szTypeDef, ptr) );
-}   // DefineTypeRefHelper
-
-
 //******************************************************************************
 //
 // Return a MemberRef token given a RuntimeMethodInfo
 //
 //******************************************************************************
-INT32 QCALLTYPE COMModule::GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * pMeth)
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * pMeth)
 {
     QCALL_CONTRACT;
 
@@ -507,7 +376,7 @@ INT32 QCALLTYPE COMModule::GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule,
 // Return a MemberRef token given a RuntimeFieldInfo
 //
 //******************************************************************************
-mdMemberRef QCALLTYPE COMModule::GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField)
+extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField)
 {
     QCALL_CONTRACT;
 
@@ -581,7 +450,7 @@ mdMemberRef QCALLTYPE COMModule::GetMemberRefOfFieldInfo(QCall::ModuleHandle pMo
 // Return a MemberRef token given a Signature
 //
 //******************************************************************************
-INT32 QCALLTYPE COMModule::GetMemberRefFromSignature(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefFromSignature(QCall::ModuleHandle pModule,
                                                      INT32 tr,
                                                      LPCWSTR wszMemberName,
                                                      LPCBYTE pSignature,
@@ -613,7 +482,7 @@ INT32 QCALLTYPE COMModule::GetMemberRefFromSignature(QCall::ModuleHandle pModule
 // This function is used to set the FieldRVA with the content data
 //
 //******************************************************************************
-void QCALLTYPE COMModule::SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 tkField, LPCBYTE pContent, INT32 length)
+extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 tkField, LPCBYTE pContent, INT32 length)
 {
     QCALL_CONTRACT;
 
@@ -663,7 +532,7 @@ void QCALLTYPE COMModule::SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 
 //  string constant or return the token of an existing constant.
 //
 //******************************************************************************
-mdString QCALLTYPE COMModule::GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength)
+extern "C" mdString QCALLTYPE ModuleBuilder_GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength)
 {
     QCALL_CONTRACT;
 
@@ -690,7 +559,7 @@ mdString QCALLTYPE COMModule::GetStringConstant(QCall::ModuleHandle pModule, LPC
 /*=============================SetModuleName====================================
 // SetModuleName
 ==============================================================================*/
-void QCALLTYPE COMModule::SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName)
+extern "C" void QCALLTYPE ModuleBuilder_SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName)
 {
     QCALL_CONTRACT;
 
@@ -709,29 +578,7 @@ void QCALLTYPE COMModule::SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wsz
 // Return a type spec token given a byte array
 //
 //******************************************************************************
-BOOL QCALLTYPE COMModule::IsTransient(QCall::ModuleHandle pModule)
-{
-    QCALL_CONTRACT;
-
-    BOOL fIsTransient = FALSE;
-
-    BEGIN_QCALL;
-
-    /* Only reflection modules can be transient */
-    if (pModule->IsReflection())
-        fIsTransient = pModule->GetReflectionModule()->IsTransient();
-
-    END_QCALL;
-
-    return fIsTransient;
-}
-
-//******************************************************************************
-//
-// Return a type spec token given a byte array
-//
-//******************************************************************************
-mdTypeSpec QCALLTYPE COMModule::GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength)
+extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;
 
@@ -753,7 +600,7 @@ mdTypeSpec QCALLTYPE COMModule::GetTokenFromTypeSpec(QCall::ModuleHandle pModule
 // GetType
 // Given a class name, this method will look for that class
 //  with in the module.
-void QCALLTYPE COMModule::GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
+extern "C" void QCALLTYPE RuntimeModule_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
 {
     CONTRACTL
     {
@@ -798,32 +645,19 @@ void QCALLTYPE COMModule::GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, 
 
 // GetName
 // This routine will return the name of the module as a String
-void QCALLTYPE COMModule::GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
+    if (!pModule->GetMDImport()->IsValidToken(pModule->GetMDImport()->GetModuleFromScope()))
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
     LPCSTR    szName = NULL;
-
-    if (pModule->IsResource())
-    {
-        IfFailThrow(pModule->GetAssembly()->GetManifestImport()->GetFileProps(
-            pModule->GetModuleRef(),
-            &szName,
-            NULL,
-            NULL,
-            NULL));
-    }
-    else
-    {
-        if (!pModule->GetMDImport()->IsValidToken(pModule->GetMDImport()->GetModuleFromScope()))
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        IfFailThrow(pModule->GetMDImport()->GetScopeProps(&szName, 0));
-    }
-
+    IfFailThrow(pModule->GetMDImport()->GetScopeProps(&szName, 0));
     retString.Set(szName);
 
     END_QCALL;
@@ -846,7 +680,7 @@ static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pw
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -877,7 +711,7 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
 **Arguments: refThis
 **Exceptions: None.
 ==============================================================================*/
-HINSTANCE QCALLTYPE COMModule::GetHINSTANCE(QCall::ModuleHandle pModule)
+extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pModule)
 {
     QCALL_CONTRACT;
 
@@ -887,10 +721,10 @@ HINSTANCE QCALLTYPE COMModule::GetHINSTANCE(QCall::ModuleHandle pModule)
 
     // This returns the base address
     // Other modules should have zero base
-    PEFile *pPEFile = pModule->GetFile();
-    if (!pPEFile->IsDynamic() && !pPEFile->IsResource())
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
+    if (!pPEAssembly->IsDynamic())
     {
-        hMod = (HMODULE) pModule->GetFile()->GetManagedFileContents();
+        hMod = (HMODULE) pModule->GetPEAssembly()->GetManagedFileContents();
     }
 
     //If we don't have an hMod, set it to -1 so that they know that there's none
@@ -953,12 +787,6 @@ Object* GetTypesInner(Module* pModule)
     bool            bSystemAssembly;    // Don't expose transparent proxy
     int             AllocSize = 0;
     MethodTable* pMT = NULL;
-
-    if (pModule->IsResource())
-    {
-        refArrClasses = (PTRARRAYREF) AllocateObjectArray(0, CoreLibBinder::GetClass(CLASS__CLASS));
-        RETURN(OBJECTREFToObject(refArrClasses));
-    }
 
     GCPROTECT_BEGIN(refArrClasses);
     GCPROTECT_BEGIN(xcept);
@@ -1043,50 +871,3 @@ Object* GetTypesInner(Module* pModule)
 
     RETURN(OBJECTREFToObject(refArrClasses));
 }
-
-
-FCIMPL1(FC_BOOL_RET, COMModule::IsResource, ReflectModuleBaseObject* pModuleUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pModuleUNSAFE == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    FC_RETURN_BOOL(pModuleUNSAFE->GetModule()->IsResource());
-}
-FCIMPLEND
-
-
-//---------------------------------------------------------------------
-// Helper code for PunkSafeHandle class. This does the Release in the
-// safehandle's critical finalizer.
-//---------------------------------------------------------------------
-static VOID __stdcall DReleaseTarget(IUnknown *punk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (punk)
-    {
-        punk->Release();
-    }
-}
-
-
-//---------------------------------------------------------------------
-// Helper code for PunkSafeHandle class. This returns the function that performs
-// the Release() for the safehandle's critical finalizer.
-//---------------------------------------------------------------------
-FCIMPL0(void*, COMPunkSafeHandle::nGetDReleaseTarget)
-{
-    FCALL_CONTRACT;
-
-    return (void*)DReleaseTarget;
-}
-FCIMPLEND
-

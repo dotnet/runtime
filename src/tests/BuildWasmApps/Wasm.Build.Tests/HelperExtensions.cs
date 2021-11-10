@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Text;
+using System.Collections;
 
 #nullable enable
 
@@ -91,6 +93,26 @@ namespace Wasm.Build.Tests
                         d.Append((object?)o)
                          .Append((object?)runId));
             });
+        }
+
+        public static void UpdateTo(this IDictionary<string, (string fullPath, bool unchanged)> dict, bool unchanged, params string[] filenames)
+        {
+            IEnumerable<string> keys = filenames.Length == 0 ? dict.Keys.ToList() : filenames;
+
+            foreach (var filename in keys)
+            {
+                if (!dict.TryGetValue(filename, out var oldValue))
+                {
+                    StringBuilder sb = new();
+                    sb.AppendLine($"Cannot find key named {filename} in the dict. Existing ones:");
+                    foreach (var kvp in dict)
+                        sb.AppendLine($"[{kvp.Key}] = [{kvp.Value}]");
+
+                    throw new KeyNotFoundException(sb.ToString());
+                }
+
+                dict[filename] = (oldValue.fullPath, unchanged);
+            }
         }
     }
 }

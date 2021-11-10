@@ -20,6 +20,7 @@
 
 #include <mono/arch/arm64/arm64-codegen.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
 #include "mono/utils/mono-tls-inline.h"
 
 #ifndef DISABLE_JIT

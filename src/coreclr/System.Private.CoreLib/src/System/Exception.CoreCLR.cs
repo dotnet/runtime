@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,8 +15,6 @@ namespace System
     {
         partial void RestoreRemoteStackTrace(SerializationInfo info, StreamingContext context)
         {
-            _remoteStackTraceString = info.GetString("RemoteStackTraceString"); // Do not rename (binary serialization)
-
             // Get the WatsonBuckets that were serialized - this is particularly
             // done to support exceptions going across AD transitions.
             //
@@ -71,6 +70,7 @@ namespace System
 
         public MethodBase? TargetSite
         {
+            [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
             get
             {
                 if (_exceptionMethod != null)
@@ -87,42 +87,17 @@ namespace System
             }
         }
 
-        // Returns the stack trace as a string.  If no stack trace is
-        // available, null is returned.
-        public virtual string? StackTrace
-        {
-            get
-            {
-                string? stackTraceString = _stackTraceString;
-                string? remoteStackTraceString = _remoteStackTraceString;
-
-                // if no stack trace, try to get one
-                if (stackTraceString != null)
-                {
-                    return remoteStackTraceString + stackTraceString;
-                }
-                if (_stackTrace == null)
-                {
-                    return remoteStackTraceString;
-                }
-
-                return remoteStackTraceString + GetStackTrace(this);
-            }
-        }
-
-        private static string GetStackTrace(Exception e)
-        {
-            // Do not include a trailing newline for backwards compatibility
-            return new StackTrace(e, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
-        }
-
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The API will return null if the metadata for current method cannot be established.")]
         private string? CreateSourceName()
         {
             StackTrace st = new StackTrace(this, fNeedFileInfo: false);
             if (st.FrameCount > 0)
             {
                 StackFrame sf = st.GetFrame(0)!;
-                MethodBase method = sf.GetMethod()!;
+                MethodBase? method = sf.GetMethod();
+                if (method == null)
+                    return null;
 
                 Module module = method.Module;
 
@@ -245,24 +220,9 @@ namespace System
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
 
-        private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
+        private bool HasBeenThrown => _stackTrace != null;
 
         private object? SerializationWatsonBuckets => _watsonBuckets;
-
-        private string? SerializationStackTraceString
-        {
-            get
-            {
-                string? stackTraceString = _stackTraceString;
-
-                if (stackTraceString == null && _stackTrace != null)
-                {
-                    stackTraceString = GetStackTrace(this);
-                }
-
-                return stackTraceString;
-            }
-        }
 
         // This piece of infrastructure exists to help avoid deadlocks
         // between parts of CoreLib that might throw an exception while
@@ -288,7 +248,7 @@ namespace System
             return retMesg!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMessageFromNativeResources")]
         private static extern void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
 
         internal readonly struct DispatchState

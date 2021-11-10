@@ -180,6 +180,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void CopyFile_FileSourceFileName_DestinationFileName_OverwriteFalse()
         {
             var testFileSource = GetTestFilePath();
@@ -296,6 +297,8 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
         // path that followed the symlink.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52851", TestPlatforms.MacCatalyst)]
         public void CurrentDirectorySet()
         {
             var SavedCurrentDirectory = System.IO.Directory.GetCurrentDirectory();
@@ -481,6 +484,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60586", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void GetDriveInfo_Drive()
         {
             var Drives = System.IO.DriveInfo.GetDrives();
@@ -733,6 +737,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void MoveFile_SourceFileName_DestinationFileName_OverwriteFalse()
         {
             var SourceFileNameWithPath = CreateTestFile(SourceData, TestFileName: GetTestFileName());

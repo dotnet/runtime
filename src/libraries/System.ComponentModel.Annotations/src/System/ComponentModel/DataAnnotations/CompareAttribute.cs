@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
@@ -36,7 +36,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 return new ValidationResult(SR.Format(SR.CompareAttribute_UnknownProperty, OtherProperty));
             }
-            if (otherPropertyInfo.GetIndexParameters().Any())
+            if (otherPropertyInfo.GetIndexParameters().Length > 0)
             {
                 throw new ArgumentException(SR.Format(SR.Common_PropertyNotFound, validationContext.ObjectType.FullName, OtherProperty));
             }
@@ -60,11 +60,13 @@ namespace System.ComponentModel.DataAnnotations
 
         private string? GetDisplayNameForProperty(PropertyInfo property)
         {
-            var attributes = CustomAttributeExtensions.GetCustomAttributes(property, true);
-            var display = attributes.OfType<DisplayAttribute>().FirstOrDefault();
-            if (display != null)
+            IEnumerable<Attribute> attributes = CustomAttributeExtensions.GetCustomAttributes(property, true);
+            foreach (Attribute attribute in attributes)
             {
-                return display.GetName();
+                if (attribute is DisplayAttribute display)
+                {
+                   return display.GetName();
+                }
             }
 
             return OtherProperty;

@@ -1096,7 +1096,10 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
         // The most call site records have only `methodHandle`, so creating two separate maps give us better perfomance
         // and smaller memory consumption. Note: we are not reading values from these maps during a normal replay.
         RecordCallSiteWithSignature = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
-        RecordCallSiteWithoutSignature = new LightWeightMap<DWORD, DWORDLONG>();
+        if (recordCallSitesWithoutSig)
+        {
+            RecordCallSiteWithoutSignature = new LightWeightMap<DWORD, DWORDLONG>();
+        }
     }
 
     if (callSig != nullptr)
@@ -1107,7 +1110,7 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
         value.methodHandle = CastHandle(methodHandle);
         RecordCallSiteWithSignature->Add(instrOffset, value);
     }
-    else
+    else if (recordCallSitesWithoutSig)
     {
         RecordCallSiteWithoutSignature->Add(instrOffset, CastHandle(methodHandle));
     }

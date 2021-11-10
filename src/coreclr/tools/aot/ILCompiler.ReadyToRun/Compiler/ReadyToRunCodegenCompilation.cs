@@ -123,9 +123,9 @@ namespace ILCompiler
             return _devirtualizationManager.IsEffectivelySealed(method);
         }
 
-        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType)
+        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
-            return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType);
+            return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
         }
 
         public bool IsModuleInstrumented(ModuleDesc module)
@@ -236,7 +236,7 @@ namespace ILCompiler
         private readonly IEnumerable<string> _inputFiles;
 
         private readonly string _compositeRootPath;
-        
+
         private readonly bool _resilient;
 
         private readonly int _parallelism;
@@ -247,7 +247,7 @@ namespace ILCompiler
         private readonly string _pdbPath;
         private readonly bool _generatePerfMapFile;
         private readonly string _perfMapPath;
-        private readonly Guid? _perfMapMvid;
+        private readonly int _perfMapFormatVersion;
         private readonly bool _generateProfileFile;
         private readonly Func<MethodDesc, string> _printReproInstructions;
 
@@ -283,7 +283,7 @@ namespace ILCompiler
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
-            Guid? perfMapMvid,
+            int perfMapFormatVersion,
             bool generateProfileFile,
             int parallelism,
             ProfileDataManager profileData,
@@ -309,7 +309,7 @@ namespace ILCompiler
             _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
-            _perfMapMvid = perfMapMvid;
+            _perfMapFormatVersion = perfMapFormatVersion;
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
@@ -329,7 +329,7 @@ namespace ILCompiler
 
             _profileData = profileData;
 
-            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
+            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
         }
 
         private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
@@ -347,6 +347,7 @@ namespace ILCompiler
                 ReadyToRunObjectWriter.EmitObject(
                     outputFile,
                     componentModule: null,
+                    inputFiles: _inputFiles,
                     nodes,
                     NodeFactory,
                     generateMapFile: _generateMapFile,
@@ -355,7 +356,7 @@ namespace ILCompiler
                     pdbPath: _pdbPath,
                     generatePerfMapFile: _generatePerfMapFile,
                     perfMapPath: _perfMapPath,
-                    perfMapMvid: _perfMapMvid,
+                    perfMapFormatVersion: _perfMapFormatVersion,
                     generateProfileFile: _generateProfileFile,
                     callChainProfile: _profileData.CallChainProfile,
                     _customPESectionAlignment);
@@ -399,7 +400,9 @@ namespace ILCompiler
             }
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
-            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
+            // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
+            // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile, shouldAddNiPdb: false, shouldGeneratePerfmap: false);
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,
@@ -427,6 +430,7 @@ namespace ILCompiler
             ReadyToRunObjectWriter.EmitObject(
                 outputFile,
                 componentModule: inputModule,
+                inputFiles: new string[] { inputFile },
                 componentGraph.MarkedNodeList,
                 componentFactory,
                 generateMapFile: false,
@@ -435,7 +439,7 @@ namespace ILCompiler
                 pdbPath: null,
                 generatePerfMapFile: false,
                 perfMapPath: null,
-                perfMapMvid: null,
+                perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
                 customPESectionAlignment: 0);
@@ -488,7 +492,7 @@ namespace ILCompiler
                 var fieldType = field.FieldType;
                 if (!fieldType.IsValueType)
                     continue;
-                
+
                 if (!IsLayoutFixedInCurrentVersionBubble(fieldType))
                 {
                     return false;
@@ -513,7 +517,7 @@ namespace ILCompiler
             {
                 return false;
             }
-            
+
             type = type.BaseType;
 
             if (type != null)
@@ -534,11 +538,6 @@ namespace ILCompiler
             }
 
             return true;
-        }
-
-        public TypeDesc GetTypeOfRuntimeType()
-        {
-            return TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType");
         }
 
         // Compilation is broken into phases which interact with dependency analysis

@@ -32,15 +32,15 @@ class EEToProfilerExceptionInterfaceWrapper
     {
         WRAPPER_NO_CONTRACT;
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             _ASSERTE(pThread->PreemptiveGCDisabled());
 
             // Get a reference to the object that won't move
             OBJECTREF thrown = pThread->GetThrowable();
 
-            g_profControlBlock.pProfInterface->ExceptionThrown(
+            (&g_profControlBlock)->ExceptionThrown(
                 reinterpret_cast<ObjectID>((*(BYTE **)&thrown)));
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -53,14 +53,14 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler of the function being searched for a handler.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             if (!pFunction->IsNoMetadata())
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ExceptionSearchFunctionEnter(
+                (&g_profControlBlock)->ExceptionSearchFunctionEnter(
                     (FunctionID) pFunction);
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -69,13 +69,13 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler of the function being searched for a handler.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             if (!pFunction->IsNoMetadata())
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ExceptionSearchFunctionLeave();
+                (&g_profControlBlock)->ExceptionSearchFunctionLeave();
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -84,14 +84,14 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler of the filter.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             if (!pFunc->IsNoMetadata())
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ExceptionSearchFilterEnter(
+                (&g_profControlBlock)->ExceptionSearchFilterEnter(
                     (FunctionID) pFunc);
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -100,10 +100,10 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler of the filter.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ExceptionSearchFilterLeave();
-            END_PIN_PROFILER();
+            (&g_profControlBlock)->ExceptionSearchFilterLeave();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -111,14 +111,14 @@ class EEToProfilerExceptionInterfaceWrapper
     {
         WRAPPER_NO_CONTRACT;
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             if (!pFunc->IsNoMetadata())
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ExceptionSearchCatcherFound(
+                (&g_profControlBlock)->ExceptionSearchCatcherFound(
                     (FunctionID) pFunc);
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -130,13 +130,13 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler of the function being searched for a handler.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             if (!pFunc->IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->ExceptionUnwindFunctionEnter(
+                (&g_profControlBlock)->ExceptionUnwindFunctionEnter(
                     (FunctionID) pFunc);
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -145,12 +145,12 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler that searching this function is over.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             if (!pFunction->IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->ExceptionUnwindFunctionLeave();
+                (&g_profControlBlock)->ExceptionUnwindFunctionLeave();
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -159,13 +159,13 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler of the function being searched for a handler.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             if (!pFunc->IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->ExceptionUnwindFinallyEnter(
+                (&g_profControlBlock)->ExceptionUnwindFinallyEnter(
                     (FunctionID) pFunc);
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -174,9 +174,9 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler of the function being searched for a handler.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
-            g_profControlBlock.pProfInterface->ExceptionUnwindFinallyLeave();
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
+            (&g_profControlBlock)->ExceptionUnwindFinallyLeave();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -185,7 +185,7 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
             if (!pFunc->IsNoMetadata())
             {
                 // <TODO>Remove the thrown variable as well as the
@@ -197,13 +197,13 @@ class EEToProfilerExceptionInterfaceWrapper
                 GCPROTECT_BEGIN(thrown);
                 thrown = pThread->GetThrowable();
                 {
-                    g_profControlBlock.pProfInterface->ExceptionCatcherEnter(
+                    (&g_profControlBlock)->ExceptionCatcherEnter(
                         (FunctionID) pFunc,
                         reinterpret_cast<ObjectID>((*(BYTE **)&thrown)));
                 }
                 GCPROTECT_END();
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 
@@ -212,9 +212,9 @@ class EEToProfilerExceptionInterfaceWrapper
         WRAPPER_NO_CONTRACT;
         // Notify the profiler of the function being searched for a handler.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackExceptions());
-            g_profControlBlock.pProfInterface->ExceptionCatcherLeave();
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
+            (&g_profControlBlock)->ExceptionCatcherLeave();
+            END_PROFILER_CALLBACK();
         }
     }
 

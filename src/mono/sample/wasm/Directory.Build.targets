@@ -1,9 +1,5 @@
 <Project>
-  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
-    </ItemGroup>
-  </Target>
+  <Import Project="../Directory.Build.targets" />
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
 
   <Target Name="BuildSampleInTree"
@@ -18,7 +14,7 @@
     <Exec Command="$(_Dotnet) publish /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject)" />
   </Target>
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree">
-    <Exec Command="cd bin/$(Configuration)/AppBundle &amp;&amp; v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run Wasm.Console.Sample.dll" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="CheckServe">
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />

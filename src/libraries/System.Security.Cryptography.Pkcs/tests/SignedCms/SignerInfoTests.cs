@@ -444,6 +444,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void RemoveCounterSignature_EncodedInSingleAttribute(int indexToRemove)
         {
             SignedCms cms = new SignedCms();
@@ -698,6 +699,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void AddCounterSigner_DSA()
         {
             SignedCms cms = new SignedCms();
@@ -1027,7 +1029,16 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void EnsureExtraCertsAdded()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.OneDsa1024);
+
+            // DSA is not supported on mobile Apple platforms, so use ECDsa signed document instead
+            if (PlatformDetection.UsesMobileAppleCrypto)
+            {
+                cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
+            }
+            else
+            {
+                cms.Decode(SignedDocuments.OneDsa1024);
+            }
 
             int preCount = cms.Certificates.Count;
 

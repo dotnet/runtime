@@ -33,8 +33,8 @@ namespace System.Reflection
             return
                 o is MdFieldInfo m &&
                 m.m_tkField == m_tkField &&
-                m_declaringType.GetTypeHandleInternal().GetModuleHandle().Equals(
-                    m.m_declaringType.GetTypeHandleInternal().GetModuleHandle());
+                m_declaringType.TypeHandle.GetModuleHandle().Equals(
+                    m.m_declaringType.TypeHandle.GetModuleHandle());
         }
         #endregion
 
@@ -80,7 +80,7 @@ namespace System.Reflection
         {
             // Cannot cache these because they could be user defined non-agile enumerations
 
-            object? value = MdConstant.GetValue(GetRuntimeModule().MetadataImport, m_tkField, FieldType.GetTypeHandleInternal(), raw);
+            object? value = MdConstant.GetValue(GetRuntimeModule().MetadataImport, m_tkField, FieldType.TypeHandle, raw);
 
             if (value == DBNull.Value)
                 throw new NotSupportedException(SR.Arg_EnumLitValueNotFound);

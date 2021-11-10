@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Diagnostics;
@@ -51,7 +52,7 @@ namespace System.Net.Sockets
         }
 
         // Initiailizes a new instance of the TcpListener class that listens on the specified port.
-        [Obsolete("This method has been deprecated. Please use TcpListener(IPAddress localaddr, int port) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use TcpListener(IPAddress localaddr, int port) instead.")]
         public TcpListener(int port)
         {
             if (!TcpValidationHelpers.ValidatePortNumber(port))
@@ -220,24 +221,27 @@ namespace System.Net.Sockets
         public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult) =>
             EndAcceptCore<TcpClient>(asyncResult);
 
-        public Task<Socket> AcceptSocketAsync()
+        public Task<Socket> AcceptSocketAsync() => AcceptSocketAsync(CancellationToken.None).AsTask();
+
+        public ValueTask<Socket> AcceptSocketAsync(CancellationToken cancellationToken)
         {
             if (!_active)
             {
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            return _serverSocket!.AcceptAsync();
+            return _serverSocket!.AcceptAsync(cancellationToken);
         }
 
-        public Task<TcpClient> AcceptTcpClientAsync()
-        {
-            return WaitAndWrap(AcceptSocketAsync());
+        public Task<TcpClient> AcceptTcpClientAsync() => AcceptTcpClientAsync(CancellationToken.None).AsTask();
 
-            static async Task<TcpClient> WaitAndWrap(Task<Socket> task) =>
+        public ValueTask<TcpClient> AcceptTcpClientAsync(CancellationToken cancellationToken)
+        {
+            return WaitAndWrap(AcceptSocketAsync(cancellationToken));
+
+            static async ValueTask<TcpClient> WaitAndWrap(ValueTask<Socket> task) =>
                 new TcpClient(await task.ConfigureAwait(false));
         }
-
 
         // This creates a TcpListener that listens on both IPv4 and IPv6 on the given port.
         public static TcpListener Create(int port)

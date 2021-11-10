@@ -19,7 +19,7 @@ Each of the BoTR documents were written with a [certain perspective](https://git
 
 # What should be in a BotR chapter?
 
-The purpose of Book of the Runtime chapters is to capture information that we cannot easily reconstruct from the functional specification and source code alone, and to enable communication at a high level between team members. It explains concepts and presents a top-down description, and mostly importantly, explains why we made the design decisions we made.
+The purpose of Book of the Runtime chapters is to capture information that we cannot easily reconstruct from the functional specification and source code alone, and to enable communication at a high level between team members. It explains concepts and presents a top-down description, and most importantly, explains why we made the design decisions we made.
 
 # How is this different from a design doc?
 

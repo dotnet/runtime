@@ -41,6 +41,18 @@ struct FakeHeapList
     DWORD_PTR           pHdrMap;        // changed from DWORD*
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    DWORD_PTR           CLRPersonalityRoutine;
+#endif
+
+    DWORD_PTR GetModuleBase()
+    {
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        return CLRPersonalityRoutine;
+#else
+        return mapBase;
+#endif
+    }
 };
 
 typedef struct _FakeHpRealCodeHdr
@@ -89,7 +101,6 @@ struct FakeStubUnwindInfoHeapSegment
 };
 
 #define FAKE_STUB_EXTERNAL_ENTRY_BIT 0x40000000
-#define FAKE_STUB_INTERCEPT_BIT     0x10000000
 #define FAKE_STUB_UNWIND_INFO_BIT   0x08000000
 
 #ifdef _DEBUG
@@ -171,9 +182,6 @@ class CheckDuplicatedStructLayouts
 
     static_assert_no_msg(       Stub::EXTERNAL_ENTRY_BIT
              == FAKE_STUB_EXTERNAL_ENTRY_BIT);
-
-    static_assert_no_msg(       Stub::INTERCEPT_BIT
-             == FAKE_STUB_INTERCEPT_BIT);
 
     static_assert_no_msg(       Stub::UNWIND_INFO_BIT
              == FAKE_STUB_UNWIND_INFO_BIT);

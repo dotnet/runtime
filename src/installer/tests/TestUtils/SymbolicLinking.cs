@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private static bool MakeSymbolicLink(string symbolicLinkName, string targetFileName, out string errorMessage)
         {
             errorMessage = string.Empty;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 if (!CreateSymbolicLink(symbolicLinkName, targetFileName, SymbolicLinkFlag.IsFile))
                 {

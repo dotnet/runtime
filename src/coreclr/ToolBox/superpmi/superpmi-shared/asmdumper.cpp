@@ -8,7 +8,8 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
 {
     CORINFO_METHOD_INFO info;
     unsigned            flags = 0;
-    mc->repCompileMethod(&info, &flags);
+    CORINFO_OS          os    = CORINFO_WINNT;
+    mc->repCompileMethod(&info, &flags, &os);
 
 #define bufflen 4096
     DWORD bytesWritten;

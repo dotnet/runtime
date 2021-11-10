@@ -2787,6 +2787,9 @@
   <data name="XmlNotSerializable" xml:space="preserve">
     <value>Type '{0}' is not serializable.</value>
   </data>
+  <data name="XmlTypeInBadLoadContext" xml:space="preserve">
+    <value>Type '{0}' is from an AssemblyLoadContext which is incompatible with that which contains this XmlSerializer.</value>
+  </data>
   <data name="XmlPregenInvalidXmlSerializerAssemblyAttribute" xml:space="preserve">
     <value>Invalid XmlSerializerAssemblyAttribute usage. Please use {0} property or {1} property.</value>
   </data>
@@ -3452,5 +3455,8 @@ Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&
   </data>
   <data name="CompilingScriptsNotSupported" xml:space="preserve">
     <value>Compiling JScript/CSharp scripts is not supported</value>
+  </data>
+  <data name="ImportInfo" xml:space="preserve">
+    <value>Importing {0} ({1}/{2})</value>
   </data>
 </root>

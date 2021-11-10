@@ -338,8 +338,7 @@ namespace System.Net.WebSockets
 
                     if (options.ClientMaxWindowBits != WebSocketValidate.MaxDeflateWindowBits)
                     {
-                        builder.Append(ClientWebSocketDeflateConstants.ClientMaxWindowBits).Append('=')
-                           .Append(options.ClientMaxWindowBits.ToString(CultureInfo.InvariantCulture));
+                        builder.Append(CultureInfo.InvariantCulture, $"{ClientWebSocketDeflateConstants.ClientMaxWindowBits}={options.ClientMaxWindowBits}");
                     }
                     else
                     {
@@ -354,9 +353,7 @@ namespace System.Net.WebSockets
 
                     if (options.ServerMaxWindowBits != WebSocketValidate.MaxDeflateWindowBits)
                     {
-                        builder.Append("; ")
-                               .Append(ClientWebSocketDeflateConstants.ServerMaxWindowBits).Append('=')
-                               .Append(options.ServerMaxWindowBits.ToString(CultureInfo.InvariantCulture));
+                        builder.Append(CultureInfo.InvariantCulture, $"; {ClientWebSocketDeflateConstants.ServerMaxWindowBits}={options.ServerMaxWindowBits}");
                     }
 
                     if (!options.ServerContextTakeover)
@@ -411,17 +408,24 @@ namespace System.Net.WebSockets
 
         private static void ValidateHeader(HttpHeaders headers, string name, string expectedValue)
         {
-            if (!headers.TryGetValues(name, out IEnumerable<string>? values))
+            if (headers.NonValidated.TryGetValues(name, out HeaderStringValues hsv))
             {
-                throw new WebSocketException(WebSocketError.Faulted, SR.Format(SR.net_WebSockets_MissingResponseHeader, name));
+                if (hsv.Count == 1)
+                {
+                    foreach (string value in hsv)
+                    {
+                        if (string.Equals(value, expectedValue, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return;
+                        }
+                        break;
+                    }
+                }
+
+                throw new WebSocketException(WebSocketError.HeaderError, SR.Format(SR.net_WebSockets_InvalidResponseHeader, name, hsv));
             }
 
-            Debug.Assert(values is string[]);
-            string[] array = (string[])values;
-            if (array.Length != 1 || !string.Equals(array[0], expectedValue, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new WebSocketException(WebSocketError.HeaderError, SR.Format(SR.net_WebSockets_InvalidResponseHeader, name, string.Join(", ", array)));
-            }
+            throw new WebSocketException(WebSocketError.Faulted, SR.Format(SR.net_WebSockets_MissingResponseHeader, name));
         }
 
         /// <summary>Used as a sentinel to indicate that ClientWebSocket should use the system's default proxy.</summary>

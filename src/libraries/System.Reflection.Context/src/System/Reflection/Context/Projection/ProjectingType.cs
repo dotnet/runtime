@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Context.Delegation;
 
 namespace System.Reflection.Context.Projection
@@ -30,17 +31,17 @@ namespace System.Reflection.Context.Projection
             get { return _projector.ProjectAssembly(base.Assembly); }
         }
 
-        public override Type BaseType
+        public override Type? BaseType
         {
             get { return _projector.ProjectType(base.BaseType); }
         }
 
-        public override MethodBase DeclaringMethod
+        public override MethodBase? DeclaringMethod
         {
             get { return _projector.ProjectMethodBase(base.DeclaringMethod); }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return _projector.ProjectType(base.DeclaringType); }
         }
@@ -50,7 +51,7 @@ namespace System.Reflection.Context.Projection
             get { return _projector.ProjectModule(base.Module); }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return _projector.ProjectType(base.ReflectedType); }
         }
@@ -134,9 +135,9 @@ namespace System.Reflection.Context.Projection
             return matchingMembers.ToArray();
         }
 
-        public override bool IsAssignableFrom(Type c)
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
-            ProjectingType otherType = c as ProjectingType;
+            ProjectingType? otherType = c as ProjectingType;
             if (otherType == null || Projector != otherType.Projector)
                 return false;
 
@@ -150,18 +151,18 @@ namespace System.Reflection.Context.Projection
             return base.IsDefined(attributeType, inherit);
         }
 
-        public override bool IsEquivalentTo(Type other)
+        public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
-            ProjectingType otherType = other as ProjectingType;
+            ProjectingType? otherType = other as ProjectingType;
             if (otherType == null || Projector != otherType.Projector)
                 return false;
 
             return UnderlyingType.IsEquivalentTo(otherType.UnderlyingType);
         }
 
-        public override bool IsInstanceOfType(object o)
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o)
         {
-            Type objectType = _projector.ProjectType(o.GetType());
+            Type? objectType = _projector.ProjectType(o?.GetType());
 
             return IsAssignableFrom(objectType);
         }
@@ -171,14 +172,14 @@ namespace System.Reflection.Context.Projection
         // and interfaces->objec.
         public override bool IsSubclassOf(Type c)
         {
-            ProjectingType otherType = c as ProjectingType;
+            ProjectingType? otherType = c as ProjectingType;
             if (otherType == null || Projector != otherType.Projector)
                 return false;
 
             return UnderlyingType.IsSubclassOf(otherType.UnderlyingType);
         }
 
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             types = _projector.Unproject(types);
 
@@ -190,12 +191,12 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetConstructors(bindingAttr), _projector.ProjectConstructor);
         }
 
-        public override Type GetElementType()
+        public override Type? GetElementType()
         {
             return _projector.ProjectType(base.GetElementType());
         }
 
-        public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
+        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             return _projector.ProjectEvent(base.GetEvent(name, bindingAttr));
         }
@@ -205,7 +206,7 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetEvents(bindingAttr), _projector.ProjectEvent);
         }
 
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return _projector.ProjectField(base.GetField(name, bindingAttr));
         }
@@ -215,7 +216,7 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetFields(bindingAttr), _projector.ProjectField);
         }
 
-        public override Type GetInterface(string name, bool ignoreCase)
+        public override Type? GetInterface(string name, bool ignoreCase)
         {
             return _projector.ProjectType(base.GetInterface(name, ignoreCase));
         }
@@ -256,7 +257,7 @@ namespace System.Reflection.Context.Projection
             return members;
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             types = _projector.Unproject(types);
 
@@ -268,7 +269,7 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetMethods(bindingAttr), _projector.ProjectMethod);
         }
 
-        public override Type GetNestedType(string name, BindingFlags bindingAttr)
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
         {
             return _projector.ProjectType(base.GetNestedType(name, bindingAttr));
         }
@@ -283,7 +284,7 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetProperties(bindingAttr), _projector.ProjectProperty);
         }
 
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             returnType = _projector.Unproject(returnType);
             types = _projector.Unproject(types);
@@ -306,6 +307,7 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectType(base.MakePointerType());
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {
             typeArguments = _projector.Unproject(typeArguments);
@@ -318,7 +320,7 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectType(base.MakeByRefType());
         }
 
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is ProjectingType other &&
                 Projector == other.Projector &&

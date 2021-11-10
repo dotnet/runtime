@@ -12,6 +12,7 @@
 #ifndef __MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__
 #define __MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__
 
+#include <mono/utils/mono-forward.h>
 #include <mono/utils/mono-publib.h>
 
 typedef MonoGCHandle MonoAssemblyLoadContextGCHandle;
@@ -27,6 +28,7 @@ typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV3) (MonoAssemblyLoadContextGCHa
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, void *user_data, mono_bool append);
 
+// This can point at NULL before the default ALC is initialized
 MONO_API MONO_RT_EXTERNAL_ONLY MonoAssemblyLoadContextGCHandle
 mono_alc_get_default_gchandle (void);
 
@@ -37,5 +39,7 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 
 MONO_API MonoBundledSatelliteAssembly *
 mono_create_new_bundled_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size);
+
+typedef void * (*PInvokeOverrideFn) (const char *libraryName, const char *entrypointName);
 
 #endif /*__MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__*/

@@ -2,7 +2,7 @@
 #ifndef __EVENTPIPE_RT_TYPES_CORECLR_H__
 #define __EVENTPIPE_RT_TYPES_CORECLR_H__
 
-#include "ep-rt-config.h"
+#include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "slist.h"
@@ -266,6 +266,12 @@ typedef struct _rt_coreclr_array_iterator_internal_t<EventPipeSessionID> ep_rt_s
 
 #undef ep_rt_method_desc_t
 typedef class MethodDesc ep_rt_method_desc_t;
+
+#undef ep_rt_execution_checkpoint_array_t
+typedef struct _rt_coreclr_array_internal_t<EventPipeExecutionCheckpoint *> ep_rt_execution_checkpoint_array_t;
+
+#undef ep_rt_execution_checkpoint_array_iterator_t
+typedef struct _rt_coreclr_array_iterator_internal_t<EventPipeExecutionCheckpoint *> ep_rt_execution_checkpoint_array_iterator_t;
 
 /*
  * PAL.

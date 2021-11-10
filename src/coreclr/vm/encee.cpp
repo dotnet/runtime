@@ -35,8 +35,8 @@ static int g_BreakOnEnCResolveField = -1;
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEFile *file)
-  : Module(pAssembly, moduleRef, file)
+EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEAssembly *pPEAssembly)
+  : Module(pAssembly, moduleRef, pPEAssembly)
 {
     CONTRACTL
     {
@@ -46,7 +46,7 @@ EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken module
     }
     CONTRACTL_END
 
-    LOG((LF_ENC,LL_INFO100,"EACM::ctor 0x%x\n", this));
+    LOG((LF_ENC,LL_INFO100,"EACM::ctor %p\n", this));
 
     m_applyChangesCount = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
 }
@@ -68,7 +68,7 @@ void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szNa
     }
     CONTRACTL_END
 
-    LOG((LF_ENC,LL_INFO100,"EACM::Initialize 0x%x\n", this));
+    LOG((LF_ENC,LL_INFO100,"EACM::Initialize %p\n", this));
     Module::Initialize(pamTracker, szName);
 }
 
@@ -76,7 +76,7 @@ void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szNa
 void EditAndContinueModule::Destruct()
 {
     LIMITED_METHOD_CONTRACT;
-    LOG((LF_ENC,LL_EVERYTHING,"EACM::Destruct 0x%x\n", this));
+    LOG((LF_ENC,LL_EVERYTHING,"EACM::Destruct %p\n", this));
 
     // Call the superclass's Destruct method...
     Module::Destruct();
@@ -175,7 +175,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     {
         // ConvertMDInternalToReadWrite should only ever be called on EnC capable files.
         _ASSERTE(IsEditAndContinueCapable()); // this also checks that the file is EnC capable
-        GetFile()->ConvertMDInternalToReadWrite();
+        GetPEAssembly()->ConvertMDInternalToReadWrite();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -211,14 +211,14 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     mdToken token;
     while (pIMDInternalImportENC->EnumNext(&enumENC, &token))
     {
-        STRESS_LOG3(LF_ENC, LL_INFO100, "EACM::AEAC: updated token 0x%x; type 0x%x; rid 0x%x\n", token, TypeFromToken(token), RidFromToken(token));
+        STRESS_LOG3(LF_ENC, LL_INFO100, "EACM::AEAC: updated token %08x; type %08x; rid %08x\n", token, TypeFromToken(token), RidFromToken(token));
 
         switch (TypeFromToken(token))
         {
             case mdtMethodDef:
 
                 // MethodDef token - update/add a method
-                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found method 0x%x\n", token));
+                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found method %08x\n", token));
 
                 ULONG dwMethodRVA;
                 DWORD dwMethodFlags;
@@ -226,7 +226,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 
                 if (dwMethodRVA >= cbDeltaIL)
                 {
-                    LOG((LF_ENC, LL_INFO10000, "EACM::AEAC:   failure RVA of %d with cbDeltaIl %d\n", dwMethodRVA, cbDeltaIL));
+                    LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Failure RVA of %d with cbDeltaIl %d\n", dwMethodRVA, cbDeltaIL));
                     IfFailGo(E_INVALIDARG);
                 }
 
@@ -251,7 +251,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
             case mdtFieldDef:
 
                 // FieldDef token - add a new field
-                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field 0x%x\n", token));
+                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field %08x\n", token));
 
                 if (LookupFieldDef(token))
                 {
@@ -262,16 +262,11 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 // Field is new - add it
                 IfFailGo(AddField(token));
                 break;
-
-            case mdtTypeRef:
-                EnsureTypeRefCanBeStored(token);
-                break;
-
-            case mdtAssemblyRef:
-                EnsureAssemblyRefCanBeStored(token);
-                break;
         }
     }
+
+    // Update the AvailableClassHash for reflection, etc. ensure that the new TypeRefs, AssemblyRefs and MethodDefs can be stored.
+    ApplyMetaData();
 
 ErrExit:
     if (pIMDInternalImportENC)
@@ -367,7 +362,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     HRESULT hr = GetMDImport()->GetParentToken(token, &parentTypeDef);
     if (FAILED(hr))
     {
-        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AM can't find parent token for method token %p\n", token));
+        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AM can't find parent token for method token %08x\n", token));
         return E_FAIL;
     }
 
@@ -377,7 +372,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     {
         // Class isn't loaded yet, don't have to modify any existing EE data structures beyond the metadata.
         // Just notify debugger and return.
-        LOG((LF_ENC, LL_INFO100, "EnCModule::AM class %p not loaded, our work is done\n", parentTypeDef));
+        LOG((LF_ENC, LL_INFO100, "EnCModule::AM class %08x not loaded (method %08x), our work is done\n", parentTypeDef, token));
         if (CORDebuggerAttached())
         {
             hr = g_pDebugInterface->UpdateNotYetLoadedFunction(token, this, m_applyChangesCount);
@@ -386,14 +381,14 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     }
 
     // Add the method to the runtime's Class data structures
-    LOG((LF_ENC, LL_INFO100000, "EACM::AM: Adding function %p\n", token));
+    LOG((LF_ENC, LL_INFO100000, "EACM::AM: Adding function %08x to type %08x\n", token, parentTypeDef));
     MethodDesc *pMethod = NULL;
     hr = EEClass::AddMethod(pParentType, token, 0, &pMethod);
 
     if (FAILED(hr))
     {
         _ASSERTE(!"Failed to add function");
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AM: Failed to add function %p  with hr 0x%x\n", token));
+        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AM: Failed to add function %08x with hr %08x\n", token, hr));
         return hr;
     }
 
@@ -404,7 +399,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         if (FAILED(hr))
         {
             _ASSERTE(!"Failed to add function");
-            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %p to debugger with hr 0x%x\n", token));
+            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %08x to debugger with hr %08x\n", token, hr));
         }
     }
 
@@ -444,7 +439,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
 
     if (FAILED(hr))
     {
-        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AF can't find parent token for field token %p\n", token));
+        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AF can't find parent token for field token %08x\n", token));
         return E_FAIL;
     }
 
@@ -456,18 +451,18 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     MethodTable * pParentType = LookupTypeDef(parentTypeDef).AsMethodTable();
     if (pParentType == NULL)
     {
-        LOG((LF_ENC, LL_INFO100, "EnCModule::AF class %p not loaded, our work is done\n", parentTypeDef));
+        LOG((LF_ENC, LL_INFO100, "EnCModule::AF class %08x not loaded (field %08x), our work is done\n", parentTypeDef, token));
         return S_OK;
     }
 
     // Create a new EnCFieldDesc for the field and add it to the class
-    LOG((LF_ENC, LL_INFO100000, "EACM::AM: Adding field %p\n", token));
+    LOG((LF_ENC, LL_INFO100000, "EACM::AM: Adding field %08x to type %08x\n", token, parentTypeDef));
     EnCFieldDesc *pField;
     hr = EEClass::AddField(pParentType, token, &pField);
 
     if (FAILED(hr))
     {
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %p to EE  with hr 0x%x\n", token));
+        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %08x to EE with hr %08x\n", token, hr));
         return hr;
     }
 
@@ -477,7 +472,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
         hr = g_pDebugInterface->AddField(pField, m_applyChangesCount);
         if (FAILED(hr))
         {
-            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %p to debugger with hr 0x%x\n", token));
+            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %08x to debugger with hr %08x\n", token, hr));
         }
     }
 
@@ -672,7 +667,9 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     if( newFrameSize > oldFrameSize)
     {
         DWORD frameIncrement = newFrameSize - oldFrameSize;
-        (void)alloca(frameIncrement);
+        // alloca() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)alloca(..)`,
+        // so we use additional NOT(!) operator to force unused-result suppression.
+        (void)!alloca(frameIncrement);
     }
 
     // Ask the EECodeManager to actually fill in the context and stack for the new frame so that
@@ -801,7 +798,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // Set the new IP
     // Note that all we're really doing here is setting the IP register.  We unfortunately don't
     // share any code with the implementation of debugger SetIP, despite the similarities.
-    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction: Resume at EIP=0x%x\n", pNewCodeInfo->GetCodeAddress()));
+    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction: Resume at EIP=%p\n", pNewCodeInfo->GetCodeAddress()));
 
     Thread *pCurThread = GetThread();
     pCurThread->SetFilterContext(pContext);
@@ -1242,7 +1239,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
 
     PTR_EnCAddedField pEntry = NULL;
 
-    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %08x\n", OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
     // arise here.
@@ -1316,7 +1313,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
     // if the field doesn't yet have available storage, we'll have to allocate it.
     PTR_EnCAddedField pEntry = NULL;
 
-    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %08x\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
     // arise here.

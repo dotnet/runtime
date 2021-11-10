@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
@@ -309,4 +310,147 @@ namespace DebuggerTests
             return await Task.FromResult(default(T));
         }
     }
+    public class EvaluateMethodTestsClass
+    {
+        public class ParmToTest
+        {
+            public int a;
+            public int b;
+            public ParmToTest()
+            {
+                a = 10;
+                b = 10;
+            }
+            public string MyMethod()
+            {
+                return "methodOK";
+            }
+        }
+        public class TestEvaluate
+        {
+            public int a;
+            public int b;
+            public int c;
+            public string str = "str_const_";
+            public bool t = true;
+            public bool f = false;
+            public ParmToTest objToTest;
+            public ParmToTest ParmToTestObj => objToTest;
+            public ParmToTest ParmToTestObjNull => null;
+            public ParmToTest ParmToTestObjException => throw new Exception("error2");
+            public void run(int g, int h, string a, string valString, int this_a)
+            {
+                objToTest = new ParmToTest();
+                int d = g + 1;
+                int e = g + 2;
+                int f = g + 3;
+                int i = d + e + f;
+                this.a = 1;
+                b = 2;
+                c = 3;
+                this.a = this.a + 1;
+                b = b + 1;
+                c = c + 1;
+            }
+
+            public int CallMethod()
+            {
+                return a;
+            }
+
+            public int CallMethodWithParm(int parm)
+            {
+                return a + parm;
+            }
+
+            public void CallMethodChangeValue()
+            {
+                a = a + 10;
+            }
+
+            public int CallMethodWithMultipleParms(int parm, int parm2)
+            {
+                return a + parm + parm2;
+            }
+
+            public string CallMethodWithParmString(string parm)
+            {
+                return str + parm;
+            }
+
+            public string CallMethodWithParmBool(bool parm)
+            {
+                if (parm)
+                    return "TRUE";
+                return "FALSE";
+            }
+
+            public int CallMethodWithObj(ParmToTest parm)
+            {
+                if (parm == null)
+                    return -1;
+                return parm.a;
+            }
+
+
+            public string CallMethodWithChar(char parm)
+            {
+                return str + parm;
+            }
+        }
+
+        public static void EvaluateMethods()
+        {
+            TestEvaluate f = new TestEvaluate();
+            f.run(100, 200, "9000", "test", 45);
+        }
+
+    }
+
+    public static class EvaluateStaticClass
+    {
+        public static int StaticField1 = 10;
+        public static string StaticProperty1 => "StaticProperty1";
+		public static string StaticPropertyWithError => throw new Exception("not implemented");
+    }
+
+    public class EvaluateLocalsWithElementAccessTests
+    {
+        public class TestEvaluate
+        {
+            public List<int> numList;
+            public List<string> textList;
+            public int[] numArray;
+            public string[] textArray;
+            public int[][] numArrayOfArrays;
+            public List<List<int>> numListOfLists;
+            public string[][] textArrayOfArrays;
+            public List<List<string>> textListOfLists;
+            public int idx0;
+            public int idx1;
+
+            public void run()
+            {
+                numList = new List<int> { 1, 2 };
+                textList = new List<string> { "1", "2" };
+                numArray = new int[] { 1, 2 };
+                textArray = new string[] { "1", "2" };
+                numArrayOfArrays = new int[][] { numArray, numArray };
+                numListOfLists = new List<List<int>> { numList, numList };
+                textArrayOfArrays = new string[][] { textArray, textArray };
+                textListOfLists = new List<List<string>> { textList, textList };
+                idx0 = 0;
+                idx1 = 1;
+            }        
+        }
+
+        public static void EvaluateLocals()
+        {
+            int i = 0;
+            int j = 1;
+            TestEvaluate f = new TestEvaluate();
+            f.run();
+        }
+    }
+
 }

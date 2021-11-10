@@ -9,13 +9,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicRegistrationHandle()
+        public SafeMsQuicRegistrationHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         { }
 
         protected override bool ReleaseHandle()
         {
             MsQuicApi.Api.RegistrationCloseDelegate(handle);
+            SetHandle(IntPtr.Zero);
             return true;
         }
     }

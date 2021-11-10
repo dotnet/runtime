@@ -5,10 +5,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
+    [UnsupportedOSPlatform("tvos")]
     internal sealed partial class NTAuthentication
     {
         private bool _isServer;

@@ -1015,35 +1015,6 @@ void    SplitPath(__in SString const &path,
 #define CLRGetTickCount64() GetTickCount64()
 
 //
-// Use this function to initialize the s_CodeAllocHint
-// during startup. base is runtime .dll base address,
-// size is runtime .dll virtual size.
-//
-void InitCodeAllocHint(SIZE_T base, SIZE_T size, int randomPageOffset);
-
-
-//
-// Use this function to reset the s_CodeAllocHint
-// after unloading an AppDomain
-//
-void ResetCodeAllocHint();
-
-//
-// Returns TRUE if p is located in near clr.dll that allows us
-// to use rel32 IP-relative addressing modes.
-//
-BOOL IsPreferredExecutableRange(void * p);
-
-//
-// Allocate free memory that will be used for executable code
-// Handles the special requirements that we have on 64-bit platforms
-// where we want the executable memory to be located near mscorwks
-//
-BYTE * ClrVirtualAllocExecutable(SIZE_T dwSize,
-                                 DWORD flAllocationType,
-                                 DWORD flProtect);
-
-//
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to allocate it.
 //
@@ -1142,6 +1113,8 @@ public:
 DWORD_PTR GetCurrentProcessCpuMask();
 
 #endif // HOST_WINDOWS
+
+int GetTotalProcessorCount();
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -4713,12 +4686,12 @@ void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler l
 namespace Clr { namespace Util
 {
 
-#ifdef FEATURE_COMINTEROP
+#ifdef HOST_WINDOWS
 namespace Com
 {
     HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name);
 }
-#endif // FEATURE_COMINTEROP
+#endif // HOST_WINDOWS
 
 }}
 

@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -14,19 +13,19 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class StreamTests
+    public partial class StreamTests
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
-        public static async Task HandleCollectionsAsync()
+        public async Task HandleCollectionsAsync()
         {
             await RunTestAsync<string>();
             await RunTestAsync<ClassWithKVP>();
             await RunTestAsync<ImmutableStructWithStrings>();
         }
 
-        private static async Task RunTestAsync<TElement>()
+        private async Task RunTestAsync<TElement>()
         {
             foreach ((Type, int) pair in CollectionTestData<TElement>())
             {
@@ -56,12 +55,12 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private static async Task PerformSerialization<TElement>(object obj, Type type, JsonSerializerOptions options)
+        private async Task PerformSerialization<TElement>(object obj, Type type, JsonSerializerOptions options)
         {
             string expectedjson = JsonSerializer.Serialize(obj, options);
 
             using var memoryStream = new MemoryStream();
-            await JsonSerializer.SerializeAsync(memoryStream, obj, options);
+            await Serializer.SerializeWrapper(memoryStream, obj, options);
             string serialized = Encoding.UTF8.GetString(memoryStream.ToArray());
             JsonTestHelper.AssertJsonEqual(expectedjson, serialized);
 
@@ -78,7 +77,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private static async Task TestDeserialization<TElement>(
+        private async Task TestDeserialization<TElement>(
             Stream memoryStream,
             string expectedJson,
             Type type,
@@ -86,7 +85,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                object deserialized = await JsonSerializer.DeserializeAsync(memoryStream, type, options);
+                object deserialized = await Serializer.DeserializeWrapper(memoryStream, type, options);
                 string serialized = JsonSerializer.Serialize(deserialized, options);
 
                 // Stack elements reversed during serialization.
@@ -361,7 +360,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("}")]
         [InlineData("[")]
         [InlineData("]")]
-        public static void DeserializeDictionaryStartsWithInvalidJson(string json)
+        public void DeserializeDictionaryStartsWithInvalidJson(string json)
         {
             foreach (Type type in CollectionTestTypes.DictionaryTypes<string>())
             {
@@ -369,14 +368,14 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                     {
-                        await JsonSerializer.DeserializeAsync(memoryStream, type);
+                        await Serializer.DeserializeWrapper(memoryStream, type);
                     }
                 });
             }
         }
 
         [Fact]
-        public static void SerializeEmptyCollection()
+        public void SerializeEmptyCollection()
         {
             foreach (Type type in CollectionTestTypes.EnumerableTypes<int>())
             {

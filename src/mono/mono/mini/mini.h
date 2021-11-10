@@ -59,7 +59,6 @@ typedef struct SeqPointInfo SeqPointInfo;
 
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/marshal.h"
-#include "mono/metadata/security-manager.h"
 #include "mono/metadata/exception.h"
 #include "mono/metadata/callspec.h"
 #include "mono/metadata/icall-signatures.h"
@@ -139,7 +138,8 @@ typedef struct SeqPointInfo SeqPointInfo;
 #define printf g_print
 #endif
 
-#define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
@@ -297,9 +297,7 @@ enum {
 
 #define MONO_JUMP_TABLE_FROM_INS(ins) (((ins)->opcode == OP_JUMP_TABLE) ? (ins)->inst_p0 : (((ins)->opcode == OP_AOTCONST) && (ins->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH) ? (ins)->inst_p0 : (((ins)->opcode == OP_SWITCH) ? (ins)->inst_p0 : ((((ins)->opcode == OP_GOT_ENTRY) && ((ins)->inst_right->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH)) ? (ins)->inst_right->inst_p0 : NULL))))
 
-/* FIXME: Add more instructions */
-/* INEG sets the condition codes, and the OP_LNEG decomposition depends on this on x86 */
-#define MONO_INS_HAS_NO_SIDE_EFFECT(ins) (MONO_IS_MOVE (ins) || (ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || MONO_IS_ZERO (ins) || (ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_R8CONST) || (ins->opcode == OP_LADD_IMM) || (ins->opcode == OP_ISUB_IMM) || (ins->opcode == OP_IADD_IMM) || (ins->opcode == OP_LNEG) || (ins->opcode == OP_ISUB) || (ins->opcode == OP_CMOV_IGE) || (ins->opcode == OP_ISHL_IMM) || (ins->opcode == OP_ISHR_IMM) || (ins->opcode == OP_ISHR_UN_IMM) || (ins->opcode == OP_IAND_IMM) || (ins->opcode == OP_ICONV_TO_U1) || (ins->opcode == OP_ICONV_TO_I1) || (ins->opcode == OP_SEXT_I4) || (ins->opcode == OP_LCONV_TO_U1) || (ins->opcode == OP_ICONV_TO_U2) || (ins->opcode == OP_ICONV_TO_I2) || (ins->opcode == OP_LCONV_TO_I2) || (ins->opcode == OP_LDADDR) || (ins->opcode == OP_PHI) || (ins->opcode == OP_NOP) || (ins->opcode == OP_ZEXT_I4) || (ins->opcode == OP_NOT_NULL) || (ins->opcode == OP_IL_SEQ_POINT) || (ins->opcode == OP_XZERO))
+#define MONO_INS_HAS_NO_SIDE_EFFECT(ins) (mono_ins_no_side_effects ((ins)))
 
 #define MONO_INS_IS_PCONST_NULL(ins) ((ins)->opcode == OP_PCONST && (ins)->inst_p0 == 0)
 
@@ -364,7 +362,6 @@ extern int mono_inject_async_exc_pos;
 extern MonoMethodDesc *mono_break_at_bb_method;
 extern int mono_break_at_bb_bb_num;
 extern gboolean mono_do_x86_stack_align;
-extern gboolean	mono_using_xdebug;
 extern int mini_verbose;
 extern int valgrind_register;
 
@@ -629,7 +626,9 @@ enum {
 	BB_EXCEPTION_UNSAFE     = 1 << 3,
 	BB_EXCEPTION_HANDLER    = 1 << 4,
 	/* for Native Client, mark the blocks that can be jumped to indirectly */
-	BB_INDIRECT_JUMP_TARGET = 1 << 5 
+	BB_INDIRECT_JUMP_TARGET = 1 << 5 ,
+	/* Contains code with some side effects */
+	BB_HAS_SIDE_EFFECTS = 1 << 6,
 };
 
 typedef struct MonoMemcpyArgs {
@@ -881,6 +880,7 @@ enum {
 	MONO_INST_GC_CALLSITE = 128,
 	/* On comparisons, mark the branch following the condition as likely to be taken */
 	MONO_INST_LIKELY = 128,
+	MONO_INST_NONULLCHECK   = 128,
 };
 
 #define inst_c0 data.op[0].const_val
@@ -1063,8 +1063,21 @@ typedef enum {
 	/* Same as MONO_PATCH_INFO_METHOD_FTNDESC */
 	MONO_RGCTX_INFO_METHOD_FTNDESC                = 33,
 	/* mono_type_size () for a class */
-	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34
+	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34,
+	/* A gsharedvt_out wrapper for a method */
+	MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT    = 35
 } MonoRgctxInfoType;
+
+/* How an rgctx is passed to a method */
+typedef enum {
+	MONO_RGCTX_ACCESS_NONE = 0,
+	/* Loaded from this->vtable->rgctx */
+	MONO_RGCTX_ACCESS_THIS = 1,
+	/* Loaded from an additional mrgctx argument */
+	MONO_RGCTX_ACCESS_MRGCTX = 2,
+	/* Loaded from an additional vtable argument */
+	MONO_RGCTX_ACCESS_VTABLE = 3
+} MonoRgctxAccess;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
 	MonoRgctxInfoType info_type;
@@ -1112,6 +1125,7 @@ typedef struct {
 
 typedef struct
 {
+	MonoClass *klass;
 	MonoMethod *invoke;
 	MonoMethod *method;
 	MonoMethodSignature *invoke_sig;
@@ -1132,6 +1146,9 @@ typedef struct
 {
 	gpointer addr;
 	gpointer arg;
+	MonoMethod *method;
+	/* Tagged InterpMethod* */
+	gpointer interp_method;
 } MonoFtnDesc;
 
 typedef enum {
@@ -1346,6 +1363,7 @@ typedef struct {
 	/* The current virtual register number */
 	guint32 next_vreg;
 
+	MonoRgctxAccess rgctx_access;
 	MonoGenericSharingContext gsctx;
 	MonoGenericContext *gsctx_context;
 
@@ -1460,6 +1478,7 @@ typedef struct {
 	guint            self_init : 1;
 	guint            code_exec_only : 1;
 	guint            interp_entry_only : 1;
+	guint            after_method_to_ir : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -1606,6 +1625,8 @@ typedef struct {
 	/* pointer to context datastructure used for graph dumping */
 	MonoGraphDumper *gdump_ctx;
 
+	gboolean *clause_is_dead;
+
 	/* Stats */
 	int stat_allocate_var;
 	int stat_locals_stack_size;
@@ -1722,11 +1743,12 @@ typedef struct {
 extern MonoJitStats mono_jit_stats;
 
 static inline void
-get_jit_stats (gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes)
+get_jit_stats (gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes, gint64 *jit_time)
 {
 	*methods_compiled = mono_jit_stats.methods_compiled;
 	*cil_code_size_bytes = mono_jit_stats.cil_code_size;
 	*native_code_size_bytes = mono_jit_stats.native_code_size;
+	*jit_time = mono_jit_stats.jit_time;
 }
 
 guint32
@@ -2132,6 +2154,8 @@ const char* mono_inst_name (int op);
 int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
+gboolean  mono_op_no_side_effects           (int opcode);
+gboolean  mono_ins_no_side_effects          (MonoInst *ins);
 guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type);
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type);
 guint32   mono_type_to_stloc_coerce         (MonoType *type);
@@ -2182,12 +2206,6 @@ void      mono_linterval_split              (MonoCompile *cfg, MonoLiveInterval 
 void      mono_liveness_handle_exception_clauses (MonoCompile *cfg);
 
 gpointer mono_realloc_native_code (MonoCompile *cfg);
-
-void     mono_xdebug_init                   (const char *xdebug_opts);
-void     mono_save_xdebug_info              (MonoCompile *cfg);
-void     mono_save_trampoline_xdebug_info   (MonoTrampInfo *info);
-/* This is an exported function */
-void     mono_xdebug_flush                  (void);
 
 void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options);
@@ -2292,7 +2310,7 @@ void              mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest,
 void              mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, MonoInst *size, int ins_flag);
 void              mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag);
 MonoInst*         mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean safety_checks);
-MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, gboolean *ins_type_initialized);
 MonoInst*         mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*         mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field);
 MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag);
@@ -2300,6 +2318,7 @@ MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass,
 MonoMethod*       mini_get_memcpy_method (void);
 MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
+MonoRgctxAccess   mini_get_rgctx_access_for_method (MonoMethod *method);
 
 CompRelation mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);
@@ -2409,7 +2428,7 @@ gboolean  mono_arch_opcode_needs_emulation      (MonoCompile *cfg, int opcode);
 gboolean  mono_arch_tailcall_supported          (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig, gboolean virtual_);
 int       mono_arch_translate_tls_offset        (int offset);
 gboolean  mono_arch_opcode_supported            (int opcode);
-void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func);
+MONO_COMPONENT_API void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func);
 gboolean  mono_arch_have_fast_tls               (void);
 
 #ifdef MONO_ARCH_HAS_REGISTER_ICALL
@@ -2428,14 +2447,14 @@ mono_arch_is_soft_float (void)
 
 /* Soft Debug support */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-void      mono_arch_set_breakpoint              (MonoJitInfo *ji, guint8 *ip);
-void      mono_arch_clear_breakpoint            (MonoJitInfo *ji, guint8 *ip);
-void      mono_arch_start_single_stepping       (void);
-void      mono_arch_stop_single_stepping        (void);
+MONO_COMPONENT_API void      mono_arch_set_breakpoint              (MonoJitInfo *ji, guint8 *ip);
+MONO_COMPONENT_API void      mono_arch_clear_breakpoint            (MonoJitInfo *ji, guint8 *ip);
+MONO_COMPONENT_API void      mono_arch_start_single_stepping       (void);
+MONO_COMPONENT_API void      mono_arch_stop_single_stepping        (void);
 gboolean  mono_arch_is_single_step_event        (void *info, void *sigctx);
 gboolean  mono_arch_is_breakpoint_event         (void *info, void *sigctx);
-void     mono_arch_skip_breakpoint              (MonoContext *ctx, MonoJitInfo *ji);
-void     mono_arch_skip_single_step             (MonoContext *ctx);
+MONO_COMPONENT_API void     mono_arch_skip_breakpoint              (MonoContext *ctx, MonoJitInfo *ji);
+MONO_COMPONENT_API void     mono_arch_skip_single_step             (MonoContext *ctx);
 SeqPointInfo *mono_arch_get_seq_point_info      (guint8 *code);
 #endif
 
@@ -2460,9 +2479,9 @@ void     mono_handle_hard_stack_ovf             (MonoJitTlsData *jit_tls, MonoJi
 void     mono_arch_undo_ip_adjustment           (MonoContext *ctx);
 void     mono_arch_do_ip_adjustment             (MonoContext *ctx);
 gpointer mono_arch_ip_from_context              (void *sigctx);
-host_mgreg_t mono_arch_context_get_int_reg      (MonoContext *ctx, int reg);
-host_mgreg_t*mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg);
-void     mono_arch_context_set_int_reg		(MonoContext *ctx, int reg, host_mgreg_t val);
+MONO_COMPONENT_API host_mgreg_t mono_arch_context_get_int_reg      (MonoContext *ctx, int reg);
+MONO_COMPONENT_API host_mgreg_t*mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg);
+MONO_COMPONENT_API void     mono_arch_context_set_int_reg		(MonoContext *ctx, int reg, host_mgreg_t val);
 void     mono_arch_flush_register_windows       (void);
 gboolean mono_arch_is_inst_imm                  (int opcode, int imm_opcode, gint64 imm);
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info);
@@ -2524,18 +2543,18 @@ gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj)
 void     mono_handle_native_crash               (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo);
 MONO_API void     mono_print_thread_dump                 (void *sigctx);
 MONO_API void     mono_print_thread_dump_from_ctx        (MonoContext *ctx);
-void     mono_walk_stack_with_ctx               (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
-void     mono_walk_stack_with_state             (MonoJitStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions unwind_options, void *user_data);
+MONO_COMPONENT_API void     mono_walk_stack_with_ctx               (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
+MONO_COMPONENT_API void     mono_walk_stack_with_state             (MonoJitStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions unwind_options, void *user_data);
 void     mono_walk_stack                        (MonoJitStackWalk func, MonoUnwindOptions options, void *user_data);
 gboolean mono_thread_state_init_from_sigctx     (MonoThreadUnwindState *ctx, void *sigctx);
 void     mono_thread_state_init                 (MonoThreadUnwindState *ctx);
-gboolean mono_thread_state_init_from_current    (MonoThreadUnwindState *ctx);
-gboolean mono_thread_state_init_from_monoctx    (MonoThreadUnwindState *ctx, MonoContext *mctx);
+MONO_COMPONENT_API gboolean mono_thread_state_init_from_current    (MonoThreadUnwindState *ctx);
+MONO_COMPONENT_API gboolean mono_thread_state_init_from_monoctx    (MonoThreadUnwindState *ctx, MonoContext *mctx);
 
 void     mono_setup_altstack                    (MonoJitTlsData *tls);
 void     mono_free_altstack                     (MonoJitTlsData *tls);
 gpointer mono_altstack_restore_prot             (host_mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp);
-MonoJitInfo* mini_jit_info_table_find           (gpointer addr);
+MONO_COMPONENT_API MonoJitInfo* mini_jit_info_table_find           (gpointer addr);
 MonoJitInfo* mini_jit_info_table_find_ext       (gpointer addr, gboolean allow_trampolines);
 G_EXTERN_C void mono_resume_unwind              (MonoContext *ctx);
 
@@ -2543,7 +2562,7 @@ MonoJitInfo * mono_find_jit_info                (MonoJitTlsData *jit_tls, MonoJi
 
 typedef gboolean (*MonoExceptionFrameWalk)      (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data);
 MONO_API gboolean mono_exception_walk_trace     (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data);
-void mono_restore_context                       (MonoContext *ctx);
+MONO_COMPONENT_API void mono_restore_context                       (MonoContext *ctx);
 guint8* mono_jinfo_get_unwind_info              (MonoJitInfo *ji, guint32 *unwind_info_len);
 int  mono_jinfo_get_epilog_size                 (MonoJitInfo *ji);
 G_EXTERN_C void mono_llvm_rethrow_exception     (MonoObject *ex);
@@ -2680,7 +2699,7 @@ mono_class_rgctx_get_array_size (int n, gboolean mrgctx);
 MonoGenericContext
 mono_method_construct_object_context (MonoMethod *method);
 
-MonoMethod*
+MONO_COMPONENT_API MonoMethod*
 mono_method_get_declaring_generic_method (MonoMethod *method);
 
 int
@@ -2891,112 +2910,6 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
-/* SIMD operations */
-typedef enum {
-	SIMD_OP_SSE_CVTSS2SI,
-	SIMD_OP_SSE_CVTTSS2SI,
-	SIMD_OP_SSE_CVTSS2SI64,
-	SIMD_OP_SSE_CVTTSS2SI64,
-	SIMD_OP_SSE_CVTSD2SI,
-	SIMD_OP_SSE_CVTTSD2SI,
-	SIMD_OP_SSE_CVTSD2SI64,
-	SIMD_OP_SSE_CVTTSD2SI64,
-	SIMD_OP_SSE_CVTSD2SS,
-	SIMD_OP_SSE_MAXPS,
-	SIMD_OP_SSE_MAXSS,
-	SIMD_OP_SSE_MINPS,
-	SIMD_OP_SSE_MINSS,
-	SIMD_OP_SSE_MAXPD,
-	SIMD_OP_SSE_MAXSD,
-	SIMD_OP_SSE_MINPD,
-	SIMD_OP_SSE_MINSD,
-	SIMD_OP_SSE_SFENCE,
-	SIMD_OP_SSE_LFENCE,
-	SIMD_OP_SSE_MFENCE,
-	SIMD_OP_SSE_SQRTPS,
-	SIMD_OP_SSE_RCPPS,
-	SIMD_OP_SSE_RSQRTPS,
-	SIMD_OP_SSE_SQRTSS,
-	SIMD_OP_SSE_RCPSS,
-	SIMD_OP_SSE_RSQRTSS,
-	SIMD_OP_SSE_SQRTPD,
-	SIMD_OP_SSE_SQRTSD,
-	SIMD_OP_SSE_PMULUDQ,
-	SIMD_OP_SSE_PMULHW,
-	SIMD_OP_SSE_PMULHUW,
-	SIMD_OP_SSE_PMADDWD,
-	SIMD_OP_SSE_PACKSSWB,
-	SIMD_OP_SSE_PACKSSDW,
-	SIMD_OP_SSE_PSRLW_IMM,
-	SIMD_OP_SSE_PSRLD_IMM,
-	SIMD_OP_SSE_PSRLQ_IMM,
-	SIMD_OP_SSE_PSRLW,
-	SIMD_OP_SSE_PSRLD,
-	SIMD_OP_SSE_PSRLQ,
-	SIMD_OP_SSE_PSLLW_IMM,
-	SIMD_OP_SSE_PSLLD_IMM,
-	SIMD_OP_SSE_PSLLQ_IMM,
-	SIMD_OP_SSE_PSLLW,
-	SIMD_OP_SSE_PSLLD,
-	SIMD_OP_SSE_PSLLQ,
-	SIMD_OP_SSE_PSRAW_IMM,
-	SIMD_OP_SSE_PSRAD_IMM,
-	SIMD_OP_SSE_PSRAW,
-	SIMD_OP_SSE_PSRAD,
-	SIMD_OP_SSE_PSADBW,
-	SIMD_OP_SSE_ADDSUBPS,
-	SIMD_OP_SSE_ADDSUBPD,
-	SIMD_OP_SSE_HADDPS,
-	SIMD_OP_SSE_HADDPD,
-	SIMD_OP_SSE_PHADDW,
-	SIMD_OP_SSE_PHADDD,
-	SIMD_OP_SSE_PHSUBW,
-	SIMD_OP_SSE_PHSUBD,
-	SIMD_OP_SSE_HSUBPS,
-	SIMD_OP_SSE_HSUBPD,
-	SIMD_OP_SSE_PHADDSW,
-	SIMD_OP_SSE_PHSUBSW,
-	SIMD_OP_SSE_PSIGNB,
-	SIMD_OP_SSE_PSIGNW,
-	SIMD_OP_SSE_PSIGND,
-	SIMD_OP_SSE_PMADDUBSW,
-	SIMD_OP_SSE_PMULHRSW,
-	SIMD_OP_SSE_LDDQU,
-	SIMD_OP_SSE_TESTC,
-	SIMD_OP_SSE_TESTNZ,
-	SIMD_OP_SSE_TESTZ,
-	SIMD_OP_SSE_PACKUSDW,
-	SIMD_OP_SSE_PHMINPOSUW,
-	SIMD_OP_AES_IMC,
-	SIMD_OP_AES_ENC,
-	SIMD_OP_AES_ENCLAST,
-	SIMD_OP_AES_DEC,
-	SIMD_OP_AES_DECLAST,
-	SIMD_OP_ARM64_CRC32B,
-	SIMD_OP_ARM64_CRC32H,
-	SIMD_OP_ARM64_CRC32W,
-	SIMD_OP_ARM64_CRC32X,
-	SIMD_OP_ARM64_CRC32CB,
-	SIMD_OP_ARM64_CRC32CH,
-	SIMD_OP_ARM64_CRC32CW,
-	SIMD_OP_ARM64_CRC32CX,
-	SIMD_OP_ARM64_RBIT32,
-	SIMD_OP_ARM64_RBIT64,
-	SIMD_OP_ARM64_AES_AESMC,
-	SIMD_OP_ARM64_SHA1C,
-	SIMD_OP_ARM64_SHA1H,
-	SIMD_OP_ARM64_SHA1M,
-	SIMD_OP_ARM64_SHA1P,
-	SIMD_OP_ARM64_SHA1SU0,
-	SIMD_OP_ARM64_SHA1SU1,
-	SIMD_OP_ARM64_SHA256H,
-	SIMD_OP_ARM64_SHA256H2,
-	SIMD_OP_ARM64_SHA256SU0,
-	SIMD_OP_ARM64_SHA256SU1,
-	SIMD_OP_ARM64_PMULL64_LOWER,
-	SIMD_OP_ARM64_PMULL64_UPPER,
-} SimdOp;
-
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
@@ -3032,9 +2945,15 @@ mini_safepoints_enabled (void)
 gpointer
 mono_arch_load_function (MonoJitICallId jit_icall_id);
 
-MonoGenericContext
+MONO_COMPONENT_API MonoGenericContext
 mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info);
 
+MONO_COMPONENT_API gpointer
+mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx);
+
 MonoMemoryManager* mini_get_default_mem_manager (void);
+
+MONO_COMPONENT_API int
+mono_wasm_get_debug_level (void);
 
 #endif /* __MONO_MINI_H__ */

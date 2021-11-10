@@ -123,7 +123,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
@@ -164,6 +164,7 @@ typedef struct _libunwindInfo
 {
     SIZE_T BaseAddress;
     CONTEXT *Context;
+    ULONG64 FunctionStart;
     UnwindReadMemoryCallback ReadMemory;
 } libunwindInfo;
 
@@ -957,7 +958,7 @@ ExtractProcInfoFromFde(
 
 static bool
 SearchCompactEncodingSection(
-    const libunwindInfo* info,
+    libunwindInfo* info,
     unw_word_t ip,
     unw_word_t compactUnwindSectionAddr,
     unw_proc_info_t *pip)
@@ -966,7 +967,11 @@ SearchCompactEncodingSection(
     if (!info->ReadMemory((PVOID)compactUnwindSectionAddr, &sectionHeader, sizeof(sectionHeader))) {
         return false;
     }
-    TRACE("Unwind ver %d common off: %08x common cnt: %d pers off: %08x pers cnt: %d index off: %08x index cnt: %d\n",
+    int32_t offset = ip - info->BaseAddress;
+
+    TRACE("Unwind %p offset %08x ver %d common off: %08x common cnt: %d pers off: %08x pers cnt: %d index off: %08x index cnt: %d\n",
+        (void*)compactUnwindSectionAddr,
+        offset,
         sectionHeader.version,
         sectionHeader.commonEncodingsArraySectionOffset,
         sectionHeader.commonEncodingsArrayCount,
@@ -979,7 +984,6 @@ SearchCompactEncodingSection(
         return false;
     }
 
-    int32_t offset = ip - info->BaseAddress;
     unwind_info_section_header_index_entry entry;
     unwind_info_section_header_index_entry entryNext;
     bool found;
@@ -1060,6 +1064,8 @@ SearchCompactEncodingSection(
             TRACE("Second level compressed pageEntry not found start %p end %p\n", (void*)funcStart, (void*)funcEnd);
         }
 
+        TRACE("Second level compressed: funcStart %p funcEnd %p pageEntry %08x pageEntryNext %08x\n", (void*)funcStart, (void*)funcEnd, pageEntry, pageEntryNext);
+
         if (ip < funcStart || ip > funcEnd) {
             ERROR("ip %p not in compressed second level\n", (void*)ip);
             return false;
@@ -1073,7 +1079,7 @@ SearchCompactEncodingSection(
             if (!ReadValue32(info, &addr, &encoding)) {
                 return false;
             }
-            TRACE("Second level compressed common table: %08x for offset %08x\n", encoding, pageOffset);
+            TRACE("Second level compressed common table: %08x for offset %08x encodingIndex %d\n", encoding, pageOffset, encodingIndex);
         }
         else
         {
@@ -1134,6 +1140,7 @@ SearchCompactEncodingSection(
         }
     }
 
+    info->FunctionStart = funcStart;
     pip->start_ip = funcStart;
     pip->end_ip = funcEnd;
     pip->lsda = lsda;
@@ -1171,6 +1178,7 @@ SearchDwarfSection(
             ERROR("ExtractFde FAILED for ip %p\n", (void*)ip);
             break;
         }
+
         if (ip >= ipStart && ip < ipEnd) {
             if (!ExtractProcInfoFromFde(info, &fdeAddr, pip, need_unwind_info)) {
                 ERROR("ExtractProcInfoFromFde FAILED for ip %p\n", (void*)ip);
@@ -1185,7 +1193,7 @@ SearchDwarfSection(
 
 
 static bool
-GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, const libunwindInfo* info, bool* step, int need_unwind_info)
+GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step, int need_unwind_info)
 {
     memset(pip, 0, sizeof(*pip));
     *step = false;
@@ -1297,11 +1305,12 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, const libunwindInfo* info, bool
         }
     }
 
-    ERROR("Unwind info not found for %p format %08x\n", (void*)ip, pip->format);
+    ERROR("Unwind info not found for %p format %08x ehframeSectionAddr %p ehframeSectionSize %p\n", (void*)ip, pip->format, (void*)ehframeSectionAddr, (void*)ehframeSectionSize);
     return false;
 }
 
 #if defined(TARGET_AMD64)
+
 static bool
 StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding)
 {
@@ -1370,9 +1379,49 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
         compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     return true;
 }
-#endif
+
+#define AMD64_SYSCALL_OPCODE 0x050f
+
+static bool
+StepWithCompactNoEncoding(const libunwindInfo* info)
+{
+    // We get here because we found the function the IP is in the compact unwind info, but the encoding is 0. This
+    // usually ends the unwind but here we check that the function is a syscall "wrapper" and assume there is no
+    // frame and pop the return address.
+    uint16_t opcode;
+    unw_word_t addr = info->Context->Rip - sizeof(opcode);
+    if (!ReadValue16(info, &addr, &opcode)) {
+        return false;
+    }
+    // Is the IP pointing just after a "syscall" opcode?
+    if (opcode != AMD64_SYSCALL_OPCODE) {
+        // There are cases where the IP points one byte after the syscall; not sure why.
+        addr = info->Context->Rip - sizeof(opcode) + 1;
+        if (!ReadValue16(info, &addr, &opcode)) {
+            return false;
+        }
+        // Is the IP pointing just after a "syscall" opcode + 1?
+        if (opcode != AMD64_SYSCALL_OPCODE) {
+            ERROR("StepWithCompactNoEncoding: not in syscall wrapper function\n");
+            return false;
+        }
+    }
+    // Pop the return address from the stack
+    uint64_t ip;
+    addr = info->Context->Rsp;
+    if (!ReadValue64(info, &addr, &ip)) {
+        return false;
+    }
+    info->Context->Rip = ip;
+    info->Context->Rsp += sizeof(uint64_t);
+    TRACE("StepWithCompactNoEncoding: SUCCESS new rip %p rsp %p\n", (void*)info->Context->Rip, (void*)info->Context->Rsp);
+    return true;
+}
+
+#endif // TARGET_AMD64
 
 #if defined(TARGET_ARM64)
+
 inline static bool
 ReadCompactEncodingRegister(const libunwindInfo* info, unw_word_t* addr, DWORD64* reg)
 {
@@ -1502,7 +1551,8 @@ StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_
         compactEncoding, (void*)context->Pc, (void*)context->Sp, (void*)context->Fp, (void*)context->Lr);
     return true;
 }
-#endif
+
+#endif // TARGET_ARM64
 
 static bool
 StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, unw_word_t functionStart)
@@ -1510,8 +1560,7 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
 #if defined(TARGET_AMD64)
     if (compactEncoding == 0)
     {
-        TRACE("Compact unwind missing for %p\n", (void*)info->Context->Rip);
-        return false;
+        return StepWithCompactNoEncoding(info);
     }
     switch (compactEncoding & UNWIND_X86_64_MODE_MASK)
     {
@@ -1606,6 +1655,17 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, &contextPointers->X27);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, &contextPointers->X28);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, &contextPointers->Fp);
+#elif defined(TARGET_S390X)
+    GetContextPointer(cursor, unwContext, UNW_S390X_R6, &contextPointers->R6);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R7, &contextPointers->R7);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R8, &contextPointers->R8);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R9, &contextPointers->R9);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R10, &contextPointers->R10);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R11, &contextPointers->R11);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R12, &contextPointers->R12);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R13, &contextPointers->R13);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R14, &contextPointers->R14);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R15, &contextPointers->R15);
 #else
 #error unsupported architecture
 #endif
@@ -1658,6 +1718,19 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_AARCH64_X29, (unw_word_t *) &winContext->Fp);
     unw_get_reg(cursor, UNW_AARCH64_X30, (unw_word_t *) &winContext->Lr);
     TRACE("sp %p pc %p lr %p fp %p\n", winContext->Sp, winContext->Pc, winContext->Lr, winContext->Fp);
+#elif defined(TARGET_S390X)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
+    unw_get_reg(cursor, UNW_S390X_R6, (unw_word_t *) &winContext->R6);
+    unw_get_reg(cursor, UNW_S390X_R7, (unw_word_t *) &winContext->R7);
+    unw_get_reg(cursor, UNW_S390X_R8, (unw_word_t *) &winContext->R8);
+    unw_get_reg(cursor, UNW_S390X_R9, (unw_word_t *) &winContext->R9);
+    unw_get_reg(cursor, UNW_S390X_R10, (unw_word_t *) &winContext->R10);
+    unw_get_reg(cursor, UNW_S390X_R11, (unw_word_t *) &winContext->R11);
+    unw_get_reg(cursor, UNW_S390X_R12, (unw_word_t *) &winContext->R12);
+    unw_get_reg(cursor, UNW_S390X_R13, (unw_word_t *) &winContext->R13);
+    unw_get_reg(cursor, UNW_S390X_R14, (unw_word_t *) &winContext->R14);
+    TRACE("sp %p pc %p lr %p\n", winContext->R15, winContext->PSWAddr, winContext->R14);
 #else
 #error unsupported architecture
 #endif
@@ -1746,6 +1819,18 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_AARCH64_X30:  *valp = (unw_word_t)winContext->Lr; break;
     case UNW_AARCH64_SP:   *valp = (unw_word_t)winContext->Sp; break;
     case UNW_AARCH64_PC:   *valp = (unw_word_t)winContext->Pc; break;
+#elif defined(TARGET_S390X)
+    case UNW_S390X_R6:     *valp = (unw_word_t)winContext->R6; break;
+    case UNW_S390X_R7:     *valp = (unw_word_t)winContext->R7; break;
+    case UNW_S390X_R8:     *valp = (unw_word_t)winContext->R8; break;
+    case UNW_S390X_R9:     *valp = (unw_word_t)winContext->R9; break;
+    case UNW_S390X_R10:    *valp = (unw_word_t)winContext->R10; break;
+    case UNW_S390X_R11:    *valp = (unw_word_t)winContext->R11; break;
+    case UNW_S390X_R12:    *valp = (unw_word_t)winContext->R12; break;
+    case UNW_S390X_R13:    *valp = (unw_word_t)winContext->R13; break;
+    case UNW_S390X_R14:    *valp = (unw_word_t)winContext->R14; break;
+    case UNW_S390X_R15:    *valp = (unw_word_t)winContext->R15; break;
+    case UNW_S390X_IP:     *valp = (unw_word_t)winContext->PSWAddr; break;
 #else
 #error unsupported architecture
 #endif
@@ -1781,7 +1866,7 @@ get_proc_name(unw_addr_space_t as, unw_word_t addr, char *bufp, size_t buf_len, 
 static int
 find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int need_unwind_info, void *arg)
 {
-    const auto *info = (libunwindInfo*)arg;
+    auto *info = (libunwindInfo*)arg;
 #ifdef __APPLE__
     bool step;
     if (!GetProcInfo(ip, pip, info, &step, need_unwind_info)) {
@@ -1963,6 +2048,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         TRACE("ip %p not in range start_ip %p end_ip %p\n", ip, pip->start_ip, pip->end_ip);
         return -UNW_ENOINFO;
     }
+    info->FunctionStart = pip->start_ip;
     return UNW_ESUCCESS;
 #else
     return _OOP_find_proc_info(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
@@ -2012,12 +2098,13 @@ Function:
 Parameters:
     context - the start context in the target
     contextPointers - the context of the next frame
+    functionStart - the pointer to return the starting address of the function or nullptr
     baseAddress - base address of the module to find the unwind info
     readMemoryCallback - reads memory from the target
 --*/
 BOOL
 PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
 {
     unw_addr_space_t addrSpace = 0;
     unw_cursor_t cursor;
@@ -2027,6 +2114,7 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
 
     info.BaseAddress = baseAddress;
     info.Context = context;
+    info.FunctionStart = 0;
     info.ReadMemory = readMemoryCallback;
 
 #ifdef __APPLE__
@@ -2077,6 +2165,10 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
     result = TRUE;
 
 exit:
+    if (functionStart)
+    {
+        *functionStart = info.FunctionStart;
+    }
     if (addrSpace != 0)
     {
         unw_destroy_addr_space(addrSpace);
@@ -2088,7 +2180,7 @@ exit:
 
 BOOL
 PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
 {
     return FALSE;
 }

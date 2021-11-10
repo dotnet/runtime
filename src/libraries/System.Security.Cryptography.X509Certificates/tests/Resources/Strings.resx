@@ -153,4 +153,13 @@
   <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
     <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
   </data>
+  <data name="Cryptography_X509Store_WouldModifyUserTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify user trust settings, and has been denied.</value>
+  </data>
+  <data name="Cryptography_X509Store_WouldModifyAdminTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify admin trust settings, and has been denied.</value>
+  </data>
+  <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
+    <value>The X509 certificate store is read-only.</value>
+  </data>
 </root>

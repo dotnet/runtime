@@ -72,8 +72,8 @@ function Get-Help() {
   Write-Host "Libraries settings:"
   Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net6.0 or net48."
-  Write-Host "                          [Default: net6.0]"
+  Write-Host "  -framework (-f)         Build framework: net7.0 or net48."
+  Write-Host "                          [Default: net7.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
@@ -127,17 +127,18 @@ if ($subset -eq 'help') {
 }
 
 if ($vs) {
+  $archToOpen = $arch[0]
+  $configToOpen = $configuration[0]
+  $repoRoot = Split-Path $PSScriptRoot -Parent
+  if ($runtimeConfiguration) {
+    $configToOpen = $runtimeConfiguration
+  }
+
   if ($vs -ieq "coreclr.sln") {
     # If someone passes in coreclr.sln (case-insensitive),
     # launch the generated CMake solution.
-    $archToOpen = $arch[0]
-    $configToOpen = $configuration[0]
-    if ($runtimeConfiguration) {
-      $configToOpen = $runtimeConfiguration
-    }
     $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
     if (-Not (Test-Path $vs)) {
-      $repoRoot = Split-Path $PSScriptRoot -Parent
       Invoke-Expression "& `"$repoRoot/src/coreclr/build-runtime.cmd`" -configureonly -$archToOpen -$configToOpen -msbuild"
       if ($lastExitCode -ne 0) {
         Write-Error "Failed to generate the CoreCLR solution file."
@@ -148,12 +149,25 @@ if ($vs) {
       }
     }
   }
+  elseif ($vs -ieq "corehost.sln") {
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
+    if (-Not (Test-Path $vs)) {
+      Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true"
+      if ($lastExitCode -ne 0) {
+        Write-Error "Failed to generate the CoreHost solution file."
+        exit 1
+      }
+      if (-Not (Test-Path $vs)) {
+        Write-Error "Unable to find the CoreHost solution file at $vs."
+      }
+    }
+  }
   elseif (-Not (Test-Path $vs)) {
     $solution = $vs
 
     if ($runtimeFlavor -eq "Mono") {
       # Search for the solution in mono
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono\netcore" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
     } else {
       # Search for the solution in coreclr
       $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
@@ -223,6 +237,11 @@ if (!$actionPassedIn) {
   $arguments = "-restore -build"
 }
 
+if ($PSBoundParameters.ContainsKey('os') -and $PSBoundParameters['os'] -eq "Browser") {
+  # make sure it is capitalized
+  $PSBoundParameters['os'] = "Browser"
+}
+
 foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
@@ -246,6 +265,10 @@ foreach ($argument in $PSBoundParameters.Keys)
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
+
+# Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
+# The later changes are ignored when using the cache.
+$env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
 $failedBuilds = @()
 

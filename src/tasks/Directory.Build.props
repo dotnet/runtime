@@ -2,6 +2,10 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
 
   <PropertyGroup>
-    <TargetFrameworkForNETFramework>net472</TargetFrameworkForNETFramework>
+    <TargetFrameworkForNETFrameworkTasks>net472</TargetFrameworkForNETFrameworkTasks>
+    <!-- Don't build for NETFramework during source-build. -->
+    <TargetFrameworkForNETFrameworkTasks Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+    <TargetFrameworkForNETCoreTasks>net6.0</TargetFrameworkForNETCoreTasks>
   </PropertyGroup>
 </Project>

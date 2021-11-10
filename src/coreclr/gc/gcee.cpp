@@ -325,25 +325,21 @@ bool GCHeap::IsConcurrentGCInProgress()
 }
 
 #ifdef FEATURE_EVENT_TRACE
-void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address)
+void gc_heap::fire_etw_allocation_event (size_t allocation_amount, 
+                                         int gen_number, 
+                                         uint8_t* object_address,
+                                         size_t object_size)
 {
-    gc_etw_alloc_kind kind;
-    switch (gen_number)
-    {
-    case 0:
-        kind = gc_etw_alloc_soh;
-        break;
-    case 3:
-        kind = gc_etw_alloc_loh;
-        break;
-    case 4:
-        kind = gc_etw_alloc_poh;
-        break;
-    default:
-        __UNREACHABLE();
-    }
-
-    FIRE_EVENT(GCAllocationTick_V3, static_cast<uint64_t>(allocation_amount), kind, heap_number, object_address);
+#ifdef FEATURE_REDHAWK
+    FIRE_EVENT(GCAllocationTick_V1, (uint32_t)allocation_amount, (uint32_t)gen_to_oh (gen_number));
+#else
+    FIRE_EVENT(GCAllocationTick_V4, 
+                allocation_amount, 
+                (uint32_t)gen_to_oh (gen_number),
+                heap_number, 
+                object_address, 
+                object_size);
+#endif //FEATURE_REDHAWK
 }
 
 void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)

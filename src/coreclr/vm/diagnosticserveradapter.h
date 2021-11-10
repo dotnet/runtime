@@ -4,9 +4,9 @@
 #ifndef __DIAGNOSTIC_SERVER_ADAPTER_H__
 #define __DIAGNOSTIC_SERVER_ADAPTER_H__
 
-#if defined(FEATURE_PERFTRACING) && !(CROSSGEN_COMPILE)
+#if defined(FEATURE_PERFTRACING)
 
-#include "ds-server.h"
+#include <eventpipe/ds-server.h>
 
 class DiagnosticServerAdapter final
 {
@@ -30,8 +30,13 @@ public:
 	{
 		return ds_server_resume_runtime_startup();
 	}
+
+	static bool IsPausedInRuntimeStartup()
+	{
+		return ds_server_is_paused_in_startup();
+	}
 };
 
-#endif // FEATURE_PERFTRACING && !CROSSGEN_COMPILE
+#endif // FEATURE_PERFTRACING
 
 #endif // __DIAGNOSTIC_SERVER_ADAPTER_H__

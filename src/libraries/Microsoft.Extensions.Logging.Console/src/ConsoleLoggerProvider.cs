@@ -47,8 +47,8 @@ namespace Microsoft.Extensions.Logging.Console
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
 
             _messageQueue = new ConsoleLoggerProcessor();
-            // TODO update when https://github.com/dotnet/runtime/issues/44922 implemented
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || DoesWindowsConsoleSupportAnsi())
+
+            if (DoesConsoleSupportAnsi())
             {
                 _messageQueue.Console = new AnsiLogConsole();
                 _messageQueue.ErrorConsole = new AnsiLogConsole(stdErr: true);
@@ -60,8 +60,14 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private static bool DoesWindowsConsoleSupportAnsi()
+        [UnsupportedOSPlatformGuard("windows")]
+        private static bool DoesConsoleSupportAnsi()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return true;
+            }
+
             // for Windows, check the console mode
             var stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
             if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out int consoleMode))

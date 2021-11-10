@@ -11,8 +11,9 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> NativeName_TestData()
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.NativeName };
-            
-            if (PlatformDetection.IsNotUsingLimitedCultures)
+
+            // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
+            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid)
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "en-CA", "English (Canada)" };

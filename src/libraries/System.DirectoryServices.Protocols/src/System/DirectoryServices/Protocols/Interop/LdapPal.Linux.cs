@@ -41,6 +41,8 @@ namespace System.DirectoryServices.Protocols
             return result;
         }
 
+        internal static int GetBoolOption(ConnectionHandle ldapHandle, LdapOption option, ref bool outValue) => Interop.Ldap.ldap_get_option_bool(ldapHandle, option, ref outValue);
+
         internal static int GetIntOption(ConnectionHandle ldapHandle, LdapOption option, ref int outValue) => Interop.Ldap.ldap_get_option_int(ldapHandle, option, ref outValue);
 
         internal static int GetPtrOption(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr outValue) => Interop.Ldap.ldap_get_option_ptr(ldapHandle, option, ref outValue);
@@ -85,6 +87,8 @@ namespace System.DirectoryServices.Protocols
         internal static int SearchDirectory(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber) =>
                                 Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, timelimit, sizelimit, ref messageNumber);
 
+        internal static int SetBoolOption(ConnectionHandle ld, LdapOption option, bool value) => Interop.Ldap.ldap_set_option_bool(ld, option, value);
+
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetClientCertOption(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue) => Interop.Ldap.ldap_set_option_clientcert(ldapHandle, option, outValue);
 
@@ -92,14 +96,58 @@ namespace System.DirectoryServices.Protocols
 
         internal static int SetPtrOption(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr inValue) => Interop.Ldap.ldap_set_option_ptr(ldapHandle, option, ref inValue);
 
+        internal static int SetStringOption(ConnectionHandle ldapHandle, LdapOption option, string inValue) => Interop.Ldap.ldap_set_option_string(ldapHandle, option, inValue);
+
         internal static int SetReferralOption(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue) => Interop.Ldap.ldap_set_option_referral(ldapHandle, option, ref outValue);
 
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetServerCertOption(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue) => Interop.Ldap.ldap_set_option_servercert(ldapHandle, option, outValue);
 
-        internal static int BindToDirectory(ConnectionHandle ld, string who, string passwd) => Interop.Ldap.ldap_simple_bind(ld, who, passwd);
+        internal static int BindToDirectory(ConnectionHandle ld, string who, string passwd)
+        {
+            IntPtr passwordPtr = IntPtr.Zero;
+            try
+            {
+                passwordPtr = LdapPal.StringToPtr(passwd);
+                berval passwordBerval = new berval
+                {
+                    bv_len = passwd.Length,
+                    bv_val = passwordPtr,
+                };
 
-        internal static int StartTls(ConnectionHandle ldapHandle, ref int ServerReturnValue, ref IntPtr Message, IntPtr ServerControls, IntPtr ClientControls) => Interop.Ldap.ldap_start_tls(ldapHandle, ref ServerReturnValue, ref Message, ServerControls, ClientControls);
+                return Interop.Ldap.ldap_sasl_bind(ld, who, Interop.LDAP_SASL_SIMPLE, passwordBerval, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(passwordPtr);
+            }
+        }
+
+        internal static int StartTls(ConnectionHandle ldapHandle, ref int serverReturnValue, ref IntPtr message, IntPtr serverControls, IntPtr clientControls)
+        {
+            // Windows and Linux have different signatures for ldap_start_tls_s.
+            // On Linux, we don't have a serverReturnValue or the message/result parameter.
+            //
+            // So in the PAL here, just emulate.
+
+            int error = Interop.Ldap.ldap_start_tls(ldapHandle, serverControls, clientControls);
+
+            // On Windows, serverReturnValue only has meaning if the result code is LDAP_OTHER.
+            // If OpenLDAP returns that, we don't have a better code, so assign that through.
+            // If we get any other error, assign serverReturnValue to 0 since it shouldn't be read.
+            if (error == (int)ResultCode.Other)
+            {
+                serverReturnValue = error;
+            }
+            else
+            {
+                serverReturnValue = 0;
+            }
+
+            // We don't have a referrer/message/result value, so just set it to NULL.
+            message = IntPtr.Zero;
+            return error;
+        }
 
         // openldap doesn't have a ldap_stop_tls function. Returning true as no-op for Linux.
         internal static byte StopTls(ConnectionHandle ldapHandle) => 1;

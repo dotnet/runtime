@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -13,17 +14,22 @@ namespace System.Security.Cryptography.Pkcs
     {
         static partial void PrepareRegistrationDsa(Dictionary<string, CmsSignature> lookup)
         {
-            lookup.Add(Oids.DsaWithSha1, new DSACmsSignature(Oids.DsaWithSha1, HashAlgorithmName.SHA1));
-            lookup.Add(Oids.DsaWithSha256, new DSACmsSignature(Oids.DsaWithSha256, HashAlgorithmName.SHA256));
-            lookup.Add(Oids.DsaWithSha384, new DSACmsSignature(Oids.DsaWithSha384, HashAlgorithmName.SHA384));
-            lookup.Add(Oids.DsaWithSha512, new DSACmsSignature(Oids.DsaWithSha512, HashAlgorithmName.SHA512));
-            lookup.Add(Oids.Dsa, new DSACmsSignature(null, default));
+            if (Helpers.IsDSASupported)
+            {
+                lookup.Add(Oids.DsaWithSha1, new DSACmsSignature(Oids.DsaWithSha1, HashAlgorithmName.SHA1));
+                lookup.Add(Oids.DsaWithSha256, new DSACmsSignature(Oids.DsaWithSha256, HashAlgorithmName.SHA256));
+                lookup.Add(Oids.DsaWithSha384, new DSACmsSignature(Oids.DsaWithSha384, HashAlgorithmName.SHA384));
+                lookup.Add(Oids.DsaWithSha512, new DSACmsSignature(Oids.DsaWithSha512, HashAlgorithmName.SHA512));
+                lookup.Add(Oids.Dsa, new DSACmsSignature(null, default));
+            }
         }
 
         private sealed class DSACmsSignature : CmsSignature
         {
             private readonly HashAlgorithmName _expectedDigest;
             private readonly string? _signatureAlgorithm;
+
+            internal override RSASignaturePadding? SignaturePadding => null;
 
             internal DSACmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
             {
@@ -57,6 +63,8 @@ namespace System.Security.Cryptography.Pkcs
                             digestAlgorithmOid,
                             _signatureAlgorithm));
                 }
+
+                Debug.Assert(Helpers.IsDSASupported);
 
                 DSA? dsa = certificate.GetDSAPublicKey();
 
@@ -103,8 +111,12 @@ namespace System.Security.Cryptography.Pkcs
                 AsymmetricAlgorithm? key,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
-                [NotNullWhen(true)] out byte[]? signatureValue)
+                [NotNullWhen(true)] out byte[]? signatureValue,
+                out byte[]? signatureParameters)
             {
+                Debug.Assert(Helpers.IsDSASupported);
+                signatureParameters = null;
+
                 // If there's no private key, fall back to the public key for a "no private key" exception.
                 DSA? dsa = key as DSA ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<DSA>(certificate, silent) ??

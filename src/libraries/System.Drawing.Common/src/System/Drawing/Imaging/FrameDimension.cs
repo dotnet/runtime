@@ -78,7 +78,7 @@ namespace System.Drawing.Imaging
             if (this == s_time) return "Time";
             if (this == s_resolution) return "Resolution";
             if (this == s_page) return "Page";
-            return "[FrameDimension: " + _guid + "]";
+            return $"[FrameDimension: {_guid}]";
         }
     }
 }

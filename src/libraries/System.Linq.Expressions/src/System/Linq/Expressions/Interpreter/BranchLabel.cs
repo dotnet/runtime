@@ -20,10 +20,8 @@ namespace System.Linq.Expressions.Interpreter
             StackDepth = stackDepth;
         }
 
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.InvariantCulture, "->{0} C({1}) S({2})", Index, ContinuationStackDepth, StackDepth);
-        }
+        public override string ToString() =>
+            string.Create(CultureInfo.InvariantCulture, $"->{Index} C({ContinuationStackDepth}) S({StackDepth})");
     }
 
     internal sealed class BranchLabel

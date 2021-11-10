@@ -26,6 +26,9 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
 
     // Indicates the operands should be swapped in importation.
     NeedsOperandsSwapped = 0x04,
+
+    // Base type should come from the this argument
+    BaseTypeFromThisArg = 0x08,
 };
 
 inline SimdAsHWIntrinsicFlag operator~(SimdAsHWIntrinsicFlag value)
@@ -123,6 +126,12 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::NeedsOperandsSwapped) == SimdAsHWIntrinsicFlag::NeedsOperandsSwapped;
+    }
+
+    static bool BaseTypeFromThisArg(NamedIntrinsic id)
+    {
+        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & SimdAsHWIntrinsicFlag::BaseTypeFromThisArg) == SimdAsHWIntrinsicFlag::BaseTypeFromThisArg;
     }
 };
 

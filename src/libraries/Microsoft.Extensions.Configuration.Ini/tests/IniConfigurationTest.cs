@@ -229,6 +229,7 @@ DefaultConnection=TestConnectionString
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50867", TestPlatforms.Android)]
         public void IniConfiguration_Throws_On_Missing_Configuration_File()
         {
             var exception = Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddIniFile("NotExistingConfig.ini").Build());

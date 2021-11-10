@@ -246,7 +246,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 if (pronunciation != null)
                 {
                     // Garbage transition is optional whereas Wildcard is not.  So we need additional epsilon transition.
-                    OneOf oneOf = pronunciation.IndexOf(';') >= 0 ? new OneOf(parent._rule, _backend) : null;
+                    OneOf oneOf = pronunciation.Contains(';') ? new OneOf(parent._rule, _backend) : null;
 
                     for (int iCurPron = 0, iDeliminator = 0; iCurPron < pronunciation.Length; iCurPron = iDeliminator + 1)
                     {
@@ -318,7 +318,7 @@ namespace System.Speech.Internal.SrgsCompiler
             System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sToken));
 
             // Easy out if no escape characters
-            if (sToken.IndexOf("\\/", StringComparison.Ordinal) == -1)
+            if (!sToken.Contains("\\/", StringComparison.Ordinal))
             {
                 return sToken;
             }

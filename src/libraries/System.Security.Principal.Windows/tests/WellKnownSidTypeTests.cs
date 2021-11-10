@@ -85,7 +85,6 @@ public class WellKnownSidTypeTests
         }
     }
 
-#if NETCOREAPP
     [ConditionalTheory(nameof(AccountIsDomainJoined))]
     [InlineData(WellKnownSidType.WinBuiltinDCOMUsersSid)]
     [InlineData(WellKnownSidType.WinBuiltinIUsersSid)]
@@ -144,7 +143,6 @@ public class WellKnownSidTypeTests
         var currentDomainSid = WindowsIdentity.GetCurrent().Owner.AccountDomainSid;
         AssertExtensions.Throws<ArgumentException>("sidType", () => new SecurityIdentifier(sidType, currentDomainSid));
     }
-    #endif
 
     [Fact]
     public void MaxDefinedHasLegacyValue()

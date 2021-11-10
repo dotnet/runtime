@@ -285,6 +285,8 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlagNumeric(HAS_EDGE_PROFILE, EXTRA_JIT_FLAGS::HAS_EDGE_PROFILE);
     AddFlagNumeric(HAS_CLASS_PROFILE, EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE);
     AddFlagNumeric(HAS_LIKELY_CLASS, EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS);
+    AddFlagNumeric(HAS_STATIC_PROFILE, EXTRA_JIT_FLAGS::HAS_STATIC_PROFILE);
+    AddFlagNumeric(HAS_DYNAMIC_PROFILE, EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE);
 
 #undef AddFlag
 #undef AddFlagNumeric

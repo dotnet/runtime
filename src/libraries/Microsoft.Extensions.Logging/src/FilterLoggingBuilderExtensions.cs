@@ -112,69 +112,69 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Adds a log filter to the factory.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
+        /// <param name="builder">The <see cref="LoggerFilterOptions"/> to add the filter to.</param>
         /// <param name="categoryLevelFilter">The filter function to apply.</param>
-        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="LoggerFilterOptions"/> so that additional calls can be chained.</returns>
         public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, Func<string, LogLevel, bool> categoryLevelFilter) =>
             AddRule(builder, filter: (type, name, level) => categoryLevelFilter(name, level));
 
         /// <summary>
         /// Adds a log filter for the given <see cref="ILoggerProvider"/>.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
+        /// <param name="builder">The <see cref="LoggerFilterOptions"/> to add the filter to.</param>
         /// <param name="categoryLevelFilter">The filter function to apply.</param>
         /// <typeparam name="T">The <see cref="ILoggerProvider"/> which this filter will be added for.</typeparam>
-        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="LoggerFilterOptions"/> so that additional calls can be chained.</returns>
         public static LoggerFilterOptions AddFilter<T>(this LoggerFilterOptions builder, Func<string, LogLevel, bool> categoryLevelFilter) where T : ILoggerProvider =>
             AddRule(builder, type: typeof(T).FullName, filter: (type, name, level) => categoryLevelFilter(name, level));
 
         /// <summary>
         /// Adds a log filter to the factory.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
+        /// <param name="builder">The <see cref="LoggerFilterOptions"/> to add the filter to.</param>
         /// <param name="levelFilter">The filter function to apply.</param>
-        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="LoggerFilterOptions"/> so that additional calls can be chained.</returns>
         public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, Func<LogLevel, bool> levelFilter) =>
             AddRule(builder, filter: (type, name, level) => levelFilter(level));
 
         /// <summary>
         /// Adds a log filter for the given <see cref="ILoggerProvider"/>.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
+        /// <param name="builder">The <see cref="LoggerFilterOptions"/> to add the filter to.</param>
         /// <param name="levelFilter">The filter function to apply.</param>
         /// <typeparam name="T">The <see cref="ILoggerProvider"/> which this filter will be added for.</typeparam>
-        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="LoggerFilterOptions"/> so that additional calls can be chained.</returns>
         public static LoggerFilterOptions AddFilter<T>(this LoggerFilterOptions builder, Func<LogLevel, bool> levelFilter) where T : ILoggerProvider =>
             AddRule(builder, type: typeof(T).FullName, filter: (type, name, level) => levelFilter(level));
 
         /// <summary>
         /// Adds a log filter to the factory.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
+        /// <param name="builder">The <see cref="LoggerFilterOptions"/> to add the filter to.</param>
         /// <param name="category">The category to filter.</param>
         /// <param name="level">The level to filter.</param>
-        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="LoggerFilterOptions"/> so that additional calls can be chained.</returns>
         public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, string category, LogLevel level) =>
             AddRule(builder, category: category, level: level);
 
         /// <summary>
         /// Adds a log filter for the given <see cref="ILoggerProvider"/>.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
+        /// <param name="builder">The <see cref="LoggerFilterOptions"/> to add the filter to.</param>
         /// <param name="category">The category to filter.</param>
         /// <param name="level">The level to filter.</param>
         /// <typeparam name="T">The <see cref="ILoggerProvider"/> which this filter will be added for.</typeparam>
-        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="LoggerFilterOptions"/> so that additional calls can be chained.</returns>
         public static LoggerFilterOptions AddFilter<T>(this LoggerFilterOptions builder, string category, LogLevel level) where T : ILoggerProvider =>
             AddRule(builder, type: typeof(T).FullName, category: category, level: level);
 
         /// <summary>
         /// Adds a log filter to the factory.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
+        /// <param name="builder">The <see cref="LoggerFilterOptions"/> to add the filter to.</param>
         /// <param name="category">The category to filter.</param>
         /// <param name="levelFilter">The filter function to apply.</param>
-        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="LoggerFilterOptions"/> so that additional calls can be chained.</returns>
         public static LoggerFilterOptions AddFilter(this LoggerFilterOptions builder, string category, Func<LogLevel, bool> levelFilter) =>
             AddRule(builder, category: category, filter: (type, name, level) => levelFilter(level));
 

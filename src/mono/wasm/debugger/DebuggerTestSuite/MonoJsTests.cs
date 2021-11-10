@@ -14,119 +14,16 @@ namespace DebuggerTests
     public class MonoJsTests : DebuggerTestBase
     {
         [Fact]
-        public async Task FixupNameValueObjectsWithMissingParts()
-        {
-            var bp1_res = await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", 3);
-
-            var names = new JObject[]
-            {
-                    JObject.FromObject(new { name = "Abc" }),
-                    JObject.FromObject(new { name = "Def" }),
-                    JObject.FromObject(new { name = "Xyz" })
-            };
-
-            var values = new JObject[]
-            {
-                    JObject.FromObject(new { value = TObject("testclass") }),
-                    JObject.FromObject(new { value = TString("test string") }),
-            };
-
-            var getters = new JObject[]
-            {
-                    GetterRes("xyz"),
-                    GetterRes("unattached")
-            };
-
-            var list = new[] { names[0], names[1], values[0], names[2], getters[0], getters[1] };
-            var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression = $"MONO._fixup_name_value_objects({JsonConvert.SerializeObject(list)})", returnByValue = true }), token);
-            Assert.True(res.IsOk);
-
-            await CheckProps(res.Value["result"]["value"], new
-            {
-                Abc = TSymbol("<unreadable value>"),
-                Def = TObject("testclass"),
-                Xyz = TGetter("xyz")
-            }, "#1", num_fields: 4);
-
-            JObject.DeepEquals(getters[1], res.Value["result"]["value"].Values<JObject>().ToArray()[3]);
-
-            static JObject GetterRes(string name) => JObject.FromObject(new
-            {
-                get = new
-                {
-                    className = "Function",
-                    description = $"get {name} () {{}}",
-                    type = "function"
-                }
-            });
-        }
-
-        [Fact]
-        public async Task GetParamsAndLocalsWithInvalidIndices()
-        {
-            var bp1_res = await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", 3);
-            var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] Math:IntAdd', 1, 2); })",
-                null, -1, -1, "IntAdd");
-
-            var scope_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-            var scope = int.Parse(scope_id.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries)[2]);
-
-            var var_ids = new[]
-            {
-                    new { index = 0, name = "one" },
-                    new { index = -12, name = "bad0" },
-                    new { index = 1231, name = "bad1" }
-                };
-
-            var expression = $"MONO.mono_wasm_get_variables({scope}, {JsonConvert.SerializeObject(var_ids)})";
-
-            var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), token);
-            Assert.True(res.IsOk);
-
-            await CheckProps(res.Value["result"]?["value"], new
-            {
-                one = TNumber(3),
-                bad0 = TSymbol("<unreadable value>"),
-                bad1 = TSymbol("<unreadable value>")
-            }, "results");
-        }
-
-        [Fact]
-        public async Task InvalidScopeId()
-        {
-            var bp1_res = await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", 3);
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] Math:IntAdd', 1, 2); })",
-                null, -1, -1, "IntAdd");
-
-            var var_ids = new[]
-            {
-                    new { index = 0, name = "one" },
-                };
-
-            var scope_id = "-12";
-            var expression = $"MONO.mono_wasm_get_variables({scope_id}, {JsonConvert.SerializeObject(var_ids)})";
-            var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), token);
-            Assert.False(res.IsOk);
-
-            scope_id = "30000";
-            expression = $"MONO.mono_wasm_get_variables({scope_id}, {JsonConvert.SerializeObject(var_ids)})";
-            res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), token);
-            Assert.False(res.IsOk);
-        }
-
-        [Fact]
         public async Task BadRaiseDebugEventsTest()
         {
             var bad_expressions = new[]
             {
-                    "MONO.mono_wasm_raise_debug_event('')",
-                    "MONO.mono_wasm_raise_debug_event(undefined)",
-                    "MONO.mono_wasm_raise_debug_event({})",
+                    "INTERNAL.mono_wasm_raise_debug_event('')",
+                    "INTERNAL.mono_wasm_raise_debug_event(undefined)",
+                    "INTERNAL.mono_wasm_raise_debug_event({})",
 
-                    "MONO.mono_wasm_raise_debug_event({eventName:'foo'}, '')",
-                    "MONO.mono_wasm_raise_debug_event({eventName:'foo'}, 12)"
+                    "INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, '')",
+                    "INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, 12)"
                 };
 
             foreach (var expression in bad_expressions)
@@ -161,7 +58,7 @@ namespace DebuggerTests
             });
 
             var trace_str = trace.HasValue ? $"trace: {trace.ToString().ToLower()}" : String.Empty;
-            var expression = $"MONO.mono_wasm_raise_debug_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
+            var expression = $"INTERNAL.mono_wasm_raise_debug_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
             var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
             Assert.True(res.IsOk, $"Expected to pass for {expression}");
 
@@ -242,7 +139,7 @@ namespace DebuggerTests
                 pdb_base64 = Convert.ToBase64String(bytes);
             }
 
-            var expression = $@"MONO.mono_wasm_raise_debug_event({{
+            var expression = $@"INTERNAL.mono_wasm_raise_debug_event({{
                     eventName: 'AssemblyLoaded',
                     assembly_name: '{asm_name}',
                     assembly_b64: '{asm_base64}',

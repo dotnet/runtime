@@ -7,12 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
-
-#if CORERT
-using RuntimeType = System.Type;
-using EnumInfo = Internal.Runtime.Augments.EnumInfo;
-#endif
 
 // The code below includes partial support for float/double and
 // pointer sized enums.
@@ -123,7 +119,7 @@ namespace System
 
         private static string? GetEnumName(EnumInfo enumInfo, ulong ulValue)
         {
-            int index = Array.BinarySearch(enumInfo.Values, ulValue);
+            int index = FindDefinedIndex(enumInfo.Values, ulValue);
             if (index >= 0)
             {
                 return enumInfo.Names[index];
@@ -339,10 +335,54 @@ namespace System
         {
             if (flag is null)
                 throw new ArgumentNullException(nameof(flag));
-            if (!GetType().IsEquivalentTo(flag.GetType()))
+            if (GetType() != flag.GetType() && !GetType().IsEquivalentTo(flag.GetType()))
                 throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), GetType()));
 
-            return InternalHasFlag(flag);
+            ref byte pThisValue = ref this.GetRawData();
+            ref byte pFlagsValue = ref flag.GetRawData();
+
+            switch (InternalGetCorElementType())
+            {
+                case CorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    {
+                        byte flagsValue = pFlagsValue;
+                        return (pThisValue & flagsValue) == flagsValue;
+                    }
+                case CorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_CHAR:
+                    {
+                        ushort flagsValue = Unsafe.As<byte, ushort>(ref pFlagsValue);
+                        return (Unsafe.As<byte, ushort>(ref pThisValue) & flagsValue) == flagsValue;
+                    }
+                case CorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
+                case CorElementType.ELEMENT_TYPE_R4:
+                    {
+                        uint flagsValue = Unsafe.As<byte, uint>(ref pFlagsValue);
+                        return (Unsafe.As<byte, uint>(ref pThisValue) & flagsValue) == flagsValue;
+                    }
+                case CorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
+                case CorElementType.ELEMENT_TYPE_R8:
+                    {
+                        ulong flagsValue = Unsafe.As<byte, ulong>(ref pFlagsValue);
+                        return (Unsafe.As<byte, ulong>(ref pThisValue) & flagsValue) == flagsValue;
+                    }
+                default:
+                    Debug.Fail("Unknown enum underlying type");
+                    return false;
+            }
         }
 
         internal static ulong[] InternalGetValues(RuntimeType enumType)
@@ -357,7 +397,22 @@ namespace System
             ulong[] ulValues = Enum.InternalGetValues(enumType);
             ulong ulValue = Enum.ToUInt64(value);
 
-            return Array.BinarySearch(ulValues, ulValue) >= 0;
+            return FindDefinedIndex(ulValues, ulValue) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int FindDefinedIndex(ulong[] ulValues, ulong ulValue)
+        {
+            // Binary searching has a higher constant overhead than linear.
+            // For smaller enums, use IndexOf.  For larger enums, use BinarySearch.
+            // This threshold can be tweaked over time as optimizations evolve.
+            const int NumberOfValuesThreshold = 32;
+
+            int ulValuesLength = ulValues.Length;
+            ref ulong start = ref MemoryMarshal.GetArrayDataReference(ulValues);
+            return ulValuesLength <= NumberOfValuesThreshold ?
+                SpanHelpers.IndexOf(ref start, ulValue, ulValuesLength) :
+                SpanHelpers.BinarySearch(ref start, ulValuesLength, ulValue);
         }
 
         public static bool IsDefined(Type enumType, object value)
@@ -879,6 +934,8 @@ namespace System
 
         private static bool TryParseByName(RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out ulong result)
         {
+            ReadOnlySpan<char> originalValue = value;
+
             // Find the field. Let's assume that these are always static classes because the class is an enum.
             EnumInfo enumInfo = GetEnumInfo(enumType);
             string[] enumNames = enumInfo.Names;
@@ -952,7 +1009,7 @@ namespace System
 
             if (throwOnFailure)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumValueNotFound, value.ToString()));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumValueNotFound, originalValue.ToString()));
             }
 
             result = 0;
@@ -1024,7 +1081,7 @@ namespace System
                 {
                     case 'G':
                     case 'g':
-                        return GetEnumName(rtType, ToUInt64(value)) ?? value.ToString()!;
+                        return InternalFormat(rtType, ToUInt64(value)) ?? value.ToString()!;
 
                     case 'D':
                     case 'd':
@@ -1085,27 +1142,82 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, ushort>(ref data);
                 case CorElementType.ELEMENT_TYPE_I4:
+#if TARGET_32BIT
+                case CorElementType.ELEMENT_TYPE_I:
+#endif
                     return (ulong)Unsafe.As<byte, int>(ref data);
                 case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
                 case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, uint>(ref data);
                 case CorElementType.ELEMENT_TYPE_I8:
+#if TARGET_64BIT
+                case CorElementType.ELEMENT_TYPE_I:
+#endif
                     return (ulong)Unsafe.As<byte, long>(ref data);
                 case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
                 case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, ulong>(ref data);
-                case CorElementType.ELEMENT_TYPE_I:
-                    return (ulong)Unsafe.As<byte, IntPtr>(ref data);
-                case CorElementType.ELEMENT_TYPE_U:
-                    return (ulong)Unsafe.As<byte, UIntPtr>(ref data);
                 default:
-                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+                    Debug.Fail("Unknown enum underlying type");
+                    return 0;
             }
         }
 
         #endregion
 
         #region Object Overrides
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            if (obj is null)
+                return false;
+
+            if (this == obj)
+                return true;
+
+            if (this.GetType() != obj.GetType())
+                return false;
+
+            ref byte pThisValue = ref this.GetRawData();
+            ref byte pOtherValue = ref obj.GetRawData();
+
+            switch (InternalGetCorElementType())
+            {
+                case CorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    return pThisValue == pOtherValue;
+                case CorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_CHAR:
+                    return Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pOtherValue);
+                case CorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
+                case CorElementType.ELEMENT_TYPE_R4:
+                    return Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pOtherValue);
+                case CorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
+                case CorElementType.ELEMENT_TYPE_R8:
+                    return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
+                default:
+                    Debug.Fail("Unknown enum underlying type");
+                    return false;
+            }
+        }
 
         public override int GetHashCode()
         {
@@ -1196,13 +1308,14 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, double>(ref pThisValue).CompareTo(Unsafe.As<byte, double>(ref pTargetValue));
                 default:
-                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+                    Debug.Fail("Unknown enum underlying type");
+                    return 0;
             }
         }
         #endregion
 
         #region IFormattable
-        [Obsolete("The provider argument is not used. Please use ToString(String).")]
+        [Obsolete("The provider argument is not used. Use ToString(String) instead.")]
         public string ToString(string? format, IFormatProvider? provider)
         {
             return ToString(format);
@@ -1242,7 +1355,7 @@ namespace System
             throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
         }
 
-        [Obsolete("The provider argument is not used. Please use ToString().")]
+        [Obsolete("The provider argument is not used. Use ToString() instead.")]
         public string ToString(IFormatProvider? provider)
         {
             return ToString();
@@ -1388,8 +1501,14 @@ namespace System
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
-            if (!(enumType is RuntimeType rtType))
+            if (enumType is not RuntimeType rtType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
+#if CORERT
+            // Check for the unfortunate "typeof(Outer<>.InnerEnum)" corner case.
+            // https://github.com/dotnet/runtime/issues/7976
+            if (enumType.ContainsGenericParameters)
+                throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));
+#endif
             return rtType;
         }
     }

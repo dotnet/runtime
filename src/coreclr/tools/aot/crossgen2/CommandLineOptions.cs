@@ -3,19 +3,22 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
+using System.Text;
 
 using Internal.CommandLine;
+using Internal.TypeSystem;
 
 namespace ILCompiler
 {
     internal class CommandLineOptions
     {
+        public const int DefaultPerfMapFormatVersion = 0;
+
         public bool Help;
         public string HelpText;
 
         public IReadOnlyList<string> InputFilePaths;
+        public IReadOnlyList<string> InputBubbleReferenceFilePaths;
         public IReadOnlyList<string> UnrootedInputFilePaths;
         public IReadOnlyList<string> ReferenceFilePaths;
         public IReadOnlyList<string> MibcFilePaths;
@@ -31,8 +34,11 @@ namespace ILCompiler
         public bool CompileBubbleGenerics;
         public bool Verbose;
         public bool Composite;
+        public string CompositeKeyFile;
         public bool CompileNoMethods;
         public bool EmbedPgoData;
+        public bool OutNearInput;
+        public bool SingleFileCompilation;
 
         public string DgmlLogFileName;
         public bool GenerateFullDgmlLog;
@@ -52,6 +58,7 @@ namespace ILCompiler
         public string PdbPath;
         public bool PerfMap;
         public string PerfMapPath;
+        public int PerfMapFormatVersion;
         public int Parallelism;
         public int CustomPESectionAlignment;
         public string MethodLayout;
@@ -66,18 +73,39 @@ namespace ILCompiler
 
         public IReadOnlyList<string> CodegenOptions;
 
+        public string MakeReproPath;
+
         public bool CompositeOrInputBubble => Composite || InputBubble;
 
         public CommandLineOptions(string[] args)
         {
             InputFilePaths = Array.Empty<string>();
+            InputBubbleReferenceFilePaths = Array.Empty<string>();
             UnrootedInputFilePaths = Array.Empty<string>();
             ReferenceFilePaths = Array.Empty<string>();
             MibcFilePaths = Array.Empty<string>();
             CodegenOptions = Array.Empty<string>();
 
+            PerfMapFormatVersion = DefaultPerfMapFormatVersion;
             Parallelism = Environment.ProcessorCount;
             SingleMethodGenericArg = null;
+
+            bool forceHelp = false;
+            if (args.Length == 0)
+            {
+                forceHelp = true;
+            }
+
+            foreach (string arg in args)
+            {
+                if (arg == "-?")
+                    forceHelp = true;
+            }
+
+            if (forceHelp)
+            {
+                args = new string[] {"--help"};
+            }
 
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
@@ -98,8 +126,12 @@ namespace ILCompiler
                 syntax.DefineOption("Os|optimize-space", ref OptimizeSpace, SR.OptimizeSpaceOption);
                 syntax.DefineOption("Ot|optimize-time", ref OptimizeTime, SR.OptimizeSpeedOption);
                 syntax.DefineOption("inputbubble", ref InputBubble, SR.InputBubbleOption);
+                syntax.DefineOptionList("inputbubbleref", ref InputBubbleReferenceFilePaths, SR.InputBubbleReferenceFiles);
                 syntax.DefineOption("composite", ref Composite, SR.CompositeBuildMode);
+                syntax.DefineOption("compositekeyfile", ref CompositeKeyFile, SR.CompositeKeyFile);
                 syntax.DefineOption("compile-no-methods", ref CompileNoMethods, SR.CompileNoMethodsOption);
+                syntax.DefineOption("out-near-input", ref OutNearInput, SR.OutNearInputOption);
+                syntax.DefineOption("single-file-compilation", ref SingleFileCompilation, SR.SingleFileCompilationOption);
                 syntax.DefineOption("tuning", ref Tuning, SR.TuningImageOption);
                 syntax.DefineOption("partial", ref Partial, SR.PartialImageOption);
                 syntax.DefineOption("compilebubblegenerics", ref CompileBubbleGenerics, SR.BubbleGenericsOption);
@@ -130,11 +162,14 @@ namespace ILCompiler
                 syntax.DefineOption("pdb-path", ref PdbPath, SR.PdbFilePathOption);
                 syntax.DefineOption("perfmap", ref PerfMap, SR.PerfMapFileOption);
                 syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
+                syntax.DefineOption("perfmap-format-version", ref PerfMapFormatVersion, SR.PerfMapFormatVersionOption);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);
                 syntax.DefineOption("verify-type-and-field-layout", ref VerifyTypeAndFieldLayout, SR.VerifyTypeAndFieldLayoutOption);
                 syntax.DefineOption("callchain-profile", ref CallChainProfileFile, SR.CallChainProfileFile);
+
+                syntax.DefineOption("make-repro-path", ref MakeReproPath, SR.MakeReproPathHelp);
 
                 syntax.DefineOption("h|help", ref Help, SR.HelpOption);
 
@@ -143,7 +178,69 @@ namespace ILCompiler
 
             if (Help)
             {
+                List<string> extraHelp = new List<string>();
+                extraHelp.Add(SR.OptionPassingHelp);
+                extraHelp.Add("");
+                extraHelp.Add(SR.DashDashHelp);
+                extraHelp.Add("");
+
+                string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64"};
+                string[] ValidOS = new string[] {"windows", "linux", "osx"};
+                TargetOS defaultOs;
+                TargetArchitecture defaultArch;
+                Program.ComputeDefaultOptions(out defaultOs, out defaultArch);
+
+                extraHelp.Add(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), defaultOs.ToString().ToLowerInvariant()));
+
+                extraHelp.Add("");
+
+                extraHelp.Add(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), defaultArch.ToString().ToLowerInvariant()));
+
+                extraHelp.Add("");
+
+                extraHelp.Add(SR.InstructionSetHelp);
+                foreach (string arch in ValidArchitectures)
+                {
+                    StringBuilder archString = new StringBuilder();
+
+                    archString.Append(arch);
+                    archString.Append(": ");
+
+                    TargetArchitecture targetArch = Program.GetTargetArchitectureFromArg(arch, out _);
+                    bool first = true;
+                    foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                    {
+                        // Only instruction sets with are specifiable should be printed to the help text
+                        if (instructionSet.Specifiable)
+                        {
+                            if (first)
+                            {
+                                first = false;
+                            }
+                            else
+                            {
+                                archString.Append(", ");
+                            }
+                            archString.Append(instructionSet.Name);
+                        }
+                    }
+
+                    extraHelp.Add(archString.ToString());
+                }
+
+                argSyntax.ExtraHelpParagraphs = extraHelp;
+
                 HelpText = argSyntax.GetHelpText();
+            }
+
+            if (MakeReproPath != null)
+            {
+                // Create a repro package in the specified path
+                // This package will have the set of input files needed for compilation
+                // + the original command line arguments
+                // + a rsp file that should work to directly run out of the zip file
+
+                Helpers.MakeReproPackage(MakeReproPath, OutputFilePath, args, argSyntax, new[] { "-r", "-u", "-m", "--inputbubbleref" });
             }
         }
     }

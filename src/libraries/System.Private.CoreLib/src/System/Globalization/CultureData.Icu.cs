@@ -103,17 +103,17 @@ namespace System.Globalization
             return true;
         }
 
-        private string IcuGetLocaleInfo(LocaleStringData type)
+        private string IcuGetLocaleInfo(LocaleStringData type, string? uiCultureName = null)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
-            return IcuGetLocaleInfo(_sWindowsName, type);
+            return IcuGetLocaleInfo(_sWindowsName, type, uiCultureName);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        private unsafe string IcuGetLocaleInfo(string localeName, LocaleStringData type)
+        private unsafe string IcuGetLocaleInfo(string localeName, LocaleStringData type, string? uiCultureName = null)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(localeName != null, "[CultureData.IcuGetLocaleInfo] Expected localeName to be not be null");
@@ -127,7 +127,7 @@ namespace System.Globalization
             }
 
             char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
-            bool result = Interop.Globalization.GetLocaleInfoString(localeName, (uint)type, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+            bool result = Interop.Globalization.GetLocaleInfoString(localeName, (uint)type, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
             if (!result)
             {
                 // Failed, just use empty string
@@ -204,22 +204,13 @@ namespace System.Globalization
             return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
         }
 
-        private static CultureData? IcuGetCultureDataFromRegionName(string? regionName)
-        {
-            // no support to lookup by region name, other than the hard-coded list in CultureData
-            return null;
-        }
+        // no support to lookup by region name, other than the hard-coded list in CultureData
+        private static CultureData? IcuGetCultureDataFromRegionName(string? regionName) => null;
 
-        private static string IcuGetLanguageDisplayName(string cultureName)
-        {
-            return new CultureInfo(cultureName)._cultureData.IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName);
-        }
+        private string IcuGetLanguageDisplayName(string cultureName) => IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
 
-        private static string? IcuGetRegionDisplayName()
-        {
-            // use the fallback which is to return NativeName
-            return null;
-        }
+        // use the fallback which is to return NativeName
+        private static string? IcuGetRegionDisplayName() => null;
 
         internal static bool IcuIsEnsurePredefinedLocaleName(string name)
         {

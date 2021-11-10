@@ -66,8 +66,8 @@ namespace System.Reflection.Emit
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
-            if (!(type is TypeBuilder) && !(type is TypeBuilderInstantiation))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder);
+            if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             // The following checks establishes invariants that more simply put require type to be generic and
             // method to be a generic method definition declared on the generic type definition of type.
@@ -91,56 +91,56 @@ namespace System.Reflection.Emit
             if (type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
-            if (!(type is TypeBuilderInstantiation))
+            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
 
-            return MethodOnTypeBuilderInstantiation.GetMethod(method, (type as TypeBuilderInstantiation)!);
+            return MethodOnTypeBuilderInstantiation.GetMethod(method, typeBuilderInstantiation);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
-            if (!(type is TypeBuilder) && !(type is TypeBuilderInstantiation))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder);
+            if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
                 throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
 
-            if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-
-            // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
-            if (type is TypeBuilder && type.IsGenericTypeDefinition)
-                type = type.MakeGenericType(type.GetGenericArguments());
-
             if (type.GetGenericTypeDefinition() != constructor.DeclaringType)
                 throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
-            return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, (type as TypeBuilderInstantiation)!);
+            // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
+            if (type.IsGenericTypeDefinition)
+                type = type.MakeGenericType(type.GetGenericArguments());
+
+            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
+
+            return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, typeBuilderInstantiation);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
-            if (!(type is TypeBuilder) && !(type is TypeBuilderInstantiation))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder);
+            if (type is not TypeBuilder and not TypeBuilderInstantiation)
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (!field.DeclaringType!.IsGenericTypeDefinition)
                 throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
 
-            if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-
-            // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
-            if (type is TypeBuilder && type.IsGenericTypeDefinition)
-                type = type.MakeGenericType(type.GetGenericArguments());
-
             if (type.GetGenericTypeDefinition() != field.DeclaringType)
                 throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
-            return FieldOnTypeBuilderInstantiation.GetField(field, (type as TypeBuilderInstantiation)!);
+            // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
+            if (type.IsGenericTypeDefinition)
+                type = type.MakeGenericType(type.GetGenericArguments());
+
+            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
+
+            return FieldOnTypeBuilderInstantiation.GetField(field, typeBuilderInstantiation);
         }
         #endregion
 
@@ -149,26 +149,26 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Private Static FCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParentType")]
         private static extern void SetParentType(QCallModule module, int tdTypeDef, int tkParent);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_AddInterfaceImpl")]
         private static extern void AddInterfaceImpl(QCallModule module, int tdTypeDef, int tkInterface);
         #endregion
 
         #region Internal Static FCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethod", CharSet = CharSet.Unicode)]
         internal static extern int DefineMethod(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             MethodAttributes attributes);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSpec")]
         internal static extern int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineField", CharSet = CharSet.Unicode)]
         internal static extern int DefineField(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             FieldAttributes attributes);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodIL")]
         private static extern void SetMethodIL(QCallModule module, int tk, bool isInitLocals,
             byte[]? body, int bodyLength,
             byte[] LocalSig, int sigLength,
@@ -176,7 +176,7 @@ namespace System.Reflection.Emit
             ExceptionHandler[]? exceptions, int numExceptions,
             int[]? tokenFixups, int numTokenFixups);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineCustomAttribute")]
         private static extern void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
             byte[]? attr, int attrLength);
 
@@ -195,40 +195,40 @@ namespace System.Reflection.Emit
                 localAttr, (localAttr != null) ? localAttr.Length : 0);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", CharSet = CharSet.Unicode)]
         internal static extern int DefineProperty(QCallModule module, int tkParent, string name, PropertyAttributes attributes,
             byte[] signature, int sigLength);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineEvent", CharSet = CharSet.Unicode)]
         internal static extern int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSemantics")]
         internal static extern void DefineMethodSemantics(QCallModule module, int tkAssociation,
             MethodSemanticsAttributes semantics, int tkMethod);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodImpl")]
         internal static extern void DefineMethodImpl(QCallModule module, int tkType, int tkBody, int tkDecl);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodImpl")]
         internal static extern void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParamInfo", CharSet = CharSet.Unicode)]
         internal static extern int SetParamInfo(QCallModule module, int tkMethod, int iSequence,
             ParameterAttributes iParamAttributes, string? strParamName);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_GetTokenFromSig")]
         internal static extern int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetFieldLayoutOffset")]
         internal static extern void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetClassLayout")]
         internal static extern void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetConstantValue")]
         private static extern unsafe void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", CharSet = CharSet.Unicode)]
         private static extern void SetPInvokeData(QCallModule module, string DllName, string name, int token, int linkFlags);
 
         #endregion
@@ -655,15 +655,15 @@ namespace System.Reflection.Emit
         #endregion
 
         #region FCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineType", CharSet = CharSet.Unicode)]
         private static extern int DefineType(QCallModule module,
             string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineGenericParam", CharSet = CharSet.Unicode)]
         private static extern int DefineGenericParam(QCallModule module,
             string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_TermCreateClass")]
         private static extern void TermCreateClass(QCallModule module, int tk, ObjectHandleOnStack type);
         #endregion
 
@@ -837,6 +837,8 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetFields(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
         {
             if (!IsCreated())
@@ -845,6 +847,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetInterface(name, ignoreCase);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             if (m_bakedRuntimeType != null)
@@ -921,7 +924,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMember(name, type, bindingAttr);
         }
 
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
@@ -947,6 +950,9 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMembers(bindingAttr);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
+                "But in this case it acts only on TypeBuilder which is never trimmed (as it's runtime created).")]
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             if (IsTypeEqual(c, this))
@@ -1125,9 +1131,7 @@ namespace System.Reflection.Emit
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
@@ -1141,9 +1145,7 @@ namespace System.Reflection.Emit
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
@@ -1189,6 +1191,7 @@ namespace System.Reflection.Emit
             return m_inst;
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {
             AssemblyBuilder.CheckContext(typeArguments);
@@ -1322,6 +1325,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
@@ -1332,6 +1336,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
@@ -1342,6 +1347,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
@@ -1354,8 +1360,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
-            Justification = "Reflection.Emit is not subject to trimming")]
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         private MethodBuilder DefinePInvokeMethodHelper(
             string name, string dllName, string importName, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,

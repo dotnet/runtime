@@ -11,6 +11,7 @@ jobs:
       - src/libraries/System.Private.CoreLib/*
       - src/libraries/Native/Unix/System.Globalization.Native/*
       - src/libraries/Native/Unix/Common/*
+      - src/native/*
       exclude:
       - eng/Version.Details.xml
       - '*.md'
@@ -30,6 +31,8 @@ jobs:
       - src/libraries/System.Private.CoreLib/*
       - src/libraries/Native/Unix/System.Globalization.Native/*
       - src/libraries/Native/Unix/Common/*
+      - src/tests/BuildWasmApps/*
+      - src/native/*
       exclude:
       - eng/Version.Details.xml
       - '*.md'

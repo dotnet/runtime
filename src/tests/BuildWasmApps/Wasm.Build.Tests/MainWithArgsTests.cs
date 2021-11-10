@@ -77,7 +77,7 @@ namespace Wasm.Build.Tests
             string programText = projectContents.Replace("##CODE##", code);
 
             buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = programText };
-            buildArgs = GetBuildArgsWith(buildArgs);
+            buildArgs = ExpandBuildArgs(buildArgs);
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 

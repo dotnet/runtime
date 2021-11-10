@@ -7,6 +7,7 @@
 
 #define SIGNATURE_VERIFICATION_ERROR -1
 
+ARGS_NON_NULL(1, 2, 3, 4, 6)
 int32_t AndroidCryptoNative_SignWithSignatureObject(JNIEnv* env,
                                                     jobject signatureObject,
                                                     jobject privateKey,
@@ -15,6 +16,7 @@ int32_t AndroidCryptoNative_SignWithSignatureObject(JNIEnv* env,
                                                     uint8_t* sig,
                                                     int32_t* siglen);
 
+ARGS_NON_NULL_ALL
 int32_t AndroidCryptoNative_VerifyWithSignatureObject(JNIEnv* env,
                                                       jobject signatureObject,
                                                       jobject publicKey,

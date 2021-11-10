@@ -22,7 +22,7 @@ namespace System.ComponentModel.Design
         /// to the control and shift keys to support appending or toggling components into the
         /// selection as needed.
         /// </summary>
-        [Obsolete("This value has been deprecated. Use SelectionTypes.Auto instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("SelectionTypes.Normal has been deprecated. Use SelectionTypes.Auto instead.")]
         Normal = 0x0001,
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace System.ComponentModel.Design
         /// component in the selection list is already selected, it does not remove the
         /// existing selection, but promotes that component to be the primary selection.
         /// </summary>
-        [Obsolete("This value has been deprecated. It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("SelectionTypes.MouseDown has been deprecated and is not supported.")]
         MouseDown = 0x0004,
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace System.ComponentModel.Design
         /// in the selection list is already selected, it does not remove the
         /// existing selection, but promotes that component to be the primary selection.
         /// </summary>
-        [Obsolete("This value has been deprecated. It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("SelectionTypes.MouseUp has been deprecated and is not supported.")]
         MouseUp = 0x0008,
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace System.ComponentModel.Design
         /// selected, it does not remove the existing selection, but promotes that component to be the
         /// primary selection.
         /// </summary>
-        [Obsolete("This value has been deprecated. Use SelectionTypes.Primary instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("SelectionTypes.Click has been deprecated. Use SelectionTypes.Primary instead.")]
         Click = 0x0010,
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace System.ComponentModel.Design
         /// Limits valid selection types to Normal, Replace, MouseDown, MouseUp,
         /// Click, Toggle or Add.
         /// </summary>
-        [Obsolete("This value has been deprecated. Use Enum class methods to determine valid values, or use a type converter. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("SelectionTypes.Valid has been deprecated. Use Enum class methods to determine valid values, or use a type converter instead.")]
         Valid = 0x1F,
     }
 }

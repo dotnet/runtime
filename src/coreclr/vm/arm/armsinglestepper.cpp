@@ -97,11 +97,7 @@ ArmSingleStepper::ArmSingleStepper()
 ArmSingleStepper::~ArmSingleStepper()
 {
 #if !defined(DACCESS_COMPILE)
-#ifdef TARGET_UNIX
     SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->BackoutMem(m_rgCode, kMaxCodeBuffer * sizeof(WORD));
-#else
-    DeleteExecutable(m_rgCode);
-#endif
 #endif
 }
 
@@ -110,11 +106,7 @@ void ArmSingleStepper::Init()
 #if !defined(DACCESS_COMPILE)
     if (m_rgCode == NULL)
     {
-#ifdef TARGET_UNIX
         m_rgCode = (WORD *)(void *)SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(kMaxCodeBuffer * sizeof(WORD)));
-#else
-        m_rgCode = new (executable) WORD[kMaxCodeBuffer];
-#endif
     }
 #endif
 }
@@ -287,6 +279,8 @@ void ArmSingleStepper::Apply(T_CONTEXT *pCtx)
 
     DWORD idxNextInstruction = 0;
 
+    ExecutableWriterHolder<WORD> codeWriterHolder(m_rgCode, kMaxCodeBuffer * sizeof(m_rgCode[0]));
+
     if (m_originalITState.InITBlock() && !ConditionHolds(pCtx, m_originalITState.CurrentCondition()))
     {
         LOG((LF_CORDB, LL_INFO100000, "ArmSingleStepper: Case 1: ITState::Clear;\n"));
@@ -295,7 +289,7 @@ void ArmSingleStepper::Apply(T_CONTEXT *pCtx)
         //         to execute. We'll put the correct value back during fixup.
         ITState::Clear(pCtx);
         m_fSkipIT = true;
-        m_rgCode[idxNextInstruction++] = kBreakpointOp;
+        codeWriterHolder.GetRW()[idxNextInstruction++] = kBreakpointOp;
     }
     else if (TryEmulate(pCtx, opcode1, opcode2, false))
     {
@@ -308,8 +302,8 @@ void ArmSingleStepper::Apply(T_CONTEXT *pCtx)
         m_fEmulate = true;
 
         // Set breakpoints to stop the execution.  This will get us right back here.
-        m_rgCode[idxNextInstruction++] = kBreakpointOp;
-        m_rgCode[idxNextInstruction++] = kBreakpointOp;
+        codeWriterHolder.GetRW()[idxNextInstruction++] = kBreakpointOp;
+        codeWriterHolder.GetRW()[idxNextInstruction++] = kBreakpointOp;
     }
     else
     {
@@ -323,24 +317,24 @@ void ArmSingleStepper::Apply(T_CONTEXT *pCtx)
         //         guarantee one of them will be hit (we don't care which one -- the fixup code will update
         //         the PC and IT state to make it look as though the CPU just executed the current
         //         instruction).
-        m_rgCode[idxNextInstruction++] = opcode1;
+        codeWriterHolder.GetRW()[idxNextInstruction++] = opcode1;
         if (Is32BitInstruction(opcode1))
-            m_rgCode[idxNextInstruction++] = opcode2;
+            codeWriterHolder.GetRW()[idxNextInstruction++] = opcode2;
 
-        m_rgCode[idxNextInstruction++] = kBreakpointOp;
-        m_rgCode[idxNextInstruction++] = kBreakpointOp;
-        m_rgCode[idxNextInstruction++] = kBreakpointOp;
+        codeWriterHolder.GetRW()[idxNextInstruction++] = kBreakpointOp;
+        codeWriterHolder.GetRW()[idxNextInstruction++] = kBreakpointOp;
+        codeWriterHolder.GetRW()[idxNextInstruction++] = kBreakpointOp;
     }
 
     // Always terminate the redirection buffer with a breakpoint.
-    m_rgCode[idxNextInstruction++] = kBreakpointOp;
+    codeWriterHolder.GetRW()[idxNextInstruction++] = kBreakpointOp;
     _ASSERTE(idxNextInstruction <= kMaxCodeBuffer);
 
     // Set the thread up so it will redirect to our buffer when execution resumes.
     pCtx->Pc = ((DWORD)(DWORD_PTR)m_rgCode) | THUMB_CODE;
 
     // Make sure the CPU sees the updated contents of the buffer.
-    FlushInstructionCache(GetCurrentProcess(), m_rgCode, sizeof(m_rgCode));
+    FlushInstructionCache(GetCurrentProcess(), m_rgCode, kMaxCodeBuffer * sizeof(m_rgCode[0]));
 
     // Done, set the state.
     m_state = Applied;

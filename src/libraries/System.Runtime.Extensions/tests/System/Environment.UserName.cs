@@ -22,6 +22,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not valid on iOS or tvOS")]
         public void UserName_Valid()
         {
             string name = Environment.UserName;

@@ -19,6 +19,119 @@
 // after a dereference (since control flow continued because no exception was thrown); that an integer value
 // is restricted to some subrange in after a comparison test; etc.
 
+// In addition to classical numbering, this implementation also performs disambiguation of heap writes,
+// using memory SSA and the guarantee that two managed field accesses will not alias (if the fields do
+// not overlap). This is the sole reason for the existence of field sequences - providing information
+// to numbering on which addresses represent "proper", non-aliasing, bases for loads and stores. Note
+// that a field sequence is *only* about the address - it is the VN's responsibility to properly "give up"
+// on reads and stores that are too wide or of otherwise incompatible types - this logic is encapsulated
+// in the methods VNApplySelectorsTypeCheck and VNApplySelectorsAssignTypeCoerce. Note as well that this
+// design, based on symbols, not offsets, is why the compiler must take such great care in maintaining the
+// field sequences throughout its many transformations - accessing a field of type A "through" a field from
+// a distinct type B will result in effectively undefined behavior. We say this is by design for classes
+// (i. e. that people using Unsafe.As(object) need to *really* know what they're doing) and fix up places
+// where the compiler itself produces these type mismatches with structs (which can arise due to "reinterpret
+// casts" or morph's transforms which fold copies of structs with bitwise compatible layouts).
+//
+// Abstractly, numbering maintains states of memory in "maps", which are indexed into with various "selectors",
+// loads reading from said maps and stores recording new states for them (note that as with everything VN, the
+// "maps" are immutable, thus an update is performed via deriving a new map from an existing one).
+//
+// Memory states are represented with value numbers corresponding to the following VNFunc's:
+// 1. MemOpaque - for opaque memory states, usually caused by writing to byrefs, or other
+//    non-analyzable memory operations such as atomics or volatile writes (and reads!).
+// 2. PhiMemoryDef - this is simply the PHI function applied to multiple reaching memory
+//    definitions for a given block.
+// 3. MapStore - this is the "update" map, it represents a map after a "set" operation at a
+//    given index. Note that the value stored can itself be a map (memory state), for example,
+//    with the store to a field of a struct that itself is a field of a class, the value
+//    recorded for the struct is a MapStore($StructInClassFieldMap, $ValueField, $Value).
+//    Because of this, these VNs need to have proper types, those being the types that the
+//    maps they represent updated states of have (in the example above, the VN would have
+//    a "struct" type, for example). MapStore VNs naturally "chain" together, the next map
+//    representing an update of the previous, and VNForMapSelect, when it tries to find
+//    the value traverses through these chains, as long as the indices are constant (meaning
+//    that they represent distinct locations, e. g. different fields).
+// 4. MapSelect - if MapStore is an "update/assign" operation, MapSelect is the "read" one.
+//    It represents a "value" (which, as with MapStore, can itself can be a memory region)
+//    taken from another map at a given index. As such, it must have a type that corresponds
+//    to the "index/selector", in practical terms - the field's type.
+//
+// Note that the above constraints on the types for maps are not followed currently to the
+// letter by the implementation - "opaque" maps can and do have TYP_REF assigned to them
+// in various situations such as when initializing the "primary" VNs for loop entries.
+//
+// Note as well that the meaning of "the type" for a map is overloaded, because maps are used
+// both to represent memory "of all fields B of all objects that have this field in the heap"
+// and "the field B of this particular object on the heap". Only the latter maps can be used
+// as VNs for actual nodes, while the former are used for "the first field" maps and "array
+// equivalence type" maps, and, of course, for the heap VNs, which always have the placeholder
+// types of TYP_REF or TYP_UNKNOWN. In principle, placeholder types could be given to all the
+// maps of the former type.
+//
+// Let's review the following snippet to demonstrate how the MapSelect/MapStore machinery works
+// together to deliver the results that it does. Say we have this snippet of (C#) code:
+//
+// int Procedure(OneClass obj, AnotherClass subj, int objVal, int subjVal)
+// {
+//     obj.StructField.AnotherStructField.ScalarField = objVal;
+//     subj.OtherScalarField = subjVal;
+//
+//     return obj.StructField.AnotherStructField.ScalarField + subj.OtherScalarField;
+// }
+//
+// On entry, we assign some VN to the GcHeap (VN mostly only cares about GcHeap, so from now on
+// the term "heap" will be used to mean GcHeap), $Heap.
+//
+// A store to the ScalarField is seen. Now, the value numbering of fields is done in the following
+// pattern for maps that it builds: [$Heap][$FirstField][$Object][$SecondField]...[$FieldToStoreInto].
+// It may seem odd that the indexing is done first for the field, and only then for the object, but
+// the reason for that is the fact that it enables MapStores to $Heap to refer to distinct selectors,
+// thus enabling the traversal through the map updates when looking for the values that were stored.
+// Were $Object VNs used for this, the traversal could not be performed, as two numerically different VNs
+// can, obviously, refer to the same object.
+//
+// With that in mind, the following maps are first built for the store ("field VNs" - VNs for handles):
+//
+//  $StructFieldMap        = MapSelect($Heap, $StructField)
+//  $StructFieldForObjMap  = MapSelect($StructFieldMap, $Obj)
+//  $AnotherStructFieldMap = MapSelect($StructFieldForObjMap, $AnotherStructField)
+//  $ScalarFieldMap        = MapSelect($AnotherStructFieldMap, $ScalarField)
+//
+// The building of maps for the individual fields in the sequence [AnotherStructField, ScalarField] is
+// usually performed by VNApplySelectors, which is just a convenience method that loops over all the
+// fields, calling VNForMapSelect on them. Now that we know where to store, the store maps are built:
+//
+//  $NewAnotherStructFieldMap = MapStore($AnotherStructFieldMap, $ScalarField, $ObjVal)
+//  $NewStructFieldForObjMap  = MapStore($StructFieldForObjMap, $AnotherStructField, $NewAnotherStructFieldMap)
+//  $NewStructFieldMap        = MapStore($StructFieldMap, $Obj, $NewStructFieldForObjMap)
+//  $NewHeap                  = MapStore($Heap, $StructField, $NewStructFieldMap)
+//
+// Notice that the maps are built in the opposite order, as we must first know the value of the "narrower"
+// map to store into the "wider" map (this is implemented via recursion in VNApplySelectorsAssign).
+//
+// Similarly, the numbering is performed for "subj.OtherScalarField = subjVal", and the heap state updated
+// (say to $NewHeapWithSubj). Now when we call VNForMapSelect to find out the stored values when numbering
+// the reads, the following traversal is performed (the '[]' operator representing VNForMapSelect):
+//
+//   $obj.StructField.AnotherStructField.ScalarField
+//     = $NewHeapWithSubj[$StructField][$Obj][$AnotherStructField][ScalarField]:
+//         "$NewHeapWithSubj.Index == $StructField" => false (not the needed map).
+//         "IsConst($NewHeapWithSubj.Index) && IsConst($StructField)" => true (can continue, non-aliasing indices).
+//         "$NewHeap.Index == $StructField" => true, Value is $NewStructFieldMap.
+//           "$NewStructFieldMap.Index == $Obj" => true, Value is $NewStructFieldForObjMap.
+//             "$NewStructFieldForObjMap.Index == $AnotherStructField" => true, Value is $NewAnotherStructFieldMap.
+//               "$NewAnotherStructFieldMap.Index == $ScalarField" => true, Value is $ObjVal (found the value!).
+//
+// And similarly for the $SubjVal - we end up with a nice $Add($ObjVal, $SubjVal) feeding the return.
+//
+// While the above example focuses on fields, the idea is universal to all supported location types. Statics are
+// modeled as straight indicies into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
+// arrays - like fields, but with the primiary selector being not the first field, but the "equivalence class" of
+// an array, i. e. the type of its elements, taking into account things like "int[]" being legally aliasable as
+// "uint[]". MapSelect & MapStore are also used to number local fields, with the primary selectors being (VNs of)
+// their local numbers.
+
 /*****************************************************************************/
 #ifndef _VALUENUM_H_
 #define _VALUENUM_H_
@@ -246,6 +359,14 @@ public:
         return unsigned(vnf) > VNF_Boundary || GenTreeOpIsLegalVNFunc(static_cast<genTreeOps>(vnf));
     }
 
+    // Returns "true" iff "vnf" is one of:
+    // VNF_ADD_OVF, VNF_SUB_OVF, VNF_MUL_OVF,
+    // VNF_ADD_UN_OVF, VNF_SUB_UN_OVF, VNF_MUL_UN_OVF.
+    static bool VNFuncIsOverflowArithmetic(VNFunc vnf);
+
+    // Returns "true" iff "vnf" is VNF_Cast or VNF_CastOvf.
+    static bool VNFuncIsNumericCast(VNFunc vnf);
+
     // Returns the arity of "vnf".
     static unsigned VNFuncArity(VNFunc vnf);
 
@@ -281,24 +402,22 @@ public:
     }
 #endif
 
-    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned = false);
+    // Packs information about the cast into an integer constant represented by the returned value number,
+    // to be used as the second operand of VNF_Cast & VNF_CastOvf.
+    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned);
+
+    // Unpacks the information stored by VNForCastOper in the constant represented by the value number.
+    void GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned);
 
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant
     // that happens to be the same...
-    ValueNum VNForHandle(ssize_t cnsVal, unsigned iconFlags);
+    ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
         // We reserve Chunk 0 for "special" VNs.  SRC_Null (== 0) is the VN of "null".
         return ValueNum(SRC_Null);
-    }
-
-    // The zero map is the map that returns a zero "for the appropriate type" when indexed at any index.
-    static ValueNum VNForZeroMap()
-    {
-        // We reserve Chunk 0 for "special" VNs.  Let SRC_ZeroMap (== 1) be the zero map.
-        return ValueNum(SRC_ZeroMap);
     }
 
     // The ROH map is the map for the "read-only heap".  We assume that this is never mutated, and always
@@ -334,12 +453,20 @@ public:
     }
 
     // Returns the value number for zero of the given "typ".
-    // It has an unreached() for a "typ" that has no zero value, such as TYP_BYREF.
+    // It has an unreached() for a "typ" that has no zero value, such as TYP_VOID.
     ValueNum VNZeroForType(var_types typ);
+
+    // Returns the value number for a zero-initialized struct.
+    ValueNum VNForZeroObj(CORINFO_CLASS_HANDLE structHnd);
 
     // Returns the value number for one of the given "typ".
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
     ValueNum VNOneForType(var_types typ);
+
+#ifdef FEATURE_SIMD
+    // A helper function for constructing VNF_SimdType VNs.
+    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+#endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set
     // for the the exception value "x".
@@ -455,17 +582,18 @@ public:
     ValueNum VNForFunc(
         var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx, ValueNum op3VNwx, ValueNum op4VNwx);
 
-    // This requires a "ValueNumKind" because it will attempt, given "select(phi(m1, ..., mk), ind)", to evaluate
-    // "select(m1, ind)", ..., "select(mk, ind)" to see if they agree.  It needs to know which kind of value number
-    // (liberal/conservative) to read from the SSA def referenced in the phi argument.
-    ValueNum VNForMapSelect(ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN);
+    ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     // A method that does the work for VNForMapSelect and may call itself recursively.
     ValueNum VNForMapSelectWork(
-        ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN, int* pBudget, bool* pUsedRecursiveVN);
+        ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
-    ValueNum VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN);
+    ValueNum VNForMapStore(var_types type, ValueNum map, ValueNum index, ValueNum value);
+
+    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE  fieldHnd,
+                                var_types*            pFieldType,
+                                CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and
@@ -507,47 +635,37 @@ public:
 // This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
 #define FEATURE_VN_TRACE_APPLY_SELECTORS 1
 
-    // Return the value number corresponding to constructing "MapSelect(map, f0)", where "f0" is the
-    // (value number of) the first field in "fieldSeq".  (The type of this application will be the type of "f0".)
-    // If there are no remaining fields in "fieldSeq", return that value number; otherwise, return VNApplySelectors
-    // applied to that value number and the remainder of "fieldSeq". When the 'fieldSeq' specifies a TYP_STRUCT
-    // then the size of the struct is returned by 'wbFinalStructSize' (when it is non-null)
     ValueNum VNApplySelectors(ValueNumKind  vnk,
                               ValueNum      map,
                               FieldSeqNode* fieldSeq,
                               size_t*       wbFinalStructSize = nullptr);
 
-    // Used after VNApplySelectors has determined that "selectedVN" is contained in a Map using VNForMapSelect
-    // It determines whether the 'selectedVN' is of an appropriate type to be read using and indirection of 'indType'
-    // If it is appropriate type then 'selectedVN' is returned, otherwise it may insert a cast to indType
-    // or return a unique value number for an incompatible indType.
-    ValueNum VNApplySelectorsTypeCheck(ValueNum selectedVN, var_types indType, size_t structSize);
+    ValueNum VNApplySelectorsTypeCheck(ValueNum value, var_types indType, size_t valueStructSize);
 
-    // Assumes that "map" represents a map that is addressable by the fields in "fieldSeq", to get
-    // to a value of the type of "rhs".  Returns an expression for the RHS of an assignment, in the given "block",
-    // to a location containing value "map" that will change the field addressed by "fieldSeq" to "rhs", leaving
-    // all other indices in "map" the same.
     ValueNum VNApplySelectorsAssign(
-        ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum rhs, var_types indType, BasicBlock* block);
+        ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum value, var_types dstIndType);
 
-    // Used after VNApplySelectorsAssign has determined that "elem" is to be writen into a Map using VNForMapStore
-    // It determines whether the 'elem' is of an appropriate type to be writen using using an indirection of 'indType'
-    // It may insert a cast to indType or return a unique value number for an incompatible indType.
-    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_types indType, BasicBlock* block);
+    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum value, var_types dstIndType);
 
     ValueNumPair VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType);
 
-    ValueNumPair VNPairApplySelectorsAssign(
-        ValueNumPair map, FieldSeqNode* fieldSeq, ValueNumPair rhs, var_types indType, BasicBlock* block)
+    ValueNumPair VNPairApplySelectorsAssign(ValueNumPair  map,
+                                            FieldSeqNode* fieldSeq,
+                                            ValueNumPair  value,
+                                            var_types     dstIndType)
     {
-        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, rhs.GetLiberal(), indType,
-                                                   block),
+        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, value.GetLiberal(),
+                                                   dstIndType),
                             VNApplySelectorsAssign(VNK_Conservative, map.GetConservative(), fieldSeq,
-                                                   rhs.GetConservative(), indType, block));
+                                                   value.GetConservative(), dstIndType));
     }
 
-    // Compute the normal ValueNumber for a cast with no exceptions
-    ValueNum VNForCast(ValueNum srcVN, var_types castToType, var_types castFromType, bool srcIsUnsigned = false);
+    // Compute the ValueNumber for a cast
+    ValueNum VNForCast(ValueNum  srcVN,
+                       var_types castToType,
+                       var_types castFromType,
+                       bool      srcIsUnsigned    = false,
+                       bool      hasOverflowCheck = false);
 
     // Compute the ValueNumberPair for a cast
     ValueNumPair VNPairForCast(ValueNumPair srcVNPair,
@@ -586,13 +704,13 @@ public:
     // Returns TYP_UNKNOWN if the given value number has not been given a type.
     var_types TypeOfVN(ValueNum vn);
 
-    // Returns MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
+    // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
     BasicBlock::loopNumber LoopOfVN(ValueNum vn);
 
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
 
-    // Returns true iff the VN represents an integeral constant.
+    // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
 
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
@@ -710,10 +828,31 @@ public:
     void GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
 
     // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example.
-    unsigned GetHandleFlags(ValueNum vn);
+    GenTreeFlags GetHandleFlags(ValueNum vn);
 
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
+
+    // Returns true iff the VN represents a relop
+    bool IsVNRelop(ValueNum vn);
+
+    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
+    //
+    // If vn is not a relop, return NoVN.
+    //
+    enum class VN_RELATION_KIND
+    {
+        VRK_Same,       // (x >  y)
+        VRK_Swap,       // (y >  x)
+        VRK_Reverse,    // (x <= y)
+        VRK_SwapReverse // (y >= x)
+    };
+
+#ifdef DEBUG
+    static const char* VNRelationString(VN_RELATION_KIND vrk);
+#endif
+
+    ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
 
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
@@ -870,6 +1009,10 @@ public:
     // Prints a representation of a MapStore operation on standard out.
     void vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore);
 
+    // Requires "memOpaque" to be a mem opaque VNFuncApp
+    // Prints a representation of a MemOpaque state on standard out.
+    void vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque);
+
     // Requires "valWithExc" to be a value with an exeception set VNFuncApp.
     // Prints a representation of the exeception set on standard out.
     void vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc);
@@ -883,6 +1026,13 @@ public:
     // Prints a representation (comma-separated list of field names) on standard out.
     void vnDumpSimdType(Compiler* comp, VNFuncApp* simdType);
 #endif // FEATURE_SIMD
+
+    // Requires "castVN" to represent VNF_Cast or VNF_CastOvf.
+    // Prints the cast's representation mirroring GT_CAST's dump format.
+    void vnDumpCast(Compiler* comp, ValueNum castVN);
+
+    // Requires "zeroObj" to be a VNF_ZeroObj. Prints its representation.
+    void vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj);
 
     // Returns the string name of "vnf".
     static const char* VNFuncName(VNFunc vnf);
@@ -925,7 +1075,6 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_None,      // No extra attributes.
         CEA_Const,     // This chunk contains constant values.
         CEA_Handle,    // This chunk contains handle constants.
         CEA_NotAField, // This chunk contains "not a field" values.
@@ -951,18 +1100,12 @@ private:
         ValueNum m_baseVN;
 
         // The common attributes of this chunk.
-        var_types              m_typ;
-        ChunkExtraAttribs      m_attribs;
-        BasicBlock::loopNumber m_loopNum;
+        var_types         m_typ;
+        ChunkExtraAttribs m_attribs;
 
-        // Initialize a chunk, starting at "*baseVN", for the given "typ", "attribs", and "loopNum" (using "alloc" for
-        // allocations).
+        // Initialize a chunk, starting at "*baseVN", for the given "typ", and "attribs", using "alloc" for allocations.
         // (Increments "*baseVN" by ChunkSize.)
-        Chunk(CompAllocator          alloc,
-              ValueNum*              baseVN,
-              var_types              typ,
-              ChunkExtraAttribs      attribs,
-              BasicBlock::loopNumber loopNum);
+        Chunk(CompAllocator alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs);
 
         // Requires that "m_numUsed < ChunkSize."  Returns the offset of the allocated VN within the chunk; the
         // actual VN is this added to the "m_baseVN" of the chunk.
@@ -981,10 +1124,10 @@ private:
 
     struct VNHandle : public JitKeyFuncsDefEquals<VNHandle>
     {
-        ssize_t  m_cnsVal;
-        unsigned m_flags;
+        ssize_t      m_cnsVal;
+        GenTreeFlags m_flags;
         // Don't use a constructor to use the default copy constructor for hashtable rehash.
-        static void Initialize(VNHandle* handle, ssize_t m_cnsVal, unsigned m_flags)
+        static void Initialize(VNHandle* handle, ssize_t m_cnsVal, GenTreeFlags m_flags)
         {
             handle->m_cnsVal = m_cnsVal;
             handle->m_flags  = m_flags;
@@ -1111,14 +1254,14 @@ private:
     JitExpandArrayStack<Chunk*> m_chunks;
 
     // These entries indicate the current allocation chunk, if any, for each valid combination of <var_types,
-    // ChunkExtraAttribute, loopNumber>.  Valid combinations require attribs==CEA_None or loopNum==MAX_LOOP_NUM.
+    // ChunkExtraAttribute>.
     // If the value is NoChunk, it indicates that there is no current allocation chunk for that pair, otherwise
     // it is the index in "m_chunks" of a chunk with the given attributes, in which the next allocation should
     // be attempted.
-    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + MAX_LOOP_NUM + 1];
+    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + 1];
 
     // Returns a (pointer to a) chunk in which a new value number may be allocated.
-    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum = MAX_LOOP_NUM);
+    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs);
 
     // First, we need mechanisms for mapping from constants to value numbers.
     // For small integers, we'll use an array.
@@ -1319,7 +1462,6 @@ private:
     enum SpecialRefConsts
     {
         SRC_Null,
-        SRC_ZeroMap,
         SRC_ReadOnlyHeap,
         SRC_Void,
         SRC_EmptyExcSet,

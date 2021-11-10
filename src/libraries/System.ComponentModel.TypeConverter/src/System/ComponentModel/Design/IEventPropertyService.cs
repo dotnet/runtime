@@ -27,7 +27,7 @@ namespace System.ComponentModel.Design
         /// For properties that are representing events, this will return the event
         /// that the property represents.
         /// </summary>
-        EventDescriptor GetEvent(PropertyDescriptor property);
+        EventDescriptor? GetEvent(PropertyDescriptor property);
 
         /// <summary>
         /// Converts a set of event descriptors to a set of property descriptors.

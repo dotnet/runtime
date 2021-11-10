@@ -29,10 +29,6 @@
 #pragma warning(disable : 4640)
 #endif
 
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-#include <corcompile.h>
-#endif
-
 #ifdef TARGET_UNIX
 #include "resourcestring.h"
 #define NATIVE_STRING_RESOURCE_NAME dasm_rc
@@ -98,9 +94,6 @@ BOOL                    g_fThisIsInstanceMethod;
 BOOL                    g_fTryInCode = TRUE;
 
 BOOL                    g_fLimitedVisibility = FALSE;
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-BOOL                    g_fNGenNativeMetadata = FALSE;
-#endif
 BOOL                    g_fHidePub = TRUE;
 BOOL                    g_fHidePriv = TRUE;
 BOOL                    g_fHideFam = TRUE;
@@ -879,22 +872,6 @@ BOOL EnumClasses()
 #pragma warning(pop)
 #endif
 
-#ifndef _DEBUG
-bool HasSuppressingAttribute()
-{
-    const void* pData;
-    ULONG cbData;
-
-    return ((S_OK == g_pImport->GetCustomAttributeByName(TokenFromRid(mdtModule,1),
-                        (LPCUTF8)"System.Runtime.CompilerServices.SuppressIldasmAttribute",
-                        &pData,
-                        &cbData))
-         || (S_OK == g_pImport->GetCustomAttributeByName(TokenFromRid(mdtAssembly,1),
-                        (LPCUTF8)"System.Runtime.CompilerServices.SuppressIldasmAttribute",
-                        &pData,
-                        &cbData)));
-}
-#endif
 void DumpMscorlib(void* GUICookie)
 {
     // In the CoreCLR with reference assemblies and redirection it is more difficult to determine if
@@ -7463,29 +7440,6 @@ BOOL DumpFile()
     g_tkEntryPoint = VAL32(IMAGE_COR20_HEADER_FIELD(*g_CORHeader, EntryPointToken)); // integration with MetaInfo
 
 
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-    if (g_fNGenNativeMetadata)
-    {
-        //if this is an ngen image, use the native metadata.
-        if( !g_CORHeader->ManagedNativeHeader.Size )
-        {
-            printError( g_pFile, "/native only works on NGen images." );
-            goto exit;
-        }
-        CORCOMPILE_HEADER * pNativeHeader;
-        g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pNativeHeader);
-
-        if (pNativeHeader->Signature != CORCOMPILE_SIGNATURE)
-        {
-            printError( g_pFile, "/native only works on NGen images." );
-            goto exit;
-        }
-
-        g_pPELoader->getVAforRVA(VAL32(pNativeHeader->ManifestMetaData.VirtualAddress), &g_pMetaData);
-        g_cbMetaData = VAL32(pNativeHeader->ManifestMetaData.Size);
-    }
-    else
-#endif
     {
     if (g_pPELoader->getVAforRVA(VAL32(g_CORHeader->MetaData.VirtualAddress),&g_pMetaData) == FALSE)
     {
@@ -7541,17 +7495,6 @@ DoneInitialization:
         _ASSERTE(g_rchCA);
         memset(g_rchCA,0,g_uNCA+1);
     }
-#ifndef _DEBUG
-    if(HasSuppressingAttribute())
-    {
-        if (g_fDumpHeader)
-            DumpHeader(g_CORHeader,g_pFile);
-        if(g_fDumpMetaInfo)
-            DumpMetaInfo(g_wszFullInputFile,NULL,g_pFile);
-        printError(g_pFile,RstrUTF(IDS_E_SUPPRESSED));
-        goto CloseFileAndExit;
-    }
-#endif
 
     {
         // Dump the CLR header info if requested.
@@ -7814,9 +7757,6 @@ ReportAndExit:
             DumpRTFPostfix(g_pFile);
         }
 
-#ifndef _DEBUG
-CloseFileAndExit:
-#endif
         if(g_pFile)
         {
             fclose(g_pFile);

@@ -169,10 +169,16 @@ namespace Internal.TypeSystem.Ecma
 
                             var lowerBoundsCount = _reader.ReadCompressedInteger();
                             int []lowerBounds = lowerBoundsCount > 0 ? new int[lowerBoundsCount] : Array.Empty<int>();
+                            bool nonZeroLowerBounds = false;
                             for (int j = 0; j < lowerBoundsCount; j++)
-                                lowerBounds[j] = _reader.ReadCompressedSignedInteger();
+                            {
+                                int loBound = _reader.ReadCompressedSignedInteger();
+                                if (loBound != 0)
+                                    nonZeroLowerBounds = true;
+                                lowerBounds[j] = loBound;
+                            }
 
-                            if (boundsCount != 0 || lowerBoundsCount != 0)
+                            if (boundsCount != 0 || lowerBoundsCount != rank || nonZeroLowerBounds)
                             {
                                 StringBuilder arrayShapeString = new StringBuilder();
                                 arrayShapeString.Append(string.Join(",", bounds));

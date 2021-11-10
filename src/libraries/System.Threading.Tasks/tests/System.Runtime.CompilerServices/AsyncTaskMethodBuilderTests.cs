@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
@@ -406,7 +407,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50968", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void Tcs_ValidateFaultedTask()
         {
             var tcs = new TaskCompletionSource<int>();
@@ -416,7 +416,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50968", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void TaskMethodBuilder_ValidateFaultedTask()
         {
             var atmb = AsyncTaskMethodBuilder.Create();
@@ -426,7 +425,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50968", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void TaskMethodBuilderT_ValidateFaultedTask()
         {
             var atmbtr = AsyncTaskMethodBuilder<object>.Create();
@@ -436,7 +434,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50968", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void TrackedSyncContext_ValidateException()
         {
             SynchronizationContext previousContext = SynchronizationContext.Current;
@@ -526,8 +523,8 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler.UnobservedTaskException -= handler;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30122")]
-        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57751")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static async Task AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion()
         {
             // Create a finalizable object that'll be referenced by both an async method's
@@ -536,7 +533,7 @@ namespace System.Threading.Tasks.Tests
             // We want to make sure that holding on to the resulting Task doesn't keep
             // that finalizable object alive.
 
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            bool finalized = false;
 
             Task t = null;
 
@@ -548,7 +545,7 @@ namespace System.Threading.Tasks.Tests
                     GC.KeepAlive(s); // keep s referenced by the state machine
                 }
 
-                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult() };
+                var state = new InvokeActionOnFinalization { Action = () => Volatile.Write(ref finalized, true) };
                 var al = new AsyncLocal<object>() { Value = state }; // ensure the object is stored in ExecutionContext
                 t = YieldOnceAsync(state); // ensure the object is stored in the state machine
                 al.Value = null;
@@ -560,19 +557,16 @@ namespace System.Threading.Tasks.Tests
             await t; // wait for the async method to complete and clear out its state
             await Task.Yield(); // ensure associated state is not still on the stack as part of the antecedent's execution
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 10 && !Volatile.Read(ref finalized); i++)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+                await Task.Yield();
             }
 
-            try
+            if (!Volatile.Read(ref finalized))
             {
-                await tcs.Task.WaitAsync(TimeSpan.FromSeconds(60));
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("Look at the created dump", e);
+                Environment.FailFast("Look at the created dump");
             }
 
             GC.KeepAlive(t); // ensure the object is stored in the state machine
@@ -641,6 +635,30 @@ namespace System.Threading.Tasks.Tests
                     Assert.Contains("42", description);
                     Assert.Contains("stored data", description);
                 }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void AsyncTaskMethodBuilder_Completed_RemovedFromTracking()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                // NOTE: This depends on private implementation details generally only used by the debugger.
+                // If those ever change, this test will need to be updated as well.
+                typeof(Task).GetField("s_asyncDebuggingEnabled", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, true);
+
+                for (int i = 0; i < 1000; i++)
+                {
+                    static async Task YieldAsync(TaskCompletionSource tcs) => await tcs.Task;
+
+                    TaskCompletionSource tcs = new();
+                    Task t = YieldAsync(tcs);
+                    tcs.SetResult();
+                    t.Wait();
+                }
+
+                int activeCount = ((dynamic)typeof(Task).GetField("s_currentActiveTasks", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
+                Assert.InRange(activeCount, 0, 10); // some other tasks may be created by the runtime, so this is just using a reasonably small upper bound
             }).Dispose();
         }
 

@@ -26,8 +26,8 @@ namespace System.Net.Http
 
         private CancellationTokenSource _pendingRequestsCts;
         private HttpRequestHeaders? _defaultRequestHeaders;
-        private Version _defaultRequestVersion = HttpUtilities.DefaultRequestVersion;
-        private HttpVersionPolicy _defaultVersionPolicy = HttpUtilities.DefaultVersionPolicy;
+        private Version _defaultRequestVersion = HttpRequestMessage.DefaultRequestVersion;
+        private HttpVersionPolicy _defaultVersionPolicy = HttpRequestMessage.DefaultVersionPolicy;
 
         private Uri? _baseAddress;
         private TimeSpan _timeout;
@@ -43,7 +43,7 @@ namespace System.Net.Http
         }
 
         public HttpRequestHeaders DefaultRequestHeaders =>
-            _defaultRequestHeaders ??= new HttpRequestHeaders(forceHeaderStoreItems: true);
+            _defaultRequestHeaders ??= new HttpRequestHeaders();
 
         public Version DefaultRequestVersion
         {
@@ -78,7 +78,12 @@ namespace System.Net.Http
             get => _baseAddress;
             set
             {
-                CheckBaseAddress(value, nameof(value));
+                // It's OK to not have a base address specified, but if one is, it needs to be absolute.
+                if (value is not null && !value.IsAbsoluteUri)
+                {
+                    throw new ArgumentException(SR.net_http_client_absolute_baseaddress_required, nameof(value));
+                }
+
                 CheckDisposedOrStarted();
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.UriBaseAddress(this, value);
@@ -127,7 +132,7 @@ namespace System.Net.Http
 
         #region Constructors
 
-        public HttpClient() : this(CreateDefaultHandler())
+        public HttpClient() : this(new HttpClientHandler())
         {
         }
 
@@ -552,8 +557,9 @@ namespace System.Net.Http
         {
             if (request == null)
             {
-                throw new ArgumentNullException(nameof(request));
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
+
             CheckDisposed();
             CheckRequestMessage(request);
 
@@ -583,17 +589,31 @@ namespace System.Net.Http
 
             Exception? toThrow = null;
 
-            if (e is OperationCanceledException oce && !cancellationToken.IsCancellationRequested && !pendingRequestsCts.IsCancellationRequested)
+            if (e is OperationCanceledException oce)
             {
-                // If this exception is for cancellation, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
-                // the only other cause could be a timeout.  Treat it as such.
-                e = toThrow = new TaskCanceledException(string.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    if (oce.CancellationToken != cancellationToken)
+                    {
+                        // We got a cancellation exception, and the caller requested cancellation, but the exception doesn't contain that token.
+                        // Massage things so that the cancellation exception we propagate appropriately contains the caller's token (it's possible
+                        // multiple things caused cancellation, in which case we can attribute it to the caller's token, or it's possible the
+                        // exception contains the linked token source, in which case that token isn't meaningful to the caller).
+                        e = toThrow = new TaskCanceledException(oce.Message, oce.InnerException, cancellationToken);
+                    }
+                }
+                else if (!pendingRequestsCts.IsCancellationRequested)
+                {
+                    // If this exception is for cancellation, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
+                    // the only other cause could be a timeout.  Treat it as such.
+                    e = toThrow = new TaskCanceledException(SR.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
+                }
             }
-            else if (cts.IsCancellationRequested && e is HttpRequestException) // if cancellationToken is canceled, cts will also be canceled
+            else if (e is HttpRequestException && cts.IsCancellationRequested) // if cancellationToken is canceled, cts will also be canceled
             {
                 // If the cancellation token source was canceled, race conditions abound, and we consider the failure to be
                 // caused by the cancellation (e.g. WebException when reading from canceled response stream).
-                e = toThrow = new OperationCanceledException(cts.Token);
+                e = toThrow = new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : cts.Token);
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
@@ -606,7 +626,7 @@ namespace System.Net.Http
 
         private static bool StartSend(HttpRequestMessage request)
         {
-            if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
+            if (HttpTelemetry.Log.IsEnabled())
             {
                 HttpTelemetry.Log.RequestStart(request);
                 return true;
@@ -793,34 +813,6 @@ namespace System.Net.Http
             }
 
             return (pendingRequestsCts, DisposeTokenSource: false, pendingRequestsCts);
-        }
-
-        private static void CheckBaseAddress(Uri? baseAddress, string parameterName)
-        {
-            if (baseAddress == null)
-            {
-                return; // It's OK to not have a base address specified.
-            }
-
-            if (!baseAddress.IsAbsoluteUri)
-            {
-                throw new ArgumentException(SR.net_http_client_absolute_baseaddress_required, parameterName);
-            }
-
-            if (!HttpUtilities.IsHttpUri(baseAddress))
-            {
-                throw new ArgumentException(HttpUtilities.InvalidUriMessage, parameterName);
-            }
-        }
-
-        private static bool IsNativeHandlerEnabled()
-        {
-            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isEnabled))
-            {
-                return false;
-            }
-
-            return isEnabled;
         }
 
         private Uri? CreateUri(string? uri) =>

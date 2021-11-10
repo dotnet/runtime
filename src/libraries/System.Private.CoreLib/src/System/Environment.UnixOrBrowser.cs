@@ -52,7 +52,7 @@ namespace System
 
         public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);
 
-        public static int SystemPageSize => CheckedSysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
+        private static int GetSystemPageSize() => CheckedSysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
 
         public static string UserDomainName => MachineName;
 

@@ -11,6 +11,7 @@ if [ "$1" == "-debug" ]; then
 fi
 
 if [ "$1" == "-DNTLM" ]; then
+  # NTLM/Winbind is aggressive and eats Negotiate so it cannot be combined with Kerberos
   ./setup-pdc.sh
   /usr/sbin/apache2 -DALTPORT "$@"
   shift

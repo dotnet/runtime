@@ -2074,7 +2074,7 @@ namespace System.Xml
         {
             if (state >= State.Error)
             {
-                Debug.Fail("We should never get to this point. State = " + state);
+                Debug.Fail($"We should never get to this point. State = {state}");
                 return "Error";
             }
             else
@@ -2109,7 +2109,7 @@ namespace System.Xml
 
         private string GeneratePrefix()
         {
-            string genPrefix = "p" + (_nsTop - 2).ToString("d", CultureInfo.InvariantCulture);
+            string genPrefix = string.Create(CultureInfo.InvariantCulture, $"p{_nsTop - 2:d}");
             if (LookupNamespace(genPrefix) == null)
             {
                 return genPrefix;
@@ -2119,7 +2119,7 @@ namespace System.Xml
             string s;
             do
             {
-                s = string.Concat(genPrefix, i.ToString(CultureInfo.InvariantCulture));
+                s = string.Create(CultureInfo.InvariantCulture, $"{genPrefix}{i}");
                 i++;
             } while (LookupNamespace(s) != null);
             return s;
@@ -2176,7 +2176,7 @@ namespace System.Xml
                 case State.Start:
                     if (_conformanceLevel == ConformanceLevel.Document)
                     {
-                        throw new InvalidOperationException(wrongTokenMessage + ' ' + SR.Xml_ConformanceLevelFragment);
+                        throw new InvalidOperationException($"{wrongTokenMessage} {SR.Xml_ConformanceLevelFragment}");
                     }
                     break;
             }

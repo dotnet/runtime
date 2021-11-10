@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!--
+      Since many resource strings in this library are shown to an end-user,
+      always generate default resource string values which will be used when UseSystemResourceKeys is true in trimmed apps.
+    -->
+    <GenerateResxSourceIncludeDefaultValues>true</GenerateResxSourceIncludeDefaultValues>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

@@ -25,7 +25,7 @@ public:
     Compiler* const    compiler;
 };
 
-BOOL vlogf(unsigned level, const char* fmt, va_list args);
+bool vlogf(unsigned level, const char* fmt, va_list args);
 int vflogf(FILE* file, const char* fmt, va_list args);
 
 int logf(const char* fmt, ...);

@@ -74,6 +74,7 @@ enum {
 	mono_mb_emit_ldloc ((mb), (var));		\
 	mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenThreadInfo, tlab_temp_end));	\
 	mono_mb_emit_byte ((mb), CEE_ADD);		\
+	mono_mb_emit_no_nullcheck ((mb));			\
 	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
 	} while (0)
 #endif
@@ -106,6 +107,7 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gbo
 	if (!is_concurrent) {
 		// if (!ptr_in_nursery (*ptr)) return;
 		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_BITS);
@@ -221,10 +223,12 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icon (mb, m_class_offsetof_instance_size ());
 		mono_mb_emit_byte (mb, CEE_ADD);
 		/* FIXME: assert instance_size stays a 4 byte integer */
+		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
 		mono_mb_emit_byte (mb, CEE_CONV_I);
 		mono_mb_emit_stloc (mb, size_var);
@@ -265,9 +269,11 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icon (mb, m_class_offsetof_sizes ());
 		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
 		mono_mb_emit_byte (mb, CEE_CONV_I);
 
@@ -390,6 +396,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 	/* p = (void**)tlab_next; */
 	p_var = mono_mb_add_local (mb, int_type);
 	mono_mb_emit_ldloc (mb, tlab_next_addr_var);
+	mono_mb_emit_no_nullcheck (mb);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, p_var);
 	
@@ -531,6 +538,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_LDPTR_PROFILER_ALLOCATION_COUNT);
+		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
 
 		int prof_br = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);

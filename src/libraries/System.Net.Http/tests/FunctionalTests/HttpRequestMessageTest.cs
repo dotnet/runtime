@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
@@ -12,7 +13,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class HttpRequestMessageTest : HttpClientHandlerTestBase
     {
         private readonly Version _expectedRequestMessageVersion = HttpVersion.Version11;
@@ -64,6 +64,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void Ctor_EmptyStringUri_Accepted()
+        {
+            var rm = new HttpRequestMessage(HttpMethod.Put, string.Empty);
+
+            Assert.Null(rm.RequestUri);
+            Assert.Equal(HttpMethod.Put, rm.Method);
+            Assert.Equal(_expectedRequestMessageVersion, rm.Version);
+            Assert.Null(rm.Content);
+        }
+
+        [Fact]
         public void Ctor_RelativeUri_CorrectValues()
         {
             var uri = new Uri("/relative", UriKind.Relative);
@@ -105,9 +116,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Ctor_NonHttpUri_ThrowsArgumentException()
+        public void Ctor_NonHttpUri_DoesNotThrow()
         {
-            AssertExtensions.Throws<ArgumentException>("requestUri", () => new HttpRequestMessage(HttpMethod.Put, "ftp://example.com"));
+            new HttpRequestMessage(HttpMethod.Put, "ftp://example.com");
         }
 
         [Fact]
@@ -159,10 +170,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void RequestUri_SetNonHttpUri_ThrowsArgumentException()
+        public void RequestUri_SetNonHttpUri_DoesNotThrow()
         {
             var rm = new HttpRequestMessage();
-            AssertExtensions.Throws<ArgumentException>("value", () => { rm.RequestUri = new Uri("ftp://example.com"); });
+            rm.RequestUri = new Uri("ftp://example.com");
         }
 
         [Fact]
@@ -240,8 +251,12 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> requestTask = client.SendAsync(request);
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        List<string> headers = await connection.ReadRequestHeaderAsync();
-                        Assert.DoesNotContain(headers, line => line.StartsWith("Content-length"));
+                        var requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
+#if TARGET_BROWSER
+                        requestData = await connection.HandleCORSPreFlight(requestData);
+#endif
+
+                        Assert.DoesNotContain(requestData.Headers, line => line.Name.StartsWith("Content-length"));
 
                         await connection.SendResponseAsync();
                         await requestTask;

@@ -619,10 +619,6 @@ typedef struct _DacGlobals
 
     ULONG fn__ThePreStubPatchLabel;
     ULONG fn__PrecodeFixupThunk;
-#ifdef FEATURE_PREJIT
-    ULONG fn__StubDispatchFixupStub;
-    ULONG fn__StubDispatchFixupPatchLabel;
-#endif
 #ifdef FEATURE_COMINTEROP
     ULONG fn__Unknown_AddRef;
     ULONG fn__Unknown_AddRefSpecial;
@@ -773,7 +769,7 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer);
 #ifdef __cplusplus
 }
 class ReflectionModule;
-interface IMDInternalImport* DacGetMDImport(const class PEFile* peFile,
+interface IMDInternalImport* DacGetMDImport(const class PEAssembly* pPEAssembly,
                                             bool throwEx);
 interface IMDInternalImport* DacGetMDImport(const ReflectionModule* reflectionModule,
                                             bool throwEx);
@@ -2387,6 +2383,7 @@ typedef DPTR(IMAGE_NT_HEADERS)      PTR_IMAGE_NT_HEADERS;
 typedef DPTR(IMAGE_NT_HEADERS32)    PTR_IMAGE_NT_HEADERS32;
 typedef DPTR(IMAGE_NT_HEADERS64)    PTR_IMAGE_NT_HEADERS64;
 typedef DPTR(IMAGE_SECTION_HEADER)  PTR_IMAGE_SECTION_HEADER;
+typedef DPTR(IMAGE_EXPORT_DIRECTORY)  PTR_IMAGE_EXPORT_DIRECTORY;
 typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
 
 #if defined(DACCESS_COMPILE)

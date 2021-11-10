@@ -92,7 +92,7 @@
 
 } // end of class C1
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_test
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  Eval() cil managed
@@ -121,7 +121,7 @@
              int32 V_2)
     .try
     {
-      call       void Test::Eval()
+      call       void Test_test::Eval()
       ldstr      "Test did not throw expected System.TypeLoadException"
       call       void [System.Console]System.Console::WriteLine(string)
       ldstr      "Test failed"

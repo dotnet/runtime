@@ -56,6 +56,8 @@ namespace System.Threading.Channels
 
             public override bool CanCount => true;
 
+            public override bool CanPeek => true;
+
             public override int Count => _parent._items.Count;
 
             public override ValueTask<T> ReadAsync(CancellationToken cancellationToken)
@@ -122,6 +124,9 @@ namespace System.Threading.Channels
                 item = default;
                 return false;
             }
+
+            public override bool TryPeek([MaybeNullWhen(false)] out T item) =>
+                _parent._items.TryPeek(out item);
 
             private void CompleteIfDone(UnboundedChannel<T> parent)
             {

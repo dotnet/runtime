@@ -79,21 +79,3 @@ DYNAMICHELPER (DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Objec
 
 #endif // FEATURE_READYTORUN
 
-#ifdef FEATURE_PREJIT
-//============================================================================================
-// EXTERN_C VOID __stdcall VirtualMethodFixupStub()
-
-NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-
-        PROLOG_WITH_TRANSITION_BLOCK 0, 8, rsi, 0, 0
-
-        lea             rdi, [rsp + __PWTB_TransitionBlock] // pTransitionBlock
-        sub             rsi, 5                              // pThunk
-        call            C_FUNC(VirtualMethodFixupWorker)
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-PATCH_LABEL VirtualMethodFixupPatchLabel
-        TAILJMP_RAX
-
-NESTED_END VirtualMethodFixupStub, _TEXT
-#endif // FEATURE_PREJIT

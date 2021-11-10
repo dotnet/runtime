@@ -8,7 +8,8 @@
 #include <array>
 #include <functional>
 #include <iostream>
-#using <mscorlib.dll>
+#using <System.Runtime.dll>
+#using <System.Collections.dll>
 using namespace System::Collections::Generic;
 
 public enum class TestCases

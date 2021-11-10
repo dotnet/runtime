@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
@@ -13,7 +14,7 @@ namespace System.ComponentModel
         {
         }
 
-        public ListSortDescriptionCollection(ListSortDescription[] sorts)
+        public ListSortDescriptionCollection(ListSortDescription?[]? sorts)
         {
             if (sorts != null)
             {
@@ -24,9 +25,9 @@ namespace System.ComponentModel
             }
         }
 
-        public ListSortDescription this[int index]
+        public ListSortDescription? this[int index]
         {
-            get => (ListSortDescription)_sorts[index];
+            get => (ListSortDescription?)_sorts[index];
             set => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
         }
 
@@ -36,23 +37,23 @@ namespace System.ComponentModel
 
         bool IList.IsReadOnly => true;
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get => this[index];
             set => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
         }
 
-        int IList.Add(object value) => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
+        int IList.Add(object? value) => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
 
         void IList.Clear() => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
 
-        public bool Contains(object value) => ((IList)_sorts).Contains(value);
+        public bool Contains(object? value) => ((IList)_sorts).Contains(value);
 
-        public int IndexOf(object value) => ((IList)_sorts).IndexOf(value);
+        public int IndexOf(object? value) => ((IList)_sorts).IndexOf(value);
 
-        void IList.Insert(int index, object value) => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
+        void IList.Insert(int index, object? value) => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
 
-        void IList.Remove(object value) => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
+        void IList.Remove(object? value) => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
 
         void IList.RemoveAt(int index) => throw new InvalidOperationException(SR.CantModifyListSortDescriptionCollection);
 

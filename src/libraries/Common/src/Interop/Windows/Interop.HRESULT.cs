@@ -13,6 +13,7 @@ internal static partial class Interop
         E_FAIL = unchecked((int)0x80004005),
         E_UNEXPECTED = unchecked((int)0x8000FFFF),
         STG_E_INVALIDFUNCTION = unchecked((int)0x80030001L),
+        STG_E_INVALIDPOINTER = unchecked((int)0x80030009),
         STG_E_INVALIDPARAMETER = unchecked((int)0x80030057),
         STG_E_INVALIDFLAG = unchecked((int)0x800300FF),
         E_ACCESSDENIED = unchecked((int)0x80070005),

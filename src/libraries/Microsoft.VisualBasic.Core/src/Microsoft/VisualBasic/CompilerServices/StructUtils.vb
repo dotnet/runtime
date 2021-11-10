@@ -15,7 +15,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
     End Interface
 
     <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
-    Friend Class StructUtils
+    Friend NotInheritable Class StructUtils
         ' Prevent creation.
         Private Sub New()
         End Sub

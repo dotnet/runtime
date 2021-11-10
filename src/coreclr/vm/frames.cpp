@@ -41,7 +41,6 @@
 
 #define CHECK_APP_DOMAIN    0
 
-#if !defined(CROSSGEN_COMPILE)
 //-----------------------------------------------------------------------
 #if _DEBUG
 //-----------------------------------------------------------------------
@@ -457,7 +456,7 @@ VOID Frame::Pop(Thread *pThread)
     m_Next = NULL;
 }
 
-#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 void Frame::PopIfChained()
 {
     CONTRACTL
@@ -476,7 +475,7 @@ void Frame::PopIfChained()
         Pop();
     }
 }
-#endif // TARGET_UNIX && !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !DACCESS_COMPILE
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
@@ -624,7 +623,7 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    PEImageLayout *pNativeImage = pZapModule->GetNativeOrReadyToRunImage();
+    PEImageLayout *pNativeImage = pZapModule->GetReadyToRunImage();
 
     RVA rva = pNativeImage->GetDataRva(ptr);
 
@@ -1261,7 +1260,7 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     }
 
     //If not "vararg" calling convention, assume "default" calling convention
-    if (!MetaSig::IsVarArg(pFunction->GetModule(), callSignature))
+    if (!MetaSig::IsVarArg(callSignature))
     {
         SigTypeContext typeContext(pFunction);
         PCCOR_SIGNATURE pSig;
@@ -1977,7 +1976,6 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
         return pRetAddr;
     }
 }
-#endif // !CROSSGEN_COMPILE
 
 #ifndef DACCESS_COMPILE
 //=================================================================================
@@ -2064,7 +2062,7 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
 #ifdef _DEBUG
     GCRefMapBuilder gcRefMapNew;
     ComputeCallRefMap(pMD, &gcRefMapNew, isDispatchCell);
-    
+
     DWORD dwFinalLength;
     PVOID pBlob = gcRefMapNew.GetBlob(&dwFinalLength);
 

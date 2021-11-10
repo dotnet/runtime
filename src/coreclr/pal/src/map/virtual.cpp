@@ -1321,6 +1321,27 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
 
 /*++
 Function:
+  PAL_GetExecutableMemoryAllocatorPreferredRange
+
+  This function gets the preferred range used by the executable memory allocator.
+  This is the range that the memory allocator will prefer to allocate memory in,
+  including (if nearby) the libcoreclr memory range.
+
+  lpBeginAddress - Inclusive beginning of range
+  lpEndAddress - Exclusive end of range
+  dwSize - Number of bytes to allocate
+--*/
+void
+PALAPI
+PAL_GetExecutableMemoryAllocatorPreferredRange(
+    OUT LPVOID *start,
+    OUT LPVOID *end)
+{
+    g_executableMemoryAllocator.GetPreferredRange(start, end);
+}
+
+/*++
+Function:
   VirtualAlloc
 
 Note:
@@ -1761,21 +1782,26 @@ ExitVirtualProtect:
 }
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-bool
-PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
+PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
 {
-    // Use a thread local to track per thread JIT Write enable state
-    // Per Apple, new threads start with MAP_JIT pages readable and executable (R-X) by default.
-    thread_local bool enabled = false;
-    bool result = enabled;
-    if (enabled != writeEnable)
+    thread_local int enabledCount = 0;
+    if (writeEnable)
     {
-        pthread_jit_write_protect_np(writeEnable ? 0 : 1);
-        enabled = writeEnable;
+        if (enabledCount++ == 0)
+        {
+            pthread_jit_write_protect_np(0);
+        }
     }
-    return result;
+    else
+    {
+        if (--enabledCount == 0)
+        {
+            pthread_jit_write_protect_np(1);
+        }
+        _ASSERTE(enabledCount >= 0);
+    }
 }
-#endif
+#endif // HOST_OSX && HOST_ARM64
 
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------
@@ -2088,11 +2114,6 @@ Function:
 --*/
 void ExecutableMemoryAllocator::Initialize()
 {
-    m_startAddress = NULL;
-    m_nextFreeAddress = NULL;
-    m_totalSizeOfReservedMemory = 0;
-    m_remainingReservedMemory = 0;
-
     // Enable the executable memory allocator on 64-bit platforms only
     // because 32-bit platforms have limited amount of virtual address space.
 #ifdef HOST_64BIT
@@ -2184,6 +2205,26 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         {
             return;
         }
+
+        m_preferredRangeStart = m_startAddress;
+        m_preferredRangeEnd = (char*)m_startAddress + sizeOfAllocation;
+    }
+    else
+    {
+        // We managed to allocate memory close to libcoreclr, so include its memory address in the preferred range to allow
+        // generated code to use IP-relative addressing.
+        if ((char*)m_startAddress < (char*)coreclrLoadAddress)
+        {
+            m_preferredRangeStart = (void*)m_startAddress;
+            m_preferredRangeEnd = (char*)coreclrLoadAddress + CoreClrLibrarySize;
+        }
+        else
+        {
+            m_preferredRangeStart = (void*)coreclrLoadAddress;
+            m_preferredRangeEnd = (char*)m_startAddress + sizeOfAllocation;
+        }
+
+        _ASSERTE((char*)m_preferredRangeEnd - (char*)m_preferredRangeStart <= INT_MAX);
     }
 
     // Memory has been successfully reserved.

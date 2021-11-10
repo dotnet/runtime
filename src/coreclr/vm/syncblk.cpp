@@ -712,14 +712,14 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
             continue;
     }
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     if (psb->m_pInteropInfo)
     {
         // called during GC
         // so do only minorcleanup
         MinorCleanupSyncBlockComData(psb->m_pInteropInfo);
     }
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     // This method will be called only by the GC thread
     //<TODO>@todo add an assert for the above statement</TODO>
@@ -840,7 +840,7 @@ void SyncBlockCache::Grow()
 
     if (!(newSyncTableSize > m_SyncTableSize)) // Make sure we actually found room to grow!
     {
-        COMPlusThrowOM();
+        EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_OUT_OF_SYNCBLOCKS));
     }
 
     newSyncTable = new SyncTableEntry[newSyncTableSize];
@@ -974,9 +974,9 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     // clean up comdata
     if (psb->m_pInteropInfo)
     {
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         CleanupSyncBlockComData(psb->m_pInteropInfo);
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
 #ifndef TARGET_UNIX
         if (g_fEEShutDown)
@@ -1076,7 +1076,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
     while ((arr = m_OldSyncTables) != NULL)
     {
         m_OldSyncTables = (SyncTableEntry*)arr[0].m_Object.Load();
-        delete arr;
+        delete[] arr;
     }
 
 #ifdef DUMP_SB

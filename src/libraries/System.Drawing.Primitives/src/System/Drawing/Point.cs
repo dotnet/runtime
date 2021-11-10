@@ -165,7 +165,7 @@ namespace System.Drawing
         /// <summary>
         /// Converts this <see cref='System.Drawing.Point'/> to a human readable string.
         /// </summary>
-        public override readonly string ToString() => "{X=" + X.ToString() + ",Y=" + Y.ToString() + "}";
+        public override readonly string ToString() => $"{{X={X},Y={Y}}}";
 
         private static short HighInt16(int n) => unchecked((short)((n >> 16) & 0xffff));
 

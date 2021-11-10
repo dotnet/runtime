@@ -144,7 +144,10 @@ namespace System.Runtime.Caching
 
             _callback = removedCallback;
 
-            if (dependencies != null)
+            // CacheItemPolicy.ChangeMonitors is frequently the source for 'dependencies', and that property
+            // is never null. So check that the collection of dependencies is not empty before allocating
+            // the 'seldom' used fields.
+            if (dependencies != null && dependencies.Count > 0)
             {
                 _fields = new SeldomUsedFields();
                 _fields._dependencies = dependencies;
@@ -237,6 +240,10 @@ namespace System.Runtime.Caching
         {
             if (State == EntryState.AddedToCache)
             {
+                // This is a callback - not directly called by the user. We don't want
+                // to throw potentially unhandled "disposed" exceptions in this case.
+                // However, RemoveEntry sidesteps 'throwOnDispose' so we don't need to
+                // worry about a try/catch here.
                 _fields._cache.RemoveEntry(this.Key, this, CacheEntryRemovedReason.ChangeMonitorChanged);
             }
         }

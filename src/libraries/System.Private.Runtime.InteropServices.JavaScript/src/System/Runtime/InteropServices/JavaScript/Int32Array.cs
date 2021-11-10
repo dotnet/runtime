@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public Int32Array(SharedArrayBuffer buffer, int byteOffset, int length) : base(buffer, byteOffset, length) { }
 
-        internal Int32Array(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal Int32Array(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>

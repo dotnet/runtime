@@ -9,7 +9,7 @@ namespace Internal.Cryptography
 {
     internal sealed partial class DesImplementation
     {
-        private static ICryptoTransform CreateTransformCore(
+        private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
@@ -20,30 +20,40 @@ namespace Internal.Cryptography
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
-            IntPtr algorithm = IntPtr.Zero;
-
-            switch (cipherMode)
-            {
-                case CipherMode.CBC:
-                    algorithm = Interop.Crypto.EvpDesCbc();
-                    break;
-                case CipherMode.ECB:
-                    algorithm = Interop.Crypto.EvpDesEcb();
-                    break;
-                case CipherMode.CFB:
-
-                    Debug.Assert(feedbackSize == 1, "DES with CFB should have FeedbackSize set to 1");
-                    algorithm = Interop.Crypto.EvpDesCfb8();
-
-                    break;
-                default:
-                    throw new NotSupportedException();
-            }
+            IntPtr algorithm = GetAlgorithm(cipherMode, feedbackSize);
 
             Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
+        }
+
+        private static ILiteSymmetricCipher CreateLiteCipher(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> iv,
+            int blockSize,
+            int feedbackSize,
+            int paddingSize,
+            bool encrypting)
+        {
+            // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
+            IntPtr algorithm = GetAlgorithm(cipherMode, feedbackSize);
+
+            Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
+            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
+        }
+
+        private static IntPtr GetAlgorithm(CipherMode cipherMode, int feedbackSize)
+        {
+            return cipherMode switch
+            {
+                CipherMode.CBC => Interop.Crypto.EvpDesCbc(),
+                CipherMode.ECB => Interop.Crypto.EvpDesEcb(),
+                CipherMode.CFB when feedbackSize == 1 => Interop.Crypto.EvpDesCfb8(),
+                _ => throw new NotSupportedException(),
+            };
         }
     }
 }

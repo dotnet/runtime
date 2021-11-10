@@ -52,15 +52,6 @@ public:
         return m_StringPool.InitOnMemReadOnly((void *)sourceData.GetDataPointer(), sourceData.GetSize());
     }
 
-#ifdef FEATURE_PREJIT
-    // Can be called multiple times.
-    inline void InitializeHotData(
-        HotHeap hotHeap)
-    {
-        m_StringPool.InitHotData(hotHeap);
-    }
-#endif //FEATURE_PREJIT
-
     inline void Delete()
     {
         return m_StringPool.Uninit();

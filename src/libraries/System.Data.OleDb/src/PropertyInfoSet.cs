@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Data.OleDb
 {
     internal sealed class OleDbPropertyInfo
@@ -125,19 +127,19 @@ namespace System.Data.OleDb
                         for (int k = 0; k < infoCount; ++k)
                         {
                             IntPtr valuePtr = ADP.IntPtrOffset(infoPtr, (k * ODB.SizeOf_tagDBPROPINFO) + ODB.OffsetOf_tagDBPROPINFO_Value);
-                            SafeNativeMethods.VariantClear(valuePtr);
+                            Interop.OleAut32.VariantClear(valuePtr);
                         }
-                        SafeNativeMethods.CoTaskMemFree(infoPtr); // was allocated by provider
+                        Interop.Ole32.CoTaskMemFree(infoPtr); // was allocated by provider
                     }
                 }
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
 
             ptr = this.descBuffer;
             this.descBuffer = IntPtr.Zero;
             if (IntPtr.Zero != ptr)
             {
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
             return true;
         }

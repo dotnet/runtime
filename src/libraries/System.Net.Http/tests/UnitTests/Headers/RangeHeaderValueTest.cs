@@ -170,52 +170,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse(string.Empty);
         }
 
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse(" bytes=1-2 ", new RangeHeaderValue(1, 2));
-
-            RangeHeaderValue expected = new RangeHeaderValue();
-            expected.Unit = "custom";
-            expected.Ranges.Add(new RangeItemHeaderValue(null, 5));
-            expected.Ranges.Add(new RangeItemHeaderValue(1, 4));
-            CheckValidTryParse("custom = -  5 , 1 - 4 ,,", expected);
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("bytes=1-2x"); // only delimiter ',' allowed after last range
-            CheckInvalidTryParse("x bytes=1-2");
-            CheckInvalidTryParse("bytes=1-2.4");
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-        }
-
         #region Helper methods
 
         private void CheckValidParse(string input, RangeHeaderValue expectedResult)
         {
             RangeHeaderValue result = RangeHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(RangeHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { RangeHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, RangeHeaderValue expectedResult)
-        {
-            RangeHeaderValue result = null;
-            Assert.True(RangeHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            RangeHeaderValue result = null;
-            Assert.False(RangeHeaderValue.TryParse(input, out result));
+            Assert.False(RangeHeaderValue.TryParse(input, out RangeHeaderValue result));
             Assert.Null(result);
         }
 

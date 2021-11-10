@@ -14,8 +14,8 @@ namespace System.Text.Json
         {
             byte[]? unescapedArray = null;
 
-            Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[utf8Source.Length] :
+            Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (unescapedArray = ArrayPool<byte>.Shared.Rent(utf8Source.Length));
 
             Unescape(utf8Source, utf8Unescaped, idx, out int written);
@@ -44,8 +44,8 @@ namespace System.Text.Json
             int length = utf8Source.Length;
             byte[]? pooledName = null;
 
-            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (pooledName = ArrayPool<byte>.Shared.Rent(length));
 
             Unescape(utf8Source, utf8Unescaped, idx, out int written);
@@ -71,8 +71,8 @@ namespace System.Text.Json
             int length = utf8Source.Length;
             byte[]? pooledName = null;
 
-            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (pooledName = ArrayPool<byte>.Shared.Rent(length));
 
             Unescape(utf8Source, utf8Unescaped, idx, out int written);
@@ -96,8 +96,8 @@ namespace System.Text.Json
 
             byte[]? unescapedArray = null;
 
-            Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[utf8Source.Length] :
+            Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (unescapedArray = ArrayPool<byte>.Shared.Rent(utf8Source.Length));
 
             Unescape(utf8Source, utf8Unescaped, 0, out int written);
@@ -127,12 +127,12 @@ namespace System.Text.Json
 
             int length = checked((int)utf8Source.Length);
 
-            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (unescapedArray = ArrayPool<byte>.Shared.Rent(length));
 
-            Span<byte> utf8Escaped = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
+            Span<byte> utf8Escaped = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (escapedArray = ArrayPool<byte>.Shared.Rent(length));
 
             utf8Source.CopyTo(utf8Escaped);
@@ -174,8 +174,8 @@ namespace System.Text.Json
         {
             byte[]? pooledArray = null;
 
-            Span<byte> byteSpan = utf8Unescaped.Length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[utf8Unescaped.Length] :
+            Span<byte> byteSpan = utf8Unescaped.Length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (pooledArray = ArrayPool<byte>.Shared.Rent(utf8Unescaped.Length));
 
             OperationStatus status = Base64.DecodeFromUtf8(utf8Unescaped, byteSpan, out int bytesConsumed, out int bytesWritten);
@@ -372,7 +372,7 @@ namespace System.Text.Json
                     else if (currentByte == 'u')
                     {
                         // The source is known to be valid JSON, and hence if we see a \u, it is guaranteed to have 4 hex digits following it
-                        // Otherwise, the Utf8JsonReader would have alreayd thrown an exception.
+                        // Otherwise, the Utf8JsonReader would have already thrown an exception.
                         Debug.Assert(source.Length >= idx + 5);
 
                         bool result = Utf8Parser.TryParse(source.Slice(idx + 1, 4), out int scalar, out int bytesConsumed, 'x');
@@ -399,7 +399,7 @@ namespace System.Text.Json
                             }
 
                             // The source is known to be valid JSON, and hence if we see a \u, it is guaranteed to have 4 hex digits following it
-                            // Otherwise, the Utf8JsonReader would have alreayd thrown an exception.
+                            // Otherwise, the Utf8JsonReader would have already thrown an exception.
                             result = Utf8Parser.TryParse(source.Slice(idx, 4), out int lowSurrogate, out bytesConsumed, 'x');
                             Debug.Assert(result);
                             Debug.Assert(bytesConsumed == 4);

@@ -66,9 +66,10 @@ class CordbNativeFrame : public CordbBaseMono, public ICorDebugNativeFrame, publ
 {
     CordbJITILFrame* m_JITILFrame;
     CordbThread*     m_pThread;
+    int              m_nPosFrame;
 
 public:
-    CordbNativeFrame(Connection* conn, int frameid, int methodId, int il_offset, int flags, CordbThread* thread);
+    CordbNativeFrame(Connection* conn, int frameid, int methodId, int il_offset, int flags, CordbThread* thread, int posFrame);
     ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());

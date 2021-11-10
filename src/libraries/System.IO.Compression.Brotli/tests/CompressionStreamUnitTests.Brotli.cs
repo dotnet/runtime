@@ -14,7 +14,8 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new BrotliStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new BrotliStream(stream, level, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((BrotliStream)stream).BaseStream;
-        protected override bool ReadsMayBlockUntilBufferFullOrEOF => true;
+
+        protected override bool FlushGuaranteesAllDataWritten => false;
 
         // The tests are relying on an implementation detail of BrotliStream, using knowledge of its internal buffer size
         // in various test calculations.  Currently the implementation is using the ArrayPool, which will round up to a
@@ -27,6 +28,14 @@ namespace System.IO.Compression
         [Fact]
         [OuterLoop("Test takes ~6 seconds to run")]
         public override void FlushAsync_DuringWriteAsync() { base.FlushAsync_DuringWriteAsync(); }
+
+        [Theory]
+        [InlineData((CompressionLevel)(-1))]
+        [InlineData((CompressionLevel)4)]
+        public void Ctor_ArgumentValidation_InvalidCompressionLevel(CompressionLevel compressionLevel)
+        {
+            Assert.Throws<ArgumentException>(() => new BrotliStream(new MemoryStream(), compressionLevel));
+        }
 
         [Fact]
         public void InvalidQuality()

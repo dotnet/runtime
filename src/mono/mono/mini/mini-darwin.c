@@ -63,13 +63,7 @@
 #include <mach/exception.h>
 #include <mach/task.h>
 #include <pthread.h>
-#include <dlfcn.h>
 #include <AvailabilityMacros.h>
-
-/* This is #define'd by Boehm GC to _GC_dlopen. */
-#undef dlopen
-
-void* dlopen(const char* path, int mode);
 
 void
 mono_runtime_install_handlers (void)
@@ -97,21 +91,6 @@ mono_runtime_install_handlers (void)
 		MACHINE_THREAD_STATE);
 	if (kr != KERN_SUCCESS)
 		g_warning ("mono_runtime_install_handlers: task_set_exception_ports failed");
-#endif
-
-	/* Snow Leopard has a horrible bug: http://openradar.appspot.com/7209349
-	 * This causes obscure SIGTRAP's for any application that comes across this built on
-	 * Snow Leopard.  This is a horrible hack to ensure that the private __CFInitialize
-	 * is run on the main thread, so that we don't get SIGTRAPs later
-	 */
-#if defined (__APPLE__) && (defined (__i386__) || defined (__x86_64__))
-	{
-		void *handle = dlopen ("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation", RTLD_LAZY);
-		if (handle == NULL)
-			return;
-
-		dlclose (handle);
-	}
 #endif
 }
 

@@ -6,6 +6,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- Encoding.UTF7 and UTF7Encoding are obsolete, but we're the unit test project for it, so suppress warnings -->
     <NoWarn>$(NoWarn),SYSLIB0001</NoWarn>
+    <EnableUnsafeUTF7Encoding>true</EnableUnsafeUTF7Encoding>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.cs" />
@@ -84,9 +85,6 @@
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="runtimeconfig.template.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />

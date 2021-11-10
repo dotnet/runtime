@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
-
 namespace System.IO.Compression
 {
     public static partial class ZipFileExtensions
@@ -21,8 +19,7 @@ namespace System.IO.Compression
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified in destinationFileName is invalid (for example, it is on
         /// an unmapped drive).</exception>
-        /// <exception cref="IOException">destinationFileName already exists.
-        /// -or- An I/O error has occurred. -or- The entry is currently open for writing.
+        /// <exception cref="IOException">An I/O error has occurred. -or- The entry is currently open for writing.
         /// -or- The entry has been deleted from the archive.</exception>
         /// <exception cref="NotSupportedException">destinationFileName is in an invalid format
         /// -or- The ZipArchive that this entry belongs to was opened in a write-only mode.</exception>
@@ -50,8 +47,7 @@ namespace System.IO.Compression
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified in destinationFileName is invalid
         /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">destinationFileName exists and overwrite is false.
-        /// -or- An I/O error has occurred.
+        /// <exception cref="IOException">An I/O error has occurred.
         /// -or- The entry is currently open for writing.
         /// -or- The entry has been deleted from the archive.</exception>
         /// <exception cref="NotSupportedException">destinationFileName is in an invalid format
@@ -75,14 +71,25 @@ namespace System.IO.Compression
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 
-            using (Stream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
+            using (FileStream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
             {
                 using (Stream es = source.Open())
                     es.CopyTo(fs);
+
+                ExtractExternalAttributes(fs, source);
             }
 
-            File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            try
+            {
+                File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
+            }
         }
+
+        static partial void ExtractExternalAttributes(FileStream fs, ZipArchiveEntry entry);
 
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) =>
             ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);

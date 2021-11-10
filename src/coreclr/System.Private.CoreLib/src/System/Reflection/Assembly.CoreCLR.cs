@@ -21,7 +21,7 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoad(assemblyString, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
-        [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly? LoadWithPartialName(string partialName)
         {
@@ -54,7 +54,7 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoad(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
         private static extern void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
@@ -82,7 +82,7 @@ namespace System.Reflection
             return GetExecutingAssembly(ref stackMark);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
         private static extern void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
         private static Assembly? GetEntryAssemblyInternal()
@@ -92,11 +92,8 @@ namespace System.Reflection
             return entryAssembly;
         }
 
-        // Exists to faciliate code sharing between CoreCLR and CoreRT.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool IsRuntimeImplemented() => this is RuntimeAssembly;
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetAssemblyCount")]
+        [SuppressGCTransition]
         internal static extern uint GetAssemblyCount();
     }
 }

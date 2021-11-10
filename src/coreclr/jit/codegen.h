@@ -14,14 +14,6 @@
 #include "regset.h"
 #include "jitgcinfo.h"
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-#define FOREACH_REGISTER_FILE(file)                                                                                    \
-    for ((file) = &(this->intRegState); (file) != NULL;                                                                \
-         (file) = ((file) == &(this->intRegState)) ? &(this->floatRegState) : NULL)
-#else
-#define FOREACH_REGISTER_FILE(file) (file) = &(this->intRegState);
-#endif
-
 class CodeGen final : public CodeGenInterface
 {
     friend class emitter;
@@ -39,15 +31,8 @@ public:
 
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
-    virtual bool genCreateAddrMode(GenTree*  addr,
-                                   bool      fold,
-                                   bool*     revPtr,
-                                   GenTree** rv1Ptr,
-                                   GenTree** rv2Ptr,
-#if SCALED_ADDR_MODES
-                                   unsigned* mulPtr,
-#endif // SCALED_ADDR_MODES
-                                   ssize_t* cnsPtr);
+    virtual bool genCreateAddrMode(
+        GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
 
 private:
 #if defined(TARGET_XARCH)
@@ -216,15 +201,8 @@ protected:
     unsigned genCurDispOffset;
 
     static const char* genInsName(instruction ins);
-#endif // DEBUG
+    const char* genInsDisplayName(emitter::instrDesc* id);
 
-    //-------------------------------------------------------------------------
-
-    // JIT-time constants for use in multi-dimensional array code generation.
-    unsigned genOffsetOfMDArrayLowerBound(var_types elemType, unsigned rank, unsigned dimension);
-    unsigned genOffsetOfMDArrayDimensionSize(var_types elemType, unsigned rank, unsigned dimension);
-
-#ifdef DEBUG
     static const char* genSizeStr(emitAttr size);
 #endif // DEBUG
 
@@ -348,6 +326,8 @@ protected:
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
+    void genPoisonFrame(regMaskTP bbRegLiveIn);
+
 #if defined(TARGET_ARM)
 
     bool genInstrWithConstant(
@@ -454,23 +434,24 @@ protected:
                      CORINFO_METHOD_HANDLE methHnd,
                      INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                      void*                 addr
-                     X86_ARG(int  argSize),
+                     X86_ARG(int argSize),
                      emitAttr              retSize
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     IL_OFFSETX            ilOffset,
-                     regNumber             base   = REG_NA,
-                     bool                  isJump = false);
+                     const DebugInfo&      di,
+                     regNumber             base,
+                     bool                  isJump);
     // clang-format on
 
     // clang-format off
-    void genEmitCall(int                   callType,
-                     CORINFO_METHOD_HANDLE methHnd,
-                     INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                     GenTreeIndir*         indir
-                     X86_ARG(int  argSize),
-                     emitAttr              retSize
-                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     IL_OFFSETX            ilOffset);
+    void genEmitCallIndir(int                   callType,
+                          CORINFO_METHOD_HANDLE methHnd,
+                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                          GenTreeIndir*         indir
+                          X86_ARG(int argSize),
+                          emitAttr              retSize
+                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                          const DebugInfo&      di,
+                          bool                  isJump);
     // clang-format on
 
     //
@@ -571,15 +552,16 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #ifdef DEBUG
-    void genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMapping);
+    void genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping);
     void genIPmappingListDisp();
 #endif // DEBUG
 
-    void genIPmappingAdd(IL_OFFSETX offset, bool isLabel);
-    void genIPmappingAddToFront(IL_OFFSETX offset);
+    IPmappingDsc* genCreateIPMapping(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
+    void genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
+    void genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingGen();
 
-    void genEnsureCodeEmitted(IL_OFFSETX offsx);
+    void genEnsureCodeEmitted(const DebugInfo& di);
 
     //-------------------------------------------------------------------------
     // scope info for the variables
@@ -843,17 +825,15 @@ protected:
 
     void genCodeForDivMod(GenTreeOp* treeNode);
     void genCodeForMul(GenTreeOp* treeNode);
+    void genCodeForIncSaturate(GenTree* treeNode);
     void genCodeForMulHi(GenTreeOp* treeNode);
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
 #if defined(TARGET_ARMARCH)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
+    void genCodeForMulLong(GenTreeOp* mul);
 #endif // TARGET_ARMARCH
-
-#if defined(TARGET_ARM)
-    void genCodeForMulLong(GenTreeMultiRegOp* treeNode);
-#endif // TARGET_ARM
 
 #if !defined(TARGET_64BIT)
     void genLongToIntCast(GenTree* treeNode);
@@ -977,8 +957,6 @@ protected:
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode);
@@ -1014,12 +992,12 @@ protected:
     void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp);
-    void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival);
+    void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_R_RM(
         GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTree* op2);
-    void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival);
-    void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins);
+    void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
+    void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
@@ -1153,7 +1131,6 @@ protected:
     void genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* tree);
 #endif // FEATURE_HW_INTRINSICS
     void genEmitGSCookieCheck(bool pushReg);
-    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type = TYP_INT, insFlags flags = INS_FLAGS_DONT_CARE);
     void genCodeForShift(GenTree* tree);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -1263,12 +1240,17 @@ protected:
     void genCodeForArrOffset(GenTreeArrOffs* treeNode);
     instruction genGetInsForOper(genTreeOps oper, var_types type);
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
-    void genCallInstruction(GenTreeCall* call);
+    GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
+    regNumber getCallIndirectionCellReg(const GenTreeCall* call);
+    void genCall(GenTreeCall* call);
+    void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
     void genCodeForJumpTrue(GenTreeOp* jtrue);
 #ifdef TARGET_ARM64
     void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForMadd(GenTreeOp* tree);
+    void genCodeForBfiz(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1359,8 +1341,6 @@ protected:
     */
 
 public:
-    void instInit();
-
     void instGen(instruction ins);
 
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
@@ -1368,6 +1348,21 @@ public:
     void inst_SET(emitJumpKind condition, regNumber reg);
 
     void inst_RV(instruction ins, regNumber reg, var_types type, emitAttr size = EA_UNKNOWN);
+
+    void inst_Mov(var_types dstType,
+                  regNumber dstReg,
+                  regNumber srcReg,
+                  bool      canSkip,
+                  emitAttr  size  = EA_UNKNOWN,
+                  insFlags  flags = INS_FLAGS_DONT_CARE);
+
+    void inst_Mov_Extend(var_types srcType,
+                         bool      srcInReg,
+                         regNumber dstReg,
+                         regNumber srcReg,
+                         bool      canSkip,
+                         emitAttr  size  = EA_UNKNOWN,
+                         insFlags  flags = INS_FLAGS_DONT_CARE);
 
     void inst_RV_RV(instruction ins,
                     regNumber   reg1,
@@ -1390,10 +1385,6 @@ public:
         instruction ins, regNumber reg, target_ssize_t val, emitAttr size, insFlags flags = INS_FLAGS_DONT_CARE);
 
     void inst_ST_RV(instruction ins, TempDsc* tmp, unsigned ofs, regNumber reg, var_types type);
-    void inst_ST_IV(instruction ins, TempDsc* tmp, unsigned ofs, int val, var_types type);
-
-    void inst_SA_RV(instruction ins, unsigned ofs, regNumber reg, var_types type);
-    void inst_SA_IV(instruction ins, unsigned ofs, int val, var_types type);
 
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
@@ -1408,15 +1399,7 @@ public:
                     emitAttr    size  = EA_UNKNOWN,
                     insFlags    flags = INS_FLAGS_DONT_CARE);
 
-    void inst_FS_TT(instruction ins, GenTree* tree);
-
     void inst_RV_SH(instruction ins, emitAttr size, regNumber reg, unsigned val, insFlags flags = INS_FLAGS_DONT_CARE);
-
-    void inst_TT_SH(instruction ins, GenTree* tree, unsigned val, unsigned offs = 0);
-
-    void inst_RV_CL(instruction ins, regNumber reg, var_types type = TYP_I_IMPL);
-
-    void inst_TT_CL(instruction ins, GenTree* tree, unsigned offs = 0);
 
 #if defined(TARGET_XARCH)
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
@@ -1424,38 +1407,20 @@ public:
     void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);
 #endif
 
-    void inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumber reg2);
-
-    void inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTree* tree);
-
-    void inst_mov_RV_ST(regNumber reg, GenTree* tree);
-
     void inst_set_SV_var(GenTree* tree);
 
 #ifdef TARGET_ARM
     bool arm_Valid_Imm_For_Instr(instruction ins, target_ssize_t imm, insFlags flags);
-    bool arm_Valid_Disp_For_LdSt(target_ssize_t disp, var_types type);
-    bool arm_Valid_Imm_For_Alu(target_ssize_t imm);
-    bool arm_Valid_Imm_For_Mov(target_ssize_t imm);
-    bool arm_Valid_Imm_For_Small_Mov(regNumber reg, target_ssize_t imm, insFlags flags);
     bool arm_Valid_Imm_For_Add(target_ssize_t imm, insFlags flag);
     bool arm_Valid_Imm_For_Add_SP(target_ssize_t imm);
-    bool arm_Valid_Imm_For_BL(ssize_t addr);
-
-    bool ins_Writes_Dest(instruction ins);
 #endif
 
-    bool isMoveIns(instruction ins);
     instruction ins_Move_Extend(var_types srcType, bool srcInReg);
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
-    static instruction ins_FloatStore(var_types type = TYP_DOUBLE);
-    static instruction ins_FloatCopy(var_types type = TYP_DOUBLE);
     instruction ins_FloatConv(var_types to, var_types from);
-    instruction ins_FloatCompare(var_types type);
     instruction ins_MathOp(genTreeOps oper, var_types type);
-    instruction ins_FloatSqrt(var_types type);
 
     void instGen_Return(unsigned stkArgSize);
 
@@ -1473,21 +1438,7 @@ public:
                                 regNumber reg,
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
-                                    DEBUGARG(unsigned gtFlags = 0));
-
-    void instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg);
-
-    void instGen_Compare_Reg_To_Reg(emitAttr size, regNumber reg1, regNumber reg2);
-
-    void instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, target_ssize_t imm);
-
-    void instGen_Load_Reg_From_Lcl(var_types srcType, regNumber dstReg, int varNum, int offs);
-
-    void instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, int varNum, int offs);
-
-#ifdef DEBUG
-    void __cdecl instDisp(instruction ins, bool noNL, const char* fmt, ...);
-#endif
+                                    DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
@@ -1537,45 +1488,6 @@ public:
     void inst_JCC(GenCondition condition, BasicBlock* target);
     void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
 };
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                       Instruction                                         XX
-XX                      Inline functions                                     XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-#ifdef TARGET_XARCH
-/*****************************************************************************
- *
- *  Generate a floating-point instruction that has one operand given by
- *  a tree (which has been made addressable).
- */
-
-inline void CodeGen::inst_FS_TT(instruction ins, GenTree* tree)
-{
-    assert(instIsFP(ins));
-
-    assert(varTypeIsFloating(tree->gtType));
-
-    inst_TT(ins, tree, 0);
-}
-#endif
-
-/*****************************************************************************
- *
- *  Generate a "shift reg, cl" instruction.
- */
-
-inline void CodeGen::inst_RV_CL(instruction ins, regNumber reg, var_types type)
-{
-    inst_RV(ins, reg, type);
-}
-
-/*****************************************************************************/
 
 // A simple phase that just invokes a method on the codegen instance
 //

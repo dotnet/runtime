@@ -105,7 +105,11 @@ mono_mem_manager_new (MonoAssemblyLoadContext **alcs, int nalcs, gboolean collec
 	mono_os_mutex_init (&memory_manager->mp_mutex);
 
 	memory_manager->_mp = mono_mempool_new ();
-	memory_manager->code_mp = mono_code_manager_new ();
+	if (mono_runtime_get_no_exec()) {
+		memory_manager->code_mp = mono_code_manager_new_aot ();
+	} else {
+		memory_manager->code_mp = mono_code_manager_new ();
+	}
 	memory_manager->lock_free_mp = lock_free_mempool_new ();
 
 	memory_manager->alcs = mono_mempool_alloc0 (memory_manager->_mp, sizeof (MonoAssemblyLoadContext *) * nalcs);

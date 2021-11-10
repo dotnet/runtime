@@ -120,7 +120,7 @@ namespace System.Xml
                 if (prefix.Length == 0)
                     return this.localname;
                 else
-                    return this.prefix + ":" + this.localname;
+                    return $"{this.prefix}:{this.localname}";
             }
 
             public static bool operator ==(QName a, QName b)
@@ -1987,7 +1987,7 @@ namespace System.Xml
         {
             _symbolTables.symCount = _symbolTables.qnameCount = 1;
             Array.Clear(_symbolTables.symtable, 1, _symbolTables.symtable.Length - 1);
-            Array.Clear(_symbolTables.qnametable, 0, _symbolTables.qnametable.Length);
+            Array.Clear(_symbolTables.qnametable);
         }
 
         private void SkipExtn()
@@ -4048,7 +4048,7 @@ namespace System.Xml
                             if (qname.prefix.Length == 0)
                                 return qname.localname;
                             else
-                                return string.Concat(qname.prefix, ":", qname.localname);
+                                return $"{qname.prefix}:{qname.localname}";
                         }
 
                     default:
@@ -4422,7 +4422,7 @@ namespace System.Xml
 
         private Exception ThrowUnexpectedToken(BinXmlToken token)
         {
-            System.Diagnostics.Debug.WriteLine("Unhandled token: " + token.ToString());
+            System.Diagnostics.Debug.WriteLine($"Unhandled token: {token}");
             return ThrowXmlException(SR.XmlBinary_UnexpectedToken);
         }
 

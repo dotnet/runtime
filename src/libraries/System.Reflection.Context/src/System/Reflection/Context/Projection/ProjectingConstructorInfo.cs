@@ -20,7 +20,7 @@ namespace System.Reflection.Context.Projection
 
         public Projector Projector { get; }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return Projector.ProjectType(base.DeclaringType); }
         }
@@ -30,7 +30,7 @@ namespace System.Reflection.Context.Projection
             get { return Projector.ProjectModule(base.Module); }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return Projector.ProjectType(base.ReflectedType); }
         }
@@ -59,7 +59,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetGenericArguments(), Projector.ProjectType);
         }
 
-        public override MethodBody GetMethodBody()
+        public override MethodBody? GetMethodBody()
         {
             return Projector.ProjectMethodBody(base.GetMethodBody());
         }
@@ -69,11 +69,9 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetParameters(), Projector.ProjectParameter);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
-            ProjectingConstructorInfo other = o as ProjectingConstructorInfo;
-
-            return other != null &&
+            return o is ProjectingConstructorInfo other &&
                    Projector == other.Projector &&
                    UnderlyingConstructor.Equals(other.UnderlyingConstructor);
         }

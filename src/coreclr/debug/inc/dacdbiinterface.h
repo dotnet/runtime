@@ -29,6 +29,7 @@
 //    In the DBI implementation, this can directly call delete (assuming the IAllocator::Free
 //    directly called new).
 template<class T> void DeleteDbiMemory(T *p);
+template<class T> void DeleteDbiArrayMemory(T *p, int count);
 // Need a class to serve as a tag that we can use to overload New/Delete.
 class forDbiWorker {};
 extern forDbiWorker forDbi;
@@ -520,7 +521,7 @@ public:
     //
     //    For dynamic modules, the CLR will eagerly serialize the metadata at "debuggable" points. This
     //    could be after each type is loaded; or after a bulk update.
-    //    For non-dynamic modules (both in-memory and file-based), the metadata exists in the PEFile's image.
+    //    For non-dynamic modules (both in-memory and file-based), the metadata exists in the PEAssembly's image.
     //
     //    Failure cases:
     //    This should succeed in normal, live-debugging scenarios. However, common failure paths here would be:
@@ -547,7 +548,6 @@ public:
     {
         kSymbolFormatNone,  // No symbols available
         kSymbolFormatPDB,   // PDB symbol format - use diasymreader.dll
-        kSymbolFormatILDB,  // ILDB symbol format - use ildbsymlib
     } SymbolFormat;
 
     //
@@ -2379,14 +2379,14 @@ public:
     CLR_DEBUGGING_PROCESS_FLAGS GetAttachStateFlags() = 0;
 
     virtual
-    bool GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
+    bool GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                        DWORD & dwTimeStamp,
                                        DWORD & dwImageSize,
                                        bool  & isNGEN,
                                        IStringHolder* pStrFilename) = 0;
 
     virtual
-    bool GetILImageInfoFromNgenPEFile(VMPTR_PEFile vmPEFile,
+    bool GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
                                       DWORD & dwTimeStamp,
                                       DWORD & dwSize,
                                       IStringHolder* pStrFilename) = 0;
@@ -2512,17 +2512,17 @@ public:
     virtual
     void GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo) = 0;
 
-    // If a PEFile has an RW capable IMDInternalImport, this returns the address of the MDInternalRW
+    // If a PEAssembly has an RW capable IMDInternalImport, this returns the address of the MDInternalRW
     // object which implements it.
     //
     //
     // Arguments:
-    //    vmPEFile - target PEFile to get metadata MDInternalRW for.
-    //    pAddrMDInternalRW - If a PEFile has an RW capable IMDInternalImport, this will be set to the address
+    //    vmPEAssembly - target PEAssembly to get metadata MDInternalRW for.
+    //    pAddrMDInternalRW - If a PEAssembly has an RW capable IMDInternalImport, this will be set to the address
     //                        of the MDInternalRW object which implements it. Otherwise it will be NULL.
     //
     virtual
-    HRESULT GetPEFileMDInternalRW(VMPTR_PEFile vmPEFile, OUT TADDR* pAddrMDInternalRW) = 0;
+    HRESULT GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW) = 0;
 
     // DEPRECATED - use GetActiveRejitILCodeVersionNode
     // Retrieves the active ReJitInfo for a given module/methodDef, if it exists.
@@ -2814,7 +2814,7 @@ public:
     {
     public:
         //
-        // Lookup a metadata importer via PEFile.
+        // Lookup a metadata importer via PEAssembly.
         //
         // Returns:
         //    A IMDInternalImport used by dac-ized VM code. The object is NOT addref-ed. See lifespan notes below.
@@ -2822,7 +2822,7 @@ public:
         //    Throws on exceptional circumstances (eg, detects the debuggee is corrupted).
         //
         // Notes:
-        //    IMDInternalImport is a property of PEFile. The DAC-ized code uses it as a weak reference,
+        //    IMDInternalImport is a property of PEAssembly. The DAC-ized code uses it as a weak reference,
         //    and so we avoid doing an AddRef() here because that would mean we need to add Release() calls
         //    in DAC-only paths.
         //    The metadata importers are not DAC-ized, and thus we have a local copy in the host.
@@ -2837,7 +2837,7 @@ public:
         //    - the reference count of the returned object is not adjusted.
         //
         virtual
-        IMDInternalImport * LookupMetaData(VMPTR_PEFile addressPEFile, bool &isILMetaDataForNGENImage) = 0;
+        IMDInternalImport * LookupMetaData(VMPTR_PEAssembly addressPEAssembly, bool &isILMetaDataForNGENImage) = 0;
     };
 
 }; // end IDacDbiInterface

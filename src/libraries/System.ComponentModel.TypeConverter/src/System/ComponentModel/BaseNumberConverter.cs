@@ -30,18 +30,18 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
-        internal abstract object FromString(string value, NumberFormatInfo formatInfo);
+        internal abstract object FromString(string value, NumberFormatInfo? formatInfo);
 
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>
-        internal abstract string ToString(object value, NumberFormatInfo formatInfo);
+        internal abstract string ToString(object value, NumberFormatInfo? formatInfo);
 
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object in the
         /// given source type to the TargetType object using the specified context.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
@@ -49,7 +49,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to an object of Type TargetType.
         /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
             {
@@ -73,7 +73,7 @@ namespace System.ComponentModel
                             culture = CultureInfo.CurrentCulture;
                         }
 
-                        NumberFormatInfo formatInfo = (NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo));
+                        NumberFormatInfo? formatInfo = (NumberFormatInfo?)culture.GetFormat(typeof(NumberFormatInfo));
                         return FromString(text, formatInfo);
                     }
                 }
@@ -89,7 +89,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the destination type.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -103,7 +103,7 @@ namespace System.ComponentModel
                     culture = CultureInfo.CurrentCulture;
                 }
 
-                NumberFormatInfo formatInfo = (NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo));
+                NumberFormatInfo? formatInfo = (NumberFormatInfo?)culture.GetFormat(typeof(NumberFormatInfo));
                 return ToString(value, formatInfo);
             }
 
@@ -115,7 +115,7 @@ namespace System.ComponentModel
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             if (destinationType != null && destinationType.IsPrimitive)
             {

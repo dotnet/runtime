@@ -136,7 +136,7 @@
 
 }
 
-.class public auto ansi Test
+.class public auto ansi Test_switch5
        extends ['mscorlib']System.Object
 {
   .method public hidebysig static void Main() il managed

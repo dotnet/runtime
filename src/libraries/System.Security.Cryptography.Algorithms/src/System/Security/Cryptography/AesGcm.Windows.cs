@@ -9,33 +9,34 @@ namespace System.Security.Cryptography
 {
     public partial class AesGcm
     {
-        private static readonly SafeAlgorithmHandle s_aesGcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_GCM).Value;
         private SafeKeyHandle _keyHandle;
+
+        public static bool IsSupported => true;
 
         [MemberNotNull(nameof(_keyHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _keyHandle = Interop.BCrypt.BCryptImportKey(s_aesGcm, key);
+            _keyHandle = Interop.BCrypt.BCryptImportKey(BCryptAeadHandleCache.AesGcm, key);
         }
 
-        private void EncryptInternal(
+        private void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
-            AesAEAD.Encrypt(s_aesGcm, _keyHandle, nonce, associatedData, plaintext, ciphertext, tag);
+            AeadCommon.Encrypt(_keyHandle, nonce, associatedData, plaintext, ciphertext, tag);
         }
 
-        private void DecryptInternal(
+        private void DecryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData = default)
         {
-            AesAEAD.Decrypt(s_aesGcm, _keyHandle, nonce, associatedData, ciphertext, tag, plaintext, clearPlaintextOnFailure: true);
+            AeadCommon.Decrypt(_keyHandle, nonce, associatedData, ciphertext, tag, plaintext, clearPlaintextOnFailure: true);
         }
 
         public void Dispose()

@@ -1,12 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <PackageDescription>Provides types that support using configuration files.
-
-Commonly Used Types:
-System.Configuration.Configuration
-System.Configuration.ConfigurationManager</PackageDescription>
+    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>

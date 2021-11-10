@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="VSSetup.props" Condition="'$(VSSetupProps)' != '1'"/>
+
+    <Target Name="PublishToVSDrop" DependsOnTargets="GetDropCmdLine">
+        <Exec Command="$(DropUpgradeCmd)" />
+        <Exec Command="$(DropCreateCmd)" />
+        <Exec Command="$(DropPublishCmd)" />
+        <Exec Command="$(DropFinalizeCmd)" />
+        <Exec Command="$(DropUpdateCmd)" />
+
+        <ItemGroup>
+            <DropManifests Include="$(VSDropSource)\*.vsman" />
+        </ItemGroup>
+
+        <WriteLinesToFile File="$(VSDropTxt)" Overwrite="true" Lines="@(DropManifests->'$(ManifestPublishUrl)%(Filename)%(Extension)')" />
+    </Target>
+
+    <Target Name="GetDropCmdLine">
+        <!-- Properties that will depend on each build configuration. We can only build the commandlines onces these are defined -->
+        <Error Text="VSDropSource property undefined" Condition="'$(VSDropSource)' == ''" />
+
+        <PropertyGroup>
+            <DropName>Products/$(ManifestTeamProject)/$(ManifestRepositoryName)/$(ManifestBuildBranch)/$(ManifestBuildNumber)</DropName>
+
+            <DropParamName>-n &quot;$(DropName)&quot;</DropParamName>
+            <DropParamSource>-d &quot;$(VSDropSource)&quot;</DropParamSource>
+
+            <DropUpgradeCmd>$(DropExe) Upgrade $(DropParamService) $(DropParamAuth) $(DropParamTimeout) $(DropParamTraceLevel)</DropUpgradeCmd>
+            <DropCreateCmd>$(DropExe) Create $(DropParamService) $(DropParamAuth) $(DropParamTimeout) $(DropParamTraceLevel) $(DropParamExpirationDate) $(DropParamName)</DropCreateCmd>
+            <DropPublishCmd>$(DropExe) Publish $(DropParamService) $(DropParamAuth) $(DropParamTimeout) $(DropParamTraceLevel) $(DropParamName) $(DropParamSource)</DropPublishCmd>
+            <DropFinalizeCmd>$(DropExe) Finalize $(DropParamService) $(DropParamAuth) $(DropParamTimeout) $(DropParamTraceLevel) $(DropParamName)</DropFinalizeCmd>
+            <DropUpdateCmd>$(DropExe) Update $(DropParamService) $(DropParamAuth) $(DropParamTimeout) $(DropParamTraceLevel) $(DropParamName) --neverExpire</DropUpdateCmd>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="VSSetupDiagnostic" DependsOnTargets="GetDropCmdLine">
+        <ItemGroup>
+            <VSSetupProperties Include="Drop cmd: $(DropUpgradeCmd)" />
+            <VSSetupProperties Include="Drop cmd: $(DropCreateCmd)" />
+            <VSSetupProperties Include="Drop cmd: $(DropPublishCmd)" />
+            <VSSetupProperties Include="Drop cmd: $(DropFinalizeCmd)" />
+            <VSSetupProperties Include="Drop cmd: $(DropUpdateCmd)" />
+            <VSSetupProperties Include="DropName: $(DropName)" />
+        </ItemGroup>
+
+        <Message Text="%(VSSetupProperties.Identity)" />
+    </Target>
+</Project>

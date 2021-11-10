@@ -128,14 +128,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void Hostfxr_get_available_sdks_with_multilevel_lookup()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // multilevel lookup is not supported on non-Windows
-                return;
-            }
-
             var f = new SdkResolutionFixture(sharedTestState);
 
             // With multi-level lookup (windows only): get local and global sdks sorted by ascending version,
@@ -322,14 +317,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_with_dotnet_root()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Only Windows supports multi-level lookup.
-                return;
-            }
-
             var f = new SdkResolutionFixture(sharedTestState);
             string expectedSdkVersions = string.Join(';', new[]
             {
@@ -406,14 +396,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_only()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Only Windows supports multi-level lookup.
-                return;
-            }
-
             var f = new SdkResolutionFixture(sharedTestState);
             string expectedSdkVersions = string.Join(';', new[]
             {
@@ -470,6 +455,52 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[{expectedSdkVersions}]")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[{expectedFrameworkNames}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[{expectedFrameworkVersions}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]");
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
+        public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_only_self_register_program_files()
+        {
+            var f = new SdkResolutionFixture(sharedTestState);
+
+            string expectedFrameworkNames = string.Join(';', new[]
+            {
+                "HostFxr.Test.A",
+                "HostFxr.Test.A",
+                "HostFxr.Test.B",
+            });
+
+            string expectedFrameworkVersions = string.Join(';', new[]
+            {
+                "1.2.3",
+                "3.0.0",
+                "5.6.7-A",
+            });
+
+            string expectedFrameworkPaths = string.Join(';', new[]
+            {
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.B"),
+            });
+
+            using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
+            {
+                // We pass f.WorkingDir so that we don't resolve dotnet_dir to the global installation
+                // in the native side.
+                f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", f.WorkingDir })
+                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES", f.ProgramFiles)
+                // Test with a self-registered path the same as ProgramFiles, with a trailing slash.  Expect this to be de-duped
+                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED", Path.Combine(f.ProgramFiles, "dotnet") + Path.DirectorySeparatorChar)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[{expectedFrameworkNames}]")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[{expectedFrameworkVersions}]")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]");
@@ -558,7 +589,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .EnsureRestored()
                     .PublishProject();
 
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     BreadcrumbLocation = Path.Combine(
                         PortableAppWithExceptionFixture.TestProject.OutputDirectory,

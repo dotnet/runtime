@@ -24,8 +24,4 @@ ICALL_EXPORT
 void
 ves_icall_System_String_ctor_RedirectToCreateString (void);
 
-ICALL_EXPORT
-int
-ves_icall_System_String_GetLOSLimit (void);
-
 #endif /* _MONO_CLI_STRING_ICALLS_H_ */

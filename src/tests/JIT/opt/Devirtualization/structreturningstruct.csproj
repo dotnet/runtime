@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- This test requires tiered compilation and PGO -->
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set DOTNET_TieredCompilation=1
+set DOTNET_TieredPGO=1
+set DOTNET_TC_QuickJitForLoops=1
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export DOTNET_TieredCompilation=1
+export DOTNET_TieredPGO=1
+export DOTNET_TC_QuickJitForLoops=1
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="structreturningstruct.cs" />
+  </ItemGroup>
+</Project>

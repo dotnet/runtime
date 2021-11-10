@@ -94,7 +94,7 @@ namespace System.Speech.Internal.ObjectTokens
         public override bool Equals(object obj)
         {
             ObjectToken token = obj as ObjectToken;
-            return token != null && string.Compare(Id, token.Id, StringComparison.OrdinalIgnoreCase) == 0;
+            return token != null && string.Equals(Id, token.Id, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

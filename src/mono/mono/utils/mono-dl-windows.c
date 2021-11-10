@@ -157,7 +157,21 @@ mono_dl_lookup_symbol (MonoDl *module, const char *symbol_name)
 
 	/* get the symbol directly from the specified module */
 	if (!module->main_module)
+	{
+		if (symbol_name[0] == '#')
+		{
+			/* lookup by ordinal */
+			unsigned long ord;
+			char *end;
+
+			ord = strtoul(symbol_name + 1, &end, 10);
+
+			if (*end == '\0' && ord > 0 && ord < 65536)
+				symbol_name = (const char*)(uintptr_t)ord;
+		}
+
 		return (void*)GetProcAddress ((HMODULE)module->handle, symbol_name);
+	}
 
 	/* get the symbol from the main module */
 	proc = (gpointer)GetProcAddress ((HMODULE)module->handle, symbol_name);
@@ -205,12 +219,6 @@ mono_dl_current_error_string (void)
 	return g_strdup_printf ("GetLastError=%d. FormatMessage not supported.", GetLastError ());
 }
 #endif /* HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE */
-
-int
-mono_dl_get_executable_path (char *buf, int buflen)
-{
-	return -1; //TODO
-}
 
 const char*
 mono_dl_get_system_dir (void)

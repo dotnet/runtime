@@ -74,7 +74,7 @@ namespace System.Net.Http.Headers
             StringBuilder sb = StringBuilderCache.Acquire();
 
             // Warning codes are always 3 digits according to RFC2616
-            sb.Append(_code.ToString("000", NumberFormatInfo.InvariantInfo));
+            sb.Append(NumberFormatInfo.InvariantInfo, $"{_code:000}");
 
             sb.Append(' ');
             sb.Append(_agent);

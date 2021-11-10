@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
@@ -186,11 +187,6 @@ internal static partial class Interop
         public static unsafe kinfo_proc* GetProcInfo(int pid, bool threads, out int count)
         {
             Span<int> sysctlName = stackalloc int[4];
-            int bytesLength = 0;
-            byte* pBuffer = null;
-            kinfo_proc* kinfo = null;
-
-            count = -1;
 
             if (pid == 0)
             {
@@ -207,23 +203,17 @@ internal static partial class Interop
             sysctlName[1] = KERN_PROC;
             sysctlName[0] = CTL_KERN;
 
-            try
-            {
-                Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
-                kinfo = (kinfo_proc*)pBuffer;
-                if (kinfo->ki_structsize != sizeof(kinfo_proc))
-                {
-                    // failed consistency check
-                    throw new ArgumentOutOfRangeException(nameof(pid));
-                }
+            byte* pBuffer = null;
+            int bytesLength = 0;
+            Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
 
-                count = (int)bytesLength / sizeof(kinfo_proc);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal((IntPtr)pBuffer);
-            }
+            kinfo_proc* kinfo = (kinfo_proc*)pBuffer;
 
+            Debug.Assert(kinfo->ki_structsize == sizeof(kinfo_proc));
+
+            count = (int)bytesLength / sizeof(kinfo_proc);
+
+            // Buffer ownership transferred to the caller
             return kinfo;
         }
     }

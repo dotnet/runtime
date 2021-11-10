@@ -25,18 +25,20 @@ namespace System.Net.Security
             private readonly int _allowedProtocols;
             private readonly EncryptionPolicy _encryptionPolicy;
             private readonly bool _isServerMode;
+            private readonly bool _sendTrustList;
 
             //
             // SECURITY: X509Certificate.GetCertHash() is virtual hence before going here,
             //           the caller of this ctor has to ensure that a user cert object was inspected and
             //           optionally cloned.
             //
-            internal SslCredKey(byte[]? thumbPrint, int allowedProtocols, bool isServerMode, EncryptionPolicy encryptionPolicy)
+            internal SslCredKey(byte[]? thumbPrint, int allowedProtocols, bool isServerMode, EncryptionPolicy encryptionPolicy, bool sendTrustList)
             {
                 _thumbPrint = thumbPrint ?? Array.Empty<byte>();
                 _allowedProtocols = allowedProtocols;
                 _encryptionPolicy = encryptionPolicy;
                 _isServerMode = isServerMode;
+                _sendTrustList = sendTrustList;
             }
 
             public override int GetHashCode()
@@ -65,6 +67,7 @@ namespace System.Net.Security
                 hashCode ^= _allowedProtocols;
                 hashCode ^= (int)_encryptionPolicy;
                 hashCode ^= _isServerMode ? 0x10000 : 0x20000;
+                hashCode ^= _sendTrustList ? 0x40000 : 0x80000;
 
                 return hashCode;
             }
@@ -96,6 +99,11 @@ namespace System.Net.Security
                     return false;
                 }
 
+                if (_sendTrustList != other._sendTrustList)
+                {
+                    return false;
+                }
+
                 for (int i = 0; i < thumbPrint.Length; ++i)
                 {
                     if (thumbPrint[i] != otherThumbPrint[i])
@@ -114,7 +122,7 @@ namespace System.Net.Security
         // ATTN: The returned handle can be invalid, the callers of InitializeSecurityContext and AcceptSecurityContext
         // must be prepared to execute a back-out code if the call fails.
         //
-        internal static SafeFreeCredentials? TryCachedCredential(byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
+        internal static SafeFreeCredentials? TryCachedCredential(byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy, bool sendTrustList = false)
         {
             if (s_cachedCreds.IsEmpty)
             {
@@ -122,7 +130,7 @@ namespace System.Net.Security
                 return null;
             }
 
-            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy);
+            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList);
 
             //SafeCredentialReference? cached;
             SafeFreeCredentials? credentials = GetCachedCredential(key);
@@ -147,7 +155,7 @@ namespace System.Net.Security
         //
         // ATTN: The thumbPrint must be from inspected and possibly cloned user Cert object or we get a security hole in SslCredKey ctor.
         //
-        internal static void CacheCredential(SafeFreeCredentials creds, byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
+        internal static void CacheCredential(SafeFreeCredentials creds, byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy, bool sendTrustList = false)
         {
             Debug.Assert(creds != null, "creds == null");
 
@@ -157,7 +165,7 @@ namespace System.Net.Security
                 return;
             }
 
-            SslCredKey key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy);
+            SslCredKey key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList);
 
             SafeFreeCredentials? credentials = GetCachedCredential(key);
 
@@ -212,8 +220,8 @@ namespace System.Net.Security
 
                     for (int i = 0; i < toRemoveAttempt.Length; ++i)
                     {
-                        SafeCredentialReference? cahced = toRemoveAttempt[i].Value;
-                        SafeFreeCredentials? creds = cahced.Target;
+                        SafeCredentialReference? cached = toRemoveAttempt[i].Value;
+                        SafeFreeCredentials? creds = cached.Target;
 
                         if (creds == null)
                         {
@@ -221,11 +229,11 @@ namespace System.Net.Security
                             continue;
                         }
 
-                        cahced.Dispose();
-                        cahced = SafeCredentialReference.CreateReference(creds);
-                        if (cahced != null)
+                        cached.Dispose();
+                        cached = SafeCredentialReference.CreateReference(creds);
+                        if (cached != null)
                         {
-                            s_cachedCreds[toRemoveAttempt[i].Key] = cahced;
+                            s_cachedCreds[toRemoveAttempt[i].Key] = cached;
                         }
                         else
                         {

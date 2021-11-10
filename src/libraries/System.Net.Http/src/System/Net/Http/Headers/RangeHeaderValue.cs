@@ -12,7 +12,7 @@ namespace System.Net.Http.Headers
     public class RangeHeaderValue : ICloneable
     {
         private string _unit;
-        private ObjectCollection<RangeItemHeaderValue>? _ranges;
+        private UnvalidatedObjectCollection<RangeItemHeaderValue>? _ranges;
 
         public string Unit
         {
@@ -24,7 +24,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<RangeItemHeaderValue> Ranges => _ranges ??= new ObjectCollection<RangeItemHeaderValue>();
+        public ICollection<RangeItemHeaderValue> Ranges => _ranges ??= new UnvalidatedObjectCollection<RangeItemHeaderValue>();
 
         public RangeHeaderValue()
         {

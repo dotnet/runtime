@@ -22,9 +22,9 @@ void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef)
 void DiagHandleCreated(OBJECTHANDLE handle, OBJECTREF objRef)
 {
 #ifdef GC_PROFILING
-    BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-    g_profControlBlock.pProfInterface->HandleCreated((uintptr_t)handle, (ObjectID)OBJECTREF_TO_UNCHECKED_OBJECTREF(objRef));
-    END_PIN_PROFILER();
+    BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
+    (&g_profControlBlock)->HandleCreated((uintptr_t)handle, (ObjectID)OBJECTREF_TO_UNCHECKED_OBJECTREF(objRef));
+    END_PROFILER_CALLBACK();
 #else
     UNREFERENCED_PARAMETER(handle);
     UNREFERENCED_PARAMETER(objRef);
@@ -34,9 +34,9 @@ void DiagHandleCreated(OBJECTHANDLE handle, OBJECTREF objRef)
 void DiagHandleDestroyed(OBJECTHANDLE handle)
 {
 #ifdef GC_PROFILING
-    BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-    g_profControlBlock.pProfInterface->HandleDestroyed((uintptr_t)handle);
-    END_PIN_PROFILER();
+    BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
+    (&g_profControlBlock)->HandleDestroyed((uintptr_t)handle);
+    END_PROFILER_CALLBACK();
 #else
     UNREFERENCED_PARAMETER(handle);
 #endif // GC_PROFILING

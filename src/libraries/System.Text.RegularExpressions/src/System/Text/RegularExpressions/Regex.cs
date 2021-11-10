@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions.Symbolic;
 using System.Threading;
 
 namespace System.Text.RegularExpressions
@@ -19,20 +20,19 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public partial class Regex : ISerializable
     {
-        internal const int MaxOptionShift = 10;
+        internal const int MaxOptionShift = 11;
 
         protected internal string? pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;             // the top-level options from the options string
-        protected internal RegexRunnerFactory? factory;
+        protected internal RegexRunnerFactory? factory;       // Factory used to create runner instances for executing the regex
         protected internal Hashtable? caps;                   // if captures are sparse, this is the hashtable capnum->index
         protected internal Hashtable? capnames;               // if named captures are used, this maps names->index
         protected internal string[]? capslist;                // if captures are sparse or named captures are used, this is the sorted list of names
         protected internal int capsize;                       // the size of the capture array
 
-        internal WeakReference<RegexReplacement?>? _replref;  // cached parsed replacement pattern
+        private WeakReference<RegexReplacement?>? _replref;   // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
         private RegexCode? _code;                             // if interpreted, this is the code for RegexInterpreter
-        private bool _refsInitialized;
 
         protected Regex()
         {
@@ -64,21 +64,32 @@ namespace System.Text.RegularExpressions
         {
             // Call Init directly rather than delegating to a Regex ctor that takes
             // options to enable linking / tree shaking to remove the Regex compiler
-            // if it may not be used.
+            // and NonBacktracking implementation if it's not used.
             Init(pattern, RegexOptions.None, s_defaultMatchTimeout, culture);
         }
 
         internal Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
+            culture ??= GetTargetCulture(options);
             Init(pattern, options, matchTimeout, culture);
 
-            // if the compile option is set, then compile the code
-            if (RuntimeFeature.IsDynamicCodeCompiled && UseOptionC())
+            if ((options & RegexOptions.NonBacktracking) != 0)
             {
-                factory = Compile(pattern, _code!, options, matchTimeout != InfiniteMatchTimeout);
+                // If we're in non-backtracking mode, create the appropriate factory.
+                factory = new SymbolicRegexRunnerFactory(_code, options, matchTimeout, culture);
+                _code = null;
+            }
+            else if (RuntimeFeature.IsDynamicCodeCompiled && UseOptionC())
+            {
+                // If the compile option is set and compilation is supported, then compile the code.
+                factory = Compile(pattern, _code, options, matchTimeout != InfiniteMatchTimeout);
                 _code = null;
             }
         }
+
+        /// <summary>Gets the culture to use based on the specified options.</summary>
+        private static CultureInfo GetTargetCulture(RegexOptions options) =>
+            (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
         /// <summary>Initializes the instance.</summary>
         /// <remarks>
@@ -86,6 +97,7 @@ namespace System.Text.RegularExpressions
         /// rather than 'new Regex(pattern, options)' can avoid statically referencing the Regex
         /// compiler, such that a tree shaker / linker can trim it away if it's not otherwise used.
         /// </remarks>
+        [MemberNotNull(nameof(_code))]
         private void Init(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
             ValidatePattern(pattern);
@@ -93,8 +105,9 @@ namespace System.Text.RegularExpressions
             ValidateMatchTimeout(matchTimeout);
 
             this.pattern = pattern;
-            roptions = options;
             internalMatchTimeout = matchTimeout;
+            roptions = options;
+            culture ??= GetTargetCulture(options);
 
 #if DEBUG
             if (IsDebug)
@@ -104,16 +117,27 @@ namespace System.Text.RegularExpressions
 #endif
 
             // Parse the input
-            RegexTree tree = RegexParser.Parse(pattern, roptions, culture ?? ((options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
+            RegexTree tree = RegexParser.Parse(pattern, roptions, culture);
 
-            // Extract the relevant information
-            capnames = tree.CapNames;
-            capslist = tree.CapsList;
+            // Generate the RegexCode from the node tree.  This is required for interpreting,
+            // and is used as input into RegexOptions.Compiled and RegexOptions.NonBacktracking.
             _code = RegexWriter.Write(tree);
-            caps = _code.Caps;
-            capsize = _code.CapSize;
 
-            InitializeReferences();
+            if ((options & RegexOptions.NonBacktracking) != 0)
+            {
+                // NonBacktracking doesn't support captures (other than the implicit top-level capture).
+                capnames = null;
+                capslist = null;
+                caps = null;
+                capsize = 1;
+            }
+            else
+            {
+                capnames = tree.CapNames;
+                capslist = tree.CapsList;
+                caps = _code.Caps;
+                capsize = _code.CapSize;
+            }
         }
 
         internal static void ValidatePattern(string pattern)
@@ -128,7 +152,7 @@ namespace System.Text.RegularExpressions
         {
             if (((((uint)options) >> MaxOptionShift) != 0) ||
                 ((options & RegexOptions.ECMAScript) != 0 &&
-                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled |
+                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.NonBacktracking |
 #if DEBUG
                              RegexOptions.Debug |
 #endif
@@ -199,30 +223,17 @@ namespace System.Text.RegularExpressions
         private static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, code, options, hasTimeout);
 
+        [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>
             CompileToAssembly(regexinfos, assemblyname, null, null);
 
+        [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes) =>
             CompileToAssembly(regexinfos, assemblyname, attributes, null);
 
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
-        {
-            if (assemblyname is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.assemblyname);
-            }
-
-            if (regexinfos is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.regexinfos);
-            }
-
-#if DEBUG // until it can be fully implemented
-            RegexCompiler.CompileToAssembly(regexinfos, assemblyname, attributes, resourceFile);
-#else
+        [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-#endif
-        }
 
         /// <summary>
         /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and
@@ -361,19 +372,21 @@ namespace System.Text.RegularExpressions
             else
             {
                 // Otherwise, try to parse it as a number.
-                return uint.TryParse(name, NumberStyles.None, provider: null, out uint result) && result < capsize ? (int)result : -1;
+                return uint.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out uint result) && result < capsize ? (int)result : -1;
             }
         }
 
+        /// <summary>A weak reference to a regex replacement, lazily initialized.</summary>
+        internal WeakReference<RegexReplacement?> RegexReplacementWeakReference =>
+            _replref ??
+            Interlocked.CompareExchange(ref _replref, new WeakReference<RegexReplacement?>(null), null) ??
+            _replref;
+
         protected void InitializeReferences()
         {
-            if (_refsInitialized)
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.OnlyAllowedOnce);
-            }
-
-            _replref = new WeakReference<RegexReplacement?>(null);
-            _refsInitialized = true;
+            // This method no longer has anything to initialize. It continues to exist
+            // purely for API compat, as it was originally shipped as protected, with
+            // assemblies generated by Regex.CompileToAssembly calling it.
         }
 
         /// <summary>Internal worker called by the public APIs</summary>
@@ -388,7 +401,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.LengthNotNegative);
             }
 
-            RegexRunner runner = RentRunner();
+            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {
                 // Do the scan starting at the requested position
@@ -400,47 +413,33 @@ namespace System.Text.RegularExpressions
             }
             finally
             {
-                ReturnRunner(runner);
+                _runner = runner;
             }
         }
 
         internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
         {
             Debug.Assert((uint)startat <= (uint)input.Length);
-            RegexRunner runner = RentRunner();
+            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {
-                runner.Scan(this, input, startat, ref state, callback, reuseMatchObject, internalMatchTimeout);
+                runner.ScanInternal(this, input, startat, ref state, callback, reuseMatchObject, internalMatchTimeout);
             }
             finally
             {
-                ReturnRunner(runner);
+                _runner = runner;
             }
         }
 
-        /// <summary>Gets a runner from the cache, or creates a new one.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // factored out to be used by only two call sites
-        private RegexRunner RentRunner() =>
-            Interlocked.Exchange(ref _runner, null) ?? // use a cached runner if there is one
-            (factory != null ? factory.CreateInstance() : // use the compiled RegexRunner factory if there is one
-            new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
-
-        /// <summary>Release the runner back to the cache.</summary>
-        internal void ReturnRunner(RegexRunner runner) => _runner = runner;
+        /// <summary>Creates a new runner instance.</summary>
+        private RegexRunner CreateRunner() =>
+            factory?.CreateInstance() ??
+            new RegexInterpreter(_code!, GetTargetCulture(roptions));
 
         /// <summary>True if the <see cref="RegexOptions.Compiled"/> option was set.</summary>
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
         /// <summary>True if the <see cref="RegexOptions.RightToLeft"/> option was set.</summary>
         protected internal bool UseOptionR() => (roptions & RegexOptions.RightToLeft) != 0;
-
-        /// <summary>True if the <see cref="RegexOptions.CultureInvariant"/> option was set.</summary>
-        internal bool UseOptionInvariant() => (roptions & RegexOptions.CultureInvariant) != 0;
-
-#if DEBUG
-        /// <summary>True if the regex has debugging enabled.</summary>
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal bool IsDebug => (roptions & RegexOptions.Debug) != 0;
-#endif
     }
 }

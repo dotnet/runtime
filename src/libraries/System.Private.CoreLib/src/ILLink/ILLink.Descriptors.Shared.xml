@@ -6,6 +6,14 @@
              https://github.com/mono/linker/pull/649 -->
       <method name=".ctor" />
     </type>
+
+    <!-- Native hosting accesses managed methods in the ComponentActivator class.
+         These are always rooted to ensure native calls get trimmer related errors
+         but will be trimmed away by the related feature switch -->
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
+      <method name="LoadAssemblyAndGetFunctionPointer" />
+      <method name="GetFunctionPointer" />
+    </type>
   </assembly>
   
   <!-- Properties and methods used by a debugger. -->
@@ -13,6 +21,7 @@
     <type fullname="System.Threading.Tasks.Task">
       <property name="ParentForDebugger" />
       <property name="StateFlagsForDebugger" />
+      <property name="StateFlags" />
       <method name="GetDelegateContinuationsForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
     </type>
@@ -57,14 +66,8 @@
     </type>
 
      <!-- methods used by hot reload --> 
-    <type fullname="System.Reflection.Metadata.AssemblyExtensions">
-      <method name="GetApplyUpdateCapabilities" />
-    </type>
-  </assembly>
-
-  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="true" featuredefault="true">
-    <type fullname="System.Diagnostics.Tracing.RuntimeEventSource">
-      <method signature="System.Void Initialize()" />
+    <type fullname="System.Reflection.Metadata.MetadataUpdater">
+      <method name="GetCapabilities" />
     </type>
   </assembly>
 </linker>

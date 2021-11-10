@@ -35,7 +35,7 @@ namespace System.Net
         }
 
         public WebProxy(string Host, int Port)
-            : this(new Uri("http://" + Host + ":" + Port.ToString(CultureInfo.InvariantCulture)), false, null, null)
+            : this(new Uri(string.Create(CultureInfo.InvariantCulture, $"http://{Host}:{Port}")), false, null, null)
         {
         }
 
@@ -66,7 +66,15 @@ namespace System.Net
         [AllowNull]
         public string[] BypassList
         {
-            get => _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>();
+            get
+            {
+                if (_bypassList == null)
+                    return Array.Empty<string>();
+
+                var bypassList = new string[_bypassList.Count];
+                _bypassList.CopyTo(bypassList);
+                return bypassList;
+            }
             set
             {
                 _bypassList = value != null ? new ArrayList(value) : null;
@@ -134,9 +142,10 @@ namespace System.Net
 
             if (_regexBypassList != null)
             {
+                Span<char> stackBuffer = stackalloc char[128];
                 string matchUriString = input.IsDefaultPort ?
-                    $"{input.Scheme}://{input.Host}" :
-                    $"{input.Scheme}://{input.Host}:{(uint)input.Port}";
+                    string.Create(null, stackBuffer, $"{input.Scheme}://{input.Host}") :
+                    string.Create(null, stackBuffer, $"{input.Scheme}://{input.Host}:{(uint)input.Port}");
 
                 foreach (Regex r in _regexBypassList)
                 {
@@ -172,7 +181,7 @@ namespace System.Net
         protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
 
-        [Obsolete("This method has been deprecated. Please use the proxy selected for you by default. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("WebProxy.GetDefaultProxy has been deprecated. Use the proxy selected for you by default.")]
         public static WebProxy GetDefaultProxy() =>
             // The .NET Framework here returns a proxy that fetches IE settings and
             // executes JavaScript to determine the correct proxy.

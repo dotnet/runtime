@@ -636,11 +636,17 @@ namespace System.Text.Json
                 case DataType.DateTimeOffset:
                     message = SR.FormatDateTimeOffset;
                     break;
+                case DataType.TimeSpan:
+                    message = SR.FormatTimeSpan;
+                    break;
                 case DataType.Base64String:
                     message = SR.CannotDecodeInvalidBase64;
                     break;
                 case DataType.Guid:
                     message = SR.FormatGuid;
+                    break;
+                case DataType.Version:
+                    message = SR.FormatVersion;
                     break;
                 default:
                     Debug.Fail($"The DateType enum value: {dateType} is not part of the switch. Add the appropriate case and exception message.");
@@ -723,7 +729,9 @@ namespace System.Text.Json
         Boolean,
         DateTime,
         DateTimeOffset,
+        TimeSpan,
         Base64String,
         Guid,
+        Version,
     }
 }

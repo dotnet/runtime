@@ -78,7 +78,7 @@
 
 } // end of class C
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_testExplicitOverride2
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

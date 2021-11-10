@@ -1,20 +1,19 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Xml", "..\System.Private.Xml\src\System.Private.Xml.csproj", "{B7D48F78-4580-4398-A93F-FD02A15AD0BD}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{667113D9-989B-44F7-81B2-F0326066B50F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{F02C927A-92DA-4212-A228-EE4E82317723}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XPath", "ref\System.Xml.XPath.csproj", "{38040AE0-59E4-46CE-861D-A33A383BB0FC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XPath", "src\System.Xml.XPath.csproj", "{F825C114-FF6D-4826-BC8A-586246369695}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BB1DEC66-E05D-414F-974B-6287EE7CB9CF}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{73688A49-11B7-47C8-BF09-A6C1C11EA0BD}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{F6E1C6DF-ADD6-4634-88E1-A51872A1CF96}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{1EF0B525-2611-41AB-AA69-28A1B9689C3A}"
 EndProject
 Global
-	GlobalSection(NestedProjects) = preSolution
-		{B7D48F78-4580-4398-A93F-FD02A15AD0BD} = {BB1DEC66-E05D-414F-974B-6287EE7CB9CF}
-		{F825C114-FF6D-4826-BC8A-586246369695} = {BB1DEC66-E05D-414F-974B-6287EE7CB9CF}
-		{38040AE0-59E4-46CE-861D-A33A383BB0FC} = {F6E1C6DF-ADD6-4634-88E1-A51872A1CF96}
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -24,6 +23,14 @@ Global
 		{B7D48F78-4580-4398-A93F-FD02A15AD0BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7D48F78-4580-4398-A93F-FD02A15AD0BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7D48F78-4580-4398-A93F-FD02A15AD0BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{667113D9-989B-44F7-81B2-F0326066B50F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{667113D9-989B-44F7-81B2-F0326066B50F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{667113D9-989B-44F7-81B2-F0326066B50F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{667113D9-989B-44F7-81B2-F0326066B50F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F02C927A-92DA-4212-A228-EE4E82317723}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F02C927A-92DA-4212-A228-EE4E82317723}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F02C927A-92DA-4212-A228-EE4E82317723}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F02C927A-92DA-4212-A228-EE4E82317723}.Release|Any CPU.Build.0 = Release|Any CPU
 		{38040AE0-59E4-46CE-861D-A33A383BB0FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{38040AE0-59E4-46CE-861D-A33A383BB0FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38040AE0-59E4-46CE-861D-A33A383BB0FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -35,6 +42,13 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B7D48F78-4580-4398-A93F-FD02A15AD0BD} = {73688A49-11B7-47C8-BF09-A6C1C11EA0BD}
+		{667113D9-989B-44F7-81B2-F0326066B50F} = {73688A49-11B7-47C8-BF09-A6C1C11EA0BD}
+		{F02C927A-92DA-4212-A228-EE4E82317723} = {73688A49-11B7-47C8-BF09-A6C1C11EA0BD}
+		{F825C114-FF6D-4826-BC8A-586246369695} = {73688A49-11B7-47C8-BF09-A6C1C11EA0BD}
+		{38040AE0-59E4-46CE-861D-A33A383BB0FC} = {1EF0B525-2611-41AB-AA69-28A1B9689C3A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DF8F269A-6F5E-4DE2-A0D7-6852F6470D4C}
