@@ -11,7 +11,7 @@ parameters:
   osSubgroup: ''                  # optional -- operating system subgroup
   continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
   dependsOn: ''                   # optional -- dependencies of the job
-  timeoutInMinutes: 320           # optional -- timeout for the job
+  timeoutInMinutes: 120           # optional -- timeout for the job
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   helixQueues: ''                 # required -- Helix queues
@@ -54,6 +54,8 @@ jobs:
       value: '$(Build.SourcesDirectory)\artifacts\spmi\'
     - name: SpmiLogsLocation
       value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+    - name: SpmiAsmdiffsLocation
+      value: '$(Build.SourcesDirectory)\artifacts\spmi_asmdiffs\'
     - name: HelixResultLocation
       value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
 
@@ -68,6 +70,7 @@ jobs:
     - script: |
         mkdir $(SpmiCollectionLocation)
         mkdir $(SpmiLogsLocation)
+        mkdir $(SpmiAsmdiffsLocation)
       displayName: Create directories
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
@@ -82,7 +85,7 @@ jobs:
         helixType: 'build/tests/'
         helixQueues: ${{ join(',', parameters.helixQueues) }}
         creator: dotnet-bot
-        WorkItemTimeout: 4:00 # 4 hours
+        WorkItemTimeout: 2:00 # 2 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-asmdiffs.proj'
@@ -105,10 +108,10 @@ jobs:
       inputs:
         sourceFolder: '$(HelixResultLocation)'
         contents: '**/superpmi_*.md'
-        targetFolder: '$(SpmiLogsLocation)'
+        targetFolder: '$(SpmiAsmdiffsLocation)'
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiLogsLocation) -arch $(archType)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiAsmdiffsLocation) -arch $(archType)
       displayName: ${{ format('Summarize ({0})', parameters.archType) }}
       condition: always()
 
@@ -117,6 +120,13 @@ jobs:
       inputs:
         targetPath: $(SpmiLogsLocation)
         artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)'
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish SuperPMI asmdiffs files
+      inputs:
+        targetPath: $(SpmiAsmdiffsLocation)
+        artifactName: 'SuperPMI_Asmdiffs_$(archType)_$(buildConfig)'
       condition: always()
 
     - task: PublishPipelineArtifact@1
