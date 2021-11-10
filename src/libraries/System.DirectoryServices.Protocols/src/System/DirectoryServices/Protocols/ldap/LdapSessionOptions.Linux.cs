@@ -10,9 +10,6 @@ namespace System.DirectoryServices.Protocols
         private static void PALCertFreeCRLContext(IntPtr certPtr) { /* No op */ }
 
         private bool _secureSocketLayer;
-
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")]
         public bool SecureSocketLayer
         {
             get
