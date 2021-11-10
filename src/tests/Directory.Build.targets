@@ -423,6 +423,20 @@
 
   </Target>
 
+
+  <Target Name="PrepublishTrimmerRoots" BeforeTargets="Publish" Condition=" '$(EnablePrePublishProperties)' != '' " >
+        <ItemGroup>
+          <TrimmerRootAssembly Include="$(MSBuildProjectName)" />
+          <TrimmerRootAssembly Include="System.Private.Corelib" />
+          <TrimmerRootAssembly Include="mscorlib" />
+        </ItemGroup>
+
+        <PropertyGroup>
+          <TrimmerSingleWarn>false</TrimmerSingleWarn>
+          <PublishTrimmed>true</PublishTrimmed>
+      </PropertyGroup>
+  </Target>
+
   <!-- TODO: I don't know why some of these conditions are required/a more principled way-->
   <Target Name="PublishAfterBuild" AfterTargets="Build"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
 
@@ -438,10 +452,12 @@
       </PropertyGroup>
 
       <Message Text="!!!naricc_debug!!! PublishAfterBuild: $(MSBuildProjectFullPath) priority: $(CLRTestPriority) TrimmerRootAssembly: @(TrimmerRootAssembly)" Importance="High" />
-      <MSBuild Targets="Publish"
-              Projects="$(MSBuildProjectFullPath)"
+      <MSBuild Targets="Restore;Publish"
+              Projects="$(RepoRoot)/src/tests/Common/wasm-test-runner/WasmTestBuilder.proj"
               BuildInParallel="true"
-              ContinueOnError="ErrorAndContinue" />
+              ContinueOnError="ErrorAndContinue"
+              Properties="TestTarget=$(MSBuildProjectFullPath)"
+              />
   </Target>
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
