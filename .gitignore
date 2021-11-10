@@ -354,3 +354,5 @@ src/coreclr/System.Private.CoreLib/common
 !src/coreclr/inc/obj/
 !src/coreclr/vm/.vscode/
 !src/coreclr/vm/.vscode/c_cpp_properties.json
+
+.dotnet-daily/
