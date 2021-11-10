@@ -178,11 +178,6 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     //                   slot [1] will contain the next version of the table if it resizes
     S_SIZE_T cbNewBuckets = S_SIZE_T(cNewBuckets + 2) * S_SIZE_T(sizeof(PTR_VolatileEntry));
 
-    // REVIEW: I need a temp array here, relatively small (under 1K elements typically), is this the right heap for that?
-    AllocMemHolder<PTR_VolatileEntry> pTails(GetHeap()->AllocMem_NoThrow(cbNewBuckets));
-    if (pTails == NULL)
-        return;
-
     PTR_VolatileEntry *pNewBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem_NoThrow(cbNewBuckets);
     if (!pNewBuckets)
         return;
@@ -201,7 +196,6 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     // IMPORTANT: every entry must be reachable from the old bucket
     //            only after an entry appears in the correct bucket in the new table we can remove it from the old.
     //            it is ok to appear temporarily in a wrong bucket.
-
     for (DWORD i = 0; i < cBuckets; i++)
     {
         // +2 to skip "length" and "next" slots
@@ -213,14 +207,21 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
             DWORD dwNewBucket = (pEntry->m_iHashValue % cNewBuckets) + 2;
             PTR_VolatileEntry pNextEntry  = pEntry->m_pNextEntry;
 
+            PTR_VolatileEntry pTail = pNewBuckets[dwNewBucket];
+
             // make the pEntry reachable in the new bucket, together with all the chain (that is temporary and ok)
-            if (pTails[dwNewBucket] == NULL)
+            if (pTail == NULL)
             {
                 pNewBuckets[dwNewBucket] = pEntry;
             }
             else
             {
-                pTails[dwNewBucket]->m_pNextEntry = pEntry;
+                while (pTail->m_pNextEntry)
+                {
+                    pTail = pTail->m_pNextEntry;
+                }
+
+                pTail->m_pNextEntry = pEntry;
             }
 
             // skip pEntry in the old bucket after it appears in the new.
@@ -229,8 +230,6 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
             // drop the rest of the bucket after old table starts referring to it
             VolatileStore(&pEntry->m_pNextEntry, (PTR_VolatileEntry)NULL);
 
-            // remember the new bucket tail
-            pTails[dwNewBucket] = pEntry;
             pEntry = pNextEntry;
         }
     }
