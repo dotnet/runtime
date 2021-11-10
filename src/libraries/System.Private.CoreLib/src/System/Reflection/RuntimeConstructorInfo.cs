@@ -158,17 +158,17 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            // Array construction is a special case.
-            if (DeclaringType is not null && DeclaringType.IsArray)
-            {
-                return InvokeArrayCtorWorker(parameters!);
-            }
-
             StackAllocedArguments stackArgs = default;
             Span<object?> arguments = default;
             if (actualCount != 0)
             {
                 arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, ArgumentTypes);
+            }
+
+            // Array construction is a special case.
+            if (DeclaringType is not null && DeclaringType.IsArray)
+            {
+                return InvokeArrayCtorWorker(arguments);
             }
 
             object retValue = InvokeCtorWorker(invokeAttr, arguments);
