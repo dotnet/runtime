@@ -16,9 +16,9 @@ variables:
 - name: isNotFullMatrix
   value: ${{ and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
 - name: isSmokeTestBuild
-  value: ${{ or(in(variables['Build.DefinitionName'], 'manual-runtime-staging', 'manual-runtime-staging'), variables['isFullMatrix']) }}
+  value: ${{ or(in(variables['Build.DefinitionName'], 'manual-runtime-staging', 'manual-runtime'), and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'))) }}
 - name: isNotSmokeTestBuild
-  value: ${{ and(not(in(variables['Build.DefinitionName'], 'manual-runtime-staging', 'manual-runtime')), not(variables['isFullMatrix'])) }}
+  value: ${{ and(not(in(variables['Build.DefinitionName'], 'manual-runtime-staging', 'manual-runtime')), eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml
