@@ -120,22 +120,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 var store = await proxy.LoadStore(sessionId, token);
                 var info = ctx.CallStack.FirstOrDefault().Method.Info;
-                var namespaceName = string.IsNullOrEmpty(info.TypeInfo.Namespace) ? classNameToFind : info.TypeInfo.Namespace + "." + classNameToFind;
-                var type = info.Assembly.GetTypeByName(namespaceName);
-                if (type != null)
-                {
-                    typeId = await sdbHelper.GetTypeIdFromToken(sessionId, info.Assembly.DebugId, type.Token, token);
+                var classNameToFindWithNamespace = string.IsNullOrEmpty(info.TypeInfo.Namespace) ? classNameToFind : info.TypeInfo.Namespace + "." + classNameToFind;
+                if (await TryGetTypeIdFromName(classNameToFindWithNamespace, info.Assembly))
                     continue;
-                }
 
                 foreach (var asm in store.assemblies)
                 {
-                    type = asm.GetTypeByName(classNameToFind);
-                    if (type != null)
-                    {
-                        typeId = await sdbHelper.GetTypeIdFromToken(sessionId, info.Assembly.DebugId, type.Token, token);
+                    if (await TryGetTypeIdFromName(classNameToFind, asm))
                         break;
-                    }
+                }
+
+                async Task<bool> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
+                {
+                    var type = assembly.GetTypeByName(typeName);
+                    if (type == null)
+                        return false;
+
+                    typeId = await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
+                    return true;
                 }
             }
             return null;
