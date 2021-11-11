@@ -118,13 +118,28 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
                 var store = await proxy.LoadStore(sessionId, token);
+                var info = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId).Method.Info;
+                var classNameToFindWithNamespace =
+                    string.IsNullOrEmpty(info.TypeInfo.Namespace) ?
+                    classNameToFind :
+                    info.TypeInfo.Namespace + "." + classNameToFind;
+
                 foreach (var asm in store.assemblies)
                 {
-                    var type = asm.GetTypeByName(classNameToFind);
-                    if (type != null)
-                    {
-                        typeId = await sdbHelper.GetTypeIdFromToken(sessionId, asm.DebugId, type.Token, token);
-                    }
+                    if (await TryGetTypeIdFromName(classNameToFindWithNamespace, asm))
+                        break;
+                    if (await TryGetTypeIdFromName(classNameToFind, asm))
+                        break;
+                }
+
+                async Task<bool> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
+                {
+                    var type = assembly.GetTypeByName(typeName);
+                    if (type == null)
+                        return false;
+
+                    typeId = await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
+                    return true;
                 }
             }
             return null;
@@ -200,6 +215,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                 }
+            }
+            if (rootObject == null)
+            {
+                rootObject = await TryToRunOnLoadedClasses(varName, token);
+                return rootObject;
             }
             scopeCache.MemberReferences[varName] = rootObject;
             return rootObject;
