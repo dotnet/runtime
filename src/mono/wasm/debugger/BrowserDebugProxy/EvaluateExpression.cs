@@ -413,7 +413,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     cancellationToken: token);
                 return JObject.FromObject(ConvertCSharpToJSType(task.Result, task.Result.GetType()));
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
             }
