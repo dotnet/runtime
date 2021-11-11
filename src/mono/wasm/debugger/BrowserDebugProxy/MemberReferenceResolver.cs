@@ -121,12 +121,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var store = await proxy.LoadStore(sessionId, token);
                 var info = ctx.CallStack.FirstOrDefault().Method.Info;
                 var classNameToFindWithNamespace = string.IsNullOrEmpty(info.TypeInfo.Namespace) ? classNameToFind : info.TypeInfo.Namespace + "." + classNameToFind;
-                if (await TryGetTypeIdFromName(classNameToFindWithNamespace, info.Assembly))
-                    continue;
 
                 foreach (var asm in store.assemblies)
                 {
                     if (await TryGetTypeIdFromName(classNameToFind, asm))
+                        break;
+                    if (await TryGetTypeIdFromName(classNameToFindWithNamespace, asm))
                         break;
                 }
 
