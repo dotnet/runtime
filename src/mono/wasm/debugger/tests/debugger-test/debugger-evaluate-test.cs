@@ -403,6 +403,8 @@ namespace DebuggerTests
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
+            DebuggerTestsV2.EvaluateStaticClass.Run();
+            var a = 0;
         }
 
         public static void EvaluateAsyncMethods()
@@ -476,4 +478,19 @@ namespace DebuggerTests
         }
     }
 
+}
+
+namespace DebuggerTestsV2
+{
+    public static class EvaluateStaticClass
+    {
+        public static int StaticField1 = 20;
+        public static string StaticProperty1 => "StaticProperty2";
+		public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        public static void Run()
+        {
+            var a = 0;
+        }
+    }
 }
