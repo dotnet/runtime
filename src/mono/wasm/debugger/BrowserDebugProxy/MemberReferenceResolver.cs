@@ -119,14 +119,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
                 var store = await proxy.LoadStore(sessionId, token);
-                var info = ctx.CallStack.FirstOrDefault().Method.Info;
-                var classNameToFindWithNamespace = string.IsNullOrEmpty(info.TypeInfo.Namespace) ? classNameToFind : info.TypeInfo.Namespace + "." + classNameToFind;
+                var info = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId).Method.Info;
+                var classNameToFindWithNamespace =
+                    string.IsNullOrEmpty(info.TypeInfo.Namespace) ?
+                    classNameToFind :
+                    info.TypeInfo.Namespace + "." + classNameToFind;
 
                 foreach (var asm in store.assemblies)
                 {
-                    if (await TryGetTypeIdFromName(classNameToFind, asm))
-                        break;
                     if (await TryGetTypeIdFromName(classNameToFindWithNamespace, asm))
+                        break;
+                    if (await TryGetTypeIdFromName(classNameToFind, asm))
                         break;
                 }
 
