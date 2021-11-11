@@ -1,0 +1,30 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)\Program.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\Test.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\TestData.cs" />
+
+    <Compile Include="$(MSBuildThisFileDirectory)\Char\PInvoke_Default.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\Char\PInvoke_False_False.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\Char\PInvoke_False_True.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\Char\PInvoke_True_False.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\Char\PInvoke_True_True.cs" />
+
+    <Compile Include="$(MSBuildThisFileDirectory)\LPStr\PInvoke_Default.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\LPStr\PInvoke_False_False.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\LPStr\PInvoke_False_True.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\LPStr\PInvoke_True_False.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\LPStr\PInvoke_True_True.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)\Char\CMakeLists.txt" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)\LPStr\CMakeLists.txt" />
+  </ItemGroup>
+</Project>
