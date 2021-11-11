@@ -3548,6 +3548,9 @@ public:
     GenTree* gtFoldTypeCompare(GenTree* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
 
+    // Reduce successive add operations to a single multiply, i + i + i + i => i * 4
+    GenTree* gtReduceStrength(GenTree* tree);
+
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
     {

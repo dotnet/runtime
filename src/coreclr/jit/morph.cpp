@@ -11498,6 +11498,20 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             break;
     }
 
+    // Perform strength reduction prior to preorder op1, op2 operand processing
+    if (opts.OptimizationEnabled() && fgGlobalMorph)
+    {
+        tree = gtReduceStrength(tree);
+
+        // gtReduceStrength could have used setOper to change the oper
+        oper = tree->OperGet();
+        typ  = tree->TypeGet();
+
+        // gtReduceStrength could have changed op1 and op2
+        op1 = tree->AsOp()->gtOp1;
+        op2 = tree->gtGetOp2IfPresent();
+    }
+
     /*-------------------------------------------------------------------------
      * Process the first operand, if any
      */

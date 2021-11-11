@@ -21967,3 +21967,77 @@ bool GenTree::IsInvariant() const
     GenTree* lclVarTree = nullptr;
     return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree);
 }
+
+//------------------------------------------------------------------------
+// gtReduceStrength: reduce successive variable adds into a single multiply,
+// e.g., i + i + i + i => i * 4.
+//
+// Arguments:
+//    tree - tree for reduction
+//
+// Return Value:
+//    reduced tree if pattern matches, original tree otherwise
+//
+GenTree* Compiler::gtReduceStrength(GenTree* tree)
+{
+    // ADD(_, V0) starts the pattern match
+    if (tree->OperGet() != GT_ADD || tree->gtOverflow() || optValnumCSE_phase)
+    {
+        return tree;
+    }
+
+    genTreeOps oper = tree->OperGet();
+    GenTree*   op1  = tree->AsOp()->gtOp1;
+    GenTree*   op2  = tree->AsOp()->gtOp2;
+
+    if (!op2->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op2))
+    {
+        return tree;
+    }
+
+    int          foldCount = 0;
+    unsigned int lclNum    = op2->AsLclVarCommon()->GetLclNum();
+
+    // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum),
+    while (true)
+    {
+        // ADD(lclNum, lclNum), end of tree
+        if (op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->GetLclNum() == lclNum && op1->OperIs(GT_LCL_VAR) &&
+            op2->AsLclVarCommon()->GetLclNum() == lclNum)
+        {
+            foldCount += 2;
+            break;
+        }
+        // ADD(ADD(X, Y), lclNum), keep descending
+        else if (op1->OperIs(GT_ADD) && !op1->gtOverflow() && op2->OperIs(GT_LCL_VAR) &&
+                 op2->AsLclVarCommon()->GetLclNum() == lclNum)
+        {
+            foldCount++;
+            op2 = op1->AsOp()->gtOp2;
+            op1 = op1->AsOp()->gtOp1;
+        }
+        // Any other case is a pattern we won't attempt to fold for now
+        else
+        {
+            return tree;
+        }
+    }
+
+    // V0 + V0 ... + V0 becomes V0 * foldCount, where postorder transform will optimize
+    // accordingly
+    GenTree* oldOp1 = tree->AsOp()->gtOp1;
+    GenTree* oldOp2 = tree->AsOp()->gtOp2;
+
+    tree->AsOp()->gtOp1 = new (this, GT_LCL_VAR) GenTreeLclVar(oldOp2->OperGet(), oldOp2->TypeGet(), lclNum);
+    tree->AsOp()->gtOp2 = new (this, GT_CNS_INT) GenTreeIntCon(op2->TypeGet(), foldCount);
+    if (vnStore != nullptr)
+    {
+        fgValueNumberTreeConst(tree->AsOp()->gtOp2);
+    }
+    tree->ChangeOper(GT_MUL, GenTree::PRESERVE_VN);
+
+    DEBUG_DESTROY_NODE(oldOp1);
+    DEBUG_DESTROY_NODE(oldOp2);
+
+    return tree;
+}
