@@ -5229,8 +5229,8 @@ class IntrinsicNodeBuilder final
 public:
     IntrinsicNodeBuilder(CompAllocator allocator, size_t operandCount) : m_operandCount(operandCount)
     {
-        m_operands = (operandCount <= ArrLen(m_inlineOperands)) ? m_inlineOperands
-                                                                : allocator.allocate<GenTree*>(operandCount);
+        m_operands =
+            (operandCount <= ArrLen(m_inlineOperands)) ? m_inlineOperands : allocator.allocate<GenTree*>(operandCount);
 #ifdef DEBUG
         for (size_t i = 0; i < operandCount; i++)
         {
@@ -5396,8 +5396,7 @@ protected:
                          type,
                          nodeBuilder.GetBuiltOperands(),
                          nodeBuilder.GetOperandCount(),
-                         gtInlineOperands
-                         DEBUGARG(false))
+                         gtInlineOperands DEBUGARG(false))
         , gtLayoutNum(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)

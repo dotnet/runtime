@@ -18936,8 +18936,8 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
         SetOpLclRelatedToSIMDIntrinsic(operands[i]);
     }
 
-    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, std::move(nodeBuilder), hwIntrinsicID, simdBaseJitType,
-                                                         simdSize, isSimdAsHWIntrinsic);
+    return new (this, GT_HWINTRINSIC)
+        GenTreeHWIntrinsic(type, std::move(nodeBuilder), hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types              type,
@@ -18952,8 +18952,8 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types              ty
         SetOpLclRelatedToSIMDIntrinsic(nodeBuilder.GetOperand(i));
     }
 
-    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, std::move(nodeBuilder), hwIntrinsicID, simdBaseJitType,
-                                                         simdSize, isSimdAsHWIntrinsic);
+    return new (this, GT_HWINTRINSIC)
+        GenTreeHWIntrinsic(type, std::move(nodeBuilder), hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
 GenTree* Compiler::gtNewSimdAbsNode(

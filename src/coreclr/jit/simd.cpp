@@ -2110,8 +2110,8 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 }
                 else
                 {
-                    simdTree = new (this, GT_SIMD) GenTreeSIMD(simdType, std::move(nodeBuilder), simdIntrinsicID,
-                                                               simdBaseJitType, size);
+                    simdTree = new (this, GT_SIMD)
+                        GenTreeSIMD(simdType, std::move(nodeBuilder), simdIntrinsicID, simdBaseJitType, size);
                 }
             }
 
