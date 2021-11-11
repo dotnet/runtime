@@ -199,10 +199,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 void AddLocalVariableWithValue(string idName, JObject value)
                 {
                     if (localsSet.Contains(idName))
-                    {
-                        // repeated member access expression
-                        // eg. this.a + this.a
-                    }
+                        return;
                     localsSet.Add(idName);
                     variableDefinitions.Add(ConvertJSToCSharpVariable(idName, value));
                 }
