@@ -62,8 +62,7 @@ g_getenv(const gchar *variable)
 		val = u16to8 (buffer);
 	} else {
 		if (GetLastError () != ERROR_ENVVAR_NOT_FOUND){
-			val = g_malloc (1);
-			*val = 0;
+			val = g_calloc (1, 1);
 		}
 	}
 	g_free(var);
@@ -255,8 +254,7 @@ g_get_current_dir (void)
 		val = u16to8 (buffer);
 	} else {
 		if (GetLastError () != ERROR_ENVVAR_NOT_FOUND) {
-			val = g_malloc (1);
-			*val = 0;
+			val = g_calloc (1, 1);
 		}
 	}
 
