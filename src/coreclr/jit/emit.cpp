@@ -5193,9 +5193,11 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
             bool            markedCurrLoop = alignCurrentLoop;
             while ((alignInstr != nullptr))
             {
+                insGroup* loopHeadIG = alignInstr->loopHeadIG();
+
                 // Find the IG that has 'align' instruction to align the current loop
                 // and clear the IGF_HAS_ALIGN flag.
-                if (!alignCurrentLoop && (alignInstr->loopHeadIG() == dstIG))
+                if (!alignCurrentLoop && (loopHeadIG == dstIG))
                 {
                     assert(!markedCurrLoop);
 
@@ -5210,8 +5212,8 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
                 // Find the IG that has 'align' instruction to align the last loop
                 // and clear the IGF_HAS_ALIGN flag.
-                if (!alignLastLoop && (alignInstr->loopHeadIG() != nullptr) &&
-                    (alignInstr->loopHeadIG()->igNum == emitLastLoopStart))
+                if (!alignLastLoop && (loopHeadIG != nullptr) &&
+                    (loopHeadIG->igNum == emitLastLoopStart))
                 {
                     assert(!markedLastLoop);
                     assert(alignInstr->idaIG->endsWithAlignInstr());

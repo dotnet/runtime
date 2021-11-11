@@ -8334,12 +8334,6 @@ public:
                            weight_t refCntWtdStkDbl);
 #endif // DOUBLE_ALIGN
 
-#if FEATURE_LOOP_ALIGN
-public:
-// alignBlocksList* alignBBLists;
-
-#endif // FEATURE_LOOP_ALIGN
-
     bool IsFullPtrRegMapRequired()
     {
         return codeGen->IsFullPtrRegMapRequired();
