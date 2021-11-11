@@ -803,7 +803,7 @@ void CodeGen::genCodeForBBlist()
             {
                 // The current IG is the one that is just before the IG having loop start.
                 // Establish a connection of recent align instruction emitted to the loop
-                // it actually is aligning using 'idaTargetIG'.
+                // it actually is aligning using 'idaLoopHeadPredIG'.
                 GetEmitter()->emitConnectAlignInstrWithCurIG();
             }
         }

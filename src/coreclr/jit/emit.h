@@ -1383,11 +1383,17 @@ protected:
 #if FEATURE_LOOP_ALIGN
     struct instrDescAlign : instrDesc
     {
-        instrDescAlign* idaNext;     // next align in the group/method
-        insGroup*       idaIG;       // containing group
-        insGroup*       idaTargetIG; // The IG before the loop IG.
-                                     // If no 'jmp' instructions were found until idaTargetIG,
-                                     // then idaTargetIG == idaIG.
+        instrDescAlign* idaNext;           // next align in the group/method
+        insGroup*       idaIG;             // containing group
+        insGroup*       idaLoopHeadPredIG; // The IG before the loop IG.
+                                           // If no 'jmp' instructions were found until idaLoopHeadPredIG,
+                                           // then idaLoopHeadPredIG == idaIG.
+
+        inline insGroup* loopHeadIG()
+        {
+            assert(idaLoopHeadPredIG);
+            return idaLoopHeadPredIG->igNext;
+        }
 
         void removeAlignFlags()
         {

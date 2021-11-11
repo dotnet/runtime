@@ -11460,7 +11460,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 instrDescAlign* alignInstr = (instrDescAlign*)id;
 
                 if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
-                    (alignInstr->idaIG != alignInstr->idaTargetIG) && !skipIns)
+                    (alignInstr->idaIG != alignInstr->idaLoopHeadPredIG) && !skipIns)
                 {
                     // There is no good way to squeeze in "bkpt" as well as display it
                     // in the disassembly because there is no corresponding instrDesc for
@@ -13351,9 +13351,9 @@ void emitter::emitDispIns(
                 printf("[%d bytes", id->idIsEmptyAlign() ? 0 : INSTR_ENCODED_SIZE);
 
                 // targetIG is only set for 1st of the series of align instruction
-                if ((alignInstrId->idaTargetIG != nullptr) && (alignInstrId->idaTargetIG->igNext != nullptr))
+                if ((alignInstrId->idaLoopHeadPredIG != nullptr) && (alignInstrId->loopHeadIG() != nullptr))
                 {
-                    printf(" for IG%02u", alignInstrId->idaTargetIG->igNext->igNum);
+                    printf(" for IG%02u", alignInstrId->loopHeadIG()->igNum);
                 }
                 printf("]");
             }
