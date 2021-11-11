@@ -11,23 +11,32 @@
 version=7.0
 repo_root=$(git rev-parse --show-toplevel)
 
-configuration="Release"
+stress_configuration="Release"
 if [ "$1" != "" ]
 then
-    configuration=${1,,}            # Lowercase all characters in $1
-    configuration=${configuration^} # Uppercase first character
+    stress_configuration=${1,,}                   # Lowercase all characters in $1
+    stress_configuration=${stress_configuration^} # Uppercase first character
 fi
 
+libraries_configuration="Release"
+if [ "$2" != "" ]
+then
+    libraries_configuration=${2,,}                      # Lowercase all characters in $1
+    libraries_configuration=${libraries_configuration^} # Uppercase first character
+fi
+
+echo "StressConfiguration: $stress_configuration, LibrariesConfiguration: $libraries_configuration"
+
 echo "Building solution."
-dotnet build -c $configuration
+dotnet build -c $stress_configuration
 
-testhost_root=$repo_root/artifacts/bin/testhost/net$version-Linux-$configuration-x64
+testhost_root=$repo_root/artifacts/bin/testhost/net$version-Linux-$libraries_configuration-x64
 
-runscript=./run-stress-${configuration,,}.sh
+runscript=./run-stress-${stress_configuration,,}-${libraries_configuration,,}.sh
 if [ ! -f $runscript ]
 then
     echo "Generating runscript."
-    echo "$testhost_root/dotnet exec ./bin/$configuration/net$version/SslStress.dll \$@" > $runscript
+    echo "$testhost_root/dotnet exec ./bin/$stress_configuration/net$version/SslStress.dll \$@" > $runscript
     chmod +x $runscript
 fi
 
