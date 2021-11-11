@@ -15321,9 +15321,13 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
                         optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
 #if FEATURE_LOOP_ALIGN
-                        optLoopTable[loopNum].lpTop->bbFlags &= ~BBF_LOOP_ALIGN;
-                        JITDUMP("Removing LOOP_ALIGN flag from bogus loop in " FMT_BB "\n",
-                                optLoopTable[loopNum].lpTop->bbNum);
+                        if (optLoopTable[loopNum].lpTop->isLoopAlign())
+                        {
+                            loopAlignCandidates--;
+                            optLoopTable[loopNum].lpTop->bbFlags &= ~BBF_LOOP_ALIGN;
+                            JITDUMP("Removing LOOP_ALIGN flag from bogus loop in " FMT_BB "\n",
+                                    optLoopTable[loopNum].lpTop->bbNum);
+                        }
 #endif
 
 #ifdef DEBUG

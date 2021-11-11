@@ -4986,10 +4986,6 @@ void emitter::emitLoopAlignment()
     assert(emitLastIns->idIns() == INS_align);
 
     JITDUMP("Adding 'align' instruction of %d bytes in %s.\n", paddingBytes, emitLabelString(emitCurIG));
-
-#ifdef DEBUG
-    emitComp->loopAlignCandidates++;
-#endif // DEBUG
 }
 
 //-----------------------------------------------------------------------------

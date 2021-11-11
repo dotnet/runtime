@@ -22,14 +22,13 @@ void Compiler::optInit()
 {
     optLoopsMarked     = false;
     fgHasLoops         = false;
-    needsLoopAlignment = false;
+    loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
     optLoopCount = 0;
     optLoopTable = nullptr;
 
 #ifdef DEBUG
-    loopAlignCandidates = 0;
     loopsAligned        = 0;
 #endif
 
@@ -384,6 +383,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     if (begBlk->isLoopAlign())
     {
         // Clear the loop alignment bit on the head of a loop, since it's no longer a loop.
+        loopAlignCandidates--;
         begBlk->bbFlags &= ~BBF_LOOP_ALIGN;
         JITDUMP("Removing LOOP_ALIGN flag from removed loop in " FMT_BB "\n", begBlk->bbNum);
     }
@@ -2517,7 +2517,7 @@ void Compiler::optIdentifyLoopsForAlignment()
                 weight_t    topWeight = top->getBBWeight(this);
                 if (topWeight >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
                 {
-                    top->bbFlags |= BBF_LOOP_ALIGN;
+                    loopAlignCandidates++;
                     JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
                             top->bbNum, topWeight);
                 }
@@ -3782,6 +3782,7 @@ PhaseStatus Compiler::optUnrollLoops()
         {
             if (block->isLoopAlign())
             {
+                loopAlignCandidates--;
                 block->bbFlags &= ~BBF_LOOP_ALIGN;
                 JITDUMP("Removing LOOP_ALIGN flag from unrolled loop in " FMT_BB "\n", block->bbNum);
             }
@@ -7618,9 +7619,13 @@ void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
     if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
     {
         BasicBlock* top = optLoopTable[lnum].lpTop;
-        top->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Removing LOOP_ALIGN flag for " FMT_LP " that starts at " FMT_BB " because loop has a call.\n", lnum,
-                top->bbNum);
+        if (top->isLoopAlign())
+        {
+            loopAlignCandidates--;
+            top->bbFlags &= ~BBF_LOOP_ALIGN;
+            JITDUMP("Removing LOOP_ALIGN flag for " FMT_LP " that starts at " FMT_BB " because loop has a call.\n",
+                    lnum, top->bbNum);
+        }
     }
 #endif
 

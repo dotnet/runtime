@@ -6874,10 +6874,9 @@ protected:
 public:
     LoopDsc*      optLoopTable;       // loop descriptor table
     unsigned char optLoopCount;       // number of tracked loops
-    bool          needsLoopAlignment; // true if at least one loop was identified as alignment candidate.
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
 
 #ifdef DEBUG
-    unsigned char loopAlignCandidates; // number of loops identified for alignment
     unsigned char loopsAligned;        // number of loops actually aligned
 #endif                                 // DEBUG
 

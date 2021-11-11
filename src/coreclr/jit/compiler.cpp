@@ -5155,7 +5155,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif
 
 #if FEATURE_LOOP_ALIGN
-    if (needsLoopAlignment)
+    if (loopAlignCandidates > 0)
     {
         // Place loop alignment instructions
         DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::bbPlaceLoopAlignInstructions);
@@ -5231,7 +5231,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 void Compiler::bbPlaceLoopAlignInstructions()
 {
-    assert(needsLoopAlignment);
+    assert(loopAlignCandidates > 0);
 
     // Add align only if there were any loops that needed alignment
     weight_t    minBlockSoFar = INFINITE;
