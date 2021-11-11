@@ -142,10 +142,11 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Memory" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.Text.Encoding.Extensions" />
@@ -167,5 +168,6 @@ System.IO.Ports.SerialPort</PackageDescription>
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
     <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
+    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>
