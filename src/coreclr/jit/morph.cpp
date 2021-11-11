@@ -1761,19 +1761,15 @@ void fgArgInfo::Dump(Compiler* compiler) const
 GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
 {
     unsigned   tmpVarNum = curArgTabEntry->tmpNum;
-    LclVarDsc* varDsc    = &lvaTable[tmpVarNum];
-    assert(varDsc->lvIsTemp);
-    var_types type = varDsc->TypeGet();
+    LclVarDsc* varDsc    = lvaGetDesc(tmpVarNum);
+    var_types  type      = varDsc->TypeGet();
 
-    // Create a copy of the temp to go into the late argument list
-    GenTree* arg      = gtNewLclvNode(tmpVarNum, type);
-    GenTree* addrNode = nullptr;
+    // We will create a copy of the temp to go into the late argument list.
+    GenTree* arg = nullptr;
 
     if (varTypeIsStruct(type))
     {
-
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-
         // Can this type be passed as a primitive type?
         // If so, the following call will return the corresponding primitive type.
         // Otherwise, it will return TYP_UNKNOWN and we will pass it as a struct type.
@@ -1814,57 +1810,50 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         // field instead. It will be loaded in registers with putarg_reg tree in lower.
         if (passedAsPrimitive)
         {
-            arg->ChangeOper(GT_LCL_FLD);
-            arg->gtType = type;
+            arg = gtNewLclFldNode(tmpVarNum, type, 0);
             lvaSetVarDoNotEnregister(tmpVarNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
         }
         else
         {
-            var_types addrType = TYP_BYREF;
-            arg                = gtNewOperNode(GT_ADDR, addrType, arg);
+            arg = gtNewLclVarAddrNode(tmpVarNum, TYP_BYREF);
             lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
-            addrNode = arg;
 
 #if FEATURE_MULTIREG_ARGS
-#ifdef TARGET_ARM64
-            assert(varTypeIsStruct(type));
-            if (lvaIsMultiregStruct(varDsc, curArgTabEntry->IsVararg()))
+            if (TargetArchitecture::IsArm64)
             {
-                // We will create a GT_OBJ for the argument below.
-                // This will be passed by value in two registers.
-                assert(addrNode != nullptr);
-
-                // Create an Obj of the temp to use it as a call argument.
+                assert(varTypeIsStruct(type));
+                if (lvaIsMultiregStruct(varDsc, curArgTabEntry->IsVararg()))
+                {
+                    // We will create a GT_OBJ for the argument.
+                    // This will be passed by value in two registers.
+                    arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
+                }
+            }
+            else
+            {
+                // Always create an Obj of the temp to use it as a call argument.
                 arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
             }
-#else
-            // Always create an Obj of the temp to use it as a call argument.
-            arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
-#endif // !TARGET_ARM64
 #endif // FEATURE_MULTIREG_ARGS
         }
 
-#else // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM)
+#else  // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM)
 
-        // other targets, we pass the struct by value
+        // On other targets (x86), we pass the struct by value, and via OBJ
+        // because x86 codegen for PUTARG_STK does not support LCL_VAR sources.
         assert(varTypeIsStruct(type));
 
-        addrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, arg);
-
-        // Get a new Obj node temp to use it as a call argument.
-        // gtNewObjNode will set the GTF_EXCEPT flag if this is not a local stack object.
-        arg = gtNewObjNode(lvaGetStruct(tmpVarNum), addrNode);
-
+        arg = gtNewLclVarAddrNode(tmpVarNum, TYP_BYREF);
+        arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
+        lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 #endif // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM)
-
-    } // (varTypeIsStruct(type))
-
-    if (addrNode != nullptr)
-    {
-        assert(addrNode->gtOper == GT_ADDR);
-        // the child of a GT_ADDR is required to have this flag set
-        addrNode->AsOp()->gtOp1->gtFlags |= GTF_DONT_CSE;
     }
+    else // Not a struct argument - a simple local node will do.
+    {
+        arg = gtNewLclvNode(tmpVarNum, type);
+    }
+
+    assert(arg != nullptr);
 
     return arg;
 }
