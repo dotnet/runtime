@@ -26,6 +26,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private class FindVariableNMethodCall : CSharpSyntaxWalker
         {
+            private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCall = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
@@ -101,7 +102,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = Regex.Replace(ma_str, @"[^A-Za-z0-9_]", "_");
+                        string prefix = regexForReplaceVarName.Replace(ma_str, "_");
                         id_name = $"{prefix}_{suffix}";
 
                         memberAccessToParamName[ma_str] = id_name;
@@ -118,7 +119,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = Regex.Replace(iesStr, @"[^A-Za-z0-9_]", "_");
+                        string prefix = regexForReplaceVarName.Replace(iesStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
