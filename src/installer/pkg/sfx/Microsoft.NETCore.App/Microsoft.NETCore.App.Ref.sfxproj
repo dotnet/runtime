@@ -21,7 +21,7 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
+  <ItemGroup Condition="'$(CreatePlatformManifest)' == 'false'">
     <FilesToPackage  Include="PlatformManifest.txt" TargetPath="data" GeneratedBuildFile="true" />
   </ItemGroup>
 </Project>
