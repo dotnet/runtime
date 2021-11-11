@@ -3,9 +3,9 @@
   <PropertyGroup>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
-    <PreviousNetCoreApp>net5.0</PreviousNetCoreApp>
+    <PreviousNetCoreApp>net6.0</PreviousNetCoreApp>
     <PreviousNetCoreAppPackageId>microsoft.netcore.app.ref</PreviousNetCoreAppPackageId>
-    <PreviousNetCoreAppPackageVersion>5.0.0</PreviousNetCoreAppPackageVersion>
+    <PreviousNetCoreAppPackageVersion>6.0.0</PreviousNetCoreAppPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
