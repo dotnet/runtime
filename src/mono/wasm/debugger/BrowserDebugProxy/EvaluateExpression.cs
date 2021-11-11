@@ -201,11 +201,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (localsSet.Contains(idName))
                         return;
                     localsSet.Add(idName);
-                    variableDefinitions.Add(ConvertJSToCSharpVariable(idName, value));
+                    variableDefinitions.Add(ConvertJSToCSharpLocalVariableAssignment(idName, value));
                 }
             }
 
-            private string ConvertJSToCSharpVariable(string idName, JToken variable)
+            private string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
             {
                 string typeRet;
                 object valueRet;
@@ -220,13 +220,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var str = value?.Value<string>();
                         str = str.Replace("\"", "\\\"");
                         valueRet = $"\"{str}\"";
+                        typeRet = valueRet.GetType().FullName;
                         break;
                     }
                     case "number":
                         valueRet = value?.Value<double>();
+                        typeRet = valueRet.GetType().FullName;
                         break;
                     case "boolean":
                         valueRet = value?.Value<string>().ToLower();
+                        typeRet = "System.Boolean";
                         break;
                     case "object":
                         valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
@@ -236,6 +239,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             + (subType != null ? $", subtype = \"{subType}\"" : "")
                             + (objectId != null ? $", objectId = \"{objectId}\"" : "")
                             + "})";
+                        typeRet = "object";
                         break;
                     case "void":
                         valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
@@ -244,27 +248,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 + $"className = \"object\","
                                 + $"subtype = \"null\""
                                 + "})";
+                        typeRet = "object";
                         break;
                     default:
                         throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
                 }
-
-                switch (type)
-                {
-                    case "object":
-                        typeRet = "object";
-                        break;
-                    case "void":
-                        typeRet = "object";
-                        break;
-                    case "boolean":
-                        typeRet = "System.Boolean";
-                        break;
-                    default:
-                        typeRet = valueRet.GetType().FullName;
-                        break;
-                }
-
                 return $"{typeRet} {idName} = {valueRet};";
             }
         }
