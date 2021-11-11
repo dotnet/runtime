@@ -372,8 +372,7 @@ inline bool ComparePgoSchemaCompatible(const uint8_t *pByte, size_t cbDataMax, I
     size_t nUnmatched = 0;    
     size_t initialOffset = cbDataMax;
 
-    ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, 
-        [schemaTable, &nSchema, &nMatched, &nUnmatched](const ICorJitInfo::PgoInstrumentationSchema& schema) 
+    auto handler = [schemaTable, &nSchema, &nMatched, &nUnmatched](const ICorJitInfo::PgoInstrumentationSchema& schema)
     {
         const size_t iSchemaAdj = nSchema - nUnmatched;
 
@@ -393,7 +392,9 @@ inline bool ComparePgoSchemaCompatible(const uint8_t *pByte, size_t cbDataMax, I
         nSchema++;
 
         return true;
-    });
+    };
+
+    ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, handler);
 
     return (nMatched == cSchemas);
 }
