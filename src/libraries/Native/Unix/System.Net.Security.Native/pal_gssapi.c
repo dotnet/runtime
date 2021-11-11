@@ -5,6 +5,8 @@
 #include "pal_utilities.h"
 #include "pal_gssapi.h"
 
+#include <minipal/utils.h>
+
 #if HAVE_GSSFW_HEADERS
 #include <GSS/GSS.h>
 #else
@@ -45,12 +47,12 @@ c_static_assert(PAL_GSS_CONTINUE_NEEDED == GSS_S_CONTINUE_NEEDED);
 
 #if !HAVE_GSS_SPNEGO_MECHANISM
 static char gss_spnego_oid_value[] = "\x2b\x06\x01\x05\x05\x02"; // Binary representation of SPNEGO Oid (RFC 4178)
-static gss_OID_desc gss_mech_spnego_OID_desc = {.length = ARRAY_SIZE(gss_spnego_oid_value) - 1,
+static gss_OID_desc gss_mech_spnego_OID_desc = {.length = MINIPAL_LENGTHOF(gss_spnego_oid_value) - 1,
                                                 .elements = gss_spnego_oid_value};
 static char gss_ntlm_oid_value[] =
     "\x2b\x06\x01\x04\x01\x82\x37\x02\x02\x0a"; // Binary representation of NTLM OID
                                                 // (https://msdn.microsoft.com/en-us/library/cc236636.aspx)
-static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_value) - 1,
+static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = MINIPAL_LENGTHOF(gss_ntlm_oid_value) - 1,
                                               .elements = gss_ntlm_oid_value};
 #endif
 

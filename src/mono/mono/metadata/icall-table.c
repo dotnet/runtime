@@ -288,7 +288,7 @@ mono_lookup_icall_symbol_internal (gpointer func)
 {
 #if ENABLE_ICALL_SYMBOL_MAP || TEST_ICALL_SYMBOL_MAP
 	typedef guint16 T;
-	const gsize N = G_N_ELEMENTS (icall_functions) - 1; // skip terminal null element
+	const gsize N = MINIPAL_LENGTHOF (icall_functions) - 1; // skip terminal null element
 	g_static_assert (N <= 0xFFFF); // If this fails, change T to guint32
 	static T *static_functions_sorted;
 

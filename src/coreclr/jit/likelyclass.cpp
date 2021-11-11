@@ -93,7 +93,7 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 
         if (!found)
         {
-            if (countHistogramElements >= _countof(m_histogram))
+            if (countHistogramElements >= MINIPAL_LENGTHOF(m_histogram))
             {
                 continue;
             }

@@ -868,7 +868,7 @@ enable_default_session_via_env_variables (void)
 		ep_config_output_path = ep_rt_config_value_get_output_path ();
 
 		ep_char8_t pidStr[24];
-		ep_rt_utf8_string_snprintf(pidStr, EP_ARRAY_SIZE (pidStr), "%u", (unsigned)ep_rt_current_process_get_id());
+		ep_rt_utf8_string_snprintf(pidStr, MINIPAL_LENGTHOF (pidStr), "%u", (unsigned)ep_rt_current_process_get_id());
 
 		while (true)
 		{

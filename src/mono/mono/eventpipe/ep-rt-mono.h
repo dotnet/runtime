@@ -28,9 +28,6 @@
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
-#undef EP_ARRAY_SIZE
-#define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
-
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT MONO_INFINITE_WAIT
 

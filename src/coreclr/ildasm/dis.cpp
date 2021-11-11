@@ -458,7 +458,7 @@ void dumpOneEHInfo(DasmExceptionInfoClause* ehInfo, IMDInternalImport *pImport, 
     /*
     if(ehInfo->GetFlags() & ERR_OUT_OF_CODE)
     {
-        _snprintf_s(szString, _countof(szString), _TRUNCATE, "%s// WARNING: Boundary outside the method code",g_szAsmCodeIndent);
+        _snprintf_s(szString, MINIPAL_LENGTHOF(szString), _TRUNCATE, "%s// WARNING: Boundary outside the method code",g_szAsmCodeIndent);
         printLine(GUICookie,szString);
     }
     */
@@ -846,7 +846,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, __out_ecount(nSize)
             /*
             BOOL fHasEmbeddedSource=FALSE;
             ((ISymUnmanagedDocument*)(pParam->pLCD->FileToken))->HasEmbeddedSource(&fHasEmbeddedSource);
-            _snprintf_s(szString, _countof(szString), _TRUNCATE, "%s// PDB has %sembedded source",g_szAsmCodeIndent,
+            _snprintf_s(szString, MINIPAL_LENGTHOF(szString), _TRUNCATE, "%s// PDB has %sembedded source",g_szAsmCodeIndent,
                         fHasEmbeddedSource ? "" : "no ");
             printLine(pParam->GUICookie,szString);
             */

@@ -763,7 +763,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
             GenTree* arg = list->Current();
 
             assert(arg->TypeGet() == simdNode->GetSimdBaseType());
-            assert(argCount < (int)_countof(constArgValues));
+            assert(argCount < (int)MINIPAL_LENGTHOF(constArgValues));
 
             if (arg->IsCnsFltOrDbl())
             {

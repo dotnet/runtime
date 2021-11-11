@@ -14,7 +14,6 @@
 #define ROWS 2
 #define COLUMNS 3
 
-#define COUNTOF(__arr) sizeof(__arr) / sizeof(__arr[0])
 #define ELEM_PER_ROW_2D(__arr) (&(__arr[1][0]) - &(__arr[0][0]))
 #define ROWS_2D(__arr) sizeof(__arr) / (ELEM_PER_ROW_2D(__arr) * sizeof(__arr[0][0]))
 

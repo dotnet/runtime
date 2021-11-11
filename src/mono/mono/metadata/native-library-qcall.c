@@ -1,4 +1,4 @@
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 #include "mono/metadata/native-library.h"
 
 static Entry mono_qcalls[] = 
@@ -9,5 +9,5 @@ static Entry mono_qcalls[] =
 gpointer
 mono_lookup_pinvoke_qcall_internal (const char *name)
 {
-	return (gpointer)minipal_resolve_dllimport(mono_qcalls, lengthof(mono_qcalls), name);
+	return (gpointer)minipal_resolve_dllimport(mono_qcalls, MINIPAL_LENGTHOF(mono_qcalls), name);
 }

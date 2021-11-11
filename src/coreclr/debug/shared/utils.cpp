@@ -130,7 +130,7 @@ void GetPidDecoratedName(__out_z __out_ecount(cBufSizeInChars) WCHAR * pBuf, int
 {
     const WCHAR szGlobal[] = W("Global\\");
     int szGlobalLen;
-    szGlobalLen = NumItems(szGlobal) - 1;
+    szGlobalLen = MINIPAL_STRLEN(szGlobal);
 
     // Caller should always give us a big enough buffer.
     _ASSERTE(cBufSizeInChars > (int) wcslen(pPrefix) + szGlobalLen);

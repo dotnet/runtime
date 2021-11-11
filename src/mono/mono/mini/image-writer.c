@@ -215,7 +215,7 @@ asm_writer_in_data_section (MonoImageWriter *acfg)
 	gboolean	in_data_section = FALSE;
 	const char	*data_sections [] = {".data", ".bss", ".rdata"};
 
-	for (guchar i = 0; i < G_N_ELEMENTS (data_sections); ++i) {
+	for (guchar i = 0; i < MINIPAL_LENGTHOF (data_sections); ++i) {
 		if (strcmp (acfg->current_section, data_sections [i]) == 0) {
 			in_data_section = TRUE;
 			break;

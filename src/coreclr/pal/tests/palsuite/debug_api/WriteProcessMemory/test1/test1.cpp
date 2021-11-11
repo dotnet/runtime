@@ -66,7 +66,7 @@ PALTEST(debug_api_WriteProcessMemory_test1_paltest_writeprocessmemory_test1, "de
     ResetEvent(hEvFromHelper);
     ResetEvent(hEvToHelper);
     
-    if (!sprintf_s(cmdComposeBuf, _countof(cmdComposeBuf), "helper %s", commsFileName)) 
+    if (!sprintf_s(cmdComposeBuf, MINIPAL_LENGTHOF(cmdComposeBuf), "helper %s", commsFileName)) 
     {
         Fail("Could not convert command line\n");
     }

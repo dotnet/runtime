@@ -780,32 +780,32 @@ MonoArray *
 mono_array_new_1 (MonoMethod *cm, guint32 length)
 {
 	uintptr_t lengths [ ] = {length};
-	intptr_t lower_bounds [G_N_ELEMENTS (lengths)] = {0};
-	return mono_array_new_n (cm, G_N_ELEMENTS (lengths), lengths, lower_bounds);
+	intptr_t lower_bounds [MINIPAL_LENGTHOF (lengths)] = {0};
+	return mono_array_new_n (cm, MINIPAL_LENGTHOF (lengths), lengths, lower_bounds);
 }
 
 MonoArray *
 mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 {
 	uintptr_t lengths [ ] = {length1, length2};
-	intptr_t lower_bounds [G_N_ELEMENTS (lengths)] = {0};
-	return mono_array_new_n (cm, G_N_ELEMENTS (lengths), lengths, lower_bounds);
+	intptr_t lower_bounds [MINIPAL_LENGTHOF (lengths)] = {0};
+	return mono_array_new_n (cm, MINIPAL_LENGTHOF (lengths), lengths, lower_bounds);
 }
 
 MonoArray *
 mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3)
 {
 	uintptr_t lengths [ ] = {length1, length2, length3};
-	intptr_t lower_bounds [G_N_ELEMENTS (lengths)] = {0};
-	return mono_array_new_n (cm, G_N_ELEMENTS (lengths), lengths, lower_bounds);
+	intptr_t lower_bounds [MINIPAL_LENGTHOF (lengths)] = {0};
+	return mono_array_new_n (cm, MINIPAL_LENGTHOF (lengths), lengths, lower_bounds);
 }
 
 MonoArray *
 mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3, guint32 length4)
 {
 	uintptr_t lengths [ ] = {length1, length2, length3, length4};
-	intptr_t lower_bounds [G_N_ELEMENTS (lengths)] = {0};
-	return mono_array_new_n (cm, G_N_ELEMENTS (lengths), lengths, lower_bounds);
+	intptr_t lower_bounds [MINIPAL_LENGTHOF (lengths)] = {0};
+	return mono_array_new_n (cm, MINIPAL_LENGTHOF (lengths), lengths, lower_bounds);
 }
 
 gpointer

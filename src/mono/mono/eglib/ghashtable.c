@@ -99,7 +99,7 @@ g_spaced_primes_closest (guint x)
 {
 	int i;
 	
-	for (i = 0; i < G_N_ELEMENTS (prime_tbl); i++) {
+	for (i = 0; i < MINIPAL_LENGTHOF (prime_tbl); i++) {
 		if (x <= prime_tbl [i])
 			return prime_tbl [i];
 	}

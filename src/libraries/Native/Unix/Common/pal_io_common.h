@@ -8,6 +8,7 @@
 #include <poll.h>
 #include <pal_error_common.h>
 #include <pal_utilities.h>
+#include <minipal/utils.h>
 
 /**
  * Our intermediate pollfd struct to normalize the data types
@@ -82,7 +83,7 @@ inline static int32_t Common_Poll(PollEvent* pollEvents, uint32_t eventCount, in
     }
 
     struct pollfd stackBuffer[(uint32_t)(2048/sizeof(struct pollfd))];
-    int useStackBuffer = eventCount <= ARRAY_SIZE(stackBuffer);
+    int useStackBuffer = eventCount <= MINIPAL_LENGTHOF(stackBuffer);
     struct pollfd* pollfds = NULL;
     if (useStackBuffer)
     {

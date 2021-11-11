@@ -53,8 +53,8 @@ main (void)
 		for (int upcase_base = 0; upcase_base <= win32; ++upcase_base) {
 			for (int itrail_base = 0; itrail_base <= 2; ++itrail_base) {
 				for (int itrail_file = 0; itrail_file <= 2; ++itrail_file) {
-					for (int ibase = 0; ibase < G_N_ELEMENTS (bases); ++ibase) {
-						for (int ifile = 0; ifile < G_N_ELEMENTS (files); ++ifile) {
+					for (int ibase = 0; ibase < MINIPAL_LENGTHOF (bases); ++ibase) {
+						for (int ifile = 0; ifile < MINIPAL_LENGTHOF (files); ++ifile) {
 							for (int islash_base = 0; islash_base <= win32; ++islash_base) {
 								for (int islash_file = 0; islash_file <= win32; ++islash_file) {
 

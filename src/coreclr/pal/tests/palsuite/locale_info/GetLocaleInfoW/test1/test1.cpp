@@ -20,9 +20,7 @@ int Types[] = { LOCALE_SDECIMAL, LOCALE_STHOUSAND, LOCALE_ILZERO,
 char *TypeStrings[] = { "LOCALE_SDECIMAL", "LOCALE_STHOUSAND", "LOCALE_ILZERO",
     "LOCALE_SCURRENCY", "LOCALE_SMONDECIMALSEP", "LOCALE_SMONTHOUSANDSEP" };
 
-#define NUM_TYPES (sizeof(Types) / sizeof(Types[0]))
-
-typedef WCHAR InfoStrings[NUM_TYPES][4];
+typedef WCHAR InfoStrings[MINIPAL_LENGTHOF(Types)][4];
 
 typedef struct
 {
@@ -52,7 +50,7 @@ PALTEST(locale_info_GetLocaleInfoW_test1_paltest_getlocaleinfow_test1, "locale_i
 
     for (i=0; i<NumLocales; i++)
     {
-        for (j=0; j<NUM_TYPES; j++)
+        for (j=0; j < MINIPAL_LENGTHOF(Types); j++)
         {
             ret = GetLocaleInfoW(Locales[i].lcid, Types[j], buffer, 256);
             

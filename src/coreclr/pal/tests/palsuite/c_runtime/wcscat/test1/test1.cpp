@@ -59,7 +59,7 @@ PALTEST(c_runtime_wcscat_test1_paltest_wcscat_test1, "c_runtime/wcscat/test1/pal
 
     if (memcmp(dest, test, sizeof(test)) != 0)
     {
-        sprintf_s(buffer, _countof(buffer), "%S", dest);
+        sprintf_s(buffer, MINIPAL_LENGTHOF(buffer), "%S", dest);
         Fail("ERROR: Expected wcscat to give \"%s\", got \"%s\"\n", 
             "foo bar baz", buffer);
     }

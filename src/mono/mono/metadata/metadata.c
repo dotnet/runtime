@@ -1833,8 +1833,6 @@ builtin_types[] = {
 	{{NULL}, 0,     MONO_TYPE_U,       0,     1,     0},
 };
 
-#define NBUILTIN_TYPES() (sizeof (builtin_types) / sizeof (builtin_types [0]))
-
 static GHashTable *type_cache = NULL;
 static gint32 next_generic_inst_id = 0;
 
@@ -1964,7 +1962,7 @@ mono_metadata_init (void)
 
 	type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
 
-	for (i = 0; i < NBUILTIN_TYPES (); ++i)
+	for (i = 0; i < MINIPAL_LENGTHOF (builtin_types); ++i)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
 	mono_metadata_update_init ();
@@ -4089,7 +4087,7 @@ mono_metadata_free_type (MonoType *type)
 {
 	/* Note: keep in sync with do_mono_metadata_parse_type and try_get_canonical_type which
 	 * allocate memory or try to avoid allocating memory. */
-	if (type >= builtin_types && type < builtin_types + NBUILTIN_TYPES ())
+	if (type >= builtin_types && type < builtin_types + MINIPAL_LENGTHOF (builtin_types))
 		return;
 	
 	switch (type->type){

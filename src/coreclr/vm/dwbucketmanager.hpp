@@ -195,11 +195,11 @@ WCHAR BytesToBase32::GetNextChar()
     unsigned int result = 0;
 
     _ASSERTE(pData <= pEnd);
-    _ASSERTE(nWhich >= 0 && nWhich < lengthof(decoder));
+    _ASSERTE(nWhich >= 0 && nWhich < MINIPAL_LENGTHOF(decoder));
 
     // If out of data, return signal value, > any valid char.
     if (pData == pEnd)
-        return base32[lengthof(base32)-1];
+        return base32[MINIPAL_LENGTHOF(base32)-1];
 
 #if defined(_DEBUG)
     if (decoder[nWhich].l1)
@@ -243,11 +243,11 @@ WCHAR BytesToBase32::GetNextChar()
     }
 
     // Advance the 'state machine' -- which 5-bits from an 8-byte block.
-    if (++nWhich == lengthof(decoder))
+    if (++nWhich == MINIPAL_LENGTHOF(decoder))
         nWhich = 0;
 
     // Sanity check on value.
-    _ASSERTE(result < lengthof(base32));
+    _ASSERTE(result < MINIPAL_LENGTHOF(base32));
 
     return base32[result];
 } // WCHAR BytesToBase32::GetNextChar()
@@ -490,7 +490,7 @@ void BaseBucketParamsManager::GetAppVersion(__out_ecount(maxLength) WCHAR* targe
             W("%d.%d.%d.%d"),
             major, minor, build, revision);
     }
-    else if (DwGetAssemblyVersion(appPath, verBuf, NumItems(verBuf)) != 0)
+    else if (DwGetAssemblyVersion(appPath, verBuf, MINIPAL_LENGTHOF(verBuf)) != 0)
     {
         wcscpy_s(targetParam, maxLength, verBuf);
     }

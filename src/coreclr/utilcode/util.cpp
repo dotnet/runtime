@@ -48,10 +48,10 @@ void InitWinRTStatus()
     WinRTStatusEnum winRTStatus = WINRT_STATUS_UNSUPPORTED;
 
     const WCHAR wszComBaseDll[] = W("\\combase.dll");
-    const SIZE_T cchComBaseDll = _countof(wszComBaseDll);
+    const SIZE_T cchComBaseDll = MINIPAL_LENGTHOF(wszComBaseDll);
 
     WCHAR wszComBasePath[MAX_LONGPATH + 1];
-    const SIZE_T cchComBasePath = _countof(wszComBasePath);
+    const SIZE_T cchComBasePath = MINIPAL_LENGTHOF(wszComBasePath);
 
     ZeroMemory(wszComBasePath, cchComBasePath * sizeof(wszComBasePath[0]));
 
@@ -3116,7 +3116,7 @@ namespace Com
             STANDARD_VM_CONTRACT;
 
             WCHAR wszClsid[39];
-            if (GuidToLPWSTR(rclsid, wszClsid, NumItems(wszClsid)) == 0)
+            if (GuidToLPWSTR(rclsid, wszClsid, MINIPAL_LENGTHOF(wszClsid)) == 0)
                 return E_UNEXPECTED;
 
             StackSString ssKeyName;

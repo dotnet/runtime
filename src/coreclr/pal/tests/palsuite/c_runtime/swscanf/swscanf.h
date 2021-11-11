@@ -149,8 +149,8 @@ inline void DoI64NumTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, INT64 
 
     if (checknum != num)
     {
-        sprintf_s(buf, _countof(buf), "%I64d", num);
-        sprintf_s(check, _countof(check), "%I64d", checknum);
+        sprintf_s(buf, MINIPAL_LENGTHOF(buf), "%I64d", num);
+        sprintf_s(check, MINIPAL_LENGTHOF(check), "%I64d", checknum);
         Fail("ERROR: scanned I64 number incorrectly from \"%s\" using \"%s\".\n"
             "Expected %s, got %s.\n", convertC(inputstr), 
             convertC(formatstr), check, buf);

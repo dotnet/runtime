@@ -33,9 +33,9 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test2_paltest_createfilemappingw_t
     }
 
 #if WIN32
-    sprintf_s(executableFileName, _countof(executableFileName),"%s","executable.exe");
+    sprintf_s(executableFileName, MINIPAL_LENGTHOF(executableFileName),"%s","executable.exe");
 #else
-    sprintf_s(executableFileName, _countof(executableFileName),"%s","executable");
+    sprintf_s(executableFileName, MINIPAL_LENGTHOF(executableFileName),"%s","executable");
 #endif
 
     //conver string to a unicode one

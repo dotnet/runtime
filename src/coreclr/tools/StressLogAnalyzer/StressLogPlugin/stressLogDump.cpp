@@ -87,7 +87,7 @@ const char *getFacilityName(DWORD_PTR lf)
     }
     else if ((((DWORD)lf) & (LF_ALWAYS | 0xfffe | LF_GC)) == (LF_ALWAYS | LF_GC))
     {
-        sprintf_s<_countof(buff)>(buff, "`GC l=%d`", (lf >> 16) & 0x7fff);
+        sprintf_s<MINIPAL_LENGTHOF(buff)>(buff, "`GC l=%d`", (lf >> 16) & 0x7fff);
         return buff;
     }
     else 
@@ -97,8 +97,8 @@ const char *getFacilityName(DWORD_PTR lf)
         {
             if ( lf & 0x1 )
             {
-                strcat_s ( buff, _countof(buff), &(facilities[i].lfName[3]) );
-                strcat_s ( buff, _countof(buff), "`" );
+                strcat_s ( buff, MINIPAL_LENGTHOF(buff), &(facilities[i].lfName[3]) );
+                strcat_s ( buff, MINIPAL_LENGTHOF(buff), "`" );
             }
             lf >>= 1;
         }
@@ -134,7 +134,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     
     int iArgCount = 0;
     
-    strcpy_s(formatCopy, _countof(formatCopy), format);
+    strcpy_s(formatCopy, MINIPAL_LENGTHOF(formatCopy), format);
     char* ptr = formatCopy;
     format = formatCopy;
     for(;;)
@@ -193,7 +193,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     static WCHAR wszNameBuffer[1024]; // should be large enough
                                     if (g_sos->GetMethodDescName(arg, 1024, wszNameBuffer, NULL) != S_OK)
                                     {
-                                        wcscpy_s(wszNameBuffer, _countof(wszNameBuffer), W("UNKNOWN METHODDESC"));
+                                        wcscpy_s(wszNameBuffer, MINIPAL_LENGTHOF(wszNameBuffer), W("UNKNOWN METHODDESC"));
                                     }
 
                                     wcscpy_s(buff, capacity_buff, wszNameBuffer);
@@ -499,7 +499,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             TADDR taFmt = (latestMsg->formatOffset) + TO_TADDR(g_hThisInst);
             hr = memCallBack->ReadVirtual(TO_CDADDR(taFmt), format, 256, 0);
             if (hr != S_OK) 
-                strcpy_s(format, _countof(format), "Could not read address of format string");
+                strcpy_s(format, MINIPAL_LENGTHOF(format), "Could not read address of format string");
 
             double deltaTime = ((double) (latestMsg->timeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
             if (bDoGcHist)

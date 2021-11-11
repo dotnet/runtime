@@ -15,7 +15,6 @@
 #include "clrversion.h"
 
 #undef EP_ARRAY_SIZE
-#define EP_ARRAY_SIZE(expr) (sizeof(expr) / sizeof ((expr) [0]))
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE

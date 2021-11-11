@@ -169,7 +169,7 @@ g_module_address (void *addr, char *file_name, size_t file_name_len,
 	if (file_name != NULL && file_name_len >= 1) {
 		/* sigh, non-const. AIX for POSIX is the same way. */
 		WCHAR fname [MAX_PATH];
-		DWORD bytes = GetModuleFileNameW (module, fname, G_N_ELEMENTS (fname));
+		DWORD bytes = GetModuleFileNameW (module, fname, MINIPAL_LENGTHOF (fname));
 		if (bytes) {
 			/* Convert back to UTF-8 from wide for runtime */
 			GFixedBufferCustomAllocatorData custom_alloc_data;
@@ -221,7 +221,7 @@ g_module_error (void)
 #else
 	WCHAR local_buf [1024];
 	if (!FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, G_N_ELEMENTS (local_buf) - 1, NULL) )
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, MINIPAL_LENGTHOF (local_buf) - 1, NULL) )
 		local_buf [0] = TEXT('\0');
 
 	ret = u16to8 (local_buf);

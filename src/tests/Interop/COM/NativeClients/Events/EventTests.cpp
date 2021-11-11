@@ -33,7 +33,7 @@ namespace
     public:
         DispIDToStringMap()
             : _pairs{}
-            , _end{ _pairs + ARRAYSIZE(_pairs) }
+            , _end{ _pairs + MINIPAL_LENGTHOF(_pairs) }
         {
             for (auto curr = _pairs; curr != _end; ++curr)
                 curr->id = DISPID_UNKNOWN;

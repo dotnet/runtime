@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
+#include <minipal/utils.h>
 
 // Include System.IO.Compression.Native headers
 #include "../zlib/pal_zlib.h"
@@ -38,5 +39,5 @@ EXTERN_C const void* CompressionResolveDllImport(const char* name);
 
 EXTERN_C const void* CompressionResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_compressionNative, lengthof(s_compressionNative), name);
+    return minipal_resolve_dllimport(s_compressionNative, MINIPAL_LENGTHOF(s_compressionNative), name);
 }

@@ -17,7 +17,7 @@ inline void DoWStrTest_swprintf_s(const WCHAR *formatstr, WCHAR *param, const WC
 {
     WCHAR buf[256] = { 0 };
 
-    swprintf_s(buf, _countof(buf), formatstr, param);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
 
     if (memcmp(buf, checkstr, wcslen(checkstr) * 2 + 2) != 0)
     {
@@ -33,7 +33,7 @@ inline void DoStrTest_swprintf_s(const WCHAR *formatstr, char *param, const WCHA
 {
     WCHAR buf[256] = { 0 };
 
-    swprintf_s(buf, _countof(buf), formatstr, param);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
 
     if (memcmp(buf, checkstr, wcslen(checkstr) * 2 + 2) != 0)
     {
@@ -49,7 +49,7 @@ inline void DoPointerTest_swprintf_s(const WCHAR *formatstr, void* param, const 
 {
     WCHAR buf[256] = { 0 };
 
-    swprintf_s(buf, _countof(buf), formatstr, param);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
     if (memcmp(buf, checkstr1, wcslen(checkstr1)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert pointer to %#p into \"%s\"\n"
@@ -63,7 +63,7 @@ inline void DoCharTest_swprintf_s(const WCHAR *formatstr, char param, const WCHA
 {
     WCHAR buf[256] = { 0 };
 
-    swprintf_s(buf, _countof(buf), formatstr, param);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
     if (memcmp(buf, checkstr, wcslen(checkstr)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert char \'%c\' (%d) into \"%s\"\n"
@@ -77,7 +77,7 @@ inline void DoWCharTest_swprintf_s(const WCHAR *formatstr, WCHAR param, const WC
 {
     WCHAR buf[256] = { 0 };
 
-    swprintf_s(buf, _countof(buf), formatstr, param);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
     if (memcmp(buf, checkstr, wcslen(checkstr)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide char \'%c\' (%d) into \"%s\"\n"
@@ -91,7 +91,7 @@ inline void DoNumTest_swprintf_s(const WCHAR *formatstr, int value, const WCHAR 
 {
     WCHAR buf[256] = { 0 };
 
-    swprintf_s(buf, _countof(buf), formatstr, value);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, value);
     if (memcmp(buf, checkstr, wcslen(checkstr)* 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert %#x into \"%s\"\n"
@@ -106,7 +106,7 @@ inline void DoI64Test_swprintf_s(const WCHAR *formatstr, INT64 param, char *para
 {
     WCHAR buf[256] = { 0 };
 
-    swprintf_s(buf, _countof(buf), formatstr, param);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
     if (memcmp(buf, checkstr1, wcslen(checkstr1)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -121,7 +121,7 @@ inline void DoDoubleTest_swprintf_s(const WCHAR *formatstr, double value, const 
 {
     WCHAR buf[256] = { 0 };
 
-    swprintf_s(buf, _countof(buf), formatstr, value);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, value);
     if (memcmp(buf, checkstr1, wcslen(checkstr1)*2 + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2)*2 + 2) != 0)
     {
@@ -138,7 +138,7 @@ inline void DoArgumentPrecTest_swprintf_s(const WCHAR *formatstr, int precision,
 {
     WCHAR buf[256];
 
-    swprintf_s(buf, _countof(buf), formatstr, precision, param);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, wcslen(checkstr1) + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2) + 2) != 0)
     {
@@ -155,7 +155,7 @@ inline void DoArgumentPrecDoubleTest_swprintf_s(const WCHAR *formatstr, int prec
 {
     WCHAR buf[256];
 
-    swprintf_s(buf, _countof(buf), formatstr, precision, param);
+    swprintf_s(buf, MINIPAL_LENGTHOF(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, wcslen(checkstr1) + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2) + 2) != 0)
     {

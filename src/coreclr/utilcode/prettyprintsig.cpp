@@ -280,11 +280,11 @@ static PCCOR_SIGNATURE PrettyPrintType(
 
         if (TypeFromToken(tk) == mdtTypeRef)
         {
-            hr = pIMDI->GetTypeRefProps(tk, 0, rcname, NumItems(rcname), 0);
+            hr = pIMDI->GetTypeRefProps(tk, 0, rcname, MINIPAL_LENGTHOF(rcname), 0);
         }
         else if (TypeFromToken(tk) == mdtTypeDef)
         {
-            hr = pIMDI->GetTypeDefProps(tk, rcname, NumItems(rcname), 0, 0, 0);
+            hr = pIMDI->GetTypeDefProps(tk, rcname, MINIPAL_LENGTHOF(rcname), 0, 0, 0);
         }
         else
         {

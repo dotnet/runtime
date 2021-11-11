@@ -55,10 +55,10 @@
 #include "jit-icalls.h"
 
 #define MONO_HANDLER_DELIMITER ','
-#define MONO_HANDLER_DELIMITER_LEN G_N_ELEMENTS(MONO_HANDLER_DELIMITER)-1
+#define MONO_HANDLER_DELIMITER_LEN MINIPAL_LENGTHOF(MONO_HANDLER_DELIMITER)-1
 
 #define MONO_HANDLER_ATEXIT_WAIT_KEYPRESS "atexit-waitkeypress"
-#define MONO_HANDLER_ATEXIT_WAIT_KEYPRESS_LEN G_N_ELEMENTS(MONO_HANDLER_ATEXIT_WAIT_KEYPRESS)-1
+#define MONO_HANDLER_ATEXIT_WAIT_KEYPRESS_LEN MINIPAL_LENGTHOF(MONO_HANDLER_ATEXIT_WAIT_KEYPRESS)-1
 
 // Typedefs used to setup handler table.
 typedef void (*handler)(void);
@@ -166,7 +166,7 @@ install_custom_handler (const char *handlers, size_t *handler_arg_len)
 	assert (handler_arg_len);
 
 	*handler_arg_len = get_next_handler_arg_len (handlers);
-	for (int current_item = 0; current_item < G_N_ELEMENTS (g_handler_items); ++current_item) {
+	for (int current_item = 0; current_item < MINIPAL_LENGTHOF (g_handler_items); ++current_item) {
 		const HandlerItem * handler_item = &g_handler_items [current_item];
 
 		if (handler_item->cmd == NULL)
@@ -347,7 +347,7 @@ mono_setup_thread_context(DWORD thread_id, MonoContext *mono_context)
 	HANDLE handle;
 #if defined(MONO_HAVE_SIMD_REG_AVX) && HAVE_API_SUPPORT_WIN32_CONTEXT_XSTATE
 	BYTE context_buffer [2048];
-	DWORD context_buffer_len = G_N_ELEMENTS (context_buffer);
+	DWORD context_buffer_len = MINIPAL_LENGTHOF (context_buffer);
 	PCONTEXT context = NULL;
 	BOOL success = InitializeContext (context_buffer, CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL | CONTEXT_XSTATE, &context, &context_buffer_len);
 	success &= SetXStateFeaturesMask (context, XSTATE_MASK_AVX);

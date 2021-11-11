@@ -7628,9 +7628,9 @@ CompTimeInfo::CompTimeInfo(unsigned byteCodeBytes)
     }
 
 #if MEASURE_CLRAPI_CALLS
-    assert(ARRAYSIZE(m_perClrAPIcalls) == API_ICorJitInfo_Names::API_COUNT);
-    assert(ARRAYSIZE(m_perClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
-    assert(ARRAYSIZE(m_maxClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
+    assert(MINIPAL_LENGTHOF(m_perClrAPIcalls) == API_ICorJitInfo_Names::API_COUNT);
+    assert(MINIPAL_LENGTHOF(m_perClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
+    assert(MINIPAL_LENGTHOF(m_maxClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
     for (int i = 0; i < API_ICorJitInfo_Names::API_COUNT; i++)
     {
         m_perClrAPIcalls[i]  = 0;
@@ -7806,7 +7806,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
                 extraHdr2);
 
         // Ensure that at least the names array and the Phases enum have the same number of entries:
-        assert(_countof(PhaseNames) == PHASE_NUMBER_OF);
+        assert(MINIPAL_LENGTHOF(PhaseNames) == PHASE_NUMBER_OF);
         for (int i = 0; i < PHASE_NUMBER_OF; i++)
         {
             double phase_tot_ms = (((double)m_total.m_cyclesByPhase[i]) / countsPerSec) * 1000.0;
@@ -7869,7 +7869,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
         fprintf(f, "     PHASE                            inv/meth Mcycles    time (ms)  %% of total\n");
         fprintf(f, "     --------------------------------------------------------------------------------------\n");
         // Ensure that at least the names array and the Phases enum have the same number of entries:
-        assert(_countof(PhaseNames) == PHASE_NUMBER_OF);
+        assert(MINIPAL_LENGTHOF(PhaseNames) == PHASE_NUMBER_OF);
         for (int i = 0; i < PHASE_NUMBER_OF; i++)
         {
             double phase_tot_ms = (((double)m_filtered.m_cyclesByPhase[i]) / countsPerSec) * 1000.0;

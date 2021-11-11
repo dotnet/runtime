@@ -136,7 +136,7 @@ public: // IConnectionPoint
         if (pUnkSink == nullptr || pdwCookie == nullptr)
             return E_POINTER;
 
-        for (DWORD i = 0; i < ARRAYSIZE(_eventConnections); ++i)
+        for (DWORD i = 0; i < MINIPAL_LENGTHOF(_eventConnections); ++i)
         {
             if (_eventConnections[i] == nullptr)
             {
@@ -156,7 +156,7 @@ public: // IConnectionPoint
     virtual HRESULT STDMETHODCALLTYPE Unadvise( 
         /* [in] */ DWORD dwCookie)
     {
-        if (0 <= dwCookie && dwCookie < ARRAYSIZE(_eventConnections))
+        if (0 <= dwCookie && dwCookie < MINIPAL_LENGTHOF(_eventConnections))
         {
             IDispatch *handler = _eventConnections[dwCookie];
             if (handler != nullptr)
@@ -186,7 +186,7 @@ private:
         arg.vt = VT_BSTR;
         arg.bstrVal = TP_SysAllocString(Names[dispId]);
 
-        for (DWORD i = 0; i < ARRAYSIZE(_eventConnections); ++i)
+        for (DWORD i = 0; i < MINIPAL_LENGTHOF(_eventConnections); ++i)
         {
             IDispatch *handler = _eventConnections[i];
             if (handler != nullptr)
@@ -233,4 +233,4 @@ const WCHAR * const EventTesting::Names[] =
     W("FireEvent"),
 };
 
-const int EventTesting::NamesCount = ARRAYSIZE(EventTesting::Names);
+const int EventTesting::NamesCount = MINIPAL_LENGTHOF(EventTesting::Names);

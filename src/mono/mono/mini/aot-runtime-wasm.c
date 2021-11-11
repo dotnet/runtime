@@ -108,7 +108,7 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 	}
 	cookie [c_count] = 0;
 
-	void *p = bsearch (cookie, interp_to_native_signatures, G_N_ELEMENTS (interp_to_native_signatures), sizeof (gpointer), compare_icall_tramp);
+	void *p = bsearch (cookie, interp_to_native_signatures, MINIPAL_LENGTHOF (interp_to_native_signatures), sizeof (gpointer), compare_icall_tramp);
 	if (!p)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
 	int idx = (const char**)p - (const char**)interp_to_native_signatures;

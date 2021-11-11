@@ -30,7 +30,7 @@ inline void DoWStrTest_vswprintf_s(const WCHAR *formatstr, WCHAR *param, const W
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, param);
+    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
 
     if (memcmp(buf, checkstr, wcslen(buf) * 2 + 2) != 0)
     {
@@ -46,7 +46,7 @@ inline void DoStrTest_vswprintf_s(const WCHAR *formatstr, char *param, const WCH
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, param);
+    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
 
     if (memcmp(buf, checkstr, wcslen(buf) * 2 + 2) != 0)
     {
@@ -62,7 +62,7 @@ inline void DoCharTest_vswprintf_s(const WCHAR *formatstr, char param, const WCH
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, param);
+    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
     if (memcmp(buf, checkstr, wcslen(buf)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert char \'%c\' (%d) into \"%s\"\n"
@@ -77,7 +77,7 @@ inline void DoWCharTest_vswprintf_s(const WCHAR *formatstr, WCHAR param, const W
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, param);
+    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, param);
     if (memcmp(buf, checkstr, wcslen(buf)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide char \'%c\' (%d) into \"%s\"\n"
@@ -92,7 +92,7 @@ inline void DoNumTest_vswprintf_s(const WCHAR *formatstr, int value, const WCHAR
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, value);
+    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, value);
     if (memcmp(buf, checkstr, wcslen(buf)* 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert %#x into \"%s\"\n"
@@ -106,7 +106,7 @@ inline void DoI64NumTest_vswprintf_s(const WCHAR *formatstr, INT64 value, char *
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, value);
+    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, value);
     if (memcmp(buf, checkstr, wcslen(buf)* 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -121,7 +121,7 @@ inline void DoDoubleTest_vswprintf_s(const WCHAR *formatstr, double value, const
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, value);
+    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, value);
     if (memcmp(buf, checkstr1, wcslen(checkstr1) + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2) + 2) != 0)
     {

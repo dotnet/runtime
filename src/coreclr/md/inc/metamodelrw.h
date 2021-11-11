@@ -24,6 +24,8 @@
 #include "../heaps/export.h"
 #include "../tables/export.h"
 
+#include<minipal/utils.h>
+
 struct HENUMInternal;
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
 struct IMDCustomDataSource;
@@ -950,7 +952,7 @@ public:
     HRESULT GetGenericParamsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, MINIPAL_LENGTHOF(mdtTypeOrMethodDef)),
             m_pVS[TBL_GenericParam], pRidStart, pRidEnd);
     }
 
@@ -965,7 +967,7 @@ public:
     HRESULT GetMethodSpecsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, lengthof(mdtMethodDefOrRef)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, MINIPAL_LENGTHOF(mdtMethodDefOrRef)),
             m_pVS[TBL_MethodSpec], pRidStart, pRidEnd);
     }
 
@@ -973,7 +975,7 @@ public:
     HRESULT GetDeclSecurityForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, lengthof(mdtHasDeclSecurity)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, MINIPAL_LENGTHOF(mdtHasDeclSecurity)),
             m_pVS[TBL_DeclSecurity],
             pRidStart,
             pRidEnd);
@@ -983,7 +985,7 @@ public:
     HRESULT GetCustomAttributeForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, lengthof(mdtHasCustomAttribute)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, MINIPAL_LENGTHOF(mdtHasCustomAttribute)),
             m_pVS[TBL_CustomAttribute],
             pRidStart,
             pRidEnd);

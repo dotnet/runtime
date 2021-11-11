@@ -533,7 +533,7 @@ void CoreLibBinder::Check()
 
     MethodTable * pMT = NULL;
 
-    for (unsigned i = 0; i < NumItems(OffsetsAndSizes); i++)
+    for (unsigned i = 0; i < MINIPAL_LENGTHOF(OffsetsAndSizes); i++)
     {
         const OffsetAndSizeCheck * p = OffsetsAndSizes + i;
 
@@ -822,11 +822,11 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 }
                 else if (argType == ELEMENT_TYPE_I4)
                 {
-                    bSigError = !IsStrInArray(pUnmanagedArg, len, aInt32Type, NumItems(aInt32Type));
+                    bSigError = !IsStrInArray(pUnmanagedArg, len, aInt32Type, MINIPAL_LENGTHOF(aInt32Type));
                 }
                 else if (argType == ELEMENT_TYPE_U4)
                 {
-                    bSigError = !IsStrInArray(pUnmanagedArg, len, aUInt32Type, NumItems(aUInt32Type));
+                    bSigError = !IsStrInArray(pUnmanagedArg, len, aUInt32Type, MINIPAL_LENGTHOF(aUInt32Type));
                 }
                 else if (argType == ELEMENT_TYPE_VALUETYPE)
                 {
@@ -835,7 +835,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 }
                 else
                 {
-                    bSigError = IsStrInArray(pUnmanagedArg, len, aType, NumItems(aType));
+                    bSigError = IsStrInArray(pUnmanagedArg, len, aType, MINIPAL_LENGTHOF(aType));
                 }
                 if (bSigError)
                 {

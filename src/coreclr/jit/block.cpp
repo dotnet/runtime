@@ -720,8 +720,9 @@ const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
     static int  nextBufferIndex = 0;
 
     auto& buffer    = buffers[nextBufferIndex];
-    nextBufferIndex = (nextBufferIndex + 1) % _countof(buffers);
-    _snprintf_s(buffer, _countof(buffer), _countof(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
+    nextBufferIndex = (nextBufferIndex + 1) % MINIPAL_LENGTHOF(buffers);
+    _snprintf_s(buffer, MINIPAL_LENGTHOF(buffer), MINIPAL_LENGTHOF(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding,
+                "", bbID);
     return buffer;
 }
 

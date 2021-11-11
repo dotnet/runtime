@@ -819,7 +819,7 @@ int LinearScan::BuildNode(GenTree* tree)
         default:
 #ifdef DEBUG
             char message[256];
-            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
+            _snprintf_s(message, MINIPAL_LENGTHOF(message), _TRUNCATE, "NYI: Unimplemented node type %s",
                         GenTree::OpName(tree->OperGet()));
             NYIRAW(message);
 #endif

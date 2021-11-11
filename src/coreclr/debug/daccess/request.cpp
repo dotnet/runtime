@@ -631,7 +631,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_e
     if (callerFrame)
         regNum = -regNum-1;
 
-    if ((unsigned int)regNum >= _countof(regs))
+    if ((unsigned int)regNum >= MINIPAL_LENGTHOF(regs))
         return E_UNEXPECTED;
 
 
@@ -1371,8 +1371,8 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
             {
                 WCHAR path[MAX_LONGPATH];
                 COUNT_T nChars = 0;
-                if (pModule->GetPath().DacGetUnicode(NumItems(path), path, &nChars) &&
-                    nChars > 0 && nChars <= NumItems(path))
+                if (pModule->GetPath().DacGetUnicode(MINIPAL_LENGTHOF(path), path, &nChars) &&
+                    nChars > 0 && nChars <= MINIPAL_LENGTHOF(path))
                 {
                     WCHAR* pFile = path + nChars - 1;
                     while ((pFile >= path) && (*pFile != W('\\')))
@@ -3274,7 +3274,7 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 #endif // FEATURE_COMINTEROP
                             };
 
-    return GetHandleEnumForTypes(types, _countof(types), ppHandleEnum);
+    return GetHandleEnumForTypes(types, MINIPAL_LENGTHOF(types), ppHandleEnum);
 }
 
 HRESULT ClrDataAccess::GetHandleEnumForTypes(unsigned int types[], unsigned int count, ISOSHandleEnum **ppHandleEnum)
@@ -3317,7 +3317,7 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 
     DacHandleWalker *walker = new DacHandleWalker();
 
-    HRESULT hr = walker->Init(this, types, _countof(types), gen);
+    HRESULT hr = walker->Init(this, types, MINIPAL_LENGTHOF(types), gen);
     if (SUCCEEDED(hr))
         hr = walker->QueryInterface(__uuidof(ISOSHandleEnum), (void**)ppHandleEnum);
 

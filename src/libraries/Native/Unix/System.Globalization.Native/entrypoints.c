@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 
 typedef uint16_t UChar;
 
@@ -16,6 +16,7 @@ typedef uint16_t UChar;
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
+#include <minipal/utils.h>
 
 static const Entry s_globalizationNative[] =
 {
@@ -64,5 +65,5 @@ EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_globalizationNative, lengthof(s_globalizationNative), name);
+    return minipal_resolve_dllimport(s_globalizationNative, MINIPAL_LENGTHOF(s_globalizationNative), name);
 }

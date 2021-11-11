@@ -23,6 +23,7 @@ typedef unsigned short char16_t;
 #include <pal_assert.h>
 #include <pal.h>
 #include <palprivate.h>
+#include <minipal/utils.h>
 
 #define PALTEST(testfunc, testname) \
  int __cdecl testfunc(int argc, char* argv[]); \
@@ -157,14 +158,11 @@ inline ULONG   VAL32(ULONG x)
 #define th_htons(w)  (((w) >> 8) | ((w) << 8))
 #endif  // BIGENDIAN
 
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-
 WCHAR* convert(const char * aString);
 char* convertC(const WCHAR * wString);
 UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency);
 
 extern const char* szTextFile;
-
 
 int
 mkAbsoluteFilename( LPSTR dirName,

@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <minipal/utils.h>
 
 #if defined(__GNUC__)
 #define EXPORT(type) extern "C" __attribute__((visibility("default"))) type
@@ -19,10 +20,6 @@
 #define __stdcall
 #endif  // !__i386__
 #endif // !defined(_MSC_VER)
-
-#ifndef _countof
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-#endif
 
 #ifdef _MSC_VER
 #define CALLBACK __stdcall
@@ -254,7 +251,7 @@ EXPORT(void) __stdcall nativeCall_PInvoke_Vector3InComplexStruct(ComplexDT* arg)
     arg->v3.y = arg->v3.y + 1;
     arg->v3.z = arg->v3.z + 1;    
     arg->iv = arg->iv + 1;
-    snprintf(arg->str, _countof(arg->str), "%s", "ret_string");
+    snprintf(arg->str, MINIPAL_LENGTHOF(arg->str), "%s", "ret_string");
     
     printf("    Return ival: %d\n", arg->iv);
     printf("    Return Vector3 v1: (%f %f %f)\n", arg->vecs.a.x, arg->vecs.a.y, arg->vecs.a.z);
@@ -431,7 +428,7 @@ EXPORT(bool) __stdcall nativeCall_RPInvoke_Vector3InComplexStruct(
 {
     static ComplexDT cdt;
     cdt.iv = 99;
-    snprintf(cdt.str, _countof("arg_string"), "%s", "arg_string");
+    snprintf(cdt.str, MINIPAL_LENGTHOF("arg_string"), "%s", "arg_string");
     cdt.vecs.a.x = 1; cdt.vecs.a.y = 2; cdt.vecs.a.z = 3;
     cdt.vecs.b.x = 5; cdt.vecs.b.y = 6; cdt.vecs.b.z = 7;
     cdt.v3.x = 10; cdt.v3.y = 20; cdt.v3.z = 30;    

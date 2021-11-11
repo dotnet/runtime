@@ -2181,7 +2181,7 @@ void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const O
     OBJECTHANDLE rgStackHandles[HANDLE_HANDLES_PER_BLOCK];
     OBJECTHANDLE *pScratchBuffer  = rgStackHandles;
     OBJECTHANDLE *pLargeScratchBuffer  = NULL;
-    uint32_t     uFreeGranularity = _countof(rgStackHandles);
+    uint32_t     uFreeGranularity = MINIPAL_LENGTHOF(rgStackHandles);
 
     // if there are more handles than we can put on the stack then try to allocate a sorting buffer
     if (uCount > uFreeGranularity)

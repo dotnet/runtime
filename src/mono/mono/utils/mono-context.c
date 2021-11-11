@@ -649,8 +649,8 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #else
 	ucontext_t *uctx = sigctx;
 
-	memcpy (&mctx->gregs, &uctx->uc_mcontext.__gregs, sizeof (host_mgreg_t) * G_N_ELEMENTS (mctx->gregs));
-	memcpy (&mctx->fregs, &uctx->uc_mcontext.__fpregs, sizeof (double) * G_N_ELEMENTS (mctx->fregs));
+	memcpy (&mctx->gregs, &uctx->uc_mcontext.__gregs, sizeof (host_mgreg_t) * MINIPAL_LENGTHOF (mctx->gregs));
+	memcpy (&mctx->fregs, &uctx->uc_mcontext.__fpregs, sizeof (double) * MINIPAL_LENGTHOF (mctx->fregs));
 #endif
 }
 
@@ -662,8 +662,8 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #else
 	ucontext_t *uctx = sigctx;
 
-	memcpy (&uctx->uc_mcontext.__gregs, &mctx->gregs, sizeof (host_mgreg_t) * G_N_ELEMENTS (mctx->gregs));
-	memcpy (&uctx->uc_mcontext.__fpregs, &mctx->fregs, sizeof (double) * G_N_ELEMENTS (mctx->fregs));
+	memcpy (&uctx->uc_mcontext.__gregs, &mctx->gregs, sizeof (host_mgreg_t) * MINIPAL_LENGTHOF (mctx->gregs));
+	memcpy (&uctx->uc_mcontext.__fpregs, &mctx->fregs, sizeof (double) * MINIPAL_LENGTHOF (mctx->fregs));
 #endif
 }
 

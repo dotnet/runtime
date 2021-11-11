@@ -155,7 +155,7 @@ static int * EnsureResultSize(MetadataEnumResult * pResult, ULONG length)
 
     int * p;
 
-    if (length >= NumItems(pResult->smallResult) || DbgRandomOnExe(.01))
+    if (length >= MINIPAL_LENGTHOF(pResult->smallResult) || DbgRandomOnExe(.01))
     {
         pResult->largeResult = (I4Array *)OBJECTREFToObject(AllocatePrimitiveArray(ELEMENT_TYPE_I4, length));
         p = pResult->largeResult->GetDirectPointerToNonObjectElements();

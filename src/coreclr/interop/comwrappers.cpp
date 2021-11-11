@@ -4,6 +4,7 @@
 #include "comwrappers.hpp"
 #include <interoplibimports.h>
 #include <corerror.h>
+#include <minipal/utils.h>
 
 #ifdef _WIN32
 #include <new> // placement new
@@ -399,7 +400,7 @@ HRESULT ManagedObjectWrapper::Create(
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
     
-    _ASSERTE(runtimeDefinedCount <= (int) ARRAYSIZE(runtimeDefinedLocal));
+    _ASSERTE(runtimeDefinedCount <= (int) MINIPAL_LENGTHOF(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);
@@ -438,7 +439,7 @@ HRESULT ManagedObjectWrapper::Create(
         { userDefined, userDefinedCount }
     };
 
-    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, ARRAYSIZE(AllEntries), AllEntries);
+    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, MINIPAL_LENGTHOF(AllEntries), AllEntries);
 
     ManagedObjectWrapper* wrapper = new (wrapperMem) ManagedObjectWrapper
         {

@@ -5149,7 +5149,7 @@ void DumpCodeManager(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         WCHAR        rcguid[128];
         GUID         Guid = *pcm;
         SwapGuid(&Guid);
-        StringFromGUID2(Guid, rcguid, NumItems(rcguid));
+        StringFromGUID2(Guid, rcguid, MINIPAL_LENGTHOF(rcguid));
         sprintf_s(szString,SZSTRING_SIZE,"//   [0x%08x]    %S", i, rcguid);
         printLine(GUICookie,szStr);
         pcm++;

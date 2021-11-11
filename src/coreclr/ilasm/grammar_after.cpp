@@ -60,14 +60,14 @@ static Keywords keywords[] = {
 #define NEW_INLINE_NAMES
                 // The volatile instruction collides with the volatile keyword, so
                 // we treat it as a keyword everywhere and modify the grammar accordingly (Yuck!)
-#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) { s, args, c, lengthof(s)-1 },
-#define OPALIAS(alias_c, s, c) { s, NO_VALUE, c, lengthof(s)-1 },
+#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) { s, args, c, MINIPAL_LENGTHOF(s)-1 },
+#define OPALIAS(alias_c, s, c) { s, NO_VALUE, c, MINIPAL_LENGTHOF(s)-1 },
 #include "opcode.def"
 #undef OPALIAS
 #undef OPDEF
 
                 /* keywords */
-#define KYWD(name, sym, val)    { name, sym, val, lengthof(name)-1 },
+#define KYWD(name, sym, val)    { name, sym, val, MINIPAL_LENGTHOF(name)-1 },
 #include "il_kywd.h"
 #undef KYWD
 

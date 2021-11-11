@@ -7165,7 +7165,7 @@ public:
         };
         // clang-format on
 
-        assert(m_code < _countof(names));
+        assert(m_code < MINIPAL_LENGTHOF(names));
         return names[m_code];
     }
 
@@ -7256,7 +7256,7 @@ public:
         };
         // clang-format on
 
-        assert(condition.m_code < _countof(reverse));
+        assert(condition.m_code < MINIPAL_LENGTHOF(reverse));
         return GenCondition(reverse[condition.m_code]);
     }
 
@@ -7273,7 +7273,7 @@ public:
         };
         // clang-format on
 
-        assert(condition.m_code < _countof(swap));
+        assert(condition.m_code < MINIPAL_LENGTHOF(swap));
         return GenCondition(swap[condition.m_code]);
     }
 };

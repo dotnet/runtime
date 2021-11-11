@@ -7,6 +7,6 @@
 using StringType = BSTR;
 using Tests = BStrMarshalingTests<TP_SysStringByteLen, char, CoreClrBStrAlloc>;
 
-#define FUNCTION_NAME CoreClrBStrAlloc(__func__, ARRAYSIZE(__func__) - 1)
+#define FUNCTION_NAME CoreClrBStrAlloc(__func__, MINIPAL_LENGTHOF(__func__) - 1)
 
 #include "../Native/StringTestEntrypoints.inl"

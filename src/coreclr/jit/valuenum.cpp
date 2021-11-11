@@ -6286,7 +6286,7 @@ void ValueNumStore::InitValueNumStoreStatics()
 
 #undef ValueNumFuncSetArity
 
-    for (unsigned i = 0; i < _countof(genTreeOpsIllegalAsVNFunc); i++)
+    for (unsigned i = 0; i < MINIPAL_LENGTHOF(genTreeOpsIllegalAsVNFunc); i++)
     {
         vnfOpAttribs[genTreeOpsIllegalAsVNFunc[i]] |= VNFOA_IllegalGenTreeOp;
     }

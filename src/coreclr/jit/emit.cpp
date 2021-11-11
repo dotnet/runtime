@@ -115,7 +115,7 @@ const char* emitter::emitIfName(unsigned f)
 
     static char errBuff[32];
 
-    if (f < _countof(ifNames))
+    if (f < MINIPAL_LENGTHOF(ifNames))
     {
         return ifNames[f];
     }
@@ -3348,7 +3348,7 @@ const BYTE emitter::emitFmtToOps[] = {
 };
 
 #ifdef DEBUG
-const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
+const unsigned emitter::emitFmtCount = MINIPAL_LENGTHOF(emitFmtToOps);
 #endif
 
 //------------------------------------------------------------------------
@@ -7233,7 +7233,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
     {
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, _countof(label), "RWD%02u", offset);
+        sprintf_s(label, MINIPAL_LENGTHOF(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
 

@@ -437,7 +437,7 @@ static int
 perfctr_type_compress (int type)
 {
 	int i;
-	for (i = 0; i < G_N_ELEMENTS (simple_type_to_type); ++i) {
+	for (i = 0; i < MINIPAL_LENGTHOF (simple_type_to_type); ++i) {
 		if (simple_type_to_type [i] == type)
 			return i;
 	}

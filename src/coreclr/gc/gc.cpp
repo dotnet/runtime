@@ -490,7 +490,7 @@ void log_va_msg(const char *fmt, va_list args)
     {
         char index_str[8];
         memset (index_str, '-', 8);
-        sprintf_s (index_str, _countof(index_str), "%d", (int)gc_buffer_index);
+        sprintf_s (index_str, MINIPAL_LENGTHOF(index_str), "%d", (int)gc_buffer_index);
         gc_log_buffer[gc_log_buffer_offset] = '\n';
         memcpy (gc_log_buffer + (gc_log_buffer_offset + 1), index_str, 8);
 
@@ -9920,7 +9920,7 @@ size_t gc_heap::sort_mark_list()
 
 #ifdef WRITE_SORT_DATA
     char file_name[256];
-    sprintf_s (file_name, _countof(file_name), "sort_data_gc%d_heap%d", settings.gc_index, heap_number);
+    sprintf_s (file_name, MINIPAL_LENGTHOF(file_name), "sort_data_gc%d_heap%d", settings.gc_index, heap_number);
 
     FILE* f;
     errno_t err = fopen_s (&f, file_name, "wb");

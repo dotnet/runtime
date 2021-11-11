@@ -16,7 +16,7 @@ namespace
         PathBuffer()
             : DefBuffer{}
             , Buf{ DefBuffer }
-            , Len{ ARRAYSIZE(DefBuffer) }
+            , Len{ MINIPAL_LENGTHOF(DefBuffer) }
         { }
 
         void SetLength(_In_ DWORD len)
@@ -277,7 +277,7 @@ HRESULT coreclr::CreateTpaList(_Inout_ std::string &tpaList, _In_opt_z_ const WC
 
         // Walk the directory for each extension separately so assembly types
         // are discovered in priority order - see above.
-        for (int extIndex = 0; extIndex < ARRAYSIZE(tpaExtensions); extIndex++)
+        for (int extIndex = 0; extIndex < MINIPAL_LENGTHOF(tpaExtensions); extIndex++)
         {
             const WCHAR* ext = tpaExtensions[extIndex];
             size_t extLength = ::wcslen(ext);

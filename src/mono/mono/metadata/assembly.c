@@ -46,7 +46,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
-#include <common/getexepath.h>
+#include <minipal/getexepath.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -837,7 +837,7 @@ static void
 remap_keys (MonoAssemblyName *aname)
 {
 	int i;
-	for (i = 0; i < G_N_ELEMENTS (key_remap_table); i++) {
+	for (i = 0; i < MINIPAL_LENGTHOF (key_remap_table); i++) {
 		const KeyRemapEntry *entry = &key_remap_table [i];
 
 		if (strcmp (aname->name, entry->name) ||

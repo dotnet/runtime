@@ -106,7 +106,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 
 	for (l = regs; l; l = l->next) {
 		int regnum = GPOINTER_TO_INT (l->data);
-		g_assert (regnum < G_N_ELEMENTS (gains));
+		g_assert (regnum < MINIPAL_LENGTHOF (gains));
 		gains [regnum] = 0;
 	}
 

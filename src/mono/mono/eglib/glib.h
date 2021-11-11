@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <eglib-config.h>
+#include <minipal/utils.h>
 
 // - Pointers should only be converted to or from pointer-sized integers.
 // - Any size integer can be converted to any other size integer.
@@ -206,10 +207,9 @@ typedef guint32 gunichar;
 /*
  * Macros
  */
-#define G_N_ELEMENTS(s)      (sizeof(s) / sizeof ((s) [0]))
 
 // e.g. strncmp (foo, G_STRING_CONSTANT_AND_LENGTH ("version"))
-#define G_STRING_CONSTANT_AND_LENGTH(x) (x), G_N_ELEMENTS (x) - 1
+#define G_STRING_CONSTANT_AND_LENGTH(x) (x), MINIPAL_LENGTHOF (x) - 1
 
 #define FALSE                0
 #define TRUE                 1

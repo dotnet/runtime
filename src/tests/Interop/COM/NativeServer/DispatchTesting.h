@@ -278,13 +278,13 @@ private:
         __int64 *l_args[2];
         unsigned __int64 *ul_args[2];
         size_t expectedArgCount =
-            ARRAYSIZE(b_args)
-            + ARRAYSIZE(s_args)
-            + ARRAYSIZE(us_args)
-            + ARRAYSIZE(i_args)
-            + ARRAYSIZE(ui_args)
-            + ARRAYSIZE(l_args)
-            + ARRAYSIZE(ul_args);
+            MINIPAL_LENGTHOF(b_args)
+            + MINIPAL_LENGTHOF(s_args)
+            + MINIPAL_LENGTHOF(us_args)
+            + MINIPAL_LENGTHOF(i_args)
+            + MINIPAL_LENGTHOF(ui_args)
+            + MINIPAL_LENGTHOF(l_args)
+            + MINIPAL_LENGTHOF(ul_args);
         RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
 
         VARENUM currType;
@@ -371,7 +371,7 @@ private:
         HRESULT hr;
 
         float *args[2];
-        size_t expectedArgCount = ARRAYSIZE(args);
+        size_t expectedArgCount = MINIPAL_LENGTHOF(args);
         RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
 
         if (pVarResult == nullptr)
@@ -401,7 +401,7 @@ private:
         HRESULT hr;
 
         double *args[2];
-        size_t expectedArgCount = ARRAYSIZE(args);
+        size_t expectedArgCount = MINIPAL_LENGTHOF(args);
         RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
 
         if (pVarResult == nullptr)
@@ -434,7 +434,7 @@ private:
         HRESULT hr;
 
         int *args[2];
-        size_t expectedArgCount = ARRAYSIZE(args);
+        size_t expectedArgCount = MINIPAL_LENGTHOF(args);
         RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
 
         VARENUM currType;
@@ -461,8 +461,8 @@ private:
             *puArgErr = 1;
             pExcepInfo->scode = HRESULT_FROM_WIN32(*args[1]);
 
-            WCHAR buffer[ARRAYSIZE(W("4294967295"))];
-            _snwprintf_s(buffer, ARRAYSIZE(buffer), _TRUNCATE, W("%x"), *args[1]);
+            WCHAR buffer[MINIPAL_LENGTHOF(W("4294967295"))];
+            _snwprintf_s(buffer, MINIPAL_LENGTHOF(buffer), _TRUNCATE, W("%x"), *args[1]);
             pExcepInfo->bstrDescription = SysAllocString(buffer);
         }
 
@@ -474,7 +474,7 @@ private:
         HRESULT hr;
 
         HFA_4 *args[1];
-        size_t expectedArgCount = ARRAYSIZE(args);
+        size_t expectedArgCount = MINIPAL_LENGTHOF(args);
         RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
 
         VARENUM currType;
@@ -523,4 +523,4 @@ const WCHAR * const DispatchTesting::Names[] =
     W("ExplicitGetEnumerator")
 };
 
-const int DispatchTesting::NamesCount = ARRAYSIZE(DispatchTesting::Names);
+const int DispatchTesting::NamesCount = MINIPAL_LENGTHOF(DispatchTesting::Names);

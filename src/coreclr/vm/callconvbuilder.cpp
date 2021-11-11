@@ -60,7 +60,7 @@ namespace
     {
 #define BASE_CALL_CONV(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
-        lengthof(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
+        MINIPAL_LENGTHOF(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
         CorInfoCallConvExtension::flag, \
         BeginsWith },
 
@@ -73,7 +73,7 @@ namespace
     {
 #define BASE_CALL_CONV(name, flag) { \
         name, \
-        lengthof(name) - 1, \
+        MINIPAL_LENGTHOF(name) - 1, \
         CorInfoCallConvExtension::flag, \
         Equals },
 
@@ -86,7 +86,7 @@ namespace
     {
 #define CALL_CONV_MODIFIER(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
-        lengthof(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
+        MINIPAL_LENGTHOF(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
         CallConvBuilder::flag, \
         BeginsWith },
 
@@ -99,7 +99,7 @@ namespace
     {
 #define CALL_CONV_MODIFIER(name, flag) { \
         name, \
-        lengthof(name) - 1, \
+        MINIPAL_LENGTHOF(name) - 1, \
         CallConvBuilder::flag, \
         Equals },
 
@@ -523,7 +523,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
         NULL,
         0,
         namedArgs,
-        lengthof(namedArgs),
+        MINIPAL_LENGTHOF(namedArgs),
         domainAssembly));
 
     // If the value isn't defined, then return without setting anything.

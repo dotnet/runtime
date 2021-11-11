@@ -1456,14 +1456,14 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 
 					// DAC module should be in the same directory as the
 					// main executable.
-					GetModuleFileNameW (NULL, buffer, G_N_ELEMENTS(buffer));
+					GetModuleFileNameW (NULL, buffer, MINIPAL_LENGTHOF(buffer));
 					path = wcsrchr (buffer, TEXT('\\'));
 					if (path != NULL) {
 						path++;
 						*path = TEXT('\0');
 					}
 
-					wcscat_s (buffer, G_N_ELEMENTS(buffer), MONO_DAC_MODULE);
+					wcscat_s (buffer, MINIPAL_LENGTHOF(buffer), MONO_DAC_MODULE);
 					path = buffer;
 
 					// Register function table callback + out of proc module.
