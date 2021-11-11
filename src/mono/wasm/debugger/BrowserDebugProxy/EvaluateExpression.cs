@@ -36,7 +36,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             private int visitCount;
             public bool hasMethodCalls;
             public bool hasElementAccesses;
-            internal StringBuilder variableDefinition = new StringBuilder();
+            internal List<string> variableDefinitions = new List<string>();
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -143,7 +143,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return SyntaxFactory.IdentifierName(id_name);
                 });
 
-                var paramsSet = new HashSet<string>();
+                var localsSet = new HashSet<string>();
 
                 // 2. For every unique member ref, add a corresponding method param
                 if (ma_values != null)
@@ -156,7 +156,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
                         }
                         memberAccessValues[id_name] = value;
-                        root = CreateNAssingVariableForExpression(id_name, value);
+                        AddLocalVariableWithValue(id_name, value);
                     }
                 }
 
@@ -164,7 +164,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     foreach ((IdentifierNameSyntax idns, JObject value) in identifiers.Zip(id_values))
                     {
-                        root = CreateNAssingVariableForExpression(idns.Identifier.Text, value);
+                        AddLocalVariableWithValue(idns.Identifier.Text, value);
                     }
                 }
 
@@ -177,7 +177,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
                         }
-                        root = CreateNAssingVariableForExpression(id_name, value);
+                        AddLocalVariableWithValue(id_name, value);
                     }
                 }
 
@@ -190,28 +190,28 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             throw new Exception($"BUG: Expected to find an id name for the element access string: {node_str}");
                         }
-                        root = CreateNAssingVariableForExpression(id_name, value);
+                        AddLocalVariableWithValue(id_name, value);
                     }
                 }
 
                 return syntaxTree.WithRootAndOptions(root, syntaxTree.Options);
 
-                CompilationUnitSyntax CreateNAssingVariableForExpression(string id_name, JObject value)
+                void AddLocalVariableWithValue(string idName, JObject value)
                 {
-                    if (paramsSet.Contains(id_name))
+                    if (localsSet.Contains(idName))
                     {
                         // repeated member access expression
                         // eg. this.a + this.a
-                        return root;
                     }
-                    paramsSet.Add(id_name);
-                    variableDefinition.Append($"{GetTypeFullName(value)} {id_name} = {ConvertJSToCSharpType(value)};\n");
-                    return root;
+                    localsSet.Add(idName);
+                    variableDefinitions.Add(ConvertJSToCSharpVariable(idName, value));
                 }
             }
 
-            private object ConvertJSToCSharpType(JToken variable)
+            private string ConvertJSToCSharpVariable(string idName, JToken variable)
             {
+                string typeRet;
+                object valueRet;
                 JToken value = variable["value"];
                 string type = variable["type"].Value<string>();
                 string subType = variable["subtype"]?.Value<string>();
@@ -222,50 +222,53 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var str = value?.Value<string>();
                         str = str.Replace("\"", "\\\"");
-                        return $"\"{str}\"";
+                        valueRet = $"\"{str}\"";
+                        break;
                     }
                     case "number":
-                        return value?.Value<double>();
+                        valueRet = value?.Value<double>();
+                        break;
                     case "boolean":
-                        return value?.Value<string>().ToLower();
+                        valueRet = value?.Value<string>().ToLower();
+                        break;
                     case "object":
-                    {
-                        return "Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                        valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
                             + $"type = \"{type}\""
                             + $", description = \"{variable["description"].Value<string>()}\""
                             + $", className = \"{variable["className"].Value<string>()}\""
                             + (subType != null ? $", subtype = \"{subType}\"" : "")
                             + (objectId != null ? $", objectId = \"{objectId}\"" : "")
                             + "})";
-                    }
+                        break;
                     case "void":
-                        return "Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                        valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
                                 + $"type = \"object\","
                                 + $"description = \"object\","
                                 + $"className = \"object\","
                                 + $"subtype = \"null\""
                                 + "})";
+                        break;
+                    default:
+                        throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
                 }
-                throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
-            }
-
-            private string GetTypeFullName(JToken variable)
-            {
-                string type = variable["type"].ToString();
-                object value = ConvertJSToCSharpType(variable);
 
                 switch (type)
                 {
                     case "object":
-                        return "object";
+                        typeRet = "object";
+                        break;
                     case "void":
-                        return "object";
+                        typeRet = "object";
+                        break;
                     case "boolean":
-                        return "System.Boolean";
+                        typeRet = "System.Boolean";
+                        break;
                     default:
-                        return value.GetType().FullName;
+                        typeRet = valueRet.GetType().FullName;
+                        break;
                 }
-                throw new ReturnAsErrorException($"GetTypefullName: Evaluate of this datatype {type} not implemented yet", "Unsupported");
+
+                return $"{typeRet} {idName} = {valueRet};";
             }
         }
 
@@ -397,7 +400,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             try {
                 var result = await CSharpScript.EvaluateAsync(
-                    findVarNMethodCall.variableDefinition + "return " + syntaxTree.ToString(),
+                    string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString(),
                     ScriptOptions.Default.WithReferences(
                         typeof(object).Assembly,
                         typeof(Enumerable).Assembly,
@@ -408,7 +411,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception)
             {
-                Console.WriteLine(findVarNMethodCall.variableDefinition + "return " + syntaxTree.ToString());
+                Console.WriteLine(string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
                 throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
             }
         }
