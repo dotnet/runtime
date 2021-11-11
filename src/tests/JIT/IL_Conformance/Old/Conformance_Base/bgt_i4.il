@@ -299,4 +299,4 @@ FAIL:
 	ret
 }
 }
-.assembly bgt_i4.exe{}
+.assembly bgt_i4{}
