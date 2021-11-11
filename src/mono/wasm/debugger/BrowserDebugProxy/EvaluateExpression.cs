@@ -12,8 +12,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -32,6 +34,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             private int visitCount;
             public bool hasMethodCalls;
             public bool hasElementAccesses;
+            internal string variableDefinition;
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -193,9 +196,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 CompilationUnitSyntax UpdateWithNewMethodParam(CompilationUnitSyntax root, string id_name, JObject value)
                 {
-                    var classDeclaration = root.Members.ElementAt(0) as ClassDeclarationSyntax;
-                    var method = classDeclaration.Members.ElementAt(0) as MethodDeclarationSyntax;
-
                     if (paramsSet.Contains(id_name))
                     {
                         // repeated member access expression
@@ -203,16 +203,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return root;
                     }
 
-                    argValues.Add(ConvertJSToCSharpType(value));
-
-                    MethodDeclarationSyntax updatedMethod = method.AddParameterListParameters(
-                        SyntaxFactory.Parameter(
-                            SyntaxFactory.Identifier(id_name))
-                            .WithType(SyntaxFactory.ParseTypeName(GetTypeFullName(value))));
-
-                    paramsSet.Add(id_name);
-                    root = root.ReplaceNode(method, updatedMethod);
-
+                    variableDefinition += $"{GetTypeFullName(value)} {id_name} = {ConvertJSToCSharpType(value)};\n";
                     return root;
                 }
             }
@@ -226,7 +217,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (type)
                 {
                     case "string":
-                        return value?.Value<string>();
+                        return $"\"{value?.Value<string>()}\"";
                     case "number":
                         return value?.Value<double>();
                     case "boolean":
@@ -266,13 +257,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static SyntaxNode GetExpressionFromSyntaxTree(SyntaxTree syntaxTree)
         {
             CompilationUnitSyntax root = syntaxTree.GetCompilationUnitRoot();
-            ClassDeclarationSyntax classDeclaration = root.Members.ElementAt(0) as ClassDeclarationSyntax;
-            MethodDeclarationSyntax methodDeclaration = classDeclaration.Members.ElementAt(0) as MethodDeclarationSyntax;
-            BlockSyntax blockValue = methodDeclaration.Body;
-            ReturnStatementSyntax returnValue = blockValue.Statements.ElementAt(0) as ReturnStatementSyntax;
-            ParenthesizedExpressionSyntax expressionParenthesized = returnValue.Expression as ParenthesizedExpressionSyntax;
 
-            return expressionParenthesized?.Expression;
+            return root;
         }
 
         private static async Task<IList<JObject>> ResolveMemberAccessExpressions(IEnumerable<MemberAccessExpressionSyntax> member_accesses,
@@ -335,8 +321,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
-        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
-            Justification = "Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/51202")]
         internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
         {
             expression = expression.Trim();
@@ -344,23 +328,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 expression = "(" + expression + ")";
             }
-            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(@"
-                using System;
-                public class CompileAndRunTheExpression
-                {
-                    public static object Evaluate()
-                    {
-                        return " + expression + @";
-                    }
-                }", cancellationToken: token);
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(expression + @";", cancellationToken: token);
 
             SyntaxNode expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
-
             FindVariableNMethodCall findVarNMethodCall = new FindVariableNMethodCall();
             findVarNMethodCall.VisitInternal(expressionTree);
-
             // this fails with `"a)"`
             // because the code becomes: return (a));
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
@@ -413,45 +387,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
-            MetadataReference[] references = new MetadataReference[]
-            {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location)
-            };
-
-            CSharpCompilation compilation = CSharpCompilation.Create(
-                "compileAndRunTheExpression",
-                syntaxTrees: new[] { syntaxTree },
-                references: references,
-                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-            SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-            CodeAnalysis.TypeInfo TypeInfo = semanticModel.GetTypeInfo(expressionTree, cancellationToken: token);
-
-            using (var ms = new MemoryStream())
-            {
-                EmitResult result = compilation.Emit(ms, cancellationToken: token);
-                if (!result.Success)
-                {
-                    var sb = new StringBuilder();
-                    foreach (Diagnostic d in result.Diagnostics)
-                        sb.Append(d.ToString());
-
-                    throw new ReturnAsErrorException(sb.ToString(), "CompilationError");
-                }
-
-                ms.Seek(0, SeekOrigin.Begin);
-                Assembly assembly = Assembly.Load(ms.ToArray());
-                Type type = assembly.GetType("CompileAndRunTheExpression");
-
-                object ret = type.InvokeMember("Evaluate",
-                    BindingFlags.InvokeMethod | BindingFlags.Static | BindingFlags.Public,
-                    null,
-                    null,
-                    findVarNMethodCall.argValues.ToArray());
-
-                return JObject.FromObject(ConvertCSharpToJSType(ret, TypeInfo.Type));
-            }
+            var task = CSharpScript.EvaluateAsync(
+                findVarNMethodCall.variableDefinition + "return " + syntaxTree.ToString(),
+                ScriptOptions.Default.WithReferences(
+                    typeof(object).Assembly,
+                    typeof(Enumerable).Assembly
+                    ),
+                cancellationToken: token);
+            return JObject.FromObject(ConvertCSharpToJSType(task.Result, task.Result.GetType()));
         }
 
         private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
@@ -462,7 +405,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             typeof(float), typeof(double)
         };
 
-        private static object ConvertCSharpToJSType(object v, ITypeSymbol type)
+        private static object ConvertCSharpToJSType(object v, Type type)
         {
             if (v == null)
                 return new { type = "object", subtype = "null", className = type.ToString(), description = type.ToString() };
