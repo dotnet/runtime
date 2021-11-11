@@ -10050,7 +10050,8 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 #ifdef DEBUG
     if (validatePadding)
     {
-        unsigned paddingNeeded = emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG->igNext, (size_t)dst, true);
+        unsigned paddingNeeded =
+            emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG->igNext, (size_t)dst, true);
 
         // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
         if (emitComp->opts.compJitAlignLoopAdaptive)

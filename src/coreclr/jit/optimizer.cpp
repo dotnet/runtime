@@ -20,8 +20,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::optInit()
 {
-    optLoopsMarked     = false;
-    fgHasLoops         = false;
+    optLoopsMarked      = false;
+    fgHasLoops          = false;
     loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
@@ -29,7 +29,7 @@ void Compiler::optInit()
     optLoopTable = nullptr;
 
 #ifdef DEBUG
-    loopsAligned        = 0;
+    loopsAligned = 0;
 #endif
 
     /* Keep track of the number of calls and indirect calls made by this method */

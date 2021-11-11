@@ -1075,7 +1075,7 @@ void emitter::emitBegFN(bool hasFramePtr
     /* We don't have any align instructions */
 
     emitAlignList = emitAlignLastGroup = emitAlignLast = nullptr;
-    emitCurIGAlignList                                   = nullptr;
+    emitCurIGAlignList                                 = nullptr;
 #endif
 
     /* We have not recorded any live sets */
@@ -4867,7 +4867,7 @@ void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign)
         // For multiple align instructions, set the idaLoopHeadPredIG only for the
         // first align instruction
         id->idaLoopHeadPredIG = emitCurIG;
-        emitAlignLastGroup = id;
+        emitAlignLastGroup    = id;
     }
     else
     {
@@ -5275,7 +5275,7 @@ void emitter::emitLoopAlignAdjustments()
 
         insGroup* loopHeadPredIG = alignInstr->idaLoopHeadPredIG;
         insGroup* loopHeadIG     = alignInstr->loopHeadIG();
-        insGroup* containingIG = alignInstr->idaIG;
+        insGroup* containingIG   = alignInstr->idaIG;
 
         JITDUMP("  Adjusting 'align' instruction in IG%02u that is targeted for IG%02u \n", containingIG->igNum,
                 loopHeadIG->igNum);
@@ -5430,7 +5430,8 @@ void emitter::emitLoopAlignAdjustments()
 //     3b. If the loop already fits in minimum alignmentBoundary blocks, then return 0. // already best aligned
 //     3c. return paddingNeeded.
 //
-unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG, size_t offset DEBUG_ARG(bool isAlignAdjusted))
+unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
+                                                       size_t offset DEBUG_ARG(bool isAlignAdjusted))
 {
     unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
 
@@ -5578,7 +5579,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG, siz
 //                    align instructions are emitted, this method will skip the 'align' instruction present
 //                    in the same IG and return the first instruction that is present in next IG.
 //  Arguments:
-//      alignInstr - Current 'align' instruction for which next IG's first 'align' should be returned. 
+//      alignInstr - Current 'align' instruction for which next IG's first 'align' should be returned.
 //
 emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
 {

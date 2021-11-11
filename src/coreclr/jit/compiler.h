@@ -6872,13 +6872,13 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc*      optLoopTable;       // loop descriptor table
-    unsigned char optLoopCount;       // number of tracked loops
+    LoopDsc*      optLoopTable;        // loop descriptor table
+    unsigned char optLoopCount;        // number of tracked loops
     unsigned char loopAlignCandidates; // number of loops identified for alignment
 
 #ifdef DEBUG
-    unsigned char loopsAligned;        // number of loops actually aligned
-#endif                                 // DEBUG
+    unsigned char loopsAligned; // number of loops actually aligned
+#endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   top,
