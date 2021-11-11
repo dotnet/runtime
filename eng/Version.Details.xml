@@ -8,9 +8,9 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>a7213b4676c1803bb251771291a525482d42e511</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-alpha.1.21558.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-alpha.1.21560.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>dc2e6e52d5b1be78da00ef57eed69461badcc720</Sha>
+      <Sha>24412d4288fda1d3c9fed49a7961bb4c476c0ce6</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
@@ -202,33 +202,33 @@
       <Uri>https://github.com/dotnet/linker</Uri>
       <Sha>a5f8466cb452f50436544572e38ff5faa17e2094</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21558.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21561.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>6a2e0d8e1ed28e1209a887c77c951337ee9e9160</Sha>
+      <Sha>42da0d206c22393c081abc4b6a48a181e17bb372</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21558.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21561.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>6a2e0d8e1ed28e1209a887c77c951337ee9e9160</Sha>
+      <Sha>42da0d206c22393c081abc4b6a48a181e17bb372</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="7.0.0-beta.21559.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>fecf65bedcee9036b8ba9d8d7feef5413f294914</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21556.2">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21560.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>93aae682a468b3c7858d497da5cf79d8ac8eecdc</Sha>
+      <Sha>764df260bfcc87cdee8edd41bbbaadfffdedab1f</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.21556.2">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.21560.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>93aae682a468b3c7858d497da5cf79d8ac8eecdc</Sha>
+      <Sha>764df260bfcc87cdee8edd41bbbaadfffdedab1f</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21556.2">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21560.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>93aae682a468b3c7858d497da5cf79d8ac8eecdc</Sha>
+      <Sha>764df260bfcc87cdee8edd41bbbaadfffdedab1f</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21556.2">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21560.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>93aae682a468b3c7858d497da5cf79d8ac8eecdc</Sha>
+      <Sha>764df260bfcc87cdee8edd41bbbaadfffdedab1f</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.2-alpha.0.21558.2">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
