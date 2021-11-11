@@ -3,11 +3,11 @@
 ## This is a helper script for non-containerized local build and test execution.
 ## It downloads and uses the daily SDK which contains the compatible AspNetCore bits.
 ## Usage:
-## ./build-local.sh [configuration]
+## ./build-local.sh [Configuration]
 
 version=7.0
 repo_root=$(git rev-parse --show-toplevel)
-daily_dotnet_root=$repo_root/.dotnet-daily
+daily_dotnet_root=./.dotnet-daily
 
 configuration="Release"
 if [ "$1" != "" ]
@@ -16,16 +16,16 @@ then
     configuration=${configuration^} # Uppercase first character
 fi
 
-echo $configuration
+echo "Configuration: $configuration"
 
-if [ ! -d $daily_dotnet_root ]
+if [ ! -d $daily_dotnet_root ];
 then
+    echo "Downloading daily SDK to $daily_dotnet_root"
     mkdir $daily_dotnet_root
     wget https://dot.net/v1/dotnet-install.sh -O $daily_dotnet_root/dotnet-install.sh
-
-    # Unfortunately "--runtime aspnetcore" cannot be downloaded with "--quality daily",
-    # so we need to acquire the full SDK:
     bash $daily_dotnet_root/dotnet-install.sh --no-path --channel $version.1xx --quality daily --install-dir $daily_dotnet_root
+else
+    echo "Daily SDK found in $daily_dotnet_root"
 fi
 
 testhost_root=$repo_root/artifacts/bin/testhost/net$version-Linux-$configuration-x64
@@ -36,15 +36,22 @@ export DOTNET_MULTILEVEL_LOOKUP=0
 
 if [ ! -d "$testhost_root/shared/Microsoft.AspNetCore.App" ]
 then
+    echo "Copying Microsoft.AspNetCore.App bits from daily SDK to testhost: $testhost_root"
     cp -r $daily_dotnet_root/shared/Microsoft.AspNetCore.App $testhost_root/shared/Microsoft.AspNetCore.App
+else
+    echo "Microsoft.AspNetCore.App found in testhost: $testhost_root"
 fi
 
+echo "Building solution."
 dotnet build -c $configuration
 
+runscript=./run-stress-${configuration,,}.sh
+if [ ! -f $runscript ]
+then
+    echo "Generating runscript."
+    echo "$testhost_root/dotnet exec ./bin/$configuration/net$version/HttpStress.dll \$@" > $runscript
+    chmod +x $runscript
+fi
 
-
-# $env:DOTNET_ROOT=$candidate_path
-# $env:DOTNET_CLI_HOME=$candidate_path
-# $env:PATH=($candidate_path + $pathSeparator + $env:PATH)
-# $env:DOTNET_MULTILEVEL_LOOKUP=0
-# $env:DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX=2
+echo "To run tests type:"
+echo "$runscript [stress test args]"
