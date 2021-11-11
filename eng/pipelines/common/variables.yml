@@ -12,7 +12,7 @@ variables:
 - name: isOfficialBuild
   value: ${{ and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
 - name: isFullMatrix
-  value: ${{ or(in(variables['Build.DefinitionName'], 'manual-runtime-staging', 'manual-runtime-staging'), and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'))) }}
+  value: ${{ or(in(variables['Build.DefinitionName'], 'manual-runtime-staging', 'manual-runtime'), and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'))) }}
 - name: isNotFullMatrix
   value: ${{ and(not(in(variables['Build.DefinitionName'], 'manual-runtime-staging', 'manual-runtime')), eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
