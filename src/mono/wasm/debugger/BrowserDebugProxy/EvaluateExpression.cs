@@ -36,7 +36,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             private int visitCount;
             public bool hasMethodCalls;
             public bool hasElementAccesses;
-            internal string variableDefinition;
+            internal StringBuilder variableDefinition = new StringBuilder();
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -156,7 +156,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
                         }
                         memberAccessValues[id_name] = value;
-                        root = UpdateWithNewMethodParam(root, id_name, value);
+                        root = CreateNAssingVariableForExpression(id_name, value);
                     }
                 }
 
@@ -164,7 +164,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     foreach ((IdentifierNameSyntax idns, JObject value) in identifiers.Zip(id_values))
                     {
-                        root = UpdateWithNewMethodParam(root, idns.Identifier.Text, value);
+                        root = CreateNAssingVariableForExpression(idns.Identifier.Text, value);
                     }
                 }
 
@@ -177,7 +177,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
                         }
-                        root = UpdateWithNewMethodParam(root, id_name, value);
+                        root = CreateNAssingVariableForExpression(id_name, value);
                     }
                 }
 
@@ -190,13 +190,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             throw new Exception($"BUG: Expected to find an id name for the element access string: {node_str}");
                         }
-                        root = UpdateWithNewMethodParam(root, id_name, value);
+                        root = CreateNAssingVariableForExpression(id_name, value);
                     }
                 }
 
                 return syntaxTree.WithRootAndOptions(root, syntaxTree.Options);
 
-                CompilationUnitSyntax UpdateWithNewMethodParam(CompilationUnitSyntax root, string id_name, JObject value)
+                CompilationUnitSyntax CreateNAssingVariableForExpression(string id_name, JObject value)
                 {
                     if (paramsSet.Contains(id_name))
                     {
@@ -205,7 +205,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return root;
                     }
                     paramsSet.Add(id_name);
-                    variableDefinition += $"{GetTypeFullName(value)} {id_name} = {ConvertJSToCSharpType(value)};\n";
+                    variableDefinition.Append($"{GetTypeFullName(value)} {id_name} = {ConvertJSToCSharpType(value)};\n");
                     return root;
                 }
             }
@@ -219,7 +219,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (type)
                 {
                     case "string":
-                        return $"\"{value?.Value<string>()}\"";
+                    {
+                        var str = value?.Value<string>();
+                        str = str.Replace("\"", "\\\"");
+                        return $"\"{str}\"";
+                    }
                     case "number":
                         return value?.Value<double>();
                     case "boolean":
@@ -392,7 +396,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
             try {
-                var task = CSharpScript.EvaluateAsync(
+                var result = await CSharpScript.EvaluateAsync(
                     findVarNMethodCall.variableDefinition + "return " + syntaxTree.ToString(),
                     ScriptOptions.Default.WithReferences(
                         typeof(object).Assembly,
@@ -400,10 +404,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeof(JObject).Assembly
                         ),
                     cancellationToken: token);
-                return JObject.FromObject(ConvertCSharpToJSType(task.Result, task.Result.GetType()));
+                return JObject.FromObject(ConvertCSharpToJSType(result, result.GetType()));
             }
             catch (Exception)
             {
+                Console.WriteLine(findVarNMethodCall.variableDefinition + "return " + syntaxTree.ToString());
                 throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
             }
         }
