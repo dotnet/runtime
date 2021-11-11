@@ -378,6 +378,11 @@ namespace DebuggerTests
                 return str + parm;
             }
 
+            public string CallMethodWithParmString_λ(string parm)
+            {
+                return "λ_" + parm;
+            }
+
             public string CallMethodWithParmBool(bool parm)
             {
                 if (parm)
