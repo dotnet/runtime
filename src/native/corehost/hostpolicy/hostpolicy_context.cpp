@@ -306,7 +306,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
         if (!coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str()))
         {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::BundleProbe));
             return StatusCode::LibHostDuplicateProperty;
         }
     }
@@ -321,7 +321,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
         if (!coreclr_properties.add(common_property::PInvokeOverride, ptr_stream.str().c_str()))
         {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::PInvokeOverride));
             return StatusCode::LibHostDuplicateProperty;
         }
     }
@@ -330,7 +330,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 #if defined(HOSTPOLICY_EMBEDDED)
     if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))
     {
-        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::HostPolicyEmbedded));
         return StatusCode::LibHostDuplicateProperty;
     }
 #endif
