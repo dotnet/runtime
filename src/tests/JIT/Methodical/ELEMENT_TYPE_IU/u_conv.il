@@ -11,7 +11,7 @@
 }
 .assembly 'test'
 { }
-.class private auto ansi Test extends [mscorlib]System.Object
+.class private auto ansi Test_u_conv extends [mscorlib]System.Object
 {
 .method private hidebysig static native unsigned int to_native(int32) il managed
 {
@@ -28,7 +28,7 @@
 	//------------------------
 	.try {
 		ldc.i4 0x7fffffff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.i4
 		ldc.i4 0x7fffffff
 		beq OK1_1
@@ -41,7 +41,7 @@
 	}
 	.try {
 		ldc.i4.m1
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.i4
 		ldc.i4.m1
 		beq OK1_2
@@ -57,7 +57,7 @@
 	//------------------------
 	.try {
 		ldc.i4 0x7fffffff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.i2
 		pop
 		leave FAIL
@@ -67,7 +67,7 @@
 	}
 	.try {
 		ldc.i4 0x7fffffff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.i2
 		ldc.i4.m1
 		beq OK2_1
@@ -80,7 +80,7 @@
 	}
 	.try {
 		ldc.i4 0x7fff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.i2
 		ldc.i4 0x7fff
 		beq OK2_2
@@ -93,7 +93,7 @@
 	}
 	.try {
 		ldc.i4.m1
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.i2
 		ldc.i4.m1
 		beq OK2_3
@@ -106,7 +106,7 @@
 	}
 	.try {
 		ldc.i4.m1
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.i2
 		ldc.i4.m1
 		beq OK2_4
@@ -122,7 +122,7 @@
 	//------------------------
 	.try {
 		ldc.i4 0x7fff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.i1
 		pop
 		leave FAIL
@@ -132,7 +132,7 @@
 	}
 	.try {
 		ldc.i4 0x7fff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.i1
 		ldc.i4.m1
 		beq OK3_1
@@ -145,7 +145,7 @@
 	}
 	.try {
 		ldc.i4 0x7f
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.i1
 		ldc.i4 0x7f
 		beq OK3_2
@@ -161,7 +161,7 @@
 	//------------------------
 	.try {
 		ldc.i4 0x7fffffff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.u4.un
 		ldc.i4 0x7fffffff
 		beq OK4_1
@@ -174,7 +174,7 @@
 	}
 	.try {
 		ldc.i4.m1
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.u4
 		ldc.i4.m1
 		beq OK4_2
@@ -190,7 +190,7 @@
 	//------------------------
 	.try {
 		ldc.i4 0x7fff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.u1.un
 		pop
 		leave FAIL
@@ -200,7 +200,7 @@
 	}
 	.try {
 		ldc.i4 0x7fff
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.u1
 		ldc.i4.m1
 		beq OK5_1
@@ -213,7 +213,7 @@
 	}
 	.try {
 		ldc.i4 0x7f
-		call native unsigned int Test::to_native(int32)
+		call native unsigned int Test_u_conv::to_native(int32)
 		conv.ovf.u1
 		ldc.i4 0x7f
 		beq OK5_2
@@ -229,14 +229,14 @@
 	//------------------------
 	ldc.i4 0x7fff
 	dup
-	call native unsigned int Test::to_native(int32)
+	call native unsigned int Test_u_conv::to_native(int32)
 	conv.r4
 	conv.i
 	ceq
 	brfalse FAIL
 	ldc.i4 -1900
 	dup
-	call native unsigned int Test::to_native(int32)
+	call native unsigned int Test_u_conv::to_native(int32)
 	conv.r4
 	conv.i
 	ceq
@@ -246,14 +246,14 @@
 	//------------------------
 	ldc.i4 0x7fff
 	dup
-	call native unsigned int Test::to_native(int32)
+	call native unsigned int Test_u_conv::to_native(int32)
 	conv.r8
 	conv.i
 	ceq
 	brfalse FAIL
 	ldc.i4 -1900
 	dup
-	call native unsigned int Test::to_native(int32)
+	call native unsigned int Test_u_conv::to_native(int32)
 	conv.r8
 	conv.i
 	ceq

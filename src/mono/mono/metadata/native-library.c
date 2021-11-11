@@ -1004,7 +1004,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	/* If qcalls are disabled, we fall back to the normal pinvoke code for them */
 #ifndef DISABLE_QCALLS
 	if (strcmp (new_scope, "QCall") == 0) {
-		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, status_out);
+		piinfo->addr = mono_lookup_pinvoke_qcall_internal (new_import);
 		if (!piinfo->addr) {
 			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
 						"Unable to find qcall for '%s'.",

@@ -30,11 +30,10 @@
 void core_initialize_internals ();
 #endif
 
+extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
+
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
-// The following two are for back-compat and will eventually be removed
-extern void* mono_wasm_invoke_js_marshalled (MonoString **exceptionMessage, void *asyncHandleLongPtr, MonoString *funcName, MonoString *argsJson);
-extern void* mono_wasm_invoke_js_unmarshalled (MonoString **exceptionMessage, MonoString *funcName, void* arg0, void* arg1, void* arg2);
 
 void mono_wasm_enable_debugging (int);
 
@@ -136,55 +135,6 @@ void mono_trace_init (void);
 static MonoDomain *root_domain;
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
-
-static MonoString*
-mono_wasm_invoke_js (MonoString *str, int *is_exception)
-{
-	if (str == NULL)
-		return NULL;
-
-	int native_res_len = 0;
-	int *p_native_res_len = &native_res_len;
-
-	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var js_str = INTERNAL.string_decoder.copy ($0);
-
-		try {
-			var res = eval (js_str);
-			setValue ($2, 0, "i32");
-			if (res === null || res === undefined)
-				return 0;
-			else
-				res = res.toString ();
-		} catch (e) {
-			res = e.toString();
-			setValue ($2, 1, "i32");
-			if (res === null || res === undefined)
-				res = "unknown exception";
-
-			var stack = e.stack;
-			if (stack) {
-				// Some JS runtimes insert the error message at the top of the stack, some don't,
-				//  so normalize it by using the stack as the result if it already contains the error
-				if (stack.startsWith(res))
-					res = stack;
-				else
- 					res += "\n" + stack;
- 			}
-		}
-		var buff = Module._malloc((res.length + 1) * 2);
-		stringToUTF16 (res, buff, (res.length + 1) * 2);
-		setValue ($1, res.length, "i32");
-		return buff;
-	}, (int)str, p_native_res_len, is_exception);
-
-	if (native_res == NULL)
-		return NULL;
-
-	MonoString *res = mono_string_new_utf16 (mono_domain_get (), native_res, native_res_len);
-	free (native_res);
-	return res;
-}
 
 static void
 wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
@@ -492,9 +442,6 @@ void mono_initialize_internals ()
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
-	// The following two are for back-compat and will eventually be removed
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSMarshalled", mono_wasm_invoke_js_marshalled);
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSUnmarshalled", mono_wasm_invoke_js_unmarshalled);
 
 #ifdef CORE_BINDINGS
 	core_initialize_internals();
@@ -1123,41 +1070,6 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	int resultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 	assert (resultType != MARSHAL_TYPE_VT);
 	return resultType;
-}
-
-// FIXME: This function is retained specifically because runtime-test.js uses it
-EMSCRIPTEN_KEEPALIVE int
-mono_unbox_int (MonoObject *obj)
-{
-	if (!obj)
-		return 0;
-	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
-
-	void *ptr = mono_object_unbox (obj);
-	switch (mono_type_get_type (type)) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-		return *(signed char*)ptr;
-	case MONO_TYPE_U1:
-		return *(unsigned char*)ptr;
-	case MONO_TYPE_I2:
-		return *(short*)ptr;
-	case MONO_TYPE_U2:
-		return *(unsigned short*)ptr;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_I:
-		return *(int*)ptr;
-	case MONO_TYPE_U4:
-		return *(unsigned int*)ptr;
-	case MONO_TYPE_CHAR:
-		return *(short*)ptr;
-	// WASM doesn't support returning longs to JS
-	// case MONO_TYPE_I8:
-	// case MONO_TYPE_U8:
-	default:
-		printf ("Invalid type %d to mono_unbox_int\n", mono_type_get_type (type));
-		return 0;
-	}
 }
 
 EMSCRIPTEN_KEEPALIVE int

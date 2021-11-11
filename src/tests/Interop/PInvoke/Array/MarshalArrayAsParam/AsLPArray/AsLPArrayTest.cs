@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 public class ArrayMarshal
 {
@@ -77,7 +77,7 @@ public class ArrayMarshal
 
     [DllImport("MarshalArrayLPArrayNative")]
     private static extern bool CStyle_Array_Bool([MarshalAs(UnmanagedType.LPArray)] bool[] actual, int cActual);
-    
+
     [DllImport("MarshalArrayLPArrayNative")]
     private static extern bool MarshalArrayOfStructAsLPArrayByVal([MarshalAs(UnmanagedType.LPArray, SizeConst = ARRAY_SIZE)] S2[] arrS2, int cActual, [In, MarshalAs(UnmanagedType.LPArray, SizeConst = ARRAY_SIZE)]S2[] pExpect);
 
@@ -129,7 +129,7 @@ public class ArrayMarshal
 
     [DllImport("MarshalArrayLPArrayNative", EntryPoint = "CStyle_Array_Bool")]
     private static extern bool CStyle_Array_Bool_In([In, MarshalAs(UnmanagedType.LPArray)] bool[] actual, int cActual);
-    
+
 
     [DllImport("MarshalArrayLPArrayNative", EntryPoint = "MarshalArrayOfStructAsLPArrayByVal")]
     private static extern bool MarshalArrayOfStructAsLPArrayByValIn([In, MarshalAs(UnmanagedType.LPArray, SizeConst = ARRAY_SIZE)] S2[] arrS2, int cActual, [In, MarshalAs(UnmanagedType.LPArray, SizeConst = ARRAY_SIZE)]S2[] pExpect);
@@ -195,7 +195,7 @@ public class ArrayMarshal
 
     [DllImport("MarshalArrayLPArrayNative")]
     private static extern bool CStyle_Array_Int_Out_Null([Out, MarshalAs(UnmanagedType.LPArray)] int[] actual);
-    
+
     [DllImport("MarshalArrayLPArrayNative")]
     private static extern bool CStyle_Array_Int_Out_ZeroLength([Out, MarshalAs(UnmanagedType.LPArray)] int[] actual);
 
@@ -297,64 +297,64 @@ public class ArrayMarshal
     {
         Console.WriteLine("ByVal marshaling CLR array as c-style-array no attributes");
 
-        Assert.IsTrue(CStyle_Array_Int(InitArray<int>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Int");
-        Assert.IsTrue(CStyle_Array_Uint(InitArray<uint>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Uint");
-        Assert.IsTrue(CStyle_Array_Short(InitArray<short>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Short");
-        Assert.IsTrue(CStyle_Array_Word(InitArray<ushort>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Word");
-        Assert.IsTrue(CStyle_Array_Long64(InitArray<long>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Long64");
-        Assert.IsTrue(CStyle_Array_ULong64(InitArray<ulong>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_ULong64");
-        Assert.IsTrue(CStyle_Array_Double(InitArray<double>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Double");
-        Assert.IsTrue(CStyle_Array_Float(InitArray<float>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Float");
-        Assert.IsTrue(CStyle_Array_Byte(InitArray<byte>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Byte");
-        Assert.IsTrue(CStyle_Array_Char(InitArray<char>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Char");
+        Assert.True(CStyle_Array_Int(InitArray<int>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Uint(InitArray<uint>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Short(InitArray<short>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Word(InitArray<ushort>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Long64(InitArray<long>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_ULong64(InitArray<ulong>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Double(InitArray<double>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Float(InitArray<float>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Byte(InitArray<byte>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Char(InitArray<char>(ARRAY_SIZE), ARRAY_SIZE));
 
         string[] strArr = InitArray<string>(ARRAY_SIZE);
         // Test nesting null value scenario
         strArr[strArr.Length / 2] = null;
-        Assert.IsTrue(CStyle_Array_LPCSTR(strArr, ARRAY_SIZE), "CStyle_Array_LPCSTR");
-        Assert.IsTrue(CStyle_Array_LPSTR(strArr, ARRAY_SIZE), "CStyle_Array_LPSTRs");
-        Assert.IsTrue(CStyle_Array_Struct(InitStructArray(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Struct");
-        Assert.IsTrue(CStyle_Array_Bool(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Bool");
+        Assert.True(CStyle_Array_LPCSTR(strArr, ARRAY_SIZE));
+        Assert.True(CStyle_Array_LPSTR(strArr, ARRAY_SIZE));
+        Assert.True(CStyle_Array_Struct(InitStructArray(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Bool(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE));
 
         if (OperatingSystem.IsWindows())
         {
             object[] oArr = InitArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
             oArr[oArr.Length / 2] = null;
-            Assert.IsTrue(CStyle_Array_Object(oArr, ARRAY_SIZE), "CStyle_Array_Object"); 
-        } 
-        
+            Assert.True(CStyle_Array_Object(oArr, ARRAY_SIZE));
+        }
+
     }
 
     private static void TestMarshalByVal_In()
     {
         Console.WriteLine("ByVal marshaling  CLR array as c-style-array with InAttribute applied");
 
-        Assert.IsTrue(CStyle_Array_Int_In(InitArray<int>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Int_In");
-        Assert.IsTrue(CStyle_Array_Uint_In(InitArray<uint>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Uint_In");
-        Assert.IsTrue(CStyle_Array_Short_In(InitArray<short>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Short_In");
-        Assert.IsTrue(CStyle_Array_Word_In(InitArray<ushort>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Word_In");
-        Assert.IsTrue(CStyle_Array_Long64_In(InitArray<long>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Long64_In");
-        Assert.IsTrue(CStyle_Array_ULong64_In(InitArray<ulong>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_ULong64_In");
-        Assert.IsTrue(CStyle_Array_Double_In(InitArray<double>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Double_In");
-        Assert.IsTrue(CStyle_Array_Float_In(InitArray<float>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Float_In");
-        Assert.IsTrue(CStyle_Array_Byte_In(InitArray<byte>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Byte_In");
-        Assert.IsTrue(CStyle_Array_Char_In(InitArray<char>(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Char_In");
+        Assert.True(CStyle_Array_Int_In(InitArray<int>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Uint_In(InitArray<uint>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Short_In(InitArray<short>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Word_In(InitArray<ushort>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Long64_In(InitArray<long>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_ULong64_In(InitArray<ulong>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Double_In(InitArray<double>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Float_In(InitArray<float>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Byte_In(InitArray<byte>(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Char_In(InitArray<char>(ARRAY_SIZE), ARRAY_SIZE));
 
         string[] strArr = InitArray<string>(ARRAY_SIZE);
         // Test nesting null value scenario
         strArr[strArr.Length / 2] = null;
-        Assert.IsTrue(CStyle_Array_LPCSTR_In(strArr, ARRAY_SIZE), "CStyle_Array_LPCSTR_In");
-        Assert.IsTrue(CStyle_Array_LPSTR_In(strArr, ARRAY_SIZE), "CStyle_Array_LPSTR_In");
-        Assert.IsTrue(CStyle_Array_Struct_In(InitStructArray(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Struct_In");
-        Assert.IsTrue(CStyle_Array_Bool_In(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Bool_In");
+        Assert.True(CStyle_Array_LPCSTR_In(strArr, ARRAY_SIZE));
+        Assert.True(CStyle_Array_LPSTR_In(strArr, ARRAY_SIZE));
+        Assert.True(CStyle_Array_Struct_In(InitStructArray(ARRAY_SIZE), ARRAY_SIZE));
+        Assert.True(CStyle_Array_Bool_In(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE));
 
         if (OperatingSystem.IsWindows())
         {
             object[] oArr = InitArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
             oArr[oArr.Length / 2] = null;
-            Assert.IsTrue(CStyle_Array_Object_In(oArr, ARRAY_SIZE), "CStyle_Array_Object_In"); 
+            Assert.True(CStyle_Array_Object_In(oArr, ARRAY_SIZE));
         }
     }
     #endregion
@@ -364,69 +364,69 @@ public class ArrayMarshal
     {
         Console.WriteLine("By value marshaling CLR array as c-style-array with InAttribute and OutAttribute applied");
         int[] iArr = InitArray<int>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Int_InOut(iArr, ARRAY_SIZE), "CStyle_Array_Int_InOut");
-        Assert.IsTrue(Equals<int>(iArr, GetExpectedOutArray<int>(ARRAY_SIZE)), "CStyle_Array_Int_InOut:Equals<int>");
+        Assert.True(CStyle_Array_Int_InOut(iArr, ARRAY_SIZE));
+        Assert.True(Equals<int>(iArr, GetExpectedOutArray<int>(ARRAY_SIZE)));
 
         int[] iArrNull = null;
-        Assert.IsTrue(CStyle_Array_Int_InOut_Null(iArrNull), "CStyle_Array_Int_InOut_Null");
-        Assert.IsNull(iArrNull, "CStyle_Array_Int_InOut_Null:Equals<null>");
+        Assert.True(CStyle_Array_Int_InOut_Null(iArrNull));
+        Assert.Null(iArrNull);
 
         int[] iArrLength0 = InitArray<int>(0);
-        Assert.IsTrue(CStyle_Array_Int_InOut_ZeroLength(iArrLength0), "CStyle_Array_Int_InOut_ZeroLength");
-        Assert.AreEqual(0, iArrLength0.Length, "CStyle_Array_Int_InOut_ZeroLength:Length<!0>");
+        Assert.True(CStyle_Array_Int_InOut_ZeroLength(iArrLength0));
+        Assert.Equal(0, iArrLength0.Length);
 
         uint[] uiArr = InitArray<uint>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Uint_InOut(uiArr, ARRAY_SIZE), "CStyle_Array_Uint_InOut");
-        Assert.IsTrue(Equals<uint>(uiArr, GetExpectedOutArray<uint>(ARRAY_SIZE)), "CStyle_Array_Uint_InOut:Equals<uint>");
+        Assert.True(CStyle_Array_Uint_InOut(uiArr, ARRAY_SIZE));
+        Assert.True(Equals<uint>(uiArr, GetExpectedOutArray<uint>(ARRAY_SIZE)));
 
         short[] sArr = InitArray<short>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Short_InOut(sArr, ARRAY_SIZE), "CStyle_Array_Short_InOut");
-        Assert.IsTrue(Equals<short>(sArr, GetExpectedOutArray<short>(ARRAY_SIZE)), "CStyle_Array_Short_InOut:Equals<short>");
+        Assert.True(CStyle_Array_Short_InOut(sArr, ARRAY_SIZE));
+        Assert.True(Equals<short>(sArr, GetExpectedOutArray<short>(ARRAY_SIZE)));
 
         ushort[] usArr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Word_InOut(usArr, ARRAY_SIZE), "CStyle_Array_Word_InOut");
-        Assert.IsTrue(Equals<ushort>(usArr, GetExpectedOutArray<ushort>(ARRAY_SIZE)), "CStyle_Array_Word_InOut:Equals<ushort>");
+        Assert.True(CStyle_Array_Word_InOut(usArr, ARRAY_SIZE));
+        Assert.True(Equals<ushort>(usArr, GetExpectedOutArray<ushort>(ARRAY_SIZE)));
 
         long[] lArr = InitArray<long>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Long64_InOut(lArr, ARRAY_SIZE), "CStyle_Array_Long64_InOut");
-        Assert.IsTrue(Equals<long>(lArr, GetExpectedOutArray<long>(ARRAY_SIZE)), "CStyle_Array_Long64_InOut:Equals<long>");
+        Assert.True(CStyle_Array_Long64_InOut(lArr, ARRAY_SIZE));
+        Assert.True(Equals<long>(lArr, GetExpectedOutArray<long>(ARRAY_SIZE)));
 
         ulong[] ulArr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_ULong64_InOut(ulArr, ARRAY_SIZE), "CStyle_Array_ULong64_InOut");
-        Assert.IsTrue(Equals<ulong>(ulArr, GetExpectedOutArray<ulong>(ARRAY_SIZE)), "CStyle_Array_ULong64_InOut:Equals<ulong>");
+        Assert.True(CStyle_Array_ULong64_InOut(ulArr, ARRAY_SIZE));
+        Assert.True(Equals<ulong>(ulArr, GetExpectedOutArray<ulong>(ARRAY_SIZE)));
 
         double[] dArr = InitArray<double>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Double_InOut(dArr, ARRAY_SIZE), "CStyle_Array_Double_InOut");
-        Assert.IsTrue(Equals<double>(dArr, GetExpectedOutArray<double>(ARRAY_SIZE)), "CStyle_Array_Double_InOut:Equals<double>");
+        Assert.True(CStyle_Array_Double_InOut(dArr, ARRAY_SIZE));
+        Assert.True(Equals<double>(dArr, GetExpectedOutArray<double>(ARRAY_SIZE)));
 
         float[] fArr = InitArray<float>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Float_InOut(fArr, ARRAY_SIZE), "CStyle_Array_Float_InOut");
-        Assert.IsTrue(Equals<float>(fArr, GetExpectedOutArray<float>(ARRAY_SIZE)), "CStyle_Array_Float_InOut:Equals<float>");
+        Assert.True(CStyle_Array_Float_InOut(fArr, ARRAY_SIZE));
+        Assert.True(Equals<float>(fArr, GetExpectedOutArray<float>(ARRAY_SIZE)));
 
         byte[] bArr = InitArray<byte>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Byte_InOut(bArr, ARRAY_SIZE), "CStyle_Array_Byte_InOut");
-        Assert.IsTrue(Equals<byte>(bArr, GetExpectedOutArray<byte>(ARRAY_SIZE)), "CStyle_Array_Byte_InOut:Equals<byte>");
+        Assert.True(CStyle_Array_Byte_InOut(bArr, ARRAY_SIZE));
+        Assert.True(Equals<byte>(bArr, GetExpectedOutArray<byte>(ARRAY_SIZE)));
 
         char[] cArr = InitArray<char>(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Char_InOut(cArr, ARRAY_SIZE), "CStyle_Array_Char_InOut");
-        Assert.IsTrue(Equals<char>(cArr, GetExpectedOutArray<char>(ARRAY_SIZE)), "CStyle_Array_Char_InOut:Equals<char>");
+        Assert.True(CStyle_Array_Char_InOut(cArr, ARRAY_SIZE));
+        Assert.True(Equals<char>(cArr, GetExpectedOutArray<char>(ARRAY_SIZE)));
 
         string[] strArr = InitArray<string>(ARRAY_SIZE);
         strArr[strArr.Length / 2] = null;
-        Assert.IsTrue(CStyle_Array_LPSTR_InOut(strArr, ARRAY_SIZE), "CStyle_Array_LPSTR_InOut");
+        Assert.True(CStyle_Array_LPSTR_InOut(strArr, ARRAY_SIZE));
 
         string[] expectedArr = GetExpectedOutArray<string>(ARRAY_SIZE);
         // Test nesting null value scenario
         expectedArr[expectedArr.Length / 2 - 1] = null;
-        Assert.IsTrue(Equals<string>(strArr, expectedArr), "CStyle_Array_LPSTR_InOut:Equals<string>");
+        Assert.True(Equals<string>(strArr, expectedArr));
 
         TestStruct[] tsArr = InitStructArray(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Struct_InOut(tsArr, ARRAY_SIZE), "CStyle_Array_Struct_InOut");
-        Assert.IsTrue(Equals<TestStruct>(tsArr, GetExpectedOutStructArray(ARRAY_SIZE)), "CStyle_Array_Struct_InOut:Equals<TestStruct>");
+        Assert.True(CStyle_Array_Struct_InOut(tsArr, ARRAY_SIZE));
+        Assert.True(Equals<TestStruct>(tsArr, GetExpectedOutStructArray(ARRAY_SIZE)));
 
         bool[] boolArr = InitBoolArray(ARRAY_SIZE);
-        Assert.IsTrue(CStyle_Array_Bool_InOut(boolArr, ARRAY_SIZE), "CStyle_Array_Bool_InOut");
-        Assert.IsTrue(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)), "CStyle_Array_Bool_InOut:Equals<bool>");
+        Assert.True(CStyle_Array_Bool_InOut(boolArr, ARRAY_SIZE));
+        Assert.True(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)));
     }
 
     private static bool Equals<T>(T[] arr1, T[] arr2)
@@ -493,77 +493,77 @@ public class ArrayMarshal
         Console.WriteLine("By value marshaling CLR array as c-style-array with OutAttribute applied");
 
         int[] iArr = new int[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Int_Out(iArr, ARRAY_SIZE), "CStyle_Array_Int_Out");
-        Assert.IsTrue(Equals<int>(iArr, GetExpectedOutArray<int>(ARRAY_SIZE)), "CStyle_Array_Int_Out:Equals<int>");
+        Assert.True(CStyle_Array_Int_Out(iArr, ARRAY_SIZE));
+        Assert.True(Equals<int>(iArr, GetExpectedOutArray<int>(ARRAY_SIZE)));
 
         int[] iArrNull = null;
-        Assert.IsTrue(CStyle_Array_Int_Out_Null(iArrNull), "CStyle_Array_Int_Out_Null");
-        Assert.IsNull(iArrNull, "CStyle_Array_Int_Out_Null:Equals<null>");
+        Assert.True(CStyle_Array_Int_Out_Null(iArrNull));
+        Assert.Null(iArrNull);
 
         int[] iArrLength0 = new int[0];
-        Assert.IsTrue(CStyle_Array_Int_Out_ZeroLength(iArrLength0), "CStyle_Array_Int_Out_ZeroLength");
-        Assert.AreEqual(0, iArrLength0.Length, "CStyle_Array_Int_Out_ZeroLength:Length<!0>");
+        Assert.True(CStyle_Array_Int_Out_ZeroLength(iArrLength0));
+        Assert.Equal(0, iArrLength0.Length);
 
         uint[] uiArr = new uint[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Uint_Out(uiArr, ARRAY_SIZE), "CStyle_Array_Uint_Out");
-        Assert.IsTrue(Equals<uint>(uiArr, GetExpectedOutArray<uint>(ARRAY_SIZE)), "CStyle_Array_Uint_Out:Equals<uint>");
+        Assert.True(CStyle_Array_Uint_Out(uiArr, ARRAY_SIZE));
+        Assert.True(Equals<uint>(uiArr, GetExpectedOutArray<uint>(ARRAY_SIZE)));
 
         short[] sArr = new short[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Short_Out(sArr, ARRAY_SIZE), "CStyle_Array_Short_Out");
-        Assert.IsTrue(Equals<short>(sArr, GetExpectedOutArray<short>(ARRAY_SIZE)), "CStyle_Array_Short_Out:Equals<short>");
+        Assert.True(CStyle_Array_Short_Out(sArr, ARRAY_SIZE));
+        Assert.True(Equals<short>(sArr, GetExpectedOutArray<short>(ARRAY_SIZE)));
 
         ushort[] usArr = new ushort[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Word_Out(usArr, ARRAY_SIZE), "CStyle_Array_Word_Out");
-        Assert.IsTrue(Equals<ushort>(usArr, GetExpectedOutArray<ushort>(ARRAY_SIZE)), "CStyle_Array_Word_Out:Equals<ushort>");
+        Assert.True(CStyle_Array_Word_Out(usArr, ARRAY_SIZE));
+        Assert.True(Equals<ushort>(usArr, GetExpectedOutArray<ushort>(ARRAY_SIZE)));
 
         long[] lArr = new long[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Long64_Out(lArr, ARRAY_SIZE), "CStyle_Array_Long64_Out");
-        Assert.IsTrue(Equals<long>(lArr, GetExpectedOutArray<long>(ARRAY_SIZE)), "CStyle_Array_Long64_Out:Equals<long>");
+        Assert.True(CStyle_Array_Long64_Out(lArr, ARRAY_SIZE));
+        Assert.True(Equals<long>(lArr, GetExpectedOutArray<long>(ARRAY_SIZE)));
 
         ulong[] ulArr = new ulong[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_ULong64_Out(ulArr, ARRAY_SIZE), "CStyle_Array_ULong64_Out");
-        Assert.IsTrue(Equals<ulong>(ulArr, GetExpectedOutArray<ulong>(ARRAY_SIZE)), "CStyle_Array_ULong64_Out:Equals<ulong>");
+        Assert.True(CStyle_Array_ULong64_Out(ulArr, ARRAY_SIZE));
+        Assert.True(Equals<ulong>(ulArr, GetExpectedOutArray<ulong>(ARRAY_SIZE)));
 
         double[] dArr = new double[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Double_Out(dArr, ARRAY_SIZE), "CStyle_Array_Double_Out");
-        Assert.IsTrue(Equals<double>(dArr, GetExpectedOutArray<double>(ARRAY_SIZE)), "CStyle_Array_Double_Out:Equals<double>");
+        Assert.True(CStyle_Array_Double_Out(dArr, ARRAY_SIZE));
+        Assert.True(Equals<double>(dArr, GetExpectedOutArray<double>(ARRAY_SIZE)));
 
         float[] fArr = new float[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Float_Out(fArr, ARRAY_SIZE), "CStyle_Array_Float_Out");
-        Assert.IsTrue(Equals<float>(fArr, GetExpectedOutArray<float>(ARRAY_SIZE)), "CStyle_Array_Float_Out:Equals<float>");
+        Assert.True(CStyle_Array_Float_Out(fArr, ARRAY_SIZE));
+        Assert.True(Equals<float>(fArr, GetExpectedOutArray<float>(ARRAY_SIZE)));
 
         byte[] bArr = new byte[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Byte_Out(bArr, ARRAY_SIZE), "CStyle_Array_Byte_Out");
-        Assert.IsTrue(Equals<byte>(bArr, GetExpectedOutArray<byte>(ARRAY_SIZE)), "CStyle_Array_Byte_Out:Equals<byte>");
+        Assert.True(CStyle_Array_Byte_Out(bArr, ARRAY_SIZE));
+        Assert.True(Equals<byte>(bArr, GetExpectedOutArray<byte>(ARRAY_SIZE)));
 
         char[] cArr = new char[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Char_Out(cArr, ARRAY_SIZE), "CStyle_Array_Char_Out");
-        Assert.IsTrue(Equals<char>(cArr, GetExpectedOutArray<char>(ARRAY_SIZE)), "CStyle_Array_Char_Out:Equals<char>");
+        Assert.True(CStyle_Array_Char_Out(cArr, ARRAY_SIZE));
+        Assert.True(Equals<char>(cArr, GetExpectedOutArray<char>(ARRAY_SIZE)));
 
         string[] strArr = new string[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_LPSTR_Out(strArr, ARRAY_SIZE), "CStyle_Array_LPSTR_Out");
+        Assert.True(CStyle_Array_LPSTR_Out(strArr, ARRAY_SIZE));
 
         string[] expectedArr = GetExpectedOutArray<string>(ARRAY_SIZE);
         // Test nesting null value scenario
         expectedArr[expectedArr.Length / 2 - 1] = null;
-        Assert.IsTrue(Equals<string>(strArr, expectedArr), "CStyle_Array_LPSTR_Out:Equals<string>");
+        Assert.True(Equals<string>(strArr, expectedArr));
 
         TestStruct[] tsArr = new TestStruct[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Struct_Out(tsArr, ARRAY_SIZE), "CStyle_Array_Struct_Out");
-        Assert.IsTrue(Equals<TestStruct>(tsArr, GetExpectedOutStructArray(ARRAY_SIZE)), "CStyle_Array_Struct_Out:Equals<TestStruct>");
+        Assert.True(CStyle_Array_Struct_Out(tsArr, ARRAY_SIZE));
+        Assert.True(Equals<TestStruct>(tsArr, GetExpectedOutStructArray(ARRAY_SIZE)));
 
         bool[] boolArr = new bool[ARRAY_SIZE];
-        Assert.IsTrue(CStyle_Array_Bool_Out(boolArr, ARRAY_SIZE), "CStyle_Array_Bool_Out");
-        Assert.IsTrue(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)), "CStyle_Array_Bool_Out:Equals<bool>");
-        
+        Assert.True(CStyle_Array_Bool_Out(boolArr, ARRAY_SIZE));
+        Assert.True(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)));
+
         if (OperatingSystem.IsWindows())
         {
             object[] oArr = new object[ARRAY_SIZE];
-            Assert.IsTrue(CStyle_Array_Object_Out(oArr, ARRAY_SIZE), "CStyle_Array_Object_Out");
+            Assert.True(CStyle_Array_Object_Out(oArr, ARRAY_SIZE));
             object[] expectedOArr = GetExpectedOutArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
             expectedOArr[expectedOArr.Length / 2 - 1] = null;
-            Assert.IsTrue(Equals<object>(oArr, expectedOArr), "CStyle_Array_Object_Out:Equals<object>"); 
+            Assert.True(Equals<object>(oArr, expectedOArr));
         }
 
     }
@@ -636,7 +636,7 @@ public class ArrayMarshal
             TestMarshalByVal_In();
             TestMarshalByVal_InOut();
             TestMarshalByVal_Out();
-            
+
             Console.WriteLine("\nTest PASS.");
             return 100;
         }

@@ -34,6 +34,10 @@ namespace Microsoft.Interop
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => true;
 
+        public bool SupportsTargetFramework { get; init; }
+
+        public bool StubIsBasicForwarder { get; init; }
+
         /// <summary>
         /// Identifier for managed return value
         /// </summary>
@@ -58,9 +62,8 @@ namespace Microsoft.Interop
         private readonly List<BoundGenerator> _sortedMarshallers;
         private readonly bool _stubReturnsVoid;
 
-        public bool StubIsBasicForwarder { get; }
-
         public PInvokeStubCodeGenerator(
+            StubEnvironment environment,
             IEnumerable<TypePositionInfo> argTypes,
             bool setLastError,
             Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
@@ -68,6 +71,19 @@ namespace Microsoft.Interop
         {
             _setLastError = setLastError;
 
+            // Support for SetLastError logic requires .NET 6+. Initialize the
+            // supports target framework value with this value.
+            if (_setLastError)
+            {
+                SupportsTargetFramework = environment.TargetFramework == TargetFramework.Net
+                    && environment.TargetFrameworkVersion.Major >= 6;
+            }
+            else
+            {
+                SupportsTargetFramework = true;
+            }
+
+            bool noMarshallingNeeded = true;
             List<BoundGenerator> allMarshallers = new();
             List<BoundGenerator> paramMarshallers = new();
             bool foundNativeRetMarshaller = false;
@@ -78,6 +94,14 @@ namespace Microsoft.Interop
             foreach (TypePositionInfo argType in argTypes)
             {
                 BoundGenerator generator = CreateGenerator(argType);
+
+                // Check each marshaler if the current target framework is supported or not.
+                SupportsTargetFramework &= generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
+
+                // Check if generator is either blittable or just a forwarder.
+                noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }
+                        or { Generator: Forwarder };
+
                 allMarshallers.Add(generator);
                 if (argType.IsManagedReturnPosition)
                 {
@@ -139,9 +163,7 @@ namespace Microsoft.Interop
 
             StubIsBasicForwarder = !setLastError
                 && managedRetMarshaller.TypeInfo.IsNativeReturnPosition // If the managed return has native return position, then it's the return for both.
-                && _sortedMarshallers.All(
-                    m => m is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }
-                        or { Generator: Forwarder });
+                && noMarshallingNeeded;
 
             if (managedRetMarshaller.Generator.UsesNativeIdentifier(managedRetMarshaller.TypeInfo, this))
             {
@@ -215,6 +237,14 @@ namespace Microsoft.Interop
             }
         }
 
+        /// <summary>
+        /// Generate the method body of the p/invoke stub.
+        /// </summary>
+        /// <param name="dllImportName">Name of the target DllImport function to invoke</param>
+        /// <returns>Method body of the p/invoke stub</returns>
+        /// <remarks>
+        /// The generated code assumes it will be in an unsafe context.
+        /// </remarks>
         public BlockSyntax GeneratePInvokeBody(string dllImportName)
         {
             bool invokeReturnsVoid = _retMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
@@ -330,8 +360,7 @@ namespace Microsoft.Interop
             if (!_stubReturnsVoid)
                 allStatements.Add(ReturnStatement(IdentifierName(ReturnIdentifier)));
 
-            // Wrap all statements in an unsafe block
-            return Block(UnsafeStatement(Block(allStatements)));
+            return Block(allStatements);
 
             void GenerateStatementsForStage(Stage stage, List<StatementSyntax> statementsToUpdate)
             {

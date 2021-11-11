@@ -49,7 +49,7 @@ public class A
 	}
 }
 
-public class Test
+public class Test_test532654_b
 {
 	public static void RunTestThread1()
 	{

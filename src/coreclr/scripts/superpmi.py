@@ -36,12 +36,12 @@ import urllib.request
 import zipfile
 
 from coreclr_arguments import *
+from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
+    make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
+    require_azure_storage_libraries, authenticate_using_azure, \
+    create_unique_directory_name, create_unique_file_name, get_files_from_path
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
-
-# Decide if we're going to download and enumerate Azure Storage using anonymous
-# read access and urllib functions (False), or Azure APIs including authentication (True).
-authenticate_using_azure = False
 
 ################################################################################
 # Azure Storage information
@@ -237,8 +237,9 @@ core_root_parser.add_argument("-core_root", help=core_root_help)
 core_root_parser.add_argument("-log_level", help=log_level_help)
 core_root_parser.add_argument("-log_file", help=log_file_help)
 core_root_parser.add_argument("-spmi_location", help=spmi_location_help)
+core_root_parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
 
-# Create a set of arguments common to target specification. Used for replay, upload, upload-private, download, list-collections.
+# Create a set of arguments common to target specification. Used for collect, replay, asmdiffs, upload, upload-private, download, list-collections.
 
 target_parser = argparse.ArgumentParser(add_help=False)
 
@@ -342,7 +343,6 @@ download_parser.add_argument("-filter", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 download_parser.add_argument("--force_download", action="store_true", help=force_download_help)
-download_parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
 download_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 download_parser.add_argument("-private_store", action="append", help=private_store_help)
 
@@ -363,345 +363,6 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 ################################################################################
 # Helper functions
 ################################################################################
-
-def remove_prefix(text, prefix):
-    """ Helper method to remove a prefix `prefix` from a string `text`
-    """
-    if text.startswith(prefix):
-        return text[len(prefix):]
-    return text
-
-# Have we checked whether we have the Azure Storage libraries yet?
-azure_storage_libraries_check = False
-
-
-def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_identity=True):
-    """ Check for and import the Azure libraries.
-        We do this lazily, only when we decide we're actually going to need them.
-        Once we've done it once, we don't do it again.
-    """
-    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
-
-    if azure_storage_libraries_check:
-        return
-
-    azure_storage_libraries_check = True
-
-    azure_storage_blob_import_ok = True
-    if need_azure_storage_blob:
-        try:
-            from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
-        except:
-            azure_storage_blob_import_ok = False
-
-    azure_identity_import_ok = True
-    if need_azure_identity:
-        try:
-            from azure.identity import AzureCliCredential
-        except:
-            azure_identity_import_ok = False
-
-    if not azure_storage_blob_import_ok or not azure_identity_import_ok:
-        logging.error("One or more required Azure Storage packages is missing.")
-        logging.error("")
-        logging.error("Please install:")
-        logging.error("  pip install azure-storage-blob azure-identity")
-        logging.error("or (Windows):")
-        logging.error("  py -3 -m pip install azure-storage-blob azure-identity")
-        logging.error("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
-        raise RuntimeError("Missing Azure Storage package.")
-
-    # The Azure packages spam all kinds of output to the logging channels.
-    # Restrict this to only ERROR and CRITICAL.
-    for name in logging.Logger.manager.loggerDict.keys():
-        if 'azure' in name:
-            logging.getLogger(name).setLevel(logging.ERROR)
-
-
-def download_progress_hook(count, block_size, total_size):
-    """ A hook for urlretrieve to report download progress
-
-    Args:
-        count (int)               : current block index
-        block_size (int)          : size of a block
-        total_size (int)          : total size of a payload
-    """
-    sys.stdout.write("\rDownloading {0:.1f}/{1:.1f} MB...".format(min(count * block_size, total_size) / 1024 / 1024, total_size / 1024 / 1024))
-    sys.stdout.flush()
-
-
-def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True, display_progress=True):
-    """ Do an URI download using urllib.request.urlretrieve with a progress hook.
-
-    Args:
-        uri (string)              : URI to download
-        target_location (string)  : local path to put the downloaded object
-        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
-                                    Otherwise, ignore the failure.
-
-    Returns True if successful, False on failure
-    """
-    logging.info("Download: %s -> %s", uri, target_location)
-
-    ok = True
-    try:
-        progress_display_method = download_progress_hook if display_progress else None
-        urllib.request.urlretrieve(uri, target_location, reporthook=progress_display_method)
-    except urllib.error.HTTPError as httperror:
-        if (httperror == 404) and fail_if_not_found:
-            logging.error("HTTP 404 error")
-            raise httperror
-        ok = False
-
-    sys.stdout.write("\n") # Add newline after progress hook
-    return ok
-
-
-def report_azure_error():
-    """ Report an Azure error
-    """
-    logging.error("A problem occurred accessing Azure. Are you properly authenticated using the Azure CLI?")
-    logging.error("Install the Azure CLI from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli.")
-    logging.error("Then log in to Azure using `az login`.")
-
-
-def download_with_azure(uri, target_location, fail_if_not_found=True):
-    """ Do an URI download using Azure blob storage API. Compared to urlretrieve,
-        there is no progress hook. Maybe if converted to use the async APIs we
-        could have some kind of progress?
-
-    Args:
-        uri (string)              : URI to download
-        target_location (string)  : local path to put the downloaded object
-        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
-                                    Otherwise, ignore the failure.
-
-    Returns True if successful, False on failure
-    """
-
-    require_azure_storage_libraries()
-
-    logging.info("Download: %s -> %s", uri, target_location)
-
-    ok = True
-    az_credential = AzureCliCredential()
-    blob = BlobClient.from_blob_url(uri, credential=az_credential)
-    with open(target_location, "wb") as my_blob:
-        try:
-            download_stream = blob.download_blob(retry_total=0)
-            try:
-                my_blob.write(download_stream.readall())
-            except Exception as ex1:
-                logging.error("Error writing data to %s", target_location)
-                report_azure_error()
-                ok = False
-        except Exception as ex2:
-            logging.error("Azure error downloading %s", uri)
-            report_azure_error()
-            ok = False
-
-    if not ok and fail_if_not_found:
-        raise RuntimeError("Azure failed to download")
-    return ok
-
-
-def download_one_url(uri, target_location, fail_if_not_found=True, display_progress=True):
-    """ Do an URI download using urllib.request.urlretrieve or Azure Storage APIs.
-
-    Args:
-        uri (string)              : URI to download
-        target_location (string)  : local path to put the downloaded object
-        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
-                                    Otherwise, ignore the failure.
-
-    Returns True if successful, False on failure
-    """
-    if authenticate_using_azure:
-        return download_with_azure(uri, target_location, fail_if_not_found)
-    else:
-        return download_with_progress_urlretrieve(uri, target_location, fail_if_not_found, display_progress)
-
-
-def is_zero_length_file(fpath):
-    """ Determine if a file system path refers to an existing file that is zero length
-
-    Args:
-        fpath (str) : file system path to test
-
-    Returns:
-        bool : true if the path is an existing file that is zero length
-    """
-    return os.path.isfile(fpath) and os.stat(fpath).st_size == 0
-
-
-def is_nonzero_length_file(fpath):
-    """ Determine if a file system path refers to an existing file that is non-zero length
-
-    Args:
-        fpath (str) : file system path to test
-
-    Returns:
-        bool : true if the path is an existing file that is non-zero length
-    """
-    return os.path.isfile(fpath) and os.stat(fpath).st_size != 0
-
-
-def make_safe_filename(s):
-    """ Turn a string into a string usable as a single file name component; replace illegal characters with underscores.
-
-    Args:
-        s (str) : string to convert to a file name
-
-    Returns:
-        (str) : The converted string
-    """
-    def safe_char(c):
-        if c.isalnum():
-            return c
-        else:
-            return "_"
-    return "".join(safe_char(c) for c in s)
-
-
-def find_in_path(name, pathlist, match_func=os.path.isfile):
-    """ Find a name (e.g., directory name or file name) in the file system by searching the directories
-        in a `pathlist` (e.g., PATH environment variable that has been semi-colon
-        split into a list).
-
-    Args:
-        name (str)               : name to search for
-        pathlist (list)          : list of directory names to search
-        match_func (str -> bool) : determines if the name is a match
-
-    Returns:
-        (str) The pathname of the object, or None if not found.
-    """
-    for dirname in pathlist:
-        candidate = os.path.join(dirname, name)
-        if match_func(candidate):
-            return candidate
-    return None
-
-
-def find_file(filename, pathlist):
-    """ Find a filename in the file system by searching the directories
-        in a `pathlist` (e.g., PATH environment variable that has been semi-colon
-        split into a list).
-
-    Args:
-        filename (str)          : name to search for
-        pathlist (list)         : list of directory names to search
-
-    Returns:
-        (str) The pathname of the object, or None if not found.
-    """
-    return find_in_path(filename, pathlist)
-
-
-def find_dir(dirname, pathlist):
-    """ Find a directory name in the file system by searching the directories
-        in a `pathlist` (e.g., PATH environment variable that has been semi-colon
-        split into a list).
-
-    Args:
-        dirname (str)           : name to search for
-        pathlist (list)         : list of directory names to search
-
-    Returns:
-        (str) The pathname of the object, or None if not found.
-    """
-    return find_in_path(dirname, pathlist, match_func=os.path.isdir)
-
-
-def create_unique_directory_name(root_directory, base_name):
-    """ Create a unique directory name by joining `root_directory` and `base_name`.
-        If this name already exists, append ".1", ".2", ".3", etc., to the final
-        name component until the full directory name is not found.
-
-    Args:
-        root_directory (str)     : root directory in which a new directory will be created
-        base_name (str)          : the base name of the new directory name component to be added
-
-    Returns:
-        (str) The full absolute path of the new directory. The directory has been created.
-    """
-
-    root_directory = os.path.abspath(root_directory)
-    full_path = os.path.join(root_directory, base_name)
-
-    count = 1
-    while os.path.isdir(full_path):
-        new_full_path = os.path.join(root_directory, base_name + "." + str(count))
-        count += 1
-        full_path = new_full_path
-
-    os.makedirs(full_path)
-    return full_path
-
-
-def create_unique_file_name(directory, base_name, extension):
-    """ Create a unique file name in the specified directory by joining `base_name` and `extension`.
-        If this name already exists, append ".1", ".2", ".3", etc., to the `base_name`
-        name component until the full file name is not found.
-
-    Args:
-        directory (str)  : directory in which a new file will be created
-        base_name (str)  : the base name of the new filename to be added
-        extension (str)  : the filename extension of the new filename to be added
-
-    Returns:
-        (str) The full absolute path of the new filename.
-    """
-
-    directory = os.path.abspath(directory)
-    if not os.path.isdir(directory):
-        try:
-            os.makedirs(directory)
-        except Exception as exception:
-            logging.critical(exception)
-            raise exception
-
-    full_path = os.path.join(directory, base_name + "." + extension)
-
-    count = 1
-    while os.path.isfile(full_path):
-        new_full_path = os.path.join(directory, base_name + "." + str(count) + "." + extension)
-        count += 1
-        full_path = new_full_path
-
-    return full_path
-
-
-def get_files_from_path(path, match_func=lambda path: True):
-    """ Return all files in a directory tree matching a criteria.
-
-    Args:
-        path (str)               : Either a single file to include, or a directory to traverse looking for matching
-                                   files.
-        match_func (str -> bool) : Criteria function determining if a file is added to the list
-
-    Returns:
-        Array of absolute paths of matching files
-    """
-
-    if not(os.path.isdir(path) or os.path.isfile(path)):
-        logging.warning("Warning: \"%s\" is not a file or directory", path)
-        return []
-
-    path = os.path.abspath(path)
-
-    files = []
-
-    if os.path.isdir(path):
-        for item in os.listdir(path):
-            files += get_files_from_path(os.path.join(path, item), match_func)
-    else:
-        if match_func(path):
-            files.append(path)
-
-    return files
-
-
 def run_and_log(command, log_level=logging.DEBUG):
     """ Return a command and log its output to the debug logger
 
@@ -788,19 +449,6 @@ def create_artifacts_base_name(coreclr_args, mch_file):
     return artifacts_base_name
 
 
-def is_url(path):
-    """ Return True if this looks like a URL
-
-    Args:
-        path (str) : name to check
-
-    Returns:
-        True it it looks like an URL, False otherwise.
-    """
-    # Probably could use urllib.parse to be more precise.
-    # If it doesn't look like an URL, treat it like a file, possibly a UNC file.
-    return path.lower().startswith("http:") or path.lower().startswith("https:")
-
 def read_csv_metrics(path):
     """ Read a metrics summary file produced by superpmi, and return the single row containing the information as a dictionary.
 
@@ -821,47 +469,6 @@ def read_csv_metrics(path):
 ################################################################################
 # Helper classes
 ################################################################################
-
-
-class TempDir:
-    """ Class to create a temporary working directory, or use one that is passed as an argument.
-
-        Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
-        change back to the original working directory afterwards and remove the temporary
-        directory and its contents (if skip_cleanup is False).
-    """
-
-    def __init__(self, path=None, skip_cleanup=False):
-        self.mydir = tempfile.mkdtemp() if path is None else path
-        self.cwd = None
-        self._skip_cleanup = skip_cleanup
-
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        os.chdir(self.mydir)
-        return self.mydir
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
-        if not self._skip_cleanup:
-            shutil.rmtree(self.mydir)
-
-
-class ChangeDir:
-    """ Class to temporarily change to a given directory. Use with "with".
-    """
-
-    def __init__(self, mydir):
-        self.mydir = mydir
-        self.cwd = None
-
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        os.chdir(self.mydir)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
-
 
 class AsyncSubprocessHelper:
     """ Class to help with async multiprocessing tasks.
@@ -1471,7 +1078,7 @@ class SuperPMICollect:
 ################################################################################
 
 
-def print_superpmi_failure_code(return_code, coreclr_args):
+def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics):
     """ Print a description of a superpmi return (error) code. If the return code is
         zero, meaning success, don't print anything.
         Note that Python treats process return codes (at least on Windows) as
@@ -1479,8 +1086,7 @@ def print_superpmi_failure_code(return_code, coreclr_args):
         those return codes.
     """
     if return_code == 0:
-        # Don't print anything if the code is zero, which is success.
-        pass
+        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Successful compiles"]))
     elif return_code == -1 or return_code == 4294967295:
         logging.error("General fatal error")
     elif return_code == -2 or return_code == 4294967294:
@@ -1490,7 +1096,15 @@ def print_superpmi_failure_code(return_code, coreclr_args):
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
-        logging.warning("SuperPMI missing data encountered")
+        missing_base = int(base_metrics["Missing compiles"])
+        total_contexts = int(base_metrics["Successful compiles"]) + int(base_metrics["Failing compiles"])
+
+        if diff_metrics is None:
+            logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
+        else:
+            missing_diff = int(diff_metrics["Missing compiles"])
+            logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
+
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
     else:
@@ -1636,16 +1250,20 @@ class SuperPMIReplay:
                 flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
+                metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_metrics.csv")
+
                 flags += [
-                    "-f", fail_mcl_file  # Failing mc List
+                    "-f", fail_mcl_file,  # Failing mc List
+                    "-metricsSummary", metrics_summary_file
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 return_code = run_and_log(command)
-                print_superpmi_failure_code(return_code, self.coreclr_args)
-                if return_code == 0:
-                    logging.info("Clean SuperPMI replay")
-                else:
+
+                metrics = read_csv_metrics(metrics_summary_file)
+
+                print_superpmi_result(return_code, self.coreclr_args, metrics, None)
+                if return_code != 0:
                     result = False
                     # Don't report as replay failure missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
@@ -1859,16 +1477,19 @@ class SuperPMIReplayAsmDiffs:
                     with ChangeDir(self.coreclr_args.core_root):
                         command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                         return_code = run_and_log(command)
-                        print_superpmi_failure_code(return_code, self.coreclr_args)
-                        if return_code == 0:
-                            logging.info("Clean SuperPMI diff")
-                        else:
-                            result = False
-                            # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
-                            # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
-                            # reported as a replay failure.
-                            if return_code != 2 and return_code != 3:
-                                files_with_replay_failures.append(mch_file)
+
+                    base_metrics = read_csv_metrics(base_metrics_summary_file)
+                    diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+
+                    print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
+
+                    if return_code != 0:
+                        result = False
+                        # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
+                        # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
+                        # reported as a replay failure.
+                        if return_code != 2 and return_code != 3:
+                            files_with_replay_failures.append(mch_file)
 
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
@@ -1983,16 +1604,13 @@ class SuperPMIReplayAsmDiffs:
                         logging.debug(item)
                     logging.debug("")
 
-                    base_metrics = read_csv_metrics(base_metrics_summary_file)
-                    diff_metrics = read_csv_metrics(diff_metrics_summary_file)
-
-                    if base_metrics is not None and "Code bytes" in base_metrics and diff_metrics is not None and "Code bytes" in diff_metrics:
-                        base_bytes = int(base_metrics["Code bytes"])
-                        diff_bytes = int(diff_metrics["Code bytes"])
-                        logging.info("Total Code bytes of base: {}".format(base_bytes))
-                        logging.info("Total Code bytes of diff: {}".format(diff_bytes))
+                    if base_metrics is not None and diff_metrics is not None:
+                        base_bytes = int(base_metrics["Diffed code bytes"])
+                        diff_bytes = int(diff_metrics["Diffed code bytes"])
+                        logging.info("Total bytes of base: {}".format(base_bytes))
+                        logging.info("Total bytes of diff: {}".format(diff_bytes))
                         delta_bytes = diff_bytes - base_bytes
-                        logging.info("Total Code bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+                        logging.info("Total bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
 
                     try:
                         current_text_diff = text_differences.get_nowait()
@@ -2004,11 +1622,11 @@ class SuperPMIReplayAsmDiffs:
                     if current_text_diff is not None:
                         logging.info("Textual differences found in generated asm.")
 
-                        # Find jit-analyze.bat/sh on PATH, if it exists, then invoke it.
+                        # Find jit-analyze on PATH, if it exists, then invoke it.
                         ran_jit_analyze = False
                         path_var = os.environ.get("PATH")
                         if path_var is not None:
-                            jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
+                            jit_analyze_file = "jit-analyze.exe" if platform.system() == "Windows" else "jit-analyze"
                             jit_analyze_path = find_file(jit_analyze_file, path_var.split(os.pathsep))
                             if jit_analyze_path is not None:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
@@ -2043,6 +1661,15 @@ class SuperPMIReplayAsmDiffs:
                             logging.info("Textual differences found in generated JitDump.")
                         else:
                             logging.warning("No textual differences found in generated JitDump. Is this an issue with coredistools?")
+
+                    if base_metrics is not None and diff_metrics is not None:
+                        missing_base = int(base_metrics["Missing compiles"])
+                        missing_diff = int(diff_metrics["Missing compiles"])
+                        total_contexts = int(base_metrics["Successful compiles"]) + int(base_metrics["Failing compiles"])
+
+                        if missing_base > 0 or missing_diff > 0:
+                            logging.warning("Warning: SuperPMI encountered missing data during the diff. The diff summary printed above may be misleading.")
+                            logging.warning("Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
 
                 ################################################################################################ end of processing asm diffs (if is_nonzero_length_file(diff_mcl_file)...
 
@@ -2147,7 +1774,8 @@ def determine_coredis_tools(coreclr_args):
             logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        download_one_url(coredistools_uri, coredistools_location)
+        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+        download_one_url(coredistools_uri, coredistools_location, is_azure_storage=True, display_progress=not skip_progress)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -2183,7 +1811,8 @@ def determine_pmi_location(coreclr_args):
                 logging.info("Using PMI found at %s", pmi_location)
             else:
                 pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
-                download_one_url(pmi_uri, pmi_location)
+                skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+                download_one_url(pmi_uri, pmi_location, is_azure_storage=True, display_progress=not skip_progress)
 
     assert os.path.isfile(pmi_location)
     return pmi_location
@@ -2609,7 +2238,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     # Download all the urls at once, and add the local cache filenames to our accumulated list of local file names.
     skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
     if len(urls) != 0:
-        local_mch_files += download_files(urls, mch_cache_dir, display_progress=not skip_progress)
+        local_mch_files += download_files(urls, mch_cache_dir, is_azure_storage=True, display_progress=not skip_progress)
 
     # Special case: walk the URLs list and for every ".mch" or ".mch.zip" file, check to see that either the associated ".mct" file is already
     # in the list, or add it to a new list to attempt to download (but don't fail the download if it doesn't exist).
@@ -2620,7 +2249,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
             if mct_url not in urls:
                 mct_urls.append(mct_url)
     if len(mct_urls) != 0:
-        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, display_progress=not skip_progress)
+        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, is_azure_storage=True, display_progress=not skip_progress)
 
     # Even though we might have downloaded MCT files, only return the set of MCH files.
     local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
@@ -2716,94 +2345,7 @@ def download_mch_from_azure(coreclr_args, target_dir):
     urls = [blob_url_prefix + path for path in paths]
 
     skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
-    return download_files(urls, target_dir, display_progress=not skip_progress)
-
-def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, display_progress=True):
-    """ Download a set of files, specified as URLs or paths (such as Windows UNC paths),
-        to a target directory. If a file is a .ZIP file, then uncompress the file and
-        copy all its contents to the target directory.
-
-    Args:
-        paths (list): the URLs and paths to download
-        target_dir (str): target directory where files are copied.
-        verbse (bool): if True, do verbose logging.
-        fail_if_not_found (bool): if True, fail if a download fails due to file not found (HTTP error 404).
-                                  Otherwise, ignore the failure.
-
-    Returns:
-        list of full paths of local filenames of downloaded files in the target directory
-    """
-
-    if len(paths) == 0:
-        logging.warning("No files specified to download")
-        return None
-
-    if verbose:
-        logging.info("Downloading:")
-        for item_path in paths:
-            logging.info("  %s", item_path)
-
-    # Create the target directory now, if it doesn't already exist.
-    target_dir = os.path.abspath(target_dir)
-    if not os.path.isdir(target_dir):
-        os.makedirs(target_dir)
-
-    local_paths = []
-
-    # In case we'll need a temp directory for ZIP file processing, create it first.
-    with TempDir() as temp_location:
-        for item_path in paths:
-            is_item_url = is_url(item_path)
-            item_name = item_path.split("/")[-1] if is_item_url else os.path.basename(item_path)
-
-            if item_path.lower().endswith(".zip"):
-                # Delete everything in the temp_location (from previous iterations of this loop, so previous URL downloads).
-                temp_location_items = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
-                for item in temp_location_items:
-                    if os.path.isdir(item):
-                        shutil.rmtree(item)
-                    else:
-                        os.remove(item)
-
-                download_path = os.path.join(temp_location, item_name)
-                if is_item_url:
-                    ok = download_one_url(item_path, download_path, fail_if_not_found, display_progress)
-                    if not ok:
-                        continue
-                else:
-                    if fail_if_not_found or os.path.isfile(item_path):
-                        if verbose:
-                            logging.info("Download: %s -> %s", item_path, download_path)
-                        shutil.copy2(item_path, download_path)
-
-                if verbose:
-                    logging.info("Uncompress %s", download_path)
-                with zipfile.ZipFile(download_path, "r") as file_handle:
-                    file_handle.extractall(temp_location)
-
-                # Copy everything that was extracted to the target directory.
-                items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip") ]
-                for item in items:
-                    target_path = os.path.join(target_dir, os.path.basename(item))
-                    if verbose:
-                        logging.info("Copy %s -> %s", item, target_path)
-                    shutil.copy2(item, target_dir)
-                    local_paths.append(target_path)
-            else:
-                # Not a zip file; download directory to target directory
-                download_path = os.path.join(target_dir, item_name)
-                if is_item_url:
-                    ok = download_one_url(item_path, download_path, fail_if_not_found, display_progress)
-                    if not ok:
-                        continue
-                else:
-                    if fail_if_not_found or os.path.isfile(item_path):
-                        if verbose:
-                            logging.info("Download: %s -> %s", item_path, download_path)
-                        shutil.copy2(item_path, download_path)
-                local_paths.append(download_path)
-
-    return local_paths
+    return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
 
 
 def upload_mch(coreclr_args):
@@ -3198,7 +2740,7 @@ def process_base_jit_path_arg(coreclr_args):
             blob_folder_name = "{}/{}/{}/{}/{}/{}".format(az_builds_root_folder, git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type, jit_name)
             blob_uri = "{}/{}".format(az_blob_storage_jitrollingbuild_container_uri, blob_folder_name)
             urls = [ blob_uri ]
-            local_files = download_files(urls, basejit_dir, verbose=False, fail_if_not_found=False)
+            local_files = download_files(urls, basejit_dir, verbose=False, is_azure_storage=True, fail_if_not_found=False)
 
             if len(local_files) > 0:
                 if hashnum > 1:
@@ -3277,6 +2819,11 @@ def setup_args(args):
                         lambda unused: True,
                         "Unable to set spmi_location",
                         modify_arg=setup_spmi_location_arg)
+
+    coreclr_args.verify(args,
+                        "no_progress",
+                        lambda unused: True,
+                        "Unable to set no_progress")
 
     # Finish setting up logging.
     # The spmi_location is the root directory where we put the log file.
@@ -3824,11 +3371,6 @@ def setup_args(args):
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
-
-        coreclr_args.verify(args,
-                            "no_progress",
-                            lambda unused: True,
-                            "Unable to set no_progress")
 
         coreclr_args.verify(args,
                             "filter",

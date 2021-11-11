@@ -30,6 +30,8 @@
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
+extern void InitProvidersAndEvents (void);
+
 // EventPipe rt init state.
 gboolean _ep_rt_mono_initialized;
 
@@ -1826,7 +1828,6 @@ profiler_eventpipe_thread_exited (
 	MonoProfiler *prof,
 	uintptr_t tid)
 {
-	void ep_rt_mono_thread_exited (void);
 	ep_rt_mono_thread_exited ();
 }
 
@@ -2414,7 +2415,6 @@ ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 void
 ep_rt_mono_init_providers_and_events (void)
 {
-	extern void InitProvidersAndEvents (void);
 	InitProvidersAndEvents ();
 }
 

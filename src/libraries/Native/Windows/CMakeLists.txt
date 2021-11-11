@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0091 NEW)
 
+include(../../../../eng/native/configurepaths.cmake)
+
 # C Compiler flags
 SET (CMAKE_C_FLAGS_INIT                     "/W3 /FC")
 SET (CMAKE_C_FLAGS_DEBUG_INIT               "/Od /Zi")
@@ -126,6 +128,8 @@ endif ()
 # such as on bad user-provided inputs.  We leave NDEBUG defined, however,
 # as other asserts should still be included.
 add_compile_definitions($<$<CONFIG:RELEASE>:NDEBUG>)
+
+include_directories(${CLR_SRC_NATIVE_DIR})
 
 # we only need to build System.Globalization.Native when building static libs.
 if(STATIC_LIBS_ONLY)

@@ -4260,7 +4260,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         noway_assert(operandReg != REG_RCX);
 
         inst_Mov(targetType, tree->GetRegNum(), operandReg, /* canSkip */ true);
-        inst_RV_CL(ins, tree->GetRegNum(), targetType);
+        inst_RV(ins, tree->GetRegNum(), targetType);
     }
 
     genProduceReg(tree);
@@ -5506,11 +5506,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     // We don't want tail call helper calls that were converted from normal calls to get a record,
     // so we skip this hash table lookup logic in that case.
 
-    IL_OFFSETX ilOffset = BAD_IL_OFFSET;
+    DebugInfo di;
 
-    if (compiler->opts.compDbgInfo && compiler->genCallSite2ILOffsetMap != nullptr && !call->IsTailCall())
+    if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
     {
-        (void)compiler->genCallSite2ILOffsetMap->Lookup(call, &ilOffset);
+        (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
     }
 
     CORINFO_SIG_INFO* sigInfo = nullptr;
@@ -5562,7 +5562,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
-                                       ilOffset, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
+                                       di, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
             // clang-format on
         }
         else
@@ -5583,7 +5583,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                             X86_ARG(argSizeForEmitter),
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                            ilOffset,
+                            di,
                             REG_NA,
                             call->IsFastTailCall());
                 // clang-format on
@@ -5605,7 +5605,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                                  X86_ARG(argSizeForEmitter),
                                  retSize
                                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                 ilOffset,
+                                 di,
                                  call->IsFastTailCall());
                 // clang-format on
             }
@@ -5631,7 +5631,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        ilOffset,
+                        di,
                         target->GetRegNum(),
                         call->IsFastTailCall());
             // clang-format on
@@ -5661,7 +5661,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 gcInfo.gcVarPtrSetCur,
                 gcInfo.gcRegGCrefSetCur,
                 gcInfo.gcRegByrefSetCur,
-                ilOffset, indirCellReg, REG_NA, 0, 0,
+                di, indirCellReg, REG_NA, 0, 0,
                 call->IsFastTailCall());
             // clang-format on
         }
@@ -5678,7 +5678,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        ilOffset,
+                        di,
                         REG_NA,
                         call->IsFastTailCall());
             // clang-format on
@@ -5718,7 +5718,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        ilOffset,
+                        di,
                         REG_NA,
                         call->IsFastTailCall());
             // clang-format on
@@ -6083,7 +6083,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
         std::swap(op1, op2);
     }
 
-    ins     = ins_FloatCompare(op1Type);
+    ins     = (op1Type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
     cmpAttr = emitTypeSize(op1Type);
 
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
@@ -7201,7 +7201,9 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             assert(srcNode->TypeGet() == treeNode->TypeGet());
 
             genConsumeOperands(treeNode->AsOp());
-            GetEmitter()->emitInsBinary(ins_FloatSqrt(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode, srcNode);
+
+            const instruction ins = (treeNode->TypeGet() == TYP_FLOAT) ? INS_sqrtss : INS_sqrtsd;
+            GetEmitter()->emitInsBinary(ins, emitTypeSize(treeNode), treeNode, srcNode);
             break;
         }
 
@@ -8406,7 +8408,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               BAD_IL_OFFSET, // IL offset
+                               DebugInfo(),
                                callTarget,    // ireg
                                REG_NA, 0, 0,  // xreg, xmul, disp
                                false         // isJump

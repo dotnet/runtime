@@ -9,7 +9,33 @@ import dts from "rollup-plugin-dts";
 const outputFileName = "runtime.iffe.js";
 const isDebug = process.env.Configuration !== "Release";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
-const plugins = isDebug ? [writeOnChangePlugin()] : [terser(), writeOnChangePlugin()];
+const terserConfig = {
+    compress: {
+        defaults: false,// to agressive minification breaks subsequent emcc compilation
+        drop_debugger: false,// we invoke debugger
+        drop_console: false,// we log to console
+        unused: false,// this breaks stuff
+        // below are minification features which seems to work fine
+        collapse_vars: true,
+        conditionals: true,
+        dead_code: true,
+        if_return: true,
+        inline: true,
+        join_vars: true,
+        loops: true,
+        reduce_vars: true,
+        evaluate: true,
+        hoist_props: true,
+        sequences: true,
+    },
+    mangle: {
+        // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
+        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message)/,
+    },
+    // we export ES5 because emcc parser has trouble parsing it otherwise
+    ecma: 5,
+};
+const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 
 export default defineConfig([
     {

@@ -13,6 +13,8 @@
 #endif
 #include "ep-getter-setter.h"
 
+extern EventPipeConfiguration _ep_config_instance;
+
 /*
  * EventPipeConfiguration.
  */
@@ -40,7 +42,6 @@ EventPipeConfiguration *
 ep_config_get (void)
 {
 	// Singelton.
-	extern EventPipeConfiguration _ep_config_instance;
 	return &_ep_config_instance;
 }
 

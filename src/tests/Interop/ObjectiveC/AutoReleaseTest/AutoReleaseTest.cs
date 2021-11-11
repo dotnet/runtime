@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
-using TestLibrary;
+using Xunit;
 
 internal static unsafe class ObjectiveC
 {
@@ -47,7 +47,7 @@ public class AutoReleaseTest
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
+            Assert.Equal(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
         }
 
         static void RunScenario(AutoResetEvent evt)
@@ -80,7 +80,7 @@ public class AutoReleaseTest
             evt.WaitOne();
             // Wait 60 ms after the signal to ensure that the thread has finished the work item and has drained the thread's autorelease pool.
             Thread.Sleep(60);
-            Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
+            Assert.Equal(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
         }
     }
 }

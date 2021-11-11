@@ -16,16 +16,16 @@
 .file alignment 512
 
 // Image base: 0x034f0000
-.class private sequential ansi sealed beforefieldinit Test
+.class private sequential ansi sealed beforefieldinit Test_oddsize
        extends [mscorlib]System.ValueType
 {
-  .field public static valuetype Test test1 at bytearray2
+  .field public static valuetype Test_oddsize test1 at bytearray2
   .field public int32 m_v1
-  .method private hidebysig static void Dump(valuetype Test &arg) cil managed
+  .method private hidebysig static void Dump(valuetype Test_oddsize &arg) cil managed
   {
     .maxstack  8
     ldarg.0
-    ldfld int32 Test::m_v1
+    ldfld int32 Test_oddsize::m_v1
     ldc.i4 0x04030201
     sub
     call void [System.Console]System.Console::Write(int32)
@@ -37,8 +37,8 @@
     .entrypoint
     .maxstack  1
     .locals (int32 V_0)
-    ldsflda valuetype Test Test::test1
-    call void Test::Dump(valuetype Test &arg)
+    ldsflda valuetype Test_oddsize Test_oddsize::test1
+    call void Test_oddsize::Dump(valuetype Test_oddsize &arg)
     ldc.i4.s   100
     ret
   } // end of method Test::Main

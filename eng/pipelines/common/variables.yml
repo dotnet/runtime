@@ -13,6 +13,8 @@ variables:
   value: ${{ and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
 - name: isFullMatrix
   value: ${{ and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
+- name: isNotFullMatrix
+  value: ${{ and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml

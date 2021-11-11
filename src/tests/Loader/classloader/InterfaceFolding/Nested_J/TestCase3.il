@@ -58,7 +58,7 @@
   }
 }
 
-.class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+.class public auto ansi beforefieldinit Test_TestCase3 extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {

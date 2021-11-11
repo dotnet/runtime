@@ -11,7 +11,7 @@
 }
 .assembly 'test'
 { }
-.class private auto ansi Test extends [mscorlib]System.Object
+.class private auto ansi Test_conv_i8_i extends [mscorlib]System.Object
 {
 .method private hidebysig static int32 Main() il managed
 {

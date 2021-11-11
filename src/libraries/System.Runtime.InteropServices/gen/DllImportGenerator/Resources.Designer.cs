@@ -511,7 +511,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to P/Invoke source generation is only supported on .NET {0} or above. The generated source will not be compatible with other frameworks..
+        ///   Looks up a localized string similar to P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks..
         /// </summary>
         internal static string TargetFrameworkNotSupportedDescription {
             get {
@@ -520,7 +520,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;GeneratedDllImportAttribute&apos; cannot be used for source-generated P/Invokes on the current target framework. Source-generated P/Invokes require .NET {0} or above..
+        ///   Looks up a localized string similar to &apos;GeneratedDllImportAttribute&apos; cannot be used for source-generated P/Invokes on an unknown target framework v{0}..
         /// </summary>
         internal static string TargetFrameworkNotSupportedMessage {
             get {

@@ -90,7 +90,7 @@
       <_MonoWorkloadRuntimePackPackageVersion>$(RuntimePackInWorkloadVersion)</_MonoWorkloadRuntimePackPackageVersion>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'">
+    <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true' and '$(TargetFramework)' == '${NetCoreAppCurrent}'">
       <MonoRuntimePackRids Include="
         linux-x64;
         win-x64;
@@ -113,12 +113,11 @@
         android-x86;
         " />
 
-      <_PackUpdates Include="Microsoft.NETCore.App" TargetFramework="${NetCoreAppCurrent}" RuntimeFrameworkName="Microsoft.NETCore.App" />
-      <KnownRuntimePack Remove="@(_PackUpdates)" MatchOnMetadata="TargetFramework;RuntimeFrameworkName"/>
+      <KnownRuntimePack Remove="Microsoft.NETCore.App" />
       <KnownRuntimePack Include="Microsoft.NETCore.App"
                         TargetFramework="${NetCoreAppCurrent}"
                         RuntimeFrameworkName="Microsoft.NETCore.App"
-                        LatestRuntimeFrameworkVersion="$(_MonoWorkloadRuntimePackPackageVersion)"
+                        LatestRuntimeFrameworkVersion="**FromWorkload**"
                         RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.Mono.**RID**"
                         RuntimePackRuntimeIdentifiers="@(MonoRuntimePackRids, '%3B')"
                         RuntimePackLabels="Mono"

@@ -801,7 +801,7 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
 		return;
 
 	GList *list = info->delta_image;
-	MonoImage *dmeta;
+	MonoImage *dmeta = NULL;
 	int ridx;
 	MonoTableInfo *table;
 	int g = 0;

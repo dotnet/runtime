@@ -3,12 +3,12 @@
 
 .assembly extern mscorlib {}
 .assembly badldslfd { }
-.class Test extends [mscorlib]System.Object
+.class Test_badldsfld extends [mscorlib]System.Object
 {
 .field int32 i
 .method static int32 f()
 {
-ldsfld int32 Test::i
+ldsfld int32 Test_badldsfld::i
 ret
 }
 .method public static int32 Main()
@@ -16,7 +16,7 @@ ret
 .entrypoint
 .try
 {
-call int32 Test::f()
+call int32 Test_badldsfld::f()
 leave.s FAIL
 }
 catch [mscorlib]System.InvalidProgramException

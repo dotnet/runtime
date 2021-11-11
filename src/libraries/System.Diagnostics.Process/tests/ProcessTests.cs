@@ -1105,6 +1105,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60588", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestGetProcesses()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -1170,6 +1171,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60588", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void GetProcessesByName_ProcessName_ReturnsExpected()
         {
             // Get the current process using its name
@@ -1229,6 +1231,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [MemberData(nameof(MachineName_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60588", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void GetProcessesByName_ProcessNameMachineName_ReturnsExpected(string machineName)
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -1255,6 +1258,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60588", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void GetProcessesByName_NoSuchProcess_ReturnsEmpty()
         {
             string processName = Guid.NewGuid().ToString("N");
@@ -2214,7 +2218,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ArgumentListArgumentNullThrowsOnStart()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName());

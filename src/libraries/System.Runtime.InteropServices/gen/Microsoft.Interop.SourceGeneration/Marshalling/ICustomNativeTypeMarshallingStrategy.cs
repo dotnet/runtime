@@ -977,6 +977,18 @@ namespace Microsoft.Interop
             if (!info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
+                // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
+                // <nativeIdentifier>.NativeValueStorage.Clear();
+                string nativeIdentifier = context.GetIdentifiers(info).native;
+                yield return ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            MemberAccessExpression(
+                                SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName(nativeIdentifier),
+                                IdentifierName(ManualTypeMarshallingHelper.NativeValueStoragePropertyName)),
+                            IdentifierName("Clear"))));
                 yield break;
             }
 

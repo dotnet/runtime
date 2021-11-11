@@ -1173,20 +1173,9 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyImportHelpers.ImportPem(input, label => {
-                if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
-                {
-                    return ImportPkcs8PrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
-                {
-                    return ImportSubjectPublicKeyInfo;
-                }
-                else
-                {
-                    return null;
-                }
-            });
+            // Implementation has been pushed down to AsymmetricAlgorithm. The
+            // override remains for compatibility.
+            base.ImportFromPem(input);
         }
 
         /// <summary>
@@ -1255,7 +1244,9 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<char> password)
         {
-            PemKeyImportHelpers.ImportEncryptedPem<char>(input, password, ImportEncryptedPkcs8PrivateKey);
+            // Implementation has been pushed down to AsymmetricAlgorithm. The
+            // override remains for compatibility.
+            base.ImportFromEncryptedPem(input, password);
         }
 
         /// <summary>
@@ -1325,7 +1316,9 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<byte> passwordBytes)
         {
-            PemKeyImportHelpers.ImportEncryptedPem<byte>(input, passwordBytes, ImportEncryptedPkcs8PrivateKey);
+            // Implementation has been pushed down to AsymmetricAlgorithm. The
+            // override remains for compatibility.
+            base.ImportFromEncryptedPem(input, passwordBytes);
         }
     }
 }

@@ -101,6 +101,10 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
+    # Build/Generate native prerequisites
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.nativeprereqs $(crossArg) -arch $(archType) -c $(buildConfig) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/CoreCLRNativePrereqs.binlog
+      displayName: Build and generate native prerequisites
+
     # Build CoreCLR JIT
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -component alljits

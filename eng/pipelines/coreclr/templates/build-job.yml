@@ -45,7 +45,7 @@ jobs:
     # Compute job name from template parameters
     ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.compilerName, 'gcc')) }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}{5}',
         parameters.runtimeVariant,
@@ -128,11 +128,14 @@ jobs:
       - name: clrInterpreterBuildArg
         value: '-cmakeargs "-DFEATURE_INTERPRETER=1"'
 
-    - name: clrBuildPALTestsBuildArg
+    - name: clrRuntimeComponentsBuildArg
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      - name: clrBuildPALTestsBuildArg
+      - name: clrRuntimeComponentsBuildArg
         value: '-component runtime -component alljits -component paltests '
+    - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x86')) }}:
+      - name: clrRuntimeComponentsBuildArg
+        value: '-component runtime -component jit -component iltools '
 
     - name: pgoInstrumentArg
       value: ''
@@ -145,7 +148,7 @@ jobs:
 
     - name: clrRuntimePortableBuildArg
       value: ''
-    - ${{ if eq(parameters.archType, 'armel' )}}:
+    - ${{ if eq(parameters.osGroup, 'Tizen') }}:
       - name: clrRuntimePortableBuildArg
         value: '-portablebuild=false'
 
@@ -195,7 +198,7 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
@@ -208,8 +211,12 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
-      displayName: Build managed product components and packages
+    - ${{ if or(ne(parameters.osGroup, 'Linux'), ne(parameters.archType, 'x86')) }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
+        displayName: Build managed product components and packages
+    - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x86')) }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
+        displayName: Build managed product components and packages
 
     # Run CoreCLR Tools unit tests
     - ${{ if eq(parameters.testGroup, 'clrTools') }}:
@@ -220,6 +227,11 @@ jobs:
     - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.disableClrTest, true)) }}:
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
+
+    # Build libs.native, host.native and mono with gcc
+    - ${{ if eq(parameters.compilerName, 'gcc') }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) libs.native+host.native+mono $(compilerArg) $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
+        displayName: Build libs.native+host.native+mono
 
     # Sign and add entitlements to these MacOS binaries
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:

@@ -5,7 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public static class Test
+public static class Test_DevDiv_653853
 {
     public static int Main()
     {        

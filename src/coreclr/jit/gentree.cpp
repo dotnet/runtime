@@ -2968,21 +2968,29 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_types type)
 {
     // These are "out" parameters on the call to genCreateAddrMode():
-    bool rev; // This will be true if the operands will need to be reversed. At this point we
-              // don't care about this because we're not yet instantiating this addressing mode.
-#if SCALED_ADDR_MODES
-    unsigned mul; // This is the index (scale) value for the addressing mode
-#endif
+    bool rev;      // This will be true if the operands will need to be reversed. At this point we
+                   // don't care about this because we're not yet instantiating this addressing mode.
+    unsigned mul;  // This is the index (scale) value for the addressing mode
     ssize_t  cns;  // This is the constant offset
     GenTree* base; // This is the base of the address.
     GenTree* idx;  // This is the index.
 
-    if (codeGen->genCreateAddrMode(addr, false /*fold*/, &rev, &base, &idx,
-#if SCALED_ADDR_MODES
-                                   &mul,
-#endif // SCALED_ADDR_MODES
-                                   &cns))
+    if (codeGen->genCreateAddrMode(addr, false /*fold*/, &rev, &base, &idx, &mul, &cns))
     {
+
+#ifdef TARGET_ARMARCH
+        // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+        //
+        //   *(ulong*)(data + index * 8); - can be optimized
+        //   *(ulong*)(data + index * 7); - can not be optimized
+        //     *(int*)(data + index * 2); - can not be optimized
+        //
+        if ((mul > 0) && (genTypeSize(type) != mul))
+        {
+            return false;
+        }
+#endif
+
         // We can form a complex addressing mode, so mark each of the interior
         // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
 
@@ -3157,11 +3165,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         // Note that cns can be zero.
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if SCALED_ADDR_MODES
         assert((base != nullptr) || (idx != nullptr && mul >= 2));
-#else
-        assert(base != NULL);
-#endif
 
         INDEBUG(GenTree* op1Save = addr);
 
@@ -3176,12 +3180,14 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         assert(op1 != op1Save);
         assert(op2 != nullptr);
 
+#if defined(TARGET_XARCH)
         // Walk the operands again (the third operand is unused in this case).
         // This time we will only consider adds with constant op2's, since
         // we have already found either a non-ADD op1 or a non-constant op2.
+        // NOTE: we don't support ADD(op1, cns) addressing for ARM/ARM64 yet so
+        // this walk makes no sense there.
         gtWalkOp(&op1, &op2, nullptr, true);
 
-#if defined(TARGET_XARCH)
         // For XARCH we will fold GT_ADDs in the op2 position into the addressing mode, so we call
         // gtWalkOp on both operands of the original GT_ADD.
         // This is not done for ARMARCH. Though the stated reason is that we don't try to create a
@@ -6343,13 +6349,13 @@ GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, CorInfoType simdBaseJ
 }
 #endif // FEATURE_SIMD
 
-GenTreeCall* Compiler::gtNewIndCallNode(GenTree* addr, var_types type, GenTreeCall::Use* args, IL_OFFSETX ilOffset)
+GenTreeCall* Compiler::gtNewIndCallNode(GenTree* addr, var_types type, GenTreeCall::Use* args, const DebugInfo& di)
 {
-    return gtNewCallNode(CT_INDIRECT, (CORINFO_METHOD_HANDLE)addr, type, args, ilOffset);
+    return gtNewCallNode(CT_INDIRECT, (CORINFO_METHOD_HANDLE)addr, type, args, di);
 }
 
 GenTreeCall* Compiler::gtNewCallNode(
-    gtCallTypes callType, CORINFO_METHOD_HANDLE callHnd, var_types type, GenTreeCall::Use* args, IL_OFFSETX ilOffset)
+    gtCallTypes callType, CORINFO_METHOD_HANDLE callHnd, var_types type, GenTreeCall::Use* args, const DebugInfo& di)
 {
     GenTreeCall* node = new (this, GT_CALL) GenTreeCall(genActualType(type));
 
@@ -6393,14 +6399,15 @@ GenTreeCall* Compiler::gtNewCallNode(
     // These get updated after call node is built.
     node->gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
     node->gtRawILOffset       = BAD_IL_OFFSET;
+    node->gtInlineContext     = compInlineContext;
 #endif
 
     // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
     //
     // Implementation note: if not generating MRV info genCallSite2ILOffsetMap will be NULL and
-    // codegen will pass BAD_IL_OFFSET as IL offset of a call node to emitter, which will cause emitter
+    // codegen will pass DebugInfo() to emitter, which will cause emitter
     // not to emit IP mapping entry.
-    if (opts.compDbgCode && opts.compDbgInfo)
+    if (opts.compDbgCode && opts.compDbgInfo && di.IsValid())
     {
         // Managed Retval - IL offset of the call.  This offset is used to emit a
         // CALL_INSTRUCTION type sequence point while emitting corresponding native call.
@@ -6412,14 +6419,14 @@ GenTreeCall* Compiler::gtNewCallNode(
         //
         // b) (Opt) Add new sequence points only if requested by debugger through
         // a new boundary type - ICorDebugInfo::BoundaryTypes
-        if (genCallSite2ILOffsetMap == nullptr)
+        if (genCallSite2DebugInfoMap == nullptr)
         {
-            genCallSite2ILOffsetMap = new (getAllocator()) CallSiteILOffsetTable(getAllocator());
+            genCallSite2DebugInfoMap = new (getAllocator()) CallSiteDebugInfoTable(getAllocator());
         }
 
         // Make sure that there are no duplicate entries for a given call node
-        assert(!genCallSite2ILOffsetMap->Lookup(node));
-        genCallSite2ILOffsetMap->Set(node, ilOffset);
+        assert(!genCallSite2DebugInfoMap->Lookup(node));
+        genCallSite2DebugInfoMap->Set(node, di);
     }
 
     // Initialize gtOtherRegs
@@ -6440,7 +6447,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     return node;
 }
 
-GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
+GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs))
 {
     assert(type != TYP_VOID);
     // We need to ensure that all struct values are normalized.
@@ -6460,7 +6467,7 @@ GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL
         assert((type == varDsc->lvType) || simd12ToSimd16Widening ||
                (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == TYP_BYREF)));
     }
-    GenTreeLclVar* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs));
+    GenTreeLclVar* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(offs));
 
     /* Cannot have this assert because the inliner uses this function
      * to add temporaries */
@@ -6470,7 +6477,7 @@ GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL
     return node;
 }
 
-GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
+GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs))
 {
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
@@ -6485,7 +6492,7 @@ GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL
     // This local variable node may later get transformed into a large node
     assert(GenTree::s_gtNodeSizes[LargeOpOpcode()] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
     GenTreeLclVar* node =
-        new (this, LargeOpOpcode()) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs) DEBUGARG(/*largeNode*/ true));
+        new (this, LargeOpOpcode()) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(offs) DEBUGARG(/*largeNode*/ true));
     return node;
 }
 
@@ -8288,7 +8295,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     copy->gtInlineObservation = tree->gtInlineObservation;
-    copy->gtRawILOffset       = tree->AsCall()->gtRawILOffset;
+    copy->gtRawILOffset       = tree->gtRawILOffset;
+    copy->gtInlineContext     = tree->gtInlineContext;
 #endif
 
     copy->CopyOtherRegFlags(tree);
@@ -11470,15 +11478,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_IL_OFFSET:
-            printf(" IL offset: ");
-            if (tree->AsILOffset()->gtStmtILoffsx == BAD_IL_OFFSET)
-            {
-                printf("???");
-            }
-            else
-            {
-                printf("0x%x", jitGetILoffs(tree->AsILOffset()->gtStmtILoffsx));
-            }
+            printf(" ");
+            tree->AsILOffset()->gtStmtDI.Dump(true);
             break;
 
         case GT_JCC:
@@ -12338,28 +12339,40 @@ void Compiler::gtDispStmt(Statement* stmt, const char* msg /* = nullptr */)
             printf("%s ", msg);
         }
         printStmtID(stmt);
-        IL_OFFSETX firstILOffsx = stmt->GetILOffsetX();
-        printf(" (IL ");
-        if (firstILOffsx == BAD_IL_OFFSET)
+        printf(" ( ");
+        const DebugInfo& di = stmt->GetDebugInfo();
+        // For statements in the root we display just the location without the
+        // inline context info.
+        if (di.GetInlineContext() == nullptr || di.GetInlineContext()->IsRoot())
         {
-            printf("  ???");
+            di.GetLocation().Dump();
         }
         else
         {
-            printf("0x%03X", jitGetILoffs(firstILOffsx));
+            stmt->GetDebugInfo().Dump(false);
         }
-        printf("...");
+        printf(" ... ");
 
         IL_OFFSET lastILOffs = stmt->GetLastILOffset();
         if (lastILOffs == BAD_IL_OFFSET)
         {
-            printf("  ???");
+            printf("???");
         }
         else
         {
             printf("0x%03X", lastILOffs);
         }
-        printf(")\n");
+
+        printf(" )");
+
+        DebugInfo par;
+        if (stmt->GetDebugInfo().GetParent(&par))
+        {
+            printf(" <- ");
+            par.Dump(true);
+        }
+
+        printf("\n");
     }
     gtDispTree(stmt->GetRootNode());
 }
@@ -15243,7 +15256,7 @@ INTEGRAL_OVF:
 //    May set compFloatingPointUsed.
 
 GenTree* Compiler::gtNewTempAssign(
-    unsigned tmp, GenTree* val, Statement** pAfterStmt, IL_OFFSETX ilOffset, BasicBlock* block)
+    unsigned tmp, GenTree* val, Statement** pAfterStmt, const DebugInfo& di, BasicBlock* block)
 {
     // Self-assignment is a nop.
     if (val->OperGet() == GT_LCL_VAR && val->AsLclVarCommon()->GetLclNum() == tmp)
@@ -15385,7 +15398,7 @@ GenTree* Compiler::gtNewTempAssign(
         }
         dest->gtFlags |= GTF_DONT_CSE;
         valx->gtFlags |= GTF_DONT_CSE;
-        asg = impAssignStruct(dest, val, valStructHnd, (unsigned)CHECK_SPILL_NONE, pAfterStmt, ilOffset, block);
+        asg = impAssignStruct(dest, val, valStructHnd, (unsigned)CHECK_SPILL_NONE, pAfterStmt, di, block);
     }
     else
     {
@@ -15561,7 +15574,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
  *  assignments too.
  */
 
-bool Compiler::gtNodeHasSideEffects(GenTree* tree, unsigned flags)
+bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
 {
     if (flags & GTF_ASG)
     {
@@ -15637,10 +15650,10 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, unsigned flags)
  * Returns true if the expr tree has any side effects.
  */
 
-bool Compiler::gtTreeHasSideEffects(GenTree* tree, unsigned flags /* = GTF_SIDE_EFFECT*/)
+bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_SIDE_EFFECT*/)
 {
     // These are the side effect flags that we care about for this tree
-    unsigned sideEffectFlags = tree->gtFlags & flags;
+    GenTreeFlags sideEffectFlags = tree->gtFlags & flags;
 
     // Does this tree have any Side-effect flags set that we care about?
     if (sideEffectFlags == 0)
@@ -15754,15 +15767,15 @@ GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
 //    each comma node holds the side effect tree and op2 points to the
 //    next comma node. The original side effect execution order is preserved.
 //
-void Compiler::gtExtractSideEffList(GenTree*  expr,
-                                    GenTree** pList,
-                                    unsigned  flags /* = GTF_SIDE_EFFECT*/,
-                                    bool      ignoreRoot /* = false */)
+void Compiler::gtExtractSideEffList(GenTree*     expr,
+                                    GenTree**    pList,
+                                    GenTreeFlags flags /* = GTF_SIDE_EFFECT*/,
+                                    bool         ignoreRoot /* = false */)
 {
     class SideEffectExtractor final : public GenTreeVisitor<SideEffectExtractor>
     {
     public:
-        const unsigned       m_flags;
+        const GenTreeFlags   m_flags;
         ArrayStack<GenTree*> m_sideEffects;
 
         enum
@@ -15771,7 +15784,7 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
             UseExecutionOrder = true
         };
 
-        SideEffectExtractor(Compiler* compiler, unsigned flags)
+        SideEffectExtractor(Compiler* compiler, GenTreeFlags flags)
             : GenTreeVisitor(compiler), m_flags(flags), m_sideEffects(compiler->getAllocator(CMK_SideEffects))
         {
         }
