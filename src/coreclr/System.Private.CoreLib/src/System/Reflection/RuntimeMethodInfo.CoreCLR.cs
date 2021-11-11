@@ -316,10 +316,10 @@ namespace System.Reflection
 
         #region Invocation Logic(On MemberBase)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
+            return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, false, wrapExceptions);
         }
 
         [DebuggerStepThroughAttribute]

@@ -106,6 +106,21 @@ namespace NativeExports
             return sum;
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "fill_char_array")]
+        public static void FillChars(ushort* values, int length, ushort start)
+        {
+            if (values == null)
+            {
+                return;
+            }
+
+            ushort val = start;
+            for (int i = 0; i < length; i++)
+            {
+                values[i] = val++;
+            }
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "reverse_char_array")]
         public static void ReverseChars(ushort** values, int numValues)
         {

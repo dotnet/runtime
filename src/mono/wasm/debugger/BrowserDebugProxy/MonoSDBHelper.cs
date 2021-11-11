@@ -5,14 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Net.Http;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
@@ -1228,8 +1225,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal async Task<MonoBinaryReader> GetCAttrsFromType(SessionId sessionId, int objectId, int typeId, string attrName, CancellationToken token)
         {
-            var invokeParams = new MemoryStream();
-            var invokeParamsWriter = new MonoBinaryWriter(invokeParams);
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write(typeId);
@@ -1287,11 +1282,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (getCAttrsRetReader == null)
                     return null;
 
-                var invokeParams = new MemoryStream();
-                var invokeParamsWriter = new MonoBinaryWriter(invokeParams);
-                invokeParamsWriter.Write((byte)ValueTypeId.Null);
-                invokeParamsWriter.Write((byte)0); //not used
-                invokeParamsWriter.Write(0); //not used
                 var parmCount = getCAttrsRetReader.ReadInt32();
                 var monoType = (ElementType) getCAttrsRetReader.ReadByte(); //MonoTypeEnum -> MONO_TYPE_STRING
                 if (monoType != ElementType.String)
