@@ -42,20 +42,19 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static async Task RunTestFile (string suiteName, string testName, params (string, string)[] msbuildProperties)
 		{
-			GetDirectoryPaths(out string rootSourceDir, out string testAssemblyPath);
-			Debug.Assert(Path.GetFileName(rootSourceDir) == MonoLinkerTestsCases);
-			var testPath = Path.Combine(rootSourceDir, suiteName, $"{testName}.cs");
-			var tree = SyntaxFactory.ParseSyntaxTree(SourceText.From(testPath));
+			GetDirectoryPaths (out string rootSourceDir, out string testAssemblyPath);
+			Debug.Assert (Path.GetFileName (rootSourceDir) == MonoLinkerTestsCases);
+			var testPath = Path.Combine (rootSourceDir, suiteName, $"{testName}.cs");
+			var tree = SyntaxFactory.ParseSyntaxTree (SourceText.From (testPath));
 
-			var testDependenciesSource = TestCase.GetTestDependencies(tree)
-				.Select(f => SyntaxFactory.ParseSyntaxTree(SourceText.From(File.OpenRead(f))));
+			var testDependenciesSource = TestCase.GetTestDependencies (tree)
+				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
 			var comp = await TestCaseCompilation.CreateCompilation (
 					tree,
 					msbuildProperties,
 					additionalSources: testDependenciesSource);
-			foreach (var testCase in BuildTestCasesForFile(tree))
-			{
-				testCase.Run(comp);
+			foreach (var testCase in BuildTestCasesForFile (tree)) {
+				testCase.Run (comp);
 			}
 		}
 
