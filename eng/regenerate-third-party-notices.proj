@@ -24,6 +24,7 @@
       <!--
         Additional repos that should be included but don't have any third-party-notices files:
           dotnet/efcore
+          dotnet/emsdk
           dotnet/extensions
           dotnet/icu
           dotnet/sdk
