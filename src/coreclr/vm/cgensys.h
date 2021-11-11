@@ -94,6 +94,38 @@ inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 
 #endif // !TARGET_X86
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+inline bool DoesOSSupportAVX()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef TARGET_UNIX
+    // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
+    typedef DWORD64 (WINAPI *PGETENABLEDXSTATEFEATURES)();
+    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
+
+    HMODULE hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if(hMod == NULL)
+        return FALSE;
+
+    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
+
+    if (pfnGetEnabledXStateFeatures == NULL)
+    {
+        return FALSE;
+    }
+
+    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
+    if ((FeatureMask & XSTATE_MASK_AVX) == 0)
+    {
+        return FALSE;
+    }
+#endif // !TARGET_UNIX
+
+    return TRUE;
+}
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
 #ifdef TARGET_UNIX
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
@@ -115,11 +147,25 @@ inline bool TargetHasAVXSupport()
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
     int cpuInfo[4];
     __cpuid(cpuInfo, 0x00000001);           // All x86/AMD64 targets support cpuid.
-    return ((cpuInfo[CPUID_ECX] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
+
+    const int EXPECTED_EDX = (1 << 25)  // SSE
+                           | (1 << 26); // SSE2
+
+    const int EXPECTED_ECX = (1 << 0)   // SSE3
+                           | (1 << 9)   // SSSE3
+                           | (1 << 19)  // SSE4.1
+                           | (1 << 20)  // SSE4.2
+                           | (1 << 27)  // OSXSAVE
+                           | (1 << 28); // AVX
+
+
+    if (((cpuInfo[CPUID_EDX] & EXPECTED_EDX) == EXPECTED_EDX) && ((cpuInfo[CPUID_ECX] & EXPECTED_ECX) == EXPECTED_ECX))
+    {
+        return DoesOSSupportAVX() && (xmmYmmStateSupport() == 1); // XGETBV == 11
+    }
 #endif // (defined(TARGET_X86) || defined(TARGET_AMD64))
     return false;
 }
-
 
 #ifndef DACCESS_COMPILE
 // Given an address in a slot, figure out if the prestub will be called

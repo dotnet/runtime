@@ -1187,40 +1187,6 @@ EEJitManager::EEJitManager()
     m_cleanupList = NULL;
 }
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-bool DoesOSSupportAVX()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifndef TARGET_UNIX
-    // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
-    typedef DWORD64 (WINAPI *PGETENABLEDXSTATEFEATURES)();
-    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
-
-    HMODULE hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if(hMod == NULL)
-        return FALSE;
-
-    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
-
-    if (pfnGetEnabledXStateFeatures == NULL)
-    {
-        return FALSE;
-    }
-
-    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
-    if ((FeatureMask & XSTATE_MASK_AVX) == 0)
-    {
-        return FALSE;
-    }
-#endif // !TARGET_UNIX
-
-    return TRUE;
-}
-
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-
 #ifdef TARGET_ARM64
 extern "C" DWORD64 __stdcall GetDataCacheZeroIDReg();
 #endif
