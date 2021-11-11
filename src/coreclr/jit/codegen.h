@@ -210,10 +210,6 @@ protected:
 
     void genInitializeRegisterState();
 
-#if FEATURE_LOOP_ALIGN
-    void genMarkBlocksForLoopAlignment();
-#endif
-
     void genCodeForBBlist();
 
 public:
