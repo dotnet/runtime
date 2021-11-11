@@ -16,6 +16,9 @@ namespace System.Security.Cryptography.Tests
 
         protected abstract TAlg CreateKey();
         protected abstract ECParameters ExportParameters(TAlg key, bool includePrivateParameters);
+        protected abstract void ImportParameters(TAlg key, ECParameters ecParameters);
+        protected abstract string ExportECPrivateKeyPem(TAlg key);
+        protected abstract bool TryExportECPrivateKeyPem(TAlg key, Span<char> destination, out int charsWritten);
 
         [Fact]
         public void ImportFromPem_NoPem()
@@ -432,6 +435,69 @@ y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
                     key.ImportFromEncryptedPem("", ""));
                 Assert.Contains(NoPemExceptionMarker, ae.Message);
+            }
+        }
+
+        [Fact]
+        public void ExportPem_ExportECPrivateKeyPem()
+        {
+            string expectedPem = 
+                "-----BEGIN EC PRIVATE KEY-----\n" +
+                "MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49\n" +
+                "AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS\n" +
+                "NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==\n" +
+                "-----END EC PRIVATE KEY-----";
+
+            using (TAlg key = CreateKey())
+            {
+                ImportParameters(key, EccTestData.GetNistP256ReferenceKey());
+                Assert.Equal(expectedPem, ExportECPrivateKeyPem(key));
+            }
+        }
+
+        [Fact]
+        public void ExportPem_TryExportECPrivateKeyPem()
+        {
+            string expectedPem = 
+                "-----BEGIN EC PRIVATE KEY-----\n" +
+                "MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49\n" +
+                "AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS\n" +
+                "NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==\n" +
+                "-----END EC PRIVATE KEY-----";
+
+            using (TAlg key = CreateKey())
+            {
+                ImportParameters(key, EccTestData.GetNistP256ReferenceKey());
+                
+                int written;
+                bool result;
+                char[] buffer;
+
+                // buffer not enough
+                buffer = new char[expectedPem.Length - 1];
+                result = TryExportECPrivateKeyPem(key, buffer, out written);
+                Assert.False(result, nameof(TryExportECPrivateKeyPem));
+                Assert.Equal(0, written);
+
+                // buffer just enough
+                buffer = new char[expectedPem.Length];
+                result = TryExportECPrivateKeyPem(key, buffer, out written);
+                Assert.True(result, nameof(TryExportECPrivateKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(buffer));
+
+                // buffer more than enough
+                buffer = new char[expectedPem.Length + 20];
+                buffer.AsSpan().Fill('!');
+                Span<char> bufferSpan = buffer.AsSpan(10);
+                result = TryExportECPrivateKeyPem(key, bufferSpan, out written);
+                Assert.True(result, nameof(TryExportECPrivateKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(bufferSpan.Slice(0, written)));
+
+                // Ensure padding has not been touched.
+                AssertExtensions.FilledWith('!', buffer[0..10]);
+                AssertExtensions.FilledWith('!', buffer[^10..]);
             }
         }
     }

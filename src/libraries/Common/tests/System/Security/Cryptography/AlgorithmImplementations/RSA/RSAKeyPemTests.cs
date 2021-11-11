@@ -518,6 +518,138 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
             }
         }
 
+        [Fact]
+        public static void ExportPem_ExportRSAPublicKeyPem()
+        {
+            string expectedPem =
+                "-----BEGIN RSA PUBLIC KEY-----\n" +
+                "MEgCQQC3P1n17ovVXiS3/wKa0WqFQ8ltJT5UMZuTUyxBw8FHe4nbLS8z17modFhI\n" + 
+                "4GqOaDtQRFEeG8o2JSfhfPQrOAYVAgMBAAE=\n" +
+                "-----END RSA PUBLIC KEY-----";
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(TestData.DiminishedDPParameters.ToPublic());
+                Assert.Equal(expectedPem, rsa.ExportRSAPublicKeyPem());
+            }
+        }
+
+        [Fact]
+        public static void ExportPem_TryExportRSAPublicKeyPem()
+        {
+            string expectedPem =
+                "-----BEGIN RSA PUBLIC KEY-----\n" +
+                "MEgCQQC3P1n17ovVXiS3/wKa0WqFQ8ltJT5UMZuTUyxBw8FHe4nbLS8z17modFhI\n" + 
+                "4GqOaDtQRFEeG8o2JSfhfPQrOAYVAgMBAAE=\n" +
+                "-----END RSA PUBLIC KEY-----";
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(TestData.DiminishedDPParameters.ToPublic());
+                
+                int written;
+                bool result;
+                char[] buffer;
+
+                // buffer not enough
+                buffer = new char[expectedPem.Length - 1];
+                result = rsa.TryExportRSAPublicKeyPem(buffer, out written);
+                Assert.False(result, nameof(rsa.TryExportRSAPublicKeyPem));
+                Assert.Equal(0, written);
+
+                // buffer just enough
+                buffer = new char[expectedPem.Length];
+                result = rsa.TryExportRSAPublicKeyPem(buffer, out written);
+                Assert.True(result, nameof(rsa.TryExportRSAPublicKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(buffer));
+
+                // buffer more than enough
+                buffer = new char[expectedPem.Length + 20];
+                buffer.AsSpan().Fill('!');
+                Span<char> bufferSpan = buffer.AsSpan(10);
+                result = rsa.TryExportRSAPublicKeyPem(bufferSpan, out written);
+                Assert.True(result, nameof(rsa.TryExportRSAPublicKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(bufferSpan.Slice(0, written)));
+
+                // Ensure padding has not been touched.
+                AssertExtensions.FilledWith('!', buffer[0..10]);
+                AssertExtensions.FilledWith('!', buffer[^10..]);
+            }
+        }
+
+        [Fact]
+        public static void ExportPem_ExportRSAPrivateKeyPem()
+        {
+            string expectedPem =
+                "-----BEGIN RSA PRIVATE KEY-----\n" +
+                "MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX\n" +
+                "uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh\n" +
+                "Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F\n" +
+                "9ykCIQDzcnsehnYgVZTTxzoCJ01PGpgESilRyFzNEsb8V60ZewIhAMCyOujqUqn7\n" +
+                "Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk\n" +
+                "rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC\n" +
+                "yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==\n" +
+                "-----END RSA PRIVATE KEY-----";
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(TestData.DiminishedDPParameters);
+                Assert.Equal(expectedPem, rsa.ExportRSAPrivateKeyPem());
+            }
+        }
+
+        [Fact]
+        public static void ExportPem_TryExportRSAPrivatePem()
+        {
+            string expectedPem =
+                "-----BEGIN RSA PRIVATE KEY-----\n" +
+                "MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX\n" +
+                "uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh\n" +
+                "Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F\n" +
+                "9ykCIQDzcnsehnYgVZTTxzoCJ01PGpgESilRyFzNEsb8V60ZewIhAMCyOujqUqn7\n" +
+                "Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk\n" +
+                "rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC\n" +
+                "yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==\n" +
+                "-----END RSA PRIVATE KEY-----";
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(TestData.DiminishedDPParameters);
+                
+                int written;
+                bool result;
+                char[] buffer;
+
+                // buffer not enough
+                buffer = new char[expectedPem.Length - 1];
+                result = rsa.TryExportRSAPrivateKeyPem(buffer, out written);
+                Assert.False(result, nameof(rsa.TryExportRSAPrivateKeyPem));
+                Assert.Equal(0, written);
+
+                // buffer just enough
+                buffer = new char[expectedPem.Length];
+                result = rsa.TryExportRSAPrivateKeyPem(buffer, out written);
+                Assert.True(result, nameof(rsa.TryExportRSAPrivateKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(buffer));
+
+                // buffer more than enough
+                buffer = new char[expectedPem.Length + 20];
+                buffer.AsSpan().Fill('!');
+                Span<char> bufferSpan = buffer.AsSpan(10);
+                result = rsa.TryExportRSAPrivateKeyPem(bufferSpan, out written);
+                Assert.True(result, nameof(rsa.TryExportRSAPrivateKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(bufferSpan.Slice(0, written)));
+
+                // Ensure padding has not been touched.
+                AssertExtensions.FilledWith('!', buffer[0..10]);
+                AssertExtensions.FilledWith('!', buffer[^10..]);
+            }
+        }
+
         private static RSAParameters ToPublic(this RSAParameters rsaParams)
         {
             return new RSAParameters
