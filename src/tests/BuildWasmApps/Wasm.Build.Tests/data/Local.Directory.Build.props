@@ -4,7 +4,6 @@
     <_WasmTargetsDir Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\wasm\</_WasmTargetsDir>
     <EMSDK_PATH Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\emsdk\</EMSDK_PATH>
     <PublishTrimmed>true</PublishTrimmed>
-    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
   <Import Project="$(_WasmTargetsDir)WasmApp.LocalBuild.props" Condition="Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.props')" />
