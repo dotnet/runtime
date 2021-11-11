@@ -1,1 +1,5 @@
-<Project />
+<Project>
+  <PropertyGroup>
+    <WasmNativeStrip>false</WasmNativeStrip>
+  </PropertyGroup>
+</Project>

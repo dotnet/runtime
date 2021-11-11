@@ -2,5 +2,6 @@
   <PropertyGroup>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
+    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 </Project>

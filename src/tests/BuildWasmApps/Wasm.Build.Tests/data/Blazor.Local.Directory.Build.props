@@ -8,4 +8,8 @@
     <BuildBaseDir>$(WasmBuildSupportDir)\</BuildBaseDir>
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'microsoft.netcore.app.runtime.browser-wasm'))</MicrosoftNetCoreAppRuntimePackLocationToUse>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <WasmNativeStrip>false</WasmNativeStrip>
+  </PropertyGroup>
 </Project>
