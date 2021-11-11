@@ -361,6 +361,44 @@ bool ReadInstrumentationSchemaWithLayout(const uint8_t *pByte, size_t cbDataMax,
     });
 }
 
+
+// Return true if schemaTable entries are a subset of the schema described by pByte, with matching entries in the same order.
+// Also updates offset of the matching entries in schemaTable to those of the pByte schema.
+//
+inline bool ComparePgoSchemaCompatible(const uint8_t *pByte, size_t cbDataMax, ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
+{
+    size_t iSchema = 0;
+    size_t nSchema = 0;
+    size_t nMatched = 0;
+    size_t nUnmatched = 0;    
+    size_t initialOffset = cbDataMax;
+
+    ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, 
+        [schemaTable, cSchemas, &iSchema, &nSchema, &nMatched, &nUnmatched](const ICorJitInfo::PgoInstrumentationSchema& schema) 
+    {
+        const size_t iSchemaAdj = nSchema - nUnmatched;
+
+        if ((schema.InstrumentationKind != schemaTable[iSchemaAdj].InstrumentationKind)
+            || (schema.ILOffset != schemaTable[iSchemaAdj].ILOffset)
+            || (schema.Count != schemaTable[iSchemaAdj].Count)
+            || (schema.Other != schemaTable[iSchemaAdj].Other))
+        {
+            nUnmatched++;
+        }
+        else
+        {
+            schemaTable[iSchemaAdj].Offset = schema.Offset;
+            nMatched++;
+        }
+
+        nSchema++;
+
+        return true;
+    });
+
+    return (nMatched == cSchemas);
+}
+
 inline bool ReadInstrumentationSchemaWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchemas)
 {
     auto lambda = [pSchemas](const ICorJitInfo::PgoInstrumentationSchema &schema)

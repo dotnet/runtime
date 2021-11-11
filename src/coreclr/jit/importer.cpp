@@ -21244,10 +21244,19 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     assert(call->IsVirtual());
 
-    // Possibly instrument, if not optimizing.
+    // Possibly instrument. Note for OSR+PGO we will instrument when
+    // optimizing and (currently) won't devirtualize. We may want
+    // to revisit -- if we can devirtualize we should be able to
+    // suppress the probe.
     //
-    if (opts.OptimizationDisabled())
+    // We strip BBINSTR from inlinees currently, so we'll only
+    // do this for the root method calls.
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
+        assert(opts.OptimizationDisabled() || opts.IsOSR());
+        assert(!compIsForInlining());
+
         // During importation, optionally flag this block as one that
         // contains calls requiring class profiling. Ideally perhaps
         // we'd just keep track of the calls themselves, so we don't
@@ -21277,7 +21286,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             //
             compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
         }
-
         return;
     }
 
