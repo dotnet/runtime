@@ -1490,6 +1490,11 @@ private:
 
     static LONG s_procInit;
 
+protected:
+#ifdef FEATURE_COMWRAPPERS
+    HRESULT DACTryGetComWrappersHandleFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTHANDLE* objHandle);
+#endif
+
 public:
     // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
     // from it's search path.
