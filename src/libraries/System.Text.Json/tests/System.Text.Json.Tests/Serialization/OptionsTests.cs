@@ -516,8 +516,14 @@ namespace System.Text.Json.Serialization.Tests
         public static void JsonSerializerOptions_Default_MatchesDefaultConstructor()
         {
             var options = new JsonSerializerOptions();
-            var optionsSingleton = JsonSerializerOptions.Default;
+            JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Default;
             VerifyOptionsEqual(options, optionsSingleton);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Default_ReturnsSameInstance()
+        {
+            Assert.Same(JsonSerializerOptions.Default, JsonSerializerOptions.Default);
         }
 
         [Fact]
