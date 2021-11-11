@@ -780,6 +780,7 @@ namespace DebuggerTests
                 var frame = pause_location["callFrames"][0];
 
                 await EvaluateOnCallFrameAndCheck(id,
+                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
                     ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
                     ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")),
                     ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)),
