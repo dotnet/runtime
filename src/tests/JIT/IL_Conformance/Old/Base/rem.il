@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly rem{}
+.assembly 'rem'{}
 
 .class public _rem {
 

@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly br{}
+.assembly 'br'{}
 
 .class public _br {
 

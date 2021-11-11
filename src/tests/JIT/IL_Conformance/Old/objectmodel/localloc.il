@@ -9,7 +9,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly localloc{
+.assembly 'localloc'{
 }
 
 .class public			_localloc {

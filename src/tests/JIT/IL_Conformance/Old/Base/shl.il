@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly shl{}
+.assembly 'shl'{}
 
 .class public _shl {
 

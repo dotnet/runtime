@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly neg{}
+.assembly 'neg'{}
 
 .class public _neg {
 

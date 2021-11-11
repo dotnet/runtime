@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly newobj{}
+.assembly 'newobj'{}
 
 
 .class public	Test {

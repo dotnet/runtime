@@ -4,7 +4,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly castclass{}
+.assembly 'castclass'{}
 
 
 .class public Super {

@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly ldlen{}
+.assembly 'ldlen'{}
 
 .class public _ldlen {
 

@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly ldloca{
+.assembly 'ldloca'{
 }
 
 .class public _ldloca {

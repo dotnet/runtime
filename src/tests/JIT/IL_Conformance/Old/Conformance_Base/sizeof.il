@@ -53,4 +53,4 @@ FAIL:
 	ret
 }
 }
-.assembly sizeof{}
+.assembly 'sizeof'{}

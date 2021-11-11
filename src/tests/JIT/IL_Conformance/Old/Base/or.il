@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly or{}
+.assembly 'or'{}
 
 .class public _or {
 

@@ -45,4 +45,4 @@ FAIL:
     ret
 }
 }
-.assembly ldftn{}
+.assembly 'ldftn'{}
