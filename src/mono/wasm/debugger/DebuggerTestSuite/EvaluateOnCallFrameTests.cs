@@ -544,7 +544,8 @@ namespace DebuggerTests
                     ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
                     ("this.CallMethodWithParmString(\"\\\"\\\"\")", TString("str_const_\"\"")),
                     ("this.CallMethodWithParmString(\"🛶\")", TString("str_const_🛶")),
-                    ("this.CallMethodWithParmString(\"\\uD83D\\uDE80\")", TString("str_const_🛶")),
+                    ("this.CallMethodWithParmString(\"\\uD83D\\uDEF6\")", TString("str_const_🛶")),
+                    ("this.CallMethodWithParmString(\"🚀\")", TString("str_const_🚀")),
                     ("this.CallMethodWithParm(10) + this.a", TNumber(12)),
                     ("this.CallMethodWithObj(null)", TNumber(-1)),
                     ("this.CallMethodWithChar('a')", TString("str_const_a")));
