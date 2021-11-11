@@ -18,6 +18,7 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -100,7 +101,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = ma_str.Trim().Replace(".", "_");
+                        string prefix = Regex.Replace(ma_str, @"[^A-Za-z0-9_]", "_");
                         id_name = $"{prefix}_{suffix}";
 
                         memberAccessToParamName[ma_str] = id_name;
@@ -117,7 +118,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = iesStr.Trim().Replace(".", "_").Replace("(", "_").Replace(")", "_").Replace(", ", "_").Replace("\"", "_").Replace("'", "_");
+                        string prefix = Regex.Replace(iesStr, @"[^A-Za-z0-9_]", "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
@@ -251,7 +252,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             private string GetTypeFullName(JToken variable)
             {
                 string type = variable["type"].ToString();
-                string subType = variable["subtype"]?.Value<string>();
                 object value = ConvertJSToCSharpType(variable);
 
                 switch (type)
@@ -267,13 +267,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 throw new ReturnAsErrorException($"GetTypefullName: Evaluate of this datatype {type} not implemented yet", "Unsupported");
             }
-        }
-
-        private static SyntaxNode GetExpressionFromSyntaxTree(SyntaxTree syntaxTree)
-        {
-            CompilationUnitSyntax root = syntaxTree.GetCompilationUnitRoot();
-
-            return root;
         }
 
         private static async Task<IList<JObject>> ResolveMemberAccessExpressions(IEnumerable<MemberAccessExpressionSyntax> member_accesses,
@@ -345,7 +338,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(expression + @";", cancellationToken: token);
 
-            SyntaxNode expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
+            SyntaxNode expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
             FindVariableNMethodCall findVarNMethodCall = new FindVariableNMethodCall();
@@ -377,7 +370,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (findVarNMethodCall.hasMethodCalls)
             {
-                expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
+                expressionTree = syntaxTree.GetCompilationUnitRoot(token);
 
                 findVarNMethodCall.VisitInternal(expressionTree);
 
@@ -389,7 +382,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             // eg. "elements[0]"
             if (findVarNMethodCall.hasElementAccesses)
             {
-                expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
+                expressionTree = syntaxTree.GetCompilationUnitRoot(token);
 
                 findVarNMethodCall.VisitInternal(expressionTree);
 
@@ -398,7 +391,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }
 
-            expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
+            expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
