@@ -43,7 +43,7 @@ DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModu
 
     // two extra slots - slot [0] contains the length of the table,
     //                   slot [1] will contain the next version of the table if it resizes
-    S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * S_SIZE_T(cInitialBuckets + 2);
+    S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * (S_SIZE_T(cInitialBuckets) + S_SIZE_T(2));
 
     m_cEntries = 0;
     PTR_VolatileEntry* pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
