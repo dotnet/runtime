@@ -38,7 +38,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj $XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(OS)' != 'Windows_NT'">_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj $XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(OS)' == 'Windows_NT'">dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
