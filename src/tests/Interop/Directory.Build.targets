@@ -12,7 +12,8 @@
        If a target project references System.Private.Corelib, we are unable to reference CoreCLRTestLibrary.
        Compile in relevant files used for testing interop. -->
   <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' == 'true')">
-    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\Assertion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\AssertExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\Assert.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\HostPolicyMock.cs" Condition="'$(RequiresMockHostPolicy)' == 'true'"/>
   </ItemGroup>
 

@@ -865,7 +865,7 @@ namespace System.Xml
 
         private string EntitizeName(string name)
         {
-            return "&" + name + ";";
+            return $"&{name};";
         }
 
         //The function is called when expanding the entity when its children being asked

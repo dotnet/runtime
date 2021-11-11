@@ -233,7 +233,7 @@ namespace System.Xml.Schema
                 {
                     if ((int)de!.Value! == symbol)
                     {
-                        return (string)de.Key + ":*";
+                        return $"{(string)de.Key}:*";
                     }
                 }
             }

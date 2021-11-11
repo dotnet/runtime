@@ -32,7 +32,7 @@ namespace Internal.Cryptography.Pal
 
             bool loadFromFile = (fileName != null);
 
-            PfxCertStoreFlags pfxCertStoreFlags = MapKeyStorageFlags(keyStorageFlags);
+            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = MapKeyStorageFlags(keyStorageFlags);
             bool deleteKeyContainer = false;
 
             Interop.Crypt32.CertEncodingType msgAndCertEncodingType;
@@ -115,19 +115,19 @@ namespace Internal.Cryptography.Pal
             // make sure that there is at least one signer of the certificate store
             int dwSigners;
             int cbSigners = sizeof(int);
-            if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_COUNT_PARAM, 0, out dwSigners, ref cbSigners))
+            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, Interop.Crypt32.CryptMsgParamType.CMSG_SIGNER_COUNT_PARAM, 0, out dwSigners, ref cbSigners))
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
             if (dwSigners == 0)
                 throw ErrorCode.CRYPT_E_SIGNER_NOT_FOUND.ToCryptographicException();
 
             // get the first signer from the store, and use that as the loaded certificate
             int cbData = 0;
-            if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_INFO_PARAM, 0, null, ref cbData))
+            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, Interop.Crypt32.CryptMsgParamType.CMSG_SIGNER_INFO_PARAM, 0, default(byte*), ref cbData))
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
             fixed (byte* pCmsgSignerBytes = new byte[cbData])
             {
-                if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_INFO_PARAM, 0, pCmsgSignerBytes, ref cbData))
+                if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, Interop.Crypt32.CryptMsgParamType.CMSG_SIGNER_INFO_PARAM, 0, pCmsgSignerBytes, ref cbData))
                     throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                 CMSG_SIGNER_INFO_Partial* pCmsgSignerInfo = (CMSG_SIGNER_INFO_Partial*)pCmsgSignerBytes;
@@ -148,7 +148,7 @@ namespace Internal.Cryptography.Pal
         private static SafeCertContextHandle FilterPFXStore(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
-            PfxCertStoreFlags pfxCertStoreFlags)
+            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags)
         {
             SafeCertStoreHandle hStore;
             unsafe
@@ -156,7 +156,7 @@ namespace Internal.Cryptography.Pal
                 fixed (byte* pbRawData = rawData)
                 {
                     Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pbRawData), (uint)rawData.Length);
-                    hStore = Interop.crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
+                    hStore = Interop.Crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
                     if (hStore.IsInvalid)
                     {
                         throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
@@ -216,28 +216,28 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
+        private static Interop.Crypt32.PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
         {
             if ((keyStorageFlags & X509Certificate.KeyStorageFlagsAll) != keyStorageFlags)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
-            PfxCertStoreFlags pfxCertStoreFlags = 0;
+            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = 0;
             if ((keyStorageFlags & X509KeyStorageFlags.UserKeySet) == X509KeyStorageFlags.UserKeySet)
-                pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_USER_KEYSET;
+                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_USER_KEYSET;
             else if ((keyStorageFlags & X509KeyStorageFlags.MachineKeySet) == X509KeyStorageFlags.MachineKeySet)
-                pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_MACHINE_KEYSET;
+                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_MACHINE_KEYSET;
 
             if ((keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable)
-                pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_EXPORTABLE;
+                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_EXPORTABLE;
             if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
-                pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_USER_PROTECTED;
+                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_USER_PROTECTED;
 
             // If a user is asking for an Ephemeral key they should be willing to test their code to find out
             // that it will no longer import into CAPI. This solves problems of legacy CSPs being
             // difficult to do SHA-2 RSA signatures with, simplifies the story for UWP, and reduces the
             // complexity of pointer interpretation.
             if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
-                pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
+                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | Interop.Crypt32.PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
             // In .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
             // enable a native application compiled against CAPI to find that private key and interoperate with it.

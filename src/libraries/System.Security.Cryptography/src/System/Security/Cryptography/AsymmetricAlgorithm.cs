@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Cryptography;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
@@ -165,55 +166,218 @@ namespace System.Security.Cryptography
             throw new NotImplementedException(SR.NotSupported_SubclassOverride);
 
         /// <summary>
-        /// When overridden in a derived class, imports an encrypted RFC 7468
-        /// PEM-encoded key, replacing the keys for this object.
+        /// Imports an encrypted RFC 7468 PEM-encoded key, replacing the keys for this object.
         /// </summary>
         /// <param name="input">The PEM text of the encrypted key to import.</param>
         /// <param name="password">
         /// The password to use for decrypting the key material.
         /// </param>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
+        /// </para>
+        /// <para>
+        ///    -or-
+        /// </para>
+        /// <para>
+        ///   <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
+        /// </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///   The password is incorrect.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
+        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
+        ///   indicate the key is for an algorithm other than the algorithm
+        ///   represented by this instance.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
+        ///   represent the key in a format that is not supported.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///   The algorithm-specific key import failed.
+        ///   </para>
+        /// </exception>
         /// <exception cref="NotImplementedException">
-        /// A derived type has not overridden this member.
+        ///   A derived type has not provided an implementation for
+        ///  <see cref="ImportEncryptedPkcs8PrivateKey(ReadOnlySpan{char}, ReadOnlySpan{byte}, out int)" />.
         /// </exception>
         /// <remarks>
-        /// Because each algorithm may have algorithm-specific PEM labels, the
-        /// default behavior will throw <see cref="NotImplementedException" />.
+        ///   <para>
+        ///   When the base-64 decoded contents of <paramref name="input" /> indicate an algorithm that uses PBKDF1
+        ///   (Password-Based Key Derivation Function 1) or PBKDF2 (Password-Based Key Derivation Function 2),
+        ///   the password is converted to bytes via the UTF-8 encoding.
+        ///   </para>
+        ///   <para>
+        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///   are found, an exception is thrown to prevent importing a key when
+        ///   the key is ambiguous.
+        ///   </para>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
+        ///   <para>
+        ///   Types that override this method may support additional PEM labels.
+        ///   </para>
         /// </remarks>
-        public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<char> password) =>
-            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+        public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<char> password)
+        {
+            PemKeyImportHelpers.ImportEncryptedPem<char>(input, password, ImportEncryptedPkcs8PrivateKey);
+        }
 
         /// <summary>
-        /// When overridden in a derived class, imports an encrypted RFC 7468
-        /// PEM-encoded key, replacing the keys for this object.
+        /// Imports an encrypted RFC 7468 PEM-encoded key, replacing the keys for this object.
         /// </summary>
         /// <param name="input">The PEM text of the encrypted key to import.</param>
         /// <param name="passwordBytes">
         /// The bytes to use as a password when decrypting the key material.
         /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///     <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///   The password is incorrect.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
+        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
+        ///   indicate the key is for an algorithm other than the algorithm
+        ///   represented by this instance.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
+        ///   represent the key in a format that is not supported.
+        ///   </para>
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <para>
+        ///   The algorithm-specific key import failed.
+        ///   </para>
+        /// </exception>
         /// <exception cref="NotImplementedException">
-        /// A derived type has not overridden this member.
+        ///   A derived type has not provided an implementation for
+        ///  <see cref="ImportEncryptedPkcs8PrivateKey(ReadOnlySpan{byte}, ReadOnlySpan{byte}, out int)" />.
         /// </exception>
         /// <remarks>
-        /// Because each algorithm may have algorithm-specific PEM labels, the
-        /// default behavior will throw <see cref="NotImplementedException" />.
+        ///   <para>
+        ///   The password bytes are passed directly into the Key Derivation Function (KDF)
+        ///   used by the algorithm indicated by <c>pbeParameters</c>. This enables compatibility
+        ///   with other systems which use a text encoding other than UTF-8 when processing
+        ///   passwords with PBKDF2 (Password-Based Key Derivation Function 2).
+        ///   </para>
+        ///   <para>
+        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///   are found, an exception is thrown to prevent importing a key when
+        ///   the key is ambiguous.
+        ///   </para>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
+        ///   <para>
+        ///   Types that override this method may support additional PEM labels.
+        ///   </para>
         /// </remarks>
-        public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<byte> passwordBytes) =>
-            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+        public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<byte> passwordBytes)
+        {
+            PemKeyImportHelpers.ImportEncryptedPem<byte>(input, passwordBytes, ImportEncryptedPkcs8PrivateKey);
+        }
 
         /// <summary>
-        /// When overridden in a derived class, imports an RFC 7468 textually
-        /// encoded key, replacing the keys for this object.
+        /// Imports an RFC 7468 textually encoded key, replacing the keys for this object.
         /// </summary>
         /// <param name="input">The text of the PEM key to import.</param>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
+        /// </para>
+        /// <para>
+        ///   -or-
+        /// </para>
+        /// <para>
+        ///   <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
+        /// </para>
+        /// <para>
+        ///     -or-
+        /// </para>
+        /// <para>
+        ///   <paramref name="input"/> contains an encrypted PEM-encoded key.
+        /// </para>
+        /// </exception>
         /// <exception cref="NotImplementedException">
-        /// A derived type has not overridden this member.
+        ///   A derived type has not provided an implementation for <see cref="ImportPkcs8PrivateKey" />
+        ///   or <see cref="ImportSubjectPublicKeyInfo" />.
         /// </exception>
         /// <remarks>
-        /// Because each algorithm may have algorithm-specific PEM labels, the
-        /// default behavior will throw <see cref="NotImplementedException" />.
+        ///   <para>
+        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///   are found, an exception is raised to prevent importing a key when
+        ///   the key is ambiguous.
+        ///   </para>
+        ///   <para>
+        ///   This method supports the following PEM labels:
+        ///   <list type="bullet">
+        ///     <item><description>PUBLIC KEY</description></item>
+        ///     <item><description>PRIVATE KEY</description></item>
+        ///   </list>
+        ///   </para>
+        ///   <para>
+        ///   Types that override this method may support additional PEM labels.
+        ///   </para>
         /// </remarks>
-        public virtual void ImportFromPem(ReadOnlySpan<char> input) =>
-            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+        public virtual void ImportFromPem(ReadOnlySpan<char> input)
+        {
+            PemKeyImportHelpers.ImportPem(input, label =>
+            {
+                if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
+                {
+                    return ImportPkcs8PrivateKey;
+                }
+                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
+                {
+                    return ImportSubjectPublicKeyInfo;
+                }
+                else
+                {
+                    return null;
+                }
+            });
+        }
 
         private delegate bool TryExportPbe<T>(
             ReadOnlySpan<T> password,

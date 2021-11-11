@@ -3220,7 +3220,9 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 {
     *lclNum = BAD_VAR_NUM;
 
-    // Here we are looking for blocks with a single statement feeding a conditional branch.
+    // Here we are looking for small blocks where a local live-into the block
+    // ultimately feeds a simple conditional branch.
+    //
     // These blocks are small, and when duplicated onto the tail of blocks that end in
     // assignments, there is a high probability of the branch completely going away.
     //
@@ -3237,22 +3239,27 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
-    Statement* stmt = target->FirstNonPhiDef();
+    Statement* const lastStmt  = target->lastStmt();
+    Statement* const firstStmt = target->FirstNonPhiDef();
 
-    if (stmt != target->lastStmt())
+    // We currently allow just one statement aside from the branch.
+    //
+    if ((firstStmt != lastStmt) && (firstStmt != lastStmt->GetPrevStmt()))
     {
         return false;
     }
 
-    GenTree* tree = stmt->GetRootNode();
+    // Verify the branch is just a simple local compare.
+    //
+    GenTree* const lastTree = lastStmt->GetRootNode();
 
-    if (tree->gtOper != GT_JTRUE)
+    if (lastTree->gtOper != GT_JTRUE)
     {
         return false;
     }
 
     // must be some kind of relational operator
-    GenTree* const cond = tree->AsOp()->gtOp1;
+    GenTree* const cond = lastTree->AsOp()->gtOp1;
     if (!cond->OperIsCompare())
     {
         return false;
@@ -3314,6 +3321,109 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
+    // If there's no second statement, we're good.
+    //
+    if (firstStmt == lastStmt)
+    {
+        return true;
+    }
+
+    // Otherwise check the first stmt.
+    // Verify the branch is just a simple local compare.
+    //
+    GenTree* const firstTree = firstStmt->GetRootNode();
+
+    if (firstTree->gtOper != GT_ASG)
+    {
+        return false;
+    }
+
+    GenTree* const lhs = firstTree->AsOp()->gtOp1;
+    if (!lhs->OperIs(GT_LCL_VAR))
+    {
+        return false;
+    }
+
+    const unsigned lhsLcl = lhs->AsLclVarCommon()->GetLclNum();
+    if (lhsLcl != *lclNum)
+    {
+        return false;
+    }
+
+    // Could allow unary here too...
+    //
+    GenTree* const rhs = firstTree->AsOp()->gtOp2;
+    if (!rhs->OperIsBinary())
+    {
+        return false;
+    }
+
+    // op1 must be some combinations of casts of local or constant
+    // (or unary)
+    op1 = rhs->AsOp()->gtOp1;
+    while (op1->gtOper == GT_CAST)
+    {
+        op1 = op1->AsOp()->gtOp1;
+    }
+
+    if (!op1->IsLocal() && !op1->OperIsConst())
+    {
+        return false;
+    }
+
+    // op2 must be some combinations of casts of local or constant
+    // (or unary)
+    op2 = rhs->AsOp()->gtOp2;
+
+    // A binop may not actually have an op2.
+    //
+    if (op2 == nullptr)
+    {
+        return false;
+    }
+
+    while (op2->gtOper == GT_CAST)
+    {
+        op2 = op2->AsOp()->gtOp1;
+    }
+
+    if (!op2->IsLocal() && !op2->OperIsConst())
+    {
+        return false;
+    }
+
+    // Tree must have one constant and one local, or be comparing
+    // the same local to itself.
+    lcl1 = BAD_VAR_NUM;
+    lcl2 = BAD_VAR_NUM;
+
+    if (op1->IsLocal())
+    {
+        lcl1 = op1->AsLclVarCommon()->GetLclNum();
+    }
+
+    if (op2->IsLocal())
+    {
+        lcl2 = op2->AsLclVarCommon()->GetLclNum();
+    }
+
+    if ((lcl1 != BAD_VAR_NUM) && op2->OperIsConst())
+    {
+        *lclNum = lcl1;
+    }
+    else if ((lcl2 != BAD_VAR_NUM) && op1->OperIsConst())
+    {
+        *lclNum = lcl2;
+    }
+    else if ((lcl1 != BAD_VAR_NUM) && (lcl1 == lcl2))
+    {
+        *lclNum = lcl1;
+    }
+    else
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -3333,6 +3443,8 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 //
 bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target)
 {
+    JITDUMP("Considering uncond to cond " FMT_BB " -> " FMT_BB "\n", block->bbNum, target->bbNum);
+
     if (!BasicBlock::sameEHRegion(block, target))
     {
         return false;
@@ -3360,23 +3472,35 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // backend always calls `fgUpdateFlowGraph` with `doTailDuplication` set to false.
     assert(!block->IsLIR());
 
-    Statement* stmt = target->FirstNonPhiDef();
-    assert(stmt == target->lastStmt());
-
     // Duplicate the target block at the end of this block
-    GenTree* cloned = gtCloneExpr(stmt->GetRootNode());
-    noway_assert(cloned);
-    Statement* jmpStmt = gtNewStmt(cloned);
+    //
+    for (Statement* stmt : target->NonPhiStatements())
+    {
+        GenTree* clone = gtCloneExpr(stmt->GetRootNode());
+        noway_assert(clone);
+        Statement* cloneStmt = gtNewStmt(clone);
 
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(cloneStmt);
+        }
+
+        fgInsertStmtAtEnd(block, cloneStmt);
+    }
+
+    // Fix up block's flow
+    //
     block->bbJumpKind = BBJ_COND;
     block->bbJumpDest = target->bbJumpDest;
     fgAddRefPred(block->bbJumpDest, block);
     fgRemoveRefPred(target, block);
 
     // add an unconditional block after this block to jump to the target block's fallthrough block
+    //
     BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true);
 
     // The new block 'next' will inherit its weight from 'block'
+    //
     next->inheritWeight(block);
     next->bbJumpDest = target->bbNext;
     fgAddRefPred(next, block);
@@ -3384,15 +3508,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
             block->bbNum, target->bbNum, next->bbNum);
-    JITDUMP("   expecting opts to key off V%02u, added cloned compare [%06u] to " FMT_BB "\n", lclNum,
-            dspTreeID(cloned), block->bbNum);
-
-    if (fgStmtListThreaded)
-    {
-        gtSetStmtInfo(jmpStmt);
-    }
-
-    fgInsertStmtAtEnd(block, jmpStmt);
+    JITDUMP("   expecting opts to key off V%02u in " FMT_BB "\n", lclNum, block->bbNum);
 
     return true;
 }
@@ -3953,7 +4069,7 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         GenTree* const   dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
         GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
-        Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetILOffsetX());
+        Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetDebugInfo());
         fgInsertStmtAtEnd(block, jmpStmt);
 
         // Reattach switch value to the switch. This may introduce a comma

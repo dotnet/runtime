@@ -5,7 +5,7 @@ namespace Dynamic
 {
     using System;
     using System.Runtime.InteropServices;
-    using TestLibrary;
+    using Xunit;
 
     internal class ParametersTest
     {
@@ -47,26 +47,26 @@ namespace Dynamic
 
             // Name all arguments
             int[] ret = obj.Required(first: one, second: two, third: three);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with all named arguments");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Name some arguments
             ret = obj.Required(one, two, third: three);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with some named arguments");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             ret = obj.Required(one, second: two, third: three);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with some named arguments");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Name in different order
             ret = obj.Required(third: three, first: one, second: two);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with out-of-order named arguments");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             ret = obj.Required(one, third: three, second: two);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with out-of-order named arguments");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Invalid name
             COMException e = Assert.Throws<COMException>(() => obj.Required(one, two, invalid: three));
             const int DISP_E_UNKNOWNNAME = unchecked((int)0x80020006);
-            Assert.AreEqual(DISP_E_UNKNOWNNAME, e.HResult, "Unexpected HRESULT on COMException");
+            Assert.Equal(DISP_E_UNKNOWNNAME, e.HResult);
         }
 
         private void DefaultValue()
@@ -75,28 +75,28 @@ namespace Dynamic
 
             // Omit all arguments
             int[] ret = obj.DefaultValue();
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with all arguments omitted");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Specify some arguments
             expected[0] = one;
             ret = obj.DefaultValue(one);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with some arguments specified");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             expected[1] = two;
             ret = obj.DefaultValue(one, two);
-            Assert.AreAllEqual(expected, ret);
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Specify all arguments
             expected[1] = two;
             expected[2] = three;
             ret = obj.DefaultValue(one, two, three);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with all arguments specified");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Named arguments
             expected[0] = Default1;
             expected[1] = Default2;
             ret = obj.DefaultValue(third: three);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with named arguments");
+            AssertExtensions.CollectionEqual(expected, ret);
         }
 
         private void Optional()
@@ -105,53 +105,53 @@ namespace Dynamic
 
             // Omit all arguments
             int[] ret = obj.Optional();
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with all arguments omitted");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Specify some arguments
             expected[0] = one;
             ret = obj.Optional(one);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with some arguments specified");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             expected[1] = Default2;
             ret = obj.Mixed(one);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with some arguments specified");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             expected[1] = two;
             ret = obj.Optional(one, two);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with some arguments specified");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             ret = obj.Mixed(one, two);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with some arguments specified");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Specify all arguments
             expected[1] = two;
             expected[2] = three;
             ret = obj.Optional(one, two, three);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with all arguments specified");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             ret = obj.Mixed(one, two, three);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with all arguments specified");
+            AssertExtensions.CollectionEqual(expected, ret);
 
             // Named arguments
             expected[1] = MissingParamId;
             ret = obj.Optional(first: one, third: three);
-            Assert.AreAllEqual(expected, ret, "Unexpected result calling function with named arguments");
+            AssertExtensions.CollectionEqual(expected, ret);
         }
 
         private void VarArgs()
         {
             VarEnum[] ret = obj.VarArgs();
-            Assert.AreEqual(0, ret.Length);
+            Assert.Equal(0, ret.Length);
 
             // COM server returns the type of each variant
             ret = obj.VarArgs(false);
-            Assert.AreEqual(1, ret.Length);
-            Assert.AreAllEqual(new [] { VarEnum.VT_BOOL }, ret);
+            Assert.Equal(1, ret.Length);
+            AssertExtensions.CollectionEqual(new [] { VarEnum.VT_BOOL }, ret);
 
             VarEnum[] expected = { VarEnum.VT_BSTR, VarEnum.VT_R8, VarEnum.VT_DATE, VarEnum.VT_I4 };
             ret = obj.VarArgs("s", 10d, new DateTime(), 10);
-            Assert.AreEqual(expected.Length, ret.Length);
-            Assert.AreAllEqual(expected, ret);
+            Assert.Equal(expected.Length, ret.Length);
+            AssertExtensions.CollectionEqual(expected, ret);
         }
 
         private void Invalid()
