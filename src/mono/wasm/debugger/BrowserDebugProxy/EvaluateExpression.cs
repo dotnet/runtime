@@ -214,6 +214,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JToken value = variable["value"];
                 string type = variable["type"].Value<string>();
                 string subType = variable["subtype"]?.Value<string>();
+                string objectId = variable["objectId"]?.Value<string>();
                 switch (type)
                 {
                     case "string":
@@ -224,19 +225,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return value?.Value<string>().ToLower();
                     case "object":
                     {
-                        if (subType == "null")
-                            return "Newtonsoft.Json.Linq.JObject.FromObject(new {"
-                                + $"type = \"{type}\","
-                                + $"description = \"{variable["description"].Value<string>()}\","
-                                + $"className = \"{variable["className"].Value<string>()}\","
-                                + $"subtype = \"{subType}\""
-                                + "})";
                         return "Newtonsoft.Json.Linq.JObject.FromObject(new {"
-                                + $"type = \"{type}\","
-                                + $"description = \"{variable["description"].Value<string>()}\","
-                                + $"className = \"{variable["className"].Value<string>()}\","
-                                + $"objectId = \"{variable["objectId"].Value<string>()}\""
-                                + "})";
+                            + $"type = \"{type}\""
+                            + $", description = \"{variable["description"].Value<string>()}\""
+                            + $", className = \"{variable["className"].Value<string>()}\""
+                            + (subType != null ? $", subtype = \"{subType}\"" : "")
+                            + (objectId != null ? $", objectId = \"{objectId}\"" : "")
+                            + "})";
                     }
                     case "void":
                         return "Newtonsoft.Json.Linq.JObject.FromObject(new {"
