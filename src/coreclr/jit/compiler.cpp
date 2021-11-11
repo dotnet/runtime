@@ -1779,6 +1779,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compPerfScore = 0.0;
 
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
+    assert(info.compMethodSuperPMIIndex != 1); // HACK: force an assert for MC#1 for every superpmi replay
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
