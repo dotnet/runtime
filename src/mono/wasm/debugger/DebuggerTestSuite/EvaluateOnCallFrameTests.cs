@@ -461,7 +461,7 @@ namespace DebuggerTests
 
                await EvaluateOnCallFrameFail(id,
                    ("me.foo", "ReferenceError"),
-                   ("this", "ReferenceError"),
+                   ("this", "CompilationError"),
                    ("this.NullIfAIsNotZero.foo", "ReferenceError"));
            });
 

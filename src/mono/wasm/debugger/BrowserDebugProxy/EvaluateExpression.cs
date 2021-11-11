@@ -117,7 +117,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = iesStr.Trim().Replace(".", "_").Replace("(", "_").Replace(")", "_");
+                        string prefix = iesStr.Trim().Replace(".", "_").Replace("(", "_").Replace(")", "_").Replace(", ", "_").Replace("\"", "_").Replace("'", "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
@@ -202,7 +202,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         // eg. this.a + this.a
                         return root;
                     }
-
+                    paramsSet.Add(id_name);
                     variableDefinition += $"{GetTypeFullName(value)} {id_name} = {ConvertJSToCSharpType(value)};\n";
                     return root;
                 }
@@ -213,7 +213,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JToken value = variable["value"];
                 string type = variable["type"].Value<string>();
                 string subType = variable["subtype"]?.Value<string>();
-
                 switch (type)
                 {
                     case "string":
@@ -221,11 +220,30 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "number":
                         return value?.Value<double>();
                     case "boolean":
-                        return value?.Value<bool>();
+                        return value?.Value<string>().ToLower();
                     case "object":
-                        return variable;
+                    {
+                        if (subType == "null")
+                            return "Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                                + $"type = \"{type}\","
+                                + $"description = \"{variable["description"].Value<string>()}\","
+                                + $"className = \"{variable["className"].Value<string>()}\","
+                                + $"subtype = \"{subType}\""
+                                + "})";
+                        return "Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                                + $"type = \"{type}\","
+                                + $"description = \"{variable["description"].Value<string>()}\","
+                                + $"className = \"{variable["className"].Value<string>()}\","
+                                + $"objectId = \"{variable["objectId"].Value<string>()}\""
+                                + "})";
+                    }
                     case "void":
-                        return null;
+                        return "Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                                + $"type = \"object\","
+                                + $"description = \"object\","
+                                + $"className = \"object\","
+                                + $"subtype = \"null\""
+                                + "})";
                 }
                 throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
             }
@@ -239,14 +257,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (type)
                 {
                     case "object":
-                        {
-                            if (subType == "null")
-                                return variable["className"].Value<string>();
-                            else
-                                return "object";
-                        }
+                        return "object";
                     case "void":
                         return "object";
+                    case "boolean":
+                        return "System.Boolean";
                     default:
                         return value.GetType().FullName;
                 }
@@ -387,14 +402,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
-            var task = CSharpScript.EvaluateAsync(
-                findVarNMethodCall.variableDefinition + "return " + syntaxTree.ToString(),
-                ScriptOptions.Default.WithReferences(
-                    typeof(object).Assembly,
-                    typeof(Enumerable).Assembly
-                    ),
-                cancellationToken: token);
-            return JObject.FromObject(ConvertCSharpToJSType(task.Result, task.Result.GetType()));
+            try {
+                var task = CSharpScript.EvaluateAsync(
+                    findVarNMethodCall.variableDefinition + "return " + syntaxTree.ToString(),
+                    ScriptOptions.Default.WithReferences(
+                        typeof(object).Assembly,
+                        typeof(Enumerable).Assembly,
+                        typeof(JObject).Assembly
+                        ),
+                    cancellationToken: token);
+                return JObject.FromObject(ConvertCSharpToJSType(task.Result, task.Result.GetType()));
+            }
+            catch (Exception e)
+            {
+                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
+            }
         }
 
         private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
