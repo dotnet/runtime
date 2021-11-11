@@ -1985,13 +1985,13 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             // SIMDIntrinsicInitN
             //    op2 - list of initializer values stitched into a list
             //    op1 - byref of vector
-            GenTree* args[4]{};
-            bool     initFromFirstArgIndir = false;
+            IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), argCount - 1);
+            bool                 initFromFirstArgIndir = false;
 
             if (simdIntrinsicID == SIMDIntrinsicInit)
             {
-                op2     = impSIMDPopStack(simdBaseType);
-                args[0] = op2;
+                op2 = impSIMDPopStack(simdBaseType);
+                nodeBuilder.AddOperand(0, op2);
             }
             else
             {
@@ -2001,7 +2001,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 unsigned initCount    = argCount - 1;
                 unsigned elementCount = getSIMDVectorLength(size, simdBaseType);
                 noway_assert(initCount == elementCount);
-                assert(initCount <= ArrLen(args));
 
                 // Build an array with the N values.
                 // We must maintain left-to-right order of the args, but we will pop
@@ -2026,7 +2025,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                     }
 
                     assert(genActualType(arg) == genActualType(simdBaseType));
-                    args[initCount - i - 1] = arg;
+                    nodeBuilder.AddOperand(initCount - i - 1, arg);
                 }
 
                 if (areArgsContiguous && simdBaseType == TYP_FLOAT)
@@ -2035,7 +2034,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                     // we intialize the vector from first argument address, only when
                     // the simdBaseType is TYP_FLOAT and the arguments are located contiguously in memory
                     initFromFirstArgIndir = true;
-                    GenTree*  op2Address  = createAddressNodeForSIMDInit(args[0], size);
+                    GenTree*  op2Address  = createAddressNodeForSIMDInit(nodeBuilder.GetOperand(0), size);
                     var_types simdType    = getSIMDTypeForSize(size);
                     op2                   = gtNewOperNode(GT_IND, simdType, op2Address);
                 }
@@ -2111,8 +2110,8 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 }
                 else
                 {
-                    simdTree = new (this, GT_SIMD) GenTreeSIMD(simdType, getAllocator(CMK_ASTNode), args, argCount - 1,
-                                                               simdIntrinsicID, simdBaseJitType, size);
+                    simdTree = new (this, GT_SIMD) GenTreeSIMD(simdType, std::move(nodeBuilder), simdIntrinsicID,
+                                                               simdBaseJitType, size);
                 }
             }
 

@@ -8013,16 +8013,16 @@ GenTree* Compiler::gtCloneExpr(
 #ifdef FEATURE_SIMD
         case GT_SIMD:
             copy = new (this, GT_SIMD)
-                GenTreeSIMD(tree->TypeGet(), getAllocator(CMK_ASTNode), tree->AsSIMD()->GetOperandArray(),
-                            tree->AsSIMD()->GetOperandCount(), tree->AsSIMD()->GetSIMDIntrinsicId(),
-                            tree->AsSIMD()->GetSimdBaseJitType(), tree->AsSIMD()->GetSimdSize());
+                GenTreeSIMD(tree->TypeGet(), IntrinsicNodeBuilder(getAllocator(CMK_ASTNode), tree->AsSIMD()),
+                            tree->AsSIMD()->GetSIMDIntrinsicId(), tree->AsSIMD()->GetSimdBaseJitType(),
+                            tree->AsSIMD()->GetSimdSize());
             goto CLONE_MULTIOP_OPERANDS;
 #endif
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             copy = new (this, GT_HWINTRINSIC)
-                GenTreeHWIntrinsic(tree->TypeGet(), getAllocator(CMK_ASTNode), tree->AsHWIntrinsic()->GetOperandArray(),
-                                   tree->AsHWIntrinsic()->GetOperandCount(), tree->AsHWIntrinsic()->GetHWIntrinsicId(),
+                GenTreeHWIntrinsic(tree->TypeGet(), IntrinsicNodeBuilder(getAllocator(CMK_ASTNode), tree->AsMultiOp()),
+                                   tree->AsHWIntrinsic()->GetHWIntrinsicId(),
                                    tree->AsHWIntrinsic()->GetSimdBaseJitType(), tree->AsHWIntrinsic()->GetSimdSize(),
                                    tree->AsHWIntrinsic()->IsSimdAsHWIntrinsic());
             copy->AsHWIntrinsic()->SetAuxiliaryJitType(tree->AsHWIntrinsic()->GetAuxiliaryJitType());
@@ -18708,14 +18708,8 @@ void GenTreeMultiOp::ResetOperandArray(size_t    newOperandCount,
     return true;
 }
 
-void GenTreeMultiOp::InitializeOperands(CompAllocator allocator,
-                                        GenTree**     operands,
-                                        size_t        operandCount,
-                                        GenTree**     inlineOperands,
-                                        size_t        inlineOperandCount)
+void GenTreeMultiOp::InitializeOperands(GenTree** operands, size_t operandCount)
 {
-    m_operands = (operandCount <= inlineOperandCount) ? inlineOperands : allocator.allocate<GenTree*>(operandCount);
-
     for (size_t i = 0; i < operandCount; i++)
     {
         m_operands[i] = operands[i];
@@ -18935,13 +18929,31 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        unsigned       simdSize,
                                                        bool           isSimdAsHWIntrinsic)
 {
+    IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), operandCount);
     for (size_t i = 0; i < operandCount; i++)
     {
+        nodeBuilder.AddOperand(i, operands[i]);
         SetOpLclRelatedToSIMDIntrinsic(operands[i]);
     }
 
-    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), operands, operandCount,
-                                                         hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, std::move(nodeBuilder), hwIntrinsicID, simdBaseJitType,
+                                                         simdSize, isSimdAsHWIntrinsic);
+}
+
+GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types              type,
+                                                       IntrinsicNodeBuilder&& nodeBuilder,
+                                                       NamedIntrinsic         hwIntrinsicID,
+                                                       CorInfoType            simdBaseJitType,
+                                                       unsigned               simdSize,
+                                                       bool                   isSimdAsHWIntrinsic)
+{
+    for (size_t i = 0; i < nodeBuilder.GetOperandCount(); i++)
+    {
+        SetOpLclRelatedToSIMDIntrinsic(nodeBuilder.GetOperand(i));
+    }
+
+    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, std::move(nodeBuilder), hwIntrinsicID, simdBaseJitType,
+                                                         simdSize, isSimdAsHWIntrinsic);
 }
 
 GenTree* Compiler::gtNewSimdAbsNode(

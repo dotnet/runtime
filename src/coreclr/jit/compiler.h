@@ -3167,6 +3167,12 @@ public:
                                                  CorInfoType    simdBaseJitType,
                                                  unsigned       simdSize,
                                                  bool           isSimdAsHWIntrinsic = false);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types              type,
+                                                 IntrinsicNodeBuilder&& nodeBuilder,
+                                                 NamedIntrinsic         hwIntrinsicID,
+                                                 CorInfoType            simdBaseJitType,
+                                                 unsigned               simdSize,
+                                                 bool                   isSimdAsHWIntrinsic = false);
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
                                                    NamedIntrinsic hwIntrinsicID,

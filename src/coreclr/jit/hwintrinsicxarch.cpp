@@ -858,15 +858,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            GenTree* args[32];
-            assert(sig->numArgs <= ArrLen(args));
+            IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
             for (int i = sig->numArgs - 1; i >= 0; i--)
             {
-                args[i] = impPopStack().val;
+                nodeBuilder.AddOperand(i, impPopStack().val);
             }
 
-            retNode = gtNewSimdHWIntrinsicNode(retType, args, sig->numArgs, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseJitType, simdSize);
             break;
         }
 

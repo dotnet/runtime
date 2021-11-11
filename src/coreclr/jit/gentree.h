@@ -5131,21 +5131,25 @@ protected:
     {
         const size_t OperandCount = sizeof...(Operands);
 
+        m_operands = (OperandCount <= InlineOperandCount) ? inlineOperands : allocator.allocate<GenTree*>(OperandCount);
+
         // "OperandCount + 1" so that it works well when OperandCount is 0.
         GenTree* operandsArray[OperandCount + 1]{operands...};
-        InitializeOperands(allocator, operandsArray, OperandCount, inlineOperands, InlineOperandCount);
+        InitializeOperands(operandsArray, OperandCount);
     }
 
+    // Note that this constructor takes the owndership of the "operands" array.
     template <unsigned InlineOperandCount>
-    GenTreeMultiOp(genTreeOps    oper,
-                   var_types     type,
-                   CompAllocator allocator,
-                   GenTree**     operands,
-                   size_t        operandCount,
+    GenTreeMultiOp(genTreeOps oper,
+                   var_types  type,
+                   GenTree**  operands,
+                   size_t     operandCount,
                    GenTree* (&inlineOperands)[InlineOperandCount] DEBUGARG(bool largeNode))
         : GenTree(oper, type DEBUGARG(largeNode))
     {
-        InitializeOperands(allocator, operands, operandCount, inlineOperands, InlineOperandCount);
+        m_operands = (operandCount <= InlineOperandCount) ? inlineOperands : operands;
+
+        InitializeOperands(operands, operandCount);
     }
 
 public:
@@ -5203,16 +5207,78 @@ protected:
     static bool OperandsAreEqual(GenTreeMultiOp* op1, GenTreeMultiOp* op2);
 
 private:
-    void InitializeOperands(CompAllocator allocator,
-                            GenTree**     operands,
-                            size_t        operandCount,
-                            GenTree**     inlineOperands,
-                            size_t        inlineOperandCount);
+    void InitializeOperands(GenTree** operands, size_t operandCount);
 
     void SetOperandCount(size_t newOperandCount)
     {
         assert(FitsIn<uint8_t>(newOperandCount));
         m_operandCount = static_cast<uint8_t>(newOperandCount);
+    }
+};
+
+// Helper class used to implement the constructor of GenTreeJitIntrinsic which
+// transfers the ownership of the passed-in array to the underlying MultiOp node.
+class IntrinsicNodeBuilder final
+{
+    friend struct GenTreeJitIntrinsic;
+
+    GenTree** m_operands;
+    size_t    m_operandCount;
+    GenTree*  m_inlineOperands[2];
+
+public:
+    IntrinsicNodeBuilder(CompAllocator allocator, size_t operandCount) : m_operandCount(operandCount)
+    {
+        m_operands = (operandCount <= ArrLen(m_inlineOperands)) ? m_inlineOperands
+                                                                : allocator.allocate<GenTree*>(operandCount);
+#ifdef DEBUG
+        for (size_t i = 0; i < operandCount; i++)
+        {
+            m_operands[i] = nullptr;
+        }
+#endif // DEBUG
+    }
+
+    IntrinsicNodeBuilder(CompAllocator allocator, GenTreeMultiOp* source) : m_operandCount(source->GetOperandCount())
+    {
+        m_operands = (m_operandCount <= ArrLen(m_inlineOperands)) ? m_inlineOperands
+                                                                  : allocator.allocate<GenTree*>(m_operandCount);
+        for (size_t i = 0; i < m_operandCount; i++)
+        {
+            m_operands[i] = source->Op(i + 1);
+        }
+    }
+
+    void AddOperand(size_t index, GenTree* operand)
+    {
+        assert(index < m_operandCount);
+        assert(m_operands[index] == nullptr);
+        m_operands[index] = operand;
+    }
+
+    GenTree* GetOperand(size_t index) const
+    {
+        assert(index < m_operandCount);
+        assert(m_operands[index] != nullptr);
+        return m_operands[index];
+    }
+
+    size_t GetOperandCount() const
+    {
+        return m_operandCount;
+    }
+
+private:
+    GenTree** GetBuiltOperands()
+    {
+#ifdef DEBUG
+        for (size_t i = 0; i < m_operandCount; i++)
+        {
+            assert(m_operands[i] != nullptr);
+        }
+#endif // DEBUG
+
+        return m_operands;
     }
 };
 
@@ -5321,14 +5387,17 @@ public:
 #endif
 
 protected:
-    GenTreeJitIntrinsic(genTreeOps    oper,
-                        var_types     type,
-                        CompAllocator allocator,
-                        GenTree**     operands,
-                        size_t        operandCount,
-                        CorInfoType   simdBaseJitType,
-                        unsigned      simdSize)
-        : GenTreeMultiOp(oper, type, allocator, operands, operandCount, gtInlineOperands DEBUGARG(false))
+    GenTreeJitIntrinsic(genTreeOps             oper,
+                        var_types              type,
+                        IntrinsicNodeBuilder&& nodeBuilder,
+                        CorInfoType            simdBaseJitType,
+                        unsigned               simdSize)
+        : GenTreeMultiOp(oper,
+                         type,
+                         nodeBuilder.GetBuiltOperands(),
+                         nodeBuilder.GetOperandCount(),
+                         gtInlineOperands
+                         DEBUGARG(false))
         , gtLayoutNum(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)
@@ -5352,14 +5421,12 @@ public:
 /* gtSIMD   -- SIMD intrinsic   (possibly-binary op [NULL op2 is allowed] with additional fields) */
 struct GenTreeSIMD : public GenTreeJitIntrinsic
 {
-    GenTreeSIMD(var_types       type,
-                CompAllocator   allocator,
-                GenTree**       operands,
-                size_t          operandCount,
-                SIMDIntrinsicID simdIntrinsicID,
-                CorInfoType     simdBaseJitType,
-                unsigned        simdSize)
-        : GenTreeJitIntrinsic(GT_SIMD, type, allocator, operands, operandCount, simdBaseJitType, simdSize)
+    GenTreeSIMD(var_types              type,
+                IntrinsicNodeBuilder&& nodeBuilder,
+                SIMDIntrinsicID        simdIntrinsicID,
+                CorInfoType            simdBaseJitType,
+                unsigned               simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, std::move(nodeBuilder), simdBaseJitType, simdSize)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
@@ -5408,15 +5475,13 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 #ifdef FEATURE_HW_INTRINSICS
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
-    GenTreeHWIntrinsic(var_types      type,
-                       CompAllocator  allocator,
-                       GenTree**      operands,
-                       size_t         operandCount,
-                       NamedIntrinsic hwIntrinsicID,
-                       CorInfoType    simdBaseJitType,
-                       unsigned       simdSize,
-                       bool           isSimdAsHWIntrinsic)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, operands, operandCount, simdBaseJitType, simdSize)
+    GenTreeHWIntrinsic(var_types              type,
+                       IntrinsicNodeBuilder&& nodeBuilder,
+                       NamedIntrinsic         hwIntrinsicID,
+                       CorInfoType            simdBaseJitType,
+                       unsigned               simdSize,
+                       bool                   isSimdAsHWIntrinsic)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, std::move(nodeBuilder), simdBaseJitType, simdSize)
     {
         SetHWIntrinsicId(hwIntrinsicID);
 
