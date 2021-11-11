@@ -41,8 +41,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj</_AOTBuildCommand>
-    <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj</_AOTBuildCommand>
 
     <_AOTBuildCommand  Condition="'$(BrowserHost)' != 'windows'">$(_AOTBuildCommand) /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
     <_AOTBuildCommand  Condition="'$(BrowserHost)' == 'windows'">$(_AOTBuildCommand) /bl:%XHARNESS_OUT%/AOTBuild.binlog</_AOTBuildCommand>
