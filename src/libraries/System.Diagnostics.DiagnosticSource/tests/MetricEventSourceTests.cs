@@ -713,6 +713,8 @@ namespace System.Diagnostics.Metrics.Tests
 
 
             EventWrittenEventArgs[] events;
+            // MaxTimeSeries = 3, MaxHistograms = 2
+            // HistogramLimitReached should be raised when Record(tags: "Color=green"), but TimeSeriesLimitReached should not be raised
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, 3, 2, "TestMeter17"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
