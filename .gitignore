@@ -355,6 +355,6 @@ src/coreclr/System.Private.CoreLib/common
 !src/coreclr/vm/.vscode/
 !src/coreclr/vm/.vscode/c_cpp_properties.json
 
-# HttpStress local execution temporary artifacts
+# Temporary artifacts from local libraries stress builds
 .dotnet-daily/
 run-stress-*
