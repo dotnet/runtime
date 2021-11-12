@@ -16,6 +16,13 @@
 .assembly 'ldsfld_mulovf'// as "ldsfld_mulovf"
 {
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module 'ldsfld_mulovf.exe'
 // MVID: {54816B74-C516-4067-93B9-A895F5F3D4AA}
 .namespace JitTest
@@ -77,6 +84,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       388 (0x184)
       .maxstack  2
