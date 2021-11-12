@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -14,7 +13,6 @@ namespace System.Security.Cryptography
 
         public static RandomNumberGenerator Create() => RandomNumberGeneratorImplementation.s_singleton;
 
-        [UnsupportedOSPlatform("browser")]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static RandomNumberGenerator? Create(string rngName)
         {

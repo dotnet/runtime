@@ -32,7 +32,7 @@ namespace Internal.Cryptography
                 ReadOnlySpan<byte> source,
                 Span<byte> destination)
             {
-                throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported);
+                throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
             }
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
@@ -45,7 +45,7 @@ namespace Internal.Cryptography
 
         public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported);
+            throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
         }
     }
 }

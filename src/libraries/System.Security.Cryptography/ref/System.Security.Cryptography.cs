@@ -6,10 +6,10 @@
 
 namespace System.Security.Cryptography
 {
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class Aes : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected Aes() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.Aes Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.Aes? Create(string algorithmName) { throw null; }
@@ -148,7 +148,6 @@ namespace System.Security.Cryptography
         public virtual bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportSubjectPublicKeyInfoPem(System.Span<char> destination, out int charsWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class AsymmetricKeyExchangeDeformatter
     {
         protected AsymmetricKeyExchangeDeformatter() { }
@@ -156,7 +155,6 @@ namespace System.Security.Cryptography
         public abstract byte[] DecryptKeyExchange(byte[] rgb);
         public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class AsymmetricKeyExchangeFormatter
     {
         protected AsymmetricKeyExchangeFormatter() { }
@@ -165,7 +163,6 @@ namespace System.Security.Cryptography
         public abstract byte[] CreateKeyExchange(byte[] data, System.Type? symAlgType);
         public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class AsymmetricSignatureDeformatter
     {
         protected AsymmetricSignatureDeformatter() { }
@@ -174,7 +171,6 @@ namespace System.Security.Cryptography
         public abstract bool VerifySignature(byte[] rgbHash, byte[] rgbSignature);
         public virtual bool VerifySignature(System.Security.Cryptography.HashAlgorithm hash, byte[] rgbSignature) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class AsymmetricSignatureFormatter
     {
         protected AsymmetricSignatureFormatter() { }
@@ -276,7 +272,6 @@ namespace System.Security.Cryptography
         Read = 0,
         Write = 1,
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class DeriveBytes : System.IDisposable
     {
         protected DeriveBytes() { }
@@ -286,27 +281,29 @@ namespace System.Security.Cryptography
         public abstract void Reset();
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class DES : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected DES() { }
         public override byte[] Key { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.DES Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.DES? Create(string algName) { throw null; }
         public static bool IsSemiWeakKey(byte[] rgbKey) { throw null; }
         public static bool IsWeakKey(byte[] rgbKey) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class DSA : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected DSA() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static new System.Security.Cryptography.DSA Create() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Security.Cryptography.DSA Create(int keySizeInBits) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Security.Cryptography.DSA Create(System.Security.Cryptography.DSAParameters parameters) { throw null; }
@@ -375,7 +372,6 @@ namespace System.Security.Cryptography
         public byte[]? X;
         public byte[]? Y;
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class DSASignatureDeformatter : System.Security.Cryptography.AsymmetricSignatureDeformatter
     {
         public DSASignatureDeformatter() { }
@@ -389,7 +385,6 @@ namespace System.Security.Cryptography
         IeeeP1363FixedFieldConcatenation = 0,
         Rfc3279DerSequence = 1,
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class DSASignatureFormatter : System.Security.Cryptography.AsymmetricSignatureFormatter
     {
         public DSASignatureFormatter() { }
@@ -398,7 +393,6 @@ namespace System.Security.Cryptography
         public override void SetHashAlgorithm(string strName) { }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial struct ECCurve
     {
         private object _dummy;
@@ -452,15 +446,17 @@ namespace System.Security.Cryptography
             public static System.Security.Cryptography.ECCurve nistP521 { get { throw null; } }
         }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class ECDiffieHellman : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected ECDiffieHellman() { }
         public override string KeyExchangeAlgorithm { get { throw null; } }
         public abstract System.Security.Cryptography.ECDiffieHellmanPublicKey PublicKey { get; }
         public override string? SignatureAlgorithm { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.ECDiffieHellman Create() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.ECDiffieHellman Create(System.Security.Cryptography.ECCurve curve) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.ECDiffieHellman Create(System.Security.Cryptography.ECParameters parameters) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.ECDiffieHellman? Create(string algorithm) { throw null; }
@@ -504,14 +500,16 @@ namespace System.Security.Cryptography
         public virtual string ToXmlString() { throw null; }
         public virtual bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected ECDsa() { }
         public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.ECDsa Create() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.ECDsa Create(System.Security.Cryptography.ECCurve curve) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.ECDsa Create(System.Security.Cryptography.ECParameters parameters) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.ECDsa? Create(string algorithm) { throw null; }
@@ -572,7 +570,6 @@ namespace System.Security.Cryptography
         public bool VerifyHash(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> signature, System.Security.Cryptography.DSASignatureFormat signatureFormat) { throw null; }
         protected virtual bool VerifyHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> signature, System.Security.Cryptography.DSASignatureFormat signatureFormat) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial struct ECParameters
     {
         public System.Security.Cryptography.ECCurve Curve;
@@ -824,7 +821,6 @@ namespace System.Security.Cryptography
         public int MinSize { get { throw null; } }
         public int SkipSize { get { throw null; } }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class MaskGenerationMethod
     {
         protected MaskGenerationMethod() { }
@@ -928,7 +924,6 @@ namespace System.Security.Cryptography
         public System.Range Label { get { throw null; } }
         public System.Range Location { get { throw null; } }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class PKCS1MaskGenerationMethod : System.Security.Cryptography.MaskGenerationMethod
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
@@ -941,7 +936,6 @@ namespace System.Security.Cryptography
         protected RandomNumberGenerator() { }
         public static System.Security.Cryptography.RandomNumberGenerator Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.RandomNumberGenerator? Create(string rngName) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -956,7 +950,6 @@ namespace System.Security.Cryptography
         public virtual void GetNonZeroBytes(System.Span<byte> data) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class RC2 : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected int EffectiveKeySizeValue;
@@ -964,6 +957,7 @@ namespace System.Security.Cryptography
         public virtual int EffectiveKeySize { get { throw null; } set { } }
         public override int KeySize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.RC2 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.RC2? Create(string AlgName) { throw null; }
@@ -996,10 +990,10 @@ namespace System.Security.Cryptography
     }
     [System.ObsoleteAttribute("The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.", DiagnosticId = "SYSLIB0022", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class Rijndael : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected Rijndael() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.Rijndael Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.Rijndael? Create(string algName) { throw null; }
@@ -1026,14 +1020,16 @@ namespace System.Security.Cryptography
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class RSA : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected RSA() { }
         public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.RSA Create() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.RSA Create(int keySizeInBits) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.RSA Create(System.Security.Cryptography.RSAParameters parameters) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.RSA? Create(string algName) { throw null; }
@@ -1080,7 +1076,6 @@ namespace System.Security.Cryptography
         public virtual bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
         public virtual bool VerifyHash(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class RSAEncryptionPadding : System.IEquatable<System.Security.Cryptography.RSAEncryptionPadding>
     {
         internal RSAEncryptionPadding() { }
@@ -1104,7 +1099,6 @@ namespace System.Security.Cryptography
         Pkcs1 = 0,
         Oaep = 1,
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class RSAOAEPKeyExchangeDeformatter : System.Security.Cryptography.AsymmetricKeyExchangeDeformatter
     {
         public RSAOAEPKeyExchangeDeformatter() { }
@@ -1113,7 +1107,6 @@ namespace System.Security.Cryptography
         public override byte[] DecryptKeyExchange(byte[] rgbData) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class RSAOAEPKeyExchangeFormatter : System.Security.Cryptography.AsymmetricKeyExchangeFormatter
     {
         public RSAOAEPKeyExchangeFormatter() { }
@@ -1136,7 +1129,6 @@ namespace System.Security.Cryptography
         public byte[]? P;
         public byte[]? Q;
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class RSAPKCS1KeyExchangeDeformatter : System.Security.Cryptography.AsymmetricKeyExchangeDeformatter
     {
         public RSAPKCS1KeyExchangeDeformatter() { }
@@ -1146,7 +1138,6 @@ namespace System.Security.Cryptography
         public override byte[] DecryptKeyExchange(byte[] rgbIn) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class RSAPKCS1KeyExchangeFormatter : System.Security.Cryptography.AsymmetricKeyExchangeFormatter
     {
         public RSAPKCS1KeyExchangeFormatter() { }
@@ -1175,7 +1166,6 @@ namespace System.Security.Cryptography
         public override void SetHashAlgorithm(string strName) { }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class RSASignaturePadding : System.IEquatable<System.Security.Cryptography.RSASignaturePadding>
     {
         internal RSASignaturePadding() { }
@@ -1286,7 +1276,6 @@ namespace System.Security.Cryptography
         public sealed override void Initialize() { }
         protected sealed override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class SignatureDescription
     {
         public SignatureDescription() { }
@@ -1387,11 +1376,11 @@ namespace System.Security.Cryptography
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { throw null; }
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class TripleDES : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected TripleDES() { }
         public override byte[] Key { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.TripleDES Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.TripleDES? Create(string str) { throw null; }

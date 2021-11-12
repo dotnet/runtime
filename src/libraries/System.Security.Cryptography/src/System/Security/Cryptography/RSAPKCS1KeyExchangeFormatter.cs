@@ -5,7 +5,6 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
     public class RSAPKCS1KeyExchangeFormatter : AsymmetricKeyExchangeFormatter
     {
         private RSA? _rsaKey;

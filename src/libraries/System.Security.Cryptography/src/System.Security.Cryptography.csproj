@@ -2,8 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
-        <!--<TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>-->
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -355,6 +354,29 @@
     </Compile>
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
+             Link="Common\System\Sha1ForNonSecretPurposes.cs" />
+    <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\AesImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\DesImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\DSA.Create.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsa.Create.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\HashProviderDispenser.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\RC2Implementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\RSA.Create.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\TripleDesImplementation.NotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(NeedOpenSslInitializer)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

@@ -4,11 +4,9 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
     public class PKCS1MaskGenerationMethod : MaskGenerationMethod
     {
         private string _hashNameValue;

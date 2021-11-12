@@ -13,6 +13,7 @@ namespace System.Security.Cryptography
 {
     public partial class CryptoConfig
     {
+#if !BROWSER
         private const string AssemblyName_Cng = "System.Security.Cryptography.Cng";
         private const string AssemblyName_Csp = "System.Security.Cryptography.Csp";
         private const string AssemblyName_Pkcs = "System.Security.Cryptography.Pkcs";
@@ -299,10 +300,14 @@ namespace System.Security.Cryptography
                 // string DpapiDataProtectorType = "System.Security.Cryptography.DpapiDataProtector, " + AssemblyRef.SystemSecurity;
             }
         }
+#endif
 
         [UnsupportedOSPlatform("browser")]
         public static void AddAlgorithm(Type algorithm, params string[] names)
         {
+#if BROWSER
+            throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
+#else
             if (algorithm == null)
                 throw new ArgumentNullException(nameof(algorithm));
             if (!algorithm.IsVisible)
@@ -328,6 +333,7 @@ namespace System.Security.Cryptography
             {
                 appNameHT[name] = algorithm;
             }
+#endif
         }
 
         [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
@@ -336,6 +342,32 @@ namespace System.Security.Cryptography
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
+#if BROWSER
+            switch (name)
+            {
+#pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
+                // hardcode mapping for SHA* algorithm names from https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptoconfig?view=net-5.0#remarks
+                case "SHA":
+                case "SHA1":
+                case "System.Security.Cryptography.SHA1":
+                    return new SHA1Managed();
+                case "SHA256":
+                case "SHA-256":
+                case "System.Security.Cryptography.SHA256":
+                    return new SHA256Managed();
+                case "SHA384":
+                case "SHA-384":
+                case "System.Security.Cryptography.SHA384":
+                    return new SHA384Managed();
+                case "SHA512":
+                case "SHA-512":
+                case "System.Security.Cryptography.SHA512":
+                    return new SHA512Managed();
+#pragma warning restore SYSLIB0021
+            }
+
+            return null;
+#else
             // Check to see if we have an application defined mapping
             appNameHT.TryGetValue(name, out Type? retvalType);
 
@@ -449,6 +481,7 @@ namespace System.Security.Cryptography
             }
 
             return retval;
+#endif
         }
 
         [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
@@ -460,6 +493,9 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static void AddOID(string oid, params string[] names)
         {
+#if BROWSER
+            throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
+#else
             if (oid == null)
                 throw new ArgumentNullException(nameof(oid));
             if (names == null)
@@ -483,11 +519,15 @@ namespace System.Security.Cryptography
             {
                 appOidHT[name] = oid;
             }
+#endif
         }
 
         [UnsupportedOSPlatform("browser")]
         public static string? MapNameToOID(string name)
         {
+#if BROWSER
+            throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
+#else
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
@@ -504,12 +544,16 @@ namespace System.Security.Cryptography
             }
 
             return oidName;
+#endif
         }
 
         [UnsupportedOSPlatform("browser")]
         [Obsolete(Obsoletions.CryptoConfigEncodeOIDMessage, DiagnosticId = Obsoletions.CryptoConfigEncodeOIDDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static byte[] EncodeOID(string str)
         {
+#if BROWSER
+            throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
+#else
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
 
@@ -555,8 +599,10 @@ namespace System.Security.Cryptography
             encodedOidNums[1] = (byte)(encodedOidNumsIndex - 2);
 
             return encodedOidNums;
+#endif
         }
 
+#if !BROWSER
         private static void EncodeSingleOidNum(uint value, byte[]? destination, ref int index)
         {
             // Write directly to destination starting at index, and update index based on how many bytes written.
@@ -636,5 +682,6 @@ namespace System.Security.Cryptography
                 }
             }
         }
+#endif
     }
 }

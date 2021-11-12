@@ -7,7 +7,6 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
     public abstract class Aes : SymmetricAlgorithm
     {
         protected Aes()
@@ -21,6 +20,7 @@ namespace System.Security.Cryptography
             ModeValue = CipherMode.CBC;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static new Aes Create()
         {
             return new AesImplementation();

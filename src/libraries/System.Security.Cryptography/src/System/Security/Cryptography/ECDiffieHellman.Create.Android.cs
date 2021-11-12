@@ -5,17 +5,17 @@ namespace System.Security.Cryptography
 {
     public abstract partial class ECDiffieHellman : AsymmetricAlgorithm
     {
-        public static new ECDiffieHellman Create()
+        public static new partial ECDiffieHellman Create()
         {
             return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid();
         }
 
-        public static ECDiffieHellman Create(ECCurve curve)
+        public static partial ECDiffieHellman Create(ECCurve curve)
         {
             return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(curve);
         }
 
-        public static ECDiffieHellman Create(ECParameters parameters)
+        public static partial ECDiffieHellman Create(ECParameters parameters)
         {
             ECDiffieHellman ecdh = new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid();
 

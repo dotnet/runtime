@@ -10,9 +10,9 @@ namespace System.Security.Cryptography
 {
     [Obsolete(Obsoletions.RijndaelMessage, DiagnosticId = Obsoletions.RijndaelDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [UnsupportedOSPlatform("browser")]
     public abstract class Rijndael : SymmetricAlgorithm
     {
+        [UnsupportedOSPlatform("browser")]
         public static new Rijndael Create()
         {
             return new RijndaelImplementation();

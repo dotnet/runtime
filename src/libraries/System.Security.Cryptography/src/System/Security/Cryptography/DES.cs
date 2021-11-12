@@ -9,7 +9,6 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class DES : SymmetricAlgorithm
     {
@@ -22,6 +21,7 @@ namespace System.Security.Cryptography
             FeedbackSizeValue = BlockSizeValue;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static new DES Create()
         {
             return new DesImplementation();

@@ -13,7 +13,6 @@ namespace System.Security.Cryptography
     /// <summary>
     /// Specifies the padding mode  and parameters to use with RSA signature creation or verification operations.
     /// </summary>
-    [UnsupportedOSPlatform("browser")]
     public sealed class RSASignaturePadding : IEquatable<RSASignaturePadding>
     {
         private static readonly RSASignaturePadding s_pkcs1 = new RSASignaturePadding(RSASignaturePaddingMode.Pkcs1);

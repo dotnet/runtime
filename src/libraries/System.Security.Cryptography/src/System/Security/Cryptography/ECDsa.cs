@@ -12,7 +12,6 @@ using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
     public abstract partial class ECDsa : AsymmetricAlgorithm
     {
         // secp521r1 maxes out at 139 bytes in the DER format, so 256 should always be enough
@@ -28,6 +27,15 @@ namespace System.Security.Cryptography
         };
 
         protected ECDsa() { }
+
+        [UnsupportedOSPlatform("browser")]
+        public static new partial ECDsa Create();
+
+        [UnsupportedOSPlatform("browser")]
+        public static partial ECDsa Create(ECCurve curve);
+
+        [UnsupportedOSPlatform("browser")]
+        public static partial ECDsa Create(ECParameters parameters);
 
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new ECDsa? Create(string algorithm)

@@ -4,12 +4,10 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [UnsupportedOSPlatform("browser")]
     public abstract class RC2 : SymmetricAlgorithm
     {
         protected int EffectiveKeySizeValue;
@@ -24,6 +22,7 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
         public static new RC2 Create()
         {
             return new RC2Implementation();

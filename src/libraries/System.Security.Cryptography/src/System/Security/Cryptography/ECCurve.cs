@@ -14,7 +14,6 @@ namespace System.Security.Cryptography
     /// which is either a prime curve or a characteristic-2 curve.
     /// </remarks>
     [DebuggerDisplay("ECCurve: {Oid}")]
-    [UnsupportedOSPlatform("browser")]
     public partial struct ECCurve
     {
         /// <summary>

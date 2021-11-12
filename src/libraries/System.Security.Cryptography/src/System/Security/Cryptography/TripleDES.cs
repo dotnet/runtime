@@ -9,7 +9,6 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     [SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for TripleDES, not consuming it.")]
-    [UnsupportedOSPlatform("browser")]
     public abstract class TripleDES : SymmetricAlgorithm
     {
         protected TripleDES()
@@ -21,6 +20,7 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static new TripleDES Create()
         {
             return new TripleDesImplementation();

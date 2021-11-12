@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.Versioning;
-using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -12,7 +11,6 @@ namespace System.Security.Cryptography
     /// <summary>
     ///     Abstract base class for implementations of elliptic curve Diffie-Hellman to derive from
     /// </summary>
-    [UnsupportedOSPlatform("browser")]
     public abstract partial class ECDiffieHellman : AsymmetricAlgorithm
     {
         private static readonly string[] s_validOids =
@@ -31,6 +29,15 @@ namespace System.Security.Cryptography
         {
             get { return null; }
         }
+
+        [UnsupportedOSPlatform("browser")]
+        public static new partial ECDiffieHellman Create();
+
+        [UnsupportedOSPlatform("browser")]
+        public static partial ECDiffieHellman Create(ECCurve curve);
+
+        [UnsupportedOSPlatform("browser")]
+        public static partial ECDiffieHellman Create(ECParameters parameters);
 
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new ECDiffieHellman? Create(string algorithm)

@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public partial class RSA : AsymmetricAlgorithm
     {
-        public static new RSA Create()
+        public static new partial RSA Create()
         {
             return new RSAImplementation.RSACng();
         }

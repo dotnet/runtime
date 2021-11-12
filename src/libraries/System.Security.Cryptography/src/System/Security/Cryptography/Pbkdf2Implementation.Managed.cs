@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -16,8 +17,13 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(!destination.IsEmpty);
             Debug.Assert(hashAlgorithmName.Name is not null);
-            // Fall back to managed implementation since Android doesn't support the full Pbkdf2 APIs
-            // until API level 26.
+
+            if (!Helpers.HasHMAC)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_AlgorithmNotSupported, "HMAC" + hashAlgorithmName.Name));
+            }
+
             using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(
                 password.ToArray(),
                 salt.ToArray(),

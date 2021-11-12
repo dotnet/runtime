@@ -12,15 +12,18 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
     public abstract partial class RSA : AsymmetricAlgorithm
     {
+        [UnsupportedOSPlatform("browser")]
+        public static new partial RSA Create();
+
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new RSA? Create(string algName)
         {
             return (RSA?)CryptoConfig.CreateFromName(algName);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static RSA Create(int keySizeInBits)
         {
             RSA rsa = Create();
@@ -37,6 +40,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static RSA Create(RSAParameters parameters)
         {
             RSA rsa = Create();
