@@ -30,6 +30,7 @@
 
 #define ALLOW_METHOD_ADD
 
+typedef struct _DeltaInfo DeltaInfo;
 
 static void
 hot_reload_init (void);
@@ -63,6 +64,10 @@ hot_reload_apply_changes (int origin, MonoImage *base_image, gconstpointer dmeta
 
 static int
 hot_reload_relative_delta_index (MonoImage *image_dmeta, int token);
+
+static int
+hot_reload_relative_delta_index_full (MonoImage *image_dmeta, DeltaInfo *delta_info, int token);
+
 
 static void
 hot_reload_close_except_pools_all (MonoImage *base_image);
@@ -167,7 +172,7 @@ typedef struct _delta_row_count {
 } delta_row_count;
 
 /* Additional informaiton for MonoImages representing deltas */
-typedef struct _DeltaInfo {
+struct _DeltaInfo {
 	uint32_t generation; /* global update ID that added this delta image */
 
 	/* Maps MethodDef token indices to a pointer into the RVA of the delta IL */
@@ -185,7 +190,7 @@ typedef struct _DeltaInfo {
 	MonoMemPool *pool; /* mutated tables are allocated here */
 
 	MonoTableInfo mutants[MONO_TABLE_NUM];
-} DeltaInfo;
+};
 
 
 /* Additional informaiton for baseline MonoImages */
@@ -205,7 +210,11 @@ typedef struct _BaselineInfo {
 	GHashTable *method_parent; /* maps added methoddef tokens to typedef tokens */
 } BaselineInfo;
 
+
 #define DOTNET_MODIFIABLE_ASSEMBLIES "DOTNET_MODIFIABLE_ASSEMBLIES"
+
+/* See Note: Suppressed Columns */
+static guint16 m_SuppressedDeltaColumns [MONO_TABLE_NUM];
 
 /**
  * mono_metadata_update_enable:
@@ -516,6 +525,12 @@ hot_reload_init (void)
 {
 	table_to_image_init ();
 	mono_native_tls_alloc (&exposed_generation_id, NULL);
+
+	/* See CMiniMdRW::ApplyDelta in metamodelenc.cpp in CoreCLR */
+	m_SuppressedDeltaColumns[MONO_TABLE_EVENTMAP]      = (1 << MONO_EVENT_MAP_EVENTLIST);
+        m_SuppressedDeltaColumns[MONO_TABLE_PROPERTYMAP]   = (1 << MONO_PROPERTY_MAP_PROPERTY_LIST);
+        m_SuppressedDeltaColumns[MONO_TABLE_METHOD]        = (1 << MONO_METHOD_PARAMLIST);
+        m_SuppressedDeltaColumns[MONO_TABLE_TYPEDEF]       = (1 << MONO_TYPEDEF_FIELD_LIST)|(1<<MONO_TYPEDEF_METHOD_LIST);
 }
 
 static
@@ -959,7 +974,6 @@ int
 hot_reload_relative_delta_index (MonoImage *image_dmeta, int token)
 {
 	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
-	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
 
 	/* this helper expects and returns as "index origin = 1" */
@@ -971,14 +985,30 @@ hot_reload_relative_delta_index (MonoImage *image_dmeta, int token)
 	DeltaInfo *delta_info = delta_info_lookup (image_dmeta);
 	g_assert (delta_info);
 
+	return hot_reload_relative_delta_index_full (image_dmeta, delta_info, token);
+}
+
+
+int
+hot_reload_relative_delta_index_full (MonoImage *image_dmeta, DeltaInfo *delta_info, int token)
+{
+	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
+
+	int table = mono_metadata_token_table (token);
+	int index = mono_metadata_token_index (token);
+
 	int index_map = delta_info->enc_recs [table];
 	int encmap_rows = table_info_get_rows (encmap);
+
+	if (!table_info_get_rows (encmap) || !image_dmeta->minimal_delta)
+		return mono_metadata_token_index (token);
 
 	/* if the table didn't have any updates in this generation and the
 	 * table index is bigger than the last table that got updates,
 	 * enc_recs will point past the last row */
 	if (index_map - 1 == encmap_rows)
 		return -1;
+
 	guint32 cols[MONO_ENCMAP_SIZE];
 	mono_metadata_decode_row (encmap, index_map - 1, cols, MONO_ENCMAP_SIZE);
 	int map_entry = cols [MONO_ENCMAP_TOKEN];
@@ -1142,6 +1172,41 @@ funccode_to_str (int func_code)
 		default: g_assert_not_reached ();
 	}
 	return NULL;
+}
+
+/*
+ * Apply the row from the delta image given by log_token to the cur_delta mutated table.
+ *
+ */
+static void
+delta_info_mutate_row (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log_token)
+{
+	int token_table = mono_metadata_token_table (log_token);
+	int token_index = mono_metadata_token_index (log_token); /* 1-based */
+
+	gboolean modified = token_index <= cur_delta->count [token_table].prev_gen_rows;
+
+	int delta_index = hot_reload_relative_delta_index_full (image_dmeta, cur_delta, log_token);
+
+	guint32 bitfield = image_base->tables [token_table].size_bitfield;
+
+	const char *src_base = image_dmeta->tables [token_table].base + delta_index * image_dmeta->tables [token_table].row_size;
+	char *dst_base = (char*)cur_delta->mutants [token_table].base + token_index * image_base->tables [token_table].row_size;
+
+	guint32 offset = 0;
+	for (int col = 0; col < mono_metadata_table_count (bitfield); ++col) {
+		guint32 col_size = mono_metadata_table_size (bitfield, col);
+		if ((m_SuppressedDeltaColumns [token_table] & (1 << col)) == 0) {
+			/* copy */
+			const char *src = src_base + offset;
+			char *dst = dst_base + offset;
+			memcpy (dst, src, col_size);
+		}
+		offset += col_size;
+	}
+	g_assert (offset == image_base->tables [token_table].row_size);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "mutate: table=0x%02x row=0x%04x delta row=0x%04x %s", token_table, token_index, delta_index, modified ? "Mod" : "Add");
 }
 
 /* Run some sanity checks first. If we detect unsupported scenarios, this
@@ -1448,6 +1513,22 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 	 * Fortunately whether we get the delta from the debugger or from the runtime API, we always
 	 * have it in writable memory (and not mmap-ed pages), so we can rewrite the table values.
 	 */
+
+
+	/* Prepare the mutated metadata tables */
+	for (int i = 0; i < rows ; ++i) {
+		guint32 cols [MONO_ENCLOG_SIZE];
+		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
+
+		int log_token = cols [MONO_ENCLOG_TOKEN];
+		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
+
+		if (func_code != ENC_FUNC_DEFAULT)
+			continue;
+
+		delta_info_mutate_row (image_base, image_dmeta, delta_info, log_token);
+	}
+
 
 	MonoClass *add_method_klass = NULL;
 	uint32_t add_param_method_index = 0;
@@ -1882,7 +1963,7 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 		list = list->next;
 		table = &dmeta->tables [table_index];
 		/* mono_image_relative_delta_index returns a 1-based index */
-		ridx = hot_reload_relative_delta_index (dmeta, original_token) - 1;
+		ridx = hot_reload_relative_delta_index_full (dmeta, delta_info, original_token) - 1;
 	} while (ridx < 0 || ridx >= table_info_get_rows (table));
 
 	return FALSE;
