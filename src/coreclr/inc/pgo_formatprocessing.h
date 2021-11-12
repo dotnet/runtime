@@ -365,7 +365,7 @@ bool ReadInstrumentationSchemaWithLayout(const uint8_t *pByte, size_t cbDataMax,
 // Return true if schemaTable entries are a subset of the schema described by pByte, with matching entries in the same order.
 // Also updates offset of the matching entries in schemaTable to those of the pByte schema.
 //
-inline bool ComparePgoSchemaCompatible(const uint8_t *pByte, size_t cbDataMax, ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
+inline bool CheckIfPgoSchemaIsCompatibleAndSetOffsets(const uint8_t *pByte, size_t cbDataMax, ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
 {
     size_t nSchema = 0;
     size_t nMatched = 0;
@@ -374,18 +374,16 @@ inline bool ComparePgoSchemaCompatible(const uint8_t *pByte, size_t cbDataMax, I
 
     auto handler = [schemaTable, &nSchema, &nMatched, &nUnmatched](const ICorJitInfo::PgoInstrumentationSchema& schema)
     {
-        const size_t iSchemaAdj = nSchema - nUnmatched;
-
-        if ((schema.InstrumentationKind != schemaTable[iSchemaAdj].InstrumentationKind)
-            || (schema.ILOffset != schemaTable[iSchemaAdj].ILOffset)
-            || (schema.Count != schemaTable[iSchemaAdj].Count)
-            || (schema.Other != schemaTable[iSchemaAdj].Other))
+        if ((schema.InstrumentationKind != schemaTable[nMatched].InstrumentationKind)
+            || (schema.ILOffset != schemaTable[nMatched].ILOffset)
+            || (schema.Count != schemaTable[nMatched].Count)
+            || (schema.Other != schemaTable[nMatched].Other))
         {
             nUnmatched++;
         }
         else
         {
-            schemaTable[iSchemaAdj].Offset = schema.Offset;
+            schemaTable[nMatched].Offset = schema.Offset;
             nMatched++;
         }
 
