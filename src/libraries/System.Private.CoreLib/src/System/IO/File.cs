@@ -254,7 +254,7 @@ namespace System.IO
             using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan))
             {
                 long fileLength = 0;
-                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > int.MaxValue)
+                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
