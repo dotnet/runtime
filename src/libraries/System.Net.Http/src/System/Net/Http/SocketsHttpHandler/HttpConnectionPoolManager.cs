@@ -51,6 +51,12 @@ namespace System.Net.Http
         /// <see cref="ConcurrentDictionary{TKey,TValue}.IsEmpty"/> call.
         /// </summary>
         private bool _timerIsRunning;
+
+        /// <summary>
+        /// Prevents parallel execution of RemoveStalePools in case the timer triggers faster than the method itself finishes.
+        /// </summary>
+        private int _removeStalePoolsIsRunning;
+
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _pools;
 
@@ -479,26 +485,40 @@ namespace System.Net.Http
         {
             Debug.Assert(_cleaningTimer != null);
 
-            // Iterate through each pool in the set of pools.  For each, ask it to clear out
-            // any unusable connections (e.g. those which have expired, those which have been closed, etc.)
-            // The pool may detect that it's empty and long unused, in which case it'll dispose of itself,
-            // such that any connections returned to the pool to be cached will be disposed of.  In such
-            // a case, we also remove the pool from the set of pools to avoid a leak.
-            foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> entry in _pools)
+            // Check whether the method is not already running and prevent parallel execution.
+            if (Interlocked.CompareExchange(ref _removeStalePoolsIsRunning, 1, 0) != 0)
             {
-                if (entry.Value.CleanCacheAndDisposeIfUnused())
-                {
-                    _pools.TryRemove(entry.Key, out HttpConnectionPool _);
-                }
+                return;
             }
 
-            // Stop running the timer if we don't have any pools to clean up.
-            lock (SyncObj)
+            try
             {
-                if (_pools.IsEmpty)
+                // Iterate through each pool in the set of pools.  For each, ask it to clear out
+                // any unusable connections (e.g. those which have expired, those which have been closed, etc.)
+                // The pool may detect that it's empty and long unused, in which case it'll dispose of itself,
+                // such that any connections returned to the pool to be cached will be disposed of.  In such
+                // a case, we also remove the pool from the set of pools to avoid a leak.
+                foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> entry in _pools)
                 {
-                    SetCleaningTimer(Timeout.InfiniteTimeSpan);
+                    if (entry.Value.CleanCacheAndDisposeIfUnused())
+                    {
+                        _pools.TryRemove(entry.Key, out HttpConnectionPool _);
+                    }
                 }
+
+                // Stop running the timer if we don't have any pools to clean up.
+                lock (SyncObj)
+                {
+                    if (_pools.IsEmpty)
+                    {
+                        SetCleaningTimer(Timeout.InfiniteTimeSpan);
+                    }
+                }
+            }
+            finally
+            {
+                // Make sure the guard value gets always reset back to 0 and that it's visible to other threads.
+                Volatile.Write(ref _removeStalePoolsIsRunning, 0);
             }
 
             // NOTE: There is a possible race condition with regards to a pool getting cleaned up at the same
