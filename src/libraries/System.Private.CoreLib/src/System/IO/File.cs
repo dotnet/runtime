@@ -511,64 +511,39 @@ namespace System.IO
             return WriteToFileAsync(path, FileMode.Create, contents, encoding, cancellationToken);
         }
 
-        public static Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
+        public static async Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<byte[]>(cancellationToken);
-            }
+            cancellationToken.ThrowIfCancellationRequested();
 
-            var fs = new FileStream(
-                path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
-
-            bool returningInternalTask = false;
-            try
+            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.Asynchronous | FileOptions.SequentialScan))
             {
                 long fileLength = 0L;
-                if (fs.CanSeek && (fileLength = fs.Length) > int.MaxValue)
+                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
                 {
-                    var e = new IOException(SR.IO_FileTooLong2GB);
-                    ExceptionDispatchInfo.SetCurrentStackTrace(e);
-                    return Task.FromException<byte[]>(e);
+                    throw new IOException(SR.IO_FileTooLong2GB);
+                }
+                if (fileLength == 0)
+                {
+                    return await InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken).ConfigureAwait(false);
                 }
 
-                returningInternalTask = true;
-                return fileLength > 0 ?
-                    InternalReadAllBytesAsync(fs, (int)fileLength, cancellationToken) :
-                    InternalReadAllBytesUnknownLengthAsync(fs, cancellationToken);
-            }
-            finally
-            {
-                if (!returningInternalTask)
-                {
-                    fs.Dispose();
-                }
-            }
-        }
-
-        private static async Task<byte[]> InternalReadAllBytesAsync(FileStream fs, int count, CancellationToken cancellationToken)
-        {
-            using (fs)
-            {
                 int index = 0;
-                byte[] bytes = new byte[count];
+                byte[] bytes = new byte[fileLength];
                 do
                 {
-                    int n = await fs.ReadAsync(new Memory<byte>(bytes, index, count - index), cancellationToken).ConfigureAwait(false);
+                    int n = await RandomAccess.ReadAtOffsetAsync(sfh, bytes.AsMemory(index), index, cancellationToken).ConfigureAwait(false);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
 
                     index += n;
-                } while (index < count);
-
+                } while (index < fileLength);
                 return bytes;
             }
         }
 
-        private static async Task<byte[]> InternalReadAllBytesUnknownLengthAsync(FileStream fs, CancellationToken cancellationToken)
+        private static async Task<byte[]> InternalReadAllBytesUnknownLengthAsync(SafeFileHandle sfh, CancellationToken cancellationToken)
         {
             byte[] rentedArray = ArrayPool<byte>.Shared.Rent(512);
             try
@@ -594,7 +569,7 @@ namespace System.IO
                     }
 
                     Debug.Assert(bytesRead < rentedArray.Length);
-                    int n = await fs.ReadAsync(rentedArray.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false);
+                    int n = await RandomAccess.ReadAtOffsetAsync(sfh, rentedArray.AsMemory(bytesRead), bytesRead, cancellationToken).ConfigureAwait(false);
                     if (n == 0)
                     {
                         return rentedArray.AsSpan(0, bytesRead).ToArray();
@@ -604,7 +579,6 @@ namespace System.IO
             }
             finally
             {
-                fs.Dispose();
                 ArrayPool<byte>.Shared.Return(rentedArray);
             }
         }
