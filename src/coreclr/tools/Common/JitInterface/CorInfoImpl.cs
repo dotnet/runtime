@@ -373,10 +373,7 @@ namespace Internal.JitInterface
                 // Currently, hot/cold splitting is not done and hence `codeSize` just includes the size of
                 // hotCode. Once hot/cold splitting is done, need to trim respective `_code` or `_coldCode`
                 // accordingly.
-                if (_compilation.Logger.IsVerbose)
-                {
-                    Log.WriteLine($"Trimming codeSize from {_code.Length} to {codeSize}, Savings: {_code.Length - codeSize}, Method: {_methodCodeNode.Method.Name}");
-                }
+
                 Debug.Assert(codeSize != 0);
                 Debug.Assert(_code.Length > codeSize);
                 Array.Resize(ref _code, (int)codeSize);
