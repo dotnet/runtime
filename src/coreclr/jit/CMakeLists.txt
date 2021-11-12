@@ -228,7 +228,6 @@ if (CLR_CMAKE_TARGET_WIN32)
     regalloc.h
     register_arg_convention.h
     register.h
-    reglist.h
     regset.h
     sideeffects.h
     simd.h

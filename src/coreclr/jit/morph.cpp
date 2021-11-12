@@ -1712,27 +1712,6 @@ void fgArgInfo::SortArgs()
     assert(begTab == (endTab + 1));
     assert(argsRemaining == 0);
 
-#if !FEATURE_FIXED_OUT_ARGS
-    // Finally build the regArgList
-    //
-    callTree->AsCall()->regArgList      = NULL;
-    callTree->AsCall()->regArgListCount = regCount;
-
-    unsigned regInx = 0;
-    for (curInx = 0; curInx < argCount; curInx++)
-    {
-        fgArgTabEntry* curArgTabEntry = argTable[curInx];
-
-        if (curArgTabEntry->GetRegNum() != REG_STK)
-        {
-            // Encode the argument register in the register mask
-            //
-            callTree->AsCall()->regArgList[regInx] = curArgTabEntry->GetRegNum();
-            regInx++;
-        }
-    }
-#endif // !FEATURE_FIXED_OUT_ARGS
-
     argsSorted = true;
 }
 

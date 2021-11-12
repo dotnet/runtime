@@ -41,7 +41,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitexpandarray.h"
 #include "tinyarray.h"
 #include "valuenum.h"
-#include "reglist.h"
 #include "jittelemetry.h"
 #include "namedintrinsiclist.h"
 #ifdef LATE_DISASM

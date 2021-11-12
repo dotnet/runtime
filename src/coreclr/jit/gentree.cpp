@@ -8235,11 +8235,6 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
         argsTail  = &((*argsTail)->NextRef());
     }
 
-#if !FEATURE_FIXED_OUT_ARGS
-    copy->regArgList      = tree->regArgList;
-    copy->regArgListCount = tree->regArgListCount;
-#endif
-
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
     // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
@@ -8756,28 +8751,6 @@ GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 
     // Assert if we used DEBUG_DESTROY_NODE.
     assert(result->gtOper != GT_COUNT);
-
-#if !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
-    // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
-    // left outdated by assertion propogation updates.
-    // There is no information about registers of late args for platforms
-    // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
-    // !FEATURE_FIXED_OUT_ARGS.
-    regNumber thisReg = REG_ARG_0;
-    regList   list    = call->regArgList;
-    int       index   = 0;
-    for (GenTreeCall::Use& use : call->LateArgs())
-    {
-        assert(index < call->regArgListCount);
-        regNumber curArgReg = list[index];
-        if (curArgReg == thisReg)
-        {
-            assert(result == use.GetNode());
-        }
-
-        index++;
-    }
-#endif // !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
 
     return result;
 }
@@ -12050,9 +12023,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                                 (call->gtControlExpr == lastChild) ? IIArcBottom : IIArc, "control expr", topOnly);
                 }
 
-#if !FEATURE_FIXED_OUT_ARGS
-                regList list = call->regArgList;
-#endif
                 int lateArgIndex = 0;
                 for (GenTreeCall::Use& use : call->LateArgs())
                 {
@@ -12231,10 +12201,7 @@ void Compiler::gtGetLateArgMsg(GenTreeCall* call, GenTree* argx, int lateArgInde
     assert(curArgTabEntry);
     regNumber argReg = curArgTabEntry->GetRegNum();
 
-#if !FEATURE_FIXED_OUT_ARGS
-    assert(lateArgIndex < call->regArgListCount);
-    assert(argReg == call->regArgList[lateArgIndex]);
-#else
+#if FEATURE_FIXED_OUT_ARGS
     if (argReg == REG_STK)
     {
         sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum, curArgTabEntry->GetByteOffset(), 0);
