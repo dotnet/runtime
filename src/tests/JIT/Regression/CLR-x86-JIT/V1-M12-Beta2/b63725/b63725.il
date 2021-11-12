@@ -8,9 +8,19 @@
   .ver 4:0:0:0
 }
 .assembly ILGEN_0xb372dbdf {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .class ILGEN_0xb372dbdf {
 .field static	int64 field_0xc
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	20
  .locals (float32 LOCAL_0x4,int16[] LOCAL_0x5,int64 LOCAL_0x6,native int LOCAL_0x7,int64 LOCAL_0x8,unsigned int32 LOCAL_0x9,native int[] LOCAL_0xa)
