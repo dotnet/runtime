@@ -12,13 +12,19 @@ namespace System.Reflection.Metadata
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern unsafe bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);
 
-        // Retrieves the metadata section of the assembly, for use with System.Reflection.Metadata.MetadataReader.
-        //   - Returns false upon failure. Metadata might not be available for some assemblies, such as AssemblyBuilder, .NET
-        //     native images, etc.
-        //   - Callers should not write to the metadata blob
-        //   - The metadata blob pointer will remain valid as long as the AssemblyLoadContext with which the assembly is
-        //     associated, is alive. The caller is responsible for keeping the assembly object alive while accessing the
-        //     metadata blob.
+        /// <summary>
+        /// Retrieves the metadata section of the assembly, for use with <see cref="T:System.Reflection.Metadata.MetadataReader" />.
+        /// </summary>
+        /// <returns>
+        /// Returns <see langword="false" /> upon failure. Metadata might not be available for some assemblies,
+        /// such as <see cref="System.Reflection.Emit.AssemblyBuilder" />, AOT images, etc.
+        /// </returns>
+        /// <remarks>
+        /// <para>Callers should not write to the metadata blob.</para>
+        /// <para>The metadata blob pointer will remain valid as long as the <see cref="System.Runtime.Loader.AssemblyLoadContext" />
+        ///   with which the assembly is associated, is alive.
+        ///   The caller is responsible for keeping the assembly object alive while accessing the metadata blob.</para>
+        /// </remarks>
         [CLSCompliant(false)] // out byte* blob
         public static unsafe bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
         {
