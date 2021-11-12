@@ -556,8 +556,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return segment;
         }
 
-        public string GetParameterString() => Base64Encode().data;
-        public (string data, int length) Base64Encode() {
+        public (string data, int length) ToBase64() {
             var segment = GetParameterBuffer();
             return (Convert.ToBase64String(segment), segment.Count);
         }
@@ -781,7 +780,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommand<T>(T command, MonoBinaryWriter arguments, CancellationToken token) =>
-            MonoBinaryReader.From (await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments is not null ? arguments.GetParameterString() : string.Empty), token));
+            MonoBinaryReader.From (await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments is not null ? arguments.ToBase64().data : string.Empty), token));
 
         internal CommandSet GetCommandSetForCommand<T>(T command) =>
             command switch {
@@ -2072,7 +2071,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 command_params_writer_to_proxy.Write(getMethodId);
                 command_params_writer_to_proxy.Write(valueTypes[valueTypeId].valueTypeBuffer);
                 command_params_writer_to_proxy.Write(0);
-                var (data, length) = command_params_writer_to_proxy.Base64Encode();
+                var (data, length) = command_params_writer_to_proxy.ToBase64();
                 valueTypes[valueTypeId].valueTypeProxy.Add(JObject.FromObject(new {
                             get = JObject.FromObject(new {
                                 commandSet = CommandSet.Vm,
@@ -2270,7 +2269,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             command_params_writer_to_set.Write(objectId);
                             command_params_writer_to_set.Write(1);
                             command_params_writer_to_set.Write(field.Id);
-                            var (data, length) = command_params_writer_to_set.Base64Encode();
+                            var (data, length) = command_params_writer_to_set.ToBase64();
 
                             fieldValue.Add("set", JObject.FromObject(new {
                                         commandSet = CommandSet.ObjectRef,
@@ -2362,7 +2361,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         command_params_writer_to_set.Write((byte)ElementType.Class);
                         command_params_writer_to_set.Write(objectId);
                         command_params_writer_to_set.Write(1);
-                        var (data, length) = command_params_writer_to_set.Base64Encode();
+                        var (data, length) = command_params_writer_to_set.ToBase64();
 
                         if (attr["set"] != null)
                         {
@@ -2383,7 +2382,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         command_params_writer_to_get.Write((byte)ElementType.Class);
                         command_params_writer_to_get.Write(objectId);
                         command_params_writer_to_get.Write(0);
-                        var (data, length) = command_params_writer_to_get.Base64Encode();
+                        var (data, length) = command_params_writer_to_get.ToBase64();
 
                         ret.Add(JObject.FromObject(new {
                                 get = JObject.FromObject(new {
@@ -2412,7 +2411,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             JArray locals = new JArray();
             using var getDebuggerCmdReader = await SendDebuggerAgentCommand(CmdFrame.GetValues, commandParamsWriter, token);
             int etype = getDebuggerCmdReader.ReadByte();
-            using var setDebuggerCmdReader = await SendDebuggerAgentCommandWithParms(CmdFrame.SetValues, commandParamsWriter.Base64Encode(), etype, newValue, token);
+            using var setDebuggerCmdReader = await SendDebuggerAgentCommandWithParms(CmdFrame.SetValues, commandParamsWriter.ToBase64(), etype, newValue, token);
             if (setDebuggerCmdReader.HasError)
                 return false;
             return true;
