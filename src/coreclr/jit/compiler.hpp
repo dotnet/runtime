@@ -3610,17 +3610,6 @@ inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
 }
 
-inline Compiler::fgWalkResult Compiler::CountSharedStaticHelper(GenTree** pTree, fgWalkData* data)
-{
-    if (Compiler::IsSharedStaticHelper(*pTree))
-    {
-        int* pCount = (int*)data->pCallbackData;
-        (*pCount)++;
-    }
-
-    return WALK_CONTINUE;
-}
-
 //  TODO-Cleanup: Replace calls to IsSharedStaticHelper with new HelperCallProperties
 //
 
