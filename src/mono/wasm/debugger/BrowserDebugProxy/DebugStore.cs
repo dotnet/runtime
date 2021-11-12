@@ -157,9 +157,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => $"(var-info [{Index}] '{Name}')";
     }
 
-    internal class NewCliLocation
+    internal class IlLocation
     {
-        public NewCliLocation(MethodInfo method, int offset)
+        public IlLocation(MethodInfo method, int offset)
         {
             Method = method;
             Offset = offset;
@@ -174,7 +174,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private SourceId id;
         private int line;
         private int column;
-        private NewCliLocation cliLoc;
+        private IlLocation ilLocation;
 
         public SourceLocation(SourceId id, int line, int column)
         {
@@ -188,13 +188,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.id = mi.SourceId;
             this.line = sp.StartLine - 1;
             this.column = sp.StartColumn - 1;
-            this.cliLoc = new NewCliLocation(mi, sp.Offset);
+            this.ilLocation = new IlLocation(mi, sp.Offset);
         }
 
         public SourceId Id { get => id; }
         public int Line { get => line; }
         public int Column { get => column; }
-        public NewCliLocation CliLocation => this.cliLoc;
+        public IlLocation IlLocation => this.ilLocation;
 
         public override string ToString() => $"{id}:{Line}:{Column}";
 
@@ -923,7 +923,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             public Task<byte[][]> Data { get; set; }
         }
 
-        public IEnumerable<MethodInfo> EnC(SessionId sessionId, AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
+        public IEnumerable<MethodInfo> EnC(AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
         {
             asm.EnC(meta_data, pdb_data);
             foreach (var method in asm.Methods)
@@ -962,7 +962,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(SessionId sessionId, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<SourceFile> Load(string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
         {
             var asm_files = new List<string>();
             var pdb_files = new List<string>();
