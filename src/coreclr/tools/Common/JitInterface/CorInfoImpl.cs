@@ -366,7 +366,7 @@ namespace Internal.JitInterface
 #endif
             }
 
-            if (codeSize != allocatedHotCodeSize)
+            if (codeSize != _code.Length)
             {
                 // If the generated code is smaller than allocatedHotCodeSize, then trim the codeBlock.
                 //
@@ -375,10 +375,10 @@ namespace Internal.JitInterface
                 // accordingly.
                 if (_compilation.Logger.IsVerbose)
                 {
-                    Log.WriteLine($"Trimming codeSize from {_code.Length} to {codeSize}, Savings: {allocatedHotCodeSize - codeSize}, Method: {_methodCodeNode.Method.Name}");
+                    Log.WriteLine($"Trimming codeSize from {_code.Length} to {codeSize}, Savings: {_code.Length - codeSize}, Method: {_methodCodeNode.Method.Name}");
                 }
                 Debug.Assert(codeSize != 0);
-                Debug.Assert(allocatedHotCodeSize > codeSize);
+                Debug.Assert(_code.Length > codeSize);
                 Array.Resize(ref _code, (int)codeSize);
             }
             PublishCode();
@@ -3257,8 +3257,6 @@ namespace Internal.JitInterface
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
-        private long allocatedHotCodeSize = 0;
-
         private void allocMem(ref AllocMemArgs args)
         {
             args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);
@@ -3269,7 +3267,6 @@ namespace Internal.JitInterface
                 args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
                 args.coldCodeBlockRW = args.coldCodeBlock;
             }
-            allocatedHotCodeSize = args.hotCodeSize;
 
             _codeAlignment = -1;
             if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
