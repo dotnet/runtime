@@ -6227,10 +6227,17 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
+    // Sign jump optimization should only be set the following check
+    assert((tree->gtFlags & GTF_RELOP_SJUMP_OPT) == 0);
 
     if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), tree->OperGet()))
     {
         JITDUMP("Not emitting compare due to flags being already set\n");
+    }
+    else if (canReuseFlags && emit->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(type), tree))
+    {
+        JITDUMP("Not emitting compare due to sign being already set, follow up instr will transform jump\n");
+        tree->gtFlags |= GTF_RELOP_SJUMP_OPT;
     }
     else
     {
