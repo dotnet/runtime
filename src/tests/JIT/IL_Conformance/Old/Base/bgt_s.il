@@ -80,5 +80,5 @@ end:
 }
 
 
-.assembly bgt_s.exe {}
+.assembly bgt_s {}
 

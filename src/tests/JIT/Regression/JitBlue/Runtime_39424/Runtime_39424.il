@@ -11,7 +11,7 @@
 .assembly extern System.Numerics.Extensions {}
 .assembly extern System.Runtime.CompilerServices.Unsafe {}
 
-.assembly Runtime_39424.exe {}
+.assembly Runtime_39424 {}
 
 .class private auto ansi beforefieldinit Runtime_39424
        extends [System.Runtime]System.Object
