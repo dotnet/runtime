@@ -943,12 +943,15 @@ PhaseStatus Rationalizer::DoPhase()
                 BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 
                 // If this statement has correct debug information, change it
-                // into a debug info node and insert it into the LIR. Currently
-                // we do not support describing IL offsets in inlinees in the
-                // emitter, so we normalize all debug info to be in the inline
-                // root here.
-                DebugInfo di = statement->GetDebugInfo().GetRoot();
-                if (di.IsValid())
+                // into a debug info node and insert it into the LIR. Note that
+                // we are currently reporting root info only back to the EE, so
+                // if the leaf debug info is invalid we still attach it.
+                // Note that we would like to have the invariant di.IsValid()
+                // => parent.IsValid() but it is currently not the case for
+                // NEWOBJ IL instructions where the debug info ends up attached
+                // to the allocation instead of the constructor call.
+                DebugInfo di = statement->GetDebugInfo();
+                if (di.IsValid() || di.GetRoot().IsValid())
                 {
                     GenTreeILOffset* ilOffset =
                         new (comp, GT_IL_OFFSET) GenTreeILOffset(di DEBUGARG(statement->GetLastILOffset()));

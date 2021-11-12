@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = false)]
-        internal static extern uint LsaNtStatusToWinError(uint status);
+        [GeneratedDllImport(Interop.Libraries.Advapi32, SetLastError = false)]
+        internal static partial uint LsaNtStatusToWinError(uint status);
     }
 }

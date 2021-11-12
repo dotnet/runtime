@@ -3294,6 +3294,13 @@ public:
                               unsigned    simdSize,
                               bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdNarrowNode(var_types   type,
+                                 GenTree*    op1,
+                                 GenTree*    op2,
+                                 CorInfoType simdBaseJitType,
+                                 unsigned    simdSize,
+                                 bool        isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
@@ -3303,6 +3310,12 @@ public:
                                CorInfoType simdBaseJitType,
                                unsigned    simdSize,
                                bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdWidenLowerNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdWidenUpperNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
     GenTree* gtNewSimdWithElementNode(var_types   type,
                                       GenTree*    op1,

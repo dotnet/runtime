@@ -1977,16 +1977,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicConvertToInt32:
             break;
 
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
-            if (varTypeIsIntegral(simdTree->GetSimdBaseType()))
-            {
-                // We need an internal register different from targetReg.
-                setInternalRegsDelayFree = true;
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-            break;
-
         case SIMDIntrinsicConvertToInt64:
             // We need an internal register different from targetReg.
             setInternalRegsDelayFree = true;
@@ -2018,16 +2008,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             }
             // We also need an integer register.
             buildInternalIntRegisterDefForNode(simdTree);
-            break;
-
-        case SIMDIntrinsicNarrow:
-            // We need an internal register different from targetReg.
-            setInternalRegsDelayFree = true;
-            buildInternalFloatRegisterDefForNode(simdTree);
-            if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) && (simdTree->GetSimdBaseType() != TYP_DOUBLE))
-            {
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
             break;
 
         case SIMDIntrinsicShuffleSSE2:

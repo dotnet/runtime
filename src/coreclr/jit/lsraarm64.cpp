@@ -816,8 +816,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicConvertToInt32:
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
             // No special handling required.
             break;
 
@@ -827,17 +825,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicEqual:
             // No special handling required.
             break;
-
-        case SIMDIntrinsicNarrow:
-        {
-            // Op1 will write to dst before Op2 is free
-            BuildUse(simdTree->Op(1));
-            RefPosition* op2Use = BuildUse(simdTree->Op(2));
-            setDelayFree(op2Use);
-            srcCount  = 2;
-            buildUses = false;
-            break;
-        }
 
         case SIMDIntrinsicInitN:
         {
@@ -872,7 +859,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
         case SIMDIntrinsicHWAccel:
-        case SIMDIntrinsicWiden:
         case SIMDIntrinsicInvalid:
             assert(!"These intrinsics should not be seen during register allocation");
             FALLTHROUGH;
