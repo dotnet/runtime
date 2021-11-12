@@ -5972,8 +5972,7 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
 
 GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon)
 {
-    compQmarkUsed = true;
-    cond->gtFlags |= GTF_RELOP_QMARK;
+    compQmarkUsed        = true;
     GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon);
 #ifdef DEBUG
     if (compQmarkRationalized)
@@ -8149,18 +8148,6 @@ DONE:
         /* GTF_NODE_MASK should not be propagated from 'tree' to 'copy' */
         addFlags &= ~GTF_NODE_MASK;
 #endif
-        // Some other flags depend on the context of the expression, and should not be preserved.
-        // For example, GTF_RELOP_QMARK:
-        if (copy->OperKind() & GTK_RELOP)
-        {
-            addFlags &= ~GTF_RELOP_QMARK;
-        }
-        // On the other hand, if we're creating such a context, restore this flag.
-        if (copy->OperGet() == GT_QMARK)
-        {
-            copy->AsOp()->gtOp1->gtFlags |= GTF_RELOP_QMARK;
-        }
-
         copy->gtFlags |= addFlags;
 
         // Update side effect flags since they may be different from the source side effect flags.
@@ -10446,12 +10433,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 if (tree->gtFlags & GTF_RELOP_JMP_USED)
                 {
                     printf("J");
-                    --msgLength;
-                    break;
-                }
-                if (tree->gtFlags & GTF_RELOP_QMARK)
-                {
-                    printf("Q");
                     --msgLength;
                     break;
                 }
@@ -12954,7 +12935,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         GenTree* compare = gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, inliningKind);
 
         // Drop any now-irrelvant flags
-        compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+        compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
         return compare;
     }
@@ -12994,7 +12975,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         GenTree* compare = gtCreateHandleCompare(oper, arg1, arg2, inliningKind);
 
         // Drop any now-irrelvant flags
-        compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+        compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
         return compare;
     }
@@ -13092,7 +13073,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const compare = gtCreateHandleCompare(oper, objMT, knownMT, typeCheckInliningResult);
 
     // Drop any now irrelevant flags
-    compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+    compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
     // And we're done
     return compare;

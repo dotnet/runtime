@@ -11013,7 +11013,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             if (op1->OperKind() & GTK_RELOP)
             {
-                noway_assert((oper == GT_JTRUE) || (op1->gtFlags & GTF_RELOP_QMARK));
                 /* Mark the comparison node with GTF_RELOP_JMP_USED so it knows that it does
                    not need to materialize the result as a 0 or 1. */
 
@@ -13488,7 +13487,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             }
 
             noway_assert((op1->gtFlags & GTF_RELOP_JMP_USED) == 0);
-            op1->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+            op1->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
             op1->SetVNsFromNode(cmp);
 
             DEBUG_DESTROY_NODE(cmp);
@@ -16358,9 +16357,6 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
         cond2Expr  = nestedQmark->gtGetOp1();
         true2Expr  = nestedQmark->gtGetOp2()->AsColon()->ThenNode();
         false2Expr = nestedQmark->gtGetOp2()->AsColon()->ElseNode();
-
-        assert(cond2Expr->gtFlags & GTF_RELOP_QMARK);
-        cond2Expr->gtFlags &= ~GTF_RELOP_QMARK;
     }
     else
     {
@@ -16377,10 +16373,6 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
         false2Expr = gtNewIconNode(0, TYP_I_IMPL);
     }
     assert(false2Expr->OperGet() == trueExpr->OperGet());
-
-    // Clear flags as they are now going to be part of JTRUE.
-    assert(condExpr->gtFlags & GTF_RELOP_QMARK);
-    condExpr->gtFlags &= ~GTF_RELOP_QMARK;
 
     // Create the chain of blocks. See method header comment.
     // The order of blocks after this is the following:
@@ -16551,9 +16543,6 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     GenTree* condExpr  = qmark->gtGetOp1();
     GenTree* trueExpr  = qmark->gtGetOp2()->AsColon()->ThenNode();
     GenTree* falseExpr = qmark->gtGetOp2()->AsColon()->ElseNode();
-
-    assert(condExpr->gtFlags & GTF_RELOP_QMARK);
-    condExpr->gtFlags &= ~GTF_RELOP_QMARK;
 
     assert(!varTypeIsFloating(condExpr->TypeGet()));
 
