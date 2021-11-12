@@ -251,19 +251,18 @@ namespace System.IO
 
         public static byte[] ReadAllBytes(string path)
         {
-            // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
+            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.SequentialScan))
             {
                 long fileLength = 0;
-                if (fs.CanSeek && (fileLength = fs.Length) > int.MaxValue)
+                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > int.MaxValue)
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
                 if (fileLength == 0)
                 {
-                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also there is non-seekable file stream.
+                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also theree are non-seekable files.
                     // Thus we need to assume 0 doesn't mean empty.
-                    return ReadAllBytesUnknownLength(fs);
+                    return ReadAllBytesUnknownLength(sfh);
                 }
 
                 int index = 0;
@@ -271,7 +270,7 @@ namespace System.IO
                 byte[] bytes = new byte[count];
                 while (count > 0)
                 {
-                    int n = fs.Read(bytes, index, count);
+                    int n = RandomAccess.ReadAtOffset(sfh, bytes.AsSpan(index, count), index);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();
@@ -775,7 +774,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
         }
 
-        private static byte[] ReadAllBytesUnknownLength(FileStream fs)
+        private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
         {
             byte[]? rentedArray = null;
             Span<byte> buffer = stackalloc byte[512];
@@ -803,7 +802,7 @@ namespace System.IO
                     }
 
                     Debug.Assert(bytesRead < buffer.Length);
-                    int n = fs.Read(buffer.Slice(bytesRead));
+                    int n = RandomAccess.ReadAtOffset(sfh, buffer.Slice(bytesRead), bytesRead);
                     if (n == 0)
                     {
                         return buffer.Slice(0, bytesRead).ToArray();
