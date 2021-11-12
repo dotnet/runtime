@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration)
-            => configuration.Get<T>(null);
+            => configuration.Get<T>(_ => { });
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance if successful, null otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(this IConfiguration configuration, Type type)
-            => configuration.Get(type, null);
+            => configuration.Get(type, _ => { });
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -207,35 +207,33 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindNonScalar(this IConfiguration configuration, object? instance, BinderOptions options)
         {
-            if (instance == null)
+            if (instance != null)
             {
-                return;
-            }
+                List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
 
-            List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
-
-            if (options.ErrorOnUnknownConfiguration)
-            {
-                HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
-                    StringComparer.OrdinalIgnoreCase);
-
-                IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
-                List<string> missingPropertyNames = configurationSections
-                    .Where(cs => !propertyNames.Contains(cs.Key))
-                    .Select(mp => $"'{mp.Key}'")
-                    .ToList();
-
-                if (missingPropertyNames.Count > 0)
+                if (options.ErrorOnUnknownConfiguration)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
-                        nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
-                        string.Join(", ", missingPropertyNames)));
-                }
-            }
+                    HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
+                        StringComparer.OrdinalIgnoreCase);
 
-            foreach (PropertyInfo property in modelProperties)
-            {
-                BindProperty(property, instance, configuration, options);
+                    IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
+                    List<string> missingPropertyNames = configurationSections
+                        .Where(cs => !propertyNames.Contains(cs.Key))
+                        .Select(mp => $"'{mp.Key}'")
+                        .ToList();
+
+                    if (missingPropertyNames.Count > 0)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
+                            nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
+                            string.Join(", ", missingPropertyNames)));
+                    }
+                }
+
+                foreach (PropertyInfo property in modelProperties)
+                {
+                    BindProperty(property, instance, configuration, options);
+                }
             }
         }
 
@@ -383,7 +381,7 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else if (type.IsArray)
                 {
-                    instance = BindArray((Array)instance, config, options);
+                    instance = BindArray((Array)instance!, config, options);
                 }
                 else
                 {
@@ -404,7 +402,7 @@ namespace Microsoft.Extensions.Configuration
             return instance;
         }
 
-        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
+        private static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
             if (type.IsInterface || type.IsAbstract)
             {
@@ -430,17 +428,14 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            object? instance;
             try
             {
-                instance = Activator.CreateInstance(type);
+                return Activator.CreateInstance(type);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type), ex);
             }
-
-            return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
