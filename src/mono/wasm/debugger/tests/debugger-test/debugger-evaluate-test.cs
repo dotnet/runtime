@@ -424,7 +424,20 @@ namespace DebuggerTests
     {
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
-		public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        public static class NestedClass1
+        {
+            public static class NestedClass2
+            {
+                public static class NestedClass3
+                {
+                    public static int StaticField1 = 3;
+                    public static string StaticProperty1 => "StaticProperty3";
+                    public static string StaticPropertyWithError => throw new Exception("not implemented 3");
+                }
+            }
+        }
     }
 
     public class EvaluateNonStaticClassWithStaticFields
