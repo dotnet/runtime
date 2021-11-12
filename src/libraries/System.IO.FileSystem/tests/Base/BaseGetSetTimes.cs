@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Xunit;
 
@@ -67,6 +68,62 @@ namespace System.IO.Tests
                 {
                     Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
                 }
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as there is only 1 effective time store.
+        public void SettingUpdatesPropertiesAfterAnother()
+        {
+            T item = GetExistingItem();
+
+            // These linq calls make an IEnumerable of pairs of functions that are not identical
+            // (eg. not (creationtime, creationtime)), includes both orders as seperate entries
+            // as they it have different behavior in reverse order (of functions), in addition
+            // to the pairs of functions, there is a reverse bool that allows a test for both
+            // increasing and decreasing timestamps as to not limit the test unnecessarily.
+            // Only testing with utc because it would be hard to check if lastwrite utc was the
+            // same type of method as lastwrite local since their .Getter fields are different.
+            // This test is required as some apis change more dates than would be desired (eg.
+            // utimes()/utimensat() set the write and access times, but as a side effect of
+            // the implementation, it sets creation time too when the write time is less than
+            // the creation time). There were issues related to the order in which the dates are
+            // set, so this test should almost fully eliminate any possibilities of that in the
+            // future by having a proper test for it. Also, it should be noted that the
+            // combination (A, B, false) is not the same as (B, A, true).
+
+            // The order that these LINQ expression creates is (when all 3 are available):
+            // [0] = (creation, access, False), [1] = (creation, access, True),  [2] = (creation, write, False),
+            // [3] = (creation, write, True),   [4] = (access, creation, False), [5] = (access, creation, True),
+            // [6] = (access, write, False),    [7] = (access, write, True),     [8] = (write, creation, False),
+            // [9] = (write, creation, True),  [10] = (write, access, False),   [11] = (write, access, True)
+            // Or, when creation time setting is not available:
+            // [0] = (access, write, False),    [1] = (access, write, True),
+            // [2] = (write, access, False),    [3] = (write, access, True)
+
+            IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
+            bool[] booleanArray = new bool[] { false, true };
+            Assert.All(timeFunctionsUtc.SelectMany((x) => timeFunctionsUtc.SelectMany((y) => booleanArray.Select((reverse) => (x, y, reverse)))).Where((fs) => fs.x.Getter != fs.y.Getter), (functions) =>
+            {
+                TimeFunction function1 = functions.x;
+                TimeFunction function2 = functions.y;
+                bool reverse = functions.reverse;
+                
+                // Checking that milliseconds are not dropped after setter.
+                DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                if (reverse) //reverse the order of setting dates
+                {
+                    (dt1, dt3) = (dt3, dt1);
+                }
+                function1.Setter(item, dt1);
+                function2.Setter(item, dt2);
+                function1.Setter(item, dt3);
+                DateTime result1 = function1.Getter(item);
+                DateTime result2 = function2.Getter(item);
+                Assert.Equal(dt3, result1);
+                Assert.Equal(dt2, result2);
             });
         }
 

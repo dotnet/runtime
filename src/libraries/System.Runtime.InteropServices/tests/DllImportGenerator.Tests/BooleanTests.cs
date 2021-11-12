@@ -90,6 +90,7 @@ namespace DllImportGenerator.IntegrationTests
         const ushort VARIANT_FALSE = 0;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60649", TestRuntimes.Mono)]
         public void ValidateBoolIsMarshalledAsExpected()
         {
             Assert.Equal((uint)1, NativeExportsNE.ReturnByteBoolAsUInt(true));

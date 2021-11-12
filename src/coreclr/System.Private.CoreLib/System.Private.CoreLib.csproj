@@ -242,7 +242,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypedReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
@@ -305,7 +305,7 @@
   TODO https://github.com/dotnet/roslyn/pull/51964: EventSource generator is currently disabled for design time builds as it is
   causing impactful slowdowns while typing in the Corelib project.
   -->
-  <ItemGroup Condition="'$(DesignTimeBuild)'!='true'">
+  <ItemGroup Condition="'$(DesignTimeBuild)'!='true' or '$(SlnGenMainProject)' != ''">
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 

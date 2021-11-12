@@ -174,128 +174,6 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
     va_end(args);
 }
 
-void Compiler::compDspSrcLinesByLineNum(unsigned line, bool seek)
-{
-    if (!jitSrcFilePtr)
-    {
-        return;
-    }
-
-    if (jitCurSrcLine == line)
-    {
-        return;
-    }
-
-    if (jitCurSrcLine > line)
-    {
-        if (!seek)
-        {
-            return;
-        }
-
-        if (fseek(jitSrcFilePtr, 0, SEEK_SET) != 0)
-        {
-            printf("Compiler::compDspSrcLinesByLineNum:  fseek returned an error.\n");
-        }
-        jitCurSrcLine = 0;
-    }
-
-    if (!seek)
-    {
-        printf(";\n");
-    }
-
-    do
-    {
-        char   temp[128];
-        size_t llen;
-
-        if (!fgets(temp, sizeof(temp), jitSrcFilePtr))
-        {
-            return;
-        }
-
-        if (seek)
-        {
-            continue;
-        }
-
-        llen = strlen(temp);
-        if (llen && temp[llen - 1] == '\n')
-        {
-            temp[llen - 1] = 0;
-        }
-
-        printf(";   %s\n", temp);
-    } while (++jitCurSrcLine < line);
-
-    if (!seek)
-    {
-        printf(";\n");
-    }
-}
-
-/*****************************************************************************/
-
-void Compiler::compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP)
-{
-    static IPmappingDsc* nextMappingDsc;
-    static unsigned      lastLine;
-
-    if (!opts.dspLines)
-    {
-        return;
-    }
-
-    if (curIP == 0)
-    {
-        if (genIPmappingList)
-        {
-            nextMappingDsc = genIPmappingList;
-            lastLine       = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            unsigned firstLine = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            unsigned earlierLine = (firstLine < 5) ? 0 : firstLine - 5;
-
-            compDspSrcLinesByLineNum(earlierLine, true); // display previous 5 lines
-            compDspSrcLinesByLineNum(firstLine, false);
-        }
-        else
-        {
-            nextMappingDsc = nullptr;
-        }
-
-        return;
-    }
-
-    if (nextMappingDsc)
-    {
-        UNATIVE_OFFSET offset = nextMappingDsc->ipmdNativeLoc.CodeOffset(GetEmitter());
-
-        if (offset <= curIP)
-        {
-            IL_OFFSET nextOffs = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            if (lastLine < nextOffs)
-            {
-                compDspSrcLinesByLineNum(nextOffs);
-            }
-            else
-            {
-                // This offset corresponds to a previous line. Rewind to that line
-
-                compDspSrcLinesByLineNum(nextOffs - 2, true);
-                compDspSrcLinesByLineNum(nextOffs);
-            }
-
-            lastLine       = nextOffs;
-            nextMappingDsc = nextMappingDsc->ipmdNext;
-        }
-    }
-}
-
-/*****************************************************************************/
 #endif // DEBUG
 
 /*****************************************************************************/
@@ -2616,7 +2494,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS));
     }
@@ -2677,16 +2554,38 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
 #endif
 
+#ifdef TARGET_XARCH
     if (opts.compJitAlignLoopAdaptive)
     {
+        // For adaptive alignment, padding limit is equal to the max instruction encoding
+        // size which is 15 bytes. Hence (32 >> 1) - 1 = 15 bytes.
         opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
     }
     else
     {
+        // For non-adaptive alignment, padding limit is 1 less than the alignment boundary
+        // specified.
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
     }
+#elif TARGET_ARM64
+    if (opts.compJitAlignLoopAdaptive)
+    {
+        // For adaptive alignment, padding limit is same as specified by the alignment
+        // boundary because all instructions are 4 bytes long. Hence (32 >> 1) = 16 bytes.
+        opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1);
+    }
+    else
+    {
+        // For non-adaptive, padding limit is same as specified by the alignment.
+        opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
+    }
+#endif
 
     assert(isPow2(opts.compJitAlignLoopBoundary));
+#ifdef TARGET_ARM64
+    // The minimum encoding size for Arm64 is 4 bytes.
+    assert(opts.compJitAlignLoopBoundary >= 4);
+#endif
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns
@@ -2722,6 +2621,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     verboseSsa       = verbose && shouldUseVerboseSsa();
     asciiTrees       = shouldDumpASCIITrees();
     opts.dspDiffable = compIsForInlining() ? impInlineInfo->InlinerCompiler->opts.dspDiffable : false;
+
 #endif
 
     opts.altJit = false;
@@ -3718,8 +3618,6 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 
 void Compiler::compInitDebuggingInfo()
 {
-    assert(!compIsForInlining());
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -5306,7 +5204,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 void Compiler::generatePatchpointInfo()
 {
-    if (!doesMethodHavePatchpoints())
+    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
     {
         // Nothing to report
         return;
@@ -6185,7 +6083,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         assert((methAttr_Old & (~flagsToIgnore)) == (methAttr_New & (~flagsToIgnore)));
 #endif
 
-        info.compFlags = impInlineInfo->inlineCandidateInfo->methAttr;
+        info.compFlags    = impInlineInfo->inlineCandidateInfo->methAttr;
+        compInlineContext = impInlineInfo->inlineContext;
     }
     else
     {
@@ -6193,6 +6092,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef PSEUDORANDOM_NOP_INSERTION
         info.compChecksum = getMethodBodyChecksum((char*)methodInfo->ILCode, methodInfo->ILCodeSize);
 #endif
+        compInlineContext = m_inlineStrategy->GetRootContext();
     }
 
     compSwitchedToOptimized = false;
@@ -6330,10 +6230,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     lvaInitTypeRef();
 
-    if (!compIsForInlining())
-    {
-        compInitDebuggingInfo();
-    }
+    compInitDebuggingInfo();
 
 #ifdef DEBUG
     if (compIsForInlining())
@@ -9255,7 +9152,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_CNS_INT:
 
             {
-                unsigned handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
+                GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
 
                 switch (handleKind)
                 {
@@ -9338,6 +9235,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_FIELD_OFF:
 
                         chars += printf("[ICON_FIELD_OFF]");
+                        break;
+
+                    default:
+                        assert(!"a forgotten handle flag");
                         break;
                 }
             }
@@ -9495,7 +9396,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             default:
 
             {
-                unsigned flags = (tree->gtFlags & (~(unsigned)(GTF_COMMON_MASK | GTF_OVERFLOW)));
+                GenTreeFlags flags = (tree->gtFlags & (~(GTF_COMMON_MASK | GTF_OVERFLOW)));
                 if (flags != 0)
                 {
                     chars += printf("[%08X]", flags);

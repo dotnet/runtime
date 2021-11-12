@@ -667,6 +667,99 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return 0;
         }
 
+        /// <summary>
+        /// Prints a chart "Call-sites grouped by number of likely classes seen"
+        /// </summary>
+        /// <param name="callSites">Each array item represents a unique call-site, and the actual value is
+        /// the number of unique classes seen at that call-site</param>
+        static void PrintCallsitesByLikelyClassesChart(int[] callSites)
+        {
+            const int maxLikelyClasses = 10;
+            const int tableWidth = 20;
+
+            if (callSites.Length < 1)
+                return;
+
+            int[] rows = new int[maxLikelyClasses + 1];
+            foreach (var item in callSites
+                .GroupBy(k => k > maxLikelyClasses ? maxLikelyClasses : k)
+                .OrderBy(d => d.Key)
+                .Select(d => new { Row = d.Key, Count = d.Count() })
+                .ToArray())
+            {
+                rows[item.Row] = item.Count;
+            }
+
+            int sum = rows.Sum();
+
+            Console.WriteLine();
+            Console.WriteLine("Call-sites grouped by number of likely classes seen:");
+            Console.WriteLine();
+
+            bool startWithZero = rows[0] > 0;
+            for (int i = startWithZero ? 0 : 1; i < rows.Length; i++)
+            {
+                double share = rows[i] / (double)sum;
+                int shareWidth = (int)(Math.Round(share * tableWidth));
+                bool lastRow = (i == rows.Length - 1);
+
+                Console.Write($"        {(lastRow ? "≥" : " ")}{i,2}: [");
+                Console.Write(new string('#', shareWidth));
+                Console.Write(new string('.', tableWidth - shareWidth));
+                Console.Write("] ");
+                Console.Write($"{share * 100.0,4:F1}%");
+                Console.Write($" ({rows[i]})");
+
+                if (i == 0)
+                    Console.Write(" - call-sites with 'null's");
+                else if (i == 1)
+                    Console.Write(" - monomorphic call-sites");
+
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+        }
+
+        /// <summary>
+        /// Prints a histogram for "likelihoods" distribution for a specific likely class (e.g. most popular one)
+        /// </summary>
+        /// <param name="likelihoods">Array of likelihoods 0-100.0</param>
+        static void PrintLikelihoodHistogram(double[] likelihoods)
+        {
+            const int columns = 10;
+            const int tableWidth = 20;
+            int columnWidth = 100 / columns;
+
+            if (likelihoods.Length == 0)
+                return; // Avoid div-by-zero
+
+            Console.WriteLine();
+            Console.WriteLine("Likelihoods of the most popular likely classes:");
+            Console.WriteLine();
+
+            likelihoods = likelihoods.OrderBy(i => i).ToArray();
+            for (int i = 0; i < columns; i++)
+            {
+                int lowerLimit = i * columnWidth;
+                int upperLimit = i * columnWidth + columnWidth;
+                int count = likelihoods.Count(l =>
+                {
+                    if (i == 0) // inclusive for [0..
+                        return l <= upperLimit;
+                    return l > lowerLimit && l <= upperLimit;
+                });
+
+                int shareWidth = (int)Math.Round((double)count / likelihoods.Length * tableWidth);
+                Console.Write(i == 0 ? "  [" : "  ("); // inclusive for [0..
+                Console.Write($"{i * columnWidth,2}-{i * columnWidth + columnWidth,3}%]: [");
+                Console.Write(new string('#', shareWidth));
+                Console.Write(new string('.', tableWidth - shareWidth));
+                Console.Write($"] {count}");
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+        }
+
         static void PrintMibcStats(ProfileData data)
         {
             List<MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
@@ -719,6 +812,37 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 foreach (MethodProfileData mpd in methodsWithZeroCounters)
                     PrintOutput($"  {mpd.Method}");
             }
+
+            PrintCallsitesByLikelyClassesChart(profiledMethods
+                .SelectMany(m => m.SchemaData)
+                .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                .Select(GetUniqueClassesSeen)
+                .ToArray());
+
+            static int GetUniqueClassesSeen(PgoSchemaElem se)
+            {
+                int uniqueClassesSeen = ((TypeSystemEntityOrUnknown[])se.DataObject)
+                    .Where(d => !d.IsNull) // ignore null, don't treat is as a unique call-site
+                    .GroupBy(d => d.GetHashCode())
+                    .Count();
+                return uniqueClassesSeen;
+            }
+
+            PrintLikelihoodHistogram(profiledMethods
+                .SelectMany(m => m.SchemaData)
+                .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                .Select(GetLikelihoodOfMostPopularType)
+                .ToArray());
+
+            static double GetLikelihoodOfMostPopularType(PgoSchemaElem se)
+            {
+                int count = ((TypeSystemEntityOrUnknown[])se.DataObject)
+                    .GroupBy(d => d.GetHashCode())
+                    .OrderByDescending(d => d.Count())
+                    .FirstOrDefault(d => d.FirstOrDefault().AsType != null)
+                    ?.Count() ?? 0;
+                return count * 100.0 / se.DataObject.Length;
+            }
         }
 
         private struct GetLikelyClassResult
@@ -741,6 +865,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             for (int i = 0; i < schema.Length; i++)
             {
                 var elem = schema[i];
+                if (elem.ILOffset == ilOffset)
+                    continue;
+
                 if (elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)
                 {
                     Trace.Assert(elem.Count == 1);
@@ -764,7 +891,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                     int totalCount = histogram.Sum(g => g.Count());
                     // The number of unknown type handles matters for the likelihood, but not for the most likely class that we pick, so we can remove them now.
-                    histogram.RemoveAll(e => IsUnknownTypeHandle(e.Key.AsUnknown));
+                    histogram.RemoveAll(e => e.Key.IsNull || e.Key.IsUnknown);
                     if (histogram.Count == 0)
                         return new GetLikelyClassResult { IsUnknown = true };
 

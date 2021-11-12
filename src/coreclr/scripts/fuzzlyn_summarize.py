@@ -155,8 +155,8 @@ def main(main_args):
             continue
 
         unreduced_examples.append(example)
-        if example['Kind'] == "Crash":
-            assertion_error = extract_assertion_error(example['CrashError'])
+        if example['Kind'] == "Crash" or example['Kind'] == "HitsJitAssert":
+            assertion_error = extract_assertion_error(example['Message'])
             if assertion_error:
                 crashes_by_assert[assertion_error].append(example)
             else:
@@ -206,7 +206,7 @@ def main(main_args):
                 if len(examples) > 1:
                     f.write("Example occurence:\n")
                 f.write("```scala\n")
-                f.write(examples[0]['CrashError'].strip() + "\n")
+                f.write(examples[0]['Message'].strip() + "\n")
                 f.write("```\n")
                 f.write("Affected seeds{}:\n".format(" (10 shown)" if len(examples) > 10 else ""))
                 f.write("\n".join("* `" + str(ex['Seed']) + "`" for ex in sorted(examples[:10], key=lambda ex: ex['Seed'])))
@@ -216,9 +216,9 @@ def main(main_args):
             f.write("# {} uncategorized/unreduced examples remain\n".format(len(remaining)))
             for ex in remaining:
                 f.write("* `{}`: {}\n".format(ex['Seed'], ex['Kind']))
-                if ex['CrashError'] and len(ex['CrashError'].strip()) > 0:
+                if ex['Message'] and len(ex['Message'].strip()) > 0:
                     f.write("```scala\n")
-                    f.write(ex['CrashError'].strip() + "\n")
+                    f.write(ex['Message'].strip() + "\n")
                     f.write("```\n")
 
             f.write("\n")

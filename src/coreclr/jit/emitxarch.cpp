@@ -165,6 +165,21 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesWriteSignFlag: check if the instruction writes the
+//     SF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the SF flag, false otherwise.
+//
+bool emitter::DoesWriteSignFlag(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & Writes_SF) != 0;
+}
+
+//------------------------------------------------------------------------
 // DoesResetOverflowAndCarryFlags: check if the instruction resets the
 //     OF and CF flag to 0.
 //
@@ -338,6 +353,11 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
 {
     assert(reg != REG_NA);
 
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
     // Don't look back across IG boundaries (possible control flow)
     if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
@@ -385,6 +405,79 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
     if ((treeOps == GT_EQ) || (treeOps == GT_NE))
     {
         if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// AreFlagsSetToForSignJumpOpt: checks if the previous instruction set the SF if the tree
+//                              node qualifies for a jg/jle to jns/js optimization
+//
+// Arguments:
+//    reg     - register of interest
+//    opSize  - size of register
+//    relop   - relational tree node
+//
+// Return Value:
+//    true if the tree node qualifies for the jg/jle to jns/js optimization
+//    false if not, or if we can't safely determine
+//
+// Notes:
+//    Currently only looks back one instruction.
+bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* relop)
+{
+    assert(reg != REG_NA);
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    // Don't look back across IG boundaries (possible control flow)
+    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    {
+        return false;
+    }
+
+    instrDesc*  id      = emitLastIns;
+    instruction lastIns = id->idIns();
+    insFormat   fmt     = id->idInsFmt();
+
+    // make sure op1 is a reg
+    switch (fmt)
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RWR:
+        case IF_RRD:
+        case IF_RRW:
+            break;
+        default:
+            return false;
+    }
+
+    if (id->idReg1() != reg)
+    {
+        return false;
+    }
+
+    // If we have a GT_GE/GT_LT which generates an jge/jl, and the previous instruction
+    // sets the SF, we can omit a test instruction and check for jns/js.
+    if ((relop->OperGet() == GT_GE || relop->OperGet() == GT_LT) && !GenCondition::FromRelop(relop).IsUnsigned())
+    {
+        if (DoesWriteSignFlag(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
@@ -2768,64 +2861,6 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
     }
 }
 
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
-//  So insert an alignment instruction here to ensure that
-//  we can properly align the code.
-//
-void emitter::emitLoopAlign(unsigned short paddingBytes)
-{
-    /* Insert a pseudo-instruction to ensure that we align
-       the next instruction properly */
-
-    assert(paddingBytes <= MAX_ENCODED_SIZE);
-    paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
-    instrDescAlign* id = emitNewInstrAlign();
-    id->idCodeSize(paddingBytes);
-    id->idaIG = emitCurIG;
-
-    /* Append this instruction to this IG's alignment list */
-    id->idaNext = emitCurIGAlignList;
-
-    emitCurIGsize += paddingBytes;
-    emitCurIGAlignList = id;
-}
-
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
-//  So insert alignment instruction(s) here to ensure that
-//  we can properly align the code.
-//
-//  This emits more than one `INS_align` instruction depending on the
-//  alignmentBoundary parameter.
-//
-void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
-{
-    unsigned short nPaddingBytes    = alignmentBoundary - 1;
-    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
-    unsigned short instrDescSize    = nAlignInstr * sizeof(instrDescAlign);
-    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
-    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
-
-    // Ensure that all align instructions fall in same IG.
-    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
-    {
-        emitForceNewIG = true;
-    }
-
-    /* Insert a pseudo-instruction to ensure that we align
-    the next instruction properly */
-
-    while (insAlignCount)
-    {
-        emitLoopAlign(MAX_ENCODED_SIZE);
-        insAlignCount--;
-    }
-    emitLoopAlign(lastInsAlignSize);
-}
-
 /*****************************************************************************
  *
  *  Add a NOP instruction of the given size.
@@ -4355,73 +4390,18 @@ bool emitter::IsJmpInstruction(instruction ins)
     return (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp) || (ins == INS_tail_i_jmp);
 }
 
-//----------------------------------------------------------------------------------------
-// IsRedundantMov:
-//    Check if the current `mov` instruction is redundant and can be omitted.
-//    A `mov` is redundant in following 3 cases:
+// TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
+// is not an important detail, such as when "regular" floating-point code is generated
 //
-//    1. Move to same register on TARGET_AMD64
-//       (Except 4-byte movement like "mov eax, eax" which zeros out upper bits of eax register)
+// This differs from cases like HWIntrinsics that deal with the entire vector and so
+// they need to be "aware" that a given move impacts the upper-bits.
 //
-//         mov rax, rax
-//
-//    2. Move that is identical to last instruction emitted.
-//
-//         mov rax, rbx  # <-- last instruction
-//         mov rax, rbx  # <-- current instruction can be omitted.
-//
-//    3. Opposite Move as that of last instruction emitted.
-//
-//         mov rax, rbx  # <-- last instruction
-//         mov rbx, rax  # <-- current instruction can be omitted.
-//
-// Arguments:
-//                 ins  - The current instruction
-//                 fmt  - The current format
-//                 size - Operand size of current instruction
-//                 dst  - The current destination
-//                 src  - The current source
-// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
-//
-// Return Value:
-//    true if the move instruction is redundant; otherwise, false.
+// Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
+// the below optimizations for those scenarios as well.
 
-bool emitter::IsRedundantMov(
-    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
+// Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
+bool emitter::HasSideEffect(instruction ins, emitAttr size)
 {
-    assert(IsMovInstruction(ins));
-
-    if (canIgnoreSideEffects && (dst == src))
-    {
-        // These elisions used to be explicit even when optimizations were disabled
-
-        // Some instructions have a side effect and shouldn't be skipped
-        // however existing codepaths were skipping these instructions in
-        // certain scenarios and so we skip them as well for back-compat
-        // when canIgnoreSideEffects is true (see below for which have a
-        // side effect).
-        //
-        // Long term, these paths should be audited and should likely be
-        // replaced with copies rather than extensions.
-        return true;
-    }
-
-    if (!emitComp->opts.OptimizationEnabled())
-    {
-        // The remaining move elisions should only happen if optimizations are enabled
-        return false;
-    }
-
-    // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
-    // is not an important detail, such as when "regular" floating-point code is generated
-    //
-    // This differs from cases like HWIntrinsics that deal with the entire vector and so
-    // they need to be "aware" that a given move impacts the upper-bits.
-    //
-    // Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
-    // the below optimizations for those scenarios as well.
-
-    // Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
     bool hasSideEffect = false;
 
     switch (ins)
@@ -4489,6 +4469,74 @@ bool emitter::IsRedundantMov(
             unreached();
         }
     }
+
+    return hasSideEffect;
+}
+
+//----------------------------------------------------------------------------------------
+// IsRedundantMov:
+//    Check if the current `mov` instruction is redundant and can be omitted.
+//    A `mov` is redundant in following 3 cases:
+//
+//    1. Move to same register on TARGET_AMD64
+//       (Except 4-byte movement like "mov eax, eax" which zeros out upper bits of eax register)
+//
+//         mov rax, rax
+//
+//    2. Move that is identical to last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rax, rbx  # <-- current instruction can be omitted.
+//
+//    3. Opposite Move as that of last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rbx, rax  # <-- current instruction can be omitted.
+//
+// Arguments:
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 dst  - The current destination
+//                 src  - The current source
+// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
+//
+// Return Value:
+//    true if the move instruction is redundant; otherwise, false.
+
+bool emitter::IsRedundantMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
+{
+    assert(IsMovInstruction(ins));
+
+    if (canIgnoreSideEffects && (dst == src))
+    {
+        // These elisions used to be explicit even when optimizations were disabled
+
+        // Some instructions have a side effect and shouldn't be skipped
+        // however existing codepaths were skipping these instructions in
+        // certain scenarios and so we skip them as well for back-compat
+        // when canIgnoreSideEffects is true (see below for which have a
+        // side effect).
+        //
+        // Long term, these paths should be audited and should likely be
+        // replaced with copies rather than extensions.
+        return true;
+    }
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    // Skip optimization if current instruction creates a GC live value.
+    if (EA_IS_GCREF_OR_BYREF(size))
+    {
+        return false;
+    }
+
+    bool hasSideEffect = HasSideEffect(ins, size);
 
     // Check if we are already in the correct register and don't have a side effect
     if ((dst == src) && !hasSideEffect)
@@ -7100,12 +7148,104 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     emitAdjustStackDepthPushPop(ins);
 }
 
+//----------------------------------------------------------------------------------------
+// IsRedundantStackMov:
+//    Check if the current `mov` instruction is redundant and can be omitted when dealing with Load/Store from stack.
+//    A `mov` is redundant in following 2 cases:
+//
+//    1. Move that is identical to last instruction emitted.
+//
+//         vmovapd  xmmword ptr [V01 rbp-20H], xmm0  # <-- last instruction
+//         vmovapd  xmmword ptr [V01 rbp-20H], xmm0  # <-- current instruction can be omitted.
+//
+//    2. Opposite Move as that of last instruction emitted.
+//
+//         vmovupd  ymmword ptr[V01 rbp-50H], ymm0  # <-- last instruction
+//         vmovupd  ymm0, ymmword ptr[V01 rbp-50H]  # <-- current instruction can be omitted.
+//
+// Arguments:
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 ireg - The current source/destination register
+//                 varx - The variable index used for the memory address
+//                 offs - The offset added to the memory address from varx
+//
+// Return Value:
+//    true if the move instruction is redundant; otherwise, false.
+
+bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs)
+{
+    assert(IsMovInstruction(ins));
+    assert((fmt == IF_SWR_RRD) || (fmt == IF_RWR_SRD));
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    // Skip optimization if current instruction creates a GC live value.
+    if (EA_IS_GCREF_OR_BYREF(size))
+    {
+        return false;
+    }
+
+    bool hasSideEffect = HasSideEffect(ins, size);
+
+    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+    // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
+    // functionality even if their actual identifier differs and we should optimize these
+
+    if (isFirstInstrInBlock ||             // Don't optimize if instruction is the first instruction in IG.
+        (emitLastIns == nullptr) ||        // or if a last instruction doesn't exist
+        (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
+    {
+        return false;
+    }
+
+    // Don't optimize if the last instruction is also not a Load/Store.
+    if (!((emitLastIns->idInsFmt() == IF_SWR_RRD) || (emitLastIns->idInsFmt() == IF_RWR_SRD)))
+    {
+        return false;
+    }
+
+    regNumber lastReg1 = emitLastIns->idReg1();
+    int       varNum   = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+    int       lastOffs = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+
+    // Check if the last instruction and current instructions use the same register and local memory.
+    if (varNum == varx && lastReg1 == ireg && lastOffs == offs)
+    {
+        // Check if we did a switched mov in the last instruction  and don't have a side effect
+        if ((((emitLastIns->idInsFmt() == IF_RWR_SRD) && (fmt == IF_SWR_RRD)) ||
+             ((emitLastIns->idInsFmt() == IF_SWR_RRD) && (fmt == IF_RWR_SRD))) &&
+            !hasSideEffect) // or if the format is different from the last instruction
+        {
+            JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src and the mov has "
+                    "no side-effects.\n");
+            return true;
+        }
+        // Check if we did same move in last instruction, side effects don't matter since they already happened
+        if (emitLastIns->idInsFmt() == fmt)
+        {
+            JITDUMP("\n -- suppressing mov because last instruction already moved from src to dst.\n");
+            return true;
+        }
+    }
+    return false;
+}
+
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
-    UNATIVE_OFFSET sz;
-    instrDesc*     id  = emitNewInstr(attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_SRD_RRD);
+    insFormat fmt = emitInsModeFormat(ins, IF_SRD_RRD);
+    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+    {
+        return;
+    }
 
+    UNATIVE_OFFSET sz;
+    instrDesc*     id = emitNewInstr(attr);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -7132,11 +7272,15 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
 {
     emitAttr size = EA_SIZE(attr);
     noway_assert(emitVerifyEncodable(ins, size, ireg));
+    insFormat fmt = emitInsModeFormat(ins, IF_RRD_SRD);
 
+    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+    {
+        return;
+    }
+
+    instrDesc*     id = emitNewInstr(attr);
     UNATIVE_OFFSET sz;
-    instrDesc*     id  = emitNewInstr(attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_SRD);
-
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -7485,7 +7629,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            VARSET_VALARG_TP      ptrVars,
                            regMaskTP             gcrefRegs,
                            regMaskTP             byrefRegs,
-                           IL_OFFSETX            ilOffset,
+                           const DebugInfo&      di,
                            regNumber             ireg,
                            regNumber             xreg,
                            unsigned              xmul,
@@ -7526,9 +7670,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
+    if (emitComp->opts.compDbgInfo && di.IsValid())
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*

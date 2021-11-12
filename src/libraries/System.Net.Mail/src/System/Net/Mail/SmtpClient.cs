@@ -415,10 +415,7 @@ namespace System.Net.Mail
 
         public void Send(string from, string recipients, string? subject, string? body)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
             //validation happends in MailMessage constructor
             MailMessage mailMessage = new MailMessage(from, recipients, subject, body);
             Send(mailMessage);
@@ -426,10 +423,7 @@ namespace System.Net.Mail
 
         public void Send(MailMessage message)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -569,19 +563,13 @@ namespace System.Net.Mail
 
         public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
             SendAsync(new MailMessage(from, recipients, subject, body), userToken);
         }
 
         public void SendAsync(MailMessage message, object? userToken)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
 
             try
@@ -722,10 +710,7 @@ namespace System.Net.Mail
 
         public void SendAsyncCancel()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!InCall || _cancelled)
             {

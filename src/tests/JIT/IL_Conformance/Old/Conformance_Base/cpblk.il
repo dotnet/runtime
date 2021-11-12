@@ -78,4 +78,4 @@ END:
 
 
 
-.assembly cpblk.exe{}
+.assembly 'cpblk'{}

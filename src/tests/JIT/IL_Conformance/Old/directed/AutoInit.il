@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly autoinit.exe{}
+.assembly autoinit{}
 
 .class public auto_init {
 

@@ -9,9 +9,10 @@ using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<M
 
 namespace DllImportGenerator.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class GeneratedDllImportAnalyzerTests
     {
-        [Fact]
+        [ConditionalFact]
         public async Task NonPartialMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -47,7 +48,7 @@ partial class Test
                     .WithArguments("ExternMethod2"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task NonStaticMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -79,7 +80,7 @@ partial class Test
                     .WithArguments("Method1"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task NonPartialNonStaticMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -115,7 +116,7 @@ partial class Test
                     .WithArguments("ExternMethod2"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task NotGeneratedDllImport_NoDiagnostic()
         {
             string source = @"
@@ -129,7 +130,7 @@ partial class Test
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task StaticPartialMethod_NoDiagnostic()
         {
             string source = @"
@@ -143,7 +144,7 @@ partial class Test
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("class")]
         [InlineData("struct")]
         [InlineData("record")]
@@ -166,7 +167,7 @@ using System.Runtime.InteropServices;
                     .WithArguments("Test"));
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("class")]
         [InlineData("struct")]
         [InlineData("record")]

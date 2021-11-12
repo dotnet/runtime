@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -17,6 +15,13 @@ namespace Microsoft.Interop.Analyzers
     public class ConvertToGeneratedDllImportAnalyzer : DiagnosticAnalyzer
     {
         private const string Category = "Interoperability";
+
+        private static readonly string[] s_unsupportedTypeNames = new string[]
+        {
+            "System.Runtime.InteropServices.CriticalHandle",
+            "System.Runtime.InteropServices.HandleRef",
+            "System.Text.StringBuilder"
+        };
 
         public static readonly DiagnosticDescriptor ConvertToGeneratedDllImport =
             new DiagnosticDescriptor(
@@ -43,15 +48,21 @@ namespace Microsoft.Interop.Analyzers
                     if (generatedDllImportAttrType == null)
                         return;
 
-                    INamedTypeSymbol? dllImportAttrType = compilationContext.Compilation.GetTypeByMetadataName(typeof(DllImportAttribute).FullName);
-                    if (dllImportAttrType == null)
-                        return;
+                    var knownUnsupportedTypes = new List<ITypeSymbol>(s_unsupportedTypeNames.Length);
+                    foreach (string typeName in s_unsupportedTypeNames)
+                    {
+                        INamedTypeSymbol? unsupportedType = compilationContext.Compilation.GetTypeByMetadataName(typeName);
+                        if (unsupportedType != null)
+                        {
+                            knownUnsupportedTypes.Add(unsupportedType);
+                        }
+                    }
 
-                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, dllImportAttrType), SymbolKind.Method);
+                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, knownUnsupportedTypes), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol dllImportAttrType)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -60,59 +71,34 @@ namespace Microsoft.Interop.Analyzers
             if (dllImportData == null)
                 return;
 
+            // Ignore methods already marked GeneratedDllImport
+            // This can be the case when the generator creates an extern partial function for blittable signatures.
+            foreach (AttributeData attr in method.GetAttributes())
+            {
+                if (attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                {
+                    return;
+                }
+            }
+
             // Ignore QCalls
             if (dllImportData.ModuleName == "QCall")
                 return;
 
-            if (RequiresMarshalling(method, dllImportData, dllImportAttrType))
+            // Ignore methods with unsupported parameters
+            foreach (IParameterSymbol parameter in method.Parameters)
             {
-                context.ReportDiagnostic(method.CreateDiagnostic(ConvertToGeneratedDllImport, method.Name));
-            }
-        }
-
-        private static bool RequiresMarshalling(IMethodSymbol method, DllImportData dllImportData, INamedTypeSymbol dllImportAttrType)
-        {
-            // SetLastError=true requires marshalling
-            if (dllImportData.SetLastError)
-                return true;
-
-            // Check if return value requires marshalling
-            if (!method.ReturnsVoid && !method.ReturnType.IsConsideredBlittable())
-                return true;
-
-            // Check if parameters require marshalling
-            foreach (IParameterSymbol paramType in method.Parameters)
-            {
-                if (paramType.RefKind != RefKind.None)
-                    return true;
-
-                if (!paramType.Type.IsConsideredBlittable())
-                    return true;
+                if (knownUnsupportedTypes.Contains(parameter.Type))
+                {
+                    return;
+                }
             }
 
-            // DllImportData does not expose all information (e.g. PreserveSig), so we still need to get the attribute data
-            AttributeData? dllImportAttr = null;
-            foreach (AttributeData attr in method.GetAttributes())
-            {
-                if (!SymbolEqualityComparer.Default.Equals(attr.AttributeClass, dllImportAttrType))
-                    continue;
+            // Ignore methods with unsupported returns
+            if (method.ReturnsByRef || method.ReturnsByRefReadonly || knownUnsupportedTypes.Contains(method.ReturnType))
+                return;
 
-                dllImportAttr = attr;
-                break;
-            }
-
-            Debug.Assert(dllImportAttr != null);
-            foreach (KeyValuePair<string, TypedConstant> namedArg in dllImportAttr!.NamedArguments)
-            {
-                if (namedArg.Key != nameof(DllImportAttribute.PreserveSig))
-                    continue;
-
-                // PreserveSig=false requires marshalling
-                if (!(bool)namedArg.Value.Value!)
-                    return true;
-            }
-
-            return false;
+            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToGeneratedDllImport, method.Name));
         }
     }
 }

@@ -18,7 +18,7 @@ delegate void Closed();
 delegate void Open(B<int> b);
 delegate void GClosed<T>();
 
-class Test{
+class Test_negativegenerics{
 	public static int retVal=100;
 
 	public static int Main(){

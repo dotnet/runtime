@@ -5,19 +5,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Net.Http;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Reflection;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -379,20 +377,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class MonoBinaryReader : BinaryReader
     {
-        public MonoBinaryReader(Stream stream) : base(stream) {}
-
-        internal static unsafe void PutBytesBE (byte *dest, byte *src, int count)
+        public bool HasError { get; }
+        public MonoBinaryReader(Stream stream, bool hasError = false) : base(stream)
         {
-            int i = 0;
-
-            if (BitConverter.IsLittleEndian){
-                dest += count;
-                for (; i < count; i++)
-                    *(--dest) = *src++;
-            } else {
-                for (; i < count; i++)
-                    *dest++ = *src++;
-            }
+            HasError = hasError;
         }
 
         public override string ReadString()
@@ -403,108 +391,58 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return new string(Encoding.UTF8.GetChars(value, 0, valueLen));
         }
-        public unsafe long ReadLong()
+
+        // SDB encodes these as 4 bytes
+        public override sbyte ReadSByte() => (sbyte)ReadInt32();
+        public byte ReadUByte() => (byte)ReadUInt32();
+        public ushort ReadUShort() => (ushort)ReadUInt32();
+        public override int ReadInt32() => ReadBigEndian<int>();
+
+        public override double ReadDouble() => ReadBigEndian<double>();
+        public override uint ReadUInt32() => ReadBigEndian<uint>();
+        public override float ReadSingle() => ReadBigEndian<float>();
+        public override ulong ReadUInt64() => ReadBigEndian<ulong>();
+        public override long ReadInt64() => ReadBigEndian<long>();
+
+        protected unsafe T ReadBigEndian<T>() where T : struct
         {
-            byte[] data = new byte[8];
-            Read(data, 0, 8);
-
-            long ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 8);
+            Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
+            T ret = default;
+            Read(data);
+            if (BitConverter.IsLittleEndian)
+            {
+                data.Reverse();
             }
-
+            data.CopyTo(new Span<byte>(Unsafe.AsPointer(ref ret), data.Length));
             return ret;
-        }
-        public override unsafe sbyte ReadSByte()
-        {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
-
-            int ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
-            return (sbyte)ret;
-        }
-
-        public unsafe byte ReadUByte()
-        {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
-
-            int ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
-            return (byte)ret;
-        }
-
-        public override unsafe int ReadInt32()
-        {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
-            int ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
-            return ret;
-        }
-
-        public override unsafe double ReadDouble()
-        {
-            byte[] data = new byte[8];
-            Read(data, 0, 8);
-
-            double ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 8);
-            }
-            return ret;
-        }
-
-        public override unsafe uint ReadUInt32()
-        {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
-
-            uint ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
-            return ret;
-        }
-        public unsafe ushort ReadUShort()
-        {
-            byte[] data = new byte[4];
-            Read(data, 0, 4);
-
-            uint ret;
-            fixed (byte *src = &data[0]){
-                PutBytesBE ((byte *) &ret, src, 4);
-            }
-            return (ushort)ret;
         }
     }
 
     internal class MonoBinaryWriter : BinaryWriter
     {
         public MonoBinaryWriter(Stream stream) : base(stream) {}
-        public void WriteString(string val)
+
+        public override void Write(string val)
         {
-            Write(val.Length);
-            Write(val.ToCharArray());
-        }
-        public void WriteLong(long val)
-        {
-            Write((int)((val >> 32) & 0xffffffff));
-            Write((int)((val >> 0) & 0xffffffff));
-        }
-        public override void Write(int val)
-        {
-            byte[] bytes = BitConverter.GetBytes(val);
-            Array.Reverse(bytes, 0, bytes.Length);
+            var bytes = Encoding.UTF8.GetBytes(val);
+            Write(bytes.Length);
             Write(bytes);
         }
+
+        public override void Write(long val) => WriteBigEndian<long>(val);
+        public override void Write(int val) => WriteBigEndian<int>(val);
+
+        protected unsafe void WriteBigEndian<T>(T val) where T : struct
+        {
+            Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
+            new Span<byte>(Unsafe.AsPointer(ref val), data.Length).CopyTo(data);
+            if (BitConverter.IsLittleEndian)
+            {
+                data.Reverse();
+            }
+            base.Write(data);
+        }
+
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
             if (objectId.Scheme == "object")
@@ -656,9 +594,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
-        private Dictionary<int, MethodInfoWithDebugInformation> methods = new();
-        private Dictionary<int, AssemblyInfo> assemblies = new();
-        private Dictionary<int, TypeInfoWithDebugInformation> types = new();
+        private Dictionary<int, MethodInfoWithDebugInformation> methods;
+        private Dictionary<int, AssemblyInfo> assemblies;
+        private Dictionary<int, TypeInfoWithDebugInformation> types;
 
         internal Dictionary<int, ValueTypeClass> valueTypes = new Dictionary<int, ValueTypeClass>();
         internal Dictionary<int, PointerValue> pointerValues = new Dictionary<int, PointerValue>();
@@ -673,12 +611,16 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             this.proxy = proxy;
             this.logger = logger;
-            this.store = null;
+            ResetStore(null);
         }
 
-        public void SetStore(DebugStore store)
+        public void ResetStore(DebugStore store)
         {
             this.store = store;
+            this.methods = new();
+            this.assemblies = new();
+            this.types = new();
+            ClearCache();
         }
 
         public async Task<AssemblyInfo> GetAssemblyInfo(SessionId sessionId, int assemblyId, CancellationToken token)
@@ -816,12 +758,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandInternal(SessionId sessionId, int command_set, int command, MemoryStream parms, CancellationToken token)
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray())), token);
-            if (res.IsErr) {
-                throw new Exception($"SendDebuggerAgentCommand Error - {(CommandSet)command_set} - {command}");
+            byte[] newBytes = Array.Empty<byte>();
+            if (!res.IsErr) {
+                newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
-            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             var retDebuggerCmd = new MemoryStream(newBytes);
-            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
+            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd, res.IsErr);
             return retDebuggerCmdReader;
         }
 
@@ -854,12 +796,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandWithParmsInternal(SessionId sessionId, int command_set, int command, MemoryStream parms, int type, string extraParm, CancellationToken token)
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommandWithParms(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray()), parms.ToArray().Length, type, extraParm), token);
-            if (res.IsErr) {
-                throw new Exception("SendDebuggerAgentCommandWithParms Error");
+            byte[] newBytes = Array.Empty<byte>();
+            if (!res.IsErr) {
+                newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
-            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             var retDebuggerCmd = new MemoryStream(newBytes);
-            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
+            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd, res.IsErr);
             return retDebuggerCmdReader;
         }
 
@@ -870,7 +812,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdAppDomain>(sessionId, CmdAppDomain.GetRootDomain, commandParams, token);
             var root_domain = retDebuggerCmdReader.ReadInt32();
             commandParamsWriter.Write(root_domain);
-            commandParamsWriter.WriteString(value);
+            commandParamsWriter.Write(value);
             retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdAppDomain>(sessionId, CmdAppDomain.CreateString, commandParams, token);
             return retDebuggerCmdReader.ReadInt32();
         }
@@ -981,7 +923,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.WriteString(asm_name);
+            commandParamsWriter.Write(asm_name);
 
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.GetAssemblyByName, commandParams, token);
             return retDebuggerCmdReader.ReadInt32();
@@ -1116,7 +1058,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)1);
             commandParamsWriter.Write((byte)ModifierKind.LocationOnly);
             commandParamsWriter.Write(methodId);
-            commandParamsWriter.WriteLong(il_offset);
+            commandParamsWriter.Write(il_offset);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.Set, commandParams, token);
             return retDebuggerCmdReader.ReadInt32();
         }
@@ -1283,8 +1225,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal async Task<MonoBinaryReader> GetCAttrsFromType(SessionId sessionId, int objectId, int typeId, string attrName, CancellationToken token)
         {
-            var invokeParams = new MemoryStream();
-            var invokeParamsWriter = new MonoBinaryWriter(invokeParams);
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write(typeId);
@@ -1342,11 +1282,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (getCAttrsRetReader == null)
                     return null;
 
-                var invokeParams = new MemoryStream();
-                var invokeParamsWriter = new MonoBinaryWriter(invokeParams);
-                invokeParamsWriter.Write((byte)ValueTypeId.Null);
-                invokeParamsWriter.Write((byte)0); //not used
-                invokeParamsWriter.Write(0); //not used
                 var parmCount = getCAttrsRetReader.ReadInt32();
                 var monoType = (ElementType) getCAttrsRetReader.ReadByte(); //MonoTypeEnum -> MONO_TYPE_STRING
                 if (monoType != ElementType.String)
@@ -1501,7 +1436,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write((int)type_id);
-            commandParamsWriter.WriteString(method_name);
+            commandParamsWriter.Write(method_name);
             commandParamsWriter.Write((int)(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             commandParamsWriter.Write((int)1); //case sensitive
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetMethodsByNameFlags, commandParams, token);
@@ -1637,7 +1572,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var ret = new List<string>();
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.WriteLong(pointerValues[pointerId].address);
+            commandParamsWriter.Write(pointerValues[pointerId].address);
             commandParamsWriter.Write(pointerValues[pointerId].typeId);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdPointer>(sessionId, CmdPointer.GetValue, commandParams, token);
             var varName = pointerValues[pointerId].varName;
@@ -1736,7 +1671,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string type;
             string value;
-            long valueAddress = retDebuggerCmdReader.ReadLong();
+            long valueAddress = retDebuggerCmdReader.ReadInt64();
             var typeId = retDebuggerCmdReader.ReadInt32();
             var className = "";
             if (etype == ElementType.FnPtr)
@@ -1947,7 +1882,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 case ElementType.R4:
                 {
-                    float value = BitConverter.Int32BitsToSingle(retDebuggerCmdReader.ReadInt32());
+                    float value = retDebuggerCmdReader.ReadSingle();
                     ret = CreateJObjectForNumber<float>(value);
                     break;
                 }
@@ -1959,15 +1894,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 case ElementType.I8:
                 {
-                    long value = retDebuggerCmdReader.ReadLong();
+                    long value = retDebuggerCmdReader.ReadInt64();
                     ret = CreateJObjectForNumber<long>(value);
                     break;
                 }
                 case ElementType.U8:
                 {
-                    ulong high = (ulong) retDebuggerCmdReader.ReadInt32();
-                    ulong low = (ulong) retDebuggerCmdReader.ReadInt32();
-                    var value = ((high << 32) | low);
+                    ulong value = retDebuggerCmdReader.ReadUInt64();
                     ret = CreateJObjectForNumber<ulong>(value);
                     break;
                 }
@@ -2249,7 +2182,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.WriteString(typeToSearch);
+            commandParamsWriter.Write(typeToSearch);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.GetTypes, commandParams, token);
             var count = retDebuggerCmdReader.ReadInt32(); //count ret
             return retDebuggerCmdReader.ReadInt32();
@@ -2530,15 +2463,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             JArray locals = new JArray();
             retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdFrame>(sessionId, CmdFrame.GetValues, commandParams, token);
             int etype = retDebuggerCmdReader.ReadByte();
-            try
-            {
-                retDebuggerCmdReader = await SendDebuggerAgentCommandWithParms<CmdFrame>(sessionId, CmdFrame.SetValues, commandParams, etype, newValue, token);
-            }
-            catch (Exception)
-            {
+            retDebuggerCmdReader = await SendDebuggerAgentCommandWithParms<CmdFrame>(sessionId, CmdFrame.SetValues, commandParams, etype, newValue, token);
+            if (retDebuggerCmdReader.HasError)
                 return false;
-            }
-
             return true;
         }
     }

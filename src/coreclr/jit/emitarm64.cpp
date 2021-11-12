@@ -138,7 +138,15 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
         if (id->idIsLargeDsp())
             return sizeof(instrDescDsp);
         else
+        {
+#if FEATURE_LOOP_ALIGN
+            if (id->idIns() == INS_align)
+            {
+                return sizeof(instrDescAlign);
+            }
+#endif
             return sizeof(instrDesc);
+        }
     }
 }
 
@@ -6977,6 +6985,14 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
     {
         shiftAmount = insOptsLSL(opt) ? scale : 0;
     }
+
+    // If target reg is ZR - it means we're doing an implicit nullcheck
+    // where target type was ignored and set to TYP_INT.
+    if ((reg1 == REG_ZR) && (shiftAmount > 0))
+    {
+        shiftAmount = scale;
+    }
+
     assert((shiftAmount == scale) || (shiftAmount == 0));
 
     reg2 = encodingSPtoZR(reg2);
@@ -8512,7 +8528,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
                            regMaskTP        byrefRegs,
-                           IL_OFFSETX       ilOffset /* = BAD_IL_OFFSET */,
+                           const DebugInfo& di /* = DebugInfo() */,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
@@ -8553,9 +8569,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
+    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -11415,9 +11431,39 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SN_0A: // SN_0A   ................ ................
-            code = emitInsCode(ins, fmt);
-            dst += emitOutput_Instr(dst, code);
+        {
+            bool skipIns = false;
+#if FEATURE_LOOP_ALIGN
+            if (id->idIns() == INS_align)
+            {
+                // IG can be marked as not needing alignment after emitting align instruction.
+                // Alternatively, there are fewer align instructions needed than emitted.
+                // If that is the case, skip outputting alignment.
+                if (!ig->isLoopAlign() || id->idIsEmptyAlign())
+                {
+                    skipIns = true;
+                }
+
+#ifdef DEBUG
+                if (!ig->isLoopAlign())
+                {
+                    // Validate if the state is correctly updated
+                    assert(id->idIsEmptyAlign());
+                }
+#endif
+                sz  = sizeof(instrDescAlign);
+                ins = INS_nop;
+            }
+#endif // FEATURE_LOOP_ALIGN
+
+            if (!skipIns)
+            {
+                code = emitInsCode(ins, fmt);
+                dst += emitOutput_Instr(dst, code);
+            }
+
             break;
+        }
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
             imm = emitGetInsSC(id);
@@ -11564,7 +11610,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     /* All instructions are expected to generate code */
 
-    assert(*dp != dst);
+    assert(*dp != dst || id->idIsEmptyAlign());
 
     *dp = dst;
 
@@ -13282,6 +13328,10 @@ void emitter::emitDispIns(
             break;
 
         case IF_SN_0A: // SN_0A   ................ ................
+            if (ins == INS_align)
+            {
+                printf("[%d bytes]", id->idIsEmptyAlign() ? 0 : INSTR_ENCODED_SIZE);
+            }
             break;
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
@@ -13435,12 +13485,27 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 if (lsl > 0)
                 {
                     // Then load/store dataReg from/to [memBase + index*scale]
-                    emitIns_R_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum(), lsl, INS_OPTS_LSL);
+                    emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum(), INS_OPTS_LSL, lsl);
                 }
                 else // no scale
                 {
-                    // Then load/store dataReg from/to [memBase + index]
-                    emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
+                    if (index->OperIs(GT_BFIZ) && index->isContained())
+                    {
+                        // Then load/store dataReg from/to [memBase + index*scale with sign/zero extension]
+                        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+
+                        // For now, this code only supports extensions from i32/u32
+                        assert(cast->isContained() && varTypeIsInt(cast->CastFromType()));
+
+                        emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
+                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW,
+                                          (int)index->gtGetOp2()->AsIntCon()->IconValue());
+                    }
+                    else
+                    {
+                        // Then load/store dataReg from/to [memBase + index]
+                        emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
+                    }
                 }
             }
         }
@@ -14517,8 +14582,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SN_0A: // bkpt, brk, nop
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            if (id->idIsEmptyAlign())
+            {
+                // We're not going to generate any instruction, so it doesn't count for PerfScore.
+                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            }
             break;
 
         case IF_SI_0B: // dmb, dsb, isb

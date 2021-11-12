@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -19,8 +22,9 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MultipleAttributes };
             yield return new[] { CodeSnippets.NestedNamespace };
             yield return new[] { CodeSnippets.NestedTypes };
+            yield return new[] { CodeSnippets.UnsafeContext };
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
             yield return new[] { CodeSnippets.DefaultParameters };
             yield return new[] { CodeSnippets.UseCSharpFeaturesForConstants };
 
@@ -266,7 +270,7 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CollectionsOfCollectionsStress };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string source)
         {
@@ -292,7 +296,7 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.PreprocessorIfAfterAttributeAroundFunctionAdditionalFunctionAfter("Foo"), Array.Empty<string>() };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(CodeSnippetsToCompileWithPreprocessorSymbols))]
         public async Task ValidateSnippetsWithPreprocessorDefintions(string source, IEnumerable<string> preprocessorSymbols)
         {
@@ -306,27 +310,47 @@ namespace DllImportGenerator.UnitTests
             Assert.Empty(newCompDiags);
         }
 
-        public static IEnumerable<object[]> CodeSnippetsToCompileWithForwarder()
+        public static IEnumerable<object[]> CodeSnippetsToValidateFallbackForwarder()
         {
-            yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            yield return new object[] { CodeSnippets.UserDefinedEntryPoint, TestTargetFramework.Net, true };
 
-            // Parameter / return types (supported in DllImportGenerator)
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<byte>() };
-            // Parameter / return types (not supported in DllImportGenerator)
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<string>() };
+            // Confirm that all unsupported target frameworks can be generated.
+            {
+                string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                yield return new object[] { code, TestTargetFramework.Net5, false };
+                yield return new object[] { code, TestTargetFramework.Core, false };
+                yield return new object[] { code, TestTargetFramework.Standard, false };
+                yield return new object[] { code, TestTargetFramework.Framework, false };
+            }
+
+            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            {
+                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                yield return new object[] { code, TestTargetFramework.Net5, true };
+                yield return new object[] { code, TestTargetFramework.Core, true };
+                yield return new object[] { code, TestTargetFramework.Standard, true };
+                yield return new object[] { code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            {
+                string code = CodeSnippets.BasicParametersAndModifiersWithCharSet<string>(CharSet.Unicode, CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                yield return new object[] { code, TestTargetFramework.Net5, true };
+                yield return new object[] { code, TestTargetFramework.Core, true };
+                yield return new object[] { code, TestTargetFramework.Standard, true };
+                yield return new object[] { code, TestTargetFramework.Framework, true };
+            }
         }
 
-        [Theory]
-        [MemberData(nameof(CodeSnippetsToCompileWithForwarder))]
-        public async Task ValidateSnippetsWithForwarder(string source)
+        [ConditionalTheory]
+        [MemberData(nameof(CodeSnippetsToValidateFallbackForwarder))]
+        public async Task ValidateSnippetsFallbackForwarder(string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
         {
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(
                 comp,
-                new DllImportGeneratorOptionsProvider(useMarshalType: false, generateForwarders: true),
                 out var generatorDiags,
                 new Microsoft.Interop.DllImportGenerator());
 
@@ -334,6 +358,89 @@ namespace DllImportGenerator.UnitTests
 
             var newCompDiags = newComp.GetDiagnostics();
             Assert.Empty(newCompDiags);
+
+            // Verify that the forwarder generates the method as a DllImport.
+            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
+            SemanticModel model = newComp.GetSemanticModel(generatedCode);
+            var methods = generatedCode.GetRoot()
+                .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .ToList();
+            MethodDeclarationSyntax generatedMethod = Assert.Single(methods);
+
+            IMethodSymbol method = model.GetDeclaredSymbol(generatedMethod)!;
+
+            // If we expect fallback forwarder, then the DllImportData will not be null.
+            Assert.Equal(expectFallbackForwarder, method.GetDllImportData() is not null);
+        }
+
+        public static IEnumerable<object[]> FullyBlittableSnippetsToCompile()
+        {
+            yield return new[] { CodeSnippets.UserDefinedEntryPoint };
+            yield return new[] { CodeSnippets.BasicParameterByValue("int") };
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(FullyBlittableSnippetsToCompile))]
+        public async Task ValidateSnippetsWithBlittableAutoForwarding(string source)
+        {
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(
+                comp,
+                out var generatorDiags,
+                new Microsoft.Interop.DllImportGenerator());
+
+            Assert.Empty(generatorDiags);
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+
+            // Verify that the forwarder generates the method as a DllImport.
+            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
+            SemanticModel model = newComp.GetSemanticModel(generatedCode);
+            var methods = generatedCode.GetRoot()
+                .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .ToList();
+
+            Assert.All(methods, method => Assert.NotNull(model.GetDeclaredSymbol(method)!.GetDllImportData()));
+        }
+
+        public static IEnumerable<object[]> SnippetsWithBlittableTypesButNonBlittableDataToCompile()
+        {
+            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
+            yield return new[] { CodeSnippets.PreserveSigFalse<int>() };
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(SnippetsWithBlittableTypesButNonBlittableDataToCompile))]
+        public async Task ValidateSnippetsWithBlittableTypesButNonBlittableMetadataDoNotAutoForward(string source)
+        {
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(
+                comp,
+                out var generatorDiags,
+                new Microsoft.Interop.DllImportGenerator());
+
+            Assert.Empty(generatorDiags);
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+
+            // Verify that the generator generates stubs with inner DllImports for all methods.
+            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
+            SemanticModel model = newComp.GetSemanticModel(generatedCode);
+            int numStubMethods = generatedCode.GetRoot()
+                .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .Count();
+            int numInnerDllImports = generatedCode.GetRoot()
+                .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
+                .Count();
+
+            Assert.Equal(numStubMethods, numInnerDllImports);
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
@@ -344,7 +451,7 @@ namespace DllImportGenerator.UnitTests
 #pragma warning disable xUnit1004 // Test methods should not be skipped.
                                   // If we have any new experimental APIs that we are implementing that have not been approved,
                                   // we will add new scenarios for this test.
-        [Theory(Skip = "No current scenarios to test.")]
+        [ConditionalTheory(Skip = "No current scenarios to test.")]
 #pragma warning restore
         [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
         public async Task ValidateSnippetsWithMarshalType(string source)
@@ -376,7 +483,7 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { new[] { CodeSnippets.BasicParameterByValue("int[]"), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(CodeSnippetsToCompileMultipleSources))]
         public async Task ValidateSnippetsWithMultipleSources(string[] sources)
         {

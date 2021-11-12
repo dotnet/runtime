@@ -12,7 +12,7 @@ using System;
 using System.Threading;
 
 
-public class Test
+public class Test_repro237932
 {
 	public static int Main()
 	{

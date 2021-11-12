@@ -10,6 +10,9 @@
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(OutputRid)</AppHostRuntimeIdentifier>
+    <_TargetsAppleOS Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'MacCatalyst' or
+      '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or
+      '$(TargetOS)' == 'tvOSSimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,24 +23,25 @@
     <ProjectReference Include="..\SharedTypes\SharedTypes.csproj" />
   </ItemGroup>
 
-  <Target Name="GetLinuxCrossBuildArgumentsForDNNE"
-          Condition="'$(CrossBuild)' == 'true' and (
-            '$(TargetOS)' == 'Linux' or
-            '$(TargetOS)' == 'NetBSD' or
-            '$(TargetOS)' == 'FreeBSD' or
-            '$(TargetOS)' == 'illumos' or
-            '$(TargetOS)' == 'Solaris')">
+  <Target Name="GetUnixBuildArgumentsForDNNE" Condition="'$(OS)' == 'Unix'">
     <PropertyGroup>
       <NativeCompiler>$(Compiler)</NativeCompiler>
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
+      <NativeCompiler Condition="$(NativeCompiler.StartsWith('-'))">$(NativeCompiler.TrimStart('-'))</NativeCompiler>
     </PropertyGroup>
 
-    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $CC '"
+    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $CC'"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="DnneCompilerCommand" />
     </Exec>
+  </Target>
+
+  <Target Name="GetUnixCrossBuildArgumentsForDNNE"
+          Condition="'$(CrossBuild)' == 'true' and
+            '$(OS)' == 'Unix' and '$(_TargetsAppleOS)' != 'true'">
+
     <Exec Command="cmake -P &quot;$(RepositoryEngineeringDir)/native/output-toolchain-info.cmake&quot;"
           EchoOff="true"
           ConsoleToMsBuild="true"
@@ -63,13 +67,7 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="GetAppleCrossBuildArgumentsForDNNE"
-          Condition="'$(TargetOS)' == 'OSX' or
-            '$(TargetOS)' == 'MacCatalyst' or
-            '$(TargetOS)' == 'iOS' or
-            '$(TargetOS)' == 'iOSSimulator' or
-            '$(TargetOS)' == 'tvOS' or
-            '$(TargetOS)' == 'tvOSSimulator'">
+  <Target Name="GetAppleBuildArgumentsForDNNE" Condition="'$(_TargetsAppleOS)' == 'true'">
     <PropertyGroup Condition=" '$(TargetOS)' == 'MacCatalyst'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios14.2-macabi</TargetTriple>
       <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-ios13.5-macabi</TargetTriple>
@@ -80,7 +78,7 @@
       <XCodeSdkName>macosx</XCodeSdkName>
     </PropertyGroup>
 
-    <Error Condition="'$(TargetTriple)' == ''" Text="A target triple was not specified for the native components build. Update the 'GetAppleCrossBuildArgumentsForDNNE' target to specify a triple." />
+    <Error Condition="'$(TargetTriple)' == ''" Text="A target triple was not specified for the native components build. Update the 'GetAppleBuildArgumentsForDNNE' target to specify a triple." />
     <Error Condition="'$(XCodeSdkName)' == ''" Text="The name of the XCode SDK for the target platform, as passed to xcrun to locate the sdk, must be specified." />
 
     <!-- xcrun is used to locate the XCode SDKs and tools within them. See the xcrun manpage for usage information. -->
@@ -91,13 +89,6 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="SysRootIncludePath" />
     </Exec>
 
-    <Exec Command="xcrun --sdk $(XCodeSdkName) --find clang"
-          EchoOff="true"
-          ConsoleToMsBuild="true"
-          StandardOutputImportance="Low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="DnneCompilerCommand" />
-    </Exec>
-
     <PropertyGroup>
       <DnneLinkerUserFlags>-target $(TargetTriple)</DnneLinkerUserFlags>
       <DnneCompilerUserFlags>-isysroot &quot;$(SysRootIncludePath)&quot; -target $(TargetTriple)</DnneCompilerUserFlags>
@@ -106,8 +97,9 @@
 
   <Target Name="GetBuildArgumentsForDNNE"
           DependsOnTargets="ResolveFrameworkReferences;
-                            GetLinuxCrossBuildArgumentsForDNNE;
-                            GetAppleCrossBuildArgumentsForDNNE"
+                            GetUnixBuildArgumentsForDNNE;
+                            GetAppleBuildArgumentsForDNNE;
+                            GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
     <PropertyGroup>
       <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>

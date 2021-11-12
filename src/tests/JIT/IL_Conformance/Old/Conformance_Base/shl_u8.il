@@ -137,4 +137,4 @@ FAIL:
 .try TRY_START to TRY_END catch [mscorlib]System.Exception handler HANDLER to END_HANDLER
 }
 }
-.assembly shl_u8.exe{}
+.assembly shl_u8{}

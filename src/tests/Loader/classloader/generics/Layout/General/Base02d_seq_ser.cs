@@ -52,7 +52,7 @@ public class Gen<T> : GenBase<T>
 	
 }
 
-public class Test
+public class Test_Base02d_seq_ser
 {	
 	public static void RunTest1()
 	{

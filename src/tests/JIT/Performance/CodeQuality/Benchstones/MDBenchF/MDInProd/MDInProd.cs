@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.MDBenchF
 {
@@ -94,18 +90,6 @@ public static class MDInProd
             for (int j = 1; j < RowSize; j++)
             {
                 InnerProduct(out rmr[i,j], rma, rmb, i, j);
-            }
-        }
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                Bench();
             }
         }
     }

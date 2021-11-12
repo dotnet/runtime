@@ -563,6 +563,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 	case MONO_RGCTX_INFO_METHOD_FTNDESC:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER:
+	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT:
 	case MONO_RGCTX_INFO_METHOD_RGCTX:
 	case MONO_RGCTX_INFO_METHOD_CONTEXT:
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
@@ -2230,6 +2231,17 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			return mini_llvmonly_create_ftndesc (m, addr, arg);
 		}
 	}
+	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT: {
+		MonoMethod *m = (MonoMethod*)data;
+		gpointer addr;
+
+		/* A gsharedvt out wrapper for the signature of M */
+		g_assert (mono_llvm_only);
+		addr = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature_internal (m), NULL, -1, FALSE);
+
+		/* Returns an ftndesc */
+		return mini_llvmonly_create_ftndesc (m, addr, NULL);
+	}
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: {
 		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)data;
 		MonoClass *iface_class = info->method->klass;
@@ -2613,6 +2625,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO: return "GSHAREDVT_INFO";
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: return "GENERIC_METHOD_CODE";
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER: return "GSHAREDVT_OUT_WRAPPER";
+	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT: return "GSHAREDVT_OUT_WRAPPER_VIRT";
 	case MONO_RGCTX_INFO_CLASS_FIELD: return "CLASS_FIELD";
 	case MONO_RGCTX_INFO_METHOD_RGCTX: return "METHOD_RGCTX";
 	case MONO_RGCTX_INFO_METHOD_CONTEXT: return "METHOD_CONTEXT";
@@ -2725,6 +2738,7 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER:
+	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT:
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_FIELD_OFFSET:
 	case MONO_RGCTX_INFO_METHOD_RGCTX:
@@ -2783,9 +2797,17 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX:
 	case MONO_RGCTX_INFO_LOCAL_OFFSET:
 		return MONO_PATCH_INFO_CLASS;
+	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_FIELD_OFFSET:
 		return MONO_PATCH_INFO_FIELD;
+	case MONO_RGCTX_INFO_METHOD:
+	case MONO_RGCTX_INFO_METHOD_RGCTX:
+	case MONO_RGCTX_INFO_METHOD_FTNDESC:
+	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER:
+	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT:
+		return MONO_PATCH_INFO_METHOD;
 	default:
+		printf ("%d\n", info_type);
 		g_assert_not_reached ();
 		return (MonoJumpInfoType)-1;
 	}
@@ -2876,7 +2898,7 @@ lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoM
 static inline int
 class_rgctx_array_size (int n)
 {
-	return 16 << n;
+	return 32 << n;
 }
 
 static inline int
@@ -2934,7 +2956,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	MonoRuntimeGenericContext *orig_rgctx;
 	int rgctx_index;
 	gboolean do_free;
-	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
+	MonoJitMemoryManager *jit_mm;
 
 	/*
 	 * Need a fastpath since this is called without trampolines in llvmonly mode.
@@ -2984,6 +3006,8 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		}
 	}
 	rgctx = orig_rgctx;
+
+	jit_mm = jit_mm_for_class (class_vtable->klass);
 
 	class_context = mono_class_is_ginst (klass) ? &mono_class_get_generic_class (klass)->context : NULL;
 	MonoGenericContext context = { class_context ? class_context->class_inst : NULL, method_inst };
@@ -3993,7 +4017,6 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGSharedGenericParam *copy, key;
 	MonoType *res;
-	MonoImage *image = NULL;
 	char *name;
 
 	mm = mono_mem_manager_merge (mono_metadata_get_mem_manager_for_type (t), mono_metadata_get_mem_manager_for_type (constraint));
@@ -4003,7 +4026,6 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	key.param.gshared_constraint = constraint;
 
 	g_assert (mono_generic_param_info (par));
-	image = mono_get_image_for_generic_param(par);
 
 	/*
 	 * Need a cache to ensure the newly created gparam

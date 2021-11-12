@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.assembly add_ovf.exe{}
+.assembly add_ovf{}
 
 
 .class public add_ovf {

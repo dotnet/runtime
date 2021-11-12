@@ -8,13 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-#if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static unsafe partial bool GetVolumeInformation(
-#else
-        [DllImport(Libraries.Kernel32, EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static unsafe extern bool GetVolumeInformation(
-#endif
             string drive,
             char* volumeName,
             int volumeNameBufLen,

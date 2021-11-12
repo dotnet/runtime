@@ -39,20 +39,12 @@ make run-tests-coreclr-all
 To debug a single test with `lldb`:
 
 1. Run the test at least once normally (or manually run the `mono.proj` `PatchCoreClrCoreRoot` target)
-2. Edit the `.sh` file for the test and change the line
-```
-    LAUNCHER="$_DebuggerFullPath "$CORE_ROOT/corerun" -p "System.Reflection.Metadata.MetadataUpdater.IsSupported=false"  ${__DotEnvArg}"
-```
-to add `--` after the debugger full path
-```
-    LAUNCHER="$_DebuggerFullPath -- "$CORE_ROOT/corerun" -p "System.Reflection.Metadata.MetadataUpdater.IsSupported=false"  ${__DotEnvArg}"
-```
-3. Run the shell script for the test case manually:
+2. Run the shell script for the test case manually:
 ```
 bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root -debug=/usr/bin/lldb
 ```
-4. In LLDB add the debug symbols for mono: `add-dsym <CORE_ROOT>/libcoreclr.dylib.dwarf`
-5. Run/debug the test
+3. In LLDB add the debug symbols for mono: `add-dsym <CORE_ROOT>/libcoreclr.dylib.dwarf`
+4. Run/debug the test
 
 ### WebAssembly:
 Build the runtime tests for WebAssembly
@@ -101,7 +93,20 @@ For example, the following command is for running System.Runtime tests:
 make run-tests-corefx-System.Runtime
 ```
 ### Mobile targets and WebAssembly
-Build and run library tests against Webassembly, Android or iOS. See instructions located in [Library testing document folder](../libraries/)
+Build and run library tests against WebAssembly, Android or iOS. See instructions located in [Library testing document folder](../libraries/)
+
+## Running the functional tests
+
+There are the [functional tests](https://github.com/dotnet/runtime/tree/main/src/tests/FunctionalTests/) which aim to test some specific features/configurations/modes on Android, iOS-like platforms (iOS/tvOS + simulators, MacCatalyst), and WebAssembly.
+
+A functional test can be run the same way as any library test suite, e.g.:
+```
+./dotnet.sh build /t:Test -c Release /p:TargetOS=Android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
+```
+
+Currently the functional tests are expected to return `42` as a success code so please be careful when adding a new one.
+
+For more details, see instructions located in [Library testing document folder](../libraries/).
 
 # Running the Mono samples
 There are a few convenient samples located in `$(REPO_ROOT)/src/mono/sample`, which could help you test your program easily with different flavors of Mono or do a sanity check on the build. The samples are set up to work with a specific configuration; please refer to the relevant Makefile for specifics. If you would like to work with a different configuration, you can edit the Makefile.

@@ -22,7 +22,7 @@ public class Hijo : Padre
         base.Incrementa(b);
     }
 }
-internal class Test
+internal class Test_b64579
 {
     public static int Main()
     {

@@ -3,7 +3,7 @@
 
 using System;
 
-internal class Test
+internal class Test_DelegStaticFtn
 {
     private delegate object MyDeleg(string s);
 

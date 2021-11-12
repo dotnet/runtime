@@ -5,13 +5,9 @@
 "use strict";
 
 const DotNetSupportLib = {
-    // this will become globalThis.DOTNET
     $DOTNET: {},
-    // this will become globalThis.MONO
     $MONO: {},
-    // this will become globalThis.BINDING
     $BINDING: {},
-    // this will become globalThis.INTERNAL
     $INTERNAL: {},
     // this line will be executed on runtime, populating the objects with methods
     $DOTNET__postset: "__dotnet_runtime.INTERNAL.export_to_emscripten (DOTNET, MONO, BINDING, INTERNAL, Module);",
@@ -31,9 +27,8 @@ const linked_functions = [
     "schedule_background_exec",
 
     // driver.c
+    "mono_wasm_invoke_js",
     "mono_wasm_invoke_js_blazor",
-    "mono_wasm_invoke_js_marshalled",
-    "mono_wasm_invoke_js_unmarshalled",
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args",
@@ -56,6 +51,7 @@ const linked_functions = [
     "mono_wasm_web_socket_receive",
     "mono_wasm_web_socket_close",
     "mono_wasm_web_socket_abort",
+    "mono_wasm_compile_function",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",

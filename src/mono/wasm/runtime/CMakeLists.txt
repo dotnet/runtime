@@ -25,7 +25,7 @@ target_link_libraries(dotnet
 
 set_target_properties(dotnet PROPERTIES
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/runtime.iffe.js;${SOURCE_DIR}/library-dotnet.js;${SYSTEM_NATIVE_DIR}/pal_random.js"
-    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DENABLE_NETCORE=1 --pre-js ${NATIVE_BIN_DIR}/src/runtime.iffe.js --js-library ${SOURCE_DIR}/library-dotnet.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
+    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_LINK_FLAGS} -DENABLE_NETCORE=1 --pre-js ${NATIVE_BIN_DIR}/src/runtime.iffe.js --js-library ${SOURCE_DIR}/library-dotnet.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

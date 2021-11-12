@@ -12,7 +12,7 @@ namespace System.Net.Http.Headers
     {
         private const string charSet = "charset";
 
-        private ObjectCollection<NameValueHeaderValue>? _parameters;
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _parameters;
         private string? _mediaType;
 
         public string? CharSet
@@ -53,7 +53,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         [DisallowNull]
         public string? MediaType
@@ -169,7 +169,7 @@ namespace System.Net.Http.Headers
 
                 current++; // skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    (ObjectCollection<NameValueHeaderValue>)mediaTypeHeader.Parameters);
+                    (UnvalidatedObjectCollection<NameValueHeaderValue>)mediaTypeHeader.Parameters);
 
                 if (parameterLength == 0)
                 {

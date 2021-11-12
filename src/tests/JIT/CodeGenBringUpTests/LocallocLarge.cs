@@ -37,7 +37,7 @@ public class ThreadData
     }
 }
 
-public class BringUpTest
+public class BringUpTest_LocallocLarge
 {
     const int Pass = 100;
     const int Fail = -1;

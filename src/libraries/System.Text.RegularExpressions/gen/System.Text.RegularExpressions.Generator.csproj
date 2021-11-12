@@ -29,6 +29,7 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="..\src\System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="..\src\System\Threading\StackHelper.cs" Link="Production\StackHelper.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexBoyerMoore.cs" Link="Production\RegexBoyerMoore.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.cs" Link="Production\RegexCharClass.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" Link="Production\RegexCharClass.MappingTable.cs" />

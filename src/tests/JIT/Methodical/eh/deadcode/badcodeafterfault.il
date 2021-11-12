@@ -18,7 +18,7 @@
 .module baddcodeafterfault.exe
 
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_badcodeafterfault
        extends [mscorlib]System.Object
 {
 
@@ -69,7 +69,7 @@
     ldloc.s    testLog
     callvirt   instance void [common]TestUtil.TestLog::StartRecording()
 
-    call       object Test::GetObj()
+    call       object Test_badcodeafterfault::GetObj()
     call       void [System.Console]System.Console::WriteLine(object)
     
     ldloc.s    testLog

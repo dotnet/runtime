@@ -247,4 +247,4 @@ END:
 }
 }
 
-.assembly sub_ovf_u4.exe{}
+.assembly sub_ovf_u4{}

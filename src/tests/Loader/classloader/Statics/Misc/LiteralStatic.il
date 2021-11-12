@@ -9,14 +9,14 @@
 
 
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_LiteralStatic
        extends [mscorlib]System.Object
 {
   .field public static literal int32 i = int32(123)
 
   .method public static void  RunTest()
   {
-      ldsfld int32 Test::i
+      ldsfld int32 Test_LiteralStatic::i
       ret
   }
 
@@ -32,7 +32,7 @@
     .try
     {
      
-      call void Test::RunTest()
+      call void Test_LiteralStatic::RunTest()
 
       ldstr      "Did not catch expected MissingFieldException"
       call       void [System.Console]System.Console::WriteLine(string)

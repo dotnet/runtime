@@ -130,6 +130,7 @@ struct InterpMethod {
 	MonoJitInfo *jinfo;
 	MonoFtnDesc *ftndesc;
 	MonoFtnDesc *ftndesc_unbox;
+	MonoDelegateTrampInfo *del_info;
 
 	guint32 locals_size;
 	guint32 alloca_size;

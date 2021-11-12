@@ -71,9 +71,6 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
-EMCC_DEBUG_FLAGS =-g -Os -s -DDEBUG=1
-EMCC_RELEASE_FLAGS=-Oz
-
 ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
 else
@@ -83,11 +80,6 @@ endif
 #
 # Wasm builds
 #
-
-# $(1) - EMCC_FLAGS
-# $(2) - libs
-# $(3) - strip cmd
-define WasmBuildTemplate
 
 $(NATIVE_BIN_DIR):
 	mkdir -p $$@
@@ -101,7 +93,7 @@ $(NATIVE_BIN_DIR)/include/wasm:
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(NATIVE_BIN_DIR)/dotnet.js: runtime/driver.c runtime/pinvoke.c runtime/pinvoke.h runtime/corebindings.c $(NATIVE_BIN_DIR)/src/runtime.iffe.js runtime/library-dotnet.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
+$(NATIVE_BIN_DIR)/dotnet.js: runtime/driver.c runtime/pinvoke.c runtime/pinvoke.h runtime/corebindings.c $(NATIVE_BIN_DIR)/src/runtime.iffe.js runtime/library-dotnet.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(MONO_LIBS) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
 	$(DOTNET) build $(CURDIR)/wasm.proj $(_MSBUILD_WASM_BUILD_ARGS) /t:BuildWasmRuntimes $(MSBUILD_ARGS)
 
 $(EMCC_DEFAULT_RSP): $(CURDIR)/wasm.proj | $(NATIVE_BIN_DIR)/src Makefile
@@ -111,14 +103,6 @@ $(NATIVE_BIN_DIR)/src/emcc-props.json: $(EMSDK_PATH)/upstream/.emsdk_version | $
 	$(DOTNET) build $(CURDIR)/wasm.proj /p:Configuration=$(CONFIG) /t:GenerateEmccPropsAndRspFiles
 
 build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-default.rsp $(NATIVE_BIN_DIR)/src/emcc-props.json
-
-endef
-
-ifeq ($(CONFIG),Debug)
-$(eval $(call WasmBuildTemplate,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS),))
-else
-$(eval $(call WasmBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS),$(STRIP_CMD)))
-endif
 
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)

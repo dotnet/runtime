@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly box_unbox.exe{}
+.assembly box_unbox{}
 .class public value sealed valClass {
 .field public int32 Field1
 }

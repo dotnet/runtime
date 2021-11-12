@@ -39,7 +39,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#include <getexepath.h>
+#include <common/getexepath.h>
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
@@ -886,5 +886,5 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 
 char* SystemNative_GetProcessPath()
 {
-    return getexepath();
+    return minipal_getexepath();
 }
