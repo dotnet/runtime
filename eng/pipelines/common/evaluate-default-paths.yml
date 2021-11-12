@@ -104,11 +104,13 @@ jobs:
       - src/tests/BuildWasmApps/*
       - src/mono/wasm/build/*
       - src/mono/wasm/runtime/*
-      - src/mono/nuget/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
+      - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
+      - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
+      - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
+      - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/mono/*
-      exclude:
-      - src/mono/nuget/Microsoft.NET.Runtime.Android.Sample.Mono/*
-      - src/mono/nuget/Microsoft.NET.Runtime.iOS.Sample.Mono/*
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}
