@@ -5155,11 +5155,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif
 
 #if FEATURE_LOOP_ALIGN
-    if (loopAlignCandidates > 0)
-    {
-        // Place loop alignment instructions
-        DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::bbPlaceLoopAlignInstructions);
-    }
+    // Place loop alignment instructions
+    DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
 #endif
 
     // Generate code
@@ -5221,20 +5218,26 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if FEATURE_LOOP_ALIGN
 
 //------------------------------------------------------------------------
-// bbPlaceLoopAlignInstructions: Iterate over all the blocks and determine
-//      the best position to place the 'align' instruction. After 'jmp' are
-//      preferred over block before loop and in case there are multiple blocks
+// placeLoopAlignInstructions: Iterate over all the blocks and determine
+//      the best position to place the 'align' instruction. Inserting 'align'
+//      instructions after an unconditional branch is preferred over inserting
+//      in the block before the loop. In case there are multiple blocks
 //      having 'jmp', the one that has lower weight is preferred.
-//      If the block having 'jmp' is hot than the block before loop, the align
-//      will still be placed after 'jmp' because the processor should be smart
-//      enough to not fetch extra instruction beyond jmp.
+//      If the block having 'jmp' is hotter than the block before the loop,
+//      the align will still be placed after 'jmp' because the processor should
+//      be smart enough to not fetch extra instruction beyond jmp.
 //
-void Compiler::bbPlaceLoopAlignInstructions()
+void Compiler::placeLoopAlignInstructions()
 {
-    assert(loopAlignCandidates > 0);
+    if (loopAlignCandidates == 0)
+    {
+        return;
+    }
+
+    int loopsToProcess = loopAlignCandidates;
 
     // Add align only if there were any loops that needed alignment
-    weight_t    minBlockSoFar = INFINITE;
+    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
     BasicBlock* bbHavingAlign = nullptr;
     for (BasicBlock* const block : Blocks())
     {
@@ -5245,7 +5248,7 @@ void Compiler::bbPlaceLoopAlignInstructions()
             {
                 minBlockSoFar = block->bbWeight;
                 bbHavingAlign = block;
-                JITDUMP(FMT_BB ", bbWeight= %f ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+                JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
             }
         }
 
@@ -5260,16 +5263,23 @@ void Compiler::bbPlaceLoopAlignInstructions()
             }
             else
             {
-                JITDUMP("Marking " FMT_BB " that ends with uncondition jump with BBF_HAS_ALIGN for loop at " FMT_BB
+                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
                         "\n",
                         bbHavingAlign->bbNum, block->bbNext->bbNum);
             }
 
             bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
-            minBlockSoFar = INFINITE;
+            minBlockSoFar = BB_MAX_WEIGHT;
             bbHavingAlign = nullptr;
         }
+
+        if (--loopsToProcess == 0)
+        {
+            break;
+        }
     }
+
+    assert(loopsToProcess == 0);
 }
 #endif
 

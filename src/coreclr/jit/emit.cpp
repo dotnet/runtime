@@ -913,8 +913,13 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 
         emitAlignLast = last;
+
         // Point to the first instruction of most recent
         // align instruction(s) added.
+        //
+        // Since emitCurIGAlignList is created in inverse of
+        // program order, the `list` reverses that in forms it
+        // in correct order.
         emitAlignLastGroup = list;
     }
 
@@ -4820,9 +4825,13 @@ void emitter::emitCheckAlignFitInCurIG(unsigned nAlignInstr)
 
 //-----------------------------------------------------------------------------
 //
-//  The next instruction will be a loop head entry point
-//  So insert an alignment instruction of "paddingBytes" to ensure that
-//  the code is properly aligned.
+//  emitLoopAlign: The next instruction will be a loop head entry point
+//                 So insert an alignment instruction of "paddingBytes" to ensure that
+//                 the code is properly aligned.
+//  Arguments:
+//      paddingBytes - Number of padding bytes to insert.
+//      isFirstAlign - For multiple 'align' instructions case, if this is the first
+//                     'align' instruction of that group.
 //
 void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign)
 {
@@ -4885,7 +4894,7 @@ void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign)
 
 //-----------------------------------------------------------------------------
 //
-//  The next instruction will be a loop head entry point
+//  emitLongLoopAlign: The next instruction will be a loop head entry point
 //  So insert alignment instruction(s) here to ensure that
 //  we can properly align the code.
 //
@@ -5212,8 +5221,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
                 // Find the IG that has 'align' instruction to align the last loop
                 // and clear the IGF_HAS_ALIGN flag.
-                if (!alignLastLoop && (loopHeadIG != nullptr) &&
-                    (loopHeadIG->igNum == emitLastLoopStart))
+                if (!alignLastLoop && (loopHeadIG != nullptr) && (loopHeadIG->igNum == emitLastLoopStart))
                 {
                     assert(!markedLastLoop);
                     assert(alignInstr->idaIG->endsWithAlignInstr());
