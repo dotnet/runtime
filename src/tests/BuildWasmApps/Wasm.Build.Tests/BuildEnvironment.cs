@@ -111,7 +111,7 @@ namespace Wasm.Build.Tests
             EnvVars["MSBuildSDKsPath"] = string.Empty;
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                                                         ".emscripten-cache");
