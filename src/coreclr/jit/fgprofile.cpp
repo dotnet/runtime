@@ -1949,6 +1949,14 @@ void Compiler::fgIncorporateBlockCounts()
             fgSetProfileWeight(block, profileWeight);
         }
     }
+
+    // For OSR, give the method entry (which will be a scratch BB)
+    // the same weight as the OSR Entry.
+    //
+    if (opts.IsOSR())
+    {
+        fgFirstBB->inheritWeight(fgOSREntryBB);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3314,11 +3322,17 @@ void Compiler::fgComputeCalledCount(weight_t returnWeight)
 
     BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
 
-    // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
+    // OSR methods can have complex entry flow, and so
+    // for OSR we ensure fgFirstBB has plausible profile data.
     //
-    while (firstILBlock->bbFlags & BBF_INTERNAL)
+    if (!opts.IsOSR())
     {
-        firstILBlock = firstILBlock->bbNext;
+        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
+        //
+        while (firstILBlock->bbFlags & BBF_INTERNAL)
+        {
+            firstILBlock = firstILBlock->bbNext;
+        }
     }
 
     // The 'firstILBlock' is now expected to have a profile-derived weight

@@ -1553,7 +1553,18 @@ void Compiler::fgPostImportationCleanup()
                 //
                 auto addConditionalFlow = [this, entryStateVar, &entryJumpTarget](BasicBlock* fromBlock,
                                                                                   BasicBlock* toBlock) {
-                    fgSplitBlockAtBeginning(fromBlock);
+
+                    // We may have previously though this try entry was unreachable, but now we're going to
+                    // step through it on the way to the OSR entry. So ensure it has plausible profile weight.
+                    //
+                    if (fgHaveProfileData() && !fromBlock->hasProfileWeight())
+                    {
+                        JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
+                                fromBlock->bbNum, fgFirstBB->bbNum);
+                        fromBlock->inheritWeight(fgFirstBB);
+                    }
+
+                    BasicBlock* const newBlock = fgSplitBlockAtBeginning(fromBlock);
                     fromBlock->bbFlags |= BBF_INTERNAL;
 
                     GenTree* const entryStateLcl = gtNewLclvNode(entryStateVar, TYP_INT);
@@ -1565,6 +1576,7 @@ void Compiler::fgPostImportationCleanup()
                     fromBlock->bbJumpKind = BBJ_COND;
                     fromBlock->bbJumpDest = toBlock;
                     fgAddRefPred(toBlock, fromBlock);
+                    newBlock->inheritWeight(fromBlock);
 
                     entryJumpTarget = fromBlock;
                 };
