@@ -8,8 +8,13 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#if UNITTEST
+        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern unsafe CERT_CONTEXT* CertEnumCertificatesInStore(
+#else
         [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static unsafe partial CERT_CONTEXT* CertEnumCertificatesInStore(
+#endif
             IntPtr hCertStore,
             CERT_CONTEXT* pPrevCertContext);
     }

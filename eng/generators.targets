@@ -3,7 +3,6 @@
   <PropertyGroup>
     <EnableDllImportGenerator Condition="'$(EnableDllImportGenerator)' == ''
                         and '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableDllImportGenerator>
-    <SetDllImportGeneratorConstants>false</SetDllImportGeneratorConstants>
     <IncludeDllImportGeneratorSources Condition="'$(IncludeDllImportGeneratorSources)' == ''">true</IncludeDllImportGeneratorSources>
   </PropertyGroup>
   <ItemGroup>
