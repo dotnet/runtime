@@ -12332,27 +12332,9 @@ DONE_MORPHING_CHILDREN:
 
                 if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
                 {
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-
                     // Fold (x + 0).
-
                     if ((op2->AsIntConCommon()->IconValue() == 0) && !gtIsActiveCSE_Candidate(tree))
                     {
-
-                        // If this addition is adding an offset to a null pointer,
-                        // avoid the work and yield the null pointer immediately.
-                        // Dereferencing the pointer in either case will have the
-                        // same effect.
-
-                        if (!optValnumCSE_phase && varTypeIsGC(op2->TypeGet()) &&
-                            ((op1->gtFlags & GTF_ALL_EFFECT) == 0))
-                        {
-                            op2->gtType = tree->gtType;
-                            DEBUG_DESTROY_NODE(op1);
-                            DEBUG_DESTROY_NODE(tree);
-                            return op2;
-                        }
-
                         // Remove the addition iff it won't change the tree type
                         // to TYP_REF.
 
