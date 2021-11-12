@@ -456,12 +456,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             base.Write(data);
         }
 
+        private void Write<T>(ElementType type, T value) where T : struct => Write((byte)type, value);
+
+        private void Write<T1, T2>(T1 type, T2 value) where T1 : struct where T2 : struct
+        {
+            WriteBigEndian(type);
+            WriteBigEndian(value);
+        }
+
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
             if (objectId.Scheme == "object")
             {
-                Write((byte)ElementType.Class);
-                Write(int.Parse(objectId.Value));
+                Write(ElementType.Class, int.Parse(objectId.Value));
             }
             else if (objectId.Scheme == "valuetype")
             {
@@ -474,27 +481,60 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case SyntaxKind.NumericLiteralExpression:
                 {
-                    Write((byte)ElementType.I4);
-                    Write((int)constValue.Token.Value);
+                    switch (constValue.Token.Value) {
+                        case double d:
+                            Write(ElementType.R8, d);
+                            break;
+                        case float f:
+                            Write(ElementType.R4, f);
+                            break;
+                        case long l:
+                            Write(ElementType.I8, l);
+                            break;
+                        case ulong ul:
+                            Write(ElementType.U8, ul);
+                            break;
+                        case byte b:
+                            Write(ElementType.U1, (int)b);
+                            break;
+                        case sbyte sb:
+                            Write(ElementType.I1, (uint)sb);
+                            break;
+                        case ushort us:
+                            Write(ElementType.U2, (int)us);
+                            break;
+                        case short s:
+                            Write(ElementType.I2, (uint)s);
+                            break;
+                        case uint ui:
+                            Write(ElementType.U4, ui);
+                            break;
+                        case IntPtr ip:
+                            Write(ElementType.I, (int)ip);
+                            break;
+                        case UIntPtr up:
+                            Write(ElementType.U, (uint)up);
+                            break;
+                        default:
+                            Write(ElementType.I4, (int)constValue.Token.Value);
+                            break;
+                    }
                     return true;
                 }
                 case SyntaxKind.StringLiteralExpression:
                 {
                     int stringId = await SdbHelper.CreateString((string)constValue.Token.Value, token);
-                    Write((byte)ElementType.String);
-                    Write((int)stringId);
+                    Write(ElementType.String, stringId);
                     return true;
                 }
                 case SyntaxKind.TrueLiteralExpression:
                 {
-                    Write((byte)ElementType.Boolean);
-                    Write((int)1);
+                    Write(ElementType.Boolean, 1);
                     return true;
                 }
                 case SyntaxKind.FalseLiteralExpression:
                 {
-                    Write((byte)ElementType.Boolean);
-                    Write((int)0);
+                    Write(ElementType.Boolean, 0);
                     return true;
                 }
                 case SyntaxKind.NullLiteralExpression:
@@ -506,8 +546,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 case SyntaxKind.CharacterLiteralExpression:
                 {
-                    Write((byte)ElementType.Char);
-                    Write((int)(char)constValue.Token.Value);
+                    Write(ElementType.Char, (int)(char)constValue.Token.Value);
                     return true;
                 }
             }
@@ -520,24 +559,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "number":
                 {
-                    Write((byte)ElementType.I4);
-                    Write(objValue["value"].Value<int>());
+                    Write(ElementType.I4, objValue["value"].Value<int>());
                     return true;
                 }
                 case "string":
                 {
                     int stringId = await SdbHelper.CreateString(objValue["value"].Value<string>(), token);
-                    Write((byte)ElementType.String);
-                    Write((int)stringId);
+                    Write(ElementType.String, stringId);
                     return true;
                 }
                 case "boolean":
                 {
-                    Write((byte)ElementType.Boolean);
-                    if (objValue["value"].Value<bool>())
-                        Write((int)1);
-                    else
-                        Write((int)0);
+                    Write(ElementType.Boolean, objValue["value"].Value<bool>() ? 1 : 0);
                     return true;
                 }
                 case "object":
@@ -780,7 +813,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommand<T>(T command, MonoBinaryWriter arguments, CancellationToken token) =>
-            MonoBinaryReader.From (await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments is not null ? arguments.ToBase64().data : string.Empty), token));
+            MonoBinaryReader.From (await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token));
 
         internal CommandSet GetCommandSetForCommand<T>(T command) =>
             command switch {
@@ -1070,7 +1103,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((int)kind);
             commandParamsWriter.Write((int)(StepFilter.StaticCtor | StepFilter.DebuggerHidden)); //filter
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token);
-            if (retDebuggerCmdReader == null)
+            if (retDebuggerCmdReader.HasError)
                 return false;
             var isBPOnManagedCode = retDebuggerCmdReader.ReadInt32();
             if (isBPOnManagedCode == 0)
@@ -1085,10 +1118,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((int) req_id);
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Clear, commandParamsWriter, token);
-
-            if (retDebuggerCmdReader != null)
-                return true;
-            return false;
+            return !retDebuggerCmdReader.HasError ? true : false;
         }
 
         public async Task<JObject> GetFieldValue(int typeId, int fieldId, CancellationToken token)
@@ -1127,10 +1157,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var typeInfo = await GetTypeInfo(typeId, token);
 
-            if (typeInfo == null)
+            if (typeInfo is null)
                 return null;
 
-            if (typeInfo.PropertiesBuffer != null)
+            if (typeInfo.PropertiesBuffer is not null)
                 return new MonoBinaryReader(typeInfo.PropertiesBuffer);
 
             var commandParamsWriter = new MonoBinaryWriter();
