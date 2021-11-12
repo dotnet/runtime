@@ -367,27 +367,20 @@ bool ReadInstrumentationSchemaWithLayout(const uint8_t *pByte, size_t cbDataMax,
 //
 inline bool CheckIfPgoSchemaIsCompatibleAndSetOffsets(const uint8_t *pByte, size_t cbDataMax, ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
 {
-    size_t nSchema = 0;
     size_t nMatched = 0;
-    size_t nUnmatched = 0;    
     size_t initialOffset = cbDataMax;
 
-    auto handler = [schemaTable, &nSchema, &nMatched, &nUnmatched](const ICorJitInfo::PgoInstrumentationSchema& schema)
+    auto handler = [schemaTable, cSchemas, &nMatched](const ICorJitInfo::PgoInstrumentationSchema& schema)
     {
-        if ((schema.InstrumentationKind != schemaTable[nMatched].InstrumentationKind)
-            || (schema.ILOffset != schemaTable[nMatched].ILOffset)
-            || (schema.Count != schemaTable[nMatched].Count)
-            || (schema.Other != schemaTable[nMatched].Other))
-        {
-            nUnmatched++;
-        }
-        else
+        if ((nMatched < cSchemas)
+            && (schema.InstrumentationKind == schemaTable[nMatched].InstrumentationKind)
+            && (schema.ILOffset == schemaTable[nMatched].ILOffset)
+            && (schema.Count == schemaTable[nMatched].Count)
+            && (schema.Other == schemaTable[nMatched].Other))
         {
             schemaTable[nMatched].Offset = schema.Offset;
             nMatched++;
         }
-
-        nSchema++;
 
         return true;
     };
