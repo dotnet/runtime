@@ -10818,12 +10818,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "OutArgs";
             }
 #endif // FEATURE_FIXED_OUT_ARGS
-#ifdef TARGET_ARM
-            else if (lclNum == lvaPromotedStructAssemblyScratchVar)
-            {
-                ilName = "PromotedStructScratch";
-            }
-#endif // TARGET_ARM
 #if !defined(FEATURE_EH_FUNCLETS)
             else if (lclNum == lvaShadowSPslotsVar)
             {

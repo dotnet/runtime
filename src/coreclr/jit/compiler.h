@@ -3774,15 +3774,6 @@ public:
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar;
 
-#ifdef TARGET_ARM
-    // On architectures whose ABIs allow structs to be passed in registers, struct promotion will sometimes
-    // require us to "rematerialize" a struct from it's separate constituent field variables.  Packing several sub-word
-    // field variables into an argument register is a hard problem.  It's easier to reserve a word of memory into which
-    // such field can be copied, after which the assembled memory word can be read into the register.  We will allocate
-    // this variable to be this scratch word whenever struct promotion occurs.
-    unsigned lvaPromotedStructAssemblyScratchVar;
-#endif // TARGET_ARM
-
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
     unsigned lvaReturnSpCheck; // Stores SP to confirm it is not corrupted on return.
