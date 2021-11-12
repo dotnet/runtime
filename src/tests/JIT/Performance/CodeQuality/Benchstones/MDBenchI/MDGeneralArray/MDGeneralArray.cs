@@ -36,7 +36,7 @@ public static class MDGeneralArray
 
         return true;
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool Bench(int loop, int[,,] s, int[,,] d) {
 

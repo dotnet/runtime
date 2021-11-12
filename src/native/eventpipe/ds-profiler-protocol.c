@@ -223,7 +223,7 @@ profiler_protocol_helper_startup_profiler (
 	if (!ds_server_is_paused_in_startup()) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_INVALIDARG);
 		ep_raise_error ();
-	}		
+	}
 
 	payload = (DiagnosticsStartupProfilerCommandPayload *)ds_ipc_message_try_parse_payload (message, startup_profiler_command_try_parse_payload);
 
@@ -294,7 +294,7 @@ ds_profiler_protocol_helper_handle_ipc_message (
 
 	return true;
 }
-#endif // PROFILING_SUPPORTED 
+#endif // PROFILING_SUPPORTED
 
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */

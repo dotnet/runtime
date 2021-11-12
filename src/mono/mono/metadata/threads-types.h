@@ -379,11 +379,11 @@ mono_threads_exiting (void);
 /* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */
 extern mono_mutex_t mono_interlocked_mutex;
 static inline void
-mono_interlocked_lock(void) { 
+mono_interlocked_lock(void) {
 	mono_os_mutex_lock (&mono_interlocked_mutex);
 }
 static inline void
-mono_interlocked_unlock(void) { 
+mono_interlocked_unlock(void) {
 	mono_os_mutex_unlock (&mono_interlocked_mutex);
 }
 #endif

@@ -53,7 +53,7 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test2_paltest_createfilemappingw_t
 
     //free this memory
     free(wpFileName);
-   
+
     if(INVALID_HANDLE_VALUE == FileHandle)
     {
         Fail("Failed to call CreateFile to create a file\n");
@@ -70,7 +70,7 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test2_paltest_createfilemappingw_t
         NULL);              //unnamed object
 
 
-    if(NULL == FileMappingHandle) 
+    if(NULL == FileMappingHandle)
     {
         Trace("\nFailed to call CreateFileMapping to create a mapping object!\n");
         err = CloseHandle(FileHandle);

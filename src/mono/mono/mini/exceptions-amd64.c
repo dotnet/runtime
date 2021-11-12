@@ -289,7 +289,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
  * mono_arch_get_call_filter:
  *
  * Returns a pointer to a method which calls an exception filter. We
- * also use this function to call finally handlers (we pass NULL as 
+ * also use this function to call finally handlers (we pass NULL as
  * @exc object in this case).
  */
 gpointer
@@ -374,7 +374,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 #endif /* !DISABLE_JIT */
 
-/* 
+/*
  * The first few arguments are dummy, to force the other arguments to be passed on
  * the stack, this avoids overwriting the argument registers in the throw trampoline.
  */
@@ -564,9 +564,9 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 /**
  * mono_arch_get_throw_exception:
- * \returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * \returns a function pointer which can be used to raise
+ * exceptions. The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  */
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
@@ -574,13 +574,13 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 	return get_throw_trampoline (info, FALSE, FALSE, FALSE, FALSE, "throw_exception", aot, FALSE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, TRUE, FALSE, FALSE, FALSE, "rethrow_exception", aot, FALSE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, TRUE, FALSE, FALSE, FALSE, "rethrow_preserve_exception", aot, TRUE);
@@ -589,14 +589,14 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 /**
  * mono_arch_get_throw_corlib_exception:
  *
- * Returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (guint32 ex_token, guint32 offset); 
- * Here, offset is the offset which needs to be substracted from the caller IP 
- * to get the IP of the throw. Passing the offset has the advantage that it 
+ * Returns a function pointer which can be used to raise
+ * corlib exceptions. The returned function has the following
+ * signature: void (*func) (guint32 ex_token, guint32 offset);
+ * Here, offset is the offset which needs to be substracted from the caller IP
+ * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  */
-gpointer 
+gpointer
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, FALSE, TRUE, FALSE, FALSE, "throw_corlib_exception", aot, FALSE);
@@ -650,7 +650,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		/* LLVM compiled code doesn't have this info */
 		if (ji->has_arch_eh_info)
 			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
- 
+
 		for (i = 0; i < AMD64_NREG; ++i)
 			regs [i] = new_ctx->gregs [i];
 
@@ -664,7 +664,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 
 		for (i = 0; i < AMD64_NREG; ++i)
 			new_ctx->gregs [i] = regs [i];
- 
+
 		/* The CFA becomes the new SP value */
 		new_ctx->gregs [AMD64_RSP] = (host_mgreg_t)(gsize)cfa;
 
@@ -685,8 +685,8 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			/* Top LMF entry */
 			return FALSE;
 		} else {
-			/* 
-			 * The rsp field is set just before the call which transitioned to native 
+			/*
+			 * The rsp field is set just before the call which transitioned to native
 			 * code. Obtain the rip from the stack.
 			 */
 			rip = *(guint64*)((*lmf)->rsp - sizeof(host_mgreg_t));
@@ -826,7 +826,7 @@ mono_arch_ip_from_context (void *sigctx)
 #else
 	MonoContext *ctx = (MonoContext*)sigctx;
 	return (gpointer)ctx->gregs [AMD64_RIP];
-#endif	
+#endif
 }
 
 static MonoObject*
@@ -844,7 +844,7 @@ restore_soft_guard_pages (void)
 	return NULL;
 }
 
-/* 
+/*
  * this function modifies mctx so that when it is restored, it
  * won't execcute starting at mctx.eip, but in a function that
  * will restore the protection on the soft-guard pages and return back to
@@ -1908,7 +1908,7 @@ void mono_arch_code_chunk_destroy (void *chunk)
 void
 mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 {
-	/* 
+	/*
 	 * When resuming from a signal handler, the stack should be misaligned, just like right after
 	 * a call.
 	 */

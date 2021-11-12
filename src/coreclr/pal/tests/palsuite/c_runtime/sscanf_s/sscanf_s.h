@@ -53,7 +53,7 @@ inline void DoStrTest_scanf_s(char *inputstr, const char *formatstr, const char 
     if (memcmp(checkstr, buf, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: scanned string incorrectly from \"%s\" using \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", inputstr, formatstr, checkstr, 
+            "Expected \"%s\", got \"%s\".\n", inputstr, formatstr, checkstr,
             buf);
     }
 
@@ -75,7 +75,7 @@ inline void DoWStrTest_scanf_s(char *inputstr, const char *formatstr, const WCHA
     if (memcmp(checkstr, buf, wcslen(checkstr)*2 + 2) != 0)
     {
         Fail("ERROR: scanned wide string incorrectly from \"%s\" using \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", inputstr, formatstr, 
+            "Expected \"%s\", got \"%s\".\n", inputstr, formatstr,
             convertC(checkstr), convertC(buf));
     }
 
@@ -167,14 +167,14 @@ inline void DoCharTest_scanf_s(char *inputstr, const char *formatstr, char* chec
         buf[numchars] = 0;
 
         Fail("ERROR: scanned character(s) incorrectly from \"%s\" using \"%s\".\n"
-            "Expected %s, got %s.\n", inputstr, formatstr, checkchars, 
+            "Expected %s, got %s.\n", inputstr, formatstr, checkchars,
             buf);
     }
 
     if (buf[numchars] != (char)-1)
     {
         Fail("ERROR: overflow occurred in scanning character(s) from \"%s\" "
-            "using \"%s\".\nExpected %d character(s)\n", inputstr, formatstr, 
+            "using \"%s\".\nExpected %d character(s)\n", inputstr, formatstr,
             numchars);
     }
 }
@@ -201,14 +201,14 @@ inline void DoWCharTest_scanf_s(char *inputstr, const char *formatstr, WCHAR* ch
         buf[numchars] = 0;
 
         Fail("ERROR: scanned wide character(s) incorrectly from \"%s\" using \"%s\".\n"
-            "Expected %s, got %s.\n", inputstr, formatstr, convertC(checkchars), 
+            "Expected %s, got %s.\n", inputstr, formatstr, convertC(checkchars),
             convertC(buf));
     }
 
     if (buf[numchars] != (WCHAR)-1)
     {
         Fail("ERROR: overflow occurred in scanning wide character(s) from \"%s\" "
-            "using \"%s\".\nExpected %d character(s)\n", inputstr, formatstr, 
+            "using \"%s\".\nExpected %d character(s)\n", inputstr, formatstr,
             numchars);
     }
 }
@@ -236,7 +236,7 @@ inline void DoFloatTest_scanf_s(char *inputstr, const char *formatstr, float che
     if (val != checkval)
     {
         Fail("ERROR: scanned float incorrectly from \"%s\" using \"%s\".\n"
-            "Expected \"%f\", got \"%f\".\n", inputstr, formatstr, checkval, 
+            "Expected \"%f\", got \"%f\".\n", inputstr, formatstr, checkval,
             val);
     }
 

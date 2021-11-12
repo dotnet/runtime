@@ -16,7 +16,7 @@
 #include <palsuite.h>
 #include "../sprintf_s.h"
 
-/* 
+/*
  * Depends on memcmp and strlen
  */
 

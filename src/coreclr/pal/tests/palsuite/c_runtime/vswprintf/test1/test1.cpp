@@ -29,7 +29,7 @@ PALTEST(c_runtime_vswprintf_test1_paltest_vswprintf_test1, "c_runtime/vswprintf/
 
     if (memcmp(checkstr, buf, wcslen(checkstr)*2+2) != 0)
     {
-        Fail("ERROR: Expected \"%s\", got \"%s\"\n", 
+        Fail("ERROR: Expected \"%s\", got \"%s\"\n",
         convertC(checkstr), convertC(buf));
     }
 

@@ -7,7 +7,7 @@
 **
 ** Purpose: Negative test the PAL_RegisterLibrary API.
 **          Call PAL_RegisterLibrary to map a non-existant module
-**          into the calling process address space. 
+**          into the calling process address space.
 **
 **
 **============================================================*/

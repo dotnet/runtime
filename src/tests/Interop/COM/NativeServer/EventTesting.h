@@ -26,22 +26,22 @@ public:
     }
 
 public: // IDispatch
-        virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount( 
+        virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount(
             /* [out] */ __RPC__out UINT *pctinfo)
         {
             *pctinfo = 0;
             return S_OK;
         }
-        
-        virtual HRESULT STDMETHODCALLTYPE GetTypeInfo( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetTypeInfo(
             /* [in] */ UINT iTInfo,
             /* [in] */ LCID lcid,
             /* [out] */ __RPC__deref_out_opt ITypeInfo **ppTInfo)
         {
             return E_NOTIMPL;
         }
-        
-        virtual HRESULT STDMETHODCALLTYPE GetIDsOfNames( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetIDsOfNames(
             /* [in] */ __RPC__in REFIID,
             /* [size_is][in] */ __RPC__in_ecount_full(cNames) LPOLESTR *rgszNames,
             /* [range][in] */ __RPC__in_range(0,16384) UINT cNames,
@@ -71,7 +71,7 @@ public: // IDispatch
             return (containsUnknown) ? DISP_E_UNKNOWNNAME : S_OK;
         }
 
-        virtual /* [local] */ HRESULT STDMETHODCALLTYPE Invoke( 
+        virtual /* [local] */ HRESULT STDMETHODCALLTYPE Invoke(
             /* [annotation][in] */ _In_  DISPID dispIdMember,
             /* [annotation][in] */ _In_  REFIID riid,
             /* [annotation][in] */ _In_  LCID lcid,
@@ -103,12 +103,12 @@ public: // IEventTesting
     }
 
 public: // IConnectionPointContainer
-    virtual HRESULT STDMETHODCALLTYPE EnumConnectionPoints( 
+    virtual HRESULT STDMETHODCALLTYPE EnumConnectionPoints(
         /* [out] */ __RPC__deref_out_opt IEnumConnectionPoints **ppEnum)
     {
         return E_NOTIMPL;
     }
-    virtual HRESULT STDMETHODCALLTYPE FindConnectionPoint( 
+    virtual HRESULT STDMETHODCALLTYPE FindConnectionPoint(
         /* [in] */ __RPC__in REFIID riid,
         /* [out] */ __RPC__deref_out_opt IConnectionPoint **ppCP)
     {
@@ -119,17 +119,17 @@ public: // IConnectionPointContainer
     }
 
 public: // IConnectionPoint
-    virtual HRESULT STDMETHODCALLTYPE GetConnectionInterface( 
+    virtual HRESULT STDMETHODCALLTYPE GetConnectionInterface(
         /* [out] */ __RPC__out IID *pIID)
     {
         return E_NOTIMPL;
     }
-    virtual HRESULT STDMETHODCALLTYPE GetConnectionPointContainer( 
+    virtual HRESULT STDMETHODCALLTYPE GetConnectionPointContainer(
         /* [out] */ __RPC__deref_out_opt IConnectionPointContainer **ppCPC)
     {
         return E_NOTIMPL;
     }
-    virtual HRESULT STDMETHODCALLTYPE Advise( 
+    virtual HRESULT STDMETHODCALLTYPE Advise(
         /* [in] */ __RPC__in_opt IUnknown *pUnkSink,
         /* [out] */ __RPC__out DWORD *pdwCookie)
     {
@@ -153,7 +153,7 @@ public: // IConnectionPoint
 
         return CONNECT_E_ADVISELIMIT;
     }
-    virtual HRESULT STDMETHODCALLTYPE Unadvise( 
+    virtual HRESULT STDMETHODCALLTYPE Unadvise(
         /* [in] */ DWORD dwCookie)
     {
         if (0 <= dwCookie && dwCookie < MINIPAL_LENGTHOF(_eventConnections))
@@ -169,7 +169,7 @@ public: // IConnectionPoint
 
         return E_POINTER;
     }
-    virtual HRESULT STDMETHODCALLTYPE EnumConnections( 
+    virtual HRESULT STDMETHODCALLTYPE EnumConnections(
         /* [out] */ __RPC__deref_out_opt IEnumConnections **ppEnum)
     {
         return E_NOTIMPL;

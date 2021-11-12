@@ -399,7 +399,7 @@ HRESULT ManagedObjectWrapper::Create(
         curr.IID = IID_IReferenceTrackerTarget;
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
-    
+
     _ASSERTE(runtimeDefinedCount <= (int) MINIPAL_LENGTHOF(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance.

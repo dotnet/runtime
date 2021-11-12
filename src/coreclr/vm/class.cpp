@@ -1877,7 +1877,7 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     if (it.Next())
     {
         // Can use GetInterfaceApprox, as there are no generic default interfaces
-        return TypeHandle(it.GetInterfaceApprox()); 
+        return TypeHandle(it.GetInterfaceApprox());
     }
     else
     {

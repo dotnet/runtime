@@ -22,8 +22,8 @@ inline void DoWStrTest_swprintf_s(const WCHAR *formatstr, WCHAR *param, const WC
     if (memcmp(buf, checkstr, wcslen(checkstr) * 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", 
-            convertC(param), convertC(formatstr), 
+            "Expected \"%s\", got \"%s\".\n",
+            convertC(param), convertC(formatstr),
             convertC(checkstr), convertC(buf));
     }
 }
@@ -38,8 +38,8 @@ inline void DoStrTest_swprintf_s(const WCHAR *formatstr, char *param, const WCHA
     if (memcmp(buf, checkstr, wcslen(checkstr) * 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", 
-            param, convertC(formatstr), convertC(checkstr), 
+            "Expected \"%s\", got \"%s\".\n",
+            param, convertC(formatstr), convertC(checkstr),
             convertC(buf));
     }
 }
@@ -55,7 +55,7 @@ inline void DoPointerTest_swprintf_s(const WCHAR *formatstr, void* param, const 
         Fail("ERROR: failed to insert pointer to %#p into \"%s\"\n"
             "Expected \"%s\", got \"%s\".\n", param,
             convertC(formatstr), convertC(checkstr1), convertC(buf));
-    }    
+    }
 }
 #define DoPointerTest DoPointerTest_swprintf_s
 

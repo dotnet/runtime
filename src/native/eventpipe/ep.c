@@ -1115,7 +1115,7 @@ ep_disable (EventPipeSessionID id)
 	// single threaded.  HOWEVER, if the runtime was suspended during startup,
 	// then ep_finish_init might not have executed yet. Disabling a session
 	// needs to either happen before we resume or after initialization. We briefly take the
-	// lock to check _ep_can_start_threads to check whether we've finished initialization. We 
+	// lock to check _ep_can_start_threads to check whether we've finished initialization. We
 	// also check whether we are still suspended in which case we can safely disable the session
 	// without deferral.
 	EP_LOCK_ENTER (section1)

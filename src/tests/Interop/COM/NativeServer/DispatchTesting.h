@@ -25,7 +25,7 @@ public:
     { }
 
 public: // IEnumVARIANT
-    HRESULT STDMETHODCALLTYPE Next( 
+    HRESULT STDMETHODCALLTYPE Next(
         ULONG celt,
         VARIANT *rgVar,
         ULONG *pCeltFetched)
@@ -36,7 +36,7 @@ public: // IEnumVARIANT
             V_VT(&rgVar[*pCeltFetched]) = VT_I4;
             V_I4(&(rgVar[*pCeltFetched])) = _current;
         }
-        
+
         return celt == *pCeltFetched ? S_OK : S_FALSE;
     }
 
@@ -89,22 +89,22 @@ private:
     static const int NamesCount;
 
 public: // IDispatch
-        virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount( 
+        virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount(
             /* [out] */ __RPC__out UINT *pctinfo)
         {
             *pctinfo = 0;
             return S_OK;
         }
-        
-        virtual HRESULT STDMETHODCALLTYPE GetTypeInfo( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetTypeInfo(
             /* [in] */ UINT iTInfo,
             /* [in] */ LCID lcid,
             /* [out] */ __RPC__deref_out_opt ITypeInfo **ppTInfo)
         {
             return E_NOTIMPL;
         }
-        
-        virtual HRESULT STDMETHODCALLTYPE GetIDsOfNames( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetIDsOfNames(
             /* [in] */ __RPC__in REFIID,
             /* [size_is][in] */ __RPC__in_ecount_full(cNames) LPOLESTR *rgszNames,
             /* [range][in] */ __RPC__in_range(0,16384) UINT cNames,
@@ -134,7 +134,7 @@ public: // IDispatch
             return (containsUnknown) ? DISP_E_UNKNOWNNAME : S_OK;
         }
 
-        virtual /* [local] */ HRESULT STDMETHODCALLTYPE Invoke( 
+        virtual /* [local] */ HRESULT STDMETHODCALLTYPE Invoke(
             /* [annotation][in] */ _In_  DISPID dispIdMember,
             /* [annotation][in] */ _In_  REFIID riid,
             /* [annotation][in] */ _In_  LCID lcid,

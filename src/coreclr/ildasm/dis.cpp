@@ -1614,7 +1614,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),
                         "%-10s (%2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X)",
-                        pszInstrName, 
+                        pszInstrName,
                         pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3],
                         pCode[PC+4], pCode[PC+5], pCode[PC+6], pCode[PC+7]);
                 PC += 8;

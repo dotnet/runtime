@@ -1927,7 +1927,7 @@ BOOL Thread::HasStarted()
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         BOOL gcOnTransition = GC_ON_TRANSITIONS(FALSE);     // disable GCStress 2 to avoid the profiler receiving a RuntimeThreadSuspended notification even before the ThreadCreated notification
-        
+
         {
             GCX_PREEMP();
             (&g_profControlBlock)->ThreadCreated((ThreadID) this);

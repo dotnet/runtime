@@ -5,10 +5,10 @@
 **
 ** Source: pal_registerlibrary_unregisterlibrary
 **
-** Purpose: Positive test the PAL_RegisterLibrary API and 
+** Purpose: Positive test the PAL_RegisterLibrary API and
 **          PAL_UnRegisterLibrary.
 **          Call PAL_RegisterLibrary to map a module into the calling
-**          process address space and call PAL_UnRegisterLibrary 
+**          process address space and call PAL_UnRegisterLibrary
 **          to unmap this module.
 **
 **

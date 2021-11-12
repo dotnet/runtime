@@ -22,7 +22,7 @@ PALTEST(c_runtime_vsprintf_test1_paltest_vsprintf_test1, "c_runtime/vsprintf/tes
     char checkstr[] = "hello world";
     char buf[256] = { 0 };
     int ret;
-    
+
     if (PAL_Initialize(argc, argv) != 0)
     {
         return(FAIL);

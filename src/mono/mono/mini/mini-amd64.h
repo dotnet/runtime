@@ -176,12 +176,12 @@ struct sigcontext {
 
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
+/* fixme: align to 16byte instead of 32byte (we align to 32byte to get
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 struct MonoLMF {
-	/* 
+	/*
 	 * The rsp field points to the stack location where the caller ip is saved.
 	 * If the second lowest bit is set, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
@@ -364,7 +364,7 @@ typedef struct {
 
 #else
 
-/* 
+/*
  * __builtin_frame_address () is broken on some older gcc versions in the presence of
  * frame pointer elimination, see bug #82095.
  */
@@ -500,7 +500,7 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-void 
+void
 mono_amd64_patch (unsigned char* code, gpointer target);
 
 void
@@ -644,5 +644,5 @@ mono_arch_unwindinfo_validate_size (GSList *unwind_ops, guint max_size)
 
 CallInfo* mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig);
 
-#endif /* __MONO_MINI_AMD64_H__ */  
+#endif /* __MONO_MINI_AMD64_H__ */
 

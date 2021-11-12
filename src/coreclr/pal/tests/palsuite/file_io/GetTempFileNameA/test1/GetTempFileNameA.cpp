@@ -46,7 +46,7 @@ PALTEST(file_io_GetTempFileNameA_test1_paltest_gettempfilenamea_test1, "file_io/
         if (GetFileAttributesA(szReturnedName) == -1)
         {
             Fail("GetTempFileNameA: ERROR -> GetFileAttributes failed on the "
-                "returned temp file \"%s\" with error code: %ld.\n", 
+                "returned temp file \"%s\" with error code: %ld.\n",
                 szReturnedName,
                 GetLastError());
         }
@@ -71,14 +71,14 @@ PALTEST(file_io_GetTempFileNameA_test1_paltest_gettempfilenamea_test1, "file_io/
         if (GetFileAttributesA(szReturnedName) == -1)
         {
             Fail("GetTempFileNameA: ERROR -> GetFileAttributes failed on the "
-                "returned temp file \"%s\" with error code: %ld.\n", 
+                "returned temp file \"%s\" with error code: %ld.\n",
                 szReturnedName,
                 GetLastError());
         }
         if (DeleteFileA(szReturnedName) != TRUE)
         {
             Fail("GetTempFileNameA: ERROR -> DeleteFileW failed to delete"
-                "the created temp \"%s\" file with error code: %ld.\n", 
+                "the created temp \"%s\" file with error code: %ld.\n",
                 szReturnedName,
                 GetLastError());
         }
@@ -97,7 +97,7 @@ PALTEST(file_io_GetTempFileNameA_test1_paltest_gettempfilenamea_test1, "file_io/
         if (GetFileAttributesA(szReturnedName) == -1)
         {
             Fail("GetTempFileNameA: ERROR -> GetFileAttributes failed on the "
-                "returned temp file \"%s\" with error code: %ld.\n", 
+                "returned temp file \"%s\" with error code: %ld.\n",
                 szReturnedName,
                 GetLastError());
         }
@@ -113,7 +113,7 @@ PALTEST(file_io_GetTempFileNameA_test1_paltest_gettempfilenamea_test1, "file_io/
         if (DeleteFileA(szReturnedName) != TRUE)
         {
             Fail("GetTempFileNameA: ERROR -> DeleteFileW failed to delete"
-                "the created temp file \"%s\" with error code: %ld.\n", 
+                "the created temp file \"%s\" with error code: %ld.\n",
                 szReturnedName,
                 GetLastError());
         }

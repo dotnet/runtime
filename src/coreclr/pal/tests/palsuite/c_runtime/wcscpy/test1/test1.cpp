@@ -25,7 +25,7 @@ PALTEST(c_runtime_wcscpy_test1_paltest_wcscpy_test1, "c_runtime/wcscpy/test1/pal
     WCHAR *ret;
     char buffer[256];
 
-    
+
     if (PAL_Initialize(argc, argv))
     {
         return FAIL;
@@ -33,7 +33,7 @@ PALTEST(c_runtime_wcscpy_test1_paltest_wcscpy_test1, "c_runtime/wcscpy/test1/pal
 
 
     ret = wcscpy(dest, str);
-    
+
     if (ret != dest || memcmp(dest, result, sizeof(result)) != 0)
     {
         sprintf_s(buffer, MINIPAL_LENGTHOF(buffer), "%S", dest);

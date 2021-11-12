@@ -12333,8 +12333,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         // Due to elided register moves, we can't have the following assert.
                         // For example, consider:
                         //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
-                        //        /--*  t85    byref                                                       
-                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx                 
+                        //        /--*  t85    byref
+                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx
                         // Here, V01 is type `long` on entry, then is stored as a byref. But because
                         // the register allocator assigned the same register, no instruction was
                         // generated, and we only (currently) make gcref/byref changes in emitter GC info

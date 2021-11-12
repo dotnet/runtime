@@ -330,7 +330,7 @@ mono_icall_table_init (void)
 		int j;
 		const char *prev_class = NULL;
 		const char *prev_method;
-		
+
 		for (i = 0; i < Icall_type_num; ++i) {
 			const IcallTypeDesc *desc;
 			int num_icalls;
