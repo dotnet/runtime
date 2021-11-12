@@ -23,14 +23,6 @@
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- Work around issue where local clone may cause failure using non-origin remote fallback: https://github.com/dotnet/sourcelink/issues/629 -->
-    <InnerBuildEnv Include="EnableSourceControlManagerQueries=false" />
-    <InnerBuildEnv Include="EnableSourceLink=false" />
-    <InnerBuildEnv Include="DisableSourceLink=true" />
-    <InnerBuildEnv Include="DeterministicSourcePaths=false" />
-  </ItemGroup>
-
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
           BeforeTargets="GetSourceBuildCommandConfiguration">
     <PropertyGroup>

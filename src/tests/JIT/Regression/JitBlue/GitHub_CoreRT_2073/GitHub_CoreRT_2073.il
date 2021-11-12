@@ -8,7 +8,7 @@
 
 .assembly extern mscorlib {}
 
-.assembly GitHub_CoreRT_2073.exe {}
+.assembly GitHub_CoreRT_2073 {}
 
 .class public Test_GitHub_CoreRT_2073
 {

@@ -451,7 +451,7 @@ struct ByRefToNullable  {
     }
 };
 
-void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pFrame)
+static void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pFrame)
 {
     // Use static contracts b/c we have SEH.
     STATIC_CONTRACT_THROWS;
@@ -478,7 +478,7 @@ void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pF
     PAL_ENDTRY
 } // CallDescrWorkerReflectionWrapper
 
-OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, Span<OBJECTREF>* objs, int argCnt)
+static OBJECTREF InvokeArrayConstructor(TypeHandle th, Span<OBJECTREF>* objs, int argCnt)
 {
     CONTRACTL {
         THROWS;
@@ -510,7 +510,9 @@ OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, Span<OBJECTRE
         if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
             COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
 
-        memcpy(&indexes[i], objs->GetAt(i)->UnBox(),pMT->GetNumInstanceFieldBytes());
+        ARG_SLOT value;
+        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, oType, objs->GetAt(i), &value);
+        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
     }
 
     return AllocateArrayEx(th, indexes, argCnt);
@@ -769,8 +771,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    Assembly *pAssem = pMeth->GetAssembly();
-
     if (ownerType.IsSharedByGenericInstantiations())
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
 
@@ -786,23 +786,20 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     if (fConstructor)
     {
         // If we are invoking a constructor on an array then we must
-        // handle this specially.  String objects allocate themselves
-        // so they are a special case.
+        // handle this specially.
         if (ownerType.IsArray()) {
             gc.retVal = InvokeArrayConstructor(ownerType,
-                                               pMeth,
                                                objs,
                                                gc.pSig->NumFixedArgs());
             goto Done;
         }
 
+        // Variable sized objects, like String instances, allocate themselves
+        // so they are a special case.
         MethodTable * pMT = ownerType.AsMethodTable();
-
-        {
-            fCtorOfVariableSizedObject = pMT->HasComponentSize();
-            if (!fCtorOfVariableSizedObject)
-                gc.retVal = pMT->Allocate();
-        }
+        fCtorOfVariableSizedObject = pMT->HasComponentSize();
+        if (!fCtorOfVariableSizedObject)
+            gc.retVal = pMT->Allocate();
     }
 
     {
@@ -936,8 +933,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     // If an exception occurs a gc may happen but we are going to dump the stack anyway and we do
     // not need to protect anything.
 
-    PVOID pRetBufStackCopy = NULL;
-
     {
     BEGINFORBIDGC();
 #ifdef _DEBUG
@@ -947,24 +942,8 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     // Take care of any return arguments
     if (fHasRetBuffArg)
     {
-        // We stack-allocate this ret buff, to preserve the invariant that ret-buffs are always in the
-        // caller's stack frame.  We'll copy into gc.retVal later.
-        TypeHandle retTH = gc.pSig->GetReturnTypeHandle();
-        MethodTable* pMT = retTH.GetMethodTable();
-        if (pMT->IsStructRequiringStackAllocRetBuf())
-        {
-            SIZE_T sz = pMT->GetNumInstanceFieldBytes();
-            pRetBufStackCopy = _alloca(sz);
-            memset(pRetBufStackCopy, 0, sz);
-
-            pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pRetBufStackCopy, pMT, pValueClasses);
-            *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pRetBufStackCopy;
-        }
-        else
-        {
-            PVOID pRetBuff = gc.retVal->GetData();
-            *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pRetBuff;
-        }
+        PVOID pRetBuff = gc.retVal->GetData();
+        *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pRetBuff;
     }
 
     // copy args
@@ -1127,10 +1106,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         else if (!fHasRetBuffArg)
         {
             CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
-        }
-        else if (pRetBufStackCopy)
-        {
-            CopyValueClass(gc.retVal->GetData(), pRetBufStackCopy, gc.retVal->GetMethodTable());
         }
         // From here on out, it is OK to have GCs since the return object (which may have had
         // GC pointers has been put into a GC object and thus protected.

@@ -3627,9 +3627,9 @@ bool CEEInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE clsHnd)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    TypeHandle     VMClsHnd(clsHnd);
-    MethodTable * pMT = VMClsHnd.GetMethodTable();
-    ret = (pMT != NULL && pMT->IsStructRequiringStackAllocRetBuf());
+    // Disable this optimization. It has limited value (only kicks in on x86, and only for less common structs),
+    // causes bugs and introduces odd ABI differences not compatible with ReadyToRun.
+    ret = false;
 
     EE_TO_JIT_TRANSITION_LEAF();
 

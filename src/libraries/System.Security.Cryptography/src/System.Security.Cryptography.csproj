@@ -21,8 +21,8 @@
              Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
              Link="Internal\Cryptography\Helpers.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyImportHelpers.cs"
-             Link="Internal\Cryptography\PemKeyImportHelpers.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyHelpers.cs"
+             Link="Internal\Cryptography\PemKeyHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"

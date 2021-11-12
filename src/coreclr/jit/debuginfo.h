@@ -34,6 +34,7 @@ public:
         return m_isStackEmpty;
     }
 
+    // Is this a call instruction? Used for managed return values.
     bool IsCall() const
     {
         return m_isCall;

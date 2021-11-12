@@ -140,7 +140,6 @@ namespace System.Security.Cryptography
             ExportArray(
                 (Span<byte> destination, out int i) => TryExportSubjectPublicKeyInfo(destination, out i));
 
-
         public virtual bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters,
@@ -238,7 +237,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<char> password)
         {
-            PemKeyImportHelpers.ImportEncryptedPem<char>(input, password, ImportEncryptedPkcs8PrivateKey);
+            PemKeyHelpers.ImportEncryptedPem<char>(input, password, ImportEncryptedPkcs8PrivateKey);
         }
 
         /// <summary>
@@ -315,7 +314,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<byte> passwordBytes)
         {
-            PemKeyImportHelpers.ImportEncryptedPem<byte>(input, passwordBytes, ImportEncryptedPkcs8PrivateKey);
+            PemKeyHelpers.ImportEncryptedPem<byte>(input, passwordBytes, ImportEncryptedPkcs8PrivateKey);
         }
 
         /// <summary>
@@ -362,7 +361,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public virtual void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyImportHelpers.ImportPem(input, label =>
+            PemKeyHelpers.ImportPem(input, label =>
             {
                 if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
                 {
@@ -377,6 +376,295 @@ namespace System.Security.Cryptography
                     return null;
                 }
             });
+        }
+
+        /// <summary>
+        /// Exports the current key in the PKCS#8 PrivateKeyInfo format, PEM encoded.
+        /// </summary>
+        /// <returns>A string containing the PEM-encoded PKCS#8 PrivateKeyInfo.</returns>
+        /// <exception cref="NotImplementedException">
+        /// An implementation for <see cref="ExportPkcs8PrivateKey" /> or
+        /// <see cref="TryExportPkcs8PrivateKey" /> has not been provided.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#8 PrivateKeyInfo will begin with <c>-----BEGIN PRIVATE KEY-----</c>
+        ///   and end with <c>-----END PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public unsafe string ExportPkcs8PrivateKeyPem()
+        {
+            byte[] exported = ExportPkcs8PrivateKey();
+
+            // Fixed to prevent GC moves.
+            fixed (byte* pExported = exported)
+            {
+                try
+                {
+                    return PemKeyHelpers.CreatePemFromData(PemLabels.Pkcs8PrivateKey, exported);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(exported);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format
+        /// with a char-based password, PEM encoded.
+        /// </summary>
+        /// <param name="password">
+        /// The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        /// The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <returns>A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.</returns>
+        /// <exception cref="NotImplementedException">
+        /// An implementation for <see cref="ExportEncryptedPkcs8PrivateKey(ReadOnlySpan{char}, PbeParameters)" /> or
+        /// <see cref="TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan{char}, PbeParameters, Span{byte}, out int)" /> has not been provided.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   When <paramref name="pbeParameters" /> indicates an algorithm that
+        ///   uses PBKDF2 (Password-Based Key Derivation Function 2), the password
+        ///   is converted to bytes via the UTF-8 encoding.
+        /// </p>
+        /// <p>
+        ///   A PEM-encoded PKCS#8 EncryptedPrivateKeyInfo will begin with
+        ///  <c>-----BEGIN ENCRYPTED PRIVATE KEY-----</c> and end with
+        ///  <c>-----END ENCRYPTED PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public unsafe string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char> password, PbeParameters pbeParameters)
+        {
+            byte[] exported = ExportEncryptedPkcs8PrivateKey(password, pbeParameters);
+
+            // Fixed to prevent GC moves.
+            fixed (byte* pExported = exported)
+            {
+                try
+                {
+                    return PemKeyHelpers.CreatePemFromData(PemLabels.EncryptedPkcs8PrivateKey, exported);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(exported);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Exports the public-key portion of the current key in the X.509
+        /// SubjectPublicKeyInfo format, PEM encoded.
+        /// </summary>
+        /// <returns>A string containing the PEM-encoded X.509 SubjectPublicKeyInfo.</returns>
+        /// <exception cref="NotImplementedException">
+        /// An implementation for <see cref="ExportSubjectPublicKeyInfo" /> or
+        /// <see cref="TryExportSubjectPublicKeyInfo" /> has not been provided.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded X.509 SubjectPublicKeyInfo will begin with
+        ///  <c>-----BEGIN PUBLIC KEY-----</c> and end with
+        ///  <c>-----END PUBLIC KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public string ExportSubjectPublicKeyInfoPem()
+        {
+            byte[] exported = ExportSubjectPublicKeyInfo();
+            return PemKeyHelpers.CreatePemFromData(PemLabels.SpkiPublicKey, exported);
+        }
+
+        /// <summary>
+        /// Attempts to export the current key in the PEM-encoded X.509
+        /// SubjectPublicKeyInfo format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The character span to receive the PEM-encoded X.509 SubjectPublicKeyInfo data.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of characters written to <paramref name="destination" />. This
+        /// parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="NotImplementedException">
+        /// An implementation for <see cref="TryExportSubjectPublicKeyInfo" />
+        /// has not been provided.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded X.509 SubjectPublicKeyInfo will begin with
+        /// <c>-----BEGIN PUBLIC KEY-----</c> and end with
+        /// <c>-----END PUBLIC KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportSubjectPublicKeyInfoPem(Span<char> destination, out int charsWritten)
+        {
+            static bool Export(AsymmetricAlgorithm alg, Span<byte> destination, out int bytesWritten)
+            {
+                return alg.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+            }
+
+            return PemKeyHelpers.TryExportToPem(
+                this,
+                PemLabels.SpkiPublicKey,
+                Export,
+                destination,
+                out charsWritten);
+        }
+
+        /// <summary>
+        /// Attempts to export the current key in the PEM-encoded PKCS#8
+        /// PrivateKeyInfo format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The character span to receive the PEM-encoded PKCS#8 PrivateKeyInfo data.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of characters written to <paramref name="destination" />. This
+        /// parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="NotImplementedException">
+        /// An implementation for <see cref="TryExportPkcs8PrivateKey" />
+        /// has not been provided.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#8 PrivateKeyInfo will begin with <c>-----BEGIN PRIVATE KEY-----</c>
+        ///   and end with <c>-----END PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportPkcs8PrivateKeyPem(Span<char> destination, out int charsWritten)
+        {
+            static bool Export(AsymmetricAlgorithm alg, Span<byte> destination, out int bytesWritten)
+            {
+                return alg.TryExportPkcs8PrivateKey(destination, out bytesWritten);
+            }
+
+            return PemKeyHelpers.TryExportToPem(
+                this,
+                PemLabels.Pkcs8PrivateKey,
+                Export,
+                destination,
+                out charsWritten);
+        }
+
+        /// <summary>
+        /// Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format
+        /// with a char-based password, PEM encoded.
+        /// </summary>
+        /// <param name="password">
+        /// The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        /// The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <param name="destination">
+        /// The character span to receive the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo data.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of characters written to <paramref name="destination" />. This
+        /// parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="NotImplementedException">
+        /// An implementation for <see cref="TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan{char}, PbeParameters, Span{byte}, out int)" />
+        /// has not been provided.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   When <paramref name="pbeParameters" /> indicates an algorithm that
+        ///   uses PBKDF2 (Password-Based Key Derivation Function 2), the password
+        ///   is converted to bytes via the UTF-8 encoding.
+        /// </p>
+        /// <p>
+        ///   A PEM-encoded PKCS#8 EncryptedPrivateKeyInfo will begin with
+        /// <c>-----BEGIN ENCRYPTED PRIVATE KEY-----</c> and end with
+        /// <c>-----END ENCRYPTED PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char> password, PbeParameters pbeParameters, Span<char> destination, out int charsWritten)
+        {
+            static bool Export(
+                AsymmetricAlgorithm alg,
+                ReadOnlySpan<char> password,
+                PbeParameters pbeParameters,
+                Span<byte> destination,
+                out int bytesWritten)
+            {
+                return alg.TryExportEncryptedPkcs8PrivateKey(password, pbeParameters, destination, out bytesWritten);
+            }
+
+            return PemKeyHelpers.TryExportToEncryptedPem(
+                this,
+                password,
+                pbeParameters,
+                Export,
+                destination,
+                out charsWritten);
         }
 
         private delegate bool TryExportPbe<T>(

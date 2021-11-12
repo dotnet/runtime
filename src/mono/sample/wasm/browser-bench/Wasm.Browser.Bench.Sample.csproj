@@ -3,10 +3,14 @@
     <!-- don't need to run this on helix -->
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="appstart-frame.html" />
+    <WasmExtraFilesToDeploy Include="appstart.js" />
+    <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />
   </ItemGroup>
 
