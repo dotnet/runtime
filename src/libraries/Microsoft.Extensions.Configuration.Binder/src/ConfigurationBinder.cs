@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="instance">The object to bind.</param>
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, object? instance)
-            => configuration.Bind(instance, null);
+            => configuration.Bind(instance, _ => { });
 
         /// <summary>
         /// Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.
