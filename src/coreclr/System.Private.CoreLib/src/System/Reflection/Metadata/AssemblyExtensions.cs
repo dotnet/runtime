@@ -21,8 +21,7 @@ namespace System.Reflection.Metadata
         /// </returns>
         /// <remarks>
         /// <para>Callers should not write to the metadata blob.</para>
-        /// <para>The metadata blob pointer will remain valid as long as the <see cref="System.Runtime.Loader.AssemblyLoadContext" />
-        ///   with which the assembly is associated, is alive.
+        /// <para>The metadata blob pointer will remain valid as long as the assembly is alive.
         ///   The caller is responsible for keeping the assembly object alive while accessing the metadata blob.</para>
         /// </remarks>
         [CLSCompliant(false)] // out byte* blob
