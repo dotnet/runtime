@@ -1979,7 +1979,11 @@ namespace System.Net.Http
             }
 
             // Dispose the stale connections outside the pool lock, to avoid holding the lock too long.
-            toDispose?.ForEach(c => c.Dispose());
+            // Dispose them asynchronously to not to block the caller on closing the SslStream or NetworkStream.
+            if (toDispose is not null)
+            {
+                Task.Run(() => toDispose.ForEach(c => c.Dispose()));
+            }
 
             // Pool is active.  Should not be removed.
             return false;
