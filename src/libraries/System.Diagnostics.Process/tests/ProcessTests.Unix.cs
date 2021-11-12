@@ -379,7 +379,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory, InlineData("/usr/bin/open"), InlineData("/usr/bin/nano")]
-        [PlatformSpecific(TestPlatforms.OSX | TestPlatform.MacCatalyst)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.MacCatalyst)]
         [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram(string programToOpenWith)
         {
