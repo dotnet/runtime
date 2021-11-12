@@ -366,17 +366,20 @@ namespace Internal.JitInterface
 #endif
             }
 
-            if (codeSize != _code.Length)
+            if (codeSize < _code.Length)
             {
-                // If the generated code is smaller than allocatedHotCodeSize, then trim the codeBlock.
-                //
-                // Currently, hot/cold splitting is not done and hence `codeSize` just includes the size of
-                // hotCode. Once hot/cold splitting is done, need to trim respective `_code` or `_coldCode`
-                // accordingly.
-
-                Debug.Assert(codeSize != 0);
-                Debug.Assert(_code.Length > codeSize);
-                Array.Resize(ref _code, (int)codeSize);
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64 ||
+                    _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86)
+                {
+                    // For xarch, the generated code is sometimes smaller than the memory allocated.
+                    // In that case, trim the codeBlock to the actual value.
+                    //
+                    // Currently, hot/cold splitting is not done and hence `codeSize` just includes the size of
+                    // hotCode. Once hot/cold splitting is done, need to trim respective `_code` or `_coldCode`
+                    // accordingly.
+                    Debug.Assert(codeSize != 0);
+                    Array.Resize(ref _code, (int)codeSize);
+                }
             }
             PublishCode();
             PublishROData();
