@@ -81,24 +81,48 @@ namespace System.Collections.Immutable
             return new ImmutableArray<T>(array);
         }
 
+        /// <summary>
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified elements.
+        /// </summary>
+        /// <typeparam name="T">The type of element stored in the array.</typeparam>
+        /// <param name="items">The elements to store in the array.</param>
+        /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> Create<T>(ReadOnlySpan<T> items)
         {
             T[] array = items.ToArray();
             return new ImmutableArray<T>(array);
         }
 
+        /// <summary>
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified elements.
+        /// </summary>
+        /// <typeparam name="T">The type of element stored in the array.</typeparam>
+        /// <param name="items">The elements to store in the array.</param>
+        /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> Create<T>(Span<T> items)
         {
             T[] array = items.ToArray();
             return new ImmutableArray<T>(array);
         }
 
+        /// <summary>
+        /// Produce an immutable array of contents from specified elements.
+        /// </summary>
+        /// <typeparam name="T">The type of element in the list.</typeparam>
+        /// <param name="items">The elements to store in the array.</param>
+        /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> ToImmutableArray<T>(this ReadOnlySpan<T> items)
         {
             T[] array = items.ToArray();
             return new ImmutableArray<T>(array);
         }
 
+        /// <summary>
+        /// Produce an immutable array of contents from specified elements.
+        /// </summary>
+        /// <typeparam name="T">The type of element in the list.</typeparam>
+        /// <param name="items">The elements to store in the array.</param>
+        /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> ToImmutableArray<T>(this Span<T> items)
         {
             T[] array = items.ToArray();

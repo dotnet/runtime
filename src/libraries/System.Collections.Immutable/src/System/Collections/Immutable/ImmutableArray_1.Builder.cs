@@ -255,106 +255,27 @@ namespace System.Collections.Immutable
             /// Adds the specified items to the end of the array.
             /// </summary>
             /// <param name="items">The items.</param>
-            public void AddRange(IEnumerable<T> items)
+            public void AddRange<TDerived>(ReadOnlySpan<TDerived> items) where TDerived : T
             {
-                Requires.NotNull(items, nameof(items));
-
-                int count;
-                if (items.TryGetCount(out count))
-                {
-                    this.EnsureCapacity(this.Count + count);
-
-                    if (items.TryCopyTo(_elements, _count))
-                    {
-                        _count += count;
-                        return;
-                    }
-                }
-
-                foreach (var item in items)
-                {
-                    this.Add(item);
-                }
-            }
-
-            /// <summary>
-            /// Adds the specified items to the end of the array.
-            /// </summary>
-            /// <param name="items">The items.</param>
-            public void AddRange(params T[] items)
-            {
-                Requires.NotNull(items, nameof(items));
-
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += items.Length;
 
-                Array.Copy(items, 0, _elements, offset, items.Length);
+                for (int i = 0; i < items.Length; i++)
+                {
+                    _elements[offset + i] = items[i];
+                }
             }
 
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
             /// <param name="items">The items.</param>
-            public void AddRange<TDerived>(TDerived[] items) where TDerived : T
+            public void AddRange(ReadOnlySpan<T> items)
             {
-                Requires.NotNull(items, nameof(items));
-
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += items.Length;
 
-                Array.Copy(items, 0, _elements, offset, items.Length);
-            }
-
-            /// <summary>
-            /// Adds the specified items to the end of the array.
-            /// </summary>
-            /// <param name="items">The items.</param>
-            /// <param name="length">The number of elements from the source array to add.</param>
-            public void AddRange(T[] items, int length)
-            {
-                Requires.NotNull(items, nameof(items));
-                Requires.Range(length >= 0 && length <= items.Length, nameof(length));
-
-                var offset = this.Count;
-                this.Count += length;
-
-                Array.Copy(items, 0, _elements, offset, length);
-            }
-
-            /// <summary>
-            /// Adds the specified items to the end of the array.
-            /// </summary>
-            /// <param name="items">The items.</param>
-            public void AddRange(ImmutableArray<T> items)
-            {
-                this.AddRange(items, items.Length);
-            }
-
-            /// <summary>
-            /// Adds the specified items to the end of the array.
-            /// </summary>
-            /// <param name="items">The items.</param>
-            /// <param name="length">The number of elements from the source array to add.</param>
-            public void AddRange(ImmutableArray<T> items, int length)
-            {
-                Requires.Range(length >= 0, nameof(length));
-
-                if (items.array != null)
-                {
-                    this.AddRange(items.array, length);
-                }
-            }
-
-            /// <summary>
-            /// Adds the specified items to the end of the array.
-            /// </summary>
-            /// <param name="items">The items.</param>
-            public void AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T
-            {
-                if (items.array != null)
-                {
-                    this.AddRange(items.array);
-                }
+                items.CopyTo(new Span<T>(_elements, offset, items.Length));
             }
 
             /// <summary>
@@ -362,16 +283,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="items">The items.</param>
             public void AddRange(Builder items)
-            {
-                Requires.NotNull(items, nameof(items));
-                this.AddRange(items._elements, items.Count);
-            }
-
-            /// <summary>
-            /// Adds the specified items to the end of the array.
-            /// </summary>
-            /// <param name="items">The items.</param>
-            public void AddRange<TDerived>(ImmutableArray<TDerived>.Builder items) where TDerived : T
             {
                 Requires.NotNull(items, nameof(items));
                 this.AddRange(items._elements, items.Count);
@@ -447,6 +358,16 @@ namespace System.Collections.Immutable
                 Requires.NotNull(array, nameof(array));
                 Requires.Range(index >= 0 && index + this.Count <= array.Length, nameof(index));
                 Array.Copy(_elements, 0, array, index, this.Count);
+            }
+
+            /// <summary>
+            /// Copies the current contents to the specified <see cref="Span{T}"/>.
+            /// </summary>
+            /// <param name="destination">The <see cref="Span{T}"/> to copy to.</param>
+            public void CopyTo(Span<T> destination)
+            {
+                Requires.Range(this.Count <= destination.Length, nameof(destination));
+                new ReadOnlySpan<T>(_elements).CopyTo(destination);
             }
 
             /// <summary>
