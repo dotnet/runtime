@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using System.IO.Pipes;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
@@ -171,6 +174,31 @@ namespace System.IO.Tests
         public void ProcFs_NotEmpty(string path)
         {
             Assert.InRange(File.ReadAllBytes(path).Length, 1, int.MaxValue);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        public async Task ReadAllBytes_NonSeekableFileStream_InUnix()
+        {
+            string fifoPath = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
+
+            var contentBytes = new byte[] { 1, 2, 3 };
+
+            await Task.WhenAll(
+                Task.Run(() =>
+                {
+                    byte[] readBytes = File.ReadAllBytes(fifoPath);
+                    Assert.Equal<byte>(contentBytes, readBytes);
+                }),
+                Task.Run(() =>
+                {
+                    using var fs = new FileStream(fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+                    foreach (byte content in contentBytes)
+                    {
+                        fs.WriteByte(content);
+                    }
+                }));
         }
     }
 }
