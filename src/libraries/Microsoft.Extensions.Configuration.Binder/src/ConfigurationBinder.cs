@@ -639,15 +639,17 @@ namespace Microsoft.Extensions.Configuration
 
         private static List<PropertyInfo> GetAllProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type? type)
+            Type type)
         {
             var allProperties = new List<PropertyInfo>();
 
-            while (type != null && type != typeof(object))
+            Type? baseType = type;
+            do
             {
-                allProperties.AddRange(type.GetProperties(DeclaredOnlyLookup));
-                type = type.BaseType;
+                allProperties.AddRange(baseType!.GetProperties(DeclaredOnlyLookup));
+                baseType = baseType.BaseType;
             }
+            while (baseType != typeof(object));
 
             return allProperties;
         }
