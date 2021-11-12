@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetEGid")]
-        internal static extern uint GetEGid();
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetEGid")]
+        internal static partial uint GetEGid();
     }
 }
