@@ -63,6 +63,7 @@
     <PackageToInclude Include="Microsoft.CodeAnalysis.CSharp"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>
     <PackageToInclude Include="CommandLineParser"/>
+    <PackageToInclude Include="Microsoft.DotNet.XUnitExtensions" />
 
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="1.1.1" />
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />

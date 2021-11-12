@@ -409,6 +409,23 @@
 
   </Target>
 
+  <Target Name="GetRequiresProcessIsolation" Returns="@(ProjectRequiringProcessIsolation)">
+    <ItemGroup Condition="'$(RequiresProcessIsolation)' == 'true'">
+      <ProjectRequiringProcessIsolation Include="$(MSBuildProjectFullPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration">
+    <MSBuild Projects="@(ProjectReference)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
+      <Output TaskParameter="TargetOutputs" ItemName="ReferencedProjectRequiringProcessIsolation" />
+    </MSBuild>
+
+    <ItemGroup>
+      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation)" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation)" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+  </Target>
+
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
 

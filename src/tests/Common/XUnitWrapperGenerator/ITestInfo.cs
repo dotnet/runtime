@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -160,7 +161,7 @@ sealed class ConditionalTest : ITestInfo
         }
         if (platform.HasFlag(Xunit.TestPlatforms.tvOS))
         {
-            platformCheckConditions.Add("global::System.OperatingSystem.IsTVOS()");
+            platformCheckConditions.Add("global::System.OperatingSystem.IsTvOS()");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.MacCatalyst))
         {
@@ -228,14 +229,34 @@ foreach (object[] {_loopVarIdentifier} in {_memberInvocation})
     }
 }
 
-class NoTestReporting : ITestReporterWrapper
+sealed class OutOfProcessTest : ITestInfo
+{
+    public OutOfProcessTest(string displayName, string relativeAssemblyPath)
+    {
+        Method = displayName;
+        TestNameExpression = $"@\"{displayName}\"";
+        ExecutionStatement = $@"TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");";
+    }
+
+    public string TestNameExpression { get; }
+
+    public string Method { get; }
+
+    public string ContainingType => "OutOfProcessTest";
+
+    private string ExecutionStatement { get; }
+
+    public string GenerateTestExecution(ITestReporterWrapper testReporterWrapper) => testReporterWrapper.WrapTestExecutionWithReporting(ExecutionStatement, this);
+}
+
+sealed class NoTestReporting : ITestReporterWrapper
 {
     public string WrapTestExecutionWithReporting(string testExecution, ITestInfo test) => testExecution;
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest) => string.Empty;
 }
 
-class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
+sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 {
     private string _summaryLocalIdentifier;
 
@@ -252,10 +273,10 @@ class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         builder.AppendLine($"TimeSpan testStart = stopwatch.Elapsed;");
         builder.AppendLine("try {");
         builder.AppendLine(testExecutionExpression);
-        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", \"{test.Method}\", stopwatch.Elapsed - testStart);");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart);");
         builder.AppendLine("}");
         builder.AppendLine("catch (System.Exception ex) {");
-        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", \"{test.Method}\", stopwatch.Elapsed - testStart, ex);");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex);");
         builder.AppendLine("}");
 
         builder.AppendLine("}");

@@ -32,7 +32,24 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             return visitor.Visit(data.Right.GetAssemblyOrModuleSymbol(data.Left))!;
         });
 
-        var assemblyName = context.CompilationProvider.Select((comp, ct) => comp.Assembly.MetadataName);
+        var outOfProcessTests = context.AdditionalTextsProvider.Combine(context.AnalyzerConfigOptionsProvider).SelectMany((data, ct) =>
+        {
+            var (file, options) = data;
+
+            AnalyzerConfigOptions fileOptions = options.GetOptions(file);
+
+            if (fileOptions.IsOutOfProcessTestAssembly())
+            {
+                string? assemblyPath = fileOptions.TestAssemblyRelativePath();
+                string? testDisplayName = fileOptions.TestDisplayName();
+                if (assemblyPath is not null && testDisplayName is not null)
+                {
+                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath));
+                }
+            }
+
+            return ImmutableArray<ITestInfo>.Empty;
+        });
 
         var allMethods = methodsInSource.Collect().Combine(methodsInReferencedAssemblies.Collect()).SelectMany((methods, ct) => methods.Left.AddRange(methods.Right));
 
@@ -48,12 +65,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             return aliasMap.ToImmutable();
         }).WithComparer(new ImmutableDictionaryValueComparer<string, string>(EqualityComparer<string>.Default));
 
+        var assemblyName = context.CompilationProvider.Select((comp, ct) => comp.Assembly.MetadataName);
+
         context.RegisterImplementationSourceOutput(
             allMethods
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Combine(aliasMap)
             .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left.Left, data.Left.Right, data.Right)))
             .Collect()
+            .Combine(outOfProcessTests.Collect())
+            .Select((tests, ct) => tests.Left.AddRange(tests.Right))
             .Combine(aliasMap)
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Combine(assemblyName),
@@ -318,6 +339,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     if (options.GlobalOptions.RuntimeFlavor() != "CoreCLR")
                     {
                         // If we're building tests not for CoreCLR, we can skip handling the specifics of the SkipOnCoreClrAttribute.
+                        testInfos = ImmutableArray<ITestInfo>.Empty;
                         break;
                     }
 
@@ -508,7 +530,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         options.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
         Xunit.TestPlatforms targetPlatform = GetPlatformForTargetOS(targetOS);
 
-        if (platformsToSkip.HasFlag(targetPlatform))
+        if (platformsToSkip == 0)
+        {
+            // In this case, we don't need to skip any platforms
+            return testInfos;
+        }
+        else if (platformsToSkip.HasFlag(targetPlatform))
         {
             // If the target platform is skipped, then we don't have any tests to emit.
             return ImmutableArray<ITestInfo>.Empty;
