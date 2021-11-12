@@ -157,8 +157,8 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "On OSX, ProcessName returns the script interpreter.")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst, "On OSX, ProcessName returns the script interpreter.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public void ProcessNameMatchesScriptName()
         {
             string scriptName = GetTestFileName();
@@ -379,7 +379,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory, InlineData("/usr/bin/open"), InlineData("/usr/bin/nano")]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatform.MacCatalyst)]
         [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram(string programToOpenWith)
         {
@@ -396,7 +396,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory, InlineData("Safari"), InlineData("\"Google Chrome\"")]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.MacCatalyst)]
         [OuterLoop("Opens browser")]
         public void ProcessStart_OpenUrl_UsesSpecifiedApplication(string applicationToOpenWith)
         {
@@ -410,7 +410,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory, InlineData("-a Safari"), InlineData("-a \"Google Chrome\"")]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.MacCatalyst)]
         [OuterLoop("Opens browser")]
         public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgument(string arguments)
         {
@@ -432,7 +432,7 @@ namespace System.Diagnostics.Tests
 
         [Theory,
             MemberData(nameof(StartOSXProcessWithArgumentList))]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.MacCatalyst)]
         [OuterLoop("Opens browser")]
         public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgumentArray(string[] argumentList)
         {
@@ -502,7 +502,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();
@@ -514,7 +514,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public void TestStartOnUnixWithBadFormat()
         {
             string path = GetTestFilePath();
