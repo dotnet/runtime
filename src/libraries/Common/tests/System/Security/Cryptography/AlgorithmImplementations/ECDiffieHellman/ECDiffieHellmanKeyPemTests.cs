@@ -10,16 +10,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     public sealed class ECDiffieHellmanKeyPemTests : ECKeyPemTests<ECDiffieHellman>
     {
         protected override ECDiffieHellman CreateKey() => ECDiffieHellman.Create();
-
         protected override ECParameters ExportParameters(ECDiffieHellman key, bool includePrivateParameters) =>
             key.ExportParameters(includePrivateParameters);
-
-        protected override void ImportParameters(ECDiffieHellman key, ECParameters ecParameters) =>
-            key.ImportParameters(ecParameters);
-
-        protected override string ExportECPrivateKeyPem(ECDiffieHellman key) => key.ExportECPrivateKeyPem();
-
-        protected override bool TryExportECPrivateKeyPem(ECDiffieHellman key, Span<char> destination, out int charsWritten) =>
-            key.TryExportECPrivateKeyPem(destination, out charsWritten);
     }
 }
