@@ -11985,12 +11985,6 @@ DONE_MORPHING_CHILDREN:
 
             effectiveOp1 = op1->gtEffectiveVal();
 
-            if (effectiveOp1->OperIsConst())
-            {
-                op1                 = gtNewOperNode(GT_IND, tree->TypeGet(), op1);
-                tree->AsOp()->gtOp1 = op1;
-            }
-
             // If we are storing a small type, we might be able to omit a cast.
             if (effectiveOp1->OperIs(GT_IND) && varTypeIsSmall(effectiveOp1))
             {
@@ -13067,15 +13061,6 @@ DONE_MORPHING_CHILDREN:
                 DEBUG_DESTROY_NODE(tree);
 
                 return addr;
-            }
-            else if (op1->gtOper == GT_CAST)
-            {
-                GenTree* casting = op1->AsCast()->CastOp();
-                if (casting->gtOper == GT_LCL_VAR || casting->gtOper == GT_CLS_VAR)
-                {
-                    DEBUG_DESTROY_NODE(op1);
-                    tree->AsOp()->gtOp1 = op1 = casting;
-                }
             }
             else if ((op1->gtOper == GT_COMMA) && !optValnumCSE_phase)
             {
