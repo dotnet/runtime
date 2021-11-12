@@ -181,6 +181,10 @@ typedef struct _DeltaInfo {
 	delta_row_count count [MONO_TABLE_NUM];
 	
 	MonoPPDBFile *ppdb_file;
+
+	MonoMemPool *pool; /* mutated tables are allocated here */
+
+	MonoTableInfo mutants[MONO_TABLE_NUM];
 } DeltaInfo;
 
 
@@ -344,7 +348,7 @@ baseline_info_lookup (MonoImage *base_image)
 }
 
 static DeltaInfo*
-delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, MonoPPDBFile *ppdb_file, BaselineInfo *base_info, uint32_t generation);
+delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, MonoPPDBFile *ppdb_file, BaselineInfo *base_info, uint32_t generation, DeltaInfo **prev_last_delta);
 
 static void
 free_ppdb_entry (gpointer key, gpointer val, gpointer user_data)
@@ -362,6 +366,9 @@ delta_info_destroy (DeltaInfo *dinfo)
 		g_hash_table_destroy (dinfo->method_ppdb_table_update);
 	}
 	mono_ppdb_close (dinfo->ppdb_file);
+
+	if (dinfo->pool)
+		mono_mempool_destroy (dinfo->pool);
 	g_free (dinfo);
 }
 
@@ -494,7 +501,7 @@ table_info_find_in_base (const MonoTableInfo *table, MonoImage **base_out, int *
 static MonoImage*
 image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_length);
 
-static void
+static DeltaInfo*
 image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, DeltaInfo *delta_info);
 
 static int
@@ -639,10 +646,68 @@ hot_reload_update_cancel (uint32_t generation)
 	publish_unlock ();
 }
 
+/*
+ * Given a baseline and an (optional) previous delta, allocate space for new tables for the current delta.
+ *
+ * Assumes the DeltaInfo:count info has already been calculated and initialized.
+ */
+static void
+delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_info, const DeltaInfo *prev_delta, DeltaInfo *delta)
+{
+	g_assert (delta->pool);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Initializing mutant tables for image %p (generation %d)", base, delta->generation);
+	for (int i = 0; i < MONO_TABLE_NUM; ++i)
+	{
+		gboolean need_copy = FALSE;
+		/* if any generation modified any row of this table, make a copy for the current generation. */
+		if (base_info->any_modified_rows [i])
+			need_copy = TRUE;
+		delta_row_count *count = &delta->count [i];
+		guint32 base_rows = table_info_get_rows (&base->tables [i]);
+		/* if some previous generation added rows, or we're adding rows, make a copy */
+		if (base_rows != count->prev_gen_rows || count->inserted_rows)
+			need_copy = TRUE;
+		if (!need_copy) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, " Table 0x%02x unchanged (rows: base %d, prev %d, inserted %d), not copied", i, base_rows, count->prev_gen_rows, count->inserted_rows);
+			continue;
+		} else {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, " Table 0x%02x   changed (rows: base %d, prev %d, inserted %d),  IS copied", i, base_rows, count->prev_gen_rows, count->inserted_rows);
+		}
+		/* The invariant is that once we made a copy in any previous generation, we'll make
+		 * a copy in this generation.  So subsequent generations can copy either from the
+		 * immediately preceeding generation or from the baseline if the preceeding
+		 * generation didn't make a copy. */
+
+		guint32 rows = count->prev_gen_rows + count->inserted_rows;
+
+		MonoTableInfo *tbl = &delta->mutants [i];
+		tbl->row_size = base->tables[i].row_size;
+		tbl->size_bitfield = base->tables[i].size_bitfield;
+		tbl->rows_ = rows;
+
+		tbl->base = mono_mempool_alloc (delta->pool, tbl->row_size * rows);
+		const MonoTableInfo *prev_table;
+		if (!prev_delta || prev_delta->mutants [i].base == NULL)
+			prev_table = &base->tables [i];
+		else
+			prev_table = &prev_delta->mutants [i];
+
+		g_assert (prev_table != NULL);
+		g_assert (table_info_get_rows (prev_table) == count->prev_gen_rows);
+
+		/* copy the old rows  and zero out the new ones */
+		memcpy ((char*)tbl->base, prev_table->base, count->prev_gen_rows * tbl->row_size);
+		memset (((char*)tbl->base) + count->prev_gen_rows * tbl->row_size, 0, count->inserted_rows * tbl->row_size);
+	}
+}
+
+
 /**
  * LOCKING: Assumes the publish_lock is held
+ * Returns: The previous latest delta, or NULL if this is the first delta
  */
-void
+DeltaInfo *
 image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, DeltaInfo *delta_info)
 {
 	if (!base_info->delta_image) {
@@ -651,9 +716,10 @@ image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, 
 		mono_memory_write_barrier ();
 		/* Have to set this here so that passes over the metadata in the updater thread start using the slow path */
 		base->has_updates = TRUE;
-		return;
+		return NULL;
 	}
-	g_assert (delta_info_lookup(((MonoImage*)base_info->delta_image_last->data))->generation < delta_info->generation);
+	DeltaInfo *prev_last_delta = delta_info_lookup(((MonoImage*)base_info->delta_image_last->data));
+	g_assert (prev_last_delta->generation < delta_info->generation);
 	/* g_list_append returns the given list, not the newly appended */
 	GList *l = g_list_append (base_info->delta_image_last, delta);
 	g_assert (l != NULL && l->next != NULL && l->next->next == NULL);
@@ -662,7 +728,7 @@ image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, 
 	mono_memory_write_barrier ();
 	/* Have to set this here so that passes over the metadata in the updater thread start using the slow path */
 	base->has_updates = TRUE;
-
+	return prev_last_delta;
 }
 
 /**
@@ -954,7 +1020,7 @@ hot_reload_relative_delta_index (MonoImage *image_dmeta, int token)
 
 /* LOCKING: assumes publish_lock is held */
 static DeltaInfo*
-delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, MonoPPDBFile *ppdb_file, BaselineInfo *base_info, uint32_t generation)
+delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, MonoPPDBFile *ppdb_file, BaselineInfo *base_info, uint32_t generation, DeltaInfo **prev_delta_info)
 {
 	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
 	g_assert (!delta_info_lookup (image_dmeta));
@@ -971,8 +1037,13 @@ delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, MonoPPDBFile *pp
 	g_hash_table_insert (delta_image_to_info, image_dmeta, delta_info);
 	table_to_image_unlock ();
 
+	delta_info->pool = mono_mempool_new ();
+
+
+	g_assert (prev_delta_info);
+
 	/* base_image takes ownership of 1 refcount ref of dmeta_image */
-	image_append_delta (image_base, base_info, image_dmeta, delta_info);
+	*prev_delta_info = image_append_delta (image_base, base_info, image_dmeta, delta_info);
 
 	return delta_info;
 }
@@ -1614,7 +1685,8 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 
 	BaselineInfo *base_info = baseline_info_lookup_or_add (image_base);
 
-	DeltaInfo *delta_info = delta_info_init (image_dmeta, image_base, ppdb_file, base_info, generation);
+	DeltaInfo *prev_delta_info = NULL;
+	DeltaInfo *delta_info = delta_info_init (image_dmeta, image_base, ppdb_file, base_info, generation, &prev_delta_info);
 
 
 	if (image_dmeta->minimal_delta) {
@@ -1649,6 +1721,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 		return;
 	}
 
+	delta_info_initialize_mutants (image_base, base_info, prev_delta_info, delta_info);
 
 	if (!apply_enclog_pass1 (image_base, image_dmeta, dil_bytes, dil_length, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on sanity-checking delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
