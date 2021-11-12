@@ -6681,7 +6681,7 @@ void Compiler::fgValueNumber()
             continue;
         }
 
-        LclVarDsc* varDsc = &lvaTable[lclNum];
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
         assert(varDsc->lvTracked);
 
         if (varDsc->lvIsParam)
@@ -8128,7 +8128,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     if (rhs->IsLocalExpr(this, &rhsLclVarTree, &rhsFldSeq))
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
-                        rhsVarDsc          = &lvaTable[rhsLclNum];
+                        rhsVarDsc          = lvaGetDesc(rhsLclNum);
                         if (!lvaInSsa(rhsLclNum) || !rhsLclVarTree->HasSsaName() ||
                             rhsFldSeq == FieldSeqStore::NotAField())
                         {
@@ -8155,7 +8155,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     if (srcAddr->IsLocalAddrExpr(this, &rhsLclVarTree, &rhsFldSeq))
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
-                        rhsVarDsc          = &lvaTable[rhsLclNum];
+                        rhsVarDsc          = lvaGetDesc(rhsLclNum);
                         if (!lvaInSsa(rhsLclNum) || !rhsLclVarTree->HasSsaName() ||
                             rhsFldSeq == FieldSeqStore::NotAField())
                         {
@@ -8422,12 +8422,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
                 unsigned             lclNum = lcl->GetLclNum();
-                LclVarDsc*           varDsc = &lvaTable[lclNum];
+                LclVarDsc*           varDsc = lvaGetDesc(lclNum);
 
                 if (varDsc->CanBeReplacedWithItsField(this))
                 {
                     lclNum = varDsc->lvFieldLclStart;
-                    varDsc = &lvaTable[lclNum];
+                    varDsc = lvaGetDesc(lclNum);
                 }
 
                 // Do we have a Use (read) of the LclVar?
@@ -8592,9 +8592,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // forms (assignment, or initBlk or copyBlk).
                 if (((lclFld->gtFlags & GTF_VAR_DEF) == 0) || (lclFld->gtFlags & GTF_VAR_USEASG))
                 {
-                    unsigned   lclNum = lclFld->GetLclNum();
                     unsigned   ssaNum = lclFld->GetSsaNum();
-                    LclVarDsc* varDsc = &lvaTable[lclNum];
+                    LclVarDsc* varDsc = lvaGetDesc(lclFld);
 
                     var_types indType = tree->TypeGet();
                     if ((lclFld->GetFieldSeq() == FieldSeqStore::NotAField()) || !lvaInSsa(lclFld->GetLclNum()) ||
@@ -8962,9 +8961,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq) && lvaInSsa(lclVarTree->GetLclNum()) &&
                     lclVarTree->HasSsaName())
                 {
-                    unsigned   lclNum = lclVarTree->GetLclNum();
                     unsigned   ssaNum = lclVarTree->GetSsaNum();
-                    LclVarDsc* varDsc = &lvaTable[lclNum];
+                    LclVarDsc* varDsc = lvaGetDesc(lclVarTree);
 
                     if ((localFldSeq == FieldSeqStore::NotAField()) || (localFldSeq == nullptr))
                     {

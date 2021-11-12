@@ -1277,9 +1277,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
 
     if (tree->OperGet() == GT_LCL_VAR)
     {
-        unsigned   lclNum    = tree->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVarDsc = &lvaTable[lclNum];
-        isParam              = lclVarDsc->lvIsParam;
+        isParam = lvaGetDesc(tree->AsLclVarCommon())->lvIsParam;
     }
 
     // normalize TYP_STRUCT value
@@ -1533,8 +1531,7 @@ GenTree* Compiler::getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORI
 void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 {
     assert(tree->OperIsLocal());
-    unsigned   lclNum                = tree->AsLclVarCommon()->GetLclNum();
-    LclVarDsc* lclVarDsc             = &lvaTable[lclNum];
+    LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
     lclVarDsc->lvUsedInSIMDIntrinsic = true;
 }
 

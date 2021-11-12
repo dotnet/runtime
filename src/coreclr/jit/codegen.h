@@ -1297,8 +1297,7 @@ protected:
         {
             return false;
         }
-        const LclVarDsc* varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-        return (varDsc->lvIsRegCandidate());
+        return compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK

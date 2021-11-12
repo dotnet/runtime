@@ -77,8 +77,7 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
                 addr->gtGetOp2()->IsIntegralConst(0))
             {
                 GenTreeLclVarCommon* lclVarNode = addr->gtGetOp1()->AsLclVarCommon();
-                unsigned             lclNum     = lclVarNode->GetLclNum();
-                LclVarDsc*           varDsc     = comp->lvaTable + lclNum;
+                const LclVarDsc*     varDsc     = comp->lvaGetDesc(lclVarNode);
                 if (indir->TypeGet() == varDsc->TypeGet())
                 {
                     JITDUMP("Rewriting GT_IND(GT_ADD(LCL_VAR_ADDR,0)) to LCL_VAR\n");

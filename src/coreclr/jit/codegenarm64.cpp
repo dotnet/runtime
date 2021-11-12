@@ -1871,8 +1871,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
 {
 
-    unsigned varNum = tree->GetLclNum();
-    assert(varNum < compiler->lvaCount);
+    unsigned   varNum     = tree->GetLclNum();
     LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
     var_types  targetType = varDsc->GetRegisterType(tree);
 
@@ -1926,9 +1925,8 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // We must have a stack store with GT_STORE_LCL_FLD
     noway_assert(targetReg == REG_NA);
 
-    unsigned varNum = tree->GetLclNum();
-    assert(varNum < compiler->lvaCount);
-    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+    unsigned   varNum = tree->GetLclNum();
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
@@ -2120,15 +2118,14 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         if (op1->OperGet() == GT_LCL_VAR)
         {
             GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
-            bool                 isRegCandidate = compiler->lvaTable[lcl->GetLclNum()].lvIsRegCandidate();
+            const LclVarDsc*     varDsc         = compiler->lvaGetDesc(lcl);
+            bool                 isRegCandidate = varDsc->lvIsRegCandidate();
             if (isRegCandidate && ((op1->gtFlags & GTF_SPILLED) == 0))
             {
                 // We may need to generate a zero-extending mov instruction to load the value from this GT_LCL_VAR
 
-                unsigned   lclNum  = lcl->GetLclNum();
-                LclVarDsc* varDsc  = &(compiler->lvaTable[lclNum]);
-                var_types  op1Type = genActualType(op1->TypeGet());
-                var_types  lclType = genActualType(varDsc->TypeGet());
+                var_types op1Type = genActualType(op1->TypeGet());
+                var_types lclType = genActualType(varDsc->TypeGet());
 
                 if (genTypeSize(op1Type) < genTypeSize(lclType))
                 {
@@ -3310,10 +3307,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     assert(genIsRegCandidateLocal(tree->gtOp1) && genIsRegCandidateLocal(tree->gtOp2));
 
     GenTreeLclVarCommon* lcl1    = tree->gtOp1->AsLclVarCommon();
-    LclVarDsc*           varDsc1 = &(compiler->lvaTable[lcl1->GetLclNum()]);
+    LclVarDsc*           varDsc1 = compiler->lvaGetDesc(lcl1);
     var_types            type1   = varDsc1->TypeGet();
     GenTreeLclVarCommon* lcl2    = tree->gtOp2->AsLclVarCommon();
-    LclVarDsc*           varDsc2 = &(compiler->lvaTable[lcl2->GetLclNum()]);
+    LclVarDsc*           varDsc2 = compiler->lvaGetDesc(lcl2);
     var_types            type2   = varDsc2->TypeGet();
 
     // We must have both int or both fp regs

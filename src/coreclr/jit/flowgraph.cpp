@@ -976,7 +976,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return false;
         }
 
-        LclVarDsc* varDsc = &lvaTable[varNum];
+        LclVarDsc* varDsc = lvaGetDesc(varNum);
 
         if (varDsc->lvStackByref)
         {
@@ -1333,8 +1333,7 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
             // Small-typed arguments and aliased locals are normalized on load.
             // Other small-typed locals are normalized on store.
             // If it is an assignment to one of the latter, insert the cast on RHS
-            unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = &lvaTable[varNum];
+            LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon()->GetLclNum());
 
             if (varDsc->lvNormalizeOnStore())
             {
@@ -1994,7 +1993,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Reverse Pinvoke FrameVar"));
 
-    LclVarDsc* varDsc   = &lvaTable[lvaReversePInvokeFrameVar];
+    LclVarDsc* varDsc   = lvaGetDesc(lvaReversePInvokeFrameVar);
     varDsc->lvType      = TYP_BLK;
     varDsc->lvExactSize = eeGetEEInfo()->sizeOfReversePInvokeFrame;
 
@@ -2750,7 +2749,7 @@ void Compiler::fgAddInternal()
         if (!opts.ShouldUsePInvokeHelpers())
         {
             info.compLvFrameListRoot           = lvaGrabTemp(false DEBUGARG("Pinvoke FrameListRoot"));
-            LclVarDsc* rootVarDsc              = &lvaTable[info.compLvFrameListRoot];
+            LclVarDsc* rootVarDsc              = lvaGetDesc(info.compLvFrameListRoot);
             rootVarDsc->lvType                 = TYP_I_IMPL;
             rootVarDsc->lvImplicitlyReferenced = 1;
         }
@@ -2760,7 +2759,7 @@ void Compiler::fgAddInternal()
         // Lowering::InsertPInvokeMethodProlog will create a call with this local addr as an argument.
         lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
-        LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
+        LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
         varDsc->lvExactSize = eeGetEEInfo()->inlinedCallFrameInfo.size;
@@ -2771,7 +2770,7 @@ void Compiler::fgAddInternal()
         if (!opts.ShouldUsePInvokeHelpers() && compJmpOpUsed)
         {
             lvaPInvokeFrameRegSaveVar = lvaGrabTempWithImplicitUse(false DEBUGARG("PInvokeFrameRegSave Var"));
-            varDsc                    = &lvaTable[lvaPInvokeFrameRegSaveVar];
+            varDsc                    = lvaGetDesc(lvaPInvokeFrameRegSaveVar);
             varDsc->lvType            = TYP_BLK;
             varDsc->lvExactSize       = 2 * REGSIZE_BYTES;
         }
