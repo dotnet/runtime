@@ -276,6 +276,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"\p{Ll}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
                 yield return (@"\p{Lt}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
                 yield return (@"\p{Lo}", "1bc", RegexOptions.IgnoreCase, 0, 3, false, string.Empty);
+                yield return (".[abc]", "xYZAbC", RegexOptions.IgnoreCase, 0, 6, true, "ZA");
+                yield return (".[abc]", "xYzXyZx", RegexOptions.IgnoreCase, 0, 6, false, "");
 
                 // "\D+"
                 yield return (@"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty);
@@ -362,7 +364,6 @@ namespace System.Text.RegularExpressions.Tests
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                 }
                 yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
-                yield return (@"a\w*a|def", "aaaaa", RegexOptions.None, 0, 5, true, "aaaaa");
 
                 // No Negation
                 yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);

@@ -1584,7 +1584,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(iLocal);
                     Ldloca(textSpanLocal);
                     Call(s_spanGetLengthMethod);
-                    if (setsToUse > 1)
+                    if (setsToUse > 1 || primarySet.Distance != 0)
                     {
                         Ldc(minRequiredLength - 1);
                         Sub();
