@@ -368,13 +368,12 @@ namespace Internal.JitInterface
 
             if (codeSize < _code.Length)
             {
-                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64 ||
-                    _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86)
+                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64)
                 {
-                    // For xarch, the generated code is sometimes smaller than the memory allocated.
+                    // For xarch/arm32, the generated code is sometimes smaller than the memory allocated.
                     // In that case, trim the codeBlock to the actual value.
                     //
-                    // For armarch, the allocation request of `hotCodeSize` also includes the roData size
+                    // For arm64, the allocation request of `hotCodeSize` also includes the roData size
                     // while the `codeSize` returned just contains the size of the native code. As such,
                     // there is guarantee that for armarch, (codeSize == _code.Length) is always true.
                     //
