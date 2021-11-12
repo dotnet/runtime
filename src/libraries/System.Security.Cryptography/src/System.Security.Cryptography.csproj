@@ -854,4 +854,7 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="@(AsnXml)" />
+  </ItemGroup>
 </Project>
