@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.assembly and.exe{}
+.assembly 'and'{}
 
 .class public _and {
 

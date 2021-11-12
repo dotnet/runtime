@@ -374,7 +374,7 @@ namespace System.Reflection
         internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> parameters)
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> parameters)
         {
             Exception? exc;
             object? o = null;
@@ -862,7 +862,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
+        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return InternalInvoke(obj, arguments, wrapExceptions);

@@ -1,3 +1,9 @@
+# This pipeline only runs on GitHub PRs, not on merges.
+trigger: none
+
+# Only run on changes to the JIT directory. Don't run if the JIT-EE GUID has changed,
+# since there won't be any SuperPMI collections with the new GUID until the collection
+# pipeline completes after this PR is merged.
 pr:
   branches:
     include:
@@ -5,6 +11,8 @@ pr:
   paths:
     include:
     - src/coreclr/jit/*
+    exclude:
+    - src/coreclr/inc/jiteeversionguid.h
 
 jobs:
 

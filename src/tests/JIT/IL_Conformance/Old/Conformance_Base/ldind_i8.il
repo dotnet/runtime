@@ -74,4 +74,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldind_i8.exe{}
+.assembly ldind_i8{}

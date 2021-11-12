@@ -68,5 +68,5 @@ END:
 
 
 
-.assembly ldc_ret_i.exe{}
+.assembly ldc_ret_i{}
 

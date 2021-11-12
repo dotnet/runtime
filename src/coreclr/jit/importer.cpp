@@ -618,7 +618,7 @@ inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
     // Once we set the current offset as debug info in an appended tree, we are
     // ready to report the following offsets. Note that we need to compare
     // offsets here instead of debug info, since we do not set the "is call"
-    // debug in impCurStmtDI.
+    // bit in impCurStmtDI.
 
     if (impLastStmt->GetDebugInfo().GetLocation().GetOffset() == impCurStmtDI.GetLocation().GetOffset())
     {
@@ -3017,11 +3017,6 @@ unsigned Compiler::impInitBlockLineInfo()
     IL_OFFSET blockOffs = compCurBB->bbCodeOffs;
 
     if ((verCurrentState.esStackDepth == 0) && (info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES))
-    {
-        impCurStmtOffsSet(blockOffs);
-    }
-
-    if (false && (info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES))
     {
         impCurStmtOffsSet(blockOffs);
     }
@@ -11721,111 +11716,108 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         if (opts.compDbgInfo)
 #endif
         {
-            if (!compIsForInlining())
+            nxtStmtOffs =
+                (nxtStmtIndex < info.compStmtOffsetsCount) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
+
+            /* Have we reached the next stmt boundary ? */
+
+            if (nxtStmtOffs != BAD_IL_OFFSET && opcodeOffs >= nxtStmtOffs)
             {
-                nxtStmtOffs =
-                    (nxtStmtIndex < info.compStmtOffsetsCount) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
+                assert(nxtStmtOffs == info.compStmtOffsets[nxtStmtIndex]);
 
-                /* Have we reached the next stmt boundary ? */
-
-                if (nxtStmtOffs != BAD_IL_OFFSET && opcodeOffs >= nxtStmtOffs)
+                if (verCurrentState.esStackDepth != 0 && opts.compDbgCode)
                 {
-                    assert(nxtStmtOffs == info.compStmtOffsets[nxtStmtIndex]);
+                    /* We need to provide accurate IP-mapping at this point.
+                       So spill anything on the stack so that it will form
+                       gtStmts with the correct stmt offset noted */
 
-                    if (verCurrentState.esStackDepth != 0 && opts.compDbgCode)
+                    impSpillStackEnsure(true);
+                }
+
+                // Have we reported debug info for any tree?
+
+                if (impCurStmtDI.IsValid() && opts.compDbgCode)
+                {
+                    GenTree* placeHolder = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
+                    impAppendTree(placeHolder, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
+
+                    assert(!impCurStmtDI.IsValid());
+                }
+
+                if (!impCurStmtDI.IsValid())
+                {
+                    /* Make sure that nxtStmtIndex is in sync with opcodeOffs.
+                       If opcodeOffs has gone past nxtStmtIndex, catch up */
+
+                    while ((nxtStmtIndex + 1) < info.compStmtOffsetsCount &&
+                           info.compStmtOffsets[nxtStmtIndex + 1] <= opcodeOffs)
                     {
-                        /* We need to provide accurate IP-mapping at this point.
-                           So spill anything on the stack so that it will form
-                           gtStmts with the correct stmt offset noted */
-
-                        impSpillStackEnsure(true);
-                    }
-
-                    // Have we reported debug info for any tree?
-
-                    if (impCurStmtDI.IsValid() && opts.compDbgCode)
-                    {
-                        GenTree* placeHolder = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
-                        impAppendTree(placeHolder, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
-
-                        assert(!impCurStmtDI.IsValid());
-                    }
-
-                    if (!impCurStmtDI.IsValid())
-                    {
-                        /* Make sure that nxtStmtIndex is in sync with opcodeOffs.
-                           If opcodeOffs has gone past nxtStmtIndex, catch up */
-
-                        while ((nxtStmtIndex + 1) < info.compStmtOffsetsCount &&
-                               info.compStmtOffsets[nxtStmtIndex + 1] <= opcodeOffs)
-                        {
-                            nxtStmtIndex++;
-                        }
-
-                        /* Go to the new stmt */
-
-                        impCurStmtOffsSet(info.compStmtOffsets[nxtStmtIndex]);
-
-                        /* Update the stmt boundary index */
-
                         nxtStmtIndex++;
-                        assert(nxtStmtIndex <= info.compStmtOffsetsCount);
-
-                        /* Are there any more line# entries after this one? */
-
-                        if (nxtStmtIndex < info.compStmtOffsetsCount)
-                        {
-                            /* Remember where the next line# starts */
-
-                            nxtStmtOffs = info.compStmtOffsets[nxtStmtIndex];
-                        }
-                        else
-                        {
-                            /* No more line# entries */
-
-                            nxtStmtOffs = BAD_IL_OFFSET;
-                        }
                     }
-                }
-                else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES) &&
-                         (verCurrentState.esStackDepth == 0))
-                {
-                    /* At stack-empty locations, we have already added the tree to
-                       the stmt list with the last offset. We just need to update
-                       impCurStmtDI
-                     */
 
-                    impCurStmtOffsSet(opcodeOffs);
-                }
-                else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES) &&
-                         impOpcodeIsCallSiteBoundary(prevOpcode))
-                {
-                    /* Make sure we have a type cached */
-                    assert(callTyp != TYP_COUNT);
+                    /* Go to the new stmt */
 
-                    if (callTyp == TYP_VOID)
+                    impCurStmtOffsSet(info.compStmtOffsets[nxtStmtIndex]);
+
+                    /* Update the stmt boundary index */
+
+                    nxtStmtIndex++;
+                    assert(nxtStmtIndex <= info.compStmtOffsetsCount);
+
+                    /* Are there any more line# entries after this one? */
+
+                    if (nxtStmtIndex < info.compStmtOffsetsCount)
                     {
-                        impCurStmtOffsSet(opcodeOffs);
+                        /* Remember where the next line# starts */
+
+                        nxtStmtOffs = info.compStmtOffsets[nxtStmtIndex];
                     }
-                    else if (opts.compDbgCode)
+                    else
                     {
-                        impSpillStackEnsure(true);
-                        impCurStmtOffsSet(opcodeOffs);
+                        /* No more line# entries */
+
+                        nxtStmtOffs = BAD_IL_OFFSET;
                     }
                 }
-                else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::NOP_BOUNDARIES) && (prevOpcode == CEE_NOP))
-                {
-                    if (opts.compDbgCode)
-                    {
-                        impSpillStackEnsure(true);
-                    }
-
-                    impCurStmtOffsSet(opcodeOffs);
-                }
-
-                assert(!impCurStmtDI.IsValid() || (nxtStmtOffs == BAD_IL_OFFSET) ||
-                       (impCurStmtDI.GetLocation().GetOffset() <= nxtStmtOffs));
             }
+            else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES) &&
+                     (verCurrentState.esStackDepth == 0))
+            {
+                /* At stack-empty locations, we have already added the tree to
+                   the stmt list with the last offset. We just need to update
+                   impCurStmtDI
+                 */
+
+                impCurStmtOffsSet(opcodeOffs);
+            }
+            else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES) &&
+                     impOpcodeIsCallSiteBoundary(prevOpcode))
+            {
+                /* Make sure we have a type cached */
+                assert(callTyp != TYP_COUNT);
+
+                if (callTyp == TYP_VOID)
+                {
+                    impCurStmtOffsSet(opcodeOffs);
+                }
+                else if (opts.compDbgCode)
+                {
+                    impSpillStackEnsure(true);
+                    impCurStmtOffsSet(opcodeOffs);
+                }
+            }
+            else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::NOP_BOUNDARIES) && (prevOpcode == CEE_NOP))
+            {
+                if (opts.compDbgCode)
+                {
+                    impSpillStackEnsure(true);
+                }
+
+                impCurStmtOffsSet(opcodeOffs);
+            }
+
+            assert(!impCurStmtDI.IsValid() || (nxtStmtOffs == BAD_IL_OFFSET) ||
+                   (impCurStmtDI.GetLocation().GetOffset() <= nxtStmtOffs));
         }
 
         CORINFO_CLASS_HANDLE clsHnd       = DUMMY_INIT(NULL);

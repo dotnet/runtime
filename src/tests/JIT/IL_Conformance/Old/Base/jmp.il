@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly jmp.exe{
+.assembly 'jmp'{
 }
 
 .method public static int32 main(class [mscorlib]System.String[]) {
