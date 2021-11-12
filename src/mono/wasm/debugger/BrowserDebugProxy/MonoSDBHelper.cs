@@ -1196,7 +1196,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 .Replace("System.UInt64", "ulong")
                 .Replace("System.Object", "object")
                 .Replace("System.Void", "void")
-                .Replace("System.Decimal", "decimal")
+                //.Replace("System.Decimal", "decimal")
                 .ToString();
 
         internal async Task<MonoBinaryReader> GetCAttrsFromType(int objectId, int typeId, string attrName, CancellationToken token)

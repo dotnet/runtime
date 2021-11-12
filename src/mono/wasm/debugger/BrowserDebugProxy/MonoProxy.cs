@@ -1050,7 +1050,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var pdb_data = string.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
 
                 var context = GetContext(sessionId);
-                foreach (var source in store.Add(sessionId, assembly_data, pdb_data))
+                foreach (var source in store.Add(assembly_name, assembly_data, pdb_data))
                 {
                     await OnSourceFileAdded(sessionId, source, context, token);
                 }
