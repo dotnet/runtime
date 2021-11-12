@@ -1685,7 +1685,17 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Verify we created schema for the calls needing class probes.
     // (we counted those when importing)
     //
-    assert(fgClassInstrumentor->SchemaCount() == info.compClassProbeCount);
+    // This is not true when we do partial compilation; it can/will erase class probes,
+    // and there's no easy way to figure out how many should be left.
+    //
+    if (doesMethodHavePartialCompilationPatchpoints())
+    {
+        assert(fgClassInstrumentor->SchemaCount() <= info.compClassProbeCount);
+    }
+    else
+    {
+        assert(fgClassInstrumentor->SchemaCount() == info.compClassProbeCount);
+    }
 
     // Optionally, when jitting, if there were no class probes and only one count probe,
     // suppress instrumentation.

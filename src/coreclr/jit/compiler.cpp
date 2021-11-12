@@ -2899,6 +2899,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         verboseDump = (JitConfig.JitDumpTier0() > 0);
     }
 
+    // Optionally suppress dumping some OSR jit requests.
+    //
+    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        const int desiredOffset = JitConfig.JitDumpAtOSROffset();
+
+        if (desiredOffset != -1)
+        {
+            verboseDump = (((IL_OFFSET)desiredOffset) == info.compILEntry);
+        }
+    }
+
     if (verboseDump)
     {
         verbose = true;
@@ -6500,9 +6512,21 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
     {
+        enum
+        {
+            BUFSIZE = 20
+        };
+        char osrBuffer[BUFSIZE] = {0};
+        if (opts.IsOSR())
+        {
+            // Tiering name already includes "OSR", we just want the IL offset
+            //
+            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
+        }
+
         printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
                info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), opts.IsOSR() ? " OSR" : "", compGetStressMessage());
+               compGetTieringName(), osrBuffer, compGetStressMessage());
     }
     if (compIsForInlining())
     {
