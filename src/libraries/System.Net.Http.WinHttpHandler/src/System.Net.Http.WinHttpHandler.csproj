@@ -119,6 +119,7 @@ System.Net.Http.WinHttpHandler</PackageDescription>
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
