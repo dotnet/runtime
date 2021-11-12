@@ -523,13 +523,14 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         {
             string expectedPem =
                 "-----BEGIN RSA PUBLIC KEY-----\n" +
-                "MEgCQQC3P1n17ovVXiS3/wKa0WqFQ8ltJT5UMZuTUyxBw8FHe4nbLS8z17modFhI\n" + 
-                "4GqOaDtQRFEeG8o2JSfhfPQrOAYVAgMBAAE=\n" +
+                "MIGJAoGBAJ8FH85xyi4XD0PGBEpvt4TYrWJb24dLBa0Ddhlj7iqdzH2vOlEjrn8Z\n" +
+                "pmO/ZWteNxxqCqfwgrG9wyFQISPvQDCTERFc91tCchje/hv2DgK/KFb7fLXxiM1m\n" +
+                "j8HKuvmDfglb0pG5FlwrDI6Ru8OEDXPuojCCLzyQUIinkpaZDGi9AgMBAAE=\n" +
                 "-----END RSA PUBLIC KEY-----";
 
             using (RSA rsa = RSAFactory.Create())
             {
-                rsa.ImportParameters(TestData.DiminishedDPParameters.ToPublic());
+                rsa.ImportParameters(TestData.RSA1024Params.ToPublic());
                 Assert.Equal(expectedPem, rsa.ExportRSAPublicKeyPem());
             }
         }
@@ -539,13 +540,14 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         {
             string expectedPem =
                 "-----BEGIN RSA PUBLIC KEY-----\n" +
-                "MEgCQQC3P1n17ovVXiS3/wKa0WqFQ8ltJT5UMZuTUyxBw8FHe4nbLS8z17modFhI\n" + 
-                "4GqOaDtQRFEeG8o2JSfhfPQrOAYVAgMBAAE=\n" +
+                "MIGJAoGBAJ8FH85xyi4XD0PGBEpvt4TYrWJb24dLBa0Ddhlj7iqdzH2vOlEjrn8Z\n" +
+                "pmO/ZWteNxxqCqfwgrG9wyFQISPvQDCTERFc91tCchje/hv2DgK/KFb7fLXxiM1m\n" +
+                "j8HKuvmDfglb0pG5FlwrDI6Ru8OEDXPuojCCLzyQUIinkpaZDGi9AgMBAAE=\n" +
                 "-----END RSA PUBLIC KEY-----";
 
             using (RSA rsa = RSAFactory.Create())
             {
-                rsa.ImportParameters(TestData.DiminishedDPParameters.ToPublic());
+                rsa.ImportParameters(TestData.RSA1024Params.ToPublic());
                 
                 int written;
                 bool result;
@@ -584,18 +586,24 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         {
             string expectedPem =
                 "-----BEGIN RSA PRIVATE KEY-----\n" +
-                "MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX\n" +
-                "uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh\n" +
-                "Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F\n" +
-                "9ykCIQDzcnsehnYgVZTTxzoCJ01PGpgESilRyFzNEsb8V60ZewIhAMCyOujqUqn7\n" +
-                "Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk\n" +
-                "rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC\n" +
-                "yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==\n" +
+                "MIICXAIBAAKBgQCfBR/OccouFw9DxgRKb7eE2K1iW9uHSwWtA3YZY+4qncx9rzpR\n" +
+                "I65/GaZjv2VrXjccagqn8IKxvcMhUCEj70AwkxERXPdbQnIY3v4b9g4CvyhW+3y1\n" +
+                "8YjNZo/Byrr5g34JW9KRuRZcKwyOkbvDhA1z7qIwgi88kFCIp5KWmQxovQIDAQAB\n" +
+                "AoGASub5f97mWkZfWM+NVth/a3I6XSGianxCfKesObJxzR4N48elYvG5MEIPN13A\n" +
+                "ck3rDJXAVjF6Bim5n1fkfE4l/90RDtnowE+YxhPXJH48PrTHhY/VlAsSVPigC2Fv\n" +
+                "3eibkZ0qbxWZjJG5Pe9lx3imV1LEF1v8qGVOHpWCaxVJbGsCQQDSSwkDkimV52WU\n" +
+                "GU8g0rf2ubB4H7fC3bRotf190ZK6qFAe3ER5vyEvwrWgCA7OgAw39mDqu1d+pXSC\n" +
+                "ip+nW0IDAkEAwZUxGvTlpB+shkg1m35y+YIXKoYKPTHM0Rwju2SQ3x9Wp0gknq8Y\n" +
+                "4wy25nvkH/cZbU7bqVDN1ihi72VySKkOPwJAd813nSkvt87T98NTaQei9lRjTIwF\n" +
+                "TGax2NWVTJCQXvZ0bqBeAl34shTjFACDLvGUBG3AWPnRprzr21LOEbHTsQJBAK5S\n" +
+                "Mw4bSlApVar2i4+iptaYl1PrsHy6w73qoSK2xN6n0diB1rgu5TJQ2MNk/WDrmzIb\n" +
+                "uSMXaMRZSf5aVDeqRPECQCo5r+J2BkiPSZPfAc17ssZoFa8OyfHgFT2paCfWZB4I\n" +
+                "3AE7ODJiT80MCfeaa8oPdsL73Xxd8YUWZ5+Yp/NAfRw=\n" +
                 "-----END RSA PRIVATE KEY-----";
 
             using (RSA rsa = RSAFactory.Create())
             {
-                rsa.ImportParameters(TestData.DiminishedDPParameters);
+                rsa.ImportParameters(TestData.RSA1024Params);
                 Assert.Equal(expectedPem, rsa.ExportRSAPrivateKeyPem());
             }
         }
@@ -605,18 +613,24 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         {
             string expectedPem =
                 "-----BEGIN RSA PRIVATE KEY-----\n" +
-                "MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX\n" +
-                "uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh\n" +
-                "Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F\n" +
-                "9ykCIQDzcnsehnYgVZTTxzoCJ01PGpgESilRyFzNEsb8V60ZewIhAMCyOujqUqn7\n" +
-                "Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk\n" +
-                "rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC\n" +
-                "yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==\n" +
+                "MIICXAIBAAKBgQCfBR/OccouFw9DxgRKb7eE2K1iW9uHSwWtA3YZY+4qncx9rzpR\n" +
+                "I65/GaZjv2VrXjccagqn8IKxvcMhUCEj70AwkxERXPdbQnIY3v4b9g4CvyhW+3y1\n" +
+                "8YjNZo/Byrr5g34JW9KRuRZcKwyOkbvDhA1z7qIwgi88kFCIp5KWmQxovQIDAQAB\n" +
+                "AoGASub5f97mWkZfWM+NVth/a3I6XSGianxCfKesObJxzR4N48elYvG5MEIPN13A\n" +
+                "ck3rDJXAVjF6Bim5n1fkfE4l/90RDtnowE+YxhPXJH48PrTHhY/VlAsSVPigC2Fv\n" +
+                "3eibkZ0qbxWZjJG5Pe9lx3imV1LEF1v8qGVOHpWCaxVJbGsCQQDSSwkDkimV52WU\n" +
+                "GU8g0rf2ubB4H7fC3bRotf190ZK6qFAe3ER5vyEvwrWgCA7OgAw39mDqu1d+pXSC\n" +
+                "ip+nW0IDAkEAwZUxGvTlpB+shkg1m35y+YIXKoYKPTHM0Rwju2SQ3x9Wp0gknq8Y\n" +
+                "4wy25nvkH/cZbU7bqVDN1ihi72VySKkOPwJAd813nSkvt87T98NTaQei9lRjTIwF\n" +
+                "TGax2NWVTJCQXvZ0bqBeAl34shTjFACDLvGUBG3AWPnRprzr21LOEbHTsQJBAK5S\n" +
+                "Mw4bSlApVar2i4+iptaYl1PrsHy6w73qoSK2xN6n0diB1rgu5TJQ2MNk/WDrmzIb\n" +
+                "uSMXaMRZSf5aVDeqRPECQCo5r+J2BkiPSZPfAc17ssZoFa8OyfHgFT2paCfWZB4I\n" +
+                "3AE7ODJiT80MCfeaa8oPdsL73Xxd8YUWZ5+Yp/NAfRw=\n" +
                 "-----END RSA PRIVATE KEY-----";
 
             using (RSA rsa = RSAFactory.Create())
             {
-                rsa.ImportParameters(TestData.DiminishedDPParameters);
+                rsa.ImportParameters(TestData.RSA1024Params);
                 
                 int written;
                 bool result;
