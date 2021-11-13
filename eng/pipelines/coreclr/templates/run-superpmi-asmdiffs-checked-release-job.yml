@@ -65,10 +65,10 @@ jobs:
         mkdir -p $(SpmiCollectionLocation)
       displayName: Create directory for SPMI collection
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiff_checked_release_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -release_directory $(releaseProductRootFolderPath) -release_artifactname $(releaseProductArtifactName) -arch $(archType)
-      displayName: ${{ format('SuperPMI asmdiff checked release setup ({0} {1})', parameters.osGroup, parameters.archType) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_checked_release_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -release_directory $(releaseProductRootFolderPath) -arch $(archType)
+      displayName: ${{ format('SuperPMI asmdiffs checked release setup ({0} {1})', parameters.osGroup, parameters.archType) }}
 
-      # Run superpmi replay in helix
+      # Run superpmi asmdiffs between checked build and release build in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
         displayName: 'Send job to Helix'
@@ -80,9 +80,7 @@ jobs:
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
-        ReleaseCorrelationPayloadDirectory: '$(ReleaseCorrelationPayloadDirectory)'
-        ReleaseArtifactName: '$(ReleaseArtifactName)'
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-replay.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-asmdiffs.proj'
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         archType: ${{ parameters.archType }}

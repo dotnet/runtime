@@ -8,13 +8,13 @@ parameters:
   variables: {}
   helixQueues: ''
   dependOnEvaluatePaths: false
-  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-asmdiff-checked-release-job.yml'
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-asmdiffs-checked-release-job.yml'
 
 jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
-    jobName: ${{ format('superpmi_asmdiff_checked_release_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
-    displayName: ${{ format('SuperPMI asmdiff checked release {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    jobName: ${{ format('superpmi_asmdiffs_checked_release_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    displayName: ${{ format('SuperPMI asmdiffs checked release {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -40,7 +40,6 @@ jobs:
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
     - name: releaseProductArtifactName
       value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_release'
-
 
     steps:
 
