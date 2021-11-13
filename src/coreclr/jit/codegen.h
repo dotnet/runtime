@@ -31,14 +31,8 @@ public:
 
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
-    virtual bool genCreateAddrMode(GenTree*  addr,
-                                   bool      fold,
-                                   bool*     revPtr,
-                                   GenTree** rv1Ptr,
-                                   GenTree** rv2Ptr,
-                                   unsigned* mulPtr,
-                                   ssize_t*  cnsPtr,
-                                   var_types targetType);
+    virtual bool genCreateAddrMode(
+        GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
 
 private:
 #if defined(TARGET_XARCH)
