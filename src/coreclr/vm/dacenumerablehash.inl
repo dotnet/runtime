@@ -130,7 +130,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseInsertEntry(DacEnumerableHa
     // Remember the entry hash code.
     pVolatileEntry->m_iHashValue = iHash;
 
-    auto curBuckets = GetBuckets();
+    DPTR(PTR_VolatileEntry) curBuckets = GetBuckets();
     DWORD cBuckets = (DWORD)((size_t*)curBuckets)[0];
 
     // Compute which bucket the entry belongs in based on the hash. (+2 to skip "length" and "next" slots)
@@ -169,14 +169,14 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     // error to our caller.
     FAULT_NOT_FATAL();
 
-    auto curBuckets = GetBuckets();
+    DPTR(PTR_VolatileEntry) curBuckets = GetBuckets();
     DWORD cBuckets = (DWORD)((size_t*)curBuckets)[0];
 
     // Make the new bucket table larger by the scale factor requested by the subclass (but also prime).
     DWORD cNewBuckets = NextLargestPrime(cBuckets * SCALE_FACTOR);
     // two extra slots - slot [0] contains the length of the table,
     //                   slot [1] will contain the next version of the table if it resizes
-    S_SIZE_T cbNewBuckets = S_SIZE_T(cNewBuckets + 2) * S_SIZE_T(sizeof(PTR_VolatileEntry));
+    S_SIZE_T cbNewBuckets = (S_SIZE_T(cNewBuckets) + S_SIZE_T(2)) * S_SIZE_T(sizeof(PTR_VolatileEntry));
 
     PTR_VolatileEntry *pNewBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem_NoThrow(cbNewBuckets);
     if (!pNewBuckets)
@@ -384,7 +384,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
     VolatileLoadBarrier();
 
     // in a case if resize is in progress, look in the new table as well.
-    auto nextBuckets = ((DPTR(PTR_VolatileEntry)*)pContext->m_curTable)[1];
+    DPTR(PTR_VolatileEntry) nextBuckets = ((DPTR(PTR_VolatileEntry)*)pContext->m_curTable)[1];
     if (nextBuckets != nullptr)
     {
         return BaseFindFirstEntryByHashCore(nextBuckets, iHash, pContext);
@@ -434,7 +434,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMe
     // sub-class).
     DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(FINAL_CLASS));
 
-    auto curBuckets = GetBuckets();
+    DPTR(PTR_VolatileEntry) curBuckets = GetBuckets();
     DWORD cBuckets = (DWORD)dac_cast<TADDR>(curBuckets[0]);
 
     // Save the bucket list.
@@ -495,7 +495,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     }
     CONTRACTL_END;
 
-    auto curBuckets = m_pTable->GetBuckets();
+    DPTR(PTR_VolatileEntry) curBuckets = m_pTable->GetBuckets();
     DWORD cBuckets = (DWORD)dac_cast<TADDR>(curBuckets[0]);
 
     while (m_dwBucket < cBuckets)
