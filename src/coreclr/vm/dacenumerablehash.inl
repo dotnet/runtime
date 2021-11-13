@@ -46,8 +46,8 @@ DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModu
     S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * (S_SIZE_T(cInitialBuckets) + S_SIZE_T(2));
 
     m_cEntries = 0;
-    PTR_VolatileEntry* pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
-    ((size_t*)pBuckets)[0] = cInitialBuckets;
+    DPTR(PTR_VolatileEntry) pBuckets = (DPTR(PTR_VolatileEntry))(void*)GetHeap()->AllocMem(cbBuckets);
+    ((size_t*)pBuckets)[SLOT_LENGTH] = cInitialBuckets;
 
     // publish after setting the length
     VolatileStore(&m_pBuckets, pBuckets);
@@ -131,7 +131,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseInsertEntry(DacEnumerableHa
     pVolatileEntry->m_iHashValue = iHash;
 
     DPTR(PTR_VolatileEntry) curBuckets = GetBuckets();
-    DWORD cBuckets = (DWORD)((size_t*)curBuckets)[0];
+    DWORD cBuckets = GetLength(curBuckets);
 
     // Compute which bucket the entry belongs in based on the hash. (+2 to skip "length" and "next" slots)
     DWORD dwBucket = iHash % cBuckets + 2;
@@ -170,7 +170,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     FAULT_NOT_FATAL();
 
     DPTR(PTR_VolatileEntry) curBuckets = GetBuckets();
-    DWORD cBuckets = (DWORD)((size_t*)curBuckets)[0];
+    DWORD cBuckets = GetLength(curBuckets);
 
     // Make the new bucket table larger by the scale factor requested by the subclass (but also prime).
     DWORD cNewBuckets = NextLargestPrime(cBuckets * SCALE_FACTOR);
@@ -183,9 +183,9 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
         return;
 
     // element 0 stores the length of the table
-    ((size_t*)pNewBuckets)[0] = cNewBuckets;
+    ((size_t*)pNewBuckets)[SLOT_LENGTH] = cNewBuckets;
     // element 1 stores the next version of the table (after length is written)
-    VolatileStore(&((PTR_VolatileEntry**)curBuckets)[1], pNewBuckets);
+    VolatileStore(&((PTR_VolatileEntry**)curBuckets)[SLOT_NEXT], pNewBuckets);
 
     // All buckets are initially empty.
     // Note: Memory allocated on loader heap is zero filled
@@ -283,12 +283,12 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
     if (m_cEntries == 0)
         return NULL;
 
-    PTR_VolatileEntry* curBuckets = GetBuckets();
+    DPTR(PTR_VolatileEntry) curBuckets = GetBuckets();
     return BaseFindFirstEntryByHashCore(curBuckets, iHash, pContext);
 }
 
 template <DAC_ENUM_HASH_PARAMS>
-DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHashCore(PTR_VolatileEntry* curBuckets, DacEnumerableHashValue iHash, LookupContext* pContext)
+DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHashCore(DPTR(PTR_VolatileEntry) curBuckets, DacEnumerableHashValue iHash, LookupContext* pContext)
 {
     CONTRACTL
     {
@@ -302,7 +302,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
 
     do
     {
-        DWORD cBuckets = (DWORD)dac_cast<TADDR>(curBuckets[0]);
+        DWORD cBuckets = GetLength(curBuckets);
 
         // Compute which bucket the entry belongs in based on the hash.
         // +2 to skip "length" and "next" slots
@@ -321,7 +321,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
                 // Record our current search state into the provided context so that a subsequent call to
                 // BaseFindNextEntryByHash can pick up the search where it left off.
                 pContext->m_pEntry = dac_cast<TADDR>(pEntry);
-                pContext->m_curTable = dac_cast<TADDR>(curBuckets);
+                pContext->m_curBuckets = curBuckets;
 
                 // Return the address of the sub-classes' embedded entry structure.
                 return VALUE_FROM_VOLATILE_ENTRY(pEntry);
@@ -336,7 +336,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
         // since we unlink it from old only after linking into the new.
         // check for next table must hapen after we looked through the current.
         VolatileLoadBarrier();
-        curBuckets = (DPTR(PTR_VolatileEntry))dac_cast<TADDR>(curBuckets[1]);
+        curBuckets = GetNext(curBuckets);
     } while (curBuckets != nullptr);
 
     // If we get here then none of the entries in the target bucket matched the hash code and we have a miss
@@ -384,7 +384,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
     VolatileLoadBarrier();
 
     // in a case if resize is in progress, look in the new table as well.
-    DPTR(PTR_VolatileEntry) nextBuckets = ((DPTR(PTR_VolatileEntry)*)pContext->m_curTable)[1];
+    DPTR(PTR_VolatileEntry) nextBuckets = GetNext(pContext->m_curBuckets);
     if (nextBuckets != nullptr)
     {
         return BaseFindFirstEntryByHashCore(nextBuckets, iHash, pContext);
@@ -435,7 +435,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMe
     DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(FINAL_CLASS));
 
     DPTR(PTR_VolatileEntry) curBuckets = GetBuckets();
-    DWORD cBuckets = (DWORD)dac_cast<TADDR>(curBuckets[0]);
+    DWORD cBuckets = GetLength(curBuckets);
 
     // Save the bucket list.
     DacEnumMemoryRegion(dac_cast<TADDR>(curBuckets), cBuckets * sizeof(VolatileEntry*));
@@ -460,7 +460,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMe
     }
 
     // we should not be resizing while enumerating memory regions.
-    _ASSERTE(curBuckets[1] == NULL);
+    _ASSERTE(GetNext(curBuckets) == NULL);
 
     // Save the module if present.
     if (GetModule().IsValid())
@@ -496,7 +496,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     CONTRACTL_END;
 
     DPTR(PTR_VolatileEntry) curBuckets = m_pTable->GetBuckets();
-    DWORD cBuckets = (DWORD)dac_cast<TADDR>(curBuckets[0]);
+    DWORD cBuckets = GetLength(curBuckets);
 
     while (m_dwBucket < cBuckets)
     {
@@ -523,7 +523,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     }
 
     // we should not be resizing while iterating.
-    _ASSERTE(curBuckets[1] == NULL);
+    _ASSERTE(GetNext(curBuckets) == NULL);
 
     return NULL;
 }
