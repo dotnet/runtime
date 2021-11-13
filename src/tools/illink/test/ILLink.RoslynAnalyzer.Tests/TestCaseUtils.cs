@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -13,6 +14,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -38,49 +40,33 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return s_net6Refs;
 		}
 
-		public static IEnumerable<object[]> GetTestData (string testSuiteName)
-			=> s_testCases[testSuiteName].Keys.Select (testName => new object[] { testName });
-
-		public static void RunTest (string suiteName, string testName, params (string, string)[] MSBuildProperties)
+		public static async Task RunTestFile (string suiteName, string testName, params (string, string)[] msbuildProperties)
 		{
-			s_testCases[suiteName][testName].Run (MSBuildProperties);
-		}
+			GetDirectoryPaths (out string rootSourceDir, out string testAssemblyPath);
+			Debug.Assert (Path.GetFileName (rootSourceDir) == MonoLinkerTestsCases);
+			var testPath = Path.Combine (rootSourceDir, suiteName, $"{testName}.cs");
+			Assert.True (File.Exists (testPath));
+			var tree = SyntaxFactory.ParseSyntaxTree (
+				SourceText.From (File.OpenRead (testPath), Encoding.UTF8),
+				path: testPath);
 
-		private static readonly Dictionary<string, Dictionary<string, TestCase>> s_testCases = InitializeTestCases ();
-
-		private static Dictionary<string, Dictionary<string, TestCase>> InitializeTestCases ()
-		{
-			var testCases = new Dictionary<string, Dictionary<string, TestCase>> ();
-			foreach (var file in GetTestFiles ()) {
-				// Some tests are in nested directories. Walk up until we get the test suite directory.
-				string directory = Path.GetDirectoryName (file)!;
-				string parentDirectory;
-				while (Path.GetFileName (parentDirectory = Path.GetDirectoryName (directory)!) != MonoLinkerTestsCases)
-					directory = parentDirectory;
-				string suiteName = Path.GetFileName (directory);
-
-				if (!testCases.TryGetValue (suiteName, out var suiteTestCases)) {
-					suiteTestCases = new ();
-					testCases.Add (suiteName, suiteTestCases);
-				}
-
-				foreach (var testCase in BuildTestCasesForFile (file)) {
-					var canditateTestName = GetMemberSyntaxFullName (testCase.MemberSyntax);
-					string testName = canditateTestName;
-					int index = 0;
-					while (!suiteTestCases.TryAdd (testName, testCase)) {
-						testName = canditateTestName + "#" + (++index).ToString ();
-					}
-
-					testCase.Name = testName;
-				}
+			var testDependenciesSource = TestCase.GetTestDependencies (tree)
+				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
+			var comp = await TestCaseCompilation.CreateCompilation (
+					tree,
+					msbuildProperties,
+					additionalSources: testDependenciesSource);
+			foreach (var testCase in BuildTestCasesForTree (tree)) {
+				testCase.Run (comp);
 			}
-			return testCases;
 		}
 
-		private static IEnumerable<TestCase> BuildTestCasesForFile (string testFile)
+		/// <summary>
+		/// Builds a <see cref="TestCase" /> for each member in the tree.
+		/// </summary>
+		private static IEnumerable<TestCase> BuildTestCasesForTree (SyntaxTree tree)
 		{
-			var root = CSharpSyntaxTree.ParseText (File.ReadAllText (testFile)).GetRoot ();
+			var root = tree.GetRoot ();
 			foreach (var node in root.DescendantNodes ()) {
 				if (node is MemberDeclarationSyntax m) {
 					var attrs = m.AttributeLists.SelectMany (al => al.Attributes.Where (IsWellKnown)).ToList ();
@@ -180,26 +166,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return arguments;
 		}
 
-		public static IEnumerable<string> GetTestFiles ()
-		{
-			GetDirectoryPaths (out var rootSourceDir, out _);
-			foreach (var subDir in Directory.EnumerateDirectories (rootSourceDir, "*", SearchOption.AllDirectories)) {
-				var subDirName = Path.GetFileName (subDir);
-				switch (subDirName) {
-				case "bin":
-				case "obj":
-				case "Properties":
-				case "Dependencies":
-				case "Individual":
-					continue;
-				}
-
-				foreach (var file in Directory.EnumerateFiles (subDir, "*.cs")) {
-					yield return file;
-				}
-			}
-		}
-
 		public static (string, string)[] UseMSBuildProperties (params string[] MSBuildProperties)
 		{
 			return MSBuildProperties.Select (msbp => ($"build_property.{msbp}", "true")).ToArray ();
@@ -211,30 +177,5 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			string ThisFile ([CallerFilePath] string path = "") => path;
 		}
-
-		public static string GetMemberSyntaxFullName (MemberDeclarationSyntax member)
-		{
-			StringBuilder fullName = new ();
-			var parent = member.Parent;
-			while (parent is ClassDeclarationSyntax parentClass) {
-				fullName.Insert (0, ".");
-				fullName.Insert (0, parentClass.Identifier.ToString ());
-				parent = parentClass.Parent;
-			}
-
-			fullName.Append (GetMemberSyntaxName (member));
-			return fullName.ToString ();
-		}
-
-		public static string GetMemberSyntaxName (MemberDeclarationSyntax member) =>
-			member switch {
-				MethodDeclarationSyntax method => method.Identifier.ToString (),
-				PropertyDeclarationSyntax property => property.Identifier.ToString (),
-				FieldDeclarationSyntax field => field.Declaration.Variables.Single ().Identifier.ToString (),
-				EventDeclarationSyntax @event => @event.Identifier.ToString (),
-				ClassDeclarationSyntax @class => @class.Identifier.ToString (),
-				ConstructorDeclarationSyntax ctor => ctor.Modifiers.Any (t => t.Text == "static") ? ".cctor" : ".ctor",
-				_ => "UnknownMember"
-			};
 	}
 }
