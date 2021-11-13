@@ -452,4 +452,4 @@ FAIL:
 	ret
 }
 }
-.assembly cgt_r8.exe{}
+.assembly cgt_r8{}

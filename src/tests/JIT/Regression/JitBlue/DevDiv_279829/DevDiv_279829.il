@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib {}
 
-.assembly DevDiv_279829.exe {}
+.assembly DevDiv_279829 {}
 
 .class public Test_DevDiv_279829
 {

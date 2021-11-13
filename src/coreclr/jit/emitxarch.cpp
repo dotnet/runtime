@@ -165,6 +165,21 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesWriteSignFlag: check if the instruction writes the
+//     SF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the SF flag, false otherwise.
+//
+bool emitter::DoesWriteSignFlag(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & Writes_SF) != 0;
+}
+
+//------------------------------------------------------------------------
 // DoesResetOverflowAndCarryFlags: check if the instruction resets the
 //     OF and CF flag to 0.
 //
@@ -338,6 +353,11 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
 {
     assert(reg != REG_NA);
 
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
     // Don't look back across IG boundaries (possible control flow)
     if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
@@ -385,6 +405,79 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
     if ((treeOps == GT_EQ) || (treeOps == GT_NE))
     {
         if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// AreFlagsSetToForSignJumpOpt: checks if the previous instruction set the SF if the tree
+//                              node qualifies for a jg/jle to jns/js optimization
+//
+// Arguments:
+//    reg     - register of interest
+//    opSize  - size of register
+//    relop   - relational tree node
+//
+// Return Value:
+//    true if the tree node qualifies for the jg/jle to jns/js optimization
+//    false if not, or if we can't safely determine
+//
+// Notes:
+//    Currently only looks back one instruction.
+bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* relop)
+{
+    assert(reg != REG_NA);
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    // Don't look back across IG boundaries (possible control flow)
+    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    {
+        return false;
+    }
+
+    instrDesc*  id      = emitLastIns;
+    instruction lastIns = id->idIns();
+    insFormat   fmt     = id->idInsFmt();
+
+    // make sure op1 is a reg
+    switch (fmt)
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RWR:
+        case IF_RRD:
+        case IF_RRW:
+            break;
+        default:
+            return false;
+    }
+
+    if (id->idReg1() != reg)
+    {
+        return false;
+    }
+
+    // If we have a GT_GE/GT_LT which generates an jge/jl, and the previous instruction
+    // sets the SF, we can omit a test instruction and check for jns/js.
+    if ((relop->OperGet() == GT_GE || relop->OperGet() == GT_LT) && !GenCondition::FromRelop(relop).IsUnsigned())
+    {
+        if (DoesWriteSignFlag(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }

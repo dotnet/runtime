@@ -821,7 +821,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Narrow:
         {
             assert(sig->numArgs == 2);
-            // TODO-ARM64-CQ: These intrinsics should be accelerated.
+
+            op2 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(retType);
+
+            retNode =
+                gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -896,6 +901,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1     = impSIMDPopStack(retType);
                 retNode = gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             }
+            break;
+        }
+
+        case NI_Vector64_WidenLower:
+        case NI_Vector128_WidenLower:
+        {
+            assert(sig->numArgs == 1);
+
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_WidenUpper:
+        case NI_Vector128_WidenUpper:
+        {
+            assert(sig->numArgs == 1);
+
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
