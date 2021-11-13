@@ -31,8 +31,14 @@ public:
 
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
-    virtual bool genCreateAddrMode(
-        GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
+    virtual bool genCreateAddrMode(GenTree*  addr,
+                                   bool      fold,
+                                   bool*     revPtr,
+                                   GenTree** rv1Ptr,
+                                   GenTree** rv2Ptr,
+                                   unsigned* mulPtr,
+                                   ssize_t*  cnsPtr,
+                                   var_types targetType);
 
 private:
 #if defined(TARGET_XARCH)
@@ -1251,6 +1257,7 @@ protected:
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForMadd(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
+    void genCodeForAddEx(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)

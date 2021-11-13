@@ -4915,26 +4915,14 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
     bool     rev    = false;
 
     // Find out if an addressing mode can be constructed
-    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,     // address
-                                                       true,     // fold
-                                                       &rev,     // reverse ops
-                                                       &base,    // base addr
-                                                       &index,   // index val
-                                                       &scale,   // scaling
-                                                       &offset); // displacement
-
-#ifdef TARGET_ARMARCH
-    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
-    //
-    //   *(ulong*)(data + index * 8); - can be optimized
-    //   *(ulong*)(data + index * 7); - can not be optimized
-    //     *(int*)(data + index * 2); - can not be optimized
-    //
-    if ((scale > 0) && (genTypeSize(targetType) != scale))
-    {
-        return false;
-    }
-#endif
+    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,    // address
+                                                       true,    // fold
+                                                       &rev,    // reverse ops
+                                                       &base,   // base addr
+                                                       &index,  // index val
+                                                       &scale,  // scaling
+                                                       &offset, // displacement
+                                                       targetType);
 
     if (scale == 0)
     {

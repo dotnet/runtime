@@ -9640,4 +9640,40 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     genProduceReg(tree);
 }
 
+//------------------------------------------------------------------------
+// genCodeForAddEx: Generates the code sequence for a GenTree node that
+// represents an addition with sign or zero extended
+//
+// Arguments:
+//    tree - the add with extend node.
+//
+void CodeGen::genCodeForAddEx(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_ADDEX) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
+
+    GenTreeCast* cast;
+    GenTree*     op2;
+    if (tree->gtGetOp1()->isContained())
+    {
+        cast = tree->gtGetOp1()->AsCast();
+        op2  = tree->gtGetOp2();
+    }
+    else
+    {
+        assert(tree->gtGetOp2()->isContained());
+        cast = tree->gtGetOp2()->AsCast();
+        op2  = tree->gtGetOp1();
+    }
+    assert(varTypeIsLong(cast->CastToType()));
+
+    regNumber dstReg = tree->GetRegNum();
+    regNumber op1Reg = op2->GetRegNum();
+    regNumber op2Reg = cast->CastOp()->GetRegNum();
+    insOpts   opts   = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
+
+    GetEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, opts);
+    genProduceReg(tree);
+}
+
 #endif // TARGET_ARM64

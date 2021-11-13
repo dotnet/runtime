@@ -1306,8 +1306,14 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *                  form an address mode later on.
  */
 
-bool CodeGen::genCreateAddrMode(
-    GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr)
+bool CodeGen::genCreateAddrMode(GenTree*  addr,
+                                bool      fold,
+                                bool*     revPtr,
+                                GenTree** rv1Ptr,
+                                GenTree** rv2Ptr,
+                                unsigned* mulPtr,
+                                ssize_t*  cnsPtr,
+                                var_types targetType)
 {
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1359,6 +1365,10 @@ bool CodeGen::genCreateAddrMode(
 
     ssize_t  cns;
     unsigned mul;
+    unsigned expectedScale = 0;
+#ifdef TARGET_ARM64
+    expectedScale = genTypeSize(targetType);
+#endif
 
     GenTree* tmp;
 
@@ -1585,6 +1595,7 @@ AGAIN:
             }
 
             break;
+#endif // TARGET_ARMARCH
 
         case GT_MUL:
 
@@ -1597,18 +1608,19 @@ AGAIN:
 
         case GT_LSH:
 
-            mul = op2->GetScaledIndex();
-            if (mul)
+            if (op2->GetScaledIndex())
             {
+                unsigned tMul = op2->GetScaledIndex();
                 // 'op2' is a scaled value...is it's argument also scaled?
-                int argScale;
-                rv2 = op2->AsOp()->gtOp1;
-                while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
+                int      argScale;
+                GenTree* tRv2 = op2->gtGetOp1();
+
+                while (tRv2->OperIs(GT_MUL, GT_LSH) && (argScale = tRv2->GetScaledIndex()) != 0)
                 {
-                    if (jitIsScaleIndexMul(argScale * mul))
+                    if (jitIsScaleIndexMul(argScale * tMul))
                     {
-                        mul = mul * argScale;
-                        rv2 = rv2->AsOp()->gtOp1;
+                        tMul = tMul * argScale;
+                        tRv2 = tRv2->gtGetOp1();
                     }
                     else
                     {
@@ -1616,12 +1628,18 @@ AGAIN:
                     }
                 }
 
+                if ((tMul != 0) && (expectedScale != 0) && (expectedScale != tMul))
+                {
+                    break;
+                }
+
                 rv1 = op1;
+                rv2 = tRv2;
+                mul = tMul;
 
                 goto FOUND_AM;
             }
             break;
-#endif // TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -1636,6 +1654,8 @@ AGAIN:
         default:
             break;
     }
+
+    assert((expectedScale == 0) || (mul == 0) || (expectedScale == mul));
 
     /* The best we can do "[rv1 + rv2]" or "[rv1 + rv2 + cns]" */
 
