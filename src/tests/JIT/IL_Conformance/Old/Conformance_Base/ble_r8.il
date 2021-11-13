@@ -475,4 +475,4 @@ FAIL:
 	ret
 }
 }
-.assembly ble_r8.exe{}
+.assembly ble_r8{}

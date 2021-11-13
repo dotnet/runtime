@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly box_unbox.exe{}
+.assembly box_unbox{}
 
 .class public value sealed valClass {
 .field public int32 Field1

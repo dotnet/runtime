@@ -3,7 +3,6 @@
   <PropertyGroup>
     <EnableDllImportGenerator Condition="'$(EnableDllImportGenerator)' == ''
                         and '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableDllImportGenerator>
-    <SetDllImportGeneratorConstants>false</SetDllImportGeneratorConstants>
     <IncludeDllImportGeneratorSources Condition="'$(IncludeDllImportGeneratorSources)' == ''">true</IncludeDllImportGeneratorSources>
   </PropertyGroup>
   <ItemGroup>
@@ -32,7 +31,7 @@
                         and '$(IsFrameworkSupportFacade)' != 'true'
                         and '$(IsSourceProject)' == 'true'
                         and '$(MSBuildProjectExtension)' == '.csproj'
-                        and '$(TargetFrameworkIdentifier)' == '.NETStandard'" />
+                        and ('$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFrameworkIdentifier)' == '.NETFramework')" />
   </ItemGroup>
 
   <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->

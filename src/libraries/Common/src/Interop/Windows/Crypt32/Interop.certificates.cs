@@ -10,25 +10,13 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertFreeCertificateContext(IntPtr pCertContext);
-#else
-        [DllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CertFreeCertificateContext(IntPtr pCertContext);
-#endif
 
-#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertVerifyCertificateChainPolicy(
-#else
-        [DllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CertVerifyCertificateChainPolicy(
-#endif
             IntPtr pszPolicyOID,
             SafeX509ChainHandle pChainContext,
             ref CERT_CHAIN_POLICY_PARA pPolicyPara,

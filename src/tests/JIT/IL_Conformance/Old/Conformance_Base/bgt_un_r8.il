@@ -894,4 +894,4 @@ FAIL:
 	ret
 }
 }
-.assembly bgt_un_r8.exe{}
+.assembly bgt_un_r8{}

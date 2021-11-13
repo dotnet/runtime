@@ -78,4 +78,4 @@ FAIL:
 	ret
 }
 }
-.assembly starg_r4.exe{}
+.assembly starg_r4{}

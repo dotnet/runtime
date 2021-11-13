@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -227,8 +226,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (elementAccess.ArgumentList != null)
                         {
-                            var commandParamsObj = new MemoryStream();
-                            var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
                             foreach (var arg in elementAccess.ArgumentList.Arguments)
                             {
                                 // e.g. x[1]

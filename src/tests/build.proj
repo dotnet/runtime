@@ -215,6 +215,7 @@
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
+      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
 
     <Copy
@@ -231,6 +232,10 @@
 
     <Copy
         SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
 
     <AndroidAppBuilderTask
@@ -285,6 +290,7 @@
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
+      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
     <ItemGroup>
       <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
@@ -309,6 +315,10 @@
         DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="%(TestDlls.Identity)"
