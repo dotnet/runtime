@@ -22,4 +22,4 @@ DLLIMPORTGENANALYZER014 | Usage            | Error    | RefValuePropertyUnsuppor
 DLLIMPORTGENANALYZER015 | Interoperability | Disabled | ConvertToGeneratedDllImportAnalyzer
 DLLIMPORTGENANALYZER016 | Usage            | Error    | GenericTypeMustBeClosed
 DLLIMPORTGENANALYZER017 | Usage            | Warning  | GeneratedDllImportContainingTypeMissingModifiers
-DLLIMPORTGENANALYZER018 | Usage            | Error  | MarshallerGetPinnableReferenceRequiresValueProperty
+DLLIMPORTGENANALYZER018 | Usage            | Error    | MarshallerGetPinnableReferenceRequiresValueProperty

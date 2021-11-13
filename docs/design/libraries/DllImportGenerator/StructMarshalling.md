@@ -54,14 +54,14 @@ partial struct TNative
 }
 ```
 
-The analyzer will report an error if neither the constructor nor the ToManaged method is defined. When one of those two methods is missing, the direction of marshalling (managed to native/native to managed) that relies on the missing method is considered unsupported for the corresponding managed type. The FreeNative method is only required when there are resources that need to be released.
+The analyzer will report an error if neither the constructor nor the `ToManaged` method is defined. When one of those two methods is missing, the direction of marshalling (managed to native/native to managed) that relies on the missing method is considered unsupported for the corresponding managed type. The `FreeNative` method is only required when there are resources that need to be released.
 
 
 > :question: Does this API surface and shape work for all marshalling scenarios we plan on supporting? It may have issues with the current "layout class" by-value `[Out]` parameter marshalling where the runtime updates a `class` typed object in place. We already recommend against using classes for interop for performance reasons and a struct value passed via `ref` or `out` with the same members would cover this scenario.
 
 If the native type `TNative` also has a public `Value` property, then the value of the `Value` property will be passed to native code instead of the `TNative` value itself. As a result, the type `TNative` will be allowed to be non-blittable and the type of the `Value` property will be required to be blittable. If the `Value` property is settable, then when marshalling in the native-to-managed direction, a default value of `TNative` will have its `Value` property set to the native value. If `Value` does not have a setter, then marshalling from native to managed is not supported.
 
-If a `Value` property is provided, the developer may also provide a ref-returning or readonly-ref-returning `GetPinnableReference` method. The `GetPinnableReference` method will be called before the `Value` property getter is called. The ref returned by `GetPinnableReference` will be pinned with a `fixed` statement, but the pinned will not be used (it acts exclusively as a side-effect).
+If a `Value` property is provided, the developer may also provide a ref-returning or readonly-ref-returning `GetPinnableReference` method. The `GetPinnableReference` method will be called before the `Value` property getter is called. The ref returned by `GetPinnableReference` will be pinned with a `fixed` statement, but the pinned value will not be used (it acts exclusively as a side-effect).
 
 A `ref` or `ref readonly` typed `Value` property is unsupported. If a ref-return is required, the type author can supply a `GetPinnableReference` method on the native type to pin the desired `ref` to return and then use `System.Runtime.CompilerServices.Unsafe.AsPointer` to get a pointer from the `ref` that will have already been pinned by the time the `Value` getter is called.
 
