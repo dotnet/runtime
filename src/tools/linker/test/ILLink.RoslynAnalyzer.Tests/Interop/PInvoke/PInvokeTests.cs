@@ -10,39 +10,39 @@ namespace ILLink.RoslynAnalyzer.Tests.Interop
 
 
 		[Fact]
-		public Task UnusedDefaultConstructorIsRemoved()
+		public Task UnusedDefaultConstructorIsRemoved ()
 		{
-			return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
-		public Task UnusedFieldsOfTypesPassedByRefAreNotRemoved()
+		public Task UnusedFieldsOfTypesPassedByRefAreNotRemoved ()
 		{
-			return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
-		public Task DefaultConstructorOfReturnTypeIsNotRemoved()
+		public Task DefaultConstructorOfReturnTypeIsNotRemoved ()
 		{
-			return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
-		public Task UnusedDefaultConstructorOfTypePassedByRefIsNotRemoved()
+		public Task UnusedDefaultConstructorOfTypePassedByRefIsNotRemoved ()
 		{
-			return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
-		public Task UnusedFieldsOfTypesAreNotRemoved()
+		public Task UnusedFieldsOfTypesAreNotRemoved ()
 		{
-			return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
-		public Task UnusedPInvoke()
+		public Task UnusedPInvoke ()
 		{
-			return RunTest();
+			return RunTest ();
 		}
 	}
 }
