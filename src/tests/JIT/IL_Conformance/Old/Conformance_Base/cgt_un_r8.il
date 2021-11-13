@@ -870,4 +870,4 @@ FAIL:
 	ret
 }
 }
-.assembly cgt_un_r8.exe{}
+.assembly cgt_un_r8{}

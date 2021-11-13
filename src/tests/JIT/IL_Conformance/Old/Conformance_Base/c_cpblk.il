@@ -78,5 +78,5 @@ END:
 }
 
 
-.assembly c_cpblk.exe {}
+.assembly c_cpblk {}
 

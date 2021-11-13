@@ -15,8 +15,9 @@ namespace Sample
     {
         List<BenchTask> tasks = new()
         {
+            new AppStartTask(),
             new ExceptionsTask(),
-            new JsonTask (),
+            new JsonTask(),
             new WebSocketTask()
         };
         static Test instance = new Test();
