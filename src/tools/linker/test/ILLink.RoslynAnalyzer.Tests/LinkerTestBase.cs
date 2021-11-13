@@ -1,4 +1,5 @@
 
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -11,7 +12,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			MSBuildPropertyOptionNames.EnableTrimAnalyzer,
 			MSBuildPropertyOptionNames.EnableSingleFileAnalyzer);
 
-		protected Task RunTest (string testName)
+		protected Task RunTest ([CallerMemberName] string testName = "")
 		{
 			return RunTestFile (TestSuiteName, testName, MSBuildProperties);
 		}

@@ -45,7 +45,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 			GetDirectoryPaths (out string rootSourceDir, out string testAssemblyPath);
 			Debug.Assert (Path.GetFileName (rootSourceDir) == MonoLinkerTestsCases);
 			var testPath = Path.Combine (rootSourceDir, suiteName, $"{testName}.cs");
-			var tree = SyntaxFactory.ParseSyntaxTree (SourceText.From (testPath));
+			Assert.True(File.Exists(testPath));
+			var tree = SyntaxFactory.ParseSyntaxTree (
+				SourceText.From (File.OpenRead(testPath), Encoding.UTF8),
+				path: testPath);
 
 			var testDependenciesSource = TestCase.GetTestDependencies (tree)
 				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
@@ -53,12 +56,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 					tree,
 					msbuildProperties,
 					additionalSources: testDependenciesSource);
-			foreach (var testCase in BuildTestCasesForFile (tree)) {
+			foreach (var testCase in BuildTestCasesForTree (tree)) {
 				testCase.Run (comp);
 			}
 		}
 
-		private static IEnumerable<TestCase> BuildTestCasesForFile (SyntaxTree tree)
+		/// <summary>
+		/// Builds a <see cref="TestCase" /> for each member in the tree.
+		/// </summary>
+		private static IEnumerable<TestCase> BuildTestCasesForTree (SyntaxTree tree)
 		{
 			var root = tree.GetRoot ();
 			foreach (var node in root.DescendantNodes ()) {
