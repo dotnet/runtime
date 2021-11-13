@@ -418,7 +418,9 @@ namespace DebuggerTests
     public static class EvaluateStaticClass
     {
         public static int StaticField1 = 10;
+        public static DateTime StaticDTField1 = new DateTime(2000, 5, 4, 3, 2, 1);
         public static string StaticProperty1 => "StaticProperty1";
+        public static DateTime StaticDTProperty1 => new DateTime(2000, 8, 1, 4, 7, 1);
 		public static string StaticPropertyWithError => throw new Exception("not implemented");
     }
 
@@ -466,7 +468,7 @@ namespace DebuggerTests
                 textListOfLists = new List<List<string>> { textList, textList };
                 idx0 = 0;
                 idx1 = 1;
-            }        
+            }
         }
 
         public static void EvaluateLocals()

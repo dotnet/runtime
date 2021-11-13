@@ -442,6 +442,10 @@ namespace DebuggerTests
                   //BUG: TODO:
                   //("a)", "CompilationError"),
 
+                  ("this.c.e", "ReferenceError"), // this.<int-field>.<field>
+                  ("this.e.a", "ReferenceError"), // this.<int-local>.<field>
+                  ("this.dt.e", "ReferenceError"), // this.<field>.<local>
+
                   ("this.a.", "ReferenceError"),
                   ("a.", "ReferenceError"),
 
@@ -465,6 +469,9 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameFail(id,
+                   ("EvaluateStaticClass.f_s.c", "ReferenceError"), // <static-type>.<local>.<field>
+                   ("EvaluateStaticClass.NonExistant.f_s.c", "ReferenceError"), // <static-type>.<non-existant>.<local>.<field>
+                   ("NonExistant.f_s.dateTime", "ReferenceError"), // <non-existant>.<local>...
                    ("me.foo", "ReferenceError"),
                    ("this", "ReferenceError"),
                    ("this.NullIfAIsNotZero.foo", "ReferenceError"));
@@ -693,10 +700,11 @@ namespace DebuggerTests
                 var frame = pause_location["callFrames"][0];
 
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
-                await EvaluateOnCallFrameAndCheck(id,
+                    ("EvaluateStaticClass.StaticDTProperty1.Hour", TNumber(4)), // <static-type>.<static-prop>.<instance member>
+                    ("EvaluateStaticClass.StaticDTField1.Hour", TNumber(3)), // <static-type>.<static-field>.<instance member>
+                    ("EvaluateStaticClass.StaticDTField1.Date.Year", TNumber(2000)), // <static-type>.<static-field>.<instance-member>.<instance member>
+                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
                     ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
@@ -769,16 +777,16 @@ namespace DebuggerTests
                 var frame = pause_location["callFrames"][0];
 
                 await EvaluateOnCallFrameAndCheck(id_top,
-                ("EvaluateStaticClass.StaticField1", TNumber(20)),
-                ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty2")),
-                ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                    ("EvaluateStaticClass.StaticField1", TNumber(20)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty2")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
 
                 var id_second = pause_location["callFrames"][1]["callFrameId"].Value<string>();
 
                 await EvaluateOnCallFrameAndCheck(id_second,
-                ("EvaluateStaticClass.StaticField1", TNumber(10)),
-                ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
-                ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
         [Fact]

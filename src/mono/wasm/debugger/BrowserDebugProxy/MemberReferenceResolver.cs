@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -82,68 +81,86 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<JObject> TryToRunOnLoadedClasses(string varName, CancellationToken token)
+        public async Task<(JObject containerObject, string remaining)> ResolveStaticMembersInStaticTypes(string varName, CancellationToken token)
         {
             string classNameToFind = "";
             string[] parts = varName.Split(".");
-            var typeId = -1;
-            foreach (string part in parts)
+            var store = await proxy.LoadStore(sessionId, token);
+            var methodInfo = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId).Method.Info;
+
+            int typeId = -1;
+            for (int i = 0; i < parts.Length; i++)
             {
+                string part = parts[i].Trim();
+
                 if (classNameToFind.Length > 0)
                     classNameToFind += ".";
-                classNameToFind += part.Trim();
+                classNameToFind += part;
+
                 if (typeId != -1)
                 {
-                    var fields = await sdbHelper.GetTypeFields(sessionId, typeId, token);
-                    foreach (var field in fields)
-                    {
-                        if (field.Name == part.Trim())
-                        {
-                            var isInitialized = await sdbHelper.TypeIsInitialized(sessionId, typeId, token);
-                            if (isInitialized == 0)
-                            {
-                                isInitialized = await sdbHelper.TypeInitialize(sessionId, typeId, token);
-                            }
-                            var valueRet = await sdbHelper.GetFieldValue(sessionId, typeId, field.Id, token);
-                            return await GetValueFromObject(valueRet, token);
-                        }
-                    }
-                    var methodId = await sdbHelper.GetPropertyMethodIdByName(sessionId, typeId, part.Trim(), token);
-                    if (methodId != -1)
-                    {
-                        var commandParamsObj = new MemoryStream();
-                        var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
-                        commandParamsObjWriter.Write(0); //param count
-                        var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
-                        return await GetValueFromObject(retMethod, token);
-                    }
-                }
-                var store = await proxy.LoadStore(sessionId, token);
-                var info = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId).Method.Info;
-                var classNameToFindWithNamespace =
-                    string.IsNullOrEmpty(info.TypeInfo.Namespace) ?
-                    classNameToFind :
-                    info.TypeInfo.Namespace + "." + classNameToFind;
+                    string remaining = null;
+                    JObject memberObject = await FindStaticMemberInType(part, typeId);
+                    if (memberObject != null && i < parts.Length - 1)
+                        remaining = string.Join('.', parts[(i+1)..]);
 
+                    return (memberObject, remaining);
+                }
+
+                if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
+                    typeId = await FindStaticTypeId(methodInfo.TypeInfo.Namespace + "." + classNameToFind);
+                if (typeId == -1)
+                    typeId = await FindStaticTypeId(classNameToFind);
+            }
+
+            return (null, null);
+
+            async Task<JObject> FindStaticMemberInType(string name, int typeId)
+            {
+                var fields = await sdbHelper.GetTypeFields(sessionId, typeId, token);
+                foreach (var field in fields)
+                {
+                    if (field.Name != name)
+                        continue;
+
+                    var isInitialized = await sdbHelper.TypeIsInitialized(sessionId, typeId, token);
+                    if (isInitialized == 0)
+                    {
+                        isInitialized = await sdbHelper.TypeInitialize(sessionId, typeId, token);
+                    }
+                    var valueRet = await sdbHelper.GetFieldValue(sessionId, typeId, field.Id, token);
+
+                    return await GetValueFromObject(valueRet, token);
+                }
+
+                var methodId = await sdbHelper.GetPropertyMethodIdByName(sessionId, typeId, name, token);
+                if (methodId != -1)
+                {
+                    var commandParamsObj = new MemoryStream();
+                    var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                    commandParamsObjWriter.Write(0); //param count
+                    var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
+                    return await GetValueFromObject(retMethod, token);
+                }
+
+                return null;
+            }
+
+            async Task<int> FindStaticTypeId(string typeName)
+            {
                 foreach (var asm in store.assemblies)
                 {
-                    if (await TryGetTypeIdFromName(classNameToFindWithNamespace, asm))
-                        break;
-                    if (await TryGetTypeIdFromName(classNameToFind, asm))
-                        break;
-                }
-
-                async Task<bool> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
-                {
-                    var type = assembly.GetTypeByName(typeName);
+                    var type = asm.GetTypeByName(typeName);
                     if (type == null)
-                        return false;
+                        continue;
 
-                    typeId = await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
-                    return true;
+                    int id = await sdbHelper.GetTypeIdFromToken(sessionId, asm.DebugId, type.Token, token);
+                    if (id != -1)
+                        return id;
                 }
+
+                return -1;
             }
-            return null;
         }
 
         // Checks Locals, followed by `this`
@@ -153,9 +170,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (varName.Contains('('))
                 return null;
 
-            string[] parts = varName.Split(".");
-            JObject rootObject = null;
-
             if (scopeCache.MemberReferences.TryGetValue(varName, out JObject ret)) {
                 return ret;
             }
@@ -164,26 +178,36 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return await GetValueFromObject(valueRet, token);
             }
 
-            foreach (string part in parts)
-            {
-                string partTrimmed = part.Trim();
-                if (partTrimmed == "")
-                    return null;
-                if (rootObject != null)
-                {
-                    if (rootObject?["subtype"]?.Value<string>() == "null")
-                        return null;
-                    if (DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
-                    {
-                        var rootResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                        var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
-                        if (objRet == null)
-                            return null;
+            string[] parts = varName.Split(".");
+            if (parts.Length == 0)
+                return null;
 
-                        rootObject = await GetValueFromObject(objRet, token);
+            JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
+            if (retObject != null && parts.Length > 1)
+                retObject = await ResolveAsInstanceMember(string.Join('.', parts[1..]), retObject);
+
+            if (retObject == null)
+            {
+                (retObject, string remaining) = await ResolveStaticMembersInStaticTypes(varName, token);
+                if (!string.IsNullOrEmpty(remaining))
+                {
+                    if (retObject?["subtype"]?.Value<string>() == "null")
+                    {
+                        // NRE on null.$remaining
+                        retObject = null;
                     }
-                    continue;
+                    else
+                    {
+                        retObject = await ResolveAsInstanceMember(remaining, retObject);
+                    }
                 }
+            }
+
+            scopeCache.MemberReferences[varName] = retObject;
+            return retObject;
+
+            async Task<JObject> ResolveAsLocalOrThisMember(string name)
+            {
                 if (scopeCache.Locals.Count == 0 && !localsFetched)
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
@@ -191,39 +215,61 @@ namespace Microsoft.WebAssembly.Diagnostics
                         throw new Exception($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
                     localsFetched = true;
                 }
-                if (scopeCache.Locals.TryGetValue(partTrimmed, out JObject obj))
-                {
-                    rootObject = obj["value"]?.Value<JObject>();
-                }
-                else if (scopeCache.Locals.TryGetValue("this", out JObject objThis))
-                {
-                    if (partTrimmed == "this")
-                    {
-                        rootObject = objThis?["value"].Value<JObject>();
-                    }
-                    else if (DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
-                    {
-                        var rootResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                        var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
-                        if (objRet != null)
-                        {
-                            rootObject = await GetValueFromObject(objRet, token);
-                        }
-                        else
-                        {
-                            rootObject = await TryToRunOnLoadedClasses(varName, token);
-                            return rootObject;
-                        }
-                    }
-                }
+
+                if (scopeCache.Locals.TryGetValue(name, out JObject obj))
+                    return obj["value"]?.Value<JObject>();
+
+                if (!scopeCache.Locals.TryGetValue("this", out JObject objThis))
+                    return null;
+
+                if (!DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                    return null;
+
+                var rootResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == name);
+                if (objRet != null)
+                    return await GetValueFromObject(objRet, token);
+
+                return null;
             }
-            if (rootObject == null)
+
+            async Task<JObject> ResolveAsInstanceMember(string expr, JObject baseObject)
             {
-                rootObject = await TryToRunOnLoadedClasses(varName, token);
-                return rootObject;
+                JObject resolvedObject = baseObject;
+                string[] parts = expr.Split('.');
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    string partTrimmed = parts[i].Trim();
+                    if (partTrimmed.Length == 0)
+                        return null;
+
+                    if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                        return null;
+
+                    var resolvedResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                    var objRet = resolvedResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
+                    if (objRet == null)
+                        return null;
+
+                    resolvedObject = await GetValueFromObject(objRet, token);
+                    if (resolvedObject == null)
+                        return null;
+
+                    if (resolvedObject["subtype"]?.Value<string>() == "null")
+                    {
+                        if (i < parts.Length - 1)
+                        {
+                            // there is some parts remaining, and can't
+                            // do null.$remaining
+                            return null;
+                        }
+
+                        return resolvedObject;
+                    }
+                }
+
+                return resolvedObject;
             }
-            scopeCache.MemberReferences[varName] = rootObject;
-            return rootObject;
         }
 
         public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, CancellationToken token)
