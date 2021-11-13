@@ -2236,12 +2236,6 @@ public:
     {
     }
 
-    // Returns the number of children of the current node.
-    unsigned NumChildren();
-
-    // Requires "childNum < NumChildren()".  Returns the "n"th child of "this."
-    GenTree* GetChild(unsigned childNum);
-
     // Returns an iterator that will produce the use edge to each operand of this node. Differs
     // from the sequence of nodes produced by a loop over `GetChild` in its handling of call, phi,
     // and block op nodes.
@@ -2250,13 +2244,11 @@ public:
 
     IteratorPair<GenTreeUseEdgeIterator> UseEdges();
 
-    // Returns an iterator that will produce each operand of this node. Differs from the sequence
-    // of nodes produced by a loop over `GetChild` in its handling of call, phi, and block op
-    // nodes.
+    // Returns an iterator that will produce each operand of this node, in execution order.
     GenTreeOperandIterator OperandsBegin();
     GenTreeOperandIterator OperandsEnd();
 
-    // Returns a range that will produce the operands of this node in use order.
+    // Returns a range that will produce the operands of this node in execution order.
     IteratorPair<GenTreeOperandIterator> Operands();
 
     enum class VisitResult
@@ -2871,8 +2863,7 @@ public:
 // GenTreeOperandIterator: an iterator that will produce each operand of a
 //                         GenTree node in the order in which they are
 //                         used. This uses `GenTreeUseEdgeIterator` under
-//                         the covers and comes with the same caveats
-//                         w.r.t. `GetChild`.
+//                         the covers.
 //
 // Note: valid values of this type may be obtained by calling
 // `GenTree::OperandsBegin` and `GenTree::OperandsEnd`.

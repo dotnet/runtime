@@ -8274,15 +8274,10 @@ void Compiler::gtUpdateNodeOperSideEffectsPost(GenTree* tree)
 void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
 {
     gtUpdateNodeOperSideEffects(tree);
-    unsigned nChildren = tree->NumChildren();
-    for (unsigned childNum = 0; childNum < nChildren; childNum++)
-    {
-        GenTree* child = tree->GetChild(childNum);
-        if (child != nullptr)
-        {
-            tree->gtFlags |= (child->gtFlags & GTF_ALL_EFFECT);
-        }
-    }
+    tree->VisitOperands([tree](GenTree* operand) -> GenTree::VisitResult {
+        tree->gtFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+        return GenTree::VisitResult::Continue;
+    });
 }
 
 //------------------------------------------------------------------------
@@ -8446,360 +8441,6 @@ bool GenTree::gtRequestSetFlags()
     // this method returns true.
     //
     return result;
-}
-
-// TODO-List-Cleanup: remove.
-unsigned GenTree::NumChildren()
-{
-    if (OperIsConst() || OperIsLeaf())
-    {
-        return 0;
-    }
-    else if (OperIsUnary())
-    {
-        if (AsUnOp()->gtOp1 == nullptr)
-        {
-            return 0;
-        }
-        else
-        {
-            return 1;
-        }
-    }
-    else if (OperIsBinary())
-    {
-        // All binary operators except LEA have at least one arg; the second arg may sometimes be null, however.
-        if (OperGet() == GT_LEA)
-        {
-            unsigned childCount = 0;
-            if (AsOp()->gtOp1 != nullptr)
-            {
-                childCount++;
-            }
-            if (AsOp()->gtOp2 != nullptr)
-            {
-                childCount++;
-            }
-            return childCount;
-        }
-#ifdef FEATURE_HW_INTRINSICS
-        // GT_HWINTRINSIC require special handling
-        if (OperGet() == GT_HWINTRINSIC)
-        {
-            if (AsOp()->gtOp1 == nullptr)
-            {
-                return 0;
-            }
-        }
-#endif
-        assert(AsOp()->gtOp1 != nullptr);
-        if (AsOp()->gtOp2 == nullptr)
-        {
-            return 1;
-        }
-        else
-        {
-            return 2;
-        }
-    }
-    else
-    {
-        // Special
-        switch (OperGet())
-        {
-            case GT_PHI:
-            {
-                unsigned count = 0;
-                for (GenTreePhi::Use& use : AsPhi()->Uses())
-                {
-                    count++;
-                }
-                return count;
-            }
-
-            case GT_FIELD_LIST:
-            {
-                unsigned count = 0;
-                for (GenTreeFieldList::Use& use : AsFieldList()->Uses())
-                {
-                    count++;
-                }
-                return count;
-            }
-
-            case GT_CMPXCHG:
-                return 3;
-
-            case GT_ARR_ELEM:
-                return 1 + AsArrElem()->gtArrRank;
-
-            case GT_DYN_BLK:
-                return 2;
-
-            case GT_ARR_OFFSET:
-            case GT_STORE_DYN_BLK:
-                return 3;
-
-            case GT_CALL:
-            {
-                GenTreeCall* call = AsCall();
-                unsigned     res  = 0;
-                if (call->gtCallThisArg != nullptr)
-                {
-                    res++;
-                }
-                for (GenTreeCall::Use& use : call->Args())
-                {
-                    res++;
-                }
-                for (GenTreeCall::Use& use : call->LateArgs())
-                {
-                    res++;
-                }
-                if (call->gtControlExpr != nullptr)
-                {
-                    res++;
-                }
-
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    if (call->gtCallCookie != nullptr)
-                    {
-                        res++;
-                    }
-                    if (call->gtCallAddr != nullptr)
-                    {
-                        res++;
-                    }
-                }
-                return res;
-            }
-
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-#if defined(FEATURE_SIMD)
-            case GT_SIMD:
-#endif
-#if defined(FEATURE_HW_INTRINSICS)
-            case GT_HWINTRINSIC:
-#endif
-                return static_cast<unsigned>(AsMultiOp()->GetOperandCount());
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-
-            case GT_NONE:
-                return 0;
-            default:
-                unreached();
-        }
-    }
-}
-
-// TODO-List-Cleanup: remove.
-GenTree* GenTree::GetChild(unsigned childNum)
-{
-    assert(childNum < NumChildren()); // Precondition.
-    assert(!(OperIsConst() || OperIsLeaf()));
-    if (OperIsUnary())
-    {
-        return AsUnOp()->gtOp1;
-    }
-    // Special case for assignment of dynamic block.
-    // This code is here to duplicate the former case where the size may be evaluated prior to the
-    // source and destination addresses. In order to do this, we treat the size as a child of the
-    // assignment.
-    // TODO-1stClassStructs: Revisit the need to duplicate former behavior, so that we can remove
-    // these special cases.
-    if ((OperGet() == GT_ASG) && (AsOp()->gtOp1->OperGet() == GT_DYN_BLK) && (childNum == 2))
-    {
-        return AsOp()->gtOp1->AsDynBlk()->gtDynamicSize;
-    }
-    else if (OperIsBinary())
-    {
-        if (OperIsAddrMode())
-        {
-            // If this is the first (0th) child, only return op1 if it is non-null
-            // Otherwise, we return gtOp2.
-            if (childNum == 0 && AsOp()->gtOp1 != nullptr)
-            {
-                return AsOp()->gtOp1;
-            }
-            return AsOp()->gtOp2;
-        }
-        // TODO-Cleanup: Consider handling ReverseOps here, and then we wouldn't have to handle it in
-        // fgGetFirstNode().  However, it seems that it causes loop hoisting behavior to change.
-        if (childNum == 0)
-        {
-            return AsOp()->gtOp1;
-        }
-        else
-        {
-            return AsOp()->gtOp2;
-        }
-    }
-    else
-    {
-        // Special
-        switch (OperGet())
-        {
-            case GT_PHI:
-                for (GenTreePhi::Use& use : AsPhi()->Uses())
-                {
-                    if (childNum == 0)
-                    {
-                        return use.GetNode();
-                    }
-                    childNum--;
-                }
-                unreached();
-
-            case GT_FIELD_LIST:
-                for (GenTreeFieldList::Use& use : AsFieldList()->Uses())
-                {
-                    if (childNum == 0)
-                    {
-                        return use.GetNode();
-                    }
-                    childNum--;
-                }
-                unreached();
-
-            case GT_CMPXCHG:
-                switch (childNum)
-                {
-                    case 0:
-                        return AsCmpXchg()->gtOpLocation;
-                    case 1:
-                        return AsCmpXchg()->gtOpValue;
-                    case 2:
-                        return AsCmpXchg()->gtOpComparand;
-                    default:
-                        unreached();
-                }
-
-            case GT_STORE_DYN_BLK:
-                switch (childNum)
-                {
-                    case 0:
-                        return AsDynBlk()->Addr();
-                    case 1:
-                        return AsDynBlk()->Data();
-                    case 2:
-                        return AsDynBlk()->gtDynamicSize;
-                    default:
-                        unreached();
-                }
-            case GT_DYN_BLK:
-                switch (childNum)
-                {
-                    case 0:
-                        return AsDynBlk()->gtEvalSizeFirst ? AsDynBlk()->gtDynamicSize : AsDynBlk()->Addr();
-                    case 1:
-                        return AsDynBlk()->gtEvalSizeFirst ? AsDynBlk()->Addr() : AsDynBlk()->gtDynamicSize;
-                    default:
-                        unreached();
-                }
-
-            case GT_ARR_ELEM:
-                if (childNum == 0)
-                {
-                    return AsArrElem()->gtArrObj;
-                }
-                else
-                {
-                    return AsArrElem()->gtArrInds[childNum - 1];
-                }
-
-            case GT_ARR_OFFSET:
-                switch (childNum)
-                {
-                    case 0:
-                        return AsArrOffs()->gtOffset;
-                    case 1:
-                        return AsArrOffs()->gtIndex;
-                    case 2:
-                        return AsArrOffs()->gtArrObj;
-                    default:
-                        unreached();
-                }
-
-            case GT_CALL:
-            {
-                GenTreeCall* call = AsCall();
-
-                if (call->gtCallThisArg != nullptr)
-                {
-                    if (childNum == 0)
-                    {
-                        return call->gtCallThisArg->GetNode();
-                    }
-
-                    childNum--;
-                }
-
-                for (GenTreeCall::Use& use : call->Args())
-                {
-                    if (childNum == 0)
-                    {
-                        return use.GetNode();
-                    }
-
-                    childNum--;
-                }
-
-                for (GenTreeCall::Use& use : call->LateArgs())
-                {
-                    if (childNum == 0)
-                    {
-                        return use.GetNode();
-                    }
-
-                    childNum--;
-                }
-
-                if (call->gtControlExpr != nullptr)
-                {
-                    if (childNum == 0)
-                    {
-                        return call->gtControlExpr;
-                    }
-
-                    childNum--;
-                }
-
-                if ((call->gtCallType == CT_INDIRECT) && (call->gtCallCookie != nullptr))
-                {
-                    if (childNum == 0)
-                    {
-                        return call->gtCallCookie;
-                    }
-
-                    childNum--;
-                }
-
-                if (call->gtCallAddr != nullptr)
-                {
-                    if (childNum == 0)
-                    {
-                        return call->gtCallAddr;
-                    }
-                }
-
-                unreached();
-            }
-
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-#if defined(FEATURE_SIMD)
-            case GT_SIMD:
-#endif
-#if defined(FEATURE_HW_INTRINSICS)
-            case GT_HWINTRINSIC:
-#endif
-                return AsMultiOp()->Op(childNum + 1);
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-
-            default:
-                unreached();
-        }
-    }
 }
 
 GenTreeUseEdgeIterator::GenTreeUseEdgeIterator()
@@ -11562,14 +11203,12 @@ void Compiler::gtDispTree(GenTree*     tree,
 
         case GT_CALL:
         {
-            GenTreeCall* call = tree->AsCall();
-            assert(call->gtFlags & GTF_CALL);
-            unsigned numChildren = call->NumChildren();
-            GenTree* lastChild   = nullptr;
-            if (numChildren != 0)
-            {
-                lastChild = call->GetChild(numChildren - 1);
-            }
+            GenTreeCall* call      = tree->AsCall();
+            GenTree*     lastChild = nullptr;
+            call->VisitOperands([&lastChild](GenTree* operand) -> GenTree::VisitResult {
+                lastChild = operand;
+                return GenTree::VisitResult::Continue;
+            });
 
             if (call->gtCallType != CT_INDIRECT)
             {
@@ -11617,7 +11256,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 
                 if (call->gtCallArgs)
                 {
-                    gtDispArgList(call, indentStack);
+                    gtDispArgList(call, lastChild, indentStack);
                 }
 
                 if (call->gtCallType == CT_INDIRECT)
@@ -11913,17 +11552,15 @@ void Compiler::gtGetLateArgMsg(GenTreeCall* call, GenTree* argx, int lateArgInde
 // gtDispArgList: Dump the tree for a call arg list
 //
 // Arguments:
-//    call         - The call to dump arguments for
-//    indentStack  - the specification for the current level of indentation & arcs
+//    call            - the call to dump arguments for
+//    lastCallOperand - the call's last operand (to determine the arc types)
+//    indentStack     - the specification for the current level of indentation & arcs
 //
 // Return Value:
 //    None.
 //
-void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
+void Compiler::gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack)
 {
-    unsigned numChildren = call->NumChildren();
-    GenTree* lastArgNode = call->GetChild(numChildren - 1);
-
     unsigned argnum = 0;
 
     if (call->gtCallThisArg != nullptr)
@@ -11938,7 +11575,7 @@ void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
         {
             char buf[256];
             gtGetArgMsg(call, argNode, argnum, buf, sizeof(buf));
-            gtDispChild(argNode, indentStack, (argNode == lastArgNode) ? IIArcBottom : IIArc, buf, false);
+            gtDispChild(argNode, indentStack, (argNode == lastCallOperand) ? IIArcBottom : IIArc, buf, false);
         }
         argnum++;
     }
