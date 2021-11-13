@@ -700,7 +700,6 @@ namespace System.Xml.Serialization
         {
             XmlSerializer?[] serializers = new XmlSerializer?[mappings.Length];
             Dictionary<XmlSerializerMappingKey, XmlSerializer>? typedMappingTable = null;
-            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(type.Assembly);
 
             typedMappingTable = s_xmlSerializerTable.GetOrCreateValue(type, () => new Dictionary<XmlSerializerMappingKey, XmlSerializer>());
 

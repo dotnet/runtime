@@ -2002,6 +2002,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var rtobj = SerializeAndDeserialize(obj, null, () => serializer, true);
         Assert.NotNull(rtobj);
         Assert.True(rtobj.Equals(obj));
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(rtobj.GetType().Assembly), alc);
 
         alc.Unload();
     }
