@@ -214,7 +214,9 @@ private:
     //                                         slot [1] will contain the next version of the table if it resizes
     static const int SLOT_LENGTH = 0;
     static const int SLOT_NEXT = 1;
-
+    // normal slots start at slot #2
+    static const int SKIP_SPECIAL_SLOTS = 2;
+    
     static DWORD GetLength(DPTR(PTR_VolatileEntry) buckets)
     {
         return (DWORD)dac_cast<TADDR>(buckets[SLOT_LENGTH]);
@@ -222,7 +224,7 @@ private:
 
     static DPTR(PTR_VolatileEntry) GetNext(DPTR(PTR_VolatileEntry) buckets)
     {
-        return (DPTR(PTR_VolatileEntry))dac_cast<TADDR>(buckets[SLOT_NEXT]);
+        return dac_cast<DPTR(PTR_VolatileEntry)>(dac_cast<TADDR>(buckets[SLOT_NEXT]));
     }
 
     // Loader heap provided at construction time. May be NULL (in which case m_pModule must *not* be NULL).
