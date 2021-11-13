@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Linq;
 
 namespace System.Collections.Concurrent
 {
@@ -63,10 +64,7 @@ namespace System.Collections.Concurrent
             _locals = new ThreadLocal<WorkStealingQueue>();
 
             WorkStealingQueue queue = GetCurrentThreadWorkStealingQueue(forceCreate: true)!;
-            foreach (T item in collection)
-            {
-                queue.LocalPush(item, ref _emptyToNonEmptyListTransitionCount);
-            }
+            queue.LocalPush(collection, ref _emptyToNonEmptyListTransitionCount);
         }
 
         /// <summary>
@@ -78,6 +76,16 @@ namespace System.Collections.Concurrent
         public void Add(T item) =>
             GetCurrentThreadWorkStealingQueue(forceCreate: true)!
             .LocalPush(item, ref _emptyToNonEmptyListTransitionCount);
+
+        /// <summary>
+        /// Adds multiple objects to the <see cref="ConcurrentBag{T}"/>.
+        /// </summary>
+        /// <param name="items">The objects to be added to the
+        /// <see cref="ConcurrentBag{T}"/>. The value can be a null reference
+        /// (Nothing in Visual Basic) for reference types.</param>
+        public void AddRange(IEnumerable<T> items) =>
+            GetCurrentThreadWorkStealingQueue(forceCreate: true)!
+            .LocalPush(items, ref _emptyToNonEmptyListTransitionCount);
 
         /// <summary>
         /// Attempts to add an object to the <see cref="ConcurrentBag{T}"/>.
@@ -450,7 +458,7 @@ namespace System.Collections.Concurrent
                 for (WorkStealingQueue? queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
                 {
                     T? ignored;
-                    while (queue.TrySteal(out ignored, take: true));
+                    while (queue.TrySteal(out ignored, take: true)) ;
                 }
             }
             finally
@@ -757,8 +765,8 @@ namespace System.Collections.Concurrent
                             // the bit-masking, because we only do this if tail == int.MaxValue, meaning that all
                             // bits are set, so all of the bits we're keeping will also be set.  Thus it's impossible
                             // for the head to end up > than the tail, since you can't set any more bits than all of them.
-                            _headIndex = _headIndex & _mask;
-                            _tailIndex = tail = tail & _mask;
+                            _headIndex &= _mask;
+                            _tailIndex = tail &= _mask;
                             Debug.Assert(_headIndex - _tailIndex <= 0);
 
                             Interlocked.Exchange(ref _currentOp, (int)Operation.Add); // ensure subsequent reads aren't reordered before this
@@ -848,6 +856,138 @@ namespace System.Collections.Concurrent
                         Monitor.Exit(this);
                     }
                 }
+            }
+
+            /// <summary>
+            /// Add new item to the tail of the queue.
+            /// </summary>
+            /// <param name="item">The item to add.</param>
+            /// <param name="emptyToNonEmptyListTransitionCount"></param>
+            internal void LocalPush(IEnumerable<T> items, ref long emptyToNonEmptyListTransitionCount)
+            {
+                Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
+
+                var itemArray = items.ToImmutableArray();
+                var itemCount = itemArray.Count;
+
+                bool lockTaken = false;
+                try
+                {
+                    foreach (var item in itemArray)
+                    {
+                        // Full fence to ensure subsequent reads don't get reordered before this
+                        Interlocked.Exchange(ref _currentOp, (int)Operation.Add);
+                        int tail = _tailIndex;
+
+                        // Rare corner case (at most once every 2 billion pushes on this thread):
+                        // We're going to increment the tail; if we'll overflow, then we need to reset our counts
+                        if (tail == int.MaxValue)
+                        {
+                            _currentOp = (int)Operation.None; // set back to None temporarily to avoid a deadlock
+                            lock (this)
+                            {
+                                Debug.Assert(_tailIndex == tail, "No other thread should be changing _tailIndex");
+
+                                // Rather than resetting to zero, we'll just mask off the bits we don't care about.
+                                // This way we don't need to rearrange the items already in the queue; they'll be found
+                                // correctly exactly where they are.  One subtlety here is that we need to make sure that
+                                // if head is currently < tail, it remains that way.  This happens to just fall out from
+                                // the bit-masking, because we only do this if tail == int.MaxValue, meaning that all
+                                // bits are set, so all of the bits we're keeping will also be set.  Thus it's impossible
+                                // for the head to end up > than the tail, since you can't set any more bits than all of them.
+                                _headIndex &= _mask;
+                                _tailIndex = tail &= _mask;
+                                Debug.Assert(_headIndex - _tailIndex <= 0);
+
+                                Interlocked.Exchange(ref _currentOp, (int)Operation.Add); // ensure subsequent reads aren't reordered before this
+                            }
+                        }
+
+                        // We'd like to take the fast path that doesn't require locking, if possible. It's not possible if:
+                        // - another thread is currently requesting that the whole bag synchronize, e.g. a ToArray operation
+                        // - if there are fewer than two spaces available.  One space is necessary for obvious reasons:
+                        //   to store the element we're trying to push.  The other is necessary due to synchronization with steals.
+                        //   A stealing thread first increments _headIndex to reserve the slot at its old value, and then tries to
+                        //   read from that slot.  We could potentially have a race condition whereby _headIndex is incremented just
+                        //   before this check, in which case we could overwrite the element being stolen as that slot would appear
+                        //   to be empty.  Thus, we only allow the fast path if there are two empty slots.
+                        // - if there <= 1 elements in the list.  We need to be able to successfully track transitions from
+                        //   empty to non-empty in a way that other threads can check, and we can only do that tracking
+                        //   correctly if we synchronize with steals when it's possible a steal could take the last item
+                        //   in the list just as we're adding.  It's possible at this point that there's currently an active steal
+                        //   operation happening but that it hasn't yet incremented the head index, such that we could read a smaller
+                        //   than accurate by 1 value for the head.  However, only one steal could possibly be doing so, as steals
+                        //   take the lock, and another steal couldn't then increment the header further because it'll see that
+                        //   there's currently an add operation in progress and wait until the add completes.
+                        int head = _headIndex; // read after _currentOp set to Add
+                        if (!_frozen && (head - (tail - 1) < 0) && (tail - (head + _mask) < 0))
+                        {
+                            _array[tail & _mask] = item;
+                            _tailIndex = tail + 1;
+                        }
+                        else
+                        {
+                            // We need to contend with foreign operations (e.g. steals, enumeration, etc.), so we lock.
+                            _currentOp = (int)Operation.None; // set back to None to avoid a deadlock
+                            Monitor.Enter(this, ref lockTaken);
+
+                            head = _headIndex;
+                            int count = tail - head; // this count is stable, as we're holding the lock
+
+                            // If we're full, expand the array.
+                            if (count >= _mask)
+                            {
+                                // Expand the queue by doubling its size.
+                                var newArray = new T[_array.Length << 1];
+                                int headIdx = head & _mask;
+                                if (headIdx == 0)
+                                {
+                                    Array.Copy(_array, newArray, _array.Length);
+                                }
+                                else
+                                {
+                                    Array.Copy(_array, headIdx, newArray, 0, _array.Length - headIdx);
+                                    Array.Copy(_array, 0, newArray, _array.Length - headIdx, headIdx);
+                                }
+
+                                // Reset the field values
+                                _array = newArray;
+                                _headIndex = 0;
+                                _tailIndex = tail = count;
+                                _mask = (_mask << 1) | 1;
+                            }
+
+                            // Add the element
+                            _array[tail & _mask] = item;
+                            _tailIndex = tail + 1;
+
+                            // Now that the item has been added, if we were at 0 (now at 1) item,
+                            // increase the empty to non-empty transition count.
+                            if (count == 0)
+                            {
+                                // We just transitioned from empty to non-empty, so increment the transition count.
+                                Interlocked.Increment(ref emptyToNonEmptyListTransitionCount);
+                            }
+                        }
+                    }
+
+                    // Update the count to avoid overflow.  We can trust _stealCount here,
+                    // as we're inside the lock and it's only manipulated there.
+                    _addTakeCount -= _stealCount * itemCount;
+                    _stealCount = 0;
+
+                    // Increment the count from the add/take perspective
+                    checked { _addTakeCount += itemCount; }
+                }
+                finally
+                {
+                    _currentOp = (int)Operation.None;
+                    if (lockTaken)
+                    {
+                        Monitor.Exit(this);
+                    }
+                }
+
             }
 
             /// <summary>Clears the contents of the local queue.</summary>

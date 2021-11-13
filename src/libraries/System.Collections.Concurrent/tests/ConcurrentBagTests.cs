@@ -19,6 +19,16 @@ namespace System.Collections.Concurrent.Tests
 
         protected override string CopyToNoLengthParamName => "index";
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void AddRange_Test()
+        {
+            var bag = new ConcurrentBag<int>();
+            var data = new[] { 1, 2, 3, 4, 5 };
+            bag.AddRange(data);
+
+            Assert.Equal(data.Length, bag.Count);
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 10)]
         [InlineData(3, 100)]

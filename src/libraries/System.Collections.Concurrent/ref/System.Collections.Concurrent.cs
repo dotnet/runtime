@@ -63,6 +63,7 @@ namespace System.Collections.Concurrent
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public void Add(T item) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<T> item) { }
         public void Clear() { }
         public void CopyTo(T[] array, int index) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
