@@ -11,31 +11,31 @@ namespace ILLink.RoslynAnalyzer.Tests.Interop.PInvoke
 		[Fact]
 		public Task DefaultConstructorOfParameterIsRemoved ()
 		{
-            return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
 		public Task DefaultConstructorOfReturnTypeIsRemoved ()
 		{
-            return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
 		public Task FieldsOfParameterAreRemoved ()
 		{
-            return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
 		public Task FieldsOfReturnTypeAreRemoved ()
 		{
-            return RunTest();
+			return RunTest ();
 		}
 
 		[Fact]
 		public Task FieldsOfThisAreRemoved ()
 		{
-            return RunTest();
+			return RunTest ();
 		}
 	}
 }
