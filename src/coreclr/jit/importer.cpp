@@ -11601,8 +11601,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             assert(!compIsForInlining());
 
             // Is the start of this block a suitable patchpoint?
-            // Current strategy is blocks that are stack-empty and backwards branch targets
-            if (block->bbFlags & BBF_BACKWARD_JUMP_TARGET && (verCurrentState.esStackDepth == 0))
+            // Current strategy is blocks that are stack-empty and backwards branch targets and not in a handler
+            //
+            // Todo (perhaps): bail out of OSR and jit this method with optimization.
+            //
+            if (!block->hasHndIndex() && ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) &&
+                (verCurrentState.esStackDepth == 0))
             {
                 block->bbFlags |= BBF_PATCHPOINT;
                 setMethodHasPatchpoint();
@@ -11629,10 +11633,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     //
     if ((JitConfig.TC_PartialCompilation() > 0) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
         (block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
-        ((block->bbFlags & BBF_PATCHPOINT) == 0))
+        ((block->bbFlags & BBF_PATCHPOINT) == 0) && !block->hasHndIndex())
     {
+        JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
         block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
         setMethodHasPartialCompilationPatchpoint();
+
+        // We can't skip importing here and then change our minds later and decide not
+        // to have this be a PC patchpoint. So we have to get it right here.
+        block->bbJumpKind = BBJ_THROW;
+        return;
     }
 
 #endif // FEATURE_ON_STACK_REPLACEMENT

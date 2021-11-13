@@ -57,35 +57,33 @@ public:
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
+                // We can't OSR from funclets.
+                //
+                assert(!block->hasHndIndex());
+
                 // Clear the patchpoint flag.
                 //
                 block->bbFlags &= ~BBF_PATCHPOINT;
 
-                // If block is in a handler region, don't insert a patchpoint.
-                // We can't OSR from funclets.
-                //
-                // TODO: check this earlier, somehow, and fall back to fully
-                // optimizing the method (ala QJFL=0).
-                if (compiler->ehGetBlockHndDsc(block) != nullptr)
-                {
-                    JITDUMP("Patchpoint: skipping patchpoint for " FMT_BB " as it is in a handler\n", block->bbNum);
-                    continue;
-                }
-
-                JITDUMP("Patchpoint: loop patchpoint in " FMT_BB "\n", block->bbNum);
-                assert(block != compiler->fgFirstBB);
+                JITDUMP("Patchpoint: regular patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformBlock(block);
                 count++;
             }
             else if (block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT)
             {
-                if (compiler->ehGetBlockHndDsc(block) != nullptr)
-                {
-                    JITDUMP("Patchpoint: skipping partial compilation patchpoint for " FMT_BB
-                            " as it is in a handler\n",
-                            block->bbNum);
-                    continue;
-                }
+                // We can't OSR from funclets.
+                // Also, we don't import the IL for these blocks.
+                //
+                assert(!block->hasHndIndex());
+
+                // If we're instrumenting, we should not have decided to
+                // put class probes here, as that is driven by looking at IL.
+                //
+                assert((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0);
+
+                // Clear the partial comp flag.
+                //
+                block->bbFlags &= ~BBF_PARTIAL_COMPILATION_PATCHPOINT;
 
                 JITDUMP("Patchpoint: partial compilation patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformPartialCompilation(block);
@@ -248,15 +246,6 @@ private:
             compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, helperArgs);
 
         compiler->fgNewStmtAtEnd(block, helperCall);
-
-        // This block will no longer have class probes.
-        // (They will appear in the OSR variant).
-        //
-        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
-        {
-            JITDUMP("No longer adding class probes to " FMT_BB "\n", block->bbNum);
-            block->bbFlags &= ~BBF_HAS_CLASS_PROFILE;
-        }
     }
 };
 
