@@ -46,7 +46,7 @@ DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModu
     S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * (S_SIZE_T(cInitialBuckets) + S_SIZE_T(2));
 
     m_cEntries = 0;
-    DPTR(PTR_VolatileEntry) pBuckets = (DPTR(PTR_VolatileEntry))(void*)GetHeap()->AllocMem(cbBuckets);
+    PTR_VolatileEntry* pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
     ((size_t*)pBuckets)[SLOT_LENGTH] = cInitialBuckets;
 
     // publish after setting the length
@@ -185,6 +185,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     // element 0 stores the length of the table
     ((size_t*)pNewBuckets)[SLOT_LENGTH] = cNewBuckets;
     // element 1 stores the next version of the table (after length is written)
+    // NOTE: DAC does not call add/grow, so this cast is ok.
     VolatileStore(&((PTR_VolatileEntry**)curBuckets)[SLOT_NEXT], pNewBuckets);
 
     // All buckets are initially empty.
