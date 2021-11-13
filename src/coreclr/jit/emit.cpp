@@ -4833,7 +4833,7 @@ void emitter::emitCheckAlignFitInCurIG(unsigned nAlignInstr)
 //      isFirstAlign - For multiple 'align' instructions case, if this is the first
 //                     'align' instruction of that group.
 //
-void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign)
+void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp))
 {
     // Determine if 'align' instruction about to be generated will
     // fall in current IG or next.
@@ -4883,6 +4883,10 @@ void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign)
         id->idaLoopHeadPredIG = nullptr;
     }
 
+#ifdef DEBUG
+    id->isPlacedAfterJmp = isPlacedBehindJmp;
+#endif
+
     /* Append this instruction to this IG's alignment list */
     id->idaNext = emitCurIGAlignList;
 
@@ -4904,7 +4908,7 @@ void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign)
 //  Arguments:
 //      alignmentBoundary - The boundary at which loop needs to be aligned.
 //
-void emitter::emitLongLoopAlign(unsigned alignmentBoundary)
+void emitter::emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp))
 {
 #if defined(TARGET_XARCH)
     unsigned nPaddingBytes    = alignmentBoundary - 1;
@@ -4926,13 +4930,13 @@ void emitter::emitLongLoopAlign(unsigned alignmentBoundary)
     bool isFirstAlign = true;
     while (insAlignCount)
     {
-        emitLoopAlign(paddingBytes, isFirstAlign);
+        emitLoopAlign(paddingBytes, isFirstAlign DEBUG_ARG(isPlacedBehindJmp));
         insAlignCount--;
         isFirstAlign = false;
     }
 
 #if defined(TARGET_XARCH)
-    emitLoopAlign(lastInsAlignSize, isFirstAlign);
+    emitLoopAlign(lastInsAlignSize, isFirstAlign DEBUG_ARG(isPlacedBehindJmp));
 #endif
 }
 
@@ -4963,7 +4967,7 @@ void emitter::emitConnectAlignInstrWithCurIG()
 //                    mark it as IGF_HAS_ALIGN to indicate that a next or a future
 //                    IG is a loop that needs alignment.
 //
-void emitter::emitLoopAlignment()
+void emitter::emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp))
 {
     unsigned paddingBytes;
 
@@ -4973,13 +4977,13 @@ void emitter::emitLoopAlignment()
     if ((emitComp->opts.compJitAlignLoopBoundary > 16) && (!emitComp->opts.compJitAlignLoopAdaptive))
     {
         paddingBytes = emitComp->opts.compJitAlignLoopBoundary;
-        emitLongLoopAlign(paddingBytes);
+        emitLongLoopAlign(paddingBytes DEBUG_ARG(isPlacedBehindJmp));
     }
     else
     {
         emitCheckAlignFitInCurIG(1);
         paddingBytes = MAX_ENCODED_SIZE;
-        emitLoopAlign(paddingBytes, true);
+        emitLoopAlign(paddingBytes, true DEBUG_ARG(isPlacedBehindJmp));
     }
 #elif defined(TARGET_ARM64)
     // For Arm64, each align instruction is 4-bytes long because of fixed-length encoding.
@@ -4992,7 +4996,7 @@ void emitter::emitLoopAlignment()
     {
         paddingBytes = emitComp->opts.compJitAlignLoopBoundary;
     }
-    emitLongLoopAlign(paddingBytes);
+    emitLongLoopAlign(paddingBytes DEBUG_ARG(isPlacedBehindJmp));
 #endif
 
     assert(emitLastIns->idIns() == INS_align);

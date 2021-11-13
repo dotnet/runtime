@@ -14872,9 +14872,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     {
         case INS_align:
 #if FEATURE_LOOP_ALIGN
-            if (id->idCodeSize() == 0)
+            if ((id->idCodeSize() == 0) || ((instrDescAlign*)id)->isPlacedAfterJmp)
             {
-                // We're not going to generate any instruction, so it doesn't count for PerfScore.
+                // Either we're not going to generate 'align' instruction, or the 'align'
+                // instruction is placed immediately after unconditional jmp.
+                // In both cases, don't count for PerfScore.
+
                 result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
                 result.insLatency    = PERFSCORE_LATENCY_ZERO;
                 break;

@@ -5271,11 +5271,12 @@ void Compiler::placeLoopAlignInstructions()
             bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             minBlockSoFar = BB_MAX_WEIGHT;
             bbHavingAlign = nullptr;
-        }
 
-        if (--loopsToProcess == 0)
-        {
-            break;
+            
+            if (--loopsToProcess == 0)
+            {
+                break;
+            }
         }
     }
 

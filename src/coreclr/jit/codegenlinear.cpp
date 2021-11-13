@@ -794,7 +794,7 @@ void CodeGen::genCodeForBBlist()
             // and 16 bytes for arm64.
             assert(ShouldAlignLoops());
 
-            GetEmitter()->emitLoopAlignment();
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->bbJumpKind == BBJ_ALWAYS));
         }
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))

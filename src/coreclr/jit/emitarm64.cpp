@@ -14607,23 +14607,27 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SN_0A: // bkpt, brk, nop
-            if (id->idIsEmptyAlign())
+
+            if (id->idIns() == INS_align)
             {
-                // We're not going to generate any instruction, so it doesn't count for PerfScore.
-                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
-                result.insLatency    = PERFSCORE_LATENCY_ZERO;
-            }
+                if ((id->idInsOpt() == INS_OPTS_NONE) || ((instrDescAlign*)id)->isPlacedAfterJmp)
+                {
+                    // Either we're not going to generate 'align' instruction, or the 'align'
+                    // instruction is placed immediately after unconditional jmp.
+                    // In both cases, don't count for PerfScore.
+
+                    result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                    result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                    break;
+                }
             else if (ins == INS_yield)
             {
                 // @ToDo - find out the actual latency, match x86/x64 for now
                 result.insThroughput = PERFSCORE_THROUGHPUT_140C;
                 result.insLatency    = PERFSCORE_LATENCY_140C;
             }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency    = PERFSCORE_LATENCY_ZERO;
-            }
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_ZERO;
             break;
 
         case IF_SI_0B: // dmb, dsb, isb
