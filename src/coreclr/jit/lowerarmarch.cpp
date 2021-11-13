@@ -1615,7 +1615,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 
     // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
     // or for ADD(LSH(X, CNS), X) or ADD(X, LSH(X, CNS)) where CNS is in the (0..typeWidth) range
-    if (!node->OperIs(GT_ADD) && !op1->isContained() && !op2->isContained() && varTypeIsIntegral(node) &&
+    if (node->OperIs(GT_ADD) && !op1->isContained() && !op2->isContained() && varTypeIsIntegral(node) &&
         !node->gtOverflow())
     {
         assert(!node->isContained());
@@ -1623,7 +1623,6 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
         {
             GenTree* cast = op1->OperIs(GT_CAST) ? op1 : op2;
-
             if (cast->gtGetOp1()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
             {
                 node->ChangeOper(GT_ADDEX);
@@ -1637,8 +1636,8 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 
             if (shiftBy->IsCnsIntOrI())
             {
-                ssize_t shiftByCns = shiftBy->AsIntCon()->IconValue();
-                ssize_t maxShift   = (ssize_t)genTypeSize(node) * BITS_IN_BYTE;
+                const ssize_t shiftByCns = shiftBy->AsIntCon()->IconValue();
+                const ssize_t maxShift   = (ssize_t)genTypeSize(node) * BITS_IN_BYTE;
 
                 if ((shiftByCns > 0) && (shiftByCns < maxShift))
                 {
