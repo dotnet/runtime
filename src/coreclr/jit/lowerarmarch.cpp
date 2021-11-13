@@ -1614,15 +1614,35 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     }
 
     // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
-    // in order to emit add with zero/sign extend
+    // or for ADD(LSH(X, CNS), X) or ADD(X, LSH(X, CNS)) where CNS is in the (0..typeWidth) range
     if (node->OperIs(GT_ADD) && !op1->isContained() && !op2->isContained() && varTypeIsIntegral(node) &&
-        !node->gtOverflow() && (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST)))
+        !node->gtOverflow())
     {
-        GenTreeCast* cast = op1->OperIs(GT_CAST) ? op1->AsCast() : op2->AsCast();
-        if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
+        if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
         {
-            node->ChangeOper(GT_ADDEX);
-            MakeSrcContained(node, cast);
+            GenTree* cast = op1->OperIs(GT_CAST) ? op1 : op2;
+            if (cast->gtGetOp1()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
+            {
+                node->ChangeOper(GT_ADDEX);
+                MakeSrcContained(node, cast);
+            }
+        }
+        else if (op1->OperIs(GT_LSH) || op2->OperIs(GT_LSH))
+        {
+            GenTree* lsh     = op1->OperIs(GT_LSH) ? op1 : op2;
+            GenTree* shiftBy = lsh->gtGetOp2();
+            if (shiftBy->IsCnsIntOrI())
+            {
+                ssize_t shiftByCns = shiftBy->AsIntCon()->IconValue();
+                ssize_t maxShift   = (ssize_t)genTypeSize(node) * BITS_IN_BYTE;
+                if ((shiftByCns > 0) && (shiftByCns < maxShift))
+                {
+                    // shiftBy is small so it has to be contained at this point.
+                    assert(shiftBy->isContained());
+                    node->ChangeOper(GT_ADDEX);
+                    MakeSrcContained(node, lsh);
+                }
+            }
         }
     }
 #endif

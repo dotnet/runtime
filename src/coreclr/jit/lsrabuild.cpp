@@ -3089,10 +3089,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         // Can be contained for MultiplyAdd on arm64
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-    if (node->OperIs(GT_NEG, GT_CAST))
+    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH))
     {
         // GT_NEG can be contained for MultiplyAdd on arm64
-        // GT_CAST can be contained for ADD with sign/zero extension
+        // GT_CAST and GT_LSH for ADD with sign/zero extension
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
 #endif

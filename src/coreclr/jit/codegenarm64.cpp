@@ -9649,30 +9649,40 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
 //
 void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_ADDEX) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    assert(tree->OperIs(GT_ADDEX) && !(tree->gtFlags & GTF_SET_FLAGS));
     genConsumeOperands(tree);
 
-    GenTreeCast* cast;
-    GenTree*     op2;
+    GenTree* op;
+    GenTree* containedOp;
     if (tree->gtGetOp1()->isContained())
     {
-        cast = tree->gtGetOp1()->AsCast();
-        op2  = tree->gtGetOp2();
+        containedOp = tree->gtGetOp1();
+        op          = tree->gtGetOp2();
     }
     else
     {
-        assert(tree->gtGetOp2()->isContained());
-        cast = tree->gtGetOp2()->AsCast();
-        op2  = tree->gtGetOp1();
+        containedOp = tree->gtGetOp2();
+        op          = tree->gtGetOp1();
     }
-    assert(varTypeIsLong(cast->CastToType()));
+    assert(containedOp->isContained() && !op->isContained());
 
     regNumber dstReg = tree->GetRegNum();
-    regNumber op1Reg = op2->GetRegNum();
-    regNumber op2Reg = cast->CastOp()->GetRegNum();
-    insOpts   opts   = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
+    regNumber op1Reg = op->GetRegNum();
+    regNumber op2Reg = containedOp->gtGetOp1()->GetRegNum();
 
-    GetEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, opts);
+    if (containedOp->OperIs(GT_CAST))
+    {
+        GenTreeCast* cast = containedOp->AsCast();
+        assert(varTypeIsLong(cast->CastToType()));
+        insOpts opts = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
+        GetEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, opts);
+    }
+    else
+    {
+        assert(containedOp->OperIs(GT_LSH));
+        ssize_t cns = containedOp->gtGetOp2()->AsIntCon()->IconValue();
+        GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cns, INS_OPTS_LSL);
+    }
     genProduceReg(tree);
 }
 
