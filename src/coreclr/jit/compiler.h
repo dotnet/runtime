@@ -7975,35 +7975,6 @@ public:
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
-    bool IsSuperPMIException(unsigned code)
-    {
-        // Copied from NDP\clr\src\ToolBox\SuperPMI\SuperPMI-Shared\ErrorHandling.h
-
-        const unsigned EXCEPTIONCODE_DebugBreakorAV = 0xe0421000;
-        const unsigned EXCEPTIONCODE_MC             = 0xe0422000;
-        const unsigned EXCEPTIONCODE_LWM            = 0xe0423000;
-        const unsigned EXCEPTIONCODE_SASM           = 0xe0424000;
-        const unsigned EXCEPTIONCODE_SSYM           = 0xe0425000;
-        const unsigned EXCEPTIONCODE_CALLUTILS      = 0xe0426000;
-        const unsigned EXCEPTIONCODE_TYPEUTILS      = 0xe0427000;
-        const unsigned EXCEPTIONCODE_ASSERT         = 0xe0440000;
-
-        switch (code)
-        {
-            case EXCEPTIONCODE_DebugBreakorAV:
-            case EXCEPTIONCODE_MC:
-            case EXCEPTIONCODE_LWM:
-            case EXCEPTIONCODE_SASM:
-            case EXCEPTIONCODE_SSYM:
-            case EXCEPTIONCODE_CALLUTILS:
-            case EXCEPTIONCODE_TYPEUTILS:
-            case EXCEPTIONCODE_ASSERT:
-                return true;
-            default:
-                return false;
-        }
-    }
-
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
     const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd);
     unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
