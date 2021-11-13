@@ -224,7 +224,7 @@ private:
 
     static DPTR(PTR_VolatileEntry) GetNext(DPTR(PTR_VolatileEntry) buckets)
     {
-        return dac_cast<DPTR(PTR_VolatileEntry)>(dac_cast<TADDR>(buckets[SLOT_NEXT]));
+        return dac_cast<DPTR(PTR_VolatileEntry)>(buckets[SLOT_NEXT]);
     }
 
     // Loader heap provided at construction time. May be NULL (in which case m_pModule must *not* be NULL).
