@@ -714,7 +714,6 @@ namespace System.Numerics
         ///
         /// Uses following Hardware Intrinsics, if supported:
         /// * uint32_t __crc32b (uint32_t a, uint8_t b)
-        /// * uint32_t __crc32b (uint32_t a, uint8_t b)
         /// </summary>
         /// <param name="crc">The base value to calculate checksum on</param>
         /// <param name="data">The checksum data</param>
