@@ -708,5 +708,113 @@ namespace System.Numerics
             return (nuint)RotateRight((uint)value, offset);
 #endif
         }
+
+        [CLSCompliant(false)]
+        public static uint Crc32(uint crc, byte data)
+        {
+            if (Sse42.IsSupported)
+            {
+                // uint32_t __crc32b (uint32_t a, uint8_t b)
+                return Sse42.Crc32(crc, data);
+            }
+            if (Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            {
+                // uint32_t __crc32b (uint32_t a, uint8_t b)
+                return Runtime.Intrinsics.Arm.Crc32.ComputeCrc32(crc, data);
+            }
+
+
+            // Software fallback
+
+            crc = ((crc >> 8) | (crc << 8)) & 0xFFFF;
+            crc ^= data & 0xFFu; // Implicit byte to uint conversion + Sign Truncation
+            crc ^= (crc & 0xFF) >> 4;
+            crc ^= (crc << 12) & 0xffff;
+            crc ^= ((crc & 0xFF) << 5) & 0xffff;
+
+            return crc;
+        }
+
+        [CLSCompliant(false)]
+        public static uint Crc32(uint crc, ushort data)
+        {
+            if (Sse42.IsSupported)
+            {
+                // unsigned int _mm_crc32_u16 (unsigned int crc, unsigned short v)
+                return Sse42.Crc32(crc, data);
+            }
+            if (Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            {
+                // uint32_t __crc32h (uint32_t a, uint16_t b)
+                return Runtime.Intrinsics.Arm.Crc32.ComputeCrc32(crc, data);
+            }
+
+
+            // Software fallback
+
+            // Implicit byte[] to ReadOnlySpan<byte> conversion
+            ReadOnlySpan<byte> bytes = BitConverter.GetBytes(data);
+
+            foreach (byte b in bytes)
+            {
+                crc = ((crc >> 8) | (crc << 8)) & 0xFFFF;
+                crc ^= b & 0xFFu; // Implicit byte to uint conversion + Sign Truncation
+                crc ^= (crc & 0xFF) >> 4;
+                crc ^= (crc << 12) & 0xffff;
+                crc ^= ((crc & 0xFF) << 5) & 0xffff;
+            }
+
+            return crc;
+        }
+
+        [CLSCompliant(false)]
+        public static uint Crc32(uint crc, uint data)
+        {
+            if (Sse42.IsSupported)
+            {
+                // unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
+                return Sse42.Crc32(crc, data);
+            }
+            if (Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            {
+                // uint32_t __crc32w (uint32_t a, uint32_t b)
+                return Runtime.Intrinsics.Arm.Crc32.ComputeCrc32(crc, data);
+            }
+
+
+            // Software fallback
+
+            // Implicit byte[] to ReadOnlySpan<byte> conversion
+            ReadOnlySpan<byte> bytes = BitConverter.GetBytes(data);
+
+            foreach (byte b in bytes)
+            {
+                crc = ((crc >> 8) | (crc << 8)) & 0xFFFF;
+                crc ^= b & 0xFFu; // Implicit byte to uint conversion + Sign Truncation
+                crc ^= (crc & 0xFF) >> 4;
+                crc ^= (crc << 12) & 0xffff;
+                crc ^= ((crc & 0xFF) << 5) & 0xffff;
+            }
+
+            return crc;
+        }
+
+        [CLSCompliant(false)]
+        public static uint Crc32(uint crc, ulong data)
+        {
+            // Implicit byte[] to ReadOnlySpan<byte> conversion
+            ReadOnlySpan<byte> bytes = BitConverter.GetBytes(data);
+
+            foreach (byte b in bytes)
+            {
+                crc = ((crc >> 8) | (crc << 8)) & 0xFFFF;
+                crc ^= b & 0xFFu; // Implicit byte to uint conversion + Sign Truncation
+                crc ^= (crc & 0xFF) >> 4;
+                crc ^= (crc << 12) & 0xffff;
+                crc ^= ((crc & 0xFF) << 5) & 0xffff;
+            }
+
+            return crc;
+        }
     }
 }
