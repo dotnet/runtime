@@ -9,6 +9,13 @@
 
 .assembly extern mscorlib {}
 .assembly test {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module test.exe
 
 .class Repro
@@ -64,6 +71,9 @@
 
     .method private hidebysig static int32  Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack  8
         ldnull

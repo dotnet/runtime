@@ -6,6 +6,13 @@
 .assembly extern System.Console { auto }
 
 .assembly DevDiv_541648 { }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 
 // The test originally hit a bug in the handling of an addressing mode (LEA) under a block
 // store, which must not be contained. This was created because the address used as the source
@@ -85,6 +92,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       59 (0x3b)
     .maxstack  2

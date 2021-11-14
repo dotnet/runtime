@@ -8,6 +8,13 @@
 }
 .assembly extern mscorlib{}
 .assembly b410474{}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .class public A{.method static void V1() {.maxstack  50
 ldsfld int8 [b410474]A::a0100
 ldc.i4 0
@@ -241,6 +248,9 @@ throw
 a0104:
 ret}
 .method static int32 Main(string[] args){.entrypoint .maxstack  5
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 call void [b410474]A::V1()
 call void [b410474]A::V2()
 call void [b410474]A::V3()

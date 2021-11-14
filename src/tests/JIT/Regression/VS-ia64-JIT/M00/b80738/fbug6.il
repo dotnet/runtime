@@ -8,6 +8,13 @@
   .ver 4:0:0:0
 }
 .assembly ILGEN_0xfa70290a {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .class ILGEN_0xfa70290a {
 .method static unsigned int8  Method_0x8f046f0b(unsigned int16 Arg_0x0, int8 Arg_0x1, int8 Arg_0x2, native int Arg_0x3, unsigned int64 Arg_0x4) {
 .maxstack	11
@@ -108,6 +115,9 @@ cgt.un
  ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	11
 ldc.i4 0x1ebe67ca 
