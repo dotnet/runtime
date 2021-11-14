@@ -714,22 +714,23 @@ namespace System.Numerics
         ///
         /// Uses following Hardware Intrinsics, if supported:
         /// * uint32_t __crc32b (uint32_t a, uint8_t b)
+        /// * uint32_t __crc32cb (uint32_t a, uint8_t b)
         /// </summary>
         /// <param name="crc">The base value to calculate checksum on</param>
         /// <param name="data">The checksum data</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
-        public static uint Crc32(uint crc, byte data)
+        public static uint Crc32C(uint crc, byte data)
         {
             if (Sse42.IsSupported)
             {
                 // uint32_t __crc32b (uint32_t a, uint8_t b)
                 return Sse42.Crc32(crc, data);
             }
-            if (Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            if (Crc32.IsSupported)
             {
-                // uint32_t __crc32b (uint32_t a, uint8_t b)
-                return Runtime.Intrinsics.Arm.Crc32.ComputeCrc32(crc, data);
+                // uint32_t __crc32cb (uint32_t a, uint8_t b)
+                return Crc32.ComputeCrc32C(crc, data);
             }
 
 
@@ -749,23 +750,23 @@ namespace System.Numerics
         ///
         /// Uses following Hardware Intrinsics, if supported:
         /// * unsigned int _mm_crc32_u16 (unsigned int crc, unsigned short v)
-        /// * uint32_t __crc32h (uint32_t a, uint16_t b)
+        /// * uint32_t __crc32ch (uint32_t a, uint16_t b)
         /// </summary>
         /// <param name="crc">The base value to calculate checksum on</param>
         /// <param name="data">The checksum data</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
-        public static uint Crc32(uint crc, ushort data)
+        public static uint Crc32C(uint crc, ushort data)
         {
             if (Sse42.IsSupported)
             {
                 // unsigned int _mm_crc32_u16 (unsigned int crc, unsigned short v)
                 return Sse42.Crc32(crc, data);
             }
-            if (Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            if (Crc32.IsSupported)
             {
-                // uint32_t __crc32h (uint32_t a, uint16_t b)
-                return Runtime.Intrinsics.Arm.Crc32.ComputeCrc32(crc, data);
+                // uint32_t __crc32ch (uint32_t a, uint16_t b)
+                return Crc32.ComputeCrc32C(crc, data);
             }
 
 
@@ -797,17 +798,17 @@ namespace System.Numerics
         /// <param name="data">The checksum data</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
-        public static uint Crc32(uint crc, uint data)
+        public static uint Crc32C(uint crc, uint data)
         {
             if (Sse42.IsSupported)
             {
                 // unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
                 return Sse42.Crc32(crc, data);
             }
-            if (Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            if (Crc32.IsSupported)
             {
                 // uint32_t __crc32w (uint32_t a, uint32_t b)
-                return Runtime.Intrinsics.Arm.Crc32.ComputeCrc32(crc, data);
+                return Crc32.ComputeCrc32(crc, data);
             }
 
 
@@ -839,7 +840,7 @@ namespace System.Numerics
         /// <param name="data">The checksum data</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
-        public static uint Crc32(uint crc, ulong data)
+        public static uint Crc32C(uint crc, ulong data)
         {
             if (Sse42.X64.IsSupported)
             {
@@ -847,10 +848,10 @@ namespace System.Numerics
                 return (uint)Sse42.X64.Crc32(crc, data);
             }
 
-            if (Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)
+            if (Crc32.Arm64.IsSupported)
             {
                 // uint32_t __crc32d (uint32_t a, uint64_t b)
-                return Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32(crc, data);
+                return Crc32.Arm64.ComputeCrc32(crc, data);
             }
 
             // Software fallback

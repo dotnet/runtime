@@ -11130,13 +11130,13 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint Crc32(uint crc, byte data) { throw null; }
+        public static uint Crc32C(uint crc, byte data) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint Crc32(uint crc, ushort data) { throw null; }
+        public static uint Crc32C(uint crc, ushort data) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint Crc32(uint crc, uint data) { throw null; }
+        public static uint Crc32C(uint crc, uint data) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint Crc32(uint crc, ulong data) { throw null; }
+        public static uint Crc32C(uint crc, ulong data) { throw null; }
     }
 }
 namespace System.Reflection
