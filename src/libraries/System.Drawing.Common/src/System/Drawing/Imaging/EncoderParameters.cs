@@ -53,7 +53,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         internal IntPtr ConvertToMemory()
         {
-            int size = Marshal.SizeOf(typeof(EncoderParameter));
+            int size = Marshal.SizeOf<EncoderParameter>();
 
             int length = _param.Length;
             IntPtr memory = Marshal.AllocHGlobal(checked(length * size + IntPtr.Size));
@@ -84,12 +84,12 @@ namespace System.Drawing.Imaging
             int count = Marshal.ReadInt32(memory);
 
             EncoderParameters p = new EncoderParameters(count);
-            int size = Marshal.SizeOf(typeof(EncoderParameter));
+            int size = Marshal.SizeOf<EncoderParameter>();
             long arrayOffset = (long)memory + IntPtr.Size;
 
             for (int i = 0; i < count; i++)
             {
-                Guid guid = (Guid)Marshal.PtrToStructure((IntPtr)(i * size + arrayOffset), typeof(Guid))!;
+                Guid guid = Marshal.PtrToStructure<Guid>((IntPtr)(i * size + arrayOffset))!;
                 int numberOfValues = Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 16));
                 EncoderParameterValueType type = (EncoderParameterValueType)Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 20));
                 IntPtr value = Marshal.ReadIntPtr((IntPtr)(i * size + arrayOffset + 24));

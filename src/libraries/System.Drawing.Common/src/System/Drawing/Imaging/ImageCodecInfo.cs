@@ -177,9 +177,9 @@ namespace System.Drawing.Imaging
 
             for (index = 0; index < numCodecs; index++)
             {
-                IntPtr curcodec = (IntPtr)((long)memoryStart + (int)Marshal.SizeOf(typeof(ImageCodecInfoPrivate)) * index);
+                IntPtr curcodec = (IntPtr)((long)memoryStart + (int)Marshal.SizeOf<ImageCodecInfoPrivate>() * index);
                 ImageCodecInfoPrivate codecp = new ImageCodecInfoPrivate();
-                Marshal.PtrToStructure(curcodec, codecp);
+                Marshal.PtrToStructure<ImageCodecInfoPrivate>(curcodec, codecp);
 
                 codecs[index] = new ImageCodecInfo();
                 codecs[index].Clsid = codecp.Clsid;

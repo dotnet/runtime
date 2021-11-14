@@ -650,7 +650,7 @@ namespace System.Drawing.Printing
         private static Interop.Comdlg32.PRINTDLGX86 CreatePRINTDLGX86()
         {
             Interop.Comdlg32.PRINTDLGX86 data = new Interop.Comdlg32.PRINTDLGX86();
-            data.lStructSize = Marshal.SizeOf(typeof(Interop.Comdlg32.PRINTDLGX86));
+            data.lStructSize = Marshal.SizeOf<Interop.Comdlg32.PRINTDLGX86>();
             data.hwndOwner = IntPtr.Zero;
             data.hDevMode = IntPtr.Zero;
             data.hDevNames = IntPtr.Zero;
@@ -679,7 +679,7 @@ namespace System.Drawing.Printing
         private static Interop.Comdlg32.PRINTDLG CreatePRINTDLG()
         {
             Interop.Comdlg32.PRINTDLG data = new Interop.Comdlg32.PRINTDLG();
-            data.lStructSize = Marshal.SizeOf(typeof(Interop.Comdlg32.PRINTDLG));
+            data.lStructSize = Marshal.SizeOf<Interop.Comdlg32.PRINTDLG>();
             data.hwndOwner = IntPtr.Zero;
             data.hDevMode = IntPtr.Zero;
             data.hDevNames = IntPtr.Zero;
@@ -881,8 +881,7 @@ namespace System.Drawing.Printing
                 }
             }
 
-            Interop.Gdi32.DEVMODE mode = (Interop.Gdi32.DEVMODE)Marshal.PtrToStructure(pointer, typeof(Interop.Gdi32.DEVMODE))!;
-
+            Interop.Gdi32.DEVMODE mode = Marshal.PtrToStructure<Interop.Gdi32.DEVMODE>(pointer)!;
 
             if (_extrainfo != null)
             {
@@ -1001,7 +1000,7 @@ namespace System.Drawing.Printing
                 }
 
                 IntPtr modePointer = Interop.Kernel32.GlobalLock(new HandleRef(this, modeHandle));
-                Interop.Gdi32.DEVMODE mode = (Interop.Gdi32.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(Interop.Gdi32.DEVMODE))!;
+                Interop.Gdi32.DEVMODE mode = Marshal.PtrToStructure<Interop.Gdi32.DEVMODE>(modePointer)!;
                 switch (field)
                 {
                     case ModeField.Orientation:
@@ -1194,7 +1193,7 @@ namespace System.Drawing.Printing
                 throw new ArgumentException(SR.Format(SR.InvalidPrinterHandle, hdevmode));
 
             IntPtr pointer = Interop.Kernel32.GlobalLock(hdevmode);
-            Interop.Gdi32.DEVMODE mode = (Interop.Gdi32.DEVMODE)Marshal.PtrToStructure(pointer, typeof(Interop.Gdi32.DEVMODE))!;
+            Interop.Gdi32.DEVMODE mode = Marshal.PtrToStructure<Interop.Gdi32.DEVMODE>(pointer)!;
 
             //Copy entire public devmode as a byte array...
             _devmodebytes = mode.dmSize;

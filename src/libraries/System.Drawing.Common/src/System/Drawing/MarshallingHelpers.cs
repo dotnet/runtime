@@ -41,10 +41,10 @@ namespace System.Drawing
         // Copies a Ptr to an array of Points and releases the memory
         public static void FromUnManagedMemoryToPointI(IntPtr prt, Point[] pts)
         {
-            int nPointSize = Marshal.SizeOf(pts[0]);
+            int nPointSize = Marshal.SizeOf<Point>();
             IntPtr pos = prt;
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                pts[i] = (Point)Marshal.PtrToStructure(pos, typeof(Point))!;
+                pts[i] = Marshal.PtrToStructure<Point>(pos)!;
 
             Marshal.FreeHGlobal(prt);
         }
@@ -52,10 +52,10 @@ namespace System.Drawing
         // Copies a Ptr to an array of Points and releases the memory
         public static void FromUnManagedMemoryToPoint(IntPtr prt, PointF[] pts)
         {
-            int nPointSize = Marshal.SizeOf(pts[0]);
+            int nPointSize = Marshal.SizeOf<PointF>();
             IntPtr pos = prt;
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                pts[i] = (PointF)Marshal.PtrToStructure(pos, typeof(PointF))!;
+                pts[i] = Marshal.PtrToStructure<PointF>(pos)!;
 
             Marshal.FreeHGlobal(prt);
         }
@@ -63,11 +63,11 @@ namespace System.Drawing
         // Copies an array of Points to unmanaged memory
         public static IntPtr FromPointToUnManagedMemoryI(Point[] pts)
         {
-            int nPointSize = Marshal.SizeOf(pts[0]);
+            int nPointSize = Marshal.SizeOf<Point>();
             IntPtr dest = Marshal.AllocHGlobal(nPointSize * pts.Length);
             IntPtr pos = dest;
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                Marshal.StructureToPtr(pts[i], pos, false);
+                Marshal.StructureToPtr<Point>(pts[i], pos, false);
 
             return dest;
         }
@@ -75,11 +75,11 @@ namespace System.Drawing
         // Copies an array of Points to unmanaged memory
         public static IntPtr FromPointToUnManagedMemory(PointF[] pts)
         {
-            int nPointSize = Marshal.SizeOf(pts[0]);
+            int nPointSize = Marshal.SizeOf<PointF>();
             IntPtr dest = Marshal.AllocHGlobal(nPointSize * pts.Length);
             IntPtr pos = dest;
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                Marshal.StructureToPtr(pts[i], pos, false);
+                Marshal.StructureToPtr<PointF>(pts[i], pos, false);
 
             return dest;
         }
