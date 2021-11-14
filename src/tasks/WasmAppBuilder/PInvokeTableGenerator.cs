@@ -88,7 +88,21 @@ public class PInvokeTableGenerator : Task
 
     private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, Type type)
     {
-        foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance)) {
+        foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance))
+        {
+            try
+            {
+                CollectPInvokesForMethod(method);
+            }
+            catch (Exception ex)
+            {
+                Log.LogMessage(MessageImportance.Low, $"Could not get pinvoke, or callbacks for method {method.Name}: {ex}");
+                continue;
+            }
+        }
+
+        void CollectPInvokesForMethod(MethodInfo method)
+        {
             if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
             {
                 var dllimport = method.CustomAttributes.First(attr => attr.AttributeType.Name == "DllImportAttribute");
