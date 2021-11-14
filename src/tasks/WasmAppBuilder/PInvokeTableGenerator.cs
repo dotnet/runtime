@@ -164,7 +164,8 @@ public class PInvokeTableGenerator : Task
                 Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct().OrderBy(n => n)));
+                Select (l => "{\"" + FixupSymbolName(l.Key) + "\", " + FixupSymbolName(l.Key) + "}, " +
+                                "// " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct().OrderBy(n => n)));
 
             foreach (var pinvoke in assemblies_pinvokes) {
                 w.WriteLine (pinvoke);
@@ -216,6 +217,41 @@ public class PInvokeTableGenerator : Task
         }
     }
 
+    private static string FixupSymbolName(string name)
+    {
+        UTF8Encoding utf8 = new();
+        byte[] bytes = utf8.GetBytes(name);
+        StringBuilder sb = new();
+
+        foreach (byte b in bytes)
+        {
+            if ((b >= (byte)'0' && b <= (byte)'9') ||
+                (b >= (byte)'a' && b <= (byte)'z') ||
+                (b >= (byte)'A' && b <= (byte)'Z') ||
+                (b == (byte)'_'))
+            {
+                sb.Append((char)b);
+            }
+            else
+            {
+                sb.Append($"_{b:X}_");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string SymbolNameForMethod(MethodInfo method)
+    {
+        StringBuilder sb = new();
+        Type? type = method.DeclaringType;
+        sb.Append($"{type!.Module!.Assembly!.GetName()!.Name!}_");
+        sb.Append($"{(type!.IsNested ? type!.FullName : type!.Name)}_");
+        sb.Append(method.Name);
+
+        return FixupSymbolName(sb.ToString());
+    }
+
     private string MapType (Type t)
     {
         string name = t.Name;
@@ -262,7 +298,7 @@ public class PInvokeTableGenerator : Task
         if (method.Name == "EnumCalendarInfo") {
             // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
             // https://github.com/dotnet/runtime/issues/43791
-            sb.Append($"int {pinvoke.EntryPoint} (int, int, int, int, int);");
+            sb.Append($"int {FixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);");
             return sb.ToString();
         }
 
@@ -274,7 +310,7 @@ public class PInvokeTableGenerator : Task
         }
 
         sb.Append(MapType(method.ReturnType));
-        sb.Append($" {pinvoke.EntryPoint} (");
+        sb.Append($" {FixupSymbolName(pinvoke.EntryPoint)} (");
         int pindex = 0;
         var pars = method.GetParameters();
         foreach (var p in pars) {
