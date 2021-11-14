@@ -208,9 +208,6 @@ typedef guint32 gunichar;
  * Macros
  */
 
-// e.g. strncmp (foo, G_STRING_CONSTANT_AND_LENGTH ("version"))
-#define G_STRING_CONSTANT_AND_LENGTH(x) (x), MINIPAL_LENGTHOF (x) - 1
-
 #define FALSE                0
 #define TRUE                 1
 

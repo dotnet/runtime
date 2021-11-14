@@ -1971,7 +1971,7 @@ switch_arch (char* argv[], const char* target_arch)
 #endif
 
 #define MONO_HANDLERS_ARGUMENT "--handlers="
-#define MONO_HANDLERS_ARGUMENT_LEN MINIPAL_LENGTHOF(MONO_HANDLERS_ARGUMENT)-1
+#define MONO_HANDLERS_ARGUMENT_LEN MINIPAL_STRLEN(MONO_HANDLERS_ARGUMENT)
 
 static void
 apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_domain_configuration_file)

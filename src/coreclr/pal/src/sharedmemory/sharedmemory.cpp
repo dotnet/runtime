@@ -444,13 +444,13 @@ SharedMemoryId::SharedMemoryId(LPCSTR name)
     if (strncmp(name, "Global\\", 7) == 0)
     {
         m_isSessionScope = false;
-        name += MINIPAL_LENGTHOF("Global\\") - 1;
+        name += MINIPAL_STRLEN("Global\\");
     }
     else
     {
         if (strncmp(name, "Local\\", 6) == 0)
         {
-            name += MINIPAL_LENGTHOF("Local\\") - 1;
+            name += MINIPAL_STRLEN("Local\\");
         }
         m_isSessionScope = true;
     }

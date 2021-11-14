@@ -3625,7 +3625,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
         }
     }
 
-    for (unsigned i = MINIPAL_LENGTHOF(CALLEE_SAVED_REGISTERS_MASK) - 1; i > 0; i--)
+    for (unsigned i = MINIPAL_STRLEN(CALLEE_SAVED_REGISTERS_MASK); i > 0; i--)
     {
         RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i - 1];
         _ASSERTE(regMask != RM_EBP);
@@ -3965,7 +3965,7 @@ void UnwindEbpDoubleAlignFrameProlog(
         /* Increment "offset" in steps to see which callee-saved
            registers have been pushed already */
 
-        for (unsigned i = 0; i < MINIPAL_LENGTHOF(CALLEE_SAVED_REGISTERS_MASK) - 1; i++)
+        for (unsigned i = 0; i < MINIPAL_STRLEN(CALLEE_SAVED_REGISTERS_MASK); i++)
         {
             RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i];
             _ASSERTE(regMask != RM_EBP);
@@ -4133,7 +4133,7 @@ bool UnwindEbpDoubleAlignFrame(
         if (info->doubleAlign && (curEBP & 0x04))
             pSavedRegs--;
 
-        for (unsigned i = 0; i < MINIPAL_LENGTHOF(CALLEE_SAVED_REGISTERS_MASK) - 1; i++)
+        for (unsigned i = 0; i < MINIPAL_STRLEN(CALLEE_SAVED_REGISTERS_MASK); i++)
         {
             RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i];
             if ((info->savedRegMask & regMask) == 0)

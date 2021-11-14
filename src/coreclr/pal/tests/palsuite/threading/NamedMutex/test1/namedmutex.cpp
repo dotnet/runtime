@@ -203,7 +203,7 @@ bool StartProcess(const char *funcName)
     if (g_isStress)
     {
         test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], " stress");
-        processCommandLinePathLength += MINIPAL_LENGTHOF("stress") - 1;
+        processCommandLinePathLength += MINIPAL_STRLEN("stress");
     }
 
     STARTUPINFO si;
@@ -412,8 +412,8 @@ bool NameTests()
     // Name too long. The maximum allowed length depends on the file system, so we're not checking for that.
     {
         char name[257];
-        memset(name, 'a', MINIPAL_LENGTHOF(name) - 1);
-        name[MINIPAL_LENGTHOF(name) - 1] = '\0';
+        memset(name, 'a', MINIPAL_STRLEN(name));
+        name[MINIPAL_STRLEN(name)] = '\0';
         TestCreateMutex(m, name);
         TestAssert(m == nullptr);
         TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);

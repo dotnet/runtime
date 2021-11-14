@@ -1797,7 +1797,7 @@ mono_test_last_error (int err)
 	*/
 	char buffer[256] = { 0 };
 	char value[] = "Dummy";
-	strncpy (buffer, value, MINIPAL_LENGTHOF (value) - 1);
+	strncpy (buffer, value, MINIPAL_STRLEN (value));
 #else
 	mono_set_errno (err);
 #endif

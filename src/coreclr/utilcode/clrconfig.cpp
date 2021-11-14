@@ -158,8 +158,8 @@ namespace
         }
         else
         {
-            bool dotnetValid = namelen < (size_t)(MINIPAL_LENGTHOF(buff) - 1 - LEN_OF_DOTNET_PREFIX);
-            bool complusValid = namelen < (size_t)(MINIPAL_LENGTHOF(buff) - 1 - LEN_OF_COMPLUS_PREFIX);
+            bool dotnetValid = namelen < (size_t)(MINIPAL_STRLEN(buff) - LEN_OF_DOTNET_PREFIX);
+            bool complusValid = namelen < (size_t)(MINIPAL_STRLEN(buff) - LEN_OF_COMPLUS_PREFIX);
             if(!dotnetValid || !complusValid)
             {
                 _ASSERTE(!"Environment variable name too long.");

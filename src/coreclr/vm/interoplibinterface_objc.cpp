@@ -131,7 +131,7 @@ namespace
     {
         // Is the function in libobjc and named appropriately.
         return ((strcmp(libraryName, ObjectiveCLibrary) == 0)
-                && (strncmp(entrypointName, OBJC_MSGSEND, MINIPAL_LENGTHOF(OBJC_MSGSEND) -1) == 0));
+                && (strncmp(entrypointName, OBJC_MSGSEND, MINIPAL_STRLEN(OBJC_MSGSEND)) == 0));
     }
 
     const void* STDMETHODCALLTYPE MessageSendPInvokeOverride(_In_z_ const char* libraryName, _In_z_ const char* entrypointName)
