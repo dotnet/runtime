@@ -17,6 +17,13 @@
   
   
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module 'refarg_i2.exe'
 // MVID: {DB5DE5DC-5255-410E-B565-E88E6CF43E3E}
 .namespace Test
@@ -148,6 +155,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       47 (0x2f)
       .maxstack  2
