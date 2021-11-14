@@ -709,6 +709,16 @@ namespace System.Numerics
 #endif
         }
 
+        /// <summary>
+        /// Calculates the CRC (Cyclic redundancy check) checksum.
+        ///
+        /// Uses following Hardware Intrinsics, if supported:
+        /// * uint32_t __crc32b (uint32_t a, uint8_t b)
+        /// * uint32_t __crc32b (uint32_t a, uint8_t b)
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The checksum data</param>
+        /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
         public static uint Crc32(uint crc, byte data)
         {
@@ -735,6 +745,16 @@ namespace System.Numerics
             return crc;
         }
 
+        /// <summary>
+        /// Calculates the CRC (Cyclic redundancy check) checksum.
+        ///
+        /// Uses following Hardware Intrinsics, if supported:
+        /// * unsigned int _mm_crc32_u16 (unsigned int crc, unsigned short v)
+        /// * uint32_t __crc32h (uint32_t a, uint16_t b)
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The checksum data</param>
+        /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
         public static uint Crc32(uint crc, ushort data)
         {
@@ -767,6 +787,16 @@ namespace System.Numerics
             return crc;
         }
 
+        /// <summary>
+        /// Calculates the CRC (Cyclic redundancy check) checksum.
+        ///
+        /// Uses following Hardware Intrinsics, if supported:
+        /// * unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
+        /// * uint32_t __crc32w (uint32_t a, uint32_t b)
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The checksum data</param>
+        /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
         public static uint Crc32(uint crc, uint data)
         {
@@ -799,6 +829,16 @@ namespace System.Numerics
             return crc;
         }
 
+        /// <summary>
+        /// Calculates the CRC (Cyclic redundancy check) checksum.
+        ///
+        /// Uses following Hardware Intrinsics, if supported:
+        /// * unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
+        /// * uint32_t __crc32d (uint32_t a, uint64_t b)
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The checksum data</param>
+        /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
         public static uint Crc32(uint crc, ulong data)
         {
