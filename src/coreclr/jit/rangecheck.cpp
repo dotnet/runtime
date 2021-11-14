@@ -273,9 +273,12 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     // Get the range for this index.
     Range range = GetRange(block, treeIndex, false DEBUGARG(0));
 
+    Limit lowerLimit = range.LowerLimit();
+    Limit upperLimit = range.UpperLimit();
+
     // If upper or lower limit is found to be unknown (top), or it was found to
     // be unknown because of over budget or a deep search, then return early.
-    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
+    if (lowerLimit.IsUnknown() || upperLimit.IsUnknown())
     {
         // Note: If we had stack depth too deep in the GetRange call, we'd be
         // too deep even in the DoesOverflow call. So return early.
@@ -284,8 +287,14 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     if (DoesOverflow(block, treeIndex))
     {
-        JITDUMP("Method determined to overflow.\n");
-        return;
+        // Actually, we don't overflow if both upper and lower limits are known
+        // to be constants
+        if (!lowerLimit.IsConstant() && !upperLimit.IsConstant() &&
+            (lowerLimit.cns <= upperLimit.cns) && (lowerLimit.cns > 0))
+        {
+            JITDUMP("Method determined to overflow.\n");
+            return;
+        }
     }
 
     JITDUMP("Range value %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
