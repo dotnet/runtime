@@ -289,8 +289,12 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     {
         // Actually, we don't overflow if both upper and lower limits are known
         // to be constants
-        if (!lowerLimit.IsConstant() && !upperLimit.IsConstant() &&
+        if (lowerLimit.IsConstant() && upperLimit.IsConstant() &&
             (lowerLimit.cns <= upperLimit.cns) && (lowerLimit.cns > 0))
+        {
+            JITDUMP("Upper and lower limits are constants => we don't overflow.\n");
+        }
+        else
         {
             JITDUMP("Method determined to overflow.\n");
             return;
