@@ -887,5 +887,49 @@ namespace System.Numerics.Tests
         {
             Assert.Equal(expected, BitOperations.RoundUpToPowerOf2((nuint) value));
         }
+
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(0, 120, 4215344322)]
+        [InlineData(0, byte.MaxValue, 2910671697)]
+        [InlineData(123, byte.MaxValue, 1164749927)]
+        public static void BitOps_Crc32_byte(uint crc, byte data, uint expected)
+        {
+            var obtained = BitOperations.Crc32(crc, data);
+            Assert.Equal(expected, obtained);
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(0, 120, 575477567)]
+        [InlineData(0, ushort.MaxValue, 245266386)]
+        [InlineData(123, ushort.MaxValue, 406112372)]
+        public static void BitOps_Crc32_ushort(uint crc, ushort data, uint expected)
+        {
+            var obtained = BitOperations.Crc32(crc, data);
+            Assert.Equal(expected, obtained);
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(0, 120, 1671666103)]
+        [InlineData(0, uint.MaxValue, 3080238136)]
+        [InlineData(123, uint.MaxValue, 3055133878)]
+        public static void BitOps_Crc32_uint(uint crc, uint data, uint expected)
+        {
+            var obtained = BitOperations.Crc32(crc, data);
+            Assert.Equal(expected, obtained);
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(0, 120, 44758)]
+        [InlineData(0, ulong.MaxValue, 42721)]
+        [InlineData(123, ulong.MaxValue, 27055)]
+        public static void BitOps_Crc32_ulong(uint crc, uint data, uint expected)
+        {
+            var obtained = BitOperations.Crc32(crc, data);
+            Assert.Equal(expected, obtained);
+        }
     }
 }
