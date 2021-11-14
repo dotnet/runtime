@@ -335,7 +335,7 @@ namespace Microsoft.CSharp
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -364,7 +364,7 @@ namespace Microsoft.CSharp
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -510,7 +510,7 @@ namespace Microsoft.CSharp
                 GenerateNamespaceImports(e);
             }
 
-            Output.WriteLine();
+            _output.WriteLineNoTabs(string.Empty);
 
             GenerateTypes(e);
             GenerateNamespaceEnd(e);
@@ -1077,20 +1077,15 @@ namespace Microsoft.CSharp
 
         private void GenerateLinePragmaStart(CodeLinePragma e)
         {
-            Output.WriteLine();
-            Output.Write("#line ");
-            Output.Write(e.LineNumber);
-            Output.Write(" \"");
-            Output.Write(e.FileName);
-            Output.Write('\"');
-            Output.WriteLine();
+            _output.WriteLineNoTabs(string.Empty);
+            _output.WriteLineNoTabs($"#line {e.LineNumber} \"{e.FileName}\"");
         }
 
         private void GenerateLinePragmaEnd(CodeLinePragma e)
         {
-            Output.WriteLine();
-            Output.WriteLine("#line default");
-            Output.WriteLine("#line hidden");
+            _output.WriteLineNoTabs(string.Empty);
+            _output.WriteLineNoTabs("#line default");
+            _output.WriteLineNoTabs("#line hidden");
         }
 
         private void GenerateEvent(CodeMemberEvent e, CodeTypeDeclaration c)
@@ -1312,7 +1307,7 @@ namespace Microsoft.CSharp
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -1409,7 +1404,7 @@ namespace Microsoft.CSharp
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -1721,7 +1716,7 @@ namespace Microsoft.CSharp
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -1875,7 +1870,7 @@ namespace Microsoft.CSharp
             {
                 if (_options.BlankLinesBetweenMembers)
                 {
-                    Output.WriteLine();
+                    _output.WriteLineNoTabs(string.Empty);
                 }
                 ((ICodeGenerator)this).GenerateCodeFromType(c, _output.InnerWriter, _options);
             }
@@ -1942,7 +1937,7 @@ namespace Microsoft.CSharp
         {
             if (_options.BlankLinesBetweenMembers)
             {
-                Output.WriteLine();
+                _output.WriteLineNoTabs(string.Empty);
             }
 
             if (member is CodeTypeDeclaration)
@@ -2015,7 +2010,7 @@ namespace Microsoft.CSharp
                 // Generate an extra new line at the end of the snippet.
                 // If the snippet is comment and this type only contains comments.
                 // The generated code will not compile.
-                Output.WriteLine();
+                _output.WriteLineNoTabs(string.Empty);
             }
 
             if (member.LinePragma != null)
@@ -2039,7 +2034,7 @@ namespace Microsoft.CSharp
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -2070,7 +2065,7 @@ namespace Microsoft.CSharp
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -2115,7 +2110,7 @@ namespace Microsoft.CSharp
                 {
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     CodeTypeDeclaration currentClass = (CodeTypeDeclaration)current;
                     ((ICodeGenerator)this).GenerateCodeFromType(currentClass, _output.InnerWriter, _options);

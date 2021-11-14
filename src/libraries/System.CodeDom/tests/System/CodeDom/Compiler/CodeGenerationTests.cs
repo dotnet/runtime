@@ -112,7 +112,7 @@ namespace System.CodeDom.Compiler.Tests
 
             Assert.Equal(
                 CoalesceWhitespace(LineEndingsHelper.Normalize(expected)),
-                CoalesceWhitespace(code));            
+                CoalesceWhitespace(code));
         }
 
         protected void AssertEqualPreserveLineBreaks(CodeObject c, string expected)
@@ -130,11 +130,29 @@ namespace System.CodeDom.Compiler.Tests
                 CoalesceWhitespace(code, preserveNewLines: true));
         }
 
-        private static string GenerateCode(CodeObject c, CodeDomProvider provider)
+        protected void AssertEqualPreserveWhitespace(CodeObject c, string expected)
+        {
+            AssertEqualPreserveWhitespace(c, null, expected);
+        }
+
+        protected void AssertEqualPreserveWhitespace(CodeObject c, CodeGeneratorOptions? options, string expected)
+        {
+            // Validate all identifiers are valid
+            CodeGenerator.ValidateIdentifiers(c);
+
+            // Generate code
+            CodeDomProvider provider = GetProvider();
+            string code = GenerateCode(c, provider, options);
+
+            // Make sure the code matches what we expected
+            Assert.Equal(LineEndingsHelper.Normalize(expected), code);
+        }
+
+        private static string GenerateCode(CodeObject c, CodeDomProvider provider, CodeGeneratorOptions? options = null)
         {
             var sb = new StringBuilder();
             var writer = new StringWriter(sb);
-            var options = new CodeGeneratorOptions();
+            options ??= new CodeGeneratorOptions();
 
             if (c is CodeStatement)
             {
@@ -181,7 +199,7 @@ namespace System.CodeDom.Compiler.Tests
                         lastWasWhitespace = true;
                         sb.Append(c);
                     }
-                    else if (lastWasWhitespace || sb.Length == 0) 
+                    else if (lastWasWhitespace || sb.Length == 0)
                     {
                         continue;
                     }
