@@ -1318,8 +1318,6 @@ namespace System.Text.RegularExpressions
 
                 using RentedLocalBuilder i = RentInt32Local();
 
-                Mvfldloc(s_runtextField, _runtextLocal);
-
                 if (set.Chars is { Length: 1 } && !set.CaseInsensitive)
                 {
                     // int i = runtext.AsSpan(runtextpos, runtextbeg, runtextpos - runtextbeg).LastIndexOf(set.Chars[0]);
@@ -1357,12 +1355,14 @@ namespace System.Text.RegularExpressions
                     Label increment = DefineLabel();
                     Label body = DefineLabel();
 
+                    Mvfldloc(s_runtextField, _runtextLocal);
+
                     // for (int i = runtextpos - 1; ...
                     Ldloc(_runtextposLocal);
                     Ldc(1);
                     Sub();
                     Stloc(i);
-                    Br(condition);
+                    BrFar(condition);
 
                     // if (MatchCharClass(runtext[i], set))
                     MarkLabel(body);
@@ -1393,10 +1393,10 @@ namespace System.Text.RegularExpressions
                     MarkLabel(condition);
                     Ldloc(i);
                     Ldloc(_runtextbegLocal!);
-                    Bge(body);
-                }
+                    BgeFar(body);
 
-                BrFar(returnFalse);
+                    BrFar(returnFalse);
+                }
             }
 
             void GenerateFixedSet_LeftToRight()

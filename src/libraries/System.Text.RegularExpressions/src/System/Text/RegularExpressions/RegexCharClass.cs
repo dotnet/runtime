@@ -876,8 +876,8 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Gets whether the specified string participates in case conversion.</summary>
-        /// <remarks>The string participates in case conversion if any of its characters do.</remarks>
+        /// <summary>Gets whether the specified span participates in case conversion.</summary>
+        /// <remarks>The span participates in case conversion if any of its characters do.</remarks>
         public static bool ParticipatesInCaseConversion(ReadOnlySpan<char> s)
         {
             foreach (char c in s)
@@ -1023,7 +1023,7 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CharInClass(char ch, string set, ref uint[]? asciiLazyCache)
         {
-            // The int[] contains 8 ints, or 256 bits.  These are laid out as pairs, where the first bit in the pair
+            // The uint[] contains 8 ints, or 256 bits.  These are laid out as pairs, where the first bit in the pair
             // says whether the second bit in the pair has already been computed.  Once a value is computed, it's never
             // changed, so since Int32s are written/read atomically, we can trust the value bit if we see that the known bit
             // has been set.  If the known bit hasn't been set, then we proceed to look it up, and then swap in the result.

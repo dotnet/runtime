@@ -450,7 +450,6 @@ namespace System.Text.RegularExpressions.Tests
         // Not reducing branches of alternations with different casing
         [InlineData("(?i:abcd)|abcd", "abcd|abcd")]
         [InlineData("abcd|(?i:abcd)", "abcd|abcd")]
-        [InlineData("abc(?:(?i:e)|f)", "abc[ef]")]
         // Not applying auto-atomicity
         [InlineData("a*b*", "(?>a*)b*")]
         [InlineData("[ab]*[^a]", "(?>[ab]*)[^a]")]

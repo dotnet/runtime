@@ -113,12 +113,7 @@ namespace System.Text.RegularExpressions
                             (true, false) => FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive,
                             (true, true) => FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive,
                         };
-
-                        // Non-compiled code will be using CharInClass with a cache, so initialize that cache.
-                        if (!compiled)
-                        {
-                            _asciiLookups = new uint[FixedDistanceSets.Count][];
-                        }
+                        _asciiLookups = new uint[1][];
                     }
                 }
                 return;
@@ -163,12 +158,7 @@ namespace System.Text.RegularExpressions
                         (false, true) => FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive,
                         (false, false) => FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive,
                     };
-
-                    // Non-compiled code will be using CharInClass with a cache, so initialize that cache.
-                    if (!compiled)
-                    {
-                        _asciiLookups = new uint[FixedDistanceSets.Count][];
-                    }
+                    _asciiLookups = new uint[fixedDistanceSets.Count][];
                 }
                 return;
             }
