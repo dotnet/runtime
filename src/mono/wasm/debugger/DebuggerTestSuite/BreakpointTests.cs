@@ -642,5 +642,21 @@ namespace DebuggerTests
                 }
             );
         }
+        
+
+        [Fact]
+        public async Task DebuggerAttributeNoStopInDebuggerHidden()
+        {
+            var bp_hidden = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "HiddenMethod", 1);
+            var bp_visible = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "VisibleMethod", 1);
+            Assert.Empty(bp_hidden.Value["locations"]);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:VisibleMethod'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_visible.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_visible.Value["locations"][0]["columnNumber"].Value<int>(),
+                "VisibleMethod"
+            );
+        }
     }
 }

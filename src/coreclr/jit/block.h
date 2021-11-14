@@ -551,6 +551,7 @@ enum BasicBlockFlags : unsigned __int64
 
     BBF_PATCHPOINT           = MAKE_BBFLAG(36), // Block is a patchpoint
     BBF_HAS_CLASS_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
+    BBF_PARTIAL_COMPILATION_PATCHPOINT  = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
 
     // The following are sets of flags.
 

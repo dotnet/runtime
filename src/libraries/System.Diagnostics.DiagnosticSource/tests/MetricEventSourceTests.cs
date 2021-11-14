@@ -704,6 +704,47 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
+        public void EventSourceEnforcesHistogramLimitAndNotMaxTimeSeries()
+        {
+            using Meter meter = new Meter("TestMeter17");
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1");
+
+
+            EventWrittenEventArgs[] events;
+            // MaxTimeSeries = 3, MaxHistograms = 2
+            // HistogramLimitReached should be raised when Record(tags: "Color=green"), but TimeSeriesLimitReached should not be raised
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, 3, 2, "TestMeter17"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
+                h.Record(5, new KeyValuePair<string, object?>("Color", "red"));
+                h.Record(6, new KeyValuePair<string, object?>("Color", "blue"));
+                h.Record(7, new KeyValuePair<string, object?>("Color", "green"));
+                h.Record(8, new KeyValuePair<string, object?>("Color", "yellow"));
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+
+                h.Record(12, new KeyValuePair<string, object?>("Color", "red"));
+                h.Record(13, new KeyValuePair<string, object?>("Color", "blue"));
+                h.Record(14, new KeyValuePair<string, object?>("Color", "green"));
+                h.Record(15, new KeyValuePair<string, object?>("Color", "yellow"));
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, h);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=red", "", "0.5=5;0.95=5;0.99=5", "0.5=12;0.95=12;0.99=12");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=blue", "", "0.5=6;0.95=6;0.99=6", "0.5=13;0.95=13;0.99=13");
+            AssertHistogramLimitPresent(events);
+            AssertTimeSeriesLimitNotPresent(events);
+            AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=green");
+            AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=yellow");
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+        }
+
+
         private void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var beginReportEvents = events.Where(e => e.EventName == "BeginInstrumentReporting").Select(e =>
@@ -764,6 +805,11 @@ namespace System.Diagnostics.Metrics.Tests
         private void AssertTimeSeriesLimitPresent(EventWrittenEventArgs[] events)
         {
             Assert.Equal(1, events.Where(e => e.EventName == "TimeSeriesLimitReached").Count());
+        }
+
+        private void AssertTimeSeriesLimitNotPresent(EventWrittenEventArgs[] events)
+        {
+            Assert.Equal(0, events.Where(e => e.EventName == "TimeSeriesLimitReached").Count());
         }
 
         private void AssertHistogramLimitPresent(EventWrittenEventArgs[] events)

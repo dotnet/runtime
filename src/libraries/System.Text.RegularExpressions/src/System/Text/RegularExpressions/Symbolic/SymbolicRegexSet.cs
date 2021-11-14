@@ -273,19 +273,6 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        public SymbolicRegexSet<S> Restrict(S pred)
-        {
-            return CreateMulti(_builder, RestrictElements(pred), _kind);
-
-            IEnumerable<SymbolicRegexNode<S>> RestrictElements(S pred)
-            {
-                foreach (SymbolicRegexNode<S> elem in this)
-                {
-                    yield return elem.Restrict(pred);
-                }
-            }
-        }
-
         internal bool IsNullableFor(uint context)
         {
             Enumerator e = GetEnumerator();
@@ -349,6 +336,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
+            // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
             if (obj is not SymbolicRegexSet<S> that ||
                 _kind != that._kind ||
                 _singleton is null && that._singleton is not null ||
@@ -373,6 +361,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public void ToString(StringBuilder sb)
         {
+            // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
             if (IsNothing)
             {
                 sb.Append(SymbolicRegexNode<S>.EmptyCharClass);
@@ -415,6 +404,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexSet<S> CreateDerivative(S elem, uint context)
         {
+            // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
             return CreateMulti(_builder, MkDerivativesOfElems(elem, context), _kind);
 
             IEnumerable<SymbolicRegexNode<S>> MkDerivativesOfElems(S elem, uint context)
@@ -428,6 +418,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexSet<T> Transform<T>(SymbolicRegexBuilder<T> builderT, Func<S, T> predicateTransformer) where T : notnull
         {
+            // This function is mutually recursive with the one in SymbolicRegexBuilder, which has stack overflow avoidance
             return SymbolicRegexSet<T>.CreateMulti(builderT, TransformElements(builderT, predicateTransformer), _kind);
 
             IEnumerable<SymbolicRegexNode<T>> TransformElements(SymbolicRegexBuilder<T> builderT, Func<S, T> predicateTransformer)
@@ -451,6 +442,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexSet<S> Reverse()
         {
+            // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
             return CreateMulti(_builder, ReverseElements(), _kind);
 
             IEnumerable<SymbolicRegexNode<S>> ReverseElements()
@@ -464,6 +456,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal bool StartsWithLoop(int upperBoundLowestValue)
         {
+            // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
             foreach (SymbolicRegexNode<S> n in this)
             {
                 if (n.StartsWithLoop(upperBoundLowestValue))
@@ -483,6 +476,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal int GetFixedLength()
         {
+            // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
             if (_loops.Count > 0)
             {
                 return -1;

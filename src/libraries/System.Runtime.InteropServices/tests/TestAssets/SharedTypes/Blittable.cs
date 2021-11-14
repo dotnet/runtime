@@ -13,4 +13,12 @@ namespace SharedTypes
         public int b;
         public int c;
     }
+
+    [BlittableType]
+    public unsafe struct PointerFields
+    {
+        public int* i;
+        public bool* b;
+        public char* c;
+    }
 }

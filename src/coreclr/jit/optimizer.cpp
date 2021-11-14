@@ -2649,7 +2649,11 @@ bool Compiler::optIsLoopEntry(BasicBlock* block) const
 {
     for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
-        // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
+        if ((optLoopTable[loopInd].lpFlags & LPFLG_REMOVED) != 0)
+        {
+            continue;
+        }
+
         if (optLoopTable[loopInd].lpEntry == block)
         {
             return true;
@@ -4399,7 +4403,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
         if (opts.compDbgInfo)
         {
-            clonedStmt->SetILOffsetX(stmt->GetILOffsetX());
+            clonedStmt->SetDebugInfo(stmt->GetDebugInfo());
         }
 
         clonedStmt->SetCompilerAdded();

@@ -2587,8 +2587,7 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	EMIT_NEW_AOTCONST (cfg, slot_ins, MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
 
 	// Can't add basic blocks during decompose/interp entry mode etc.
-	// Can't add basic blocks to the gsharedvt init block either
-	if (cfg->after_method_to_ir || entry->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO || cfg->interp_entry_only) {
+	if (cfg->after_method_to_ir || cfg->interp_entry_only) {
 		MonoInst *args [2] = { rgctx, slot_ins };
 		if (entry->in_mrgctx)
 			call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
@@ -5681,12 +5680,17 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	gboolean constrained_is_generic_param =
 		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_VAR ||
 		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_MVAR;
+	MonoType *gshared_constraint = NULL;
 
 	if (constrained_is_generic_param && cfg->gshared) {
 		if (!mini_is_gsharedvt_klass (constrained_class)) {
 			g_assert (!m_class_is_valuetype (cmethod->klass));
 			if (!mini_type_is_reference (m_class_get_byval_arg (constrained_class)))
 				constrained_partial_call = TRUE;
+
+			MonoType *t = m_class_get_byval_arg (constrained_class);
+			MonoGenericParam *gparam = t->data.generic_param;
+			gshared_constraint = gparam->gshared_constraint;
 		}
 	}
 
@@ -5726,6 +5730,24 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 			 */
 			/* If the method is not abstract, it's a default interface method, and we need to box */
 			need_box = FALSE;
+		}
+
+		if (gshared_constraint && MONO_TYPE_IS_PRIMITIVE (gshared_constraint) && cmethod->klass == mono_defaults.object_class &&
+			!strcmp (cmethod->name, "GetHashCode")) {
+			/*
+			 * The receiver is constrained to a primitive type or an enum with the same basetype.
+			 * Enum.GetHashCode () returns the hash code of the underlying type (see comments in Enum.cs),
+			 * so the constrained call can be replaced with a normal call to the basetype GetHashCode ()
+			 * method.
+			 */
+			MonoClass *gshared_constraint_class = mono_class_from_mono_type_internal (gshared_constraint);
+			cmethod = get_method_nofail (gshared_constraint_class, cmethod->name, 0, 0);
+			g_assert (cmethod);
+			*ref_cmethod = cmethod;
+			*ref_virtual = FALSE;
+			if (cfg->verbose_level)
+				printf (" -> %s\n", mono_method_get_full_name (cmethod));
+			return NULL;
 		}
 
 		if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && (cmethod->klass == mono_defaults.object_class || cmethod->klass == m_class_get_parent (mono_defaults.enum_class) || cmethod->klass == mono_defaults.enum_class)) {
@@ -6401,19 +6423,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_emit_method_call (cfg, wrapper, args, NULL);
 	}
 
-	/* FIRST CODE BLOCK */
-	NEW_BBLOCK (cfg, tblock);
-	tblock->cil_code = ip;
-	cfg->cbb = tblock;
-	cfg->ip = ip;
-
-	ADD_BBLOCK (cfg, tblock);
-
 	if (cfg->method == method) {
 		breakpoint_id = mono_debugger_method_has_breakpoint (method);
 		if (breakpoint_id) {
 			MONO_INST_NEW (cfg, ins, OP_BREAK);
 			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		if (!cfg->method->wrapper_type && header->num_clauses) {
+			for (int i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				/* Finally clauses are checked after the remove_finally pass */
+				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+					cfg->interp_entry_only = TRUE;
+			}
 		}
 	}
 
@@ -6423,9 +6448,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->bb_init = init_localsbb;
 	init_localsbb->real_offset = cfg->real_offset;
 	start_bblock->next_bb = init_localsbb;
-	init_localsbb->next_bb = cfg->cbb;
 	link_bblock (cfg, start_bblock, init_localsbb);
-	link_bblock (cfg, init_localsbb, cfg->cbb);
 	init_localsbb2 = init_localsbb;
 	cfg->cbb = init_localsbb;
 
@@ -6468,7 +6491,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (init_locals)
 			ins->flags |= MONO_INST_INIT;
 		*/
+		if (cfg->llvm_only) {
+			init_localsbb = cfg->cbb;
+			init_localsbb2 = cfg->cbb;
+		}
 	}
+
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		if (cfg->interp_entry_only)
+			emit_llvmonly_interp_entry (cfg, header);
+	}
+
+	/* FIRST CODE BLOCK */
+	NEW_BBLOCK (cfg, tblock);
+	tblock->cil_code = ip;
+	cfg->cbb = tblock;
+	cfg->ip = ip;
+
+	init_localsbb->next_bb = cfg->cbb;
+	link_bblock (cfg, init_localsbb, cfg->cbb);
+
+	ADD_BBLOCK (cfg, tblock);
 
 	CHECK_CFG_EXCEPTION;
 
@@ -6519,19 +6562,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_ADD_INS (cfg->cbb, arg_ins);
 			MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
 		}
-	}
-
-	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		if (!cfg->method->wrapper_type && header->num_clauses) {
-			for (int i = 0; i < header->num_clauses; ++i) {
-				MonoExceptionClause *clause = &header->clauses [i];
-				/* Finally clauses are checked after the remove_finally pass */
-				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
-					cfg->interp_entry_only = TRUE;
-			}
-		}
-		if (cfg->interp_entry_only)
-			emit_llvmonly_interp_entry (cfg, header);
 	}
 
 	skip_dead_blocks = !dont_verify;
@@ -7208,7 +7238,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean direct_icall; direct_icall = FALSE;
 			gboolean tailcall_calli; tailcall_calli = FALSE;
 			gboolean noreturn; noreturn = FALSE;
+#ifdef TARGET_WASM
 			gboolean needs_stack_walk; needs_stack_walk = FALSE;
+#endif
 
 			// Variables shared by CEE_CALLI and CEE_CALL/CEE_CALLVIRT.
 			common_call = FALSE;
@@ -7237,7 +7269,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				printf ("cmethod = %s\n", mono_method_get_full_name (cmethod));
 
 			MonoMethod *cil_method; cil_method = cmethod;
-				
 			if (constrained_class) {
 				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class))
 					// FIXME:
@@ -7255,7 +7286,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					g_assert (cmethod);
 				}
 			}
-					
+
 			if (!dont_verify && !cfg->skip_visibility) {
 				MonoMethod *target_method = cil_method;
 				if (method->is_inflated) {
@@ -7274,9 +7305,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* Use the interpreter instead */
 					cfg->exception_message = g_strdup ("stack walk");
 					cfg->disable_llvm = TRUE;
-				} else {
+				}
+#ifdef TARGET_WASM
+				else {
 					needs_stack_walk = TRUE;
 				}
+#endif
 			}
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {

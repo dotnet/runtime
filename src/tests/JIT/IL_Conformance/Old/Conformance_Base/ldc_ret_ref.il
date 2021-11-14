@@ -128,5 +128,5 @@ END:
 
 
 
-.assembly ldc_ret_ref.exe{}
+.assembly ldc_ret_ref{}
 

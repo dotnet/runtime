@@ -100,8 +100,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
     regSet.tmpInit();
 
-    instInit();
-
 #ifdef LATE_DISASM
     getDisAssembler().disInit(compiler);
 #endif
@@ -125,9 +123,9 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 #endif // TARGET_AMD64
 
     //  Initialize the IP-mapping logic.
-    compiler->genIPmappingList        = nullptr;
-    compiler->genIPmappingLast        = nullptr;
-    compiler->genCallSite2ILOffsetMap = nullptr;
+    compiler->genIPmappingList         = nullptr;
+    compiler->genIPmappingLast         = nullptr;
+    compiler->genCallSite2DebugInfoMap = nullptr;
 
     /* Assume that we not fully interruptible */
 
@@ -1299,10 +1297,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *      *rv1Ptr     ...     base operand
  *      *rv2Ptr     ...     optional operand
  *      *revPtr     ...     true if rv2 is before rv1 in the evaluation order
- *  #if SCALED_ADDR_MODES
  *      *mulPtr     ...     optional multiplier (2/4/8) for rv2
  *                          Note that for [reg1 + reg2] and [reg1 + reg2 + icon], *mulPtr == 0.
- *  #endif
  *      *cnsPtr     ...     integer constant [optional]
  *
  *  IMPORTANT NOTE: This routine doesn't generate any code, it merely
@@ -1310,15 +1306,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *                  form an address mode later on.
  */
 
-bool CodeGen::genCreateAddrMode(GenTree*  addr,
-                                bool      fold,
-                                bool*     revPtr,
-                                GenTree** rv1Ptr,
-                                GenTree** rv2Ptr,
-#if SCALED_ADDR_MODES
-                                unsigned* mulPtr,
-#endif // SCALED_ADDR_MODES
-                                ssize_t* cnsPtr)
+bool CodeGen::genCreateAddrMode(
+    GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr)
 {
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1368,10 +1357,8 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
     GenTree* op1;
     GenTree* op2;
 
-    ssize_t cns;
-#if SCALED_ADDR_MODES
+    ssize_t  cns;
     unsigned mul;
-#endif // SCALED_ADDR_MODES
 
     GenTree* tmp;
 
@@ -1395,9 +1382,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
 
             op1     ...     base address
             op2     ...     optional scaled index
-#if SCALED_ADDR_MODES
             mul     ...     optional multiplier (2/4/8) for op2
-#endif
             cns     ...     optional displacement
 
         Here we try to find such a set of operands and arrange for these
@@ -1405,9 +1390,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
      */
 
     cns = 0;
-#if SCALED_ADDR_MODES
     mul = 0;
-#endif // SCALED_ADDR_MODES
 
 AGAIN:
     /* We come back to 'AGAIN' if we have an add of a constant, and we are folding that
@@ -1416,9 +1399,7 @@ AGAIN:
     */
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if SCALED_ADDR_MODES
     assert(mul == 0);
-#endif // SCALED_ADDR_MODES
 
     /* Special case: keep constants as 'op2' */
 
@@ -1461,7 +1442,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH)
                 // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
@@ -1484,7 +1465,7 @@ AGAIN:
                         goto FOUND_AM;
                     }
                     break;
-#endif // SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#endif // !defined(TARGET_ARMARCH)
 
                 default:
                     break;
@@ -1525,8 +1506,6 @@ AGAIN:
 
             break;
 
-#if SCALED_ADDR_MODES
-
         case GT_MUL:
 
             if (op1->gtOverflow())
@@ -1566,8 +1545,6 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-
-#endif // SCALED_ADDR_MODES
 #endif // !TARGET_ARMARCH
 
         case GT_NOP:
@@ -1588,7 +1565,9 @@ AGAIN:
     switch (op2->gtOper)
     {
 #if !defined(TARGET_ARMARCH)
-        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
+        // arm doesn't support both scale and offset at the same. Offset is handled
+        // at the emitter as a peephole optimization.
         case GT_ADD:
 
             if (op2->gtOverflow())
@@ -1606,8 +1585,6 @@ AGAIN:
             }
 
             break;
-
-#if SCALED_ADDR_MODES
 
         case GT_MUL:
 
@@ -1644,9 +1621,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-
-#endif // SCALED_ADDR_MODES
-#endif // !TARGET_ARMARCH
+#endif // TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -1720,13 +1695,11 @@ FOUND_AM:
                 /* Get hold of the index value */
                 ssize_t ixv = index->AsIntConCommon()->IconValue();
 
-#if SCALED_ADDR_MODES
                 /* Scale the index if necessary */
                 if (tmpMul)
                 {
                     ixv *= tmpMul;
                 }
-#endif
 
                 if (FitsIn<INT32>(cns + ixv))
                 {
@@ -1734,10 +1707,8 @@ FOUND_AM:
 
                     cns += ixv;
 
-#if SCALED_ADDR_MODES
                     /* There is no scaled operand any more */
                     mul = 0;
-#endif
                     rv2 = nullptr;
                 }
             }
@@ -1759,9 +1730,7 @@ FOUND_AM:
     *revPtr = rev;
     *rv1Ptr = rv1;
     *rv2Ptr = rv2;
-#if SCALED_ADDR_MODES
     *mulPtr = mul;
-#endif
     *cnsPtr = cns;
 
     return true;
@@ -1829,7 +1798,7 @@ void CodeGen::genExitCode(BasicBlock* block)
        that this is ok  */
 
     // For non-optimized debuggable code, there is only one epilog.
-    genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::EPILOG, true);
+    genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
     bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
     if (compiler->getNeedsGSSecurityCookie())
@@ -7009,7 +6978,7 @@ void CodeGen::genFnProlog()
 
     // Do this so we can put the prolog instruction group ahead of
     // other instruction groups
-    genIPmappingAddToFront((IL_OFFSETX)ICorDebugInfo::PROLOG);
+    genIPmappingAddToFront(IPmappingDscKind::Prolog, DebugInfo(), true);
 
 #ifdef DEBUG
     if (compiler->opts.dspCode)
@@ -8099,7 +8068,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
-                                       BAD_IL_OFFSET, // IL offset
+                                       DebugInfo(),
                                        indCallReg,    // ireg
                                        REG_NA,        // xreg
                                        0,             // xmul
@@ -8500,7 +8469,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
-                                       BAD_IL_OFFSET, indCallReg, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
+                                       DebugInfo(),
+                                       indCallReg, REG_NA, 0, 0,  /* ireg, xreg, xmul, disp */
                                        true /* isJump */
             );
             // clang-format on
@@ -10432,32 +10402,38 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
  *  Display a IPmappingDsc. Pass -1 as mappingNum to not display a mapping number.
  */
 
-void CodeGen::genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMapping)
+void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
 {
     if (mappingNum != unsigned(-1))
     {
         printf("%d: ", mappingNum);
     }
 
-    IL_OFFSETX offsx = ipMapping->ipmdILoffsx;
-
-    if (offsx == BAD_IL_OFFSET)
+    switch (ipMapping->ipmdKind)
     {
-        printf("???");
-    }
-    else
-    {
-        Compiler::eeDispILOffs(jitGetILoffsAny(offsx));
+        case IPmappingDscKind::Prolog:
+            printf("PROLOG");
+            break;
+        case IPmappingDscKind::Epilog:
+            printf("EPILOG");
+            break;
+        case IPmappingDscKind::NoMapping:
+            printf("NO_MAP");
+            break;
+        case IPmappingDscKind::Normal:
+            const ILLocation& loc = ipMapping->ipmdLoc;
+            Compiler::eeDispILOffs(loc.GetOffset());
+            if (loc.IsStackEmpty())
+            {
+                printf(" STACK_EMPTY");
+            }
 
-        if (jitIsStackEmpty(offsx))
-        {
-            printf(" STACK_EMPTY");
-        }
+            if (loc.IsCall())
+            {
+                printf(" CALL_INSTRUCTION");
+            }
 
-        if (jitIsCallInstruction(offsx))
-        {
-            printf(" CALL_INSTRUCTION");
-        }
+            break;
     }
 
     printf(" ");
@@ -10475,8 +10451,8 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMa
 
 void CodeGen::genIPmappingListDisp()
 {
-    unsigned                mappingNum = 0;
-    Compiler::IPmappingDsc* ipMapping;
+    unsigned      mappingNum = 0;
+    IPmappingDsc* ipMapping;
 
     for (ipMapping = compiler->genIPmappingList; ipMapping != nullptr; ipMapping = ipMapping->ipmdNext)
     {
@@ -10494,34 +10470,35 @@ void CodeGen::genIPmappingListDisp()
  *  Record the instr offset as being at the current code gen position.
  */
 
-void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
+void CodeGen::genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel)
 {
     if (!compiler->opts.compDbgInfo)
     {
         return;
     }
 
-    assert(offsx != BAD_IL_OFFSET);
+    assert((kind == IPmappingDscKind::Normal) == di.IsValid());
 
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
+    switch (kind)
     {
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
+        case IPmappingDscKind::Prolog:
+        case IPmappingDscKind::Epilog:
             break;
 
         default:
 
-            if (offsx != (IL_OFFSETX)ICorDebugInfo::NO_MAPPING)
+            if (kind == IPmappingDscKind::Normal)
             {
-                noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
+                noway_assert(di.GetLocation().GetOffset() <= compiler->info.compILCodeSize);
             }
 
-            // Ignore this one if it's the same IL offset as the last one we saw.
+            // Ignore this one if it's the same IL location as the last one we saw.
             // Note that we'll let through two identical IL offsets if the flag bits
             // differ, or two identical "special" mappings (e.g., PROLOG).
-            if ((compiler->genIPmappingLast != nullptr) && (offsx == compiler->genIPmappingLast->ipmdILoffsx))
+            if ((compiler->genIPmappingLast != nullptr) && (kind == compiler->genIPmappingLast->ipmdKind) &&
+                (di.GetLocation() == compiler->genIPmappingLast->ipmdLoc))
             {
-                JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", offsx);
+                JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", di.GetLocation().GetOffset());
                 return;
             }
             break;
@@ -10529,11 +10506,14 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
 
     /* Create a mapping entry and append it to the list */
 
-    Compiler::IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
+    IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<IPmappingDsc>(1);
     addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdILoffsx = offsx;
+    addMapping->ipmdKind    = kind;
+    addMapping->ipmdLoc     = di.GetLocation();
     addMapping->ipmdIsLabel = isLabel;
     addMapping->ipmdNext    = nullptr;
+
+    assert((kind == IPmappingDscKind::Normal) == addMapping->ipmdLoc.IsValid());
 
     if (compiler->genIPmappingList != nullptr)
     {
@@ -10562,37 +10542,24 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
  *
  *  Prepend an IPmappingDsc struct to the list that we're maintaining
  *  for the debugger.
- *  Record the instr offset as being at the current code gen position.
  */
-void CodeGen::genIPmappingAddToFront(IL_OFFSETX offsx)
+void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel)
 {
     if (!compiler->opts.compDbgInfo)
     {
         return;
     }
 
-    assert(offsx != BAD_IL_OFFSET);
-    assert(compiler->compGeneratingProlog); // We only ever do this during prolog generation.
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            break;
-
-        default:
-            noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
-            break;
-    }
+    noway_assert((kind != IPmappingDscKind::Normal) ||
+                 (di.IsValid() && (di.GetLocation().GetOffset() <= compiler->info.compILCodeSize)));
 
     /* Create a mapping entry and prepend it to the list */
 
-    Compiler::IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
+    IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<IPmappingDsc>(1);
     addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdILoffsx = offsx;
-    addMapping->ipmdIsLabel = true;
-    addMapping->ipmdNext    = nullptr;
+    addMapping->ipmdKind    = kind;
+    addMapping->ipmdLoc     = di.GetLocation();
+    addMapping->ipmdIsLabel = isLabel;
 
     addMapping->ipmdNext       = compiler->genIPmappingList;
     compiler->genIPmappingList = addMapping;
@@ -10613,130 +10580,14 @@ void CodeGen::genIPmappingAddToFront(IL_OFFSETX offsx)
 
 /*****************************************************************************/
 
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::NO_MAPPING) != IL_OFFSETX(BAD_IL_OFFSET));
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::PROLOG) != IL_OFFSETX(BAD_IL_OFFSET));
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::EPILOG) != IL_OFFSETX(BAD_IL_OFFSET));
-
-C_ASSERT(IL_OFFSETX(BAD_IL_OFFSET) > MAX_IL_OFFSET);
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::NO_MAPPING) > MAX_IL_OFFSET);
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::PROLOG) > MAX_IL_OFFSET);
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::EPILOG) > MAX_IL_OFFSET);
-
-//------------------------------------------------------------------------
-// jitGetILoffs: Returns the IL offset portion of the IL_OFFSETX type.
-//      Asserts if any ICorDebugInfo distinguished value (like ICorDebugInfo::NO_MAPPING)
-//      is seen; these are unexpected here. Also asserts if passed BAD_IL_OFFSET.
-//
-// Arguments:
-//    offsx - the IL_OFFSETX value with the IL offset to extract.
-//
-// Return Value:
-//    The IL offset.
-
-IL_OFFSET jitGetILoffs(IL_OFFSETX offsx)
-{
-    assert(offsx != BAD_IL_OFFSET);
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            unreached();
-
-        default:
-            return IL_OFFSET(offsx & ~IL_OFFSETX_BITS);
-    }
-}
-
-//------------------------------------------------------------------------
-// jitGetILoffsAny: Similar to jitGetILoffs(), but passes through ICorDebugInfo
-//      distinguished values. Asserts if passed BAD_IL_OFFSET.
-//
-// Arguments:
-//    offsx - the IL_OFFSETX value with the IL offset to extract.
-//
-// Return Value:
-//    The IL offset.
-
-IL_OFFSET jitGetILoffsAny(IL_OFFSETX offsx)
-{
-    assert(offsx != BAD_IL_OFFSET);
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            return IL_OFFSET(offsx);
-
-        default:
-            return IL_OFFSET(offsx & ~IL_OFFSETX_BITS);
-    }
-}
-
-//------------------------------------------------------------------------
-// jitIsStackEmpty: Does the IL offset have the stack empty bit set?
-//      Asserts if passed BAD_IL_OFFSET.
-//
-// Arguments:
-//    offsx - the IL_OFFSETX value to check
-//
-// Return Value:
-//    'true' if the stack empty bit is set; 'false' otherwise.
-
-bool jitIsStackEmpty(IL_OFFSETX offsx)
-{
-    assert(offsx != BAD_IL_OFFSET);
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            return true;
-
-        default:
-            return (offsx & IL_OFFSETX_STKBIT) == 0;
-    }
-}
-
-//------------------------------------------------------------------------
-// jitIsCallInstruction: Does the IL offset have the call instruction bit set?
-//      Asserts if passed BAD_IL_OFFSET.
-//
-// Arguments:
-//    offsx - the IL_OFFSETX value to check
-//
-// Return Value:
-//    'true' if the call instruction bit is set; 'false' otherwise.
-
-bool jitIsCallInstruction(IL_OFFSETX offsx)
-{
-    assert(offsx != BAD_IL_OFFSET);
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            return false;
-
-        default:
-            return (offsx & IL_OFFSETX_CALLINSTRUCTIONBIT) != 0;
-    }
-}
-
-/*****************************************************************************/
-
-void CodeGen::genEnsureCodeEmitted(IL_OFFSETX offsx)
+void CodeGen::genEnsureCodeEmitted(const DebugInfo& di)
 {
     if (!compiler->opts.compDbgCode)
     {
         return;
     }
 
-    if (offsx == BAD_IL_OFFSET)
+    if (!di.IsValid())
     {
         return;
     }
@@ -10748,7 +10599,7 @@ void CodeGen::genEnsureCodeEmitted(IL_OFFSETX offsx)
         return;
     }
 
-    if (compiler->genIPmappingLast->ipmdILoffsx != offsx)
+    if (compiler->genIPmappingLast->ipmdLoc != di.GetLocation())
     {
         return;
     }
@@ -10787,10 +10638,10 @@ void CodeGen::genIPmappingGen()
         return;
     }
 
-    Compiler::IPmappingDsc* tmpMapping;
-    Compiler::IPmappingDsc* prevMapping;
-    unsigned                mappingCnt;
-    UNATIVE_OFFSET          lastNativeOfs;
+    IPmappingDsc*  tmpMapping;
+    IPmappingDsc*  prevMapping;
+    unsigned       mappingCnt;
+    UNATIVE_OFFSET lastNativeOfs;
 
     /* First count the number of distinct mapping records */
 
@@ -10800,12 +10651,10 @@ void CodeGen::genIPmappingGen()
     for (prevMapping = nullptr, tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr;
          tmpMapping = tmpMapping->ipmdNext)
     {
-        IL_OFFSETX srcIP = tmpMapping->ipmdILoffsx;
-
         // Managed RetVal - since new sequence points are emitted to identify IL calls,
         // make sure that those are not filtered and do not interfere with filtering of
         // other sequence points.
-        if (jitIsCallInstruction(srcIP))
+        if (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.IsCall())
         {
             mappingCnt++;
             continue;
@@ -10828,19 +10677,20 @@ void CodeGen::genIPmappingGen()
          */
 
         PREFIX_ASSUME(prevMapping != nullptr); // We would exit before if this was true
-        if (prevMapping->ipmdILoffsx == (IL_OFFSETX)ICorDebugInfo::NO_MAPPING)
+        if (prevMapping->ipmdKind == IPmappingDscKind::NoMapping)
         {
             // If the previous entry was NO_MAPPING, ignore it
             prevMapping->ipmdNativeLoc.Init();
             prevMapping = tmpMapping;
         }
-        else if (srcIP == (IL_OFFSETX)ICorDebugInfo::NO_MAPPING)
+        else if (tmpMapping->ipmdKind == IPmappingDscKind::NoMapping)
         {
             // If the current entry is NO_MAPPING, ignore it
             // Leave prevMapping unchanged as tmpMapping is no longer valid
             tmpMapping->ipmdNativeLoc.Init();
         }
-        else if (srcIP == (IL_OFFSETX)ICorDebugInfo::EPILOG || srcIP == 0)
+        else if ((tmpMapping->ipmdKind == IPmappingDscKind::Epilog) ||
+                 (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
         {
             // counting for special cases: see below
             mappingCnt++;
@@ -10887,18 +10737,18 @@ void CodeGen::genIPmappingGen()
         }
 
         UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
-        IL_OFFSETX     srcIP         = tmpMapping->ipmdILoffsx;
 
-        if (jitIsCallInstruction(srcIP))
+        if (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.IsCall())
         {
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffs(srcIP), jitIsStackEmpty(srcIP), true);
+            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, IPmappingDscKind::Normal, tmpMapping->ipmdLoc);
         }
         else if (nextNativeOfs != lastNativeOfs)
         {
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffsAny(srcIP), jitIsStackEmpty(srcIP), false);
+            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, tmpMapping->ipmdKind, tmpMapping->ipmdLoc);
             lastNativeOfs = nextNativeOfs;
         }
-        else if (srcIP == (IL_OFFSETX)ICorDebugInfo::EPILOG || srcIP == 0)
+        else if (tmpMapping->ipmdKind == IPmappingDscKind::Epilog ||
+                 (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
         {
             // For the special case of an IL instruction with no body
             // followed by the epilog (say ret void immediately preceding
@@ -10906,7 +10756,7 @@ void CodeGen::genIPmappingGen()
             // at the (empty) ret statement if the user tries to put a
             // breakpoint there, and then have the option of seeing the
             // epilog or not based on SetUnmappedStopMask for the stepper.
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffsAny(srcIP), jitIsStackEmpty(srcIP), false);
+            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, tmpMapping->ipmdKind, tmpMapping->ipmdLoc);
         }
     }
 
@@ -10930,12 +10780,12 @@ void CodeGen::genIPmappingGen()
             if ((block->bbRefs > 1) && (stmt != nullptr))
             {
                 bool found = false;
-                if (stmt->GetILOffsetX() != BAD_IL_OFFSET)
+                DebugInfo rootInfo = stmt->GetDebugInfo().GetRoot();
+                if (rootInfo.IsValid())
                 {
-                    IL_OFFSET ilOffs = jitGetILoffs(stmt->GetILOffsetX());
-                    for (unsigned i = 0; i < eeBoundariesCount; ++i)
+                    for (unsigned i = 0; i < compiler->eeBoundariesCount; ++i)
                     {
-                        if (eeBoundaries[i].ilOffset == ilOffs)
+                        if (compiler->eeBoundaries[i].ilOffset == rootInfo.GetLocation().GetOffset())
                         {
                             found = true;
                             break;

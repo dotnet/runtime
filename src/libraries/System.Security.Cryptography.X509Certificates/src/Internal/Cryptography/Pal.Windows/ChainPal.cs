@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal
             if (chainContext == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(chainContext));
 
-            SafeX509ChainHandle certChainHandle = Interop.crypt32.CertDuplicateCertificateChain(chainContext);
+            SafeX509ChainHandle certChainHandle = Interop.Crypt32.CertDuplicateCertificateChain(chainContext);
             if (certChainHandle == null || certChainHandle.IsInvalid)
                 throw new CryptographicException(SR.Cryptography_InvalidContextHandle, nameof(chainContext));
 

@@ -4,6 +4,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -77,6 +79,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public TransitionRegex<S> Complement()
         {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(Complement);
+            }
+
             switch (_kind)
             {
                 case TransitionRegexKind.Leaf:
@@ -100,6 +107,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Concatenate a node at the end of this transition regex</summary>
         public TransitionRegex<S> Concat(SymbolicRegexNode<S> node)
         {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(Concat, node);
+            }
+
             switch (_kind)
             {
                 case TransitionRegexKind.Leaf:
@@ -132,6 +144,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private TransitionRegex<S> IntersectWith(TransitionRegex<S> that, S pathIn)
         {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(IntersectWith, that, pathIn);
+            }
+
             Debug.Assert(_builder._solver.IsSatisfiable(pathIn));
 
             #region Conditional
@@ -205,6 +222,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private static TransitionRegex<S> Union(TransitionRegex<S> one, TransitionRegex<S> two)
         {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(Union, one, two);
+            }
+
             // Apply common simplifications, always trying to push the operations into the leaves or to eliminate redundant branches
             if (one.IsNothing || two.IsAnyStar || one == two)
             {

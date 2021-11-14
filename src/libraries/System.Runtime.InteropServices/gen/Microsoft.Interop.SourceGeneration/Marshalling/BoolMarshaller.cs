@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -25,6 +26,8 @@ namespace Microsoft.Interop
             _falseValue = falseValue;
             _compareToTrue = compareToTrue;
         }
+
+        public bool IsSupported(TargetFramework target, Version version) => true;
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {

@@ -9,7 +9,7 @@
 }
 .assembly legacy library inlbug {}
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_inl001
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  foo() cil managed
@@ -45,7 +45,7 @@
     IL_0004:  br.s       IL_0012
 
     IL_0006:  ldloc.1
-    IL_0007:  call       int32 Test::foo()
+    IL_0007:  call       int32 Test_inl001::foo()
     IL_000c:  add
     IL_000d:  stloc.1
     IL_000e:  ldloc.0

@@ -4,7 +4,11 @@ Documentation on compatibility guidance and the current state. The version headi
 
 ## Version 1
 
-The focus of version 1 is to support `NetCoreApp`. This implies that anything not needed by `NetCoreApp` is subject to change. Only .NET 6+ is supported.
+The focus of version 1 is to support `NetCoreApp`. This implies that anything not needed by `NetCoreApp` is subject to change.
+
+### Fallback mechanism
+
+In the event a marshaller would generate code that has a specific target framework or version requirement that is not satisfied, the generator will instead produce a normal `DllImportAttribute` declaration. This fallback mechanism enables the use of `GeneratedDllImportAttribute` in most circumstances and permits the conversion from `DllImportAttribute` to `GeneratedDllImportAttribute` to be across most code bases. There are instances where the generator will not be able to handle signatures or configuration. For example, uses of `StringBuilder` are not supported in any form and consumers should retain uses of `DllImportAttribute`. Additionally, `GeneratedDllImportAttribute` cannot represent all settings available on `DllImportAttribute`&mdash;see below for details.
 
 ### Semantic changes compared to `DllImportAttribute`
 
@@ -67,6 +71,8 @@ Only single-dimensional arrays are supported for source generated marshalling.
 
 In the source-generated marshalling, arrays will be allocated on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if they are passed by value or by read-only reference if they contain at most 256 bytes of data. The built-in system does not support this optimization for arrays.
 
+In the built-in system, marshalling a `char` array by value with `CharSet.Unicode` would default to also marshalling data out. In the source-generated marshalling, the `char` array must be marked with the `[Out]` attribute for data to be marshalled out by value.
+
 ### `in` keyword
 
 For some types - blittable or Unicode `char` - passed by read-only reference via the [`in` keyword](https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/in-parameter-modifier), the built-in system simply pins the parameter. The generated marshalling code does the same, such that there is no behavioural difference. A consequence of this behaviour is that any modifications made by the invoked function will be reflected in the caller. It is left to the user to avoid the situation in which `in` is used for a parameter that will actually be modified by the invoked function.
@@ -92,4 +98,4 @@ Unlike the built-in system, the source generator does not support marshalling fo
 
 ## Version 0
 
-This version is the built-in IL Stub generation system that is triggered whenever a method marked with `DllImport` is invoked.
+This version is the built-in IL Stub generation system that is triggered whenever a method marked with `DllImportAttribute` is invoked.

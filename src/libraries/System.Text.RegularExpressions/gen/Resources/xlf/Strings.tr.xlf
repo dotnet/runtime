@@ -109,8 +109,8 @@
       </trans-unit>
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
-        <target state="translated">ScanRegex iç hatası.</target>
-        <note />
+        <target state="needs-review-translation">ScanRegex iç hatası.</target>
+        <note>{Locked="ScanRegex"}</note>
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
         <source>Argument {0} cannot be zero-length.</source>
@@ -134,13 +134,13 @@
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="translated">RegexGeneratorAttribute hatalı biçimlendirilmiş</target>
-        <note />
+        <target state="needs-review-translation">RegexGeneratorAttribute hatalı biçimlendirilmiş</target>
+        <note>{Locked="RegexGeneratorAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
-        <target state="translated">Geçersiz RegexGenerator kullanımı</target>
-        <note />
+        <target state="needs-review-translation">Geçersiz RegexGenerator kullanımı</target>
+        <note>{Locked="RegexGenerator"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
@@ -195,7 +195,7 @@
       <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
         <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
         <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
-        <note />
+        <note>{Locked="RegexOptions.NonBacktracking"}</note>
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
@@ -219,8 +219,8 @@
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="translated">Yakalama grubu numaraları Int32.MaxValue değerine eşit veya bundan küçük olmalıdır.</target>
-        <note />
+        <target state="needs-review-translation">Yakalama grubu numaraları Int32.MaxValue değerine eşit veya bundan küçük olmalıdır.</target>
+        <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>

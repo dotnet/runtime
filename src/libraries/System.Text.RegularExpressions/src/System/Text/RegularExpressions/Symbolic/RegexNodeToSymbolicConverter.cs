@@ -31,6 +31,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private BDD CreateConditionFromSet(bool ignoreCase, string set)
         {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(CreateConditionFromSet, ignoreCase, set);
+            }
+
             (bool ignoreCase, string set) key = (ignoreCase, set);
             if (!_createConditionFromSet_Cache.TryGetValue(key, out BDD? result))
             {

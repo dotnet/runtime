@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System;
 using System.Reflection;
 using System.Text;
-using TestLibrary;
+using Xunit;
 
 #pragma warning disable CS0612, CS0618
 
@@ -21,12 +21,12 @@ class Test
             string newValue = "zyxwvut\0";
 
             actual = expected;
-            Assert.IsTrue(VBByRefStrNative.Marshal_Ansi(expected, ref actual, newValue));
-            Assert.AreEqual(newValue, actual);
+            Assert.True(VBByRefStrNative.Marshal_Ansi(expected, ref actual, newValue));
+            Assert.Equal(newValue, actual);
 
             actual = expected;
-            Assert.IsTrue(VBByRefStrNative.Marshal_Unicode(expected, ref actual, newValue));
-            Assert.AreEqual(newValue, actual);
+            Assert.True(VBByRefStrNative.Marshal_Unicode(expected, ref actual, newValue));
+            Assert.Equal(newValue, actual);
 
             StringBuilder builder = new StringBuilder();
 

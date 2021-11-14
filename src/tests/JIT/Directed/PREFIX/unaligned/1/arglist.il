@@ -19,7 +19,7 @@ arg1==arg4, arg2==arg5, arg3==arg6.
 */
 
 .assembly extern legacy library mscorlib {}
-.assembly arglist.exe{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
+.assembly 'arglist'{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
 

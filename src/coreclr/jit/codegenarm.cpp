@@ -182,7 +182,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     {
         // TODO-CrossBitness: we wouldn't need the cast below if we had CodeGen::instGen_Set_Reg_To_Reloc_Imm.
         const int val32 = (int)imm;
-        if (arm_Valid_Imm_For_Mov(val32))
+        if (validImmForMov(val32))
         {
             GetEmitter()->emitIns_R_I(INS_mov, size, reg, val32, flags);
         }
@@ -191,7 +191,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
             const int imm_lo16 = val32 & 0xffff;
             const int imm_hi16 = (val32 >> 16) & 0xffff;
 
-            assert(arm_Valid_Imm_For_Mov(imm_lo16));
+            assert(validImmForMov(imm_lo16));
             assert(imm_hi16 != 0);
 
             GetEmitter()->emitIns_R_I(INS_movw, size, reg, imm_lo16);
@@ -313,8 +313,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     var_types        targetType = treeNode->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(oper == GT_ADD || oper == GT_SUB || oper == GT_MUL || oper == GT_ADD_LO || oper == GT_ADD_HI ||
-           oper == GT_SUB_LO || oper == GT_SUB_HI || oper == GT_OR || oper == GT_XOR || oper == GT_AND);
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_ADD_LO, GT_ADD_HI, GT_SUB_LO, GT_SUB_HI, GT_OR, GT_XOR, GT_AND,
+                            GT_AND_NOT));
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
@@ -670,6 +670,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             break;
         case GT_AND:
             ins = INS_AND;
+            break;
+        case GT_AND_NOT:
+            ins = INS_bic;
             break;
         case GT_MUL:
             ins = INS_MUL;
@@ -1606,7 +1609,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         addr = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, (void**)&pAddr);
     }
 
-    if (!addr || !arm_Valid_Imm_For_BL((ssize_t)addr))
+    if (!addr || !validImmForBL((ssize_t)addr))
     {
         if (callTargetReg == REG_NA)
         {
@@ -1629,8 +1632,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         GetEmitter()->emitIns_Call(emitter::EC_INDIR_R, compiler->eeFindHelper(helper),
                                    INDEBUG_LDISASM_COMMA(nullptr) NULL, // addr
                                    argSize, retSize, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                   gcInfo.gcRegByrefSetCur,
-                                   BAD_IL_OFFSET, // ilOffset
+                                   gcInfo.gcRegByrefSetCur, DebugInfo(),
                                    callTargetReg, // ireg
                                    REG_NA, 0, 0,  // xreg, xmul, disp
                                    false          // isJump
@@ -1640,7 +1642,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     {
         GetEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN, compiler->eeFindHelper(helper),
                                    INDEBUG_LDISASM_COMMA(nullptr) addr, argSize, retSize, gcInfo.gcVarPtrSetCur,
-                                   gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, BAD_IL_OFFSET, REG_NA, REG_NA, 0,
+                                   gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), REG_NA, REG_NA, 0,
                                    0,    /* ilOffset, ireg, xreg, xmul, disp */
                                    false /* isJump */
                                    );

@@ -288,10 +288,7 @@ namespace System.Net.Mail
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _attachments ??= new AttachmentCollection();
             }
@@ -300,10 +297,7 @@ namespace System.Net.Mail
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _views ??= new AlternateViewCollection();
             }

@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (this.containedActions != null)
             {
-                baseUri = baseUri + '#' + compiler.GetUnicRtfId();
+                baseUri = $"{baseUri}#{compiler.GetUnicRtfId()}";
             }
             else
             {

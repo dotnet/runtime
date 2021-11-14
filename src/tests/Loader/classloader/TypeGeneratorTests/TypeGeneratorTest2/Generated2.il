@@ -8,7 +8,6 @@
 
 //TEST ASSEMBLY:
 .assembly Generated2 { .hash algorithm 0x00008004 }
-.module Generated2.exe
 
 .class public BaseClass0 
 {
@@ -98,7 +97,7 @@
 	.method public hidebysig newslot abstract virtual instance string Method5() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method6<M0>() cil managed { }
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Generated2 {
 	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
@@ -434,22 +433,22 @@
 		initobj valuetype MyStruct52`1<class BaseClass0>
 		.try {  ldloc V_3
 				ldstr "MyStruct52::Method4.MI.415()#MyStruct52::Method5.MI.417()#MyStruct52::Method6.MI.419<System.Object>()#"
-				call void Framework::M.IBase1.T<class BaseClass0,valuetype MyStruct52`1<class BaseClass0>>(!!1,string) leave.s LV0
+				call void Generated2::M.IBase1.T<class BaseClass0,valuetype MyStruct52`1<class BaseClass0>>(!!1,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_3
 				ldstr "MyStruct52::Method4.MI.415()#MyStruct52::Method5.MI.417()#MyStruct52::Method6.MI.419<System.Object>()#"
-				call void Framework::M.IBase1.A<valuetype MyStruct52`1<class BaseClass0>>(!!0,string) leave.s LV1
+				call void Generated2::M.IBase1.A<valuetype MyStruct52`1<class BaseClass0>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.locals init (valuetype MyStruct52`1<class BaseClass1> V_4)
 		ldloca V_4
 		initobj valuetype MyStruct52`1<class BaseClass1>
 		.try {  ldloc V_4
 				ldstr "MyStruct52::Method4.MI.415()#MyStruct52::Method5.MI.417()#MyStruct52::Method6.MI.419<System.Object>()#"
-				call void Framework::M.IBase1.T<class BaseClass0,valuetype MyStruct52`1<class BaseClass1>>(!!1,string) leave.s LV2
+				call void Generated2::M.IBase1.T<class BaseClass0,valuetype MyStruct52`1<class BaseClass1>>(!!1,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.try {  ldloc V_4
 				ldstr "MyStruct52::Method4.MI.415()#MyStruct52::Method5.MI.417()#MyStruct52::Method6.MI.419<System.Object>()#"
-				call void Framework::M.IBase1.A<valuetype MyStruct52`1<class BaseClass1>>(!!0,string) leave.s LV3
+				call void Generated2::M.IBase1.A<valuetype MyStruct52`1<class BaseClass1>>(!!0,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -467,13 +466,13 @@
 				ldstr "MyStruct52::Method4.MI.415()#" +
 				      "MyStruct52::Method5.MI.417()#" +
 				      "MyStruct52::Method6.MI.419<System.Object>()#"
-				call void Framework::M.MyStruct52.T<class BaseClass0,valuetype MyStruct52`1<class BaseClass0>>(!!1,string) leave.s LV0
+				call void Generated2::M.MyStruct52.T<class BaseClass0,valuetype MyStruct52`1<class BaseClass0>>(!!1,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_5
 				ldstr "MyStruct52::Method4.MI.415()#" +
 				      "MyStruct52::Method5.MI.417()#" +
 				      "MyStruct52::Method6.MI.419<System.Object>()#"
-				call void Framework::M.MyStruct52.A<valuetype MyStruct52`1<class BaseClass0>>(!!0,string) leave.s LV1
+				call void Generated2::M.MyStruct52.A<valuetype MyStruct52`1<class BaseClass0>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.locals init (valuetype MyStruct52`1<class BaseClass1> V_6)
 		ldloca V_6
@@ -482,13 +481,13 @@
 				ldstr "MyStruct52::Method4.MI.415()#" +
 				      "MyStruct52::Method5.MI.417()#" +
 				      "MyStruct52::Method6.MI.419<System.Object>()#"
-				call void Framework::M.MyStruct52.T<class BaseClass1,valuetype MyStruct52`1<class BaseClass1>>(!!1,string) leave.s LV2
+				call void Generated2::M.MyStruct52.T<class BaseClass1,valuetype MyStruct52`1<class BaseClass1>>(!!1,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.try {  ldloc V_6
 				ldstr "MyStruct52::Method4.MI.415()#" +
 				      "MyStruct52::Method5.MI.417()#" +
 				      "MyStruct52::Method6.MI.419<System.Object>()#"
-				call void Framework::M.MyStruct52.B<valuetype MyStruct52`1<class BaseClass1>>(!!0,string) leave.s LV3
+				call void Generated2::M.MyStruct52.B<valuetype MyStruct52`1<class BaseClass1>>(!!0,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -676,10 +675,10 @@
 	{
 		.entrypoint
 		.maxstack  10
-		call void Framework::MethodCallingTest()
-		call void Framework::ConstrainedCallsTest()
-		call void Framework::StructConstrainedInterfaceCallsTest()
-		call void Framework::CalliTest()
+		call void Generated2::MethodCallingTest()
+		call void Generated2::ConstrainedCallsTest()
+		call void Generated2::StructConstrainedInterfaceCallsTest()
+		call void Generated2::CalliTest()
 		ldc.i4 100
 		ret
 	}

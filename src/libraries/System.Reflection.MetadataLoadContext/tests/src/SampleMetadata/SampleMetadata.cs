@@ -418,6 +418,9 @@ namespace SampleMetadata
 
         [MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "Blah", MarshalCookie = "YumYum")]
         public int F20;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 65)]
+        public int F21;
     }
 
     [StructLayout(LayoutKind.Explicit)]
