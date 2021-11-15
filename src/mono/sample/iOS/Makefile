@@ -82,6 +82,7 @@ run-catalyst-interp:
 	/p:UseLLVM=False \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	/p:ForceAOT=True \
+	/p:EnableAppSandbox=$(APP_SANDBOX) \
 	/p:MonoForceInterpreter=true
 
 clean:
