@@ -1589,21 +1589,6 @@ interp_method_get_header (MonoMethod* method, MonoError *error)
 		return mono_method_get_header_internal (method, error);
 }
 
-/* stores top of stack as local and pushes address of it on stack */
-static void
-emit_store_value_as_local (TransformData *td, MonoType *src)
-{
-	int local = create_interp_local (td, mini_native_type_replace_type (src));
-
-	store_local (td, local);
-
-	interp_add_ins (td, MINT_LDLOCA_S);
-	push_simple_type (td, STACK_TYPE_MP);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	interp_ins_set_sreg (td->last_ins, local);
-	td->locals [local].indirects++;
-}
-
 static gboolean
 interp_ip_in_cbb (TransformData *td, int il_offset)
 {
@@ -1914,15 +1899,15 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		int src_size = mini_magic_type_size (NULL, src);
 		int dst_size = mini_magic_type_size (NULL, dst);
 
-		gboolean store_value_as_local = FALSE;
+		gboolean managed_fallback = FALSE;
 
 		switch (type_index) {
 		case 0: case 1:
 			if (!mini_magic_is_int_type (src) || !mini_magic_is_int_type (dst)) {
 				if (mini_magic_is_int_type (src))
-					store_value_as_local = TRUE;
+					managed_fallback = TRUE;
 				else if (mono_class_is_magic_float (src_klass))
-					store_value_as_local = TRUE;
+					managed_fallback = TRUE;
 				else
 					return FALSE;
 			}
@@ -1930,21 +1915,17 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		case 2:
 			if (!mini_magic_is_float_type (src) || !mini_magic_is_float_type (dst)) {
 				if (mini_magic_is_float_type (src))
-					store_value_as_local = TRUE;
+					managed_fallback = TRUE;
 				else if (mono_class_is_magic_int (src_klass))
-					store_value_as_local = TRUE;
+					managed_fallback = TRUE;
 				else
 					return FALSE;
 			}
 			break;
 		}
 
-		if (store_value_as_local) {
-			emit_store_value_as_local (td, src);
-
-			/* emit call to managed conversion method */
+		if (managed_fallback)
 			return FALSE;
-		}
 
 		if (src_size > dst_size) { // 8 -> 4
 			switch (type_index) {
@@ -2001,15 +1982,6 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		td->ip += 5;
 		return TRUE;
 	} else if (!strcmp ("CompareTo", tm) || !strcmp ("Equals", tm)) {
-		MonoType *arg = csignature->params [0];
-		int mt = mint_type (arg);
-
-		/* on 'System.n*::{CompareTo,Equals} (System.n*)' variant we need to push managed
-		 * pointer instead of value */
-		if (mt != MINT_TYPE_O)
-			emit_store_value_as_local (td, arg);
-
-		/* emit call to managed conversion method */
 		return FALSE;
 	} else if (!strcmp (".cctor", tm)) {
 		return FALSE;
@@ -2846,8 +2818,7 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
-	/* Our usage of `emit_store_value_as_local ()` for nint, nuint and nfloat
-	 * is kinda hacky, and doesn't work with the inliner */
+	// FIXME Re-enable this
 	if (mono_class_get_magic_index (method->klass) >= 0)
 		return FALSE;
 
@@ -6034,6 +6005,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->sp--;
 					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
+				} else if (td->sp [-1].type != STACK_TYPE_O && td->sp [-1].type != STACK_TYPE_MP && (mono_class_is_magic_int (klass) || mono_class_is_magic_float (klass))) {
+					// No need to load anything, the value is already on the execution stack
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
 					int size = 0;
 					/* First we pop the vt object from the stack. Then we push the field */
