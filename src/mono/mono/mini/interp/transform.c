@@ -1446,25 +1446,27 @@ dump_interp_compacted_ins (const guint16 *ip, const guint16 *start)
 {
 	int opcode = *ip;
 	int ins_offset = ip - start;
+	GString *str = g_string_new ("");
 
-	g_print ("IR_%04x: %-14s", ins_offset, mono_interp_opname (opcode));
+	g_string_append_printf (str, "IR_%04x: %-14s", ins_offset, mono_interp_opname (opcode));
 	ip++;
 
         if (mono_interp_op_dregs [opcode] > 0)
-                g_print (" [%d <-", *ip++);
+                g_string_append_printf (str, " [%d <-", *ip++);
         else
-                g_print (" [nil <-");
+                g_string_append_printf (str, " [nil <-");
 
         if (mono_interp_op_sregs [opcode] > 0) {
                 for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-                        g_print (" %d", *ip++);
-                g_print ("],");
+                        g_string_append_printf (str, " %d", *ip++);
+                g_string_append_printf (str, "],");
         } else {
-                g_print (" nil],");
+                g_string_append_printf (str, " nil],");
         }
-	char *ins = dump_interp_ins_data (NULL, ins_offset, ip, opcode);
-	g_print ("%s\n", ins);
-	g_free (ins);
+	char *ins_data = dump_interp_ins_data (NULL, ins_offset, ip, opcode);
+	g_print ("%s%s\n", str->str, ins_data);
+	g_string_free (str, TRUE);
+	g_free (ins_data);
 }
 
 static void
@@ -1478,51 +1480,47 @@ dump_interp_code (const guint16 *start, const guint16* end)
 }
 
 static void
-dump_interp_inst_no_newline (InterpInst *ins)
+dump_interp_inst (InterpInst *ins)
 {
 	int opcode = ins->opcode;
-	g_print ("IL_%04x: %-14s", ins->il_offset, mono_interp_opname (opcode));
+	GString *str = g_string_new ("");
+	g_string_append_printf (str, "IL_%04x: %-14s", ins->il_offset, mono_interp_opname (opcode));
 
 	if (mono_interp_op_dregs [opcode] > 0)
-		g_print (" [%d <-", ins->dreg);
+		g_string_append_printf (str, " [%d <-", ins->dreg);
 	else
-		g_print (" [nil <-");
+		g_string_append_printf (str, " [nil <-");
 
 	if (mono_interp_op_sregs [opcode] > 0) {
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
 			if (ins->sregs [i] == MINT_CALL_ARGS_SREG) {
-				g_print (" c:");
+				g_string_append_printf (str, " c:");
 				int *call_args = ins->info.call_args;
 				if (call_args) {
 					while (*call_args != -1) {
-						g_print (" %d", *call_args);
+						g_string_append_printf (str, " %d", *call_args);
 						call_args++;
 					}
 				}
 			} else {
-				g_print (" %d", ins->sregs [i]);
+				g_string_append_printf (str, " %d", ins->sregs [i]);
 			}
 		}
-		g_print ("],");
+		g_string_append_printf (str, "],");
 	} else {
-		g_print (" nil],");
+		g_string_append_printf (str, " nil],");
 	}
 
 	if (opcode == MINT_LDLOCA_S) {
 		// LDLOCA has special semantics, it has data in sregs [0], but it doesn't have any sregs
-		g_print (" %d", ins->sregs [0]);
+		g_string_append_printf (str, " %d", ins->sregs [0]);
 	} else {
 		char *descr = dump_interp_ins_data (ins, ins->il_offset, &ins->data [0], ins->opcode);
-		g_print ("%s", descr);
+		g_string_append_printf (str, "%s", descr);
 		g_free (descr);
 	}
-}
-
-static void
-dump_interp_inst (InterpInst *ins)
-{
-	dump_interp_inst_no_newline (ins);
-	g_print ("\n");
+	g_print ("%s\n", str->str);
+	g_string_free (str, TRUE);
 }
 
 static G_GNUC_UNUSED void
