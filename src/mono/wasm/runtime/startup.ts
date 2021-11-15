@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { INTERNAL, Module, MONO, runtimeHelpers } from "./modules";
-import { AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -56,7 +56,7 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
 }
 
-function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
+function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
     const bytes = new Uint8Array(blob);
     if (ctx.tracing)
         console.log(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
@@ -129,16 +129,6 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
     }
 }
 
-// Initializes the runtime and loads assemblies, debug information, and other files.
-export function mono_load_runtime_and_bcl_args(args: MonoConfig): void {
-    try {
-        return _load_assets_and_runtime(args);
-    } catch (exc: any) {
-        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", exc);
-        throw exc;
-    }
-}
-
 function _apply_configuration_from_args(args: MonoConfig) {
     for (const k in (args.environment_variables || {}))
         mono_wasm_setenv(k, args.environment_variables![k]);
@@ -153,7 +143,7 @@ function _apply_configuration_from_args(args: MonoConfig) {
         mono_wasm_init_coverage_profiler(args.coverage_profiler_options);
 }
 
-function _get_fetch_file_cb_from_args(args: MonoConfig): (asset: string) => Promise<Response> {
+function _get_fetch_implementation(args: MonoConfig): (asset: string) => Promise<Response> {
     if (typeof (args.fetch_file_cb) === "function")
         return args.fetch_file_cb;
 
@@ -307,116 +297,50 @@ export function bindings_lazy_init(): void {
 
     _create_primitive_converters();
 }
-function _load_assets_and_runtime(args: MonoConfig) {
-    if (args.enable_debugging)
-        args.debug_level = args.enable_debugging;
 
-    const ctx: MonoInitContext = {
-        tracing: args.diagnostic_tracing || false,
-        pending_count: args.assets.length,
-        loaded_assets: Object.create(null),
-        // dlls and pdbs, used by blazor and the debugger
-        loaded_files: [],
-        createPath: Module.FS_createPath,
-        createDataFile: Module.FS_createDataFile
-    };
+// Initializes the runtime and loads assemblies, debug information, and other files.
+export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<void> {
+    try {
+        if (args.enable_debugging)
+            args.debug_level = args.enable_debugging;
 
-    if (ctx.tracing)
-        console.log("MONO_WASM: mono_wasm_load_runtime_with_args", JSON.stringify(args));
-
-    _apply_configuration_from_args(args);
-
-    const fetch_file_cb = _get_fetch_file_cb_from_args(args);
-
-    const onPendingRequestComplete = function () {
-        --ctx.pending_count;
-
-        if (ctx.pending_count === 0) {
-            try {
-                _finalize_startup(args, ctx);
-            } catch (exc: any) {
-                console.error("MONO_WASM: Unhandled exception in _finalize_startup", exc);
-                console.error(exc.stack);
-                throw exc;
-            }
-        }
-    };
-
-    const processFetchResponseBuffer = function (asset: AssetEntry, url: string, buffer: ArrayBuffer) {
-        try {
-            _handle_loaded_asset(ctx, asset, url, buffer);
-        } catch (exc) {
-            console.error(`MONO_WASM: Unhandled exception in processFetchResponseBuffer ${url} ${exc}`);
-            throw exc;
-        } finally {
-            onPendingRequestComplete();
-        }
-    };
-
-    args.assets.forEach(function (asset: AssetEntry) {
-        let sourceIndex = 0;
-        const sourcesList = asset.load_remote ? args.remote_sources! : [""];
-
-        const handleFetchResponse = function (response: Response) {
-            if (!response.ok) {
-                try {
-                    attemptNextSource();
-                    return;
-                } catch (exc) {
-                    console.error(`MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset ${asset.name} ${exc}`);
-                    throw exc;
-                }
-            }
-
-            try {
-                const bufferPromise = response.arrayBuffer();
-                bufferPromise.then((data) => processFetchResponseBuffer(asset, response.url, data));
-            } catch (exc) {
-                console.error(`MONO_WASM: Unhandled exception in handleFetchResponse for asset ${asset.name} ${exc}`);
-                attemptNextSource();
-            }
+        const ctx: MonoInitContext = {
+            tracing: args.diagnostic_tracing || false,
+            pending_count: args.assets.length,
+            loaded_assets: Object.create(null),
+            // dlls and pdbs, used by blazor and the debugger
+            loaded_files: [],
+            createPath: Module.FS_createPath,
+            createDataFile: Module.FS_createDataFile
         };
 
-        const attemptNextSource = function () {
-            if (sourceIndex >= sourcesList.length) {
-                const msg = `MONO_WASM: Failed to load ${asset.name}`;
-                try {
-                    const isOk = asset.is_optional ||
-                        (asset.name.match(/\.pdb$/) && args.ignore_pdb_load_errors);
+        _apply_configuration_from_args(args);
 
-                    if (isOk)
-                        console.debug(msg);
-                    else {
-                        console.error(msg);
-                        throw new Error(msg);
+        const local_fetch = _get_fetch_implementation(args);
+
+        const load_asset = async (asset: AllAssetEntryTypes): Promise<void> => {
+            //TODO we could do module.addRunDependency(asset.name) and delay emscripten run() after all assets are loaded
+
+            const sourcesList = asset.load_remote ? args.remote_sources! : [""];
+            let error = undefined;
+            for (let sourcePrefix of sourcesList) {
+                // HACK: Special-case because MSBuild doesn't allow "" as an attribute
+                if (sourcePrefix === "./")
+                    sourcePrefix = "";
+
+                let attemptUrl;
+                if (sourcePrefix.trim() === "") {
+                    if (asset.behavior === "assembly")
+                        attemptUrl = locateFile(args.assembly_root + "/" + asset.name);
+                    else if (asset.behavior === "resource") {
+                        const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
+                        attemptUrl = locateFile(args.assembly_root + "/" + path);
                     }
-                } finally {
-                    onPendingRequestComplete();
+                    else
+                        attemptUrl = asset.name;
+                } else {
+                    attemptUrl = sourcePrefix + asset.name;
                 }
-            }
-
-            let sourcePrefix = sourcesList[sourceIndex];
-            sourceIndex++;
-
-            // HACK: Special-case because MSBuild doesn't allow "" as an attribute
-            if (sourcePrefix === "./")
-                sourcePrefix = "";
-
-            let attemptUrl;
-            if (sourcePrefix.trim() === "") {
-                if (asset.behavior === "assembly")
-                    attemptUrl = locateFile(args.assembly_root + "/" + asset.name);
-                else if (asset.behavior === "resource") {
-                    const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
-                    attemptUrl = locateFile(args.assembly_root + "/" + path);
-                }
-                else
-                    attemptUrl = asset.name;
-            } else {
-                attemptUrl = sourcePrefix + asset.name;
-            }
-
-            try {
                 if (asset.name === attemptUrl) {
                     if (ctx.tracing)
                         console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}'`);
@@ -424,19 +348,50 @@ function _load_assets_and_runtime(args: MonoConfig) {
                     if (ctx.tracing)
                         console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}' for ${asset.name}`);
                 }
-                const fetch_promise = fetch_file_cb(attemptUrl);
-                fetch_promise.then(handleFetchResponse);
-            } catch (exc) {
-                console.error(`MONO_WASM: Error fetching ${attemptUrl} ${exc}`);
-                attemptNextSource();
+                try {
+                    const response = await local_fetch(attemptUrl);
+                    if (!response.ok) {
+                        error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+                        continue;// next source
+                    }
+
+                    const buffer = await response.arrayBuffer();
+                    _handle_fetched_asset(ctx, asset, attemptUrl, buffer);
+                    --ctx.pending_count;
+                    error = undefined;
+                }
+                catch (err) {
+                    error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${err}`);
+                    continue; //next source
+                }
+
+                if (!error) {
+                    //TODO Module.removeRunDependency(configFilePath);
+                    break; // this source worked, stop searching
+                }
+            }
+            if (error) {
+                const isOkToFail = asset.is_optional || (asset.name.match(/\.pdb$/) && args.ignore_pdb_load_errors);
+                if (!isOkToFail)
+                    throw error;
             }
         };
+        const fetch_promises: Promise<void>[] = [];
+        // start fetching all assets in parallel
+        for (const asset of args.assets) {
+            fetch_promises.push(load_asset(asset));
+        }
 
-        attemptNextSource();
-    });
+        await Promise.all(fetch_promises);
+
+        _finalize_startup(args, ctx);
+    } catch (exc: any) {
+        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", exc);
+        throw exc;
+    }
 }
 
-// used from ASP.NET
+// used from Blazor
 export function mono_wasm_load_data_archive(data: TypedArray, prefix: string): boolean {
     if (data.length < 8)
         return false;
