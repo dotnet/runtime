@@ -534,7 +534,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Credentials = CredentialCache.DefaultCredentials;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -550,7 +550,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Credentials = _credential;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(Username, Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -564,7 +564,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClient(UseVersion.ToString()))
             {
-                Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(Username, Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
