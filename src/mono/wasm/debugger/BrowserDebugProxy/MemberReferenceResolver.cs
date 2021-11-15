@@ -127,6 +127,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 async Task<int?> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
                 {
+                    int typeId;
                     var type = assembly.GetTypeByName(typeName);
                     if (type == null)
                         return null;
@@ -216,11 +217,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                 }
-            }
-            if (rootObject == null)
-            {
-                rootObject = await TryToRunOnLoadedClasses(varName, token);
-                return rootObject;
             }
             if (rootObject == null)
                 rootObject = await TryToRunOnLoadedClasses(varName, token);
