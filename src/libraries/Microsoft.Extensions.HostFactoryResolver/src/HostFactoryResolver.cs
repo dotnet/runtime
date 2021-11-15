@@ -229,7 +229,7 @@ namespace Microsoft.Extensions.Hosting
 
                         // Try to set an exception if the entry point returns gracefully, this will force
                         // build to throw
-                        _hostTcs.TrySetException(new InvalidOperationException("Unable to build IHost"));
+                        _hostTcs.TrySetException(new InvalidOperationException("The entry point exited without ever building an IHost."));
                     }
                     catch (TargetInvocationException tie) when (tie.InnerException is StopTheHostException)
                     {
@@ -268,7 +268,7 @@ namespace Microsoft.Extensions.Hosting
                     // Wait before throwing an exception
                     if (!_hostTcs.Task.Wait(_waitTimeout))
                     {
-                        throw new InvalidOperationException("Unable to build IHost");
+                        throw new InvalidOperationException($"Timed out waiting for the entry point to build the IHost after {s_defaultWaitTimeout}.");
                     }
                 }
                 catch (AggregateException) when (_hostTcs.Task.IsCompleted)
