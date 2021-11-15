@@ -1,0 +1,88 @@
+parameters:
+  archType: ''
+  buildConfig: ''
+  container: ''
+  crossBuild: false
+  crossrootfsDir: ''
+  osGroup: ''
+  osSubgroup: ''
+  pool: ''
+  stagedBuild: false
+  timeoutInMinutes: ''
+  variables: {}
+  dependOnEvaluatePaths: false
+
+### Product build
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    helixType: 'build/product/'
+    enableMicrobuild: true
+    stagedBuild: ${{ parameters.stagedBuild }}
+    pool: ${{ parameters.pool }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+
+    # Compute job name from template parameters
+    name: ${{ format('coreclr_jitmap_update_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('CoreCLR JITMAP Update {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    # Run all steps in the container.
+    # Note that the containers are defined in platform-matrix.yml
+    container: ${{ parameters.container }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    gatherAssetManifests: true
+
+    variables:
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
+
+    - name: publishLogsArtifactPrefix
+      value: 'BuildLogs_CoreCLR_JITMAP'
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'py -3'
+      - name: PipScript
+        value: 'py -3 -m pip'
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'python3'
+      - name: PipScript
+        value: 'pip3'
+
+    - ${{ parameters.variables }}
+
+    steps:
+
+    # Install internal tools on official builds
+    # Since our internal tools are behind an authenticated feed,
+    # we need to use the DotNetCli AzDO task to restore from the feed using a service connection.
+    # We can't do this from within the build, so we need to do this as a separate step.
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    # Ensure the Python azure-storage-blob package is installed before doing the updatejitmap.
+    - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
+      displayName: Upgrade Pip to latest and install azure-storage-blob Python package
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py updatejitmap -build_type $(buildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion)
+      displayName: Update jitmap.txt on Azure Storage
+      env:
+        CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+
+    # Publish Logs
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: '$(publishLogsArtifactPrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      continueOnError: true
+      condition: always()

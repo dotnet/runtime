@@ -56,6 +56,12 @@ corresponds to the current tree, and download that JIT. That is, find an appropr
 "baseline" JIT for doing asm diffs.
 """
 
+updatejitmap_description = """\
+Update jitmap.xml on SuperPMI Azure storage. It's basically a dictionary where one can get
+a dotnet/runtime git hash of a corresponding last good checked jit for any dotnet/runtime commit.
+This command just adds the current commit to the map.
+"""
+
 list_description = """\
 List clrjit in SuperPMI Azure storage.
 """
@@ -106,6 +112,11 @@ download_parser = subparsers.add_parser("download", description=download_descrip
 download_parser.add_argument("-git_hash", help=git_hash_help)
 download_parser.add_argument("-target_dir", help=target_dir_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
+
+# subparser for updatejitmap
+updatejitmap_parser = subparsers.add_parser("updatejitmap", description=updatejitmap_description, parents=[common_parser])
+
+updatejitmap_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
 
 # subparser for list
 list_parser = subparsers.add_parser("list", description=list_description, parents=[common_parser])
@@ -181,6 +192,18 @@ def determine_jit_name(coreclr_args):
     else:
         raise RuntimeError("Unknown OS.")
 
+def get_current_hash(runtime_repo_location):
+    with ChangeDir(runtime_repo_location):
+        command = [ "git", "rev-parse", "HEAD" ]
+        print("Invoking: {}".format(" ".join(command)))
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+        stdout_git_rev_parse, _ = proc.communicate()
+        return_code = proc.returncode
+        if return_code == 0:
+            return stdout_git_rev_parse.decode('utf-8').strip()
+        else:
+            raise RuntimeError("Couldn't determine current git hash")
+
 
 def process_git_hash_arg(coreclr_args):
     """ Process the -git_hash argument.
@@ -223,16 +246,7 @@ def process_git_hash_arg(coreclr_args):
     # from the root of the runtime repo.
 
     with ChangeDir(coreclr_args.runtime_repo_location):
-        command = [ "git", "rev-parse", "HEAD" ]
-        print("Invoking: {}".format(" ".join(command)))
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE)
-        stdout_git_rev_parse, _ = proc.communicate()
-        return_code = proc.returncode
-        if return_code == 0:
-            current_git_hash = stdout_git_rev_parse.decode('utf-8').strip()
-            print("Current hash: {}".format(current_git_hash))
-        else:
-            raise RuntimeError("Couldn't determine current git hash")
+        current_git_hash = get_current_hash(coreclr_args.runtime_repo_location)
 
         # We've got the current hash; figure out the baseline hash.
         command = [ "git", "merge-base", current_git_hash, "origin/main" ]
@@ -594,6 +608,39 @@ def get_jit_urls(coreclr_args, find_all=False):
     return list_az_jits(filter_jits, None if find_all else blob_filter_string)
 
 
+def updatejitmap_command(coreclr_args):
+    # Step 1: get current dotnet/runtime hash and a hash of a last good jit that matches this hash
+    urls = get_jit_urls(coreclr_args, find_all=False)
+    current_hash = get_current_hash(coreclr_args.runtime_repo_location)
+    jit_hash = coreclr_args.git_hash
+    print(f"For current dotnet/runtime hash={current_hash} we found dotnet/runtime hash with Checked JIT binary.")
+    if not current_hash or not jit_hash:
+        RuntimeError("current_hash and jit_hash should not be empty")
+
+    # Step 2: donwload curret jitmap.txt
+    jitmap_url = "{}/{}/jitmap.txt".format(az_blob_storage_jitrollingbuild_container_uri, az_builds_root_folder).lower()
+    jitmap_content = ''
+    try:
+        jitmap_content = urllib.request.urlopen(jitmap_url).read().decode('utf-8')
+    except urllib.error.HTTPError as e:
+        print(f"jitmap.txt does not exist yet: {e.code}")
+        pass
+
+    # Step 3: append {current_hash}:{jit_hash} and upload it back by replacing existing jitmap.txt
+    jitmap_content += f"{current_hash}:{jit_hash}"
+    blob_client = blob_service_client.get_blob_client(container=az_jitrollingbuild_container_name, blob=jitmap_url)
+    try:
+        blob_client.get_blob_properties()
+        # If no exception, then the jitmap.txt is already exists as expected
+        print("replacing existing blob!")
+        blob_client.delete_blob()
+    except Exception:
+        # jitmap doesn't exist yet
+        pass
+    blob_client.upload_blob(jitmap_content)
+    return
+
+
 def download_command(coreclr_args):
     """ Download the JITs
 
@@ -699,6 +746,17 @@ def setup_args(args):
             print("Built product location could not be determined")
             raise RuntimeError("Error")
 
+    elif coreclr_args.mode == "updatejitmap":
+
+        coreclr_args.verify(args,
+                            "az_storage_key",
+                            lambda item: item is not None,
+                            "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
+                            modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
+
+        coreclr_args.git_hash = None
+        process_git_hash_arg(coreclr_args)
+
     elif coreclr_args.mode == "download":
 
         coreclr_args.verify(args,
@@ -757,6 +815,9 @@ def main(args):
 
     elif coreclr_args.mode == "download":
         download_command(coreclr_args)
+
+    elif coreclr_args.mode == "updatejitmap":
+        updatejitmap_command(coreclr_args)
 
     elif coreclr_args.mode == "list":
         list_command(coreclr_args)

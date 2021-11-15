@@ -6,8 +6,7 @@ trigger:
     - release/*.*
   paths:
     include:
-    - src/coreclr/jit/*
-    - src/coreclr/inc/jiteeversionguid.h
+    - '*'
 
 # This pipeline is supposed to be run only on merged changes
 # and should not be triggerable from a PR. 
@@ -17,7 +16,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/update-checkedjit-map-job.yml
     buildConfig: checked
     platforms:
     - OSX_arm64
