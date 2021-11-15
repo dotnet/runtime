@@ -12489,7 +12489,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 #else
         int addr = 0;
 #endif
-        int end  = addr + size;
+        int end = addr + size;
         for (int offs = addr; offs < end;)
         {
 #ifdef TARGET_64BIT
