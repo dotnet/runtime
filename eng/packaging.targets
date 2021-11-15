@@ -32,9 +32,9 @@
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</VersionPrefix>
     <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
     <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
-    <_AssemblyInTargetingPack Condition="'$(IsNETCoreAppSrc)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true'">true</_AssemblyInTargetingPack>
+    <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
     <!-- Assembly version do not get updated in non-netfx ref pack assemblies. -->
-    <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
+    <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(EnablePackageValidation)' == 'true'">
