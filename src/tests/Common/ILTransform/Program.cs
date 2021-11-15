@@ -68,6 +68,8 @@ public class ILTransform
                 testStore.DumpFolderStatistics(log);
                 testStore.DumpDebugOptimizeStatistics(log);
                 testStore.DumpImplicitSharedLibraries(log);
+                testStore.DumpDuplicateProjectContent(log);
+                testStore.DumpDuplicateSimpleProjectNames(log);
                 testStore.DumpDuplicateEntrypointClasses(log);
             }
 
@@ -83,6 +85,7 @@ public class ILTransform
                     testStore.GenerateAllWrappers(wrapperRoot);
                 }
             }
+
             return 0;
         }
         catch (Exception ex)

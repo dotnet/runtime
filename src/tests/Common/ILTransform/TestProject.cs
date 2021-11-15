@@ -136,6 +136,42 @@ public class TestProject
         }
         return line;
     }
+
+    public bool HasSameContentAs(TestProject project2)
+    {
+        if (CompileFiles.Length == 0 || project2.CompileFiles.Length == 0)
+        {
+            return false;
+        }
+        if (ProjectReferences.Length != project2.ProjectReferences.Length)
+        {
+            return false;
+        }
+        if (CompileFiles.Length != project2.CompileFiles.Length)
+        {
+            return false;
+        }
+        for (int refIndex = 0; refIndex < ProjectReferences.Length; refIndex++)
+        {
+            string ref1 = ProjectReferences[refIndex];
+            string ref2 = project2.ProjectReferences[refIndex];
+            if (ref1 != ref2 && File.ReadAllText(ref1) != File.ReadAllText(ref2))
+            {
+                return false;
+            }
+        }
+        for (int fileIndex = 0; fileIndex < CompileFiles.Length; fileIndex++)
+        {
+            string file1 = CompileFiles[fileIndex];
+            string file2 = project2.CompileFiles[fileIndex];
+            if (file1 != file2 && File.ReadAllText(file1) != File.ReadAllText(file2))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
 }
 
 class TestProjectStore
@@ -226,6 +262,77 @@ class TestProjectStore
         writer.WriteLine();
     }
 
+    public void DumpDuplicateProjectContent(TextWriter writer)
+    {
+        Dictionary<string, List<TestProject>> potentialDuplicateMap = new Dictionary<string, List<TestProject>>();
+        foreach (TestProject project in _projects)
+        {
+            StringBuilder projectKey = new StringBuilder();
+            projectKey.AppendLine("Debug: " + project.DebugOptimize.Debug.ToLower());
+            projectKey.AppendLine("Optimize: " + project.DebugOptimize.Optimize.ToLower());
+            foreach (string projectReference in project.ProjectReferences.Select(p => Path.GetFileName(p)).OrderBy(p => p))
+            {
+                projectKey.AppendLine("ProjectReference: " + projectReference);
+            }
+            foreach (string compileFile in project.CompileFiles.Select(p => Path.GetFileName(p)).OrderBy(p => p))
+            {
+                projectKey.AppendLine("CompileFile: " + compileFile);
+            }
+            string key = projectKey.ToString();
+            if (!potentialDuplicateMap.TryGetValue(key, out List<TestProject>? projectList))
+            {
+                projectList = new List<TestProject>();
+                potentialDuplicateMap.Add(key, projectList);
+            }
+            projectList.Add(project);
+        }
+
+        writer.WriteLine("PROJECT PAIRS WITH DUPLICATE CONTENT");
+        writer.WriteLine("------------------------------------");
+        foreach (List<TestProject> projectGroup in potentialDuplicateMap.Values)
+        {
+            for (int index1 = 1; index1 < projectGroup.Count; index1++)
+            {
+                for (int index2 = 0; index2 < index1; index2++)
+                {
+                    TestProject project1 = projectGroup[index1];
+                    TestProject project2 = projectGroup[index2];
+                    if (project1.HasSameContentAs(project2))
+                    {
+                        writer.WriteLine(project1.AbsolutePath);
+                        writer.WriteLine(project2.AbsolutePath);
+                        writer.WriteLine();
+                    }
+                }
+            }
+        }
+    }
+
+    public void DumpDuplicateSimpleProjectNames(TextWriter writer)
+    {
+        Dictionary<string, List<TestProject>> simpleNameMap = new Dictionary<string, List<TestProject>>();
+        foreach (TestProject project in _projects)
+        {
+            string simpleName = Path.GetFileNameWithoutExtension(project.RelativePath);
+            if (!simpleNameMap.TryGetValue(simpleName, out List<TestProject>? projectsForSimpleName))
+            {
+                projectsForSimpleName = new List<TestProject>();
+                simpleNameMap.Add(simpleName, projectsForSimpleName);
+            }
+            projectsForSimpleName.Add(project);
+        }
+
+        foreach (KeyValuePair<string, List<TestProject>> kvp in simpleNameMap.Where(kvp => kvp.Value.Count > 1).OrderByDescending(kvp => kvp.Value.Count))
+        {
+            writer.WriteLine("DUPLICATE PROJECT NAME: ({0}x): {1}", kvp.Value.Count, kvp.Key);
+            foreach (TestProject project in kvp.Value)
+            {
+                writer.WriteLine("    {0}", project.AbsolutePath);
+            }
+            writer.WriteLine();
+        }
+    }
+
     public void DumpDuplicateEntrypointClasses(TextWriter writer)
     {
         Dictionary<string, List<TestProject>> duplicateClassNames = new Dictionary<string, List<TestProject>>();
@@ -263,7 +370,7 @@ class TestProjectStore
 
         writer.WriteLine();
 
-        foreach (KeyValuePair<string, List<TestProject>> kvp in duplicateClassNames.OrderByDescending(kvp => kvp.Value.Count))
+        foreach (KeyValuePair<string, List<TestProject>> kvp in _classNameMap.Where(kvp => kvp.Value.Count > 1).OrderByDescending(kvp => kvp.Value.Count))
         {
             string title = string.Format("{0} PROJECTS WITH CLASS NAME {1}:", kvp.Value.Count, kvp.Key);
             writer.WriteLine(title);

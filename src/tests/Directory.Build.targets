@@ -65,6 +65,13 @@
     <DebugType Condition=" '$(DebugType)' == '' and '$(RunningOnUnix)' == 'true' ">None</DebugType>
   </PropertyGroup>
 
+  <!-- Empty OutputType corresponds to [Fact]-style tests; inject the XUnit wrapper generator into test build -->
+  <ItemGroup Condition="$(IsFactStyleTest)">
+    <ProjectReference Include="Common/XUnitWrapperGenerator/XUnitWrapperGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Import Project="Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" Condition="$(IsFactStyleTest)" />
+
   <!--
   If it needs ProjectToRun, turn the project into a ProjectReference so it gets built
   -->

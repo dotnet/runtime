@@ -7,6 +7,24 @@ using System.Text;
 
 public class ILRewriter
 {
+    static string[] s_xUnitLines =
+    {
+        ".assembly extern xunit.core",
+        "{",
+        "    .publickeytoken = (",
+        "        8d 05 b1 bb 7a 6f db 6c",
+        "     )",
+        "     .ver 2:4:2:0",
+        "}",
+    };
+
+    static string[] s_factLines =
+    {
+        ".custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (",
+        "    01 00 00 00",
+        ")",
+    };
+
     private readonly TestProject _testProject;
     private readonly HashSet<string> _classNameDuplicates;
     private readonly bool _deduplicateClassNames;
@@ -45,6 +63,27 @@ public class ILRewriter
             int mainPos = line.IndexOf(MainTag);
             if (mainPos >= 0)
             {
+                int lineInBody = lineIndex;
+                while (!lines[lineInBody].Contains('{'))
+                {
+                    lineInBody++;
+                }
+
+                string firstMainBodyLine = lines[lineInBody + 1];
+                int indent = 0;
+                while (indent < firstMainBodyLine.Length && firstMainBodyLine[indent] <= ' ')
+                {
+                    indent++;
+                }
+                string indentString = firstMainBodyLine.Substring(0, indent);
+                string[] indentedFactLines = new string[s_factLines.Length];
+                for (int i = 0; i < s_factLines.Length; i++)
+                {
+                    indentedFactLines[i] = indentString + s_factLines[i];
+                }
+                lines.InsertRange(lineInBody + 1, indentedFactLines);
+                rewritten = true;
+
                 /*
                 int closingParen = line.IndexOf(')', mainPos + MainTag.Length);
                 if (!_deduplicateClassNames)
@@ -57,6 +96,7 @@ public class ILRewriter
                 rewritten = true;
                 */
 
+                /*
                 for (int privateIndex = lineIndex; privateIndex >= lineIndex - 1 && privateIndex >= 0; privateIndex--)
                 {
                     line = lines[privateIndex];
@@ -77,9 +117,11 @@ public class ILRewriter
                         break;
                     }
                 }
+                */
             }
         }
 
+        /*
         if (_testProject.TestClassLine >= 0)
         {
             string line = lines[_testProject.TestClassLine];
@@ -92,16 +134,24 @@ public class ILRewriter
                 }
             }
         }
+        */
 
         if (!_deduplicateClassNames)
         {
             string testName = _testProject.TestProjectAlias!;
             for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
-                string line = lines[lineIndex];
-                const string AssemblyTag = ".assembly";
-                int assemblyIndex = line.IndexOf(AssemblyTag);
-                if (assemblyIndex >= 0 && line.IndexOf("extern") < 0)
+                int assemblyClosingBraceLine = lineIndex;
+                while (!lines[assemblyClosingBraceLine].Contains('}'))
+                {
+                    assemblyClosingBraceLine++;
+                }
+                lines.InsertRange(assemblyClosingBraceLine + 1, s_xUnitLines);
+                rewritten = true;
+
+                /*
+                int start = assemblyIndex + AssemblyTag.Length;
+                for (; ;)
                 {
                     int start = assemblyIndex + AssemblyTag.Length;
                     for (; ; )
@@ -153,9 +203,12 @@ public class ILRewriter
                         break;
                     }
                 }
+                */
             }
 
-            for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+        /*
+        for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+        {
             {
                 if (lines[lineIndex].IndexOf(".module") >= 0)
                 {
@@ -164,7 +217,9 @@ public class ILRewriter
                 }
             }
         }
+        */
 
+        /*
         if (_testProject.DeduplicatedClassName != null)
         {
             for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
@@ -173,6 +228,7 @@ public class ILRewriter
             }
             rewritten = true;
         }
+        */
 
         if (rewritten)
         {
@@ -184,7 +240,8 @@ public class ILRewriter
     {
         List<string> lines = new List<string>(File.ReadAllLines(path));
         bool rewritten = false;
-        for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+        /*
+        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
         {
             string line = lines[lineIndex];
             const string outputTypeTag = "<OutputType>Exe</OutputType>";
@@ -204,6 +261,7 @@ public class ILRewriter
                 continue;
             }
         }
+        */
         if (rewritten)
         {
             File.WriteAllLines(path, lines);
