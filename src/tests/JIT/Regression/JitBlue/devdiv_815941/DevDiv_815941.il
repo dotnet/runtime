@@ -8,12 +8,22 @@
 }
 .assembly extern mscorlib { }
 .assembly DevDiv_815941 { }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module DevDiv_815941.exe
 
 .class Repro
 {
     .method private hidebysig static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         // This testcase declares a union of two fields: double and long
         // We ensure that if a non-zero value is stored in the double field
         // the value returned for the long field is also non-zero

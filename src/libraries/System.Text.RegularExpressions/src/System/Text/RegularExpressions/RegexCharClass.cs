@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions
 
         private const string NullCharString = "\0";
         private const char NullChar = '\0';
-        private const char LastChar = '\uFFFF';
+        internal const char LastChar = '\uFFFF';
 
         private const short SpaceConst = 100;
         private const short NotSpaceConst = -100;
@@ -874,6 +874,21 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Gets whether the specified string participates in case conversion.</summary>
+        /// <remarks>The string participates in case conversion if any of its characters do.</remarks>
+        public static bool ParticipatesInCaseConversion(string s)
+        {
+            foreach (char c in s)
+            {
+                if (ParticipatesInCaseConversion(c))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         private static bool CanEasilyEnumerateSetContents(string set) =>
             set.Length > SetStartIndex &&
@@ -1267,16 +1282,17 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Constructs the string representation of the class.
         /// </summary>
-        public string ToStringClass()
+        public string ToStringClass(RegexOptions options = RegexOptions.None)
         {
+            bool isNonBacktracking = (options & RegexOptions.NonBacktracking) != 0;
             var vsb = new ValueStringBuilder(stackalloc char[256]);
-            ToStringClass(ref vsb);
+            ToStringClass(isNonBacktracking, ref vsb);
             return vsb.ToString();
         }
 
-        private void ToStringClass(ref ValueStringBuilder vsb)
+        private void ToStringClass(bool isNonBacktracking, ref ValueStringBuilder vsb)
         {
-            Canonicalize();
+            Canonicalize(isNonBacktracking);
 
             int initialLength = vsb.Length;
             int categoriesLength = _categories?.Length ?? 0;
@@ -1302,7 +1318,7 @@ namespace System.Text.RegularExpressions
 
             // Update the range length.  The ValueStringBuilder may have already had some
             // contents (if this is a subtactor), so we need to offset by the initial length.
-            vsb[initialLength + SetLengthIndex] = (char)((vsb.Length - initialLength) - SetStartIndex);
+            vsb[initialLength + SetLengthIndex] = (char)(vsb.Length - initialLength - SetStartIndex);
 
             // Append categories
             if (categoriesLength != 0)
@@ -1314,13 +1330,13 @@ namespace System.Text.RegularExpressions
             }
 
             // Append a subtractor if there is one.
-            _subtractor?.ToStringClass(ref vsb);
+            _subtractor?.ToStringClass(isNonBacktracking, ref vsb);
         }
 
         /// <summary>
         /// Logic to reduce a character class to a unique, sorted form.
         /// </summary>
-        private void Canonicalize()
+        private void Canonicalize(bool isNonBacktracking)
         {
             List<SingleRange>? rangelist = _rangelist;
             if (rangelist != null)
@@ -1376,7 +1392,10 @@ namespace System.Text.RegularExpressions
 
                 // If the class now represents a single negated character, but does so by including every
                 // other character, invert it to produce a normalized form recognized by IsSingletonInverse.
-                if (!_negate && _subtractor is null && (_categories is null || _categories.Length == 0))
+                if (!isNonBacktracking && // do not produce the IsSingletonInverse transformation in NonBacktracking mode
+                    !_negate &&
+                    _subtractor is null &&
+                    (_categories is null || _categories.Length == 0))
                 {
                     if (rangelist.Count == 2)
                     {
@@ -1512,35 +1531,38 @@ namespace System.Text.RegularExpressions
 
                     const char GroupChar = (char)0;
                     int lastindex = set.IndexOf(GroupChar, index + 1);
-                    string group = set.Substring(index, lastindex - index + 1);
-
-                    foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                    if (lastindex != -1)
                     {
-                        if (group.Equals(kvp.Value))
-                        {
-                            desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
-                            found = true;
-                            break;
-                        }
-                    }
+                        string group = set.Substring(index, lastindex - index + 1);
 
-                    if (!found)
-                    {
-                        if (group.Equals(Word))
+                        foreach (KeyValuePair<string, string> kvp in s_definedCategories)
                         {
-                            desc.Append("\\w");
+                            if (group.Equals(kvp.Value))
+                            {
+                                desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
+                                found = true;
+                                break;
+                            }
                         }
-                        else if (group.Equals(NotWord))
-                        {
-                            desc.Append("\\W");
-                        }
-                        else
-                        {
-                            // TODO: The code is incorrectly handling pretty-printing groups like \P{P}.
-                        }
-                    }
 
-                    index = lastindex;
+                        if (!found)
+                        {
+                            if (group.Equals(Word))
+                            {
+                                desc.Append("\\w");
+                            }
+                            else if (group.Equals(NotWord))
+                            {
+                                desc.Append("\\W");
+                            }
+                            else
+                            {
+                                // TODO: The code is incorrectly handling pretty-printing groups like \P{P}.
+                            }
+                        }
+
+                        index = lastindex;
+                    }
                 }
                 else
                 {

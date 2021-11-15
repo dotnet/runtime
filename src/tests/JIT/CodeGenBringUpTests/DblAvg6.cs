@@ -5,7 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-public class BringUpTest
+public class BringUpTest_DblAvg6
 {
     const int Pass = 100;
     const int Fail = -1;

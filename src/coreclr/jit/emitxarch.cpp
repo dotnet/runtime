@@ -165,6 +165,21 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesWriteSignFlag: check if the instruction writes the
+//     SF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the SF flag, false otherwise.
+//
+bool emitter::DoesWriteSignFlag(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & Writes_SF) != 0;
+}
+
+//------------------------------------------------------------------------
 // DoesResetOverflowAndCarryFlags: check if the instruction resets the
 //     OF and CF flag to 0.
 //
@@ -338,6 +353,11 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
 {
     assert(reg != REG_NA);
 
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
     // Don't look back across IG boundaries (possible control flow)
     if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
@@ -385,6 +405,79 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
     if ((treeOps == GT_EQ) || (treeOps == GT_NE))
     {
         if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// AreFlagsSetToForSignJumpOpt: checks if the previous instruction set the SF if the tree
+//                              node qualifies for a jg/jle to jns/js optimization
+//
+// Arguments:
+//    reg     - register of interest
+//    opSize  - size of register
+//    relop   - relational tree node
+//
+// Return Value:
+//    true if the tree node qualifies for the jg/jle to jns/js optimization
+//    false if not, or if we can't safely determine
+//
+// Notes:
+//    Currently only looks back one instruction.
+bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* relop)
+{
+    assert(reg != REG_NA);
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    // Don't look back across IG boundaries (possible control flow)
+    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    {
+        return false;
+    }
+
+    instrDesc*  id      = emitLastIns;
+    instruction lastIns = id->idIns();
+    insFormat   fmt     = id->idInsFmt();
+
+    // make sure op1 is a reg
+    switch (fmt)
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RWR:
+        case IF_RRD:
+        case IF_RRW:
+            break;
+        default:
+            return false;
+    }
+
+    if (id->idReg1() != reg)
+    {
+        return false;
+    }
+
+    // If we have a GT_GE/GT_LT which generates an jge/jl, and the previous instruction
+    // sets the SF, we can omit a test instruction and check for jns/js.
+    if ((relop->OperGet() == GT_GE || relop->OperGet() == GT_LT) && !GenCondition::FromRelop(relop).IsUnsigned())
+    {
+        if (DoesWriteSignFlag(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
@@ -625,7 +718,8 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
     // With 1 special case: movzx because the 4 byte version still zeros-out the hi 4 bytes
     // so we never need it
     if ((ins != INS_push) && (ins != INS_pop) && (ins != INS_movq) && (ins != INS_movzx) && (ins != INS_push_hide) &&
-        (ins != INS_pop_hide) && (ins != INS_ret) && (ins != INS_call) && !((ins >= INS_i_jmp) && (ins <= INS_l_jg)))
+        (ins != INS_pop_hide) && (ins != INS_ret) && (ins != INS_call) && (ins != INS_tail_i_jmp) &&
+        !((ins >= INS_i_jmp) && (ins <= INS_l_jg)))
     {
         return true;
     }
@@ -2767,64 +2861,6 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
     }
 }
 
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
-//  So insert an alignment instruction here to ensure that
-//  we can properly align the code.
-//
-void emitter::emitLoopAlign(unsigned short paddingBytes)
-{
-    /* Insert a pseudo-instruction to ensure that we align
-       the next instruction properly */
-
-    assert(paddingBytes <= MAX_ENCODED_SIZE);
-    paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
-    instrDescAlign* id = emitNewInstrAlign();
-    id->idCodeSize(paddingBytes);
-    id->idaIG = emitCurIG;
-
-    /* Append this instruction to this IG's alignment list */
-    id->idaNext = emitCurIGAlignList;
-
-    emitCurIGsize += paddingBytes;
-    emitCurIGAlignList = id;
-}
-
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
-//  So insert alignment instruction(s) here to ensure that
-//  we can properly align the code.
-//
-//  This emits more than one `INS_align` instruction depending on the
-//  alignmentBoundary parameter.
-//
-void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
-{
-    unsigned short nPaddingBytes    = alignmentBoundary - 1;
-    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
-    unsigned short instrDescSize    = nAlignInstr * sizeof(instrDescAlign);
-    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
-    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
-
-    // Ensure that all align instructions fall in same IG.
-    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
-    {
-        emitForceNewIG = true;
-    }
-
-    /* Insert a pseudo-instruction to ensure that we align
-    the next instruction properly */
-
-    while (insAlignCount)
-    {
-        emitLoopAlign(MAX_ENCODED_SIZE);
-        insAlignCount--;
-    }
-    emitLoopAlign(lastInsAlignSize);
-}
-
 /*****************************************************************************
  *
  *  Add a NOP instruction of the given size.
@@ -2901,13 +2937,13 @@ void emitter::emitIns(instruction ins)
 }
 
 // Add an instruction with no operands, but whose encoding depends on the size
-// (Only CDQ/CQO currently)
+// (Only CDQ/CQO/CWDE/CDQE currently)
 void emitter::emitIns(instruction ins, emitAttr attr)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id   = emitNewInstr(attr);
     code_t         code = insCodeMR(ins);
-    assert(ins == INS_cdq);
+    assert((ins == INS_cdq) || (ins == INS_cwde));
     assert((code & 0xFFFFFF00) == 0);
     sz = 1;
 
@@ -4354,73 +4390,18 @@ bool emitter::IsJmpInstruction(instruction ins)
     return (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp) || (ins == INS_tail_i_jmp);
 }
 
-//----------------------------------------------------------------------------------------
-// IsRedundantMov:
-//    Check if the current `mov` instruction is redundant and can be omitted.
-//    A `mov` is redundant in following 3 cases:
+// TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
+// is not an important detail, such as when "regular" floating-point code is generated
 //
-//    1. Move to same register on TARGET_AMD64
-//       (Except 4-byte movement like "mov eax, eax" which zeros out upper bits of eax register)
+// This differs from cases like HWIntrinsics that deal with the entire vector and so
+// they need to be "aware" that a given move impacts the upper-bits.
 //
-//         mov rax, rax
-//
-//    2. Move that is identical to last instruction emitted.
-//
-//         mov rax, rbx  # <-- last instruction
-//         mov rax, rbx  # <-- current instruction can be omitted.
-//
-//    3. Opposite Move as that of last instruction emitted.
-//
-//         mov rax, rbx  # <-- last instruction
-//         mov rbx, rax  # <-- current instruction can be omitted.
-//
-// Arguments:
-//                 ins  - The current instruction
-//                 fmt  - The current format
-//                 size - Operand size of current instruction
-//                 dst  - The current destination
-//                 src  - The current source
-// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
-//
-// Return Value:
-//    true if the move instruction is redundant; otherwise, false.
+// Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
+// the below optimizations for those scenarios as well.
 
-bool emitter::IsRedundantMov(
-    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
+// Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
+bool emitter::HasSideEffect(instruction ins, emitAttr size)
 {
-    assert(IsMovInstruction(ins));
-
-    if (canIgnoreSideEffects && (dst == src))
-    {
-        // These elisions used to be explicit even when optimizations were disabled
-
-        // Some instructions have a side effect and shouldn't be skipped
-        // however existing codepaths were skipping these instructions in
-        // certain scenarios and so we skip them as well for back-compat
-        // when canIgnoreSideEffects is true (see below for which have a
-        // side effect).
-        //
-        // Long term, these paths should be audited and should likely be
-        // replaced with copies rather than extensions.
-        return true;
-    }
-
-    if (!emitComp->opts.OptimizationEnabled())
-    {
-        // The remaining move elisions should only happen if optimizations are enabled
-        return false;
-    }
-
-    // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
-    // is not an important detail, such as when "regular" floating-point code is generated
-    //
-    // This differs from cases like HWIntrinsics that deal with the entire vector and so
-    // they need to be "aware" that a given move impacts the upper-bits.
-    //
-    // Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
-    // the below optimizations for those scenarios as well.
-
-    // Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
     bool hasSideEffect = false;
 
     switch (ins)
@@ -4489,6 +4470,74 @@ bool emitter::IsRedundantMov(
         }
     }
 
+    return hasSideEffect;
+}
+
+//----------------------------------------------------------------------------------------
+// IsRedundantMov:
+//    Check if the current `mov` instruction is redundant and can be omitted.
+//    A `mov` is redundant in following 3 cases:
+//
+//    1. Move to same register on TARGET_AMD64
+//       (Except 4-byte movement like "mov eax, eax" which zeros out upper bits of eax register)
+//
+//         mov rax, rax
+//
+//    2. Move that is identical to last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rax, rbx  # <-- current instruction can be omitted.
+//
+//    3. Opposite Move as that of last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rbx, rax  # <-- current instruction can be omitted.
+//
+// Arguments:
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 dst  - The current destination
+//                 src  - The current source
+// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
+//
+// Return Value:
+//    true if the move instruction is redundant; otherwise, false.
+
+bool emitter::IsRedundantMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
+{
+    assert(IsMovInstruction(ins));
+
+    if (canIgnoreSideEffects && (dst == src))
+    {
+        // These elisions used to be explicit even when optimizations were disabled
+
+        // Some instructions have a side effect and shouldn't be skipped
+        // however existing codepaths were skipping these instructions in
+        // certain scenarios and so we skip them as well for back-compat
+        // when canIgnoreSideEffects is true (see below for which have a
+        // side effect).
+        //
+        // Long term, these paths should be audited and should likely be
+        // replaced with copies rather than extensions.
+        return true;
+    }
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    // Skip optimization if current instruction creates a GC live value.
+    if (EA_IS_GCREF_OR_BYREF(size))
+    {
+        return false;
+    }
+
+    bool hasSideEffect = HasSideEffect(ins, size);
+
     // Check if we are already in the correct register and don't have a side effect
     if ((dst == src) && !hasSideEffect)
     {
@@ -4526,6 +4575,45 @@ bool emitter::IsRedundantMov(
         JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src register and the mov has "
                 "no side-effects.\n");
         return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// EmitMovsxAsCwde: try to emit "movsxd rax, eax" and "movsx eax, ax" as
+//                  "cdqe" and "cwde" as a code size optimization.
+//
+// Arguments:
+//    ins  - The instruction for the original mov
+//    size - The size of the original mov
+//    dst  - The destination register for the original mov
+//    src  - The source register for the original mov
+//
+// Return Value:
+//    "true" if the optimization succeded, in which case the instruction can be
+//    counted as emitted, "false" otherwise.
+//
+bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
+{
+    if ((src == REG_EAX) && (src == dst))
+    {
+#ifdef TARGET_64BIT
+        // "movsxd rax, eax".
+        if ((ins == INS_movsxd) && (size == EA_4BYTE))
+        {
+            // "cdqe".
+            emitIns(INS_cwde, EA_8BYTE);
+            return true;
+        }
+#endif
+        // "movsx eax, ax".
+        if ((ins == INS_movsx) && (size == EA_2BYTE))
+        {
+            // "cwde".
+            emitIns(INS_cwde, EA_4BYTE);
+            return true;
+        }
     }
 
     return false;
@@ -4602,13 +4690,19 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
 
-    UNATIVE_OFFSET sz  = emitInsSizeRR(ins, dstReg, srcReg, attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_RRD);
+    insFormat fmt = emitInsModeFormat(ins, IF_RRD_RRD);
 
     if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
     {
         return;
     }
+
+    if (EmitMovsxAsCwde(ins, size, dstReg, srcReg))
+    {
+        return;
+    }
+
+    UNATIVE_OFFSET sz = emitInsSizeRR(ins, dstReg, srcReg, attr);
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -7054,12 +7148,104 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     emitAdjustStackDepthPushPop(ins);
 }
 
+//----------------------------------------------------------------------------------------
+// IsRedundantStackMov:
+//    Check if the current `mov` instruction is redundant and can be omitted when dealing with Load/Store from stack.
+//    A `mov` is redundant in following 2 cases:
+//
+//    1. Move that is identical to last instruction emitted.
+//
+//         vmovapd  xmmword ptr [V01 rbp-20H], xmm0  # <-- last instruction
+//         vmovapd  xmmword ptr [V01 rbp-20H], xmm0  # <-- current instruction can be omitted.
+//
+//    2. Opposite Move as that of last instruction emitted.
+//
+//         vmovupd  ymmword ptr[V01 rbp-50H], ymm0  # <-- last instruction
+//         vmovupd  ymm0, ymmword ptr[V01 rbp-50H]  # <-- current instruction can be omitted.
+//
+// Arguments:
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 ireg - The current source/destination register
+//                 varx - The variable index used for the memory address
+//                 offs - The offset added to the memory address from varx
+//
+// Return Value:
+//    true if the move instruction is redundant; otherwise, false.
+
+bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs)
+{
+    assert(IsMovInstruction(ins));
+    assert((fmt == IF_SWR_RRD) || (fmt == IF_RWR_SRD));
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    // Skip optimization if current instruction creates a GC live value.
+    if (EA_IS_GCREF_OR_BYREF(size))
+    {
+        return false;
+    }
+
+    bool hasSideEffect = HasSideEffect(ins, size);
+
+    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+    // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
+    // functionality even if their actual identifier differs and we should optimize these
+
+    if (isFirstInstrInBlock ||             // Don't optimize if instruction is the first instruction in IG.
+        (emitLastIns == nullptr) ||        // or if a last instruction doesn't exist
+        (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
+    {
+        return false;
+    }
+
+    // Don't optimize if the last instruction is also not a Load/Store.
+    if (!((emitLastIns->idInsFmt() == IF_SWR_RRD) || (emitLastIns->idInsFmt() == IF_RWR_SRD)))
+    {
+        return false;
+    }
+
+    regNumber lastReg1 = emitLastIns->idReg1();
+    int       varNum   = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+    int       lastOffs = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+
+    // Check if the last instruction and current instructions use the same register and local memory.
+    if (varNum == varx && lastReg1 == ireg && lastOffs == offs)
+    {
+        // Check if we did a switched mov in the last instruction  and don't have a side effect
+        if ((((emitLastIns->idInsFmt() == IF_RWR_SRD) && (fmt == IF_SWR_RRD)) ||
+             ((emitLastIns->idInsFmt() == IF_SWR_RRD) && (fmt == IF_RWR_SRD))) &&
+            !hasSideEffect) // or if the format is different from the last instruction
+        {
+            JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src and the mov has "
+                    "no side-effects.\n");
+            return true;
+        }
+        // Check if we did same move in last instruction, side effects don't matter since they already happened
+        if (emitLastIns->idInsFmt() == fmt)
+        {
+            JITDUMP("\n -- suppressing mov because last instruction already moved from src to dst.\n");
+            return true;
+        }
+    }
+    return false;
+}
+
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
-    UNATIVE_OFFSET sz;
-    instrDesc*     id  = emitNewInstr(attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_SRD_RRD);
+    insFormat fmt = emitInsModeFormat(ins, IF_SRD_RRD);
+    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+    {
+        return;
+    }
 
+    UNATIVE_OFFSET sz;
+    instrDesc*     id = emitNewInstr(attr);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -7086,11 +7272,15 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
 {
     emitAttr size = EA_SIZE(attr);
     noway_assert(emitVerifyEncodable(ins, size, ireg));
+    insFormat fmt = emitInsModeFormat(ins, IF_RRD_SRD);
 
+    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+    {
+        return;
+    }
+
+    instrDesc*     id = emitNewInstr(attr);
     UNATIVE_OFFSET sz;
-    instrDesc*     id  = emitNewInstr(attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_SRD);
-
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -7439,25 +7629,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            VARSET_VALARG_TP      ptrVars,
                            regMaskTP             gcrefRegs,
                            regMaskTP             byrefRegs,
-                           IL_OFFSETX            ilOffset, // = BAD_IL_OFFSET
-                           regNumber             ireg,     // = REG_NA
-                           regNumber             xreg,     // = REG_NA
-                           unsigned              xmul,     // = 0
-                           ssize_t               disp,     // = 0
-                           bool                  isJump)   // = false
+                           const DebugInfo&      di,
+                           regNumber             ireg,
+                           regNumber             xreg,
+                           unsigned              xmul,
+                           ssize_t               disp,
+                           bool                  isJump)
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
 
     assert(callType < EC_COUNT);
-    assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_TOKEN_INDIR && callType != EC_FUNC_ADDR) ||
-           (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType != EC_FUNC_VIRTUAL || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0));
-    assert(callType < EC_INDIR_R || callType == EC_INDIR_ARD || callType == EC_INDIR_C || addr == nullptr);
-    assert(callType != EC_INDIR_R || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType != EC_INDIR_SR ||
-           (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp < (int)emitComp->lvaCount));
-    assert(callType != EC_INDIR_C || (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp != 0));
+    assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_TOKEN_INDIR) ||
+           (addr != nullptr && ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert(callType != EC_INDIR_ARD || (addr == nullptr));
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
@@ -7484,9 +7670,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
+    if (emitComp->opts.compDbgInfo && di.IsValid())
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -7508,12 +7694,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(argSize % REGSIZE_BYTES == 0);
     int argCnt = (int)(argSize / (int)REGSIZE_BYTES); // we need a signed-divide
 
-    if (callType >= EC_FUNC_VIRTUAL)
+    if ((callType == EC_INDIR_R) || (callType == EC_INDIR_ARD))
     {
         /* Indirect call, virtual calls */
-
-        assert(callType == EC_FUNC_VIRTUAL || callType == EC_INDIR_R || callType == EC_INDIR_SR ||
-               callType == EC_INDIR_C || callType == EC_INDIR_ARD);
 
         id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs,
                                  retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
@@ -7523,7 +7706,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         // Helper/static/nonvirtual/function calls (direct or through handle),
         // and calls to an absolute addr.
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR);
 
         id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs,
                                  retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
@@ -7540,8 +7723,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     if (isJump)
     {
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR || callType == EC_INDIR_ARD ||
-               callType == EC_INDIR_R);
         if (callType == EC_FUNC_TOKEN)
         {
             ins = INS_l_jmp;
@@ -7558,83 +7739,55 @@ void emitter::emitIns_Call(EmitCallType          callType,
     UNATIVE_OFFSET sz;
 
     // Record the address: method, indirection, or funcptr
-    if (callType >= EC_FUNC_VIRTUAL)
+    if ((callType == EC_INDIR_R) || (callType == EC_INDIR_ARD))
     {
-        // This is an indirect call (either a virtual call or func ptr call)
+        // This is an indirect call/jmp (either a virtual call or func ptr call)
 
-        switch (callType)
+        if (callType == EC_INDIR_R) // call reg
         {
-            case EC_INDIR_C:
-                // Indirect call using an absolute code address.
-                // Must be marked as relocatable and is done at the
-                // branch target location.
-                goto CALL_ADDR_MODE;
+            id->idSetIsCallRegPtr();
+        }
 
-            case EC_INDIR_R: // the address is in a register
+        // The function is "ireg" if id->idIsCallRegPtr(),
+        // else [ireg+xmul*xreg+disp]
 
-                id->idSetIsCallRegPtr();
+        id->idInsFmt(IF_ARD);
 
-                FALLTHROUGH;
+        id->idAddr()->iiaAddrMode.amBaseReg = ireg;
+        id->idAddr()->iiaAddrMode.amIndxReg = xreg;
+        id->idAddr()->iiaAddrMode.amScale   = xmul ? emitEncodeScale(xmul) : emitter::OPSZ1;
 
-            case EC_INDIR_ARD: // the address is an indirection
+        code_t code = insCodeMR(ins);
+        if (ins == INS_tail_i_jmp)
+        {
+            // Tailcall with addressing mode/register needs to be rex.w
+            // prefixed to be recognized as part of epilog by unwinder.
+            code = AddRexWPrefix(ins, code);
+        }
 
-                goto CALL_ADDR_MODE;
+        sz = emitInsSizeAM(id, code);
 
-            case EC_INDIR_SR: // the address is in a lcl var
-
-                id->idInsFmt(IF_SRD);
-                // disp is really a lclVarNum
-                noway_assert((unsigned)disp == (size_t)disp);
-                id->idAddr()->iiaLclVar.initLclVarAddr((unsigned)disp, 0);
-                sz = emitInsSizeSV(id, insCodeMR(INS_call), (unsigned)disp, 0);
-
-                break;
-
-            case EC_FUNC_VIRTUAL:
-
-            CALL_ADDR_MODE:
-
-                // fall-through
-
-                // The function is "ireg" if id->idIsCallRegPtr(),
-                // else [ireg+xmul*xreg+disp]
-
-                id->idInsFmt(IF_ARD);
-
-                id->idAddr()->iiaAddrMode.amBaseReg = ireg;
-                id->idAddr()->iiaAddrMode.amIndxReg = xreg;
-                id->idAddr()->iiaAddrMode.amScale   = xmul ? emitEncodeScale(xmul) : emitter::OPSZ1;
-
-                sz = emitInsSizeAM(id, insCodeMR(INS_call));
-
-                if (ireg == REG_NA && xreg == REG_NA)
-                {
-                    if (codeGen->genCodeIndirAddrNeedsReloc(disp))
-                    {
-                        id->idSetIsDspReloc();
-                    }
+        if (ireg == REG_NA && xreg == REG_NA)
+        {
+            if (codeGen->genCodeIndirAddrNeedsReloc(disp))
+            {
+                id->idSetIsDspReloc();
+            }
 #ifdef TARGET_AMD64
-                    else
-                    {
-                        // An absolute indir address that doesn't need reloc should fit within 32-bits
-                        // to be encoded as offset relative to zero.  This addr mode requires an extra
-                        // SIB byte
-                        noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
-                        sz++;
-                    }
+            else
+            {
+                // An absolute indir address that doesn't need reloc should fit within 32-bits
+                // to be encoded as offset relative to zero.  This addr mode requires an extra
+                // SIB byte
+                noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+                sz++;
+            }
 #endif // TARGET_AMD64
-                }
-
-                break;
-
-            default:
-                NO_WAY("unexpected instruction");
-                break;
         }
     }
     else if (callType == EC_FUNC_TOKEN_INDIR)
     {
-        /* "call [method_addr]" */
+        // call/jmp [method_addr]
 
         assert(addr != nullptr);
 
@@ -7662,9 +7815,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
     else
     {
-        /* This is a simple direct call: "call helper/method/addr" */
+        // This is a simple direct call/jmp: call/jmp helper/method/addr
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         assert(addr != nullptr);
 
@@ -7672,11 +7825,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         sz = 5;
 
         id->idAddr()->iiaAddr = (BYTE*)addr;
-
-        if (callType == EC_FUNC_ADDR)
-        {
-            id->idSetIsCallAddr();
-        }
 
         // Direct call to a method and no addr indirection is needed.
         if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
@@ -7690,16 +7838,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         if (id->idIsLargeCall())
         {
-            if (callType >= EC_FUNC_VIRTUAL)
-            {
-                printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
-                       VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
-            }
-            else
-            {
-                printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
-                       VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
-            }
+            printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
+                   VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
         }
     }
 
@@ -8850,7 +8990,12 @@ void emitter::emitDispIns(
             }
             else
             {
-                printf("%s", sstr);
+                // GC ref bit is for the return value for calls, do not print it before the address mode
+                if ((ins != INS_call) && (ins != INS_tail_i_jmp))
+                {
+                    printf("%s", sstr);
+                }
+
                 emitDispAddrMode(id, isNew);
                 emitDispShift(ins);
             }
@@ -9664,34 +9809,14 @@ void emitter::emitDispIns(
 
         case IF_METHOD:
         case IF_METHPTR:
-            if (id->idIsCallAddr())
-            {
-                offs       = (ssize_t)id->idAddr()->iiaAddr;
-                methodName = "";
-            }
-            else
-            {
-                offs       = 0;
-                methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
-            }
+            methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
 
             if (id->idInsFmt() == IF_METHPTR)
             {
                 printf("[");
             }
 
-            if (offs)
-            {
-                if (id->idIsDspReloc())
-                {
-                    printf("reloc ");
-                }
-                printf("%08X", offs);
-            }
-            else
-            {
-                printf("%s", methodName);
-            }
+            printf("%s", methodName);
 
             if (id->idInsFmt() == IF_METHPTR)
             {
@@ -10316,7 +10441,7 @@ GOT_DSP:
                     noway_assert((int)dsp == dsp);
 
                     // This requires, specifying a SIB byte after ModRM byte.
-                    if (EncodedBySSE38orSSE3A(ins))
+                    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                     {
                         dst += emitOutputByte(dst, code | 0x04);
                     }
@@ -13284,7 +13409,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // Support only scalar AVX instructions and hence size is hard coded to 4-byte.
             code = AddVexPrefixIfNeeded(ins, code, EA_4BYTE);
 
-            if (ins == INS_cdq && TakesRexWPrefix(ins, id->idOpSize()))
+            if (((ins == INS_cdq) || (ins == INS_cwde)) && TakesRexWPrefix(ins, id->idOpSize()))
             {
                 code = AddRexWPrefix(ins, code);
             }
@@ -14762,6 +14887,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_mov:
         case INS_movsx:
         case INS_movzx:
+        case INS_cwde:
         case INS_cmp:
         case INS_test:
             if (memFmt == IF_NONE)

@@ -468,6 +468,10 @@ void BasicBlock::dspFlags()
     {
         printf("ppoint ");
     }
+    if (bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT)
+    {
+        printf("pc-ppoint ");
+    }
     if (bbFlags & BBF_RETLESS_CALL)
     {
         printf("retless ");

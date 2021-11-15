@@ -751,7 +751,7 @@ inst_c1_type (const MonoInst *ins)
 static LLVMTypeRef
 type_to_llvm_type (EmitContext *ctx, MonoType *t)
 {
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return ThisType ();
 
 	t = mini_get_underlying_type (t);
@@ -845,7 +845,7 @@ static gboolean
 type_is_unsigned (EmitContext *ctx, MonoType *t)
 {
 	t = mini_get_underlying_type (t);
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return FALSE;
 	return primitive_type_is_unsigned (t->type);
 }
@@ -1414,7 +1414,7 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 
 	v = mono_llvm_build_load (ctx->builder, ctx->addresses [vreg], "", TRUE);
 	t = ctx->vreg_cli_types [vreg];
-	if (t && !t->byref) {
+	if (t && !m_type_is_byref (t)) {
 		/* 
 		 * Might have to zero extend since llvm doesn't have 
 		 * unsigned types.
@@ -3912,7 +3912,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		default: {
 			LLVMTypeRef t;
 			/* Needed to avoid phi argument mismatch errors since operations on pointers produce i32/i64 */
-			if (ainfo->type->byref)
+			if (m_type_is_byref (ainfo->type))
 				t = IntPtrType ();
 			else
 				t = type_to_llvm_type (ctx, ainfo->type);
@@ -11126,7 +11126,7 @@ get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		}
 
 		for (i = 0; i < sig->param_count; ++i) {
-			if (sig->params [i]->byref)
+			if (m_type_is_byref (sig->params [i]))
 				linfo->args [pindex].storage = LLVMArgNormal;
 			else if (mini_is_gsharedvt_variable_type (sig->params [i]))
 				linfo->args [pindex].storage = LLVMArgGsharedvtVariable;

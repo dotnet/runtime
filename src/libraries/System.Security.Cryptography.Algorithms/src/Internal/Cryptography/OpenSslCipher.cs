@@ -11,7 +11,7 @@ namespace Internal.Cryptography
     {
         private readonly OpenSslCipherLite _cipherLite;
 
-        public OpenSslCipher(IntPtr algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, byte[] key, int effectiveKeyLength, byte[]? iv, bool encrypting)
+        public OpenSslCipher(IntPtr algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, byte[] key, byte[]? iv, bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             _cipherLite = new OpenSslCipherLite(
@@ -20,7 +20,6 @@ namespace Internal.Cryptography
                 blockSizeInBytes,
                 paddingSizeInBytes,
                 key,
-                effectiveKeyLength,
                 iv,
                 encrypting);
         }

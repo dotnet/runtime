@@ -15,6 +15,13 @@
 .assembly vtret // as "vtret"
 {
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module vtret.exe
 // MVID: {DAD31C3D-EF49-47EA-945E-72055ACE0D58}
 .namespace MS
@@ -76,6 +83,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       46 (0x2e)
       .maxstack  2

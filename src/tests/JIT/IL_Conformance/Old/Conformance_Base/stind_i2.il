@@ -46,4 +46,4 @@ FAIL:
 	ret
 }
 }
-.assembly stind_i2.exe{}
+.assembly stind_i2{}

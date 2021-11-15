@@ -11,10 +11,17 @@
 
 
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 
 .module 'switch3.exe'
 
-.class public auto ansi Test
+.class public auto ansi Test_switch3
        extends ['mscorlib']System.Object
 {
   .method private hidebysig static void  DoSwitch(int32 'value') il managed
@@ -50,10 +57,13 @@
 
   .method public hidebysig static void Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     IL_0000:  ldc.i4.1
-    IL_0001:  call       void Test::DoSwitch(int32)
+    IL_0001:  call       void Test_switch3::DoSwitch(int32)
     IL_0006:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
               call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
               ret

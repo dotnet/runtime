@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography.Pal.Native;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -133,7 +134,7 @@ namespace Internal.Cryptography.Pal
                 {
                     unsafe
                     {
-                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
+                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
                         if (!success)
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         return bCryptKeyHandle;
@@ -287,8 +288,8 @@ namespace Internal.Cryptography.Pal
                     CryptDecodeObjectStructType.X509_DSS_PUBLICKEY,
                     static delegate (void* pvDecoded, int cbDecoded)
                     {
-                        Debug.Assert(cbDecoded >= sizeof(CRYPTOAPI_BLOB));
-                        CRYPTOAPI_BLOB* pBlob = (CRYPTOAPI_BLOB*)pvDecoded;
+                        Debug.Assert(cbDecoded >= sizeof(DATA_BLOB));
+                        DATA_BLOB* pBlob = (DATA_BLOB*)pvDecoded;
                         return pBlob->ToByteArray();
                     });
             }

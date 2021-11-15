@@ -13,7 +13,7 @@
   .ver 4:0:0:0
 }
 
-.assembly NestedFilt.exe{}
+.assembly NestedFilt{}
 
 .class		NestedFilt {
 

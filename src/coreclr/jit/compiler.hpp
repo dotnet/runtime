@@ -822,9 +822,16 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 
 /*****************************************************************************/
 
-inline Statement* Compiler::gtNewStmt(GenTree* expr, IL_OFFSETX offset)
+inline Statement* Compiler::gtNewStmt(GenTree* expr)
 {
-    Statement* stmt = new (this->getAllocator(CMK_ASTNode)) Statement(expr, offset DEBUGARG(compStatementID++));
+    Statement* stmt = new (this->getAllocator(CMK_ASTNode)) Statement(expr DEBUGARG(compStatementID++));
+    return stmt;
+}
+
+inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
+{
+    Statement* stmt = gtNewStmt(expr);
+    stmt->SetDebugInfo(di);
     return stmt;
 }
 
@@ -1524,6 +1531,28 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
     }
 }
 
+//------------------------------------------------------------------------
+// BashToZeroConst: Bash the node to a constant representing "zero" of "type".
+//
+// Arguments:
+//    type  - Type the bashed node will have, currently only integers,
+//            GC types and floating point types are supported.
+//
+inline void GenTree::BashToZeroConst(var_types type)
+{
+    if (varTypeIsFloating(type))
+    {
+        BashToConst(0.0, type);
+    }
+    else
+    {
+        assert(varTypeIsIntegral(type) || varTypeIsGC(type));
+
+        // "genActualType" so that we do not create CNS_INT(small type).
+        BashToConst(0, genActualType(type));
+    }
+}
+
 /*****************************************************************************
  *
  * Returns true if the node is of the "ovf" variety, for example, add.ovf.i1.
@@ -1758,11 +1787,6 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
 
     LclVarDsc* varDsc = &lvaTable[lclNum];
 
-    // This will prevent it from being optimized away
-    // TODO-CQ: We shouldn't have to go as far as to declare these
-    // address-exposed -- DoNotEnregister should suffice?
-    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-
     // Note the implicit use
     varDsc->lvImplicitlyReferenced = 1;
 
@@ -1777,7 +1801,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
 inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState state, bool propagate)
 {
     // In minopts and debug codegen, we don't maintain normal ref counts.
-    if ((state == RCS_NORMAL) && comp->opts.OptimizationDisabled())
+    if ((state == RCS_NORMAL) && !comp->PreciseRefCountsRequired())
     {
         // Note, at least, that there is at least one reference.
         lvImplicitlyReferenced = 1;
@@ -2362,11 +2386,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 inline var_types Compiler::mangleVarArgsType(var_types type)
 {
 #if defined(TARGET_ARMARCH)
-    if (opts.compUseSoftFP
-#if defined(TARGET_WINDOWS)
-        || info.compIsVarArgs
-#endif // defined(TARGET_WINDOWS)
-        )
+    if (opts.compUseSoftFP || (TargetOS::IsWindows && info.compIsVarArgs))
     {
         switch (type)
         {
@@ -2383,9 +2403,9 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
 }
 
 // For CORECLR there is no vararg on System V systems.
-#if FEATURE_VARARG
 inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 {
+    assert(compFeatureVarArg());
 #ifdef TARGET_AMD64
     switch (floatReg)
     {
@@ -2409,6 +2429,7 @@ inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 
 inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
 {
+    assert(compFeatureVarArg());
 #ifdef TARGET_AMD64
     switch (intReg)
     {
@@ -2429,7 +2450,6 @@ inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
     return REG_NA;
 #endif // !TARGET_AMD64
 }
-#endif // FEATURE_VARARG
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4220,6 +4240,11 @@ unsigned Compiler::GetSsaNumForLocalVarDef(GenTree* lcl)
     }
 }
 
+inline bool Compiler::PreciseRefCountsRequired()
+{
+    return opts.OptimizationEnabled();
+}
+
 template <typename TVisitor>
 void GenTree::VisitOperands(TVisitor visitor)
 {
@@ -4263,6 +4288,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 
         // Unary operators with an optional operand
         case GT_NOP:
+        case GT_FIELD:
         case GT_RETURN:
         case GT_RETFILT:
             if (this->AsUnOp()->gtOp1 == nullptr)
@@ -4370,30 +4396,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             visitor(cmpXchg->gtOpComparand);
             return;
         }
-
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-        {
-            GenTreeBoundsChk* const boundsChk = this->AsBoundsChk();
-            if (visitor(boundsChk->gtIndex) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(boundsChk->gtArrLen);
-            return;
-        }
-
-        case GT_FIELD:
-            if (this->AsField()->gtFldObj != nullptr)
-            {
-                visitor(this->AsField()->gtFldObj);
-            }
-            return;
 
         case GT_ARR_ELEM:
         {

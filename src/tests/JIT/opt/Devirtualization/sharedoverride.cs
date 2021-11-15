@@ -39,7 +39,7 @@ public class Derived<T> : Base
 // get the b.Foo case yet because we don't recognize b
 // as having an exact type.
 
-public class Test
+public class Test_sharedoverride
 {
     public static int Main()
     {

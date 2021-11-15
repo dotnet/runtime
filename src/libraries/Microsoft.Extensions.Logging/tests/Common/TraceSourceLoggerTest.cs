@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(expected, logger.IsEnabled(LogLevel.Information));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public static void Log_Shoud_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(bool shouldFormatterBeNull)

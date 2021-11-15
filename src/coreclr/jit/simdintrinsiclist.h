@@ -78,10 +78,6 @@ SIMD_INTRINSIC("ConvertToDouble",           false,       ConvertToDouble,       
 SIMD_INTRINSIC("ConvertToInt32",            false,       ConvertToInt32,           "ConvertToInt32",         TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_FLOAT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 // Convert double to long
 SIMD_INTRINSIC("ConvertToInt64",            false,       ConvertToInt64,           "ConvertToInt64",         TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-// Narrow two input Vector<T>s to a single Vector<T>. The return value's lower elements are the elements from src1, and the upper elements are from src2.
-SIMD_INTRINSIC("Narrow",                    false,       Narrow,                   "Narrow",                 TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_ULONG, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-// Widen one input Vector<T> to two Vector<T>s: dest1 contains the lower half of elements in src, and dest2 contains the upper half of elements in src.
-SIMD_INTRINSIC("Widen",                     false,       Widen,                    "Widen",                  TYP_VOID,       3,      {TYP_STRUCT, TYP_BYREF,  TYP_BYREF},   {TYP_INT, TYP_FLOAT, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 
 // Miscellaneous
 SIMD_INTRINSIC("get_IsHardwareAccelerated", false,       HWAccel,                  "HWAccel",                TYP_BOOL,       0,      {TYP_UNDEF,  TYP_UNDEF,  TYP_UNDEF},   {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
@@ -99,10 +95,6 @@ SIMD_INTRINSIC("ShiftRightInternal",        false,       ShiftRightInternal,    
 // Internal intrinsics for saving & restoring the upper half of a vector register
 SIMD_INTRINSIC("UpperSave",                 false,       UpperSave,                "UpperSave Internal",     TYP_STRUCT,     2,      {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF},     {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 SIMD_INTRINSIC("UpperRestore",              false,       UpperRestore,             "UpperRestore Internal",  TYP_STRUCT,     2,      {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF},     {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-
-// Internal intrinsics for Widen
-SIMD_INTRINSIC("WidenHi",                   false,       WidenHi,                   "WidenHi",               TYP_VOID,       2,      {TYP_UNDEF, TYP_UNDEF,  TYP_UNDEF},    {TYP_INT, TYP_FLOAT, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-SIMD_INTRINSIC("WidenLo",                   false,       WidenLo,                   "WidenLo",               TYP_VOID,       2,      {TYP_UNDEF, TYP_UNDEF,  TYP_UNDEF},    {TYP_INT, TYP_FLOAT, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 
 SIMD_INTRINSIC(nullptr,                     false,       Invalid,                   "Invalid",               TYP_UNDEF,      0,      {TYP_UNDEF,  TYP_UNDEF,  TYP_UNDEF},   {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 #undef SIMD_INTRINSIC

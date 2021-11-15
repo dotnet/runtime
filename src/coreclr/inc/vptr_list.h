@@ -39,7 +39,6 @@ VPTR_CLASS(DelegateInvokeStubManager)
 VPTR_CLASS(TailCallStubManager)
 #endif
 VPTR_CLASS(CallCountingStubManager)
-VPTR_CLASS(PEFile)
 VPTR_CLASS(PEAssembly)
 VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(RawImageLayout)

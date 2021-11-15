@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Id number to use for the next compiled regex.</summary>
         private static int s_regexCount;
 
-        public RegexLWCGCompiler() : base(persistsAssembly: false)
+        public RegexLWCGCompiler()
         {
         }
 

@@ -281,6 +281,11 @@ namespace System.Text.Json.Reflection
             return _elementType;
         }
 
+        public override Type MakeArrayType()
+        {
+            return _metadataLoadContext.Compilation.CreateArrayTypeSymbol(_typeSymbol).AsType(_metadataLoadContext);
+        }
+
         public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
         {
             throw new NotImplementedException();

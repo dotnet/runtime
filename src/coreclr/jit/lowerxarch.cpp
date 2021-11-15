@@ -171,6 +171,26 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 }
 
 //------------------------------------------------------------------------
+// LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
+//
+// Currently only performs containment checks.
+//
+// Arguments:
+//    mul - The node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerMul(GenTreeOp* mul)
+{
+    assert(mul->OperIsMul());
+
+    ContainCheckMul(mul);
+
+    return mul->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
 //
 // Arguments:
@@ -225,7 +245,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                     {
                         const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
 #ifdef TARGET_AMD64
-                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % XMM_REGSIZE_BYTES == 0);
 #else
                         const bool willUseOnlySimdMov = (size % 8 == 0);
 #endif
@@ -1285,6 +1305,15 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
         node->gtOp1 = op1;
         BlockRange().Remove(op2);
+
+        op2 = op2->AsOp()->gtGetOp1();
+
+        if (op2 != nullptr)
+        {
+            // Some zero vectors are Create/Initialization nodes with a constant zero operand
+            // We should also remove this to avoid dead code
+            BlockRange().Remove(op2);
+        }
 
         LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
         ReplaceWithLclVar(op1Use);
@@ -2870,7 +2899,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
         if (foundUse)
         {
-            use.ReplaceWith(comp, cast);
+            use.ReplaceWith(cast);
         }
         LowerNode(cast);
     }
@@ -3952,7 +3981,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 
         if (foundUse)
         {
-            use.ReplaceWith(comp, cast);
+            use.ReplaceWith(cast);
         }
         LowerNode(cast);
     }
@@ -4559,19 +4588,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
     else if (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))
     {
         // Amd64:
-        // We can mark any pc-relative 32-bit addr as containable, except for a direct VSD call address.
-        // (i.e. those VSD calls for which stub addr is known during JIT compilation time).  In this case,
-        // VM requires us to pass stub addr in VirtualStubParam.reg - see LowerVirtualStubCall().  For
-        // that reason we cannot mark such an addr as contained.  Note that this is not an issue for
-        // indirect VSD calls since morphArgs() is explicitly materializing hidden param as a non-standard
-        // argument.
-        //
-        // Workaround:
-        // Note that LowerVirtualStubCall() sets addr->GetRegNum() to VirtualStubParam.reg and Lowering::doPhase()
-        // sets destination candidates on such nodes and resets addr->GetRegNum() to REG_NA.
-        // Ideally we should set a flag on addr nodes that shouldn't be marked as contained
-        // (in LowerVirtualStubCall()), but we don't have any GTF_* flags left for that purpose.  As a workaround
-        // an explicit check is made here.
+        // We can mark any pc-relative 32-bit addr as containable.
         //
         // On x86, direct VSD is done via a relative branch, and in fact it MUST be contained.
         MakeSrcContained(node, addr);
@@ -5308,24 +5325,24 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
     assert(node->OperIsBoundsCheck());
     GenTree* other;
-    if (CheckImmedAndMakeContained(node, node->gtIndex))
+    if (CheckImmedAndMakeContained(node, node->GetIndex()))
     {
-        other = node->gtArrLen;
+        other = node->GetArrayLength();
     }
-    else if (CheckImmedAndMakeContained(node, node->gtArrLen))
+    else if (CheckImmedAndMakeContained(node, node->GetArrayLength()))
     {
-        other = node->gtIndex;
+        other = node->GetIndex();
     }
-    else if (IsContainableMemoryOp(node->gtIndex))
+    else if (IsContainableMemoryOp(node->GetIndex()))
     {
-        other = node->gtIndex;
+        other = node->GetIndex();
     }
     else
     {
-        other = node->gtArrLen;
+        other = node->GetArrayLength();
     }
 
-    if (node->gtIndex->TypeGet() == node->gtArrLen->TypeGet())
+    if (node->GetIndex()->TypeGet() == node->GetArrayLength()->TypeGet())
     {
         if (IsContainableMemoryOp(other))
         {

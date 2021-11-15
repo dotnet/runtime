@@ -11,6 +11,13 @@
 .assembly 'ldvirtftncalli'
 {
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .class private auto ansi beforefieldinit A
        extends [mscorlib]System.Object
 {
@@ -55,13 +62,13 @@
 
 } // end of class B
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_b64026
        extends [mscorlib]System.Object
 {
   .field public static class B b1
   .method public hidebysig static int32 f1a() 
   {
-    ldsfld     class B Test::b1
+    ldsfld     class B Test_b64026::b1
     dup
     ldvirtftn   instance int32 A::f1()
     calli instance int32 ()
@@ -70,10 +77,13 @@
 
   .method public hidebysig static int32 Main() 
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       279 (0x117)
     .maxstack  2
-    	call       int32 Test::f1a()
+    	call       int32 Test_b64026::f1a()
     	ret
   } // end of method Test::Main
 
@@ -83,7 +93,7 @@
     // Code size       11 (0xb)
     .maxstack  8
     IL_0000:  newobj     instance void B::.ctor()
-    IL_0005:  stsfld     class B Test::b1
+    IL_0005:  stsfld     class B Test_b64026::b1
     IL_000a:  ret
   } // end of method Test::.cctor
 

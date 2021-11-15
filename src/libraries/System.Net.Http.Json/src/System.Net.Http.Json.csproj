@@ -15,6 +15,7 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Post.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Put.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Patch.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
     <Compile Include="System\Net\Http\Json\JsonContentOfT.cs" />
@@ -26,6 +27,7 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingReadStream.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingWriteStream.cs" />

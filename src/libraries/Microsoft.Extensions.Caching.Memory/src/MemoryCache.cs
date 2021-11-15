@@ -108,22 +108,13 @@ namespace Microsoft.Extensions.Caching.Memory
 
             DateTimeOffset utcNow = _options.Clock.UtcNow;
 
-            DateTimeOffset? absoluteExpiration = null;
-            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
-            {
-                absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
-            }
-            else if (entry.AbsoluteExpiration.HasValue)
-            {
-                absoluteExpiration = entry.AbsoluteExpiration;
-            }
-
             // Applying the option's absolute expiration only if it's not already smaller.
             // This can be the case if a dependent cache entry has a smaller value, and
             // it was set by cascading it to its parent.
-            if (absoluteExpiration.HasValue)
+            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
             {
-                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration.Value < entry.AbsoluteExpiration.Value)
+                var absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow.Value;
+                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration < entry.AbsoluteExpiration.Value)
                 {
                     entry.AbsoluteExpiration = absoluteExpiration;
                 }
@@ -137,9 +128,19 @@ namespace Microsoft.Extensions.Caching.Memory
                 priorEntry.SetExpired(EvictionReason.Replaced);
             }
 
-            bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry);
+            if (entry.CheckExpired(utcNow))
+            {
+                entry.InvokeEvictionCallbacks();
+                if (priorEntry != null)
+                {
+                    RemoveEntry(priorEntry);
+                }
+                StartScanForExpiredItemsIfNeeded(utcNow);
+                return;
+            }
 
-            if (!entry.CheckExpired(utcNow) && !exceedsCapacity)
+            bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry);
+            if (!exceedsCapacity)
             {
                 bool entryAdded = false;
 
@@ -192,22 +193,8 @@ namespace Microsoft.Extensions.Caching.Memory
             }
             else
             {
-                if (exceedsCapacity)
-                {
-                    // The entry was not added due to overcapacity
-                    entry.SetExpired(EvictionReason.Capacity);
-
-                    TriggerOvercapacityCompaction();
-                }
-                else
-                {
-                    if (_options.SizeLimit.HasValue)
-                    {
-                        // Entry could not be added due to being expired, reset cache size
-                        Interlocked.Add(ref _cacheSize, -entry.Size.Value);
-                    }
-                }
-
+                entry.SetExpired(EvictionReason.Capacity);
+                TriggerOvercapacityCompaction();
                 entry.InvokeEvictionCallbacks();
                 if (priorEntry != null)
                 {

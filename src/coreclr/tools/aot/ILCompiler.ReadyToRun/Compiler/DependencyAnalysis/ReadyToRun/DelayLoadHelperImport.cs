@@ -17,6 +17,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ReadyToRunHelper _helper;
 
         private readonly bool _useVirtualCall;
+        private readonly bool _useJumpableStub;
 
         private readonly ImportThunk _delayLoadHelper;
 
@@ -26,12 +27,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunHelper helper, 
             Signature instanceSignature, 
             bool useVirtualCall = false, 
+            bool useJumpableStub = false,
             MethodDesc callingMethod = null)
             : base(importSectionNode, instanceSignature, callingMethod)
         {
             _helper = helper;
             _useVirtualCall = useVirtualCall;
-            _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall);
+            _useJumpableStub = useJumpableStub;
+            _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall, useJumpableStub);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -40,6 +43,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_useVirtualCall)
             {
                 sb.Append("[VSD] ");
+            }
+            if (_useJumpableStub)
+            {
+                sb.Append("[JMP] ");
             }
             sb.Append(_helper.ToString());
             sb.Append(") -> ");
@@ -79,7 +86,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             DelayLoadHelperImport otherNode = (DelayLoadHelperImport)other;
-            int result = _useVirtualCall.CompareTo(otherNode._useVirtualCall);
+            int result = _useJumpableStub.CompareTo(otherNode._useJumpableStub);
+            if (result != 0)
+                return result;
+
+            result = _useVirtualCall.CompareTo(otherNode._useVirtualCall);
             if (result != 0)
                 return result;
 

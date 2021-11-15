@@ -50,27 +50,39 @@ namespace System.Text.RegularExpressions.Tests
         internal static async Task<Regex> SourceGenRegexAsync(
             string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default)
         {
-            Assert.True(options is not null || matchTimeout is null);
-            string attr = $"[RegexGenerator({SymbolDisplay.FormatLiteral(pattern, quote: true)}";
-            if (options is not null)
+            Regex[] results = await SourceGenRegexAsync(new[] { (pattern, options, matchTimeout) }, cancellationToken).ConfigureAwait(false);
+            return results[0];
+        }
+
+        internal static async Task<Regex[]> SourceGenRegexAsync(
+            (string pattern, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
+        {
+            Debug.Assert(regexes.Length > 0);
+
+            var code = new StringBuilder();
+            code.AppendLine("using System.Text.RegularExpressions;");
+            code.AppendLine("public partial class C {");
+
+            // Build up the code for all of the regexes
+            int count = 0;
+            foreach (var regex in regexes)
             {
-                attr += $", {string.Join(" | ", options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}";
-                if (matchTimeout is not null)
+                Assert.True(regex.options is not null || regex.matchTimeout is null);
+                code.Append($"    [RegexGenerator({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
+                if (regex.options is not null)
                 {
-                    attr += string.Create(CultureInfo.InvariantCulture, $", {(int)matchTimeout.Value.TotalMilliseconds}");
+                    code.Append($", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
+                    if (regex.matchTimeout is not null)
+                    {
+                        code.Append(string.Create(CultureInfo.InvariantCulture, $", {(int)regex.matchTimeout.Value.TotalMilliseconds}"));
+                    }
                 }
+                code.AppendLine($")] public static partial Regex Get{count}();");
+
+                count++;
             }
-            attr += ")]";
 
-            // Create the source boilerplate for the pattern
-            string code = $@"
-                using System.Text.RegularExpressions;
-                public partial class C
-                {{
-                    {attr}
-                    public static partial Regex Get();
-                }}";
-
+            code.AppendLine("}");
 
             // Use a cached compilation to save a little time.  Rather than creating an entirely new workspace
             // for each test, just create a single compilation, cache it, and then replace its syntax tree
@@ -92,7 +104,7 @@ namespace System.Text.RegularExpressions.Tests
                 Debug.Assert(comp is not null);
             }
 
-            comp = comp.ReplaceSyntaxTree(comp.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(SourceText.From(code, Encoding.UTF8), s_previewParseOptions));
+            comp = comp.ReplaceSyntaxTree(comp.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(SourceText.From(code.ToString(), Encoding.UTF8), s_previewParseOptions));
 
             // Run the generator
             GeneratorDriverRunResult generatorResults = s_generatorDriver.RunGenerators(comp!, cancellationToken).GetRunResult();
@@ -119,13 +131,18 @@ namespace System.Text.RegularExpressions.Tests
             var alc = new RegexLoadContext(Environment.CurrentDirectory);
             Assembly a = alc.LoadFromStream(dll);
 
-            // Instantiate a regex using the newly created static Get method that was source generated.
-            Regex r = (Regex)a.GetType("C")!.GetMethod("Get")!.Invoke(null, null)!;
+            // Instantiate each regex using the newly created static Get method that was source generated.
+            var instances = new Regex[count];
+            Type c = a.GetType("C")!;
+            for (int i = 0; i < instances.Length; i++)
+            {
+                instances[i] = (Regex)c.GetMethod($"Get{i}")!.Invoke(null, null)!;
+            }
 
             // Issue an unload on the ALC, so it'll be collected once the Regex instance is collected
             alc.Unload();
 
-            return r;
+            return instances;
         }
 
         /// <summary>Number the lines in the source file.</summary>

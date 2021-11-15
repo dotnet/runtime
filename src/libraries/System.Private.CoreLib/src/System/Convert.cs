@@ -2528,14 +2528,14 @@ namespace System
         private static int ToBase64_CalculateAndValidateOutputLength(int inputLength, bool insertLineBreaks)
         {
             // the base length - we want integer division here, at most 4 more chars for the remainder
-            long outlen = ((long)inputLength + 2) / 3 * 4;
+            uint outlen = ((uint)inputLength + 2) / 3 * 4;
 
             if (outlen == 0)
                 return 0;
 
             if (insertLineBreaks)
             {
-                (long newLines, long remainder) = Math.DivRem(outlen, base64LineBreakPosition);
+                (uint newLines, uint remainder) = Math.DivRem(outlen, base64LineBreakPosition);
                 if (remainder == 0)
                 {
                     --newLines;

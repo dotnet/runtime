@@ -1,7 +1,22 @@
 <Project>
-  <ItemGroup Condition="'$(IsFrameworkSupportFacade)' == 'true'">
-    <ResolvedMatchingContract Include="$(ContractAssemblyPath)" />
+  <Import Project="..\Directory.Build.targets" />
+
+  <PropertyGroup>
+    <NETFrameworkReferenceAssemblyTFM>net48</NETFrameworkReferenceAssemblyTFM>
+    <NetFxRefPath>$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.$(NETFrameworkReferenceAssemblyTFM)\$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)\build\.NETFramework\v4.8\</NetFxRefPath>
+    <NETStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</NETStandard21RefPath>
+  </PropertyGroup>
+
+  <!-- Download the corresponding targeting pack to build against the contract. -->
+  <ItemGroup Condition="'$(IsFrameworkSupportFacade)' == 'true' and '$(MSBuildProjectName)' == 'netstandard'">
+    <PackageDownload Include="NETStandard.Library.Ref"
+                     Version="[$(NETStandardLibraryRefVersion)]" />
+    <ResolvedMatchingContract Include="$(NETStandard21RefPath)$(MSBuildProjectName).dll" />
   </ItemGroup>
 
-  <Import Project="..\Directory.Build.targets" />
+  <ItemGroup Condition="'$(IsFrameworkSupportFacade)' == 'true' and '$(MSBuildProjectName)' != 'netstandard'">
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.$(NETFrameworkReferenceAssemblyTFM)"
+                     Version="[$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)]" />
+    <ResolvedMatchingContract Include="$(NetFxRefPath)$(MSBuildProjectName).dll" />
+  </ItemGroup>
 </Project>

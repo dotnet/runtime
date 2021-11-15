@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -144,6 +145,14 @@ namespace Microsoft.Extensions.Hosting
             {
                 return args =>
                 {
+                    static bool IsApplicationNameArg(string arg)
+                        => arg.Equals("--applicationName", StringComparison.OrdinalIgnoreCase) ||
+                            arg.Equals("/applicationName", StringComparison.OrdinalIgnoreCase);
+
+                    args = args.Any(arg => IsApplicationNameArg(arg)) || assembly.FullName is null
+                        ? args
+                        : args.Concat(new[] { "--applicationName", assembly.FullName }).ToArray();
+
                     var host = hostFactory(args);
                     return GetServiceProvider(host);
                 };

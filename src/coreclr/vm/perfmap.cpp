@@ -7,6 +7,7 @@
 #include "common.h"
 
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
+#include <clrconfignocache.h>
 #include "perfmap.h"
 #include "perfinfo.h"
 #include "pal.h"
@@ -49,16 +50,18 @@ void PerfMap::Initialize()
 
         s_enabled = true;
 
-        char jitdumpPath[4096];
+        const char* jitdumpPath;
+        char jitdumpPathBuffer[4096];
 
-        // CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapJitDumpPath) returns a LPWSTR
-        // Use GetEnvironmentVariableA because it is simpler.
-        // Keep comment here to make it searchable.
-        DWORD len = GetEnvironmentVariableA("COMPlus_PerfMapJitDumpPath", jitdumpPath, sizeof(jitdumpPath) - 1);
-
-        if (len == 0)
+        CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
+        if (value.IsSet())
         {
-            GetTempPathA(sizeof(jitdumpPath) - 1, jitdumpPath);
+            jitdumpPath = value.AsString();
+        }
+        else
+        {
+            GetTempPathA(sizeof(jitdumpPathBuffer) - 1, jitdumpPathBuffer);
+            jitdumpPath = jitdumpPathBuffer;
         }
 
         PAL_PerfJitDump_Start(jitdumpPath);
@@ -216,22 +219,22 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
 }
 
 
-void PerfMap::LogImageLoad(PEFile * pFile)
+void PerfMap::LogImageLoad(PEAssembly * pPEAssembly)
 {
     if (s_enabled)
     {
-        s_Current->LogImage(pFile);
+        s_Current->LogImage(pPEAssembly);
     }
 }
 
 // Log an image load to the map.
-void PerfMap::LogImage(PEFile * pFile)
+void PerfMap::LogImage(PEAssembly * pPEAssembly)
 {
     CONTRACTL{
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        PRECONDITION(pFile != nullptr);
+        PRECONDITION(pPEAssembly != nullptr);
     } CONTRACTL_END;
 
 
@@ -244,9 +247,9 @@ void PerfMap::LogImage(PEFile * pFile)
     EX_TRY
     {
         WCHAR wszSignature[39];
-        GetNativeImageSignature(pFile, wszSignature, lengthof(wszSignature));
+        GetNativeImageSignature(pPEAssembly, wszSignature, lengthof(wszSignature));
 
-        m_PerfInfo->LogImage(pFile, wszSignature);
+        m_PerfInfo->LogImage(pPEAssembly, wszSignature);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
@@ -358,10 +361,10 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
-void PerfMap::GetNativeImageSignature(PEFile * pFile, WCHAR * pwszSig, unsigned int nSigSize)
+void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, WCHAR * pwszSig, unsigned int nSigSize)
 {
     CONTRACTL{
-        PRECONDITION(pFile != nullptr);
+        PRECONDITION(pPEAssembly != nullptr);
         PRECONDITION(pwszSig != nullptr);
         PRECONDITION(nSigSize >= 39);
     } CONTRACTL_END;
@@ -369,7 +372,7 @@ void PerfMap::GetNativeImageSignature(PEFile * pFile, WCHAR * pwszSig, unsigned 
     // We use the MVID as the signature, since ready to run images
     // don't have a native image signature.
     GUID mvid;
-    pFile->GetMVID(&mvid);
+    pPEAssembly->GetMVID(&mvid);
     if(!StringFromGUID2(mvid, pwszSig, nSigSize))
     {
         pwszSig[0] = '\0';
@@ -414,7 +417,7 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    PEImageLayout * pLoadedLayout = pModule->GetFile()->GetLoaded();
+    PEImageLayout * pLoadedLayout = pModule->GetPEAssembly()->GetLoadedLayout();
     _ASSERTE(pLoadedLayout != nullptr);
 
     ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());

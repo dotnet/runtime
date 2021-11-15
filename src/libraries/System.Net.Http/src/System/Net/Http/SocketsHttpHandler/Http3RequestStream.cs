@@ -235,6 +235,7 @@ namespace System.Net.Http
                     // A read stream is required to finish up the request.
                     responseContent.SetStream(new Http3ReadStream(this));
                 }
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received response: {_response}");
 
                 // Process any Set-Cookie headers.
                 if (_connection.Pool.Settings._useCookies)
@@ -485,6 +486,8 @@ namespace System.Net.Http
                     case null:
                         // Done receiving: copy over trailing headers.
                         CopyTrailersToResponseMessage(_response!);
+
+                        _responseDataPayloadRemaining = -1; // Set to -1 to indicate EOS.
                         return;
                     case Http3FrameType.Data:
                         // The sum of data frames must equal content length. Because this method is only
@@ -500,7 +503,7 @@ namespace System.Net.Http
                         }
                         break;
                     default:
-                        Debug.Fail($"Recieved unexpected frame type {frameType}.");
+                        Debug.Fail($"Received unexpected frame type {frameType}.");
                         return;
                 }
             }
@@ -1303,7 +1306,8 @@ namespace System.Net.Http
                 else
                 {
                     // We shouldn't be using a managed instance here, but don't have much choice -- we
-                    // need to remove the stream from the connection's GOAWAY collection.
+                    // need to remove the stream from the connection's GOAWAY collection and properly abort.
+                    stream.AbortStream();
                     stream._connection.RemoveStream(stream._stream);
                     stream._connection = null!;
                 }

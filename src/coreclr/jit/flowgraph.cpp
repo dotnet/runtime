@@ -278,7 +278,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             if (nextStmt != nullptr)
             {
                 // Is it possible for gtNextStmt to be NULL?
-                newStmt->SetILOffsetX(nextStmt->GetILOffsetX());
+                newStmt->SetDebugInfo(nextStmt->GetDebugInfo());
             }
         }
 
@@ -2757,6 +2757,9 @@ void Compiler::fgAddInternal()
 
         lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Pinvoke FrameVar"));
 
+        // Lowering::InsertPInvokeMethodProlog will create a call with this local addr as an argument.
+        lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+
         LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
         varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
@@ -2801,7 +2804,7 @@ void Compiler::fgAddInternal()
         // Stick the conditional call at the start of the method
 
         fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback));
+        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
     }
 
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -2927,7 +2930,7 @@ void Compiler::fgFindOperOrder()
 
 //------------------------------------------------------------------------
 // fgSimpleLowering: do full walk of all IR, lowering selected operations
-// and computing lvaOutgoingArgumentAreaSize.
+// and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
 //    Lowers GT_ARR_LENGTH, GT_ARR_BOUNDS_CHECK, and GT_SIMD_CHK.
@@ -2938,7 +2941,7 @@ void Compiler::fgFindOperOrder()
 //    Outgoing arg area size is computed here because we want to run it
 //    after optimization (in case calls are removed) and need to look at
 //    all possible calls in the method.
-
+//
 void Compiler::fgSimpleLowering()
 {
 #if FEATURE_FIXED_OUT_ARGS
@@ -3020,9 +3023,9 @@ void Compiler::fgSimpleLowering()
 
                         if (thisCallOutAreaSize > outgoingArgSpaceSize)
                         {
+                            JITDUMP("Bumping outgoingArgSpaceSize from %u to %u for call [%06d]\n",
+                                    outgoingArgSpaceSize, thisCallOutAreaSize, dspTreeID(tree));
                             outgoingArgSpaceSize = thisCallOutAreaSize;
-                            JITDUMP("Bumping outgoingArgSpaceSize to %u for call [%06d]\n", outgoingArgSpaceSize,
-                                    dspTreeID(tree));
                         }
                         else
                         {
@@ -3051,18 +3054,25 @@ void Compiler::fgSimpleLowering()
     // Finish computing the outgoing args area size
     //
     // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-    // 1. there are calls to THROW_HEPLPER methods.
+    // 1. there are calls to THROW_HELPER methods.
     // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
     //    that even methods without any calls will have outgoing arg area space allocated.
+    // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
+    //    if there are any calls to PInvoke methods, there should be a call that we processed
+    //    above. However, we still generate calls to PInvoke prolog helpers even if we have dead code
+    //    eliminated all the calls.
+    // 4. We will be generating a stack cookie check. In this case we can call a helper to fail fast.
     //
     // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for
     // the outgoing arg space if the method makes any calls.
     if (outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
-        if (compUsesThrowHelper || compIsProfilerHookNeeded())
+        if (compUsesThrowHelper || compIsProfilerHookNeeded() ||
+            (compMethodRequiresPInvokeFrame() && !opts.ShouldUsePInvokeHelpers()) || getNeedsGSSecurityCookie())
         {
             outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
-            JITDUMP("Bumping outgoingArgSpaceSize to %u for throw helper or profile hook", outgoingArgSpaceSize);
+            JITDUMP("Bumping outgoingArgSpaceSize to %u for possible helper or profile hook call",
+                    outgoingArgSpaceSize);
         }
     }
 
@@ -4050,10 +4060,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 
     switch (oper)
     {
-        case GT_FIELD:
-            noway_assert(tree->AsField()->gtFldObj == nullptr);
-            break;
-
         case GT_CALL:
 
             /* We'll evaluate the 'this' argument value first */
@@ -4128,28 +4134,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpComparand, isLIR);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            // Evaluate the trees left to right
-            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtIndex, isLIR);
-            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtArrLen, isLIR);
-            break;
-
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
             noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
-            break;
-
-        case GT_INDEX_ADDR:
-            // Evaluate the array first, then the index....
-            assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Arr(), isLIR);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Index(), isLIR);
             break;
 
         default:

@@ -72,6 +72,11 @@ namespace System.Text.Json.SourceGeneration
         public bool HasPropertyFactoryConverters { get; private set; }
         public bool HasTypeFactoryConverter { get; private set; }
 
+        // The spec is derived from cached `System.Type` instances, which are generally annotation-agnostic.
+        // Hence we can only record the potential for nullable annotations being possible for the runtime type.
+        // TODO: consider deriving the generation spec from the Roslyn symbols directly.
+        public bool CanContainNullableReferenceAnnotations { get; private set; }
+
         public string? ImmutableCollectionBuilderName
         {
             get
@@ -114,6 +119,7 @@ namespace System.Text.Json.SourceGeneration
             bool implementsIJsonOnSerialized,
             bool implementsIJsonOnSerializing,
             bool hasTypeFactoryConverter,
+            bool canContainNullableReferenceAnnotations,
             bool hasPropertyFactoryConverters)
         {
             GenerationMode = generationMode;
@@ -136,6 +142,7 @@ namespace System.Text.Json.SourceGeneration
             ConverterInstantiationLogic = converterInstantiationLogic;
             ImplementsIJsonOnSerialized = implementsIJsonOnSerialized;
             ImplementsIJsonOnSerializing = implementsIJsonOnSerializing;
+            CanContainNullableReferenceAnnotations = canContainNullableReferenceAnnotations;
             HasTypeFactoryConverter = hasTypeFactoryConverter;
             HasPropertyFactoryConverters = hasPropertyFactoryConverters;
         }

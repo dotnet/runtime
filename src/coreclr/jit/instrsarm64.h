@@ -1971,6 +1971,10 @@ INST1(tbx_3regs,   "tbx",          0,      IF_DV_3C,  0x0E005000)
 INST1(tbx_4regs,   "tbx",          0,      IF_DV_3C,  0x0E007000)
                                    //  tbx    Vd,{Vn,Vn+1,Vn+2,Vn+3},Vm DV_3C  0Q001110000mmmmm 011100nnnnnddddd   0E00 7000   Vd,Vn,Vm   (vector)
 
+#if FEATURE_LOOP_ALIGN
+INST1(align,       "align",        0,      IF_SN_0A,  BAD_CODE)
+                                   //  align                          SN_0A
+#endif
 // clang-format on
 
 /*****************************************************************************/

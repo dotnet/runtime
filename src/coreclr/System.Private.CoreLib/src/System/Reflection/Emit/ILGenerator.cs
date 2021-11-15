@@ -1210,7 +1210,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                Emit(OpCodes.Ldarg, (short)0); // Load the this ref.
+                Emit(OpCodes.Ldarg_0); // Load the this ref.
                 Emit(OpCodes.Ldfld, fld);
             }
             Type[] parameterTypes = new Type[1];

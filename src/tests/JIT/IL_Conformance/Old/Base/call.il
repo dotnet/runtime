@@ -5,7 +5,7 @@
 
 
 
-.assembly call.exe{}
+.assembly 'call'{}
 
 .method public public static int32 test() {
 	ldc.i4	0xFF

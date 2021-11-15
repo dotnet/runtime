@@ -542,4 +542,4 @@ FAIL:
 	ret
 
 }
-.assembly beq_r8.exe{}
+.assembly beq_r8{}

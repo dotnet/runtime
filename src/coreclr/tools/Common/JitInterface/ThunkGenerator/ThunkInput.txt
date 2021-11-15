@@ -309,6 +309,7 @@ FUNCTIONS
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
     bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
+    void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint);
     void allocMem(AllocMemArgs* pArgs);
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize)
     void allocUnwindInfo(uint8_t* pHotCode, uint8_t* pColdCode, uint32_t startOffset, uint32_t endOffset, uint32_t unwindSize, uint8_t* pUnwindBlock, CorJitFuncKind funcKind)

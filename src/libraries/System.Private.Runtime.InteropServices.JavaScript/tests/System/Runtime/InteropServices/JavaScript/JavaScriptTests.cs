@@ -186,18 +186,31 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     return rangeIterator;
                 ");
 
-            for (int attempt = 0; attempt < 100_000; attempt++)
+            const int count = 500;
+            for (int attempt = 0; attempt < 100; attempt++)
             {
+                int index = 0;
                 try
                 {
-                    using (var entriesIterator = (JSObject)makeRangeIterator.Call(null, 0, 500))
-                    {
-                        var cnt = entriesIterator.ToEnumerable().Count();
+                    var entriesIterator = (JSObject)makeRangeIterator.Call(null, 0, count, 1);
+                    Assert.NotNull(entriesIterator);
+                    using (entriesIterator) {
+                        var enumerable = entriesIterator.ToEnumerable();
+                        var enumerator = enumerable.GetEnumerator();
+                        Assert.NotNull(enumerator);
+
+                        using (enumerator) {
+                            while (enumerator.MoveNext()) {
+                                Assert.NotNull(enumerator.Current);
+                                index++;
+                            }
+                        }
                     }
+                    Assert.Equal(count, index);
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception(ex.Message + " At attempt=" + attempt, ex);
+                    throw new Exception($"At attempt={attempt}, index={index}: {ex.Message}", ex);
                 }
             }
         }

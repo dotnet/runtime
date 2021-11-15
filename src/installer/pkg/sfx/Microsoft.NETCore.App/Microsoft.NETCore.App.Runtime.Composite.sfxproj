@@ -7,7 +7,7 @@
     <ArchiveName>dotnet-runtime-internal-composite</ArchiveName>
     <OverridePackageId>$(SharedFrameworkName).Composite</OverridePackageId>
     <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).Composite.PGO</OverridePackageId>
-    <GenerateSymbolsArchive>true</GenerateSymbolsArchive>
+    <CreateSymbolsArchive Condition="'$(PgoInstrument)' == ''">true</CreateSymbolsArchive>
     <SymbolsArchiveName>dotnet-runtime-composite-symbols</SymbolsArchiveName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ForcePublishReadyToRunComposite>true</ForcePublishReadyToRunComposite>

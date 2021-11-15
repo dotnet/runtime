@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.IO
 {
-    internal struct FileStatus
+    internal partial struct FileStatus
     {
         private const int NanosecondsPerTick = 100;
 
@@ -245,20 +245,6 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileCache.CTime, _fileCache.CTimeNsec);
         }
 
-        internal void SetCreationTime(string path, DateTimeOffset time)
-        {
-            // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
-            // There is no API to update the CreationTime.
-            // Some platforms (e.g. Linux) don't store a creation time. On those platforms, the creation time
-            // is synthesized as the oldest of last status change time (ctime) and last modification time (mtime).
-            // We update the LastWriteTime (mtime).
-            // This triggers a metadata change for FileSystemWatcher NotifyFilters.CreationTime.
-            // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
-            // CreationTime, GetCreationTime will return the value that was previously set (when that value
-            // wasn't in the future).
-            SetLastWriteTime(path, time);
-        }
-
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
@@ -284,20 +270,29 @@ namespace System.IO
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
-        private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
+        private unsafe void SetAccessOrWriteTimeCore(string path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime)
         {
+            // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.
+            // The reason why we use it to set 'creation time' is the below comment:
+            // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
+            // There is no API to update the CreationTime.
+            // Some platforms (e.g. Linux) don't store a creation time. On those platforms, the creation time
+            // is synthesized as the oldest of last status change time (ctime) and last modification time (mtime).
+            // We update the LastWriteTime (mtime).
+            // This triggers a metadata change for FileSystemWatcher NotifyFilters.CreationTime.
+            // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
+            // CreationTime, GetCreationTime will return the value that was previously set (when that value
+            // wasn't in the future).
+
             // force a refresh so that we have an up-to-date times for values not being overwritten
-            _initializedFileCache = -1;
+            InvalidateCaches();
             EnsureCachesInitialized(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
 
             long seconds = time.ToUnixTimeSeconds();
-
-            const long TicksPerMillisecond = 10000;
-            const long TicksPerSecond = TicksPerMillisecond * 1000;
-            long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
 #if TARGET_BROWSER
             buf[0].TvSec = seconds;
@@ -321,7 +316,28 @@ namespace System.IO
             }
 #endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-            _initializedFileCache = -1;
+
+            // On OSX-like platforms, when the modification time is less than the creation time (including
+            // when the modification time is already less than but access time is being set), the creation
+            // time is set to the modification time due to the api we're currently using; this is not
+            // desirable behaviour since it is inconsistent with windows behaviour and is not logical to
+            // the programmer (ie. we'd have to document it), so these api calls revert the creation time
+            // when it shouldn't be set (since we're setting modification time and access time here).
+            // checkCreationTime is only true on OSX-like platforms.
+            // allowFallbackToLastWriteTime is ignored on non OSX-like platforms.
+            bool updateCreationTime = checkCreationTime && (_fileCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0 &&
+                                        (buf[1].TvSec < _fileCache.BirthTime || (buf[1].TvSec == _fileCache.BirthTime && buf[1].TvNsec < _fileCache.BirthTimeNsec));
+
+            InvalidateCaches();
+
+            if (updateCreationTime)
+            {
+                Interop.Error error = SetCreationTimeCore(path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
+                if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
+                {
+                    Interop.CheckIo(error, path, InitiallyDirectory);
+                }
+            }
         }
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -397,6 +413,13 @@ namespace System.IO
                 InvalidateCaches();
                 throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
             }
+        }
+
+        private static long UnixTimeSecondsToNanoseconds(DateTimeOffset time, long seconds)
+        {
+            const long TicksPerMillisecond = 10000;
+            const long TicksPerSecond = TicksPerMillisecond * 1000;
+            return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
         }
 
         private bool TryRefreshFileCache(ReadOnlySpan<char> path) =>

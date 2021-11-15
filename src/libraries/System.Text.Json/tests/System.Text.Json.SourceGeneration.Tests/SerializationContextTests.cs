@@ -25,9 +25,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
+    [JsonSerializable(typeof(byte[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
@@ -61,9 +63,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -98,9 +102,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -146,6 +152,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(SerializationContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(SerializationContext.Default.ByteArray.SerializeHandler);
             Assert.Null(SerializationContext.Default.String.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.ClassWithEnumAndNullable.SerializeHandler);
@@ -370,6 +377,41 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public override void ClassWithNullableProperties_Roundtrip()
+        {
+            RunTest(new ClassWithNullableProperties
+            {
+                Uri = new Uri("http://contoso.com"),
+                Array = new int[] { 42 },
+                Poco = new ClassWithNullableProperties.MyPoco(),
+
+                NullableUri = new Uri("http://contoso.com"),
+                NullableArray = new int[] { 42 },
+                NullablePoco = new ClassWithNullableProperties.MyPoco()
+            });
+
+            RunTest(new ClassWithNullableProperties());
+
+            void RunTest(ClassWithNullableProperties expected)
+            {
+                string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithNullableProperties);
+                ClassWithNullableProperties actual = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).ClassWithNullableProperties);
+
+                Assert.Equal(expected.Uri, actual.Uri);
+                Assert.Equal(expected.Array, actual.Array);
+                Assert.Equal(expected.Poco, actual.Poco);
+
+                Assert.Equal(expected.NullableUri, actual.NullableUri);
+                Assert.Equal(expected.NullableArray, actual.NullableArray);
+                Assert.Equal(expected.NullablePoco, actual.NullablePoco);
+
+                Assert.Equal(expected.NullableUriParameter, actual.NullableUriParameter);
+                Assert.Equal(expected.NullableArrayParameter, actual.NullableArrayParameter);
+                Assert.Equal(expected.NullablePocoParameter, actual.NullablePocoParameter);
+            }
+        }
+
+        [Fact]
         public override void ParameterizedConstructor()
         {
             string json = JsonSerializer.Serialize(new HighLowTempsImmutable(1, 2), DefaultContext.HighLowTempsImmutable);
@@ -413,6 +455,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.ByteArray.SerializeHandler);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.String.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);

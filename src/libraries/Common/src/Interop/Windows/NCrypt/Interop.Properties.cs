@@ -13,11 +13,22 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
-        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        internal static extern unsafe ErrorCode NCryptGetProperty(SafeNCryptHandle hObject, string pszProperty, [Out] void* pbOutput, int cbOutput, out int pcbResult, CngPropertyOptions dwFlags);
+        [GeneratedDllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe partial ErrorCode NCryptGetProperty(
+            SafeNCryptHandle hObject,
+            string pszProperty,
+            void* pbOutput,
+            int cbOutput,
+            out int pcbResult,
+            CngPropertyOptions dwFlags);
 
-        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        internal static extern unsafe ErrorCode NCryptSetProperty(SafeNCryptHandle hObject, string pszProperty, [In] void* pbInput, int cbInput, CngPropertyOptions dwFlags);
+        [GeneratedDllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe partial ErrorCode NCryptSetProperty(
+            SafeNCryptHandle hObject,
+            string pszProperty,
+            void* pbInput,
+            int cbInput,
+            CngPropertyOptions dwFlags);
 
         [SupportedOSPlatform("windows")]
         internal static unsafe ErrorCode NCryptGetByteProperty(SafeNCryptHandle hObject, string pszProperty, ref byte result, CngPropertyOptions options = CngPropertyOptions.None)

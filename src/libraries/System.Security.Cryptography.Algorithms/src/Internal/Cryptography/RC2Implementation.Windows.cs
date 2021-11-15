@@ -14,14 +14,13 @@ namespace Internal.Cryptography
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
-            int effectiveKeyLength,
             byte[]? iv,
             int blockSize,
             int feedbackSize,
             int paddingSize,
             bool encrypting)
         {
-            using (SafeAlgorithmHandle algorithm = RC2BCryptModes.GetHandle(cipherMode, effectiveKeyLength))
+            using (SafeAlgorithmHandle algorithm = RC2BCryptModes.GetHandle(cipherMode, key.Length * 8))
             {
                 // The BasicSymmetricCipherBCrypt ctor will increase algorithm reference count and take ownership.
                 BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, paddingSize, key, true, iv, encrypting);
@@ -33,14 +32,13 @@ namespace Internal.Cryptography
             CipherMode cipherMode,
             PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
-            int effectiveKeyLength,
             ReadOnlySpan<byte> iv,
             int blockSize,
             int feedbackSizeInBytes,
             int paddingSize,
             bool encrypting)
         {
-            using (SafeAlgorithmHandle algorithm = RC2BCryptModes.GetHandle(cipherMode, effectiveKeyLength))
+            using (SafeAlgorithmHandle algorithm = RC2BCryptModes.GetHandle(cipherMode, key.Length * 8))
             {
                 // The BasicSymmetricCipherBCrypt ctor will increase algorithm reference count and take ownership.
                 return new BasicSymmetricCipherLiteBCrypt(

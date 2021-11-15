@@ -54,10 +54,6 @@
     <PackageToInclude Include="xunit.extensibility.core"/>
     <PackageToInclude Include="xunit.extensibility.execution"/>
     <PackageToInclude Include="xunit.runner.utility"/>
-    <PackageToInclude Include="xunit.performance.api"/>
-    <PackageToInclude Include="xunit.performance.core"/>
-    <PackageToInclude Include="xunit.performance.execution"/>
-    <PackageToInclude Include="xunit.performance.metrics"/>
     <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
     <PackageToInclude Include="Newtonsoft.Json.Bson"/>
@@ -70,10 +66,6 @@
 
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="1.1.1" />
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
-    <PackageReference Include="xunit.performance.api" Version="$(XunitPerformanceApiPackageVersion)" />
-    <PackageReference Include="xunit.performance.core" Version="$(XunitPerformanceApiPackageVersion)" />
-    <PackageReference Include="xunit.performance.execution" Version="$(XunitPerformanceApiPackageVersion)" />
-    <PackageReference Include="xunit.performance.metrics" Version="$(XunitPerformanceApiPackageVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />

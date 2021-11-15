@@ -4,7 +4,7 @@
 namespace NetClient
 {
     using System;
-    using TestLibrary;
+    using Xunit;
 
     class NumericTests
     {
@@ -59,145 +59,145 @@ namespace NetClient
         {
             var expected = (byte)(a + b);
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.AreEqual(expected, this.server.Add_Byte(a, b));
+            Assert.Equal(expected, this.server.Add_Byte(a, b));
 
             var c = byte.MaxValue;
             this.server.Add_Byte_Ref(a, b, ref c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
 
             c = 0;
             this.server.Add_Byte_Out(a, b, out c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
         }
 
         private void Marshal_Short(short a, short b)
         {
             var expected = (short)(a + b);
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.AreEqual(expected, this.server.Add_Short(a, b));
+            Assert.Equal(expected, this.server.Add_Short(a, b));
 
             var c = short.MaxValue;
             this.server.Add_Short_Ref(a, b, ref c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
 
             c = 0;
             this.server.Add_Short_Out(a, b, out c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
         }
 
         private void Marshal_UShort(ushort a, ushort b)
         {
             var expected = (ushort)(a + b);
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.AreEqual(expected, this.server.Add_UShort(a, b));
+            Assert.Equal(expected, this.server.Add_UShort(a, b));
 
             var c = ushort.MaxValue;
             this.server.Add_UShort_Ref(a, b, ref c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
 
             c = 0;
             this.server.Add_UShort_Out(a, b, out c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
         }
 
         private void Marshal_Int(int a, int b)
         {
             var expected = a + b;
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.AreEqual(expected, this.server.Add_Int(a, b));
+            Assert.Equal(expected, this.server.Add_Int(a, b));
 
             var c = int.MaxValue;
             this.server.Add_Int_Ref(a, b, ref c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
 
             c = 0;
             this.server.Add_Int_Out(a, b, out c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
         }
 
         private void Marshal_UInt(uint a, uint b)
         {
             var expected = a + b;
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.AreEqual(expected, this.server.Add_UInt(a, b));
+            Assert.Equal(expected, this.server.Add_UInt(a, b));
 
             var c = uint.MaxValue;
             this.server.Add_UInt_Ref(a, b, ref c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
 
             c = 0;
             this.server.Add_UInt_Out(a, b, out c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
         }
 
         private void Marshal_Long(long a, long b)
         {
             var expected = a + b;
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.AreEqual(expected, this.server.Add_Long(a, b));
+            Assert.Equal(expected, this.server.Add_Long(a, b));
 
             var c = long.MaxValue;
             this.server.Add_Long_Ref(a, b, ref c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
 
             c = 0;
             this.server.Add_Long_Out(a, b, out c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
         }
 
         private void Marshal_ULong(ulong a, ulong b)
         {
             var expected = a + b;
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.AreEqual(expected, this.server.Add_ULong(a, b));
+            Assert.Equal(expected, this.server.Add_ULong(a, b));
 
             var c = ulong.MaxValue;
             this.server.Add_ULong_Ref(a, b, ref c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
 
             c = 0;
             this.server.Add_ULong_Out(a, b, out c);
-            Assert.AreEqual(expected, c);
+            Assert.Equal(expected, c);
         }
 
         private void Marshal_Float(float a, float b)
         {
             var expected = a + b;
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.IsTrue(EqualByBound(expected, this.server.Add_Float(a, b)), $"Add_Float: {this.server.Add_Float(a, b)}");
+            Assert.True(EqualByBound(expected, this.server.Add_Float(a, b)), $"Add_Float: {this.server.Add_Float(a, b)}");
 
             var c = float.MaxValue;
             this.server.Add_Float_Ref(a, b, ref c);
-            Assert.IsTrue(EqualByBound(expected, c), "Add_Float_Ref");
+            Assert.True(EqualByBound(expected, c));
 
             c = 0;
             this.server.Add_Float_Out(a, b, out c);
-            Assert.IsTrue(EqualByBound(expected, c), "Add_Float_Out");
+            Assert.True(EqualByBound(expected, c));
         }
 
         private void Marshal_Double(double a, double b)
         {
             var expected = a + b;
             Console.WriteLine($"{expected.GetType().Name} test invariant: {a} + {b} = {expected}");
-            Assert.IsTrue(EqualByBound(expected, this.server.Add_Double(a, b)));
+            Assert.True(EqualByBound(expected, this.server.Add_Double(a, b)));
 
             var c = double.MaxValue;
             this.server.Add_Double_Ref(a, b, ref c);
-            Assert.IsTrue(EqualByBound(expected, c));
+            Assert.True(EqualByBound(expected, c));
 
             c = 0;
             this.server.Add_Double_Out(a, b, out c);
-            Assert.IsTrue(EqualByBound(expected, c));
+            Assert.True(EqualByBound(expected, c));
         }
 
         private void Marshal_ManyInts()
         {
             var expected = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11;
             Console.WriteLine($"{expected.GetType().Name} 11 test invariant: 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 = {expected}");
-            Assert.IsTrue(expected == this.server.Add_ManyInts11(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
+            Assert.True(expected == this.server.Add_ManyInts11(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
             expected = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12;
             Console.WriteLine($"{expected.GetType().Name} 12 test invariant: 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 = {expected}");
-            Assert.IsTrue(expected == this.server.Add_ManyInts12(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
+            Assert.True(expected == this.server.Add_ManyInts12(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
         }
     }
 }

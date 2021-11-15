@@ -1049,7 +1049,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
 
         case GT_MUL:
         case GT_MULHI:
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
         case GT_MUL_LONG:
 #endif
             killMask = getKillSetForMul(tree->AsOp());
@@ -3021,10 +3021,22 @@ int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
         BuildUse(addrMode->Base(), candidates);
         srcCount++;
     }
-    if ((addrMode->Index() != nullptr) && !addrMode->Index()->isContained())
+    if (addrMode->Index() != nullptr)
     {
-        BuildUse(addrMode->Index(), candidates);
-        srcCount++;
+        if (!addrMode->Index()->isContained())
+        {
+            BuildUse(addrMode->Index(), candidates);
+            srcCount++;
+        }
+#ifdef TARGET_ARM64
+        else if (addrMode->Index()->OperIs(GT_BFIZ))
+        {
+            GenTreeCast* cast = addrMode->Index()->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+            BuildUse(cast->CastOp(), candidates);
+            srcCount++;
+        }
+#endif
     }
     return srcCount;
 }
@@ -3071,6 +3083,18 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return 1;
     }
 #endif // FEATURE_HW_INTRINSICS
+#ifdef TARGET_ARM64
+    if (node->OperIs(GT_MUL))
+    {
+        // Can be contained for MultiplyAdd on arm64
+        return BuildBinaryUses(node->AsOp(), candidates);
+    }
+    if (node->OperIs(GT_NEG))
+    {
+        // Can be contained for MultiplyAdd on arm64
+        return BuildOperandUses(node->gtGetOp1(), candidates);
+    }
+#endif
 
     return 0;
 }
@@ -3406,8 +3430,8 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         {
             BuildUse(op1, RBM_NONE, i);
         }
-#if defined(FEATURE_SIMD) && defined(TARGET_X86) && defined(TARGET_WINDOWS)
-        if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+#if defined(FEATURE_SIMD) && defined(TARGET_X86)
+        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
         {
             if (varTypeIsSIMD(storeLoc) && op1->IsCall())
             {
@@ -3417,7 +3441,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
                 setInternalRegsDelayFree = true;
             }
         }
-#endif // FEATURE_SIMD && TARGET_X86 && TARGET_WINDOWS
+#endif // FEATURE_SIMD && TARGET_X86
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
@@ -3838,8 +3862,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
 //    (e.g. for the target).
 void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs)
 {
-#if FEATURE_VARARG
-    if (call->IsVarargs() && varTypeIsFloating(argNode))
+    if (compFeatureVarArg() && call->IsVarargs() && varTypeIsFloating(argNode))
     {
         *callHasFloatRegArgs = true;
 
@@ -3849,7 +3872,6 @@ void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* c
 
         buildInternalIntRegisterDefForNode(call, genRegMask(targetReg));
     }
-#endif // FEATURE_VARARG
 }
 
 //------------------------------------------------------------------------

@@ -14,6 +14,13 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module cs_test_01.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
@@ -32,12 +39,15 @@
   .field public int32 dummy
 } 
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_cs_il
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals (valuetype big V_0,

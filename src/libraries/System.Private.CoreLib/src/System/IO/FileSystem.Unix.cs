@@ -11,25 +11,30 @@ namespace System.IO
     /// <summary>Provides an implementation of FileSystem for Unix systems.</summary>
     internal static partial class FileSystem
     {
-        internal const int DefaultBufferSize = 4096;
-
         // On Linux, the maximum number of symbolic links that are followed while resolving a pathname is 40.
         // See: https://man7.org/linux/man-pages/man7/path_resolution.7.html
         private const int MaxFollowedLinks = 40;
 
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // If the destination path points to a directory, we throw to match Windows behaviour
-            if (DirectoryExists(destFullPath))
-            {
-                throw new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, destFullPath));
-            }
+            long fileLength;
+            Interop.Sys.Permissions filePermissions;
+            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
+            using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
+                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, openPermissions: filePermissions,
+                                            (Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path) => CreateOpenException(error, flags, path));
 
-            // Copy the contents of the file from the source to the destination, creating the destination in the process
-            using (SafeFileHandle src = File.OpenHandle(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.None))
-            using (SafeFileHandle dst = File.OpenHandle(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, FileOptions.None))
+            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
+
+            static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
             {
-                Interop.CheckIo(Interop.Sys.CopyFile(src, dst));
+                // If the destination path points to a directory, we throw to match Windows behaviour.
+                if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
+                {
+                    return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
+                }
+
+                return null; // Let SafeFileHandle create the exception for this error.
             }
         }
 

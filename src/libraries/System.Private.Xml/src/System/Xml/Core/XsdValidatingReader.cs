@@ -244,7 +244,7 @@ namespace System.Xml
                     string? prefix = _validator.GetDefaultAttributePrefix(_cachedNode.Namespace);
                     if (prefix != null && prefix.Length != 0)
                     {
-                        return prefix + ":" + _cachedNode.LocalName;
+                        return $"{prefix}:{_cachedNode.LocalName}";
                     }
 
                     return _cachedNode.LocalName;

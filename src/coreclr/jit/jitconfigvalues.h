@@ -125,7 +125,13 @@ CONFIG_INTEGER(JitQueryCurrentStaticFieldClass, W("JitQueryCurrentStaticFieldCla
 CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions"), 0)
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
+
+// Controls verbosity for JitPrintInlinedMethods. Ignored for JitDump/NgenDump where
+// it's always set.
+CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLevel"), 0)
+// Prints a tree of inlinees for a specific method (use '*' for all methods)
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
+
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), 0) // 1 enable in dumps, 2 assert if issues found
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
@@ -165,12 +171,15 @@ CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, 
 
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
-CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
-                                                             // from this semicolon-delimited list of assemblies.
-CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
-CONFIG_METHODSET(JitDump, W("JitDump"))                      // Dumps trees for specified method
-CONFIG_METHODSET(JitEHDump, W("JitEHDump"))                  // Dump the EH table for the method, as reported to the VM
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                     // Dumps disassembly for specified method
+CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies"))    // Only show JitDisasm and related info for methods
+                                                                // from this semicolon-delimited list of assemblies.
+CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)        // Dump interleaved GC Info for any method disassembled.
+CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
+CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
 CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
@@ -500,6 +509,8 @@ CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualiza
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
+// Enable partial compilation for Tier0 methods
+CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)

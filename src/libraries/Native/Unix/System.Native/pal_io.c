@@ -61,6 +61,14 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 #endif
 
+// The portable build is performed on RHEL7 which doesn't define FICLONE yet.
+// Ensure FICLONE is defined for all Linux builds.
+#ifdef __linux__
+#ifndef FICLONE
+#define FICLONE _IOW(0x94, 9, int)
+#endif
+#endif
+
 #if HAVE_STAT64
 #define stat_ stat64
 #define fstat_ fstat64
@@ -1008,83 +1016,33 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
 #endif
 }
 
-int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
+int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
 {
     assert_msg(offset == 0, "Invalid offset value", (int)offset);
 
     int fileDescriptor = ToFileDescriptor(fd);
     int32_t result;
-#if HAVE_POSIX_FALLOCATE64 // 64-bit Linux
-    while ((result = posix_fallocate64(fileDescriptor, (off64_t)offset, (off64_t)length)) == EINTR);
-#elif HAVE_POSIX_FALLOCATE // 32-bit Linux
-    while ((result = posix_fallocate(fileDescriptor, (off_t)offset, (off_t)length)) == EINTR);
+#if HAVE_FALLOCATE // Linux
+    while ((result = fallocate(fileDescriptor, FALLOC_FL_KEEP_SIZE, (off_t)offset, (off_t)length)) == -1 && errno == EINTR);
 #elif defined(F_PREALLOCATE) // macOS
     fstore_t fstore;
-    fstore.fst_flags = F_ALLOCATECONTIG; // ensure contiguous space
-    fstore.fst_posmode = F_PEOFPOSMODE;  // allocate from the physical end of file, as offset MUST NOT be 0 for F_VOLPOSMODE
+    fstore.fst_flags = F_ALLOCATEALL; // Allocate all requested space or no space at all.
+    fstore.fst_posmode = F_PEOFPOSMODE; // Allocate from the physical end of file.
     fstore.fst_offset = (off_t)offset;
     fstore.fst_length = (off_t)length;
     fstore.fst_bytesalloc = 0; // output size, can be > length
 
     while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
-
-    if (result == -1)
-    {
-        // we have failed to allocate contiguous space, let's try non-contiguous
-        fstore.fst_flags = F_ALLOCATEALL; // all or nothing
-        while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
-    }
-#elif defined(F_ALLOCSP) || defined(F_ALLOCSP64) // FreeBSD
-    #if HAVE_FLOCK64
-    struct flock64 lockArgs;
-    int command = F_ALLOCSP64;
-    #else
-    struct flock lockArgs;
-    int command = F_ALLOCSP;
-    #endif
-
-    lockArgs.l_whence = SEEK_SET;
-    lockArgs.l_start = (off_t)offset;
-    lockArgs.l_len = (off_t)length;
-
-    while ((result = fcntl(fileDescriptor, command, &lockArgs)) == -1 && errno == EINTR);
+#else
+    (void)offset; // unused
+    (void)length; // unused
+    result = -1;
+    errno = EOPNOTSUPP;
 #endif
 
-#if defined(F_PREALLOCATE) || defined(F_ALLOCSP) || defined(F_ALLOCSP64)
-    // most of the Unixes implement posix_fallocate which does NOT set the last error
-    // fctnl does, but to mimic the posix_fallocate behaviour we just return error
-    if (result == -1)
-    {
-        result = errno;
-    }
-    else
-    {
-        // align the behaviour with what posix_fallocate does (change reported file size)
-        ftruncate(fileDescriptor, length);
-    }
-#endif
+    assert(result == 0 || errno != EINVAL);
 
-    // error codes can be OS-specific, so this is why this handling is done here rather than in the managed layer
-    switch (result)
-    {
-        case ENOSPC: // there was not enough space
-            return -1;
-        case EFBIG: // the file was too large
-            return -2;
-        case ENODEV: // not a regular file
-        case ESPIPE: // a pipe
-            // We ignore it, as FileStream contract makes it clear that allocationSize is ignored for non-regular files.
-            return 0;
-        case EINVAL:
-            // We control the offset and length so they are correct.
-            assert_msg(length >= 0, "Invalid length value", (int)length);
-            // But if the underlying filesystem does not support the operation, we just ignore it and treat as a hint.
-            return 0;
-        default:
-            assert(result != EINTR); // it can't happen here as we retry the call on EINTR
-            assert(result != EBADF); // it can't happen here as this method is being called after a succesfull call to open (with write permissions) before returning the SafeFileHandle to the user
-            return 0;
-    }
+    return result;
 }
 
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
@@ -1188,8 +1146,10 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 }
 #endif // !HAVE_FCOPYFILE
 
-int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
+int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
 {
+    (void)sourceLength; // unused on some platforms.
+
     int inFd = ToFileDescriptor(sourceFd);
     int outFd = ToFileDescriptor(destinationFd);
 
@@ -1201,28 +1161,27 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
 #else
     // Get the stats on the source file.
     int ret;
-    struct stat_ sourceStat;
     bool copied = false;
-#if HAVE_SENDFILE_4
-    // If sendfile is available (Linux), try to use it, as the whole copy
-    // can be performed in the kernel, without lots of unnecessary copying.
-    while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
-    if (ret != 0)
-    {
-        return -1;
-    }
 
-    // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
-    // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
-    // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
-    uint64_t size = (uint64_t)sourceStat.st_size;
-    if (size != 0)
+    // Certain files (e.g. procfs) may return a size of 0 even though reading them will
+    // produce data. We use plain read/write for those.
+#ifdef FICLONE
+    // Try copying data using a copy-on-write clone. This shares storage between the files.
+    if (sourceLength != 0)
+    {
+        while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
+        copied = ret == 0;
+    }
+#endif
+#if HAVE_SENDFILE_4
+    // Try copying the data using sendfile.
+    if (!copied && sourceLength != 0)
     {
         // Note that per man page for large files, you have to iterate until the
         // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
-        while (size > 0)
+        do
         {
-            ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
+            ssize_t sent = sendfile(outFd, inFd, NULL, (sourceLength >= SSIZE_MAX ? SSIZE_MAX : (size_t)sourceLength));
             if (sent < 0)
             {
                 if (errno != EINVAL && errno != ENOSYS)
@@ -1234,36 +1193,31 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
                     break;
                 }
             }
+            else if (sent == 0)
+            {
+                // The file was truncated (or maybe some other condition occurred).
+                // Perform the remaining copying using read/write.
+                break;
+            }
             else
             {
-                assert((size_t)sent <= size);
-                size -= (size_t)sent;
+                assert(sent <= sourceLength);
+                sourceLength -= sent;
             }
-        }
+        } while (sourceLength > 0);
 
-        if (size == 0)
-        {
-            copied = true;
-        }
+        copied = sourceLength == 0;
     }
-
-    // sendfile couldn't be used; fall back to a manual copy below. This could happen
-    // if we're on an old kernel, for example, where sendfile could only be used
-    // with sockets and not regular files.  Additionally, certain files (e.g. procfs)
-    // may return a size of 0 even though reading from then will produce data.  As such,
-    // we avoid using sendfile with the queried size if the size is reported as 0.
 #endif // HAVE_SENDFILE_4
 
-    // Manually read all data from the source and write it to the destination.
+    // Perform a manual copy.
     if (!copied && CopyFile_ReadWrite(inFd, outFd) != 0)
     {
         return -1;
     }
 
-    // Now that the data from the file has been copied, copy over metadata
-    // from the source file.  First copy the file times.
-    // If futimes nor futimes are available on this platform, file times will
-    // not be copied over.
+    // Copy file times.
+    struct stat_ sourceStat;
     while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
     if (ret == 0)
     {
@@ -1292,7 +1246,10 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
     {
         return -1;
     }
-    // Then copy permissions.
+
+    // Copy permissions.
+    // Even though managed code created the file with permissions matching those of the source file,
+    // we need to copy permissions because the open permissions may be filtered by 'umask'.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
     if (ret != 0 && errno != EPERM) // See EPERM comment above
     {

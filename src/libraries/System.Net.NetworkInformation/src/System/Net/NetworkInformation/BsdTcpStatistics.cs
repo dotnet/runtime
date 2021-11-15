@@ -17,10 +17,10 @@ namespace System.Net.NetworkInformation
         private readonly long _segmentsReceived;
         private readonly int _currentConnections;
 
-        public BsdTcpStatistics()
+        public unsafe BsdTcpStatistics()
         {
             Interop.Sys.TcpGlobalStatistics statistics;
-            if (Interop.Sys.GetTcpGlobalStatistics(out statistics) != 0)
+            if (Interop.Sys.GetTcpGlobalStatistics(&statistics) != 0)
             {
                 throw new NetworkInformationException(SR.net_PInvokeError);
             }

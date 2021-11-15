@@ -8,6 +8,13 @@
 .assembly GitHub_13822
 {
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -42,15 +49,18 @@
   // This test verifies that the temp struct returned by newobj is zero-initialized
   // before calling the constructor on each iteration of the loop.
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_GitHub_13822
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
               ldc.i4.0
-              call       int32 Test::A(int32)
+              call       int32 Test_GitHub_13822::A(int32)
               ret
   } // end of method Test::Main
 
@@ -58,7 +68,7 @@
   {
     .maxstack  2
     .locals init (int32 V_0)
-              call       int32 Test::GetZero()
+              call       int32 Test_GitHub_13822::GetZero()
               stloc.0
               ldarg.0
               ldc.i4.3
@@ -76,7 +86,7 @@
     L2:       ldarg.0
               ldc.i4.1
               add
-              call       int32 Test::A(int32)
+              call       int32 Test_GitHub_13822::A(int32)
               ret
   } // end of method Test::A
 

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
+    [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class RegexCompilationInfo
     {
         private string _pattern;

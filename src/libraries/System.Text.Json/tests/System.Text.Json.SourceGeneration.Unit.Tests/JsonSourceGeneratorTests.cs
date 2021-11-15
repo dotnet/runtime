@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     public class GeneratorTests
     {
         [Fact]
@@ -474,7 +475,7 @@ namespace System.Text.Json.Serialization
         {
             // Adding a dependency to an assembly that has internal definitions of public types
             // should not result in a collision and break generation.
-            // This verifies the usage of GetBestTypeByMetadataName() instead of GetTypeByMetadataName().
+            // Verify usage of the extension GetBestTypeByMetadataName(this Compilation) instead of Compilation.GetTypeByMetadataName().
             var referencedSource = @"
                 namespace System.Text.Json.Serialization
                 {
@@ -487,16 +488,7 @@ namespace System.Text.Json.Serialization
             Compilation referencedCompilation = CompilationHelper.CreateCompilation(referencedSource);
 
             // Obtain the image of the referenced assembly.
-            byte[] referencedImage;
-            using (MemoryStream ms = new MemoryStream())
-            {
-                var emitResult = referencedCompilation.Emit(ms);
-                if (!emitResult.Success)
-                {
-                    throw new InvalidOperationException();
-                }
-                referencedImage = ms.ToArray();
-            }
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
 
             // Generate the code
             string source = @"

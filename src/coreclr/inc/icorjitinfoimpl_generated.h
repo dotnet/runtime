@@ -635,6 +635,9 @@ bool notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
           bool supportEnabled) override;
 
+void updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint) override;
+
 void allocMem(
           AllocMemArgs* pArgs) override;
 
