@@ -9,11 +9,48 @@ public class ILTransform
     {
         try
         {
-            if (args.Length == 0)
+            string testRoot = "";
+            bool deduplicateClassNames = false;
+            string classToDeduplicate = "";
+            bool fixImplicitSharedLibraries = false;
+            foreach (string arg in args)
             {
-                throw new Exception("Usage: ILTransform <test source root, e.g. d:\\git\\runtime\\src\\tests>");
+                if (arg[0] == '-')
+                {
+                    if (arg.StartsWith("-d"))
+                    {
+                        deduplicateClassNames = true;
+                        int index = 2;
+                        while (index < arg.Length && !TestProject.IsIdentifier(arg[index]))
+                        {
+                            index++;
+                        }
+                        if (index < arg.Length)
+                        {
+                            classToDeduplicate = arg.Substring(index);
+                        }
+                    }
+                    else if (arg.StartsWith("-i"))
+                    {
+                        fixImplicitSharedLibraries = true;
+                    }
+                    else
+                    {
+                        throw new Exception(string.Format("Unsupported option '{0}'", arg));
+                    }
+                }
+                else
+                {
+                    testRoot = arg;
+                }
             }
-            string testRoot = args[0];
+
+
+            if (testRoot == "")
+            {
+                throw new Exception("Usage: ILTransform <test source root, e.g. d:\\git\\runtime\\src\\tests> [-d]");
+            }
+
             string wrapperRoot = Path.Combine(testRoot, "generated", "wrappers");
             string logPath = Path.Combine(wrapperRoot, "wrapper.log");
             Directory.CreateDirectory(wrapperRoot);
@@ -30,11 +67,22 @@ public class ILTransform
             {
                 testStore.DumpFolderStatistics(log);
                 testStore.DumpDebugOptimizeStatistics(log);
+                testStore.DumpImplicitSharedLibraries(log);
                 testStore.DumpDuplicateEntrypointClasses(log);
             }
 
-            testStore.RewriteAllTests();
-            testStore.GenerateAllWrappers(wrapperRoot);
+            if (fixImplicitSharedLibraries)
+            {
+                // TODO
+            }
+            else
+            {
+                testStore.RewriteAllTests(deduplicateClassNames, classToDeduplicate);
+                if (!deduplicateClassNames)
+                {
+                    testStore.GenerateAllWrappers(wrapperRoot);
+                }
+            }
             return 0;
         }
         catch (Exception ex)
