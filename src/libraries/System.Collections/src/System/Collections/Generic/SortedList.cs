@@ -546,7 +546,7 @@ namespace System.Collections.Generic
         // Sets the value of the entry at the given index.
         public void SetValueAtIndex(int index, TValue value)
         {
-            if (index< 0 || index >= _size)
+            if (index < 0 || index >= _size)
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             values[index] = value;
             version++;
