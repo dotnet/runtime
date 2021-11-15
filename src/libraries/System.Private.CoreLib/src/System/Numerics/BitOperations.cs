@@ -805,7 +805,7 @@ namespace System.Numerics
             // Software fallback
 
             Span<byte> bytes = stackalloc byte[sizeof(ushort)];
-            Unsafe.As<byte, ushort>(ref bytes[0]) = data;
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(bytes), data);
 
             foreach (byte b in bytes)
             {
@@ -844,7 +844,7 @@ namespace System.Numerics
             // Software fallback
 
             Span<byte> bytes = stackalloc byte[sizeof(uint)];
-            Unsafe.As<byte, uint>(ref bytes[0]) = data;
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(bytes), data);
 
             foreach (byte b in bytes)
             {
@@ -884,7 +884,7 @@ namespace System.Numerics
             // Software fallback
 
             Span<byte> bytes = stackalloc byte[sizeof(ulong)];
-            Unsafe.As<byte, ulong>(ref bytes[0]) = data;
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(bytes), data);
 
             foreach (byte b in bytes)
             {
