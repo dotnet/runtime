@@ -201,6 +201,7 @@ internal sealed class Xcode
         bool invariantGlobalization,
         bool optimized,
         bool enableRuntimeLogging,
+        bool enableAppSandbox,
         string? diagnosticPorts,
         string? runtimeComponents=null,
         string? nativeMainSource = null)
@@ -236,13 +237,23 @@ internal sealed class Xcode
         var entitlements = new List<KeyValuePair<string, string>>();
 
         bool hardenedRuntime = false;
-        if (Target == TargetNames.MacCatalyst && !forceAOT) {
-            hardenedRuntime = true;
+        if (Target == TargetNames.MacCatalyst)
+        {
+            if (!forceAOT)
+            {
+                hardenedRuntime = true;
 
-            /* for mmmap MAP_JIT */
-            entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.allow-jit", "<true/>"));
-            /* for loading unsigned dylibs like libicu from outside the bundle or libSystem.Native.dylib from inside */
-            entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.disable-library-validation", "<true/>"));
+                /* for mmmap MAP_JIT */
+                entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.allow-jit", "<true/>"));
+                /* for loading unsigned dylibs like libicu from outside the bundle or libSystem.Native.dylib from inside */
+                entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.disable-library-validation", "<true/>"));
+            }
+
+            if (enableAppSandbox)
+            {
+                hardenedRuntime = true;
+                entitlements.Add (KeyValuePair.Create ("com.apple.security.app-sandbox", "<true/>"));
+            }
         }
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
