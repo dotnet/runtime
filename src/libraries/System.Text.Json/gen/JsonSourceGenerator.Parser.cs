@@ -298,7 +298,7 @@ namespace System.Text.Json.SourceGeneration
                     INamedTypeSymbol contextTypeSymbol = (INamedTypeSymbol)compilationSemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
                     Debug.Assert(contextTypeSymbol != null);
 
-                    Location contextLocation = contextTypeSymbol.Locations[0];
+                    Location contextLocation = contextTypeSymbol.Locations.Length > 0 ? contextTypeSymbol.Locations[0] : Location.None;
 
                     if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
                     {
