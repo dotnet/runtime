@@ -116,7 +116,13 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly HashSet<TypeGenerationSpec> _implicitlyRegisteredTypes = new();
 
-            private readonly HashSet<ValueTuple<Type, DiagnosticDescriptor, string[]>> _typeLevelDiagnostics = new();
+            /// <summary>
+            /// A list of diagnostics emitted at the type level. This is cached and emitted between the processing of context types
+            /// in order to properly retrieve [JsonSerializable] attribute applications for top-level types (since a type might occur
+            /// both at top-level and in nested object graphs, with no guarantee of the order that we will see the type).
+            /// The element tuple types specifies the serializable type, the kind of diagnostic to emit, and the diagnostic message.
+            /// </summary>
+            private readonly List<(Type, DiagnosticDescriptor, string[])> _typeLevelDiagnostics = new();
 
             private JsonKnownNamingPolicy _currentContextNamingPolicy;
 
@@ -246,6 +252,11 @@ namespace System.Text.Json.SourceGeneration
 
                 foreach (ClassDeclarationSyntax classDeclarationSyntax in classDeclarationSyntaxList)
                 {
+                    // Ensure context-scoped metadata caches are empty.
+                    Debug.Assert(_typeGenerationSpecCache.Count == 0);
+                    Debug.Assert(_implicitlyRegisteredTypes.Count == 0);
+                    Debug.Assert(_typeLevelDiagnostics.Count == 0);
+
                     CompilationUnitSyntax compilationUnitSyntax = classDeclarationSyntax.FirstAncestorOrSelf<CompilationUnitSyntax>();
                     SemanticModel compilationSemanticModel = compilation.GetSemanticModel(compilationUnitSyntax.SyntaxTree);
 
@@ -342,7 +353,7 @@ namespace System.Text.Json.SourceGeneration
                     contextGenSpecList ??= new List<ContextGenerationSpec>();
                     contextGenSpecList.Add(contextGenSpec);
 
-                    // Clear the cache of generated metadata between the processing of context classes.
+                    // Clear the caches of generated metadata between the processing of context classes.
                     _typeGenerationSpecCache.Clear();
                     _implicitlyRegisteredTypes.Clear();
                     _typeLevelDiagnostics.Clear();

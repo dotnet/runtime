@@ -11,7 +11,6 @@ using System.Runtime.Serialization;
 using System.Text.Encodings.Web;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
@@ -340,16 +339,20 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         internal static void CheckDiagnosticMessages(
             DiagnosticSeverity level,
             ImmutableArray<Diagnostic> diagnostics,
-            (TextSpan Location, string Message)[] expectedDiags)
+            (Location Location, string Message)[] expectedDiags,
+            bool sort = true)
         {
-            (TextSpan Location, string Message)[] actualDiags = diagnostics
+            (Location Location, string Message)[] actualDiags = diagnostics
                 .Where(diagnostic => diagnostic.Severity == level)
-                .Select(diagnostic => (diagnostic.Location.SourceSpan, diagnostic.GetMessage()))
+                .Select(diagnostic => (diagnostic.Location, diagnostic.GetMessage()))
                 .ToArray();
 
-            // Can't depend on reflection order when generating type metadata.
-            Array.Sort(actualDiags);
-            Array.Sort(expectedDiags);
+            if (sort)
+            {
+                // Can't depend on reflection order when generating type metadata.
+                Array.Sort(actualDiags);
+                Array.Sort(expectedDiags);
+            }
 
             if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
             {
