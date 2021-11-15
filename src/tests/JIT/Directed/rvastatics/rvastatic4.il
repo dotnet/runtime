@@ -1,4 +1,11 @@
 .assembly extern mscorlib{}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .assembly rvastatic4{}
 .class public A{
  .method static native int Call1(int64) {.maxstack  50
@@ -7082,6 +7089,9 @@ a010126:
 a010127:
   ret}
  .method static int32 Main(string[] args){.entrypoint .maxstack  5
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   call void [rvastatic4]A::V1()
   call void [rvastatic4]A::V2()
   call void [rvastatic4]A::V3()

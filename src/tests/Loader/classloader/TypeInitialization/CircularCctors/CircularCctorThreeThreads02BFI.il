@@ -5,6 +5,13 @@
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.50103.00
 //  Copyright (C) Microsoft Corporation. All rights reserved.
 .assembly extern System.Console { auto }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .assembly extern System.Threading.Thread { auto }
 // Metadata version: v2.0.50103
 .assembly extern mscorlib { auto }
@@ -315,6 +322,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       244 (0xf4)
     .maxstack  3

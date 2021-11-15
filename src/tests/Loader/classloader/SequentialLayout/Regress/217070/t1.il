@@ -2,6 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .assembly extern mscorlib { } 
 .assembly typeload { }
 
@@ -16,6 +23,9 @@
 
   .method public static int32 Main()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (valuetype main/NumberNode[] V_0,
 		  class [mscorlib]System.Exception V_1,                  

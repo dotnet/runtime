@@ -3,6 +3,13 @@
 
 
 .assembly extern System.Runtime.Extensions { auto }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .assembly extern mscorlib { auto }
 
 .assembly MCCTest {}
@@ -116,6 +123,9 @@
 
     .method private static int32 Main(string[] args)
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  64
       .locals init	(
