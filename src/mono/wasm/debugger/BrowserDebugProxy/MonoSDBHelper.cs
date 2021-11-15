@@ -358,7 +358,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         Line
     }
 
-    internal class ArrayDimensions
+    internal record ArrayDimensions
     {
         internal int Rank { get; }
         internal int [] Bounds { get; }
