@@ -499,7 +499,7 @@ namespace DebuggerTestsV2
     {
         public static int StaticField1 = 20;
         public static string StaticProperty1 => "StaticProperty2";
-		public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static string StaticPropertyWithError => throw new Exception("not implemented");
 
         public static void Run()
         {
