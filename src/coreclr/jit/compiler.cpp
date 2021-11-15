@@ -4889,14 +4889,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
-        // Discover and classify natural loops
-        // (e.g. mark iterative loops as such). Also marks loop blocks
-        // and sets bbWeight to the loop nesting levels
+        // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
+        // and sets bbWeight to the loop nesting levels.
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
-        // Clone loops with optimization opportunities, and
-        // choose one based on dynamic condition evaluation.
+        // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
         DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
@@ -8699,7 +8697,6 @@ void cLoop(Compiler* comp, Compiler::LoopDsc* loop)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== Loop %u\n", sequenceNumber++);
     printf("HEAD   " FMT_BB "\n", loop->lpHead->bbNum);
-    printf("FIRST  " FMT_BB "\n", loop->lpFirst->bbNum);
     printf("TOP    " FMT_BB "\n", loop->lpTop->bbNum);
     printf("ENTRY  " FMT_BB "\n", loop->lpEntry->bbNum);
     if (loop->lpExitCnt == 1)
