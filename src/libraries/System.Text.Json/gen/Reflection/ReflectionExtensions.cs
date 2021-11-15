@@ -49,23 +49,20 @@ namespace System.Text.Json.Reflection
 
         public static Location? GetDiagnosticLocation(this Type type)
         {
-            TypeWrapper? typeWrapper = type as TypeWrapper;
-            Debug.Assert(typeWrapper != null);
-            return typeWrapper.Location;
+            Debug.Assert(type is TypeWrapper);
+            return ((TypeWrapper)type).Location;
         }
 
         public static Location? GetDiagnosticLocation(this PropertyInfo propertyInfo)
         {
-            PropertyInfoWrapper? propertyInfoWrapper = propertyInfo as PropertyInfoWrapper;
-            Debug.Assert(propertyInfoWrapper != null);
-            return propertyInfoWrapper.Location;
+            Debug.Assert(propertyInfo is PropertyInfoWrapper);
+            return ((PropertyInfoWrapper)propertyInfo).Location;
         }
 
         public static Location? GetDiagnosticLocation(this FieldInfo fieldInfo)
         {
-            FieldInfoWrapper? fieldInfoWrapper = fieldInfo as FieldInfoWrapper;
-            Debug.Assert(fieldInfoWrapper != null);
-            return fieldInfoWrapper.Location;
+            Debug.Assert(fieldInfo is FieldInfoWrapper);
+            return ((FieldInfoWrapper)fieldInfo).Location;
         }
     }
 }
