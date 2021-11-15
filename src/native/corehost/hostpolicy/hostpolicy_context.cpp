@@ -290,13 +290,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         const pal::char_t *config_startup_hooks;
         if (coreclr_properties.try_get(common_property::StartUpHooks, &config_startup_hooks))
         {
-#ifdef TARGET_UNIX
-            char separator = ':';
-#else
-            char separator = ';';
-#endif // TARGET_UNIX
-
-            startup_hooks.push_back(separator);
+            startup_hooks.push_back(PATH_SEPARATOR);
             startup_hooks.append(config_startup_hooks);
         }
         
