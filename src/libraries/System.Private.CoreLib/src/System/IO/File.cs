@@ -251,7 +251,9 @@ namespace System.IO
 
         public static byte[] ReadAllBytes(string path)
         {
-            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
+            FileOptions options = OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None;
+            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options))
             {
                 long fileLength = 0;
                 if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
@@ -515,7 +517,9 @@ namespace System.IO
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.Asynchronous))
+            // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
+            FileOptions options = (OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None) | FileOptions.Asynchronous;
+            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options))
             {
                 long fileLength = 0L;
                 if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
