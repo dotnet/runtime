@@ -895,7 +895,7 @@ namespace System.Numerics.Tests
         [InlineData(123, byte.MaxValue, 1164749927)]
         public static void BitOps_Crc32C_byte(uint crc, byte data, uint expected)
         {
-            var obtained = BitOperations.Crc32C(crc, data);
+            uint obtained = BitOperations.Crc32C(crc, data);
             Assert.Equal(expected, obtained);
         }
 
@@ -906,7 +906,7 @@ namespace System.Numerics.Tests
         [InlineData(123, ushort.MaxValue, 406112372)]
         public static void BitOps_Crc32C_ushort(uint crc, ushort data, uint expected)
         {
-            var obtained = BitOperations.Crc32C(crc, data);
+            uint obtained = BitOperations.Crc32C(crc, data);
             Assert.Equal(expected, obtained);
         }
 
@@ -917,7 +917,7 @@ namespace System.Numerics.Tests
         [InlineData(123, uint.MaxValue, 3055133878)]
         public static void BitOps_Crc32C_uint(uint crc, uint data, uint expected)
         {
-            var obtained = BitOperations.Crc32C(crc, data);
+            uint obtained = BitOperations.Crc32C(crc, data);
             Assert.Equal(expected, obtained);
         }
 
@@ -928,7 +928,7 @@ namespace System.Numerics.Tests
         [InlineData(123, ulong.MaxValue, 27055)]
         public static void BitOps_Crc32C_ulong(uint crc, uint data, uint expected)
         {
-            var obtained = BitOperations.Crc32C(crc, data);
+            uint obtained = BitOperations.Crc32C(crc, data);
             Assert.Equal(expected, obtained);
         }
     }
