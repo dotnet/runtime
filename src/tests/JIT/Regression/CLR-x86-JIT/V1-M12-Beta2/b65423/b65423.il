@@ -9,6 +9,13 @@
 .assembly 'b1904'
 {
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module 'b1904.exe'
 .class private auto ansi b1904 extends ['mscorlib']System.Object
 {
@@ -222,6 +229,9 @@
 
   .method public static void Main() il managed forwardref
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (int32 V_0,

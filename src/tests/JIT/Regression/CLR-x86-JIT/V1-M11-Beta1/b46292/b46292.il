@@ -17,6 +17,13 @@
 .assembly 'test'
 {
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module 'test.exe'
 // MVID: {74C704CE-5E25-4072-A5C7-A9DD14614D82}
 .class private auto ansi Mod1
@@ -24,6 +31,9 @@
 {
   .method public static void Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     // Code size       26 (0x1a)
     .maxstack  1
     .locals init (class c1 V_0)

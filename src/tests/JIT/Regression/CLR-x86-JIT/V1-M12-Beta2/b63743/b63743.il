@@ -8,8 +8,18 @@
 }
 .assembly extern mscorlib {}
 .assembly ILGEN_0x9461697d {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .class ILGEN_0x9461697d {
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	2
  ldc.r8 1.2e+309

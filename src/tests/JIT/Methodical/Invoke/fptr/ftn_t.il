@@ -19,6 +19,13 @@
   
   
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module 'bug.exe'
 // MVID: {90803FD0-8E18-44C9-A242-98463ADD450D}
 .namespace JitTest
@@ -65,6 +72,9 @@
 
     .method private hidebysig static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  4
 		ldftn 		void JitTest.Test::TestMain()
