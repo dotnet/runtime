@@ -3571,7 +3571,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     var_types op2Type = genActualType(op2->TypeGet());
 
     assert(!op1->isUsedFromMemory());
-    assert(!op2->isUsedFromMemory());
 
     genConsumeOperands(tree);
 
@@ -3585,7 +3584,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         assert(!op1->isContained());
         assert(op1Type == op2Type);
 
-        if (op2->IsIntegralConst(0))
+        if (op2->IsFPZero())
         {
             assert(op2->isContained());
             emit->emitIns_R_F(INS_fcmp, cmpSize, op1->GetRegNum(), 0.0);
