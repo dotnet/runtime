@@ -338,10 +338,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     if (options.GlobalOptions.RuntimeFlavor() != "Mono")
                     {
                         // If we're building tests not for Mono, we can skip handling the specifics of the SkipOnMonoAttribute.
-                        testInfos = ImmutableArray<ITestInfo>.Empty;
-                        break;
+                        continue;
                     }
-                    testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[0].Value!, options);
+                    testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
                     break;
                 case "Xunit.SkipOnPlatformAttribute":
                     testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[0].Value!, options);
@@ -356,8 +355,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     if (options.GlobalOptions.RuntimeFlavor() != "CoreCLR")
                     {
                         // If we're building tests not for CoreCLR, we can skip handling the specifics of the SkipOnCoreClrAttribute.
-                        testInfos = ImmutableArray<ITestInfo>.Empty;
-                        break;
+                        continue;
                     }
 
                     Xunit.TestPlatforms skippedTestPlatforms = 0;
