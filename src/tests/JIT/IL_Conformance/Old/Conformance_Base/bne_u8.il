@@ -129,4 +129,4 @@ FAIL:
 	ret
 }
 }
-.assembly bne_u8.exe{}
+.assembly bne_u8{}

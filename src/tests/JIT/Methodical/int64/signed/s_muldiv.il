@@ -16,6 +16,13 @@
 .assembly 'muldiv'// as "muldiv"
 {
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module 'muldiv.exe'
 // MVID: {BF2F71BF-B5EC-4C96-8B9A-70A2AFBE37F8}
 .namespace JitTest
@@ -249,6 +256,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       5045 (0x13b5)
       .maxstack  2

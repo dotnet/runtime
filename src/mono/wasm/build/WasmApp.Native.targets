@@ -7,7 +7,6 @@
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
-      _CheckEmccIsExpectedVersion;
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
       _GeneratePInvokeTable;
@@ -260,14 +259,17 @@
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
       Assemblies="@(_WasmAssembliesInternal)"
-      OutputPath="$(_WasmICallTablePath)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </IcallTableGenerator>
+      OutputPath="$(_WasmICallTablePath)" />
+
+    <!-- Writing this explicitly, so it gets picked up when the target is skipped -->
+    <ItemGroup>
+      <FileWrites Include="$(_WasmICallTablePath)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == true" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
-  <Target Name="_WasmCompileNativeFiles">
+  <Target Name="_WasmCompileNativeFiles" DependsOnTargets="_CheckEmccIsExpectedVersion">
     <PropertyGroup>
       <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
       <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
@@ -304,7 +306,7 @@
           Inputs="@(_BitcodeFile);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)"
           Outputs="@(_BitcodeFile->'%(ObjectFile)')"
           Condition="'$(_WasmShouldAOT)' == 'true' and @(_BitcodeFile->Count()) > 0"
-          DependsOnTargets="_WasmWriteRspForCompilingBitcode"
+          DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmWriteRspForCompilingBitcode"
           Returns="@(FileWrites)">
 
     <ItemGroup>
@@ -372,7 +374,7 @@
   <Target Name="_WasmLinkDotNet"
           Inputs="@(_WasmLinkDependencies);$(_EmccDefaultFlagsRsp);$(_EmccLinkRsp)"
           Outputs="$(_WasmIntermediateOutputPath)dotnet.js;$(_WasmIntermediateOutputPath)dotnet.wasm"
-          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
+          DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
           Returns="@(FileWrites)" >
 
     <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
@@ -427,9 +429,23 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
 
-    <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
+    <PropertyGroup>
+      <_EmccVersionCommand>emcc --version</_EmccVersionCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(_EmccVersionCommand)" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low" IgnoreExitCode="true">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
+      <Output TaskParameter="ExitCode" PropertyName="_EmccVersionExitCode" />
     </Exec>
+
+    <!-- If `emcc -version` failed, then run it again, so we can surface the output as *Errors*. This allows the errors to show up correctly,
+         versus trying to use the output lines with the Error task -->
+    <Exec Condition="$(_EmccVersionExitCode) != '0'"
+          Command="$(_EmccVersionCommand)"
+          WorkingDirectory="$(_WasmIntermediateOutputPath)"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          CustomErrorRegularExpression=".*"
+          />
 
     <!-- we want to get the first line from the output, which has the version.
          Rest of the lines are the license -->

@@ -8,6 +8,13 @@
   .ver 4:0:0:0
 }
 .assembly asm1{}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 
 .data LONG_DATA = int64(0x0000000100000002)
 
@@ -72,6 +79,9 @@
 
 .method public static int32 Main(string[] args)
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.locals init(class asm1 obj, int32 i, valuetype S s)
 	.maxstack  8

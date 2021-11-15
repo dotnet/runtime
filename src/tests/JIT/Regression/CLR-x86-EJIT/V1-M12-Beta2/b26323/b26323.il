@@ -8,6 +8,13 @@
   .ver 4:0:0:0
 }
 .assembly b26323 { }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .namespace Test
 {
   .class auto ansi App extends [mscorlib]System.Object
@@ -28,6 +35,9 @@
 
     .method private static int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals ([0] class Test.App app)

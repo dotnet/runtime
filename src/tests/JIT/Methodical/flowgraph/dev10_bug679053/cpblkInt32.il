@@ -3,6 +3,13 @@
 
 
 .assembly ILGEN_0xb8816d7d {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .assembly extern mscorlib{auto}
 
 .class ILGEN_0xb8816d7d {
@@ -163,6 +170,9 @@ End_Orphan_b_12:
  ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	13
 ldc.r4 float32(0x177ad9a4) 

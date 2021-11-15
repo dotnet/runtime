@@ -38,6 +38,9 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_char_array", CharSet = CharSet.Unicode)]
             public static partial int SumChars(char[] chars, int numElements);
 
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "fill_char_array", CharSet = CharSet.Unicode)]
+            public static partial void FillChars([Out] char[] chars, int length, ushort start);
+
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_char_array", CharSet = CharSet.Unicode)]
             public static partial void ReverseChars([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref char[] chars, int numElements);
 
@@ -253,12 +256,34 @@ namespace DllImportGenerator.IntegrationTests
         [Fact]
         public void ArrayByValueOutParameter()
         {
-            var testArray = new IntStructWrapper[10];
-            int start = 5;
+            {
+                var testArray = new IntStructWrapper[10];
+                int start = 5;
 
-            NativeExportsNE.Arrays.FillRangeArray(testArray, testArray.Length, start);
+                NativeExportsNE.Arrays.FillRangeArray(testArray, testArray.Length, start);
+                Assert.Equal(Enumerable.Range(start, testArray.Length), testArray.Select(wrapper => wrapper.Value));
 
-            Assert.Equal(Enumerable.Range(start, 10), testArray.Select(wrapper => wrapper.Value));
+                // Any items not populated by the invoke target should be initialized to default
+                testArray = new IntStructWrapper[10];
+                int lengthToFill = testArray.Length / 2;
+                NativeExportsNE.Arrays.FillRangeArray(testArray, lengthToFill, start);
+                Assert.Equal(Enumerable.Range(start, lengthToFill), testArray[..lengthToFill].Select(wrapper => wrapper.Value));
+                Assert.All(testArray[lengthToFill..], wrapper => Assert.Equal(0, wrapper.Value));
+            }
+            {
+                var testArray = new char[10];
+                ushort start = 65;
+
+                NativeExportsNE.Arrays.FillChars(testArray, testArray.Length, start);
+                Assert.Equal(Enumerable.Range(start, testArray.Length), testArray.Select(c => (int)c));
+
+                // Any items not populated by the invoke target should be initialized to default
+                testArray = new char[10];
+                int lengthToFill = testArray.Length / 2;
+                NativeExportsNE.Arrays.FillChars(testArray, lengthToFill, start);
+                Assert.Equal(Enumerable.Range(start, lengthToFill), testArray[..lengthToFill].Select(c => (int)c));
+                Assert.All(testArray[lengthToFill..], c => Assert.Equal(0, c));
+            }
         }
 
         [Fact]

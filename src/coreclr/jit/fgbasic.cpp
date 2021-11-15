@@ -4238,10 +4238,10 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
             if ((*riter)->gtOper == GT_IL_OFFSET)
             {
                 GenTreeILOffset* ilOffset = (*riter)->AsILOffset();
-                if (ilOffset->gtStmtDI.IsValid())
+                DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
+                if (rootDI.IsValid())
                 {
-                    assert(ilOffset->gtStmtDI.GetInlineContext()->IsRoot());
-                    splitPointILOffset = ilOffset->gtStmtDI.GetLocation().GetOffset();
+                    splitPointILOffset = rootDI.GetLocation().GetOffset();
                     break;
                 }
             }

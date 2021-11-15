@@ -588,7 +588,7 @@ private:
     void DeliverSyncEvents();
     void DeliverAsyncEvents();
     void RegisterWithHostAssembly();
-    void UnRegisterFromHostAssembly();
+    void UnregisterFromHostAssembly();
 #endif
 
  public:

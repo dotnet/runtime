@@ -265,4 +265,4 @@ FAIL:
 	ret
 }
 }
-.assembly beq_i4.exe{}
+.assembly beq_i4{}

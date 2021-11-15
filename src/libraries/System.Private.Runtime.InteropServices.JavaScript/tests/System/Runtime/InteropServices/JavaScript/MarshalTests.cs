@@ -3,6 +3,8 @@
 
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -898,6 +900,123 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var result = Runtime.InvokeJS(@"var test_local_variable_name = 5; globalThis.test_local_variable_name");
             Assert.Null(result);
+        }
+
+        private static async Task<bool> MarshalTask(string helperMethodName, string helperMethodArgs = "", string resolvedBody = "") 
+        {
+            Runtime.InvokeJS(
+                @"globalThis.__test_promise_completed = false; " +
+                @"globalThis.__test_promise_resolved = false; " +
+                @"globalThis.__test_promise_failed = false; " +
+                $@"var t = App.call_test_method ('{helperMethodName}', [ {helperMethodArgs} ], 'i'); " +
+                "t.finally(result => { globalThis.__test_promise_completed = true; }); " + 
+                "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " }); " + 
+                "t.catch(e => { console.log(e); globalThis.__test_promise_failed = true; }); "
+            );
+
+            await Task.Delay(1);
+
+            var completed = bool.Parse(Runtime.InvokeJS(@"globalThis.__test_promise_completed"));
+            Assert.True(completed, "JavasScript promise did not completed.");
+
+            var resolved = bool.Parse(Runtime.InvokeJS(@"globalThis.__test_promise_resolved"));
+            return resolved;
+        }
+
+        private static async Task MarshalTaskReturningInt(string helperMethodName)
+        {
+            HelperMarshal._intValue = 0;
+
+            bool success = await MarshalTask(helperMethodName, "7", "App.call_test_method ('InvokeInt', [ result ], 'i');");
+
+            Assert.True(success, $"{helperMethodName} didn't succeeded.");
+            Assert.Equal(7, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static async Task MarshalSynchronousTask()
+        {
+            bool success = await MarshalTask("SynchronousTask");
+            Assert.True(success, "SynchronousTask didn't succeeded.");
+        }
+
+        [Fact]
+        public static async Task MarshalAsynchronousTask()
+        {
+            bool success = await MarshalTask("AsynchronousTask");
+            Assert.True(success, "AsynchronousTask didn't succeeded.");
+        }
+
+        [Fact]
+        public static Task MarshalSynchronousTaskInt()
+        {
+            return MarshalTaskReturningInt("SynchronousTaskInt");
+        }
+
+        [Fact]
+        public static Task MarshalAsynchronousTaskInt()
+        {
+            return MarshalTaskReturningInt("AsynchronousTaskInt");
+        }
+
+        [Fact]
+        public static async Task MarshalFailedSynchronousTask()
+        {
+            bool success = await MarshalTask("FailedSynchronousTask");
+            Assert.False(success, "FailedSynchronousTask didn't failed.");
+        }
+
+        [Fact]
+        public static async Task MarshalFailedAsynchronousTask()
+        {
+            bool success = await MarshalTask("FailedAsynchronousTask");
+            Assert.False(success, "FailedAsynchronousTask didn't failed.");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static async Task MarshalSynchronousValueTaskDoesNotWorkYet()
+        {
+            bool success = await MarshalTask("SynchronousValueTask");
+            Assert.True(success, "SynchronousValueTask didn't succeeded.");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static async Task MarshalAsynchronousValueTaskDoesNotWorkYet()
+        {
+            bool success = await MarshalTask("AsynchronousValueTask");
+            Assert.True(success, "AsynchronousValueTask didn't succeeded.");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static Task MarshalSynchronousValueTaskIntDoesNotWorkYet()
+        {
+            return MarshalTaskReturningInt("SynchronousValueTaskInt");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static Task MarshalAsynchronousValueTaskIntDoesNotWorkYet()
+        {
+            return MarshalTaskReturningInt("AsynchronousValueTaskInt");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static async Task MarshalFailedSynchronousValueTaskDoesNotWorkYet()
+        {
+            bool success = await MarshalTask("FailedSynchronousValueTask");
+            Assert.False(success, "FailedSynchronousValueTask didn't failed.");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static async Task MarshalFailedAsynchronousValueTaskDoesNotWorkYet()
+        {
+            bool success = await MarshalTask("FailedAsynchronousValueTask");
+            Assert.False(success, "FailedAsynchronousValueTask didn't failed.");
         }
     }
 }
