@@ -789,11 +789,11 @@ namespace DebuggerTests
            });
 
         [Theory]
-        [MemberData(nameof(EvaluateStaticClassFromAsyncMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
-        public async Task EvaluateStaticClassFromAsyncMethod(string type, string method, string bp_function_name, bool is_async)
+        [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
+        public async Task EvaluateStaticClassFromStaticMethod(string type, string method, string bp_function_name, bool is_async)
         => await CheckInspectLocalsAtBreakpointSite(
             type, method, 1, bp_function_name,
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] {type}:{method}'); }})",
             wait_for_event_fn: async (pause_location) =>
            {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
