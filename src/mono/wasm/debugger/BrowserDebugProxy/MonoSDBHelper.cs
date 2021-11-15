@@ -360,28 +360,23 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ArrayDimensions
     {
-        public int Rank { get; }
-        public List<int> Bounds { get; }
-
-        public ArrayDimensions(int rank)
+        internal int Rank { get; }
+        internal int [] Bounds { get; }
+        internal int TotalLength { get; }
+        public ArrayDimensions(int [] rank)
         {
-            Rank = rank;
-            Bounds = new List<int>(rank);
-        }
-        public int TotalLength()
-        {
-            int ret = 1;
+            Rank = rank.Length;
+            Bounds = rank;
+            TotalLength = 1;
             for (int i = 0 ; i < Rank ; i++)
-            {
-                ret *= Bounds[i];
-            }
-            return ret;
+                TotalLength *= Bounds[i];
         }
+
         public override string ToString()
         {
-            return $"{string.Join(", ", Bounds.ToArray())}";
+            return $"{string.Join(", ", Bounds)}";
         }
-        public string GetArrayIndexString(int idx)
+        internal string GetArrayIndexString(int idx)
         {
             int boundLimit = 1;
             int lastBoundLimit = 1;
@@ -1508,13 +1503,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(object_id);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdArray>(sessionId, CmdArray.GetLength, commandParams, token);
             var length = retDebuggerCmdReader.ReadInt32();
-            var arrDimensions = new ArrayDimensions(length);
+            var rank = new int[length];
             for (int i = 0 ; i < length; i++)
             {
-                arrDimensions.Bounds.Add(retDebuggerCmdReader.ReadInt32());
+                rank[i] = retDebuggerCmdReader.ReadInt32();
                 retDebuggerCmdReader.ReadInt32();
             }
-            return arrDimensions;
+            return new ArrayDimensions(rank);
         }
         public async Task<List<int>> GetTypeIdFromObject(SessionId sessionId, int object_id, bool withParents, CancellationToken token)
         {
@@ -2271,10 +2266,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write(arrayId);
             commandParamsWriter.Write(0);
-            commandParamsWriter.Write(length.TotalLength());
+            commandParamsWriter.Write(length.TotalLength);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdArray>(sessionId, CmdArray.GetValues, commandParams, token);
             JArray array = new JArray();
-            for (int i = 0 ; i < length.TotalLength(); i++)
+            for (int i = 0 ; i < length.TotalLength; i++)
             {
                 var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, length.GetArrayIndexString(i), false, -1, false, token);
                 array.Add(var_json);
@@ -2288,7 +2283,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var arrayProxy = JObject.FromObject(new
             {
                 items = await GetArrayValues(sessionId, arrayId, token),
-                dimensionsDetails = length.Bounds.ToArray()
+                dimensionsDetails = length.Bounds
             });
             return arrayProxy;
         }
