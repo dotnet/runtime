@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Hosting
         public const string CreateHostBuilder = nameof(CreateHostBuilder);
 
         // The amount of time we wait for the diagnostic source events to fire
-        private static readonly TimeSpan s_defaultWaitTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan s_defaultWaitTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromMinutes(1);
 
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {
