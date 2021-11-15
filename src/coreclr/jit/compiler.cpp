@@ -5272,7 +5272,6 @@ void Compiler::placeLoopAlignInstructions()
             minBlockSoFar = BB_MAX_WEIGHT;
             bbHavingAlign = nullptr;
 
-            
             if (--loopsToProcess == 0)
             {
                 break;

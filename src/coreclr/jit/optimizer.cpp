@@ -2517,9 +2517,15 @@ void Compiler::optIdentifyLoopsForAlignment()
                 weight_t    topWeight = top->getBBWeight(this);
                 if (topWeight >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
                 {
-                    loopAlignCandidates++;
-                    JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
-                            top->bbNum, topWeight);
+                    // Sometimes with JitOptRepeat > 1, we might end up finding the loops twice. In such
+                    // cases, make sure to count them just once.
+                    if (!first->isLoopAlign())
+                    {
+                        loopAlignCandidates++;
+                        top->bbFlags |= BBF_LOOP_ALIGN;
+                        JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
+                                top->bbNum, top->getBBWeight(this));
+                    }
                 }
                 else
                 {

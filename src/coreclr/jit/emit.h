@@ -1389,9 +1389,9 @@ protected:
                                            // If no 'jmp' instructions were found until idaLoopHeadPredIG,
                                            // then idaLoopHeadPredIG == idaIG.
 #ifdef DEBUG
-        bool isPlacedAfterJmp;             // Is the 'align' instruction placed after jmp. Used to decide
-                                           // if the instruction cost should be included in PerfScore
-                                           // calculation or not.
+        bool isPlacedAfterJmp; // Is the 'align' instruction placed after jmp. Used to decide
+                               // if the instruction cost should be included in PerfScore
+                               // calculation or not.
 #endif
 
         inline insGroup* loopHeadIG()
@@ -1804,14 +1804,14 @@ private:
 
     unsigned getLoopSize(insGroup* igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
-    void     emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
+    void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
 
-    void            emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
-    void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
+    void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
+    void emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
     instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
     void emitConnectAlignInstrWithCurIG();
 
