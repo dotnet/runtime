@@ -1982,7 +1982,8 @@ namespace System.Net.Http
             // Dispose them asynchronously to not to block the caller on closing the SslStream or NetworkStream.
             if (toDispose is not null)
             {
-                Task.Run(() => toDispose.ForEach(c => c.Dispose()));
+                Task.Factory.StartNew(static s => ((List<HttpConnectionBase>)s!).ForEach(c => c.Dispose()), toDispose,
+                    CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
 
             // Pool is active.  Should not be removed.
