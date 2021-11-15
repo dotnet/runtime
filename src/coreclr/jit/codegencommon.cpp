@@ -12553,7 +12553,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 
         int size = (int)compiler->lvaLclSize(varNum);
 
-        if (size / TARGET_POINTER_SIZE > 16)
+        if ((size / TARGET_POINTER_SIZE) > 16)
         {
             // For very large structs the offsets in the movs we emit below can
             // grow too large to be handled properly by JIT. Furthermore, while
