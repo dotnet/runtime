@@ -119,28 +119,38 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
                 var store = await proxy.LoadStore(sessionId, token);
-                var info = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId).Method.Info;
+                var methodInfo = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
                 var classNameToFindWithNamespace =
-                    string.IsNullOrEmpty(info.TypeInfo.Namespace) ?
+                    string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace) ?
                     classNameToFind :
-                    info.TypeInfo.Namespace + "." + classNameToFind;
+                    methodInfo.TypeInfo.Namespace + "." + classNameToFind;
 
-                foreach (var asm in store.assemblies)
-                {
-                    if (await TryGetTypeIdFromName(classNameToFindWithNamespace, asm))
-                        break;
-                    if (await TryGetTypeIdFromName(classNameToFind, asm))
-                        break;
-                }
+                var searchResult = await TryFindNameInAssembly(store.assemblies, classNameToFindWithNamespace);
+                if (searchResult == null)
+                    searchResult = await TryFindNameInAssembly(store.assemblies, classNameToFind);
+                if (searchResult != null)
+                    typeId = (int)searchResult;
 
-                async Task<bool> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
+                async Task<Tuple<bool, int?>> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
                 {
+                    int typeId;
                     var type = assembly.GetTypeByName(typeName);
                     if (type == null)
-                        return false;
+                        return new Tuple<bool, int?>(false, null);
 
                     typeId = await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
-                    return true;
+                    return new Tuple<bool, int?>(true, typeId); ;
+                }
+
+                async Task<int?> TryFindNameInAssembly(List<AssemblyInfo> assemblies, string name)
+                {
+                    foreach (var asm in assemblies)
+                    {
+                        var searchResult = await TryGetTypeIdFromName(name, asm);
+                        if (searchResult.Item1)
+                            return searchResult.Item2;
+                    }
+                    return null;
                 }
             }
             return null;
@@ -211,17 +221,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            rootObject = await TryToRunOnLoadedClasses(varName, token);
-                            return rootObject;
+                            break;
                         }
                     }
                 }
             }
             if (rootObject == null)
-            {
                 rootObject = await TryToRunOnLoadedClasses(varName, token);
-                return rootObject;
-            }
             scopeCache.MemberReferences[varName] = rootObject;
             return rootObject;
         }
