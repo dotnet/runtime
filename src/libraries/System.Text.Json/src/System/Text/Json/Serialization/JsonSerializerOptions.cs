@@ -24,7 +24,7 @@ namespace System.Text.Json
         /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the default configuration.
         /// </summary>
         /// <remarks>
-        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own converter cache,
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
         /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
         /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
         /// </remarks>
