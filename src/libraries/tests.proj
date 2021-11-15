@@ -205,7 +205,7 @@
 
   <!-- Excluding all tests for aot catalyst until building on helix works properly -->
   <ItemGroup Condition="('$(TargetOS)' == 'MacCatalyst' and '$(BuildTestsOnHelix)' == 'true') and '$(RunDisablediOSTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="$(MSBuildThisFileDirectory)System.Diagnostics.Process\tests\System.Diagnostics.Process.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
     
     <!-- No functional tests until helix stabilizes -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj" />
@@ -331,6 +331,7 @@
 
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'">
