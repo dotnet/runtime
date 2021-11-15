@@ -11593,8 +11593,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // Are there any places in the method where we might add a patchpoint?
     if (compHasBackwardJump)
     {
-        // Are patchpoints enabled?
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+        // Are patchpoints enabled and supported?
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0) &&
+            compCanHavePatchpoints())
         {
             // We don't inline at Tier0, if we do, we may need rethink our approach.
             // Could probably support inlines that don't introduce flow.
@@ -11631,18 +11632,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     //
     // Todo: stress mode...
     //
-    if ((JitConfig.TC_PartialCompilation() > 0) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-        (block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
-        ((block->bbFlags & BBF_PATCHPOINT) == 0) && !block->hasHndIndex())
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
+        compCanHavePatchpoints())
     {
-        JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
-        block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
-        setMethodHasPartialCompilationPatchpoint();
+        // Is this block a good place for partial compilation?
+        //
+        if ((block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
+            ((block->bbFlags & BBF_PATCHPOINT) == 0) && !block->hasHndIndex())
+        {
+            JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
+            block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
+            setMethodHasPartialCompilationPatchpoint();
 
-        // We can't skip importing here and then change our minds later and decide not
-        // to have this be a PC patchpoint. So we have to get it right here.
-        block->bbJumpKind = BBJ_THROW;
-        return;
+            // We can't skip importing here and then change our minds later and decide not
+            // to have this be a PC patchpoint. So we have to get it right here.
+            block->bbJumpKind = BBJ_THROW;
+            return;
+        }
     }
 
 #endif // FEATURE_ON_STACK_REPLACEMENT

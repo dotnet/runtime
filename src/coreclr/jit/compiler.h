@@ -9427,6 +9427,7 @@ public:
     bool compLongUsed;             // Does the method use TYP_LONG
     bool compFloatingPointUsed;    // Does the method use TYP_FLOAT or TYP_DOUBLE
     bool compTailCallUsed;         // Does the method do a tailcall
+    bool compLocallocSeen;         // Does the method IL have localloc opcode
     bool compLocallocUsed;         // Does the method use localloc.
     bool compLocallocOptimized;    // Does the method have an optimized localloc
     bool compQmarkUsed;            // Does the method use GT_QMARK/GT_COLON
@@ -10241,6 +10242,10 @@ public:
 #endif
         return !info.compInitMem && opts.compDbgCode;
     }
+
+    // Returns true if the jit supports having patchpoints in this method.
+    // Optionally, get the reason why not.
+    bool compCanHavePatchpoints(const char** reason = nullptr);
 
 #if defined(DEBUG)
 

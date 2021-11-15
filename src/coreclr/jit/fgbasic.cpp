@@ -2015,6 +2015,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             case CEE_LOCALLOC:
 
+                compLocallocSeen = true;
+
                 // We now allow localloc callees to become candidates in some cases.
                 if (makeInlineObservations)
                 {

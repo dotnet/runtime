@@ -271,34 +271,8 @@ PhaseStatus Compiler::fgTransformPatchpoints()
     // We should only be adding patchpoints at Tier0, so should not be in an inlinee
     assert(!compIsForInlining());
 
-    // We currently can't do OSR in methods with localloc.
-    // Such methods don't have a fixed relationship between frame and stack pointers.
-    //
-    // This is true whether or not the localloc was executed in the original method.
-    //
-    // TODO: handle this case, or else check this earlier and fall back to fully
-    // optimizing the method (ala QJFL=0).
-    if (compLocallocUsed)
-    {
-        JITDUMP("\n -- unable to handle methods with localloc\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    // We currently can't do OSR in synchronized methods. We need to alter
-    // the logic in fgAddSyncMethodEnterExit for OSR to not try and obtain the
-    // monitor (since the original method will have done so) and set the monitor
-    // obtained flag to true (or reuse the original method slot value).
-    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
-    {
-        JITDUMP("\n -- unable to handle synchronized methods\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    if (opts.IsReversePInvoke())
-    {
-        JITDUMP(" -- unable to handle Reverse P/Invoke\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
+    // We should be allowed to have patchpoints in this method.
+    assert(compCanHavePatchpoints());
 
     PatchpointTransformer ppTransformer(this);
     int                   count = ppTransformer.Run();
