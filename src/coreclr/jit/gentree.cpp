@@ -21798,6 +21798,12 @@ GenTree* Compiler::gtNewSimdZeroNode(var_types   type,
     return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
+GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID)
+{
+    return new (this, GT_HWINTRINSIC)
+        GenTreeHWIntrinsic(type, hwIntrinsicID, CORINFO_TYPE_UNDEF, 0, /* isSimdAsHWIntrinsic */ false);
+}
+
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
 {
     SetOpLclRelatedToSIMDIntrinsic(op1);
