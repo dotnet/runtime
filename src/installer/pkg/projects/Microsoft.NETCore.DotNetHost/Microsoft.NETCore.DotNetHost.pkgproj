@@ -19,6 +19,11 @@
       <VSInsertionShortComponentName>SharedHost</VSInsertionShortComponentName>
 
       <PublishRootDir>$(IntermediateOutputPath)publishRoot/</PublishRootDir>
+
+      <!-- Stabilizes upgrade codes, using values from 5.0.12 release - do not change -->
+      <UpgradeCode Condition="'$(TargetArchitecture)' == 'arm64'">{01641E02-508B-44C0-03F9-9C24097910A8}</UpgradeCode>
+      <UpgradeCode Condition="'$(TargetArchitecture)' == 'x64'">{8DA8DDFA-591B-6F59-58DF-79F2FA881F7B}</UpgradeCode>
+      <UpgradeCode Condition="'$(TargetArchitecture)' == 'x86'">{49C53A16-52DB-5FC0-1519-43577C49406B}</UpgradeCode>
     </PropertyGroup>
 
     <!-- Always clean this up to avoid side-by-side versions in unclean dev builds. -->
@@ -46,6 +51,10 @@
 
       <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
       <CandleVariables Include="HostSrc" Value="$(PublishRootDir)" />
+      <!-- Stabilizes provider key, using values from 5.0.12 release - do not change -->
+      <CandleVariables Condition="'$(TargetArchitecture)' == 'arm64'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_40.48.30622_arm64" />
+      <CandleVariables Condition="'$(TargetArchitecture)' == 'x64'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_40.48.30622_x64" />
+      <CandleVariables Condition="'$(TargetArchitecture)' == 'x86'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_40.48.30622_x86" />
     </ItemGroup>
   </Target>
 
