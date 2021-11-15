@@ -67,6 +67,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         var assemblyName = context.CompilationProvider.Select((comp, ct) => comp.Assembly.MetadataName);
 
+        var alwaysWriteEntryPoint = context.CompilationProvider.Select((comp, ct) => comp.Options.OutputKind == OutputKind.ConsoleApplication && comp.GetEntryPoint(ct) is null);
+
         context.RegisterImplementationSourceOutput(
             allMethods
             .Combine(context.AnalyzerConfigOptionsProvider)
@@ -83,10 +85,18 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 return (ImmutableArray.CreateRange(tests.Where(test => filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>()))), options);
             })
             .Combine(aliasMap)
-            .Combine(assemblyName),
+            .Combine(assemblyName)
+            .Combine(alwaysWriteEntryPoint),
             static (context, data) =>
             {
-                var (((methods, configOptions), aliasMap), assemblyName) = data;
+                var ((((methods, configOptions), aliasMap), assemblyName), alwaysWriteEntryPoint) = data;
+
+                if (methods.Length == 0 && !alwaysWriteEntryPoint)
+                {
+                    // If we have no test methods, assume that this project is not migrated to the new system yet
+                    // and that we shouldn't generate a no-op Main method.
+                    return;
+                }
 
                 bool referenceCoreLib = configOptions.GlobalOptions.ReferenceSystemPrivateCoreLib();
 

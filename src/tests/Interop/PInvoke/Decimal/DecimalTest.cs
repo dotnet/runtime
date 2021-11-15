@@ -55,7 +55,9 @@ public class DecimalTest
         DecimalTestNative.PassThroughLPDecimalToCallback((decimal)NewIntValue, d => Assert.Equal((decimal)NewIntValue, d));
     }
 
-    private static void RunCurrencyTests()
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public static void RunCurrencyTests()
     {
         Assert.Throws<MarshalDirectiveException>(() => DecimalTestNative.CreateCurrencyFromInt(StartingIntValue));
 
