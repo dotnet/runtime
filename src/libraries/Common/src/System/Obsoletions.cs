@@ -117,13 +117,7 @@ namespace System
         internal const string SignerInfoCounterSigMessage = "ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner.";
         internal const string SignerInfoCounterSigDiagId = "SYSLIB0035";
 
-        internal const string AssemblyHashAlgorithmMessage = "AssemblyName.HashAlgorithm has been deprecated and is not supported.";
-        internal const string AssemblyHashAlgorithmDiagId = "SYSLIB0036";
-
-        internal const string ProcessorArchitectureMessage = "AssemblyName.ProcessorArchitecture has been deprecated and is not supported.";
-        internal const string ProcessorArchitectureDiagId = "SYSLIB0037";
-
-        internal const string AssemblyVersionCompatibilityMessage = "AssemblyName.VersionCompatibility has been deprecated and is not supported.";
-        internal const string AssemblyVersionCompatibilityDiagId = "SYSLIB0038";
+        internal const string AssemblyNameMembersMessage = "AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.";
+        internal const string AssemblyNameMembersDiagId = "SYSLIB0036";
     }
 }

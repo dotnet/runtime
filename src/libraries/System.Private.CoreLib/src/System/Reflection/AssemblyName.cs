@@ -77,7 +77,7 @@ namespace System.Reflection
             }
         }
 
-        [Obsolete(Obsoletions.ProcessorArchitectureMessage, DiagnosticId = Obsoletions.ProcessorArchitectureDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.AssemblyNameMembersMessage, DiagnosticId = Obsoletions.AssemblyNameMembersDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public ProcessorArchitecture ProcessorArchitecture
         {
             get
@@ -190,14 +190,14 @@ namespace System.Reflection
             }
         }
 
-        [Obsolete(Obsoletions.AssemblyHashAlgorithmMessage, DiagnosticId = Obsoletions.AssemblyHashAlgorithmDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.AssemblyNameMembersMessage, DiagnosticId = Obsoletions.AssemblyNameMembersDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AssemblyHashAlgorithm HashAlgorithm
         {
             get => _hashAlgorithm;
             set => _hashAlgorithm = value;
         }
 
-        [Obsolete(Obsoletions.AssemblyVersionCompatibilityMessage, DiagnosticId = Obsoletions.AssemblyVersionCompatibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.AssemblyNameMembersMessage, DiagnosticId = Obsoletions.AssemblyNameMembersDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AssemblyVersionCompatibility VersionCompatibility
         {
             get => _versionCompatibility;
