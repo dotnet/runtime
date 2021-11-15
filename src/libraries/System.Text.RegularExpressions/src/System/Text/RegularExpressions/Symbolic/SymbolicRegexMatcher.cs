@@ -258,7 +258,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 minterms.Length : // mintermId = minterms.Length represents \Z (last \n)
                 _partitions.GetMintermID(c);
 
-            TSetType minterm = (uint)mintermId < minterms.Length ?
+            TSetType minterm = (uint)mintermId < (uint)minterms.Length ?
                 minterms[mintermId] :
                 _builder._solver.False; // minterm=False represents \Z
 
@@ -692,7 +692,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 Debug.Assert(_asciiCharKinds is not null);
 
-                if ((uint)i >= input.Length)
+                if ((uint)i >= (uint)input.Length)
                 {
                     return CharKind.StartStop;
                 }
@@ -708,7 +708,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 uint[] asciiCharKinds = _asciiCharKinds;
                 return
-                    nextChar < asciiCharKinds.Length ? asciiCharKinds[nextChar] :
+                    nextChar < (uint)asciiCharKinds.Length ? asciiCharKinds[nextChar] :
                     _builder._solver.And(GetMinterm(nextChar), _builder._wordLetterPredicateForAnchors).Equals(_builder._solver.False) ? 0 : //apply the wordletter predicate to compute the kind of the next character
                     CharKind.WordLetter;
             }
