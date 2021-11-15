@@ -868,12 +868,6 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static uint Crc32C(uint crc, ulong data)
         {
-            if (Sse42.X64.IsSupported)
-            {
-                // unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
-                return (uint)Sse42.X64.Crc32(crc, data);
-            }
-
             if (Crc32.Arm64.IsSupported)
             {
                 // uint32_t __crc32d (uint32_t a, uint64_t b)
