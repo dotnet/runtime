@@ -10,7 +10,7 @@ namespace System.CodeDom.Compiler
     public abstract class CodeGenerator : ICodeGenerator
     {
         private const int ParameterMultilineThreshold = 15;
-        private ExposedTabStringIndentedTextWriter _output;
+        internal ExposedTabStringIndentedTextWriter _output;
         private CodeGeneratorOptions _options;
 
         private CodeTypeDeclaration _currentClass;
@@ -108,7 +108,7 @@ namespace System.CodeDom.Compiler
         {
             if (_options.BlankLinesBetweenMembers)
             {
-                Output.WriteLine();
+                _output.WriteLineNoTabs(string.Empty);
             }
 
             if (member is CodeTypeDeclaration)
@@ -178,7 +178,8 @@ namespace System.CodeDom.Compiler
                 // Restore the indent
                 Indent = savedIndent;
 
-                // Generate an extra new line at the end of the snippet.
+                // Generate an extra new line at the end of the snippet, restoring
+                // the indent for the next line.
                 // If the snippet is comment and this type only contains comments.
                 // The generated code will not compile.
                 Output.WriteLine();
@@ -205,7 +206,7 @@ namespace System.CodeDom.Compiler
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -243,7 +244,7 @@ namespace System.CodeDom.Compiler
             {
                 if (_options.BlankLinesBetweenMembers)
                 {
-                    Output.WriteLine();
+                    _output.WriteLineNoTabs(string.Empty);
                 }
                 ((ICodeGenerator)this).GenerateCodeFromType(c, _output.InnerWriter, _options);
             }
@@ -445,7 +446,7 @@ namespace System.CodeDom.Compiler
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -480,7 +481,7 @@ namespace System.CodeDom.Compiler
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -630,7 +631,7 @@ namespace System.CodeDom.Compiler
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -667,7 +668,7 @@ namespace System.CodeDom.Compiler
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -745,7 +746,7 @@ namespace System.CodeDom.Compiler
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {
@@ -785,7 +786,7 @@ namespace System.CodeDom.Compiler
                 {
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     CodeTypeDeclaration currentClass = (CodeTypeDeclaration)current;
                     ((ICodeGenerator)this).GenerateCodeFromType(currentClass, _output.InnerWriter, _options);
@@ -849,7 +850,7 @@ namespace System.CodeDom.Compiler
 
                     if (_options.BlankLinesBetweenMembers)
                     {
-                        Output.WriteLine();
+                        _output.WriteLineNoTabs(string.Empty);
                     }
                     if (_currentMember.StartDirectives.Count > 0)
                     {

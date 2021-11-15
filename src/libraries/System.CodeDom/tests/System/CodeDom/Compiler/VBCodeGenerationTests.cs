@@ -3322,5 +3322,268 @@ namespace System.CodeDom.Compiler.Tests
                   End Class
                 ");
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateNamespace()
+        {
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            myTestNamespace.Imports.Add(new("System"));
+
+            AssertEqualPreserveWhitespace(myTestNamespace,
+@"Imports System
+
+Namespace MyTestNamespace
+End Namespace
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateTypes()
+        {
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            myTestNamespace.Types.Add(myTestClass);
+
+            AssertEqualPreserveWhitespace(myTestNamespace,
+@"
+Namespace MyTestNamespace
+
+    Public Class MyTestClass
+    End Class
+End Namespace
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_VerbatimMembers()
+        {
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            var member1 = new CodeMemberEvent { Name = "Member1", Type = new CodeTypeReference("System.EventHandler") };
+            var member2 = new CodeMemberField("System.String", "Member2");
+            myTestClass.Members.AddRange(new CodeTypeMember[] { member1, member2 });
+
+            AssertEqualPreserveWhitespace(myTestClass, new CodeGeneratorOptions { VerbatimOrder = true },
+@"
+Public Class MyTestClass
+
+    Private Event Member1 As System.EventHandler
+
+    Private Member2 As String
+End Class
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_VerbatimSnippet()
+        {
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            myTestNamespace.Types.Add(myTestClass);
+
+            var snippet = new CodeSnippetTypeMember("' Comment code snippet\n");
+            myTestClass.Members.Add(snippet);
+
+            AssertEqualPreserveWhitespace(myTestNamespace, new CodeGeneratorOptions { VerbatimOrder = true },
+@"
+Namespace MyTestNamespace
+
+    Public Class MyTestClass
+
+' Comment code snippet
+
+    End Class
+End Namespace
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateEvents()
+        {
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            var member1 = new CodeMemberEvent { Name = "Member1", Type = new CodeTypeReference("System.EventHandler") };
+            var member2 = new CodeMemberEvent { Name = "Member2", Type = new CodeTypeReference("System.EventHandler") };
+            myTestClass.Members.AddRange(new[] { member1, member2 });
+
+            AssertEqualPreserveWhitespace(myTestClass,
+@"
+Public Class MyTestClass
+
+    Private Event Member1 As System.EventHandler
+
+    Private Event Member2 As System.EventHandler
+End Class
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateFields()
+        {
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            var member1 = new CodeMemberField("System.String", "Member1");
+            var member2 = new CodeMemberField("System.String", "Member2");
+            myTestClass.Members.AddRange(new[] { member1, member2 });
+
+            AssertEqualPreserveWhitespace(myTestClass,
+@"
+Public Class MyTestClass
+
+    Private Member1 As String
+
+    Private Member2 As String
+End Class
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_LinePragma()
+        {
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            myTestClass.LinePragma = new() { LineNumber = 42, FileName = "CodeDom.vb" };
+
+            myTestNamespace.Types.Add(myTestClass);
+            AssertEqualPreserveWhitespace(myTestNamespace,
+@"
+Namespace MyTestNamespace
+
+
+#ExternalSource(""CodeDom.vb"",42)
+    Public Class MyTestClass
+    End Class
+
+#End ExternalSource
+End Namespace
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateConstructors()
+        {
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            var ctor = new CodeConstructor();
+            myTestClass.Members.Add(ctor);
+
+            AssertEqualPreserveWhitespace(myTestClass,
+@"
+Public Class MyTestClass
+
+    Private Sub New()
+        MyBase.New
+    End Sub
+End Class
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateTypeConstructors()
+        {
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            var ctor = new CodeTypeConstructor();
+            myTestClass.Members.Add(ctor);
+
+            AssertEqualPreserveWhitespace(myTestClass,
+@"
+Public Class MyTestClass
+
+    Shared Sub New()
+    End Sub
+End Class
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateSnippetMembers()
+        {
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            myTestNamespace.Types.Add(myTestClass);
+
+            var snippet = new CodeSnippetTypeMember("' Comment code snippet\n");
+            myTestClass.Members.Add(snippet);
+
+            AssertEqualPreserveWhitespace(myTestNamespace,
+@"
+Namespace MyTestNamespace
+
+    Public Class MyTestClass
+
+' Comment code snippet
+
+    End Class
+End Namespace
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateProperties()
+        {
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            var member1 = new CodeMemberProperty { Type = new CodeTypeReference("System.String"), Name = "Member1" };
+            var member2 = new CodeMemberProperty { Type = new CodeTypeReference("System.String"), Name = "Member2" };
+            myTestClass.Members.AddRange(new[] { member1, member2 });
+
+            AssertEqualPreserveWhitespace(myTestClass,
+@"
+Public Class MyTestClass
+
+    Private Property Member1() As String
+    End Property
+
+    Private Property Member2() As String
+    End Property
+End Class
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateMethods()
+        {
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            var member1 = new CodeMemberMethod { Name = "Member1" };
+            var member2 = new CodeMemberMethod { Name = "Member2" };
+            myTestClass.Members.AddRange(new[] { member1, member2 });
+
+            AssertEqualPreserveWhitespace(myTestClass,
+@"
+Public Class MyTestClass
+
+    Private Sub Member1()
+    End Sub
+
+    Private Sub Member2()
+    End Sub
+End Class
+");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
+        public void EmptyLinesAreNotIndented_GenerateNestedTypes()
+        {
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            var myNestedClass = new CodeTypeDeclaration("MyNestedClass");
+            myTestClass.Members.Add(myNestedClass);
+
+            AssertEqualPreserveWhitespace(myTestClass,
+@"
+Public Class MyTestClass
+
+    Public Class MyNestedClass
+    End Class
+End Class
+");
+        }
     }
 }

@@ -3577,10 +3577,12 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateNamespace()
         {
-            var namespaceDeclaration = new CodeNamespace("MyNamespace");
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            myTestNamespace.Imports.Add(new("System"));
 
-            AssertEqualPreserveWhitespace(namespaceDeclaration,
-@"namespace MyNamespace {
+            AssertEqualPreserveWhitespace(myTestNamespace,
+@"namespace MyTestNamespace {
+    using System;
 
 }
 ");
@@ -3590,16 +3592,15 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateTypes()
         {
-            var myNamespace = new CodeNamespace("MyNamespace");
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            myTestNamespace.Types.Add(myTestClass);
 
-            myNamespace.Types.Add(myClass);
-
-            AssertEqualPreserveWhitespace(myNamespace,
-@"namespace MyNamespace {
+            AssertEqualPreserveWhitespace(myTestNamespace,
+@"namespace MyTestNamespace {
 
 
-    public class MyClass {
+    public class MyTestClass {
     }
 }
 ");
@@ -3609,14 +3610,14 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_VerbatimMembers()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var member1 = new CodeMemberEvent { Name = "Member1", Type = new CodeTypeReference("System.EventHandler") };
             var member2 = new CodeMemberField("System.String", "Member2");
-            myClass.Members.AddRange(new CodeTypeMember[] { member1, member2 });
+            myTestClass.Members.AddRange(new CodeTypeMember[] { member1, member2 });
 
-            AssertEqualPreserveWhitespace(myClass, new CodeGeneratorOptions { VerbatimOrder = true },
+            AssertEqualPreserveWhitespace(myTestClass, new CodeGeneratorOptions { VerbatimOrder = true },
 @"
-public class MyClass {
+public class MyTestClass {
 
     private event System.EventHandler Member1;
 
@@ -3629,16 +3630,22 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_VerbatimSnippet()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
-            var snippet = new CodeSnippetTypeMember("// Comment code snippet\n");
-            myClass.Members.Add(snippet);
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            myTestNamespace.Types.Add(myTestClass);
 
-            AssertEqualPreserveWhitespace(myClass, new CodeGeneratorOptions { VerbatimOrder = true },
-@"
-public class MyClass {
+            var snippet = new CodeSnippetTypeMember("// Comment code snippet\n");
+            myTestClass.Members.Add(snippet);
+
+            AssertEqualPreserveWhitespace(myTestNamespace, new CodeGeneratorOptions { VerbatimOrder = true },
+@"namespace MyTestNamespace {
+
+
+    public class MyTestClass {
 
 // Comment code snippet
 
+    }
 }
 ");
         }
@@ -3647,14 +3654,14 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateEvents()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var member1 = new CodeMemberEvent { Name = "Member1", Type = new CodeTypeReference("System.EventHandler") };
             var member2 = new CodeMemberEvent { Name = "Member2", Type = new CodeTypeReference("System.EventHandler") };
-            myClass.Members.AddRange(new[] { member1, member2 });
+            myTestClass.Members.AddRange(new[] { member1, member2 });
 
-            AssertEqualPreserveWhitespace(myClass,
+            AssertEqualPreserveWhitespace(myTestClass,
 @"
-public class MyClass {
+public class MyTestClass {
 
     private event System.EventHandler Member1;
 
@@ -3667,14 +3674,14 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateFields()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var member1 = new CodeMemberField("System.String", "Member1");
             var member2 = new CodeMemberField("System.String", "Member2");
-            myClass.Members.AddRange(new[] { member1, member2 });
+            myTestClass.Members.AddRange(new[] { member1, member2 });
 
-            AssertEqualPreserveWhitespace(myClass,
+            AssertEqualPreserveWhitespace(myTestClass,
 @"
-public class MyClass {
+public class MyTestClass {
 
     private string Member1;
 
@@ -3687,18 +3694,18 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_LinePragma()
         {
-            var myNamespace = new CodeNamespace("MyNamespace");
-            var myClass = new CodeTypeDeclaration("MyClass");
-            myClass.LinePragma = new() { LineNumber = 42, FileName = "CodeDom.cs" };
+            var myTestNamespace = new CodeNamespace("MyTestNamespace");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
+            myTestClass.LinePragma = new() { LineNumber = 42, FileName = "CodeDom.cs" };
 
-            myNamespace.Types.Add(myClass);
-            AssertEqualPreserveWhitespace(myNamespace,
-@"namespace MyNamespace {
+            myTestNamespace.Types.Add(myTestClass);
+            AssertEqualPreserveWhitespace(myTestNamespace,
+@"namespace MyTestNamespace {
 
 
 
 #line 42 ""CodeDom.cs""
-    public class MyClass {
+    public class MyTestClass {
     }
 
 #line default
@@ -3711,15 +3718,15 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateConstructors()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var ctor = new CodeConstructor();
-            myClass.Members.Add(ctor);
+            myTestClass.Members.Add(ctor);
 
-            AssertEqualPreserveWhitespace(myClass,
+            AssertEqualPreserveWhitespace(myTestClass,
 @"
-public class MyClass {
+public class MyTestClass {
 
-    private MyClass() {
+    private MyTestClass() {
     }
 }
 ");
@@ -3729,15 +3736,15 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateTypeConstructors()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var ctor = new CodeTypeConstructor();
-            myClass.Members.Add(ctor);
+            myTestClass.Members.Add(ctor);
 
-            AssertEqualPreserveWhitespace(myClass,
+            AssertEqualPreserveWhitespace(myTestClass,
 @"
-public class MyClass {
+public class MyTestClass {
 
-    static MyClass() {
+    static MyTestClass() {
     }
 }
 ");
@@ -3747,13 +3754,13 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateSnippetMembers()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var snippet = new CodeSnippetTypeMember("// Comment code snippet\n");
-            myClass.Members.Add(snippet);
+            myTestClass.Members.Add(snippet);
 
-            AssertEqualPreserveWhitespace(myClass,
+            AssertEqualPreserveWhitespace(myTestClass,
 @"
-public class MyClass {
+public class MyTestClass {
 
 // Comment code snippet
 
@@ -3765,14 +3772,14 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateProperties()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var member1 = new CodeMemberProperty { Type = new CodeTypeReference("System.String"), Name = "Member1" };
             var member2 = new CodeMemberProperty { Type = new CodeTypeReference("System.String"), Name = "Member2" };
-            myClass.Members.AddRange(new[] { member1, member2 });
+            myTestClass.Members.AddRange(new[] { member1, member2 });
 
-            AssertEqualPreserveWhitespace(myClass,
+            AssertEqualPreserveWhitespace(myTestClass,
 @"
-public class MyClass {
+public class MyTestClass {
 
     private string Member1 {
     }
@@ -3787,14 +3794,14 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateMethods()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var member1 = new CodeMemberMethod { Name = "Member1" };
             var member2 = new CodeMemberMethod { Name = "Member2" };
-            myClass.Members.AddRange(new[] { member1, member2 });
+            myTestClass.Members.AddRange(new[] { member1, member2 });
 
-            AssertEqualPreserveWhitespace(myClass,
+            AssertEqualPreserveWhitespace(myTestClass,
 @"
-public class MyClass {
+public class MyTestClass {
 
     private void Member1() {
     }
@@ -3809,13 +3816,13 @@ public class MyClass {
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/30761")]
         public void EmptyLinesAreNotIndented_GenerateNestedTypes()
         {
-            var myClass = new CodeTypeDeclaration("MyClass");
+            var myTestClass = new CodeTypeDeclaration("MyTestClass");
             var myNestedClass = new CodeTypeDeclaration("MyNestedClass");
-            myClass.Members.Add(myNestedClass);
+            myTestClass.Members.Add(myNestedClass);
 
-            AssertEqualPreserveWhitespace(myClass,
+            AssertEqualPreserveWhitespace(myTestClass,
 @"
-public class MyClass {
+public class MyTestClass {
 
     public class MyNestedClass {
     }

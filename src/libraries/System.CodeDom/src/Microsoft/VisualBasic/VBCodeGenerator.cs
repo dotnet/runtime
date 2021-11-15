@@ -1429,18 +1429,14 @@ namespace Microsoft.VisualBasic
         }
         protected override void GenerateLinePragmaStart(CodeLinePragma e)
         {
-            Output.WriteLine();
-            Output.Write("#ExternalSource(\"");
-            Output.Write(e.FileName);
-            Output.Write("\",");
-            Output.Write(e.LineNumber);
-            Output.WriteLine(')');
+            _output.WriteLineNoTabs(string.Empty);
+            _output.WriteLineNoTabs($"#ExternalSource(\"{e.FileName}\",{e.LineNumber})");
         }
 
         protected override void GenerateLinePragmaEnd(CodeLinePragma e)
         {
-            Output.WriteLine();
-            Output.WriteLine("#End ExternalSource");
+            _output.WriteLineNoTabs(string.Empty);
+            _output.WriteLineNoTabs("#End ExternalSource");
         }
 
         protected override void GenerateEvent(CodeMemberEvent e, CodeTypeDeclaration c)

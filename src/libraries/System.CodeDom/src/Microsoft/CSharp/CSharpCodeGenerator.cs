@@ -2007,10 +2007,11 @@ namespace Microsoft.CSharp
                 // Restore the indent
                 Indent = savedIndent;
 
-                // Generate an extra new line at the end of the snippet.
+                // Generate an extra new line at the end of the snippet, restoring
+                // the indent for the next line.
                 // If the snippet is comment and this type only contains comments.
                 // The generated code will not compile.
-                _output.WriteLineNoTabs(string.Empty);
+                Output.WriteLine();
             }
 
             if (member.LinePragma != null)
