@@ -4610,7 +4610,6 @@ private:
 
     unsigned impInitBlockLineInfo();
 
-    GenTree* impCheckForNullPointer(GenTree* obj);
     bool impIsThis(GenTree* obj);
     bool impIsLDFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr);
     bool impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr);

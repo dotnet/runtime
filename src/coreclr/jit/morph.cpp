@@ -9278,10 +9278,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             fgWalkTreePost(&value, resetMorphedFlag);
 #endif // DEBUG
 
-            GenTree* const nullCheckedArr = impCheckForNullPointer(arr);
-            GenTree* const arrIndexNode   = gtNewIndexRef(TYP_REF, nullCheckedArr, index);
-            GenTree* const arrStore       = gtNewAssignNode(arrIndexNode, value);
-            arrStore->gtFlags |= GTF_ASG;
+            GenTree* const arrIndexNode = gtNewIndexRef(TYP_REF, arr, index);
+            GenTree* const arrStore     = gtNewAssignNode(arrIndexNode, value);
 
             GenTree* result = fgMorphTree(arrStore);
             if (argSetup != nullptr)
