@@ -24,6 +24,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal static class EvaluateExpression
     {
+        internal static Script<object> script = CSharpScript.Create(
+            "",
+            ScriptOptions.Default.WithReferences(
+                typeof(object).Assembly,
+                typeof(Enumerable).Assembly,
+                typeof(JObject).Assembly
+                ));
         private class FindVariableNMethodCall : CSharpSyntaxWalker
         {
             private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
@@ -220,16 +227,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var str = value?.Value<string>();
                         str = str.Replace("\"", "\\\"");
                         valueRet = $"\"{str}\"";
-                        typeRet = valueRet.GetType().FullName;
+                        typeRet = "string";
                         break;
                     }
                     case "number":
                         valueRet = value?.Value<double>();
-                        typeRet = valueRet.GetType().FullName;
+                        typeRet = "double";
                         break;
                     case "boolean":
                         valueRet = value?.Value<string>().ToLower();
-                        typeRet = "System.Boolean";
+                        typeRet = "bool";
                         break;
                     case "object":
                         valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
@@ -384,19 +391,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
             try {
-                var result = await CSharpScript.EvaluateAsync(
-                    string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString(),
-                    ScriptOptions.Default.WithReferences(
-                        typeof(object).Assembly,
-                        typeof(Enumerable).Assembly,
-                        typeof(JObject).Assembly
-                        ),
-                    cancellationToken: token);
-                return JObject.FromObject(ConvertCSharpToJSType(result, result.GetType()));
+                var newScript = script.ContinueWith(
+                    string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
+
+                var state = await newScript.RunAsync(cancellationToken: token);
+
+                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
             catch (Exception)
             {
-                Console.WriteLine(string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
                 throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
             }
         }
