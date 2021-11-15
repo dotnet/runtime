@@ -52,7 +52,7 @@ public class TestProject
     public readonly string AbsolutePath;
     public readonly string RelativePath;
     public readonly string OutputType;
-    public readonly string TestType;
+    public readonly string CLRTestKind;
     public readonly DebugOptimize DebugOptimize;
     public readonly string Priority;
     public readonly string[] CompileFiles;
@@ -69,7 +69,7 @@ public class TestProject
         string absolutePath,
         string relativePath,
         string outputType,
-        string testType,
+        string clrTestKind,
         DebugOptimize debugOptimize,
         string priority,
         string[] compileFiles,
@@ -82,7 +82,7 @@ public class TestProject
         AbsolutePath = absolutePath;
         RelativePath = relativePath;
         OutputType = outputType;
-        TestType = testType;
+        CLRTestKind = clrTestKind;
         DebugOptimize = debugOptimize;
         Priority = priority;
         CompileFiles = compileFiles;
@@ -106,6 +106,10 @@ public class TestProject
             char c = source[i];
             if (IsIdentifier(c))
             {
+                if (Char.IsDigit(c) && output.Length == 0)
+                {
+                    output.Append('_');
+                }
                 output.Append(c);
             }
             else if (c == '-')
@@ -224,17 +228,42 @@ class TestProjectStore
 
     public void DumpDuplicateEntrypointClasses(TextWriter writer)
     {
+        Dictionary<string, List<TestProject>> duplicateClassNames = new Dictionary<string, List<TestProject>>();
+        foreach (KeyValuePair<string, List<TestProject>> kvp in _classNameMap.Where(kvp => kvp.Value.Count > 1))
+        {
+            Dictionary<DebugOptimize, List<TestProject>> debugOptMap = new Dictionary<DebugOptimize, List<TestProject>>();
+            foreach (TestProject project in kvp.Value)
+            {
+                if (!debugOptMap.TryGetValue(project.DebugOptimize, out List<TestProject>? projects))
+                {
+                    projects = new List<TestProject>();
+                    debugOptMap.Add(project.DebugOptimize, projects);
+                }
+                projects.Add(project);
+            }
+            List<TestProject> filteredDuplicates = new List<TestProject>();
+            foreach (List<TestProject> projectList in debugOptMap.Values.Where(v => v.Count > 1))
+            {
+                filteredDuplicates.AddRange(projectList);
+            }
+            if (filteredDuplicates.Count > 0)
+            {
+                duplicateClassNames.Add(kvp.Key, filteredDuplicates);
+            }
+        }
+
         writer.WriteLine("#PROJECTS | DUPLICATE TEST CLASS NAME");
         writer.WriteLine("-------------------------------------");
+        writer.WriteLine("{0,-9} | (total)", duplicateClassNames.Where(kvp => kvp.Value.Count > 1).Sum(kvp => kvp.Value.Count));
 
-        foreach (KeyValuePair<string, List<TestProject>> kvp in _classNameMap.Where(kvp => kvp.Value.Count > 1).OrderByDescending(kvp => kvp.Value.Count))
+        foreach (KeyValuePair<string, List<TestProject>> kvp in duplicateClassNames.Where(kvp => kvp.Value.Count > 1).OrderByDescending(kvp => kvp.Value.Count))
         {
             writer.WriteLine("{0,-9} | {1}", kvp.Value.Count, kvp.Key);
         }
 
         writer.WriteLine();
 
-        foreach (KeyValuePair<string, List<TestProject>> kvp in _classNameMap.OrderByDescending(kvp => kvp.Value.Count))
+        foreach (KeyValuePair<string, List<TestProject>> kvp in duplicateClassNames.OrderByDescending(kvp => kvp.Value.Count))
         {
             string title = string.Format("{0} PROJECTS WITH CLASS NAME {1}:", kvp.Value.Count, kvp.Key);
             writer.WriteLine(title);
@@ -243,19 +272,37 @@ class TestProjectStore
             {
                 writer.WriteLine(project.AbsolutePath);
             }
+            writer.WriteLine();
         }
 
         writer.WriteLine();
     }
 
-    public void RewriteAllTests()
+    public void DumpImplicitSharedLibraries(TextWriter writer)
+    {
+        writer.WriteLine("IMPLICIT SHARED LIBRARIES");
+        writer.WriteLine("-------------------------");
+
+        foreach (TestProject project in _projects.Where(p => p.OutputType.Equals("Library", StringComparison.OrdinalIgnoreCase) && p.CLRTestKind == "").OrderBy(p => p.RelativePath))
+        {
+            writer.WriteLine(project.AbsolutePath);
+        }
+
+        writer.WriteLine();
+    }
+
+    public void RewriteAllTests(bool deduplicateClassNames, string classToDeduplicate)
     {
         HashSet<string> classNameDuplicates = new HashSet<string>(_classNameMap.Where(kvp => kvp.Value.Count > 1).Select(kvp => kvp.Key));
 
         int index = 0;
         foreach (TestProject project in _projects)
         {
-            new ILRewriter(project, classNameDuplicates, _rewrittenFiles).Rewrite();
+            if (!string.IsNullOrEmpty(classToDeduplicate) && project.TestClassName != classToDeduplicate)
+            {
+                continue;
+            }
+            new ILRewriter(project, classNameDuplicates, deduplicateClassNames, _rewrittenFiles).Rewrite();
             index++;
             if (index % 500 == 0)
             {
@@ -405,7 +452,7 @@ class TestProjectStore
 
     private void ScanRecursive(string absolutePath, string relativePath, ref int projectCount)
     {
-        foreach (string absoluteProjectPath in Directory.EnumerateFiles(absolutePath, "*.ilproj", SearchOption.TopDirectoryOnly))
+        foreach (string absoluteProjectPath in Directory.EnumerateFiles(absolutePath, "*.*proj", SearchOption.TopDirectoryOnly))
         {
             string relativeProjectPath = Path.Combine(relativePath, Path.GetFileName(absoluteProjectPath));
             ScanProject(absoluteProjectPath, relativeProjectPath);
@@ -482,7 +529,10 @@ class TestProjectStore
                                         string[] compileFileArray = compileFileList.Split(' ');
                                         foreach (string compileFile in compileFileArray)
                                         {
-                                            string file = compileFile.Replace("$(MSBuildProjectName)", projectName).Replace("$(MSBuildThisFileName)", projectName);
+                                            string file = compileFile
+                                                .Replace("$(MSBuildProjectName)", projectName)
+                                                .Replace("$(MSBuildThisFileName)", projectName)
+                                                .Replace("$(InteropCommonDir)", "../common/");
                                             compileFiles.Add(Path.GetFullPath(file, projectDir));
                                         }
                                     }
@@ -547,6 +597,142 @@ class TestProjectStore
     }
 
     private static void AnalyzeSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
+    {
+        if (path.IndexOf('*') < 0 && path.IndexOf('?') < 0)
+        {
+            // Exact path
+            AnalyzeFileSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine);
+            return;
+        }
+
+        string directory = Path.GetDirectoryName(path)!;
+        string pattern = Path.GetFileName(path);
+        SearchOption searchOption = SearchOption.TopDirectoryOnly;
+        bool subtreePattern = false;
+        if (Path.GetFileName(directory) == "**")
+        {
+            searchOption = SearchOption.AllDirectories;
+            directory = Path.GetDirectoryName(directory)!;
+        }
+        else if (pattern == "**")
+        {
+            searchOption = SearchOption.AllDirectories;
+            pattern = "*";
+        }
+
+        foreach (string file in Directory.EnumerateFiles(directory, pattern, searchOption))
+        {
+            AnalyzeFileSource(file, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine);
+        }
+    }
+
+    private static void AnalyzeFileSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
+    {
+        switch (Path.GetExtension(path).ToLower())
+        {
+            case ".il":
+                AnalyzeILSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine);
+                break;
+
+            case ".cs":
+                AnalyzeCSSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine);
+                break;
+
+            default:
+                Console.Error.WriteLine("Cannot analyze source file '{0}'", path);
+                break;
+        }
+    }
+
+    private static int GetIndent(string line)
+    {
+        int indent = 0;
+        while (indent < line.Length && Char.IsWhiteSpace(line[indent]))
+        {
+            indent++;
+        }
+        return indent;
+    }
+
+    private static bool IsIdentifier(char c)
+    {
+        return Char.IsDigit(c) || Char.IsLetter(c) || c == '_' || c == '@';
+    }
+
+    private static void AnalyzeCSSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
+    {
+        List<string> lines = new List<string>(File.ReadAllLines(path));
+
+        string fileName = Path.GetFileNameWithoutExtension(path);
+
+        for (int mainLine = lines.Count; --mainLine >= 0;)
+        {
+            string line = lines[mainLine];
+            int mainPos = line.IndexOf("int Main()");
+            if (mainPos >= 0)
+            {
+                int mainLineIndent = GetIndent(line);
+                mainMethodLine = mainLine;
+                testClassSourceFile = path;
+                while (--mainLine >= 0)
+                {
+                    line = lines[mainLine];
+                    int lineIndent = GetIndent(line);
+                    if (lineIndent < mainLineIndent && line.IndexOf('{') >= 0)
+                    {
+                        do
+                        {
+                            line = lines[mainLine];
+                            int classPos = line.IndexOf("class ");
+                            int classNameStart = -1;
+                            if (classPos >= 0)
+                            {
+                                classNameStart = classPos + 6;
+                            }
+                            else
+                            {
+                                classPos = line.IndexOf("struct ");
+                                if (classPos >= 0)
+                                {
+                                    classNameStart = classPos + 7;
+                                }
+                            }
+                            if (classNameStart >= 0)
+                            {
+                                int classNameEnd = classNameStart;
+                                while (line.Length > classNameEnd && IsIdentifier(line[classNameEnd]))
+                                {
+                                    classNameEnd++;
+                                }
+                                testClassName = line.Substring(classNameStart, classNameEnd - classNameStart);
+                                testClassLine = mainLine;
+
+                                while (--mainLine >= 0)
+                                {
+                                    line = lines[mainLine];
+                                    int namespacePos = line.IndexOf("namespace ");
+                                    if (namespacePos >= 0)
+                                    {
+                                        int namespaceNameStart = namespacePos + 10;
+                                        int namespaceNameEnd = namespaceNameStart;
+                                        while (namespaceNameEnd < line.Length && IsIdentifier(line[namespaceNameEnd]))
+                                        {
+                                            namespaceNameEnd++;
+                                        }
+                                        string namespaceName = line.Substring(namespaceNameStart, namespaceNameEnd - namespaceNameStart);
+                                        testClassName = namespaceName + "." + testClassName;
+                                    }
+                                }
+                            }
+                        }
+                        while (--mainLine >= 0);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void AnalyzeILSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
     {
         List<string> lines = new List<string>(File.ReadAllLines(path));
 
@@ -619,7 +805,7 @@ class TestProjectStore
 
     private void PopulateClassNameMap()
     {
-        foreach (TestProject project in _projects.Where(p => p.TestClassName != null))
+        foreach (TestProject project in _projects.Where(p => p.TestClassName != "" && p.MainMethodLine > 0))
         {
             if (!_classNameMap.TryGetValue(project.TestClassName!, out List<TestProject>? projectList))
             {
@@ -642,7 +828,7 @@ class TestProjectStore
             {
                 foreach (TestProject project in projectList)
                 {
-                    project.DeduplicatedClassName = TestProject.SanitizeIdentifier(Path.GetFileNameWithoutExtension(project.TestClassSourceFile));
+                    project.DeduplicatedClassName = TestProject.SanitizeIdentifier(project.TestClassName + "_" + Path.GetFileNameWithoutExtension(project.TestClassSourceFile));
                 }
             }
         }
