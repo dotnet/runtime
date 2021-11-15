@@ -857,16 +857,16 @@ namespace DebuggerTests
                 var frame = pause_location["callFrames"][0];
 
                 await EvaluateOnCallFrameAndCheck(id_top,
-                ("EvaluateStaticClass.StaticField1", TNumber(20)),
-                ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty2")),
-                ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                    ("EvaluateStaticClass.StaticField1", TNumber(20)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty2")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
 
                 var id_second = pause_location["callFrames"][1]["callFrameId"].Value<string>();
 
                 await EvaluateOnCallFrameAndCheck(id_second,
-                ("EvaluateStaticClass.StaticField1", TNumber(10)),
-                ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
-                ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
         [Fact]
