@@ -4649,6 +4649,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             if (block->isLoopAlign())
             {
+                loopAlignCandidates++;
                 succBlock->bbFlags |= BBF_LOOP_ALIGN;
                 JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for loop# %d.", block->bbNum,
                         succBlock->bbNum, block->bbNatLoopNum);
@@ -4663,6 +4664,12 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         else if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
         {
             skipUnmarkLoop = true;
+        }
+
+        // Make sure that we don't double count the loop align candidates.
+        if (block->isLoopAlign())
+        {
+            loopAlignCandidates--;
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
