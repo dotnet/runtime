@@ -20,7 +20,7 @@ import {
     mono_wasm_raise_debug_event,
     mono_wasm_fire_debugger_agent_message,
 } from "./debug";
-import { runtimeHelpers, setLegacyModules } from "./modules";
+import { runtimeHelpers, setAPI } from "./modules";
 import { EmscriptenModuleMono, MonoArray, MonoConfig, MonoConfigError, MonoObject } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
@@ -63,7 +63,7 @@ import {
     getU8, getU16, getU32, getF32, getF64,
 } from "./memory";
 
-export const MONO: MONO = <any>{
+const MONO: MONO = <any>{
     // current "public" MONO API
     mono_wasm_setenv,
     mono_wasm_load_bytes_into_heap,
@@ -88,7 +88,7 @@ export const MONO: MONO = <any>{
     mono_wasm_new_roots,
 };
 
-export const BINDING: BINDING = <any>{
+const BINDING: BINDING = <any>{
     //current "public" BINDING API
     mono_obj_array_new: cwraps.mono_wasm_obj_array_new,
     mono_obj_array_set: cwraps.mono_wasm_obj_array_set,
@@ -115,23 +115,48 @@ export const BINDING: BINDING = <any>{
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: any, module: any): void {
+function exportAPI(mono: any, binding: any, internal: any, module: any, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, glocateFile: Function): void {
     const moduleExt = module as EmscriptenModuleMono;
+    const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
-    setLegacyModules(dotnet, mono, binding, internal, module);
+    setAPI(mono, binding, internal, module, isGlobal, isNode, isShell, isWeb, glocateFile);
 
-    // here we merge methods to it from the local objects
-    Object.assign(dotnet, DOTNET);
+    // here we merge methods from the local objects into exported objects
     Object.assign(mono, MONO);
     Object.assign(binding, BINDING);
     Object.assign(internal, INTERNAL);
 
-    // this could be overriden on Module
-    moduleExt.preInit = mono_wasm_pre_init;
-    moduleExt.onRuntimeInitialized = mono_wasm_on_runtime_initialized;
+    const exports: DotNetExports = <any>{
+        MONO: mono,
+        BINDING: binding,
+        INTERNAL: internal,
+        Module: module
+    };
 
-    if (!moduleExt.disableDotNet6Compatibility) {
+    if (moduleExt.configSrc) {
+        // this could be overriden on Module
+        if (!module.preInit) {
+            module.preInit = [];
+        } else if (typeof module.preInit === "function") {
+            module.preInit = [module.preInit];
+        }
+        module.preInit.unshift(mono_wasm_pre_init);
+    }
+    // this could be overriden on Module
+    if (!moduleExt.onRuntimeInitialized) {
+        moduleExt.onRuntimeInitialized = mono_wasm_on_runtime_initialized;
+    }
+    if (!moduleExt.print) {
+        moduleExt.print = console.log;
+    }
+    if (!moduleExt.printErr) {
+        moduleExt.printErr = console.error;
+    }
+
+    if (isGlobal || !moduleExt.disableDotNet6Compatibility) {
+        Object.assign(module, exports);
+
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
@@ -141,38 +166,42 @@ function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: an
         };
 
         // here we expose objects used in tests to global namespace
-        (<any>globalThis).Module = module;
-        const warnWrap = (name: string, value: any) => {
-            if (typeof ((<any>globalThis)[name]) !== "undefined") {
+        const warnWrap = (name: string, provider: () => any) => {
+            if (typeof globalThisAny[name] !== "undefined") {
                 // it already exists in the global namespace
                 return;
             }
-            let warnOnce = true;
+            let value: any = undefined;
             Object.defineProperty(globalThis, name, {
                 get: () => {
-                    if (warnOnce) {
+                    if (!value) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
                         console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
-                        warnOnce = false;
+                        value = provider();
                     }
                     return value;
                 }
             });
         };
-        warnWrap("MONO", mono);
-        warnWrap("BINDING", binding);
+        globalThisAny.MONO = mono;
+        globalThisAny.BINDING = binding;
+        globalThisAny.INTERNAL = internal;
+        if (!isGlobal) {
+            globalThisAny.Module = module;
+        }
 
         // Blazor back compat
-        warnWrap("cwrap", Module.cwrap);
-        warnWrap("addRunDependency", Module.addRunDependency);
-        warnWrap("removeRunDependency", Module.removeRunDependency);
+        warnWrap("cwrap", () => module.cwrap);
+        warnWrap("addRunDependency", () => module.addRunDependency);
+        warnWrap("removeRunDependency", () => module.removeRunDependency);
     }
 }
+export const __exportAPI: any = exportAPI; // don't want to export the type
 
 // the methods would be visible to EMCC linker
-// --- keep in sync with library-dotnet.js ---
-const linker_exports = {
+// --- keep in sync with dotnet.lib.js ---
+export const __linker_exports: any = {
     // mini-wasm.c
     mono_set_timeout,
 
@@ -214,16 +243,10 @@ const linker_exports = {
     mono_wasm_load_icu_data,
     mono_wasm_get_icudt_name,
 };
-export const DOTNET: any = {
-};
 
-export const INTERNAL: any = {
+const INTERNAL: any = {
     // startup
     BINDING_ASM: "[System.Private.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
-    export_to_emscripten,
-
-    // linker
-    linker_exports: linker_exports,
 
     // tests
     call_static_method,
@@ -281,7 +304,7 @@ export const INTERNAL: any = {
 
 // this represents visibility in the javascript
 // like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
-export interface MONO {
+interface MONO {
     mono_wasm_runtime_ready: typeof mono_wasm_runtime_ready
     mono_wasm_setenv: typeof mono_wasm_setenv
     mono_wasm_load_data_archive: typeof mono_wasm_load_data_archive;
@@ -294,8 +317,8 @@ export interface MONO {
     mono_wasm_release_roots: typeof mono_wasm_release_roots;
 
     // for Blazor's future!
-    mono_wasm_add_assembly: typeof cwraps.mono_wasm_add_assembly,
-    mono_wasm_load_runtime: typeof cwraps.mono_wasm_load_runtime,
+    mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number,
+    mono_wasm_load_runtime: (unused: string, debug_level: number) => void,
 
     loaded_files: string[];
     config: MonoConfig | MonoConfigError,
@@ -303,7 +326,7 @@ export interface MONO {
 
 // this represents visibility in the javascript
 // like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
-export interface BINDING {
+interface BINDING {
     mono_obj_array_new: (size: number) => MonoArray,
     mono_obj_array_set: (array: MonoArray, idx: number, obj: MonoObject) => void,
     js_string_to_mono_string: typeof js_string_to_mono_string,
@@ -314,4 +337,9 @@ export interface BINDING {
     bind_static_method: typeof mono_bind_static_method,
     call_assembly_entry_point: typeof mono_call_assembly_entry_point,
     unbox_mono_obj: typeof unbox_mono_obj
+}
+export interface DotNetExports {
+    MONO: MONO,
+    BINDING: BINDING,
+    Module: any
 }

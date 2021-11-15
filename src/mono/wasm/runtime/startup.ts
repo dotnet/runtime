@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, MONO, runtimeHelpers } from "./modules";
 import { AllAssetEntryTypes, AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./modules";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -12,11 +12,25 @@ import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
 
+export let runtime_is_initialized_resolve: Function;
+export let runtime_is_initialized_reject: Function;
+export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) => {
+    runtime_is_initialized_resolve = resolve;
+    runtime_is_initialized_reject = reject;
+});
+
+
 export async function mono_wasm_pre_init(): Promise<void> {
     const moduleExt = Module as EmscriptenModuleMono;
     if (moduleExt.configSrc) {
-        // sets MONO.config implicitly
-        await mono_wasm_load_config(moduleExt.configSrc);
+        try {
+            // sets MONO.config implicitly
+            await mono_wasm_load_config(moduleExt.configSrc);
+        }
+        catch (err: any) {
+            runtime_is_initialized_reject(err);
+            throw err;
+        }
 
         if (moduleExt.onConfigLoaded) {
             try {
@@ -26,6 +40,7 @@ export async function mono_wasm_pre_init(): Promise<void> {
                 Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
                 Module.printErr("MONO_WASM: Stacktrace: \n");
                 Module.printErr(err.stack);
+                runtime_is_initialized_reject(err);
                 throw err;
             }
         }
@@ -223,6 +238,20 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
     mono_wasm_setenv("TZ", tz || "UTC");
     mono_wasm_runtime_ready();
 
+    //legacy config loading
+    const argsAny: any = args;
+    if (argsAny.loaded_cb) {
+        try {
+            argsAny.loaded_cb();
+        }
+        catch (err: any) {
+            Module.printErr("MONO_WASM: loaded_cb () failed: " + err);
+            Module.printErr("MONO_WASM: Stacktrace: \n");
+            Module.printErr(err.stack);
+            throw err;
+        }
+    }
+
     if (moduleExt.onDotNetReady) {
         try {
             moduleExt.onDotNetReady();
@@ -234,6 +263,8 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
             throw err;
         }
     }
+
+    runtime_is_initialized_resolve();
 }
 
 export function bindings_lazy_init(): void {

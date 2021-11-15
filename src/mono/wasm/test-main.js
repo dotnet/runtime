@@ -8,7 +8,7 @@
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 const is_browser = typeof window != "undefined";
-const is_node = !is_browser && typeof process != 'undefined';
+const is_node = !is_browser && typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
 
 // if the engine doesn't provide a console
 if (typeof (console) === "undefined") {
@@ -101,18 +101,12 @@ if (typeof globalThis.performance === 'undefined') {
         }
     }
 }
-
 var Module = {
-    no_global_exports: true,
-    mainScriptUrlOrBlob: "dotnet.js",
     config: null,
     configSrc: "./mono-config.json",
-    print: console.log,
-    printErr: console.error,
-    onConfigLoaded: function () {
+    onConfigLoaded: () => {
         if (!Module.config) {
-            console.error("Could not find ./mono-config.json. Cancelling run");
-            fail_exec(1);
+            set_exit_code(1, "Could not find ./mono-config.json. Cancelling run");
         }
         // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
         for (let variable in processedArguments.setenv) {
@@ -123,10 +117,10 @@ var Module = {
             INTERNAL.mono_wasm_enable_on_demand_gc(0);
         }
     },
-    onDotNetReady: function () {
+    onDotNetReady: () => {
         let wds = Module.FS.stat(processedArguments.working_dir);
         if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-            fail_exec(1, `Could not find working directory ${processedArguments.working_dir}`);
+            set_exit_code(1, `Could not find working directory ${processedArguments.working_dir}`);
             return;
         }
 
@@ -134,26 +128,26 @@ var Module = {
 
         App.init();
     },
-    onAbort: function (x) {
-        console.log("ABORT: " + x);
+    onAbort: (error) => {
+        console.log("ABORT: " + error);
         const err = new Error();
         console.log("Stacktrace: \n");
         console.error(err.stack);
-        fail_exec(1);
+        set_exit_code(1, error);
     },
 };
 
-const App = {
-    init: function () {
-        console.info("Initializing.....");
 
+const App = {
+    init: async function () {
+        console.info("Initializing.....");
         for (let i = 0; i < processedArguments.profilers.length; ++i) {
             const init = Module.cwrap('mono_wasm_load_profiler_' + processedArguments.profilers[i], 'void', ['string']);
             init("");
         }
 
         if (processedArguments.applicationArgs.length == 0) {
-            fail_exec(1, "Missing required --run argument");
+            set_exit_code(1, "Missing required --run argument");
             return;
         }
 
@@ -171,7 +165,7 @@ const App = {
             }
 
             if (res)
-                fail_exec(1, "REGRESSION TEST FAILED");
+                set_exit_code(1, "REGRESSION TEST FAILED");
 
             return;
         }
@@ -182,31 +176,23 @@ const App = {
         if (processedArguments.applicationArgs[0] == "--run") {
             // Run an exe
             if (processedArguments.applicationArgs.length == 1) {
-                fail_exec(1, "Error: Missing main executable argument.");
+                set_exit_code(1, "Error: Missing main executable argument.");
                 return;
             }
-
-            const main_assembly_name = processedArguments.applicationArgs[1];
-            const app_args = processedArguments.applicationArgs.slice(2);
-            INTERNAL.mono_wasm_set_main_args(processedArguments.applicationArgs[1], app_args);
-
-            // Automatic signature isn't working correctly
-            const result = BINDING.call_assembly_entry_point(main_assembly_name, [app_args], "m");
-            const onError = function (error) {
-                console.error(error);
-                if (error.stack)
-                    console.error(error.stack);
-
-                fail_exec(1);
-            }
             try {
-                result.then(fail_exec).catch(onError);
-            } catch (error) {
-                onError(error);
-            }
 
+                const main_assembly_name = processedArguments.applicationArgs[1];
+                const app_args = processedArguments.applicationArgs.slice(2);
+                INTERNAL.mono_wasm_set_main_args(processedArguments.applicationArgs[1], app_args);
+
+                // Automatic signature isn't working correctly
+                const result = await BINDING.call_assembly_entry_point(main_assembly_name, [app_args], "m");
+                set_exit_code(result);
+            } catch (error) {
+                set_exit_code(1, error);
+            }
         } else {
-            fail_exec(1, "Unhandled argument: " + processedArguments.applicationArgs[0]);
+            set_exit_code(1, "Unhandled argument: " + processedArguments.applicationArgs[0]);
         }
     },
 
@@ -229,19 +215,24 @@ const App = {
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
-function fail_exec(exit_code, reason) {
+function set_exit_code(exit_code, reason) {
     if (reason) {
-        console.error(reason);
+        console.error(reason.toString());
+        if (reason.stack) {
+            console.error(reason.stack);
+        }
     }
     if (is_browser) {
         // Notify the selenium script
         Module.exit_code = exit_code;
-        originalConsole.log("WASM EXIT " + exit_code);
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
-    } else { // shell or node
+
+        // tell xharness stream procesor we are done
+        console.log("WASM EXIT " + exit_code);
+    } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }
 }
@@ -262,7 +253,7 @@ function processArguments(incomingArguments) {
             const arg = currentArg.substring("--setenv=".length);
             const parts = arg.split('=');
             if (parts.length != 2)
-                fail_exec(1, "Error: malformed argument: '" + currentArg);
+                set_exit_code(1, "Error: malformed argument: '" + currentArg);
             setenv[parts[0]] = parts[1];
         } else if (currentArg.startsWith("--runtime-arg=")) {
             const arg = currentArg.substring("--runtime-arg=".length);
@@ -322,8 +313,10 @@ try {
 async function loadDotnet(file) {
     let loadScript = undefined;
     if (typeof WScript !== "undefined") { // Chakra
-        loadScript = WScript.LoadScriptFile;
-        return globalThis.Module;
+        loadScript = function (file) {
+            WScript.LoadScriptFile(file);
+            return globalThis.Module;
+        };
     } else if (is_node) { // NodeJS
         loadScript = async function (file) {
             return require(file);
@@ -333,7 +326,17 @@ async function loadDotnet(file) {
             const script = document.createElement("script");
             script.src = file;
             document.head.appendChild(script);
-            return globalThis.Module;
+            let timeout = 100;
+            // bysy spin waiting for script to load into global namespace
+            while (timeout > 0) {
+                if (globalThis.Module) {
+                    return globalThis.Module;
+                }
+                // delay 10ms
+                await new Promise(resolve => setTimeout(resolve, 10));
+                timeout--;
+            }
+            throw new Error("Can't load " + file);
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
@@ -351,6 +354,6 @@ async function loadDotnet(file) {
 
 loadDotnet("./dotnet.js").catch(function (err) {
     console.error(err);
-    fail_exec(1, "failed to load the dotnet.js file");
+    set_exit_code(1, "failed to load the dotnet.js file");
     throw err;
 });
