@@ -873,8 +873,7 @@ namespace System.Numerics
                 // unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
                 ulong result = Sse42.X64.Crc32(crc, data);
 
-                // Truncate redundant bytes and cast to uint
-                return Unsafe.As<ulong, uint>(ref result);
+                return unchecked((uint)result);
             }
             if (Crc32.Arm64.IsSupported)
             {
