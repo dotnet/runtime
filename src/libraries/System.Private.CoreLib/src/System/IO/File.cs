@@ -513,26 +513,35 @@ namespace System.IO
             return WriteToFileAsync(path, FileMode.Create, contents, encoding, cancellationToken);
         }
 
-        public static async Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<byte[]>(cancellationToken);
+            }
 
             // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
             FileOptions options = (OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None) | FileOptions.Asynchronous;
-            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options))
-            {
-                long fileLength = 0L;
-                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
-                {
-                    throw new IOException(SR.IO_FileTooLong2GB);
-                }
-                if (fileLength == 0)
-                {
-                    return await InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken).ConfigureAwait(false);
-                }
+            SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options);
 
+            long fileLength = 0L;
+            if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
+            {
+                sfh.Dispose();
+                return Task.FromException<byte[]>(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.IO_FileTooLong2GB)));
+            }
+
+            return fileLength > 0 ?
+                InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken) :
+                InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken);
+        }
+
+        private static async Task<byte[]> InternalReadAllBytesAsync(SafeFileHandle sfh, int count, CancellationToken cancellationToken)
+        {
+            using (sfh)
+            {
                 int index = 0;
-                byte[] bytes = new byte[fileLength];
+                byte[] bytes = new byte[count];
                 do
                 {
                     int n = await RandomAccess.ReadAtOffsetAsync(sfh, bytes.AsMemory(index), index, cancellationToken).ConfigureAwait(false);
@@ -542,7 +551,8 @@ namespace System.IO
                     }
 
                     index += n;
-                } while (index < fileLength);
+                } while (index < count);
+
                 return bytes;
             }
         }
@@ -583,6 +593,7 @@ namespace System.IO
             }
             finally
             {
+                sfh.Dispose();
                 ArrayPool<byte>.Shared.Return(rentedArray);
             }
         }
