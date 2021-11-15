@@ -125,5 +125,19 @@ namespace System.Collections.Tests
             Assert.Equal(dictionary["key2"], readOnlyDictionary["key2"]);
             Assert.Equal(dictionary.Count, readOnlyDictionary.Count);
         }
+
+        [Fact]
+        public void AsReadOnly_NullIList_ThrowsArgumentNullException()
+        {
+            IList<string> list = null;
+            Assert.Throws<ArgumentNullException>(() => list.AsReadOnly());
+        }
+
+        [Fact]
+        public void AsReadOnly_NullIDictionary_ThrowsArgumentNullException()
+        {
+            IDictionary<string, string> dictionary = null;
+            Assert.Throws<ArgumentNullException>(() => dictionary.AsReadOnly());
+        }
     }
 }
