@@ -320,10 +320,12 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             }
 
-            char[] arr = new char[count];
-            Span<char> s = new(arr);
-            s.Fill(c);
-            return new(s);
+            string result = FastAllocateString(count);
+            if (c != '\0')
+            {
+                  MemoryMarshal.CreateSpan(ref result._firstChar, count).Fill(c);
+            }
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
