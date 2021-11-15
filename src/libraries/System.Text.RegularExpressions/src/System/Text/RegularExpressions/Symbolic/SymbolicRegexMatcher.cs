@@ -321,8 +321,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Interface for transitions used by the <see cref="Delta"/> method.</summary>
         private interface ITransition
         {
+#pragma warning disable CA2252 // This API requires opting into preview features
             /// <summary>Find the next state given the current state and next character.</summary>
-            DfaMatchingState<TSetType> TakeTransition(SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentState, int mintermId, TSetType minterm);
+            static abstract DfaMatchingState<TSetType> TakeTransition(SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentState, int mintermId, TSetType minterm);
+#pragma warning restore CA2252
         }
 
         /// <summary>Compute the target state for the source state and input[i] character.</summary>
@@ -345,14 +347,14 @@ namespace System.Text.RegularExpressions.Symbolic
                 minterms[mintermId] :
                 _builder._solver.False; // minterm=False represents \Z
 
-            return default(TTransition).TakeTransition(this, sourceState, mintermId, minterm);
+            return TTransition.TakeTransition(this, sourceState, mintermId, minterm);
         }
 
         /// <summary>Transition for Brzozowski-style derivatives (i.e. a DFA).</summary>
         private readonly struct BrzozowskiTransition : ITransition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public DfaMatchingState<TSetType> TakeTransition(
+            public static DfaMatchingState<TSetType> TakeTransition(
                 SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentState, int mintermId, TSetType minterm)
             {
                 SymbolicRegexBuilder<TSetType> builder = matcher._builder;
@@ -367,13 +369,13 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly struct AntimirovTransition : ITransition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public DfaMatchingState<TSetType> TakeTransition(
+            public static DfaMatchingState<TSetType> TakeTransition(
                 SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentStates, int mintermId, TSetType minterm)
             {
                 if (currentStates.Node.Kind != SymbolicRegexKind.Or)
                 {
                     // Fall back to Brzozowski when the state is not a disjunction.
-                    return default(BrzozowskiTransition).TakeTransition(matcher, currentStates, mintermId, minterm);
+                    return BrzozowskiTransition.TakeTransition(matcher, currentStates, mintermId, minterm);
                 }
 
                 SymbolicRegexBuilder<TSetType> builder = matcher._builder;
