@@ -18,7 +18,6 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
-    <EnableAppSandbox Condition="'$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
   </PropertyGroup>
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
@@ -82,7 +81,6 @@
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
         RuntimeComponents="$(RuntimeComponents)"
-        EnableAppSandbox="$(EnableAppSandbox)"
         DiagnosticPorts="$(DiagnosticPorts)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />

@@ -5,7 +5,6 @@ USE_LLVM=true
 AOT?=false
 TARGET?=iOSSimulator
 DEPLOY_AND_RUN?=true
-APP_SANDBOX?=false
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
@@ -59,8 +58,7 @@ run-catalyst:
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	/p:UseLLVM=False \
-	/p:ForceAOT=True \
-	/p:EnableAppSandbox=$(APP_SANDBOX)
+	/p:ForceAOT=True
 
 run-sim-interp: clean appbuilder
 	$(DOTNET) publish \

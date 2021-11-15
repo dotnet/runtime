@@ -158,11 +158,6 @@ public class AppleAppBuilderTask : Task
     /// </summary>
     public bool EnableRuntimeLogging { get; set; }
 
-    /// <summary>
-    /// Enables App Sandbox for Mac Catalyst apps
-    /// </summary>
-    public bool EnableAppSandbox { get; set; }
-
     public override bool Execute()
     {
         bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
@@ -234,11 +229,6 @@ public class AppleAppBuilderTask : Task
                 throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
         }
 
-        if (EnableAppSandbox && TargetOS != TargetNames.MacCatalyst)
-        {
-            throw new InvalidOperationException("App Sandbox can only be enabled for Mac Catalyst builds.");
-        }
-
         var generator = new Xcode(Log, TargetOS, Arch);
 
         if (GenerateXcodeProject)
@@ -262,7 +252,7 @@ public class AppleAppBuilderTask : Task
         else if (GenerateCMakeProject)
         {
              generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, DiagnosticPorts, RuntimeComponents, NativeMainSource);
         }
 
         return true;
