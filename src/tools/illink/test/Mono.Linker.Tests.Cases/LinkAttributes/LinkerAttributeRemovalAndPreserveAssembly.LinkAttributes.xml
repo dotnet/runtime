@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="*">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.AttributeToRemoveAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+  </assembly>
+</linker>
