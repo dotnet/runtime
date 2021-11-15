@@ -13,6 +13,7 @@ namespace XUnitWrapperGenerator;
 interface ITestInfo
 {
     string TestNameExpression { get; }
+    string DisplayNameForFiltering { get; }
     string Method { get; }
     string ContainingType { get; }
 
@@ -33,6 +34,7 @@ sealed class BasicTestMethod : ITestInfo
         var args = arguments.IsDefaultOrEmpty ? "" : string.Join(", ", arguments);
         ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
         Method = method.Name;
+        DisplayNameForFiltering = $"{ContainingType}.{Method}({args})";
         TestNameExpression = displayNameExpression ?? $"\"{externAlias}::{ContainingType}.{Method}({args})\"";
         if (method.IsStatic)
         {
@@ -45,6 +47,7 @@ sealed class BasicTestMethod : ITestInfo
     }
 
     public string TestNameExpression { get; }
+    public string DisplayNameForFiltering { get; }
     public string Method { get; }
     public string ContainingType { get; }
     private string ExecutionStatement { get; }
@@ -69,10 +72,13 @@ sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
         ContainingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
         Method = method.Name;
         TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}()\"";
+        DisplayNameForFiltering = $"{ContainingType}.{Method}()";
         ExecutionStatement = $"Xunit.Assert.Equal(100, {externAlias}::{ContainingType}.{Method}());";
     }
 
     public string TestNameExpression { get; }
+    public string DisplayNameForFiltering { get; }
+
     public string Method { get; }
     public string ContainingType { get; }
     private string ExecutionStatement { get; }
@@ -100,6 +106,7 @@ sealed class ConditionalTest : ITestInfo
         _innerTest = innerTest;
         _condition = condition;
         TestNameExpression = innerTest.TestNameExpression;
+        DisplayNameForFiltering = innerTest.DisplayNameForFiltering;
         Method = innerTest.Method;
         ContainingType = innerTest.ContainingType;
     }
@@ -110,6 +117,9 @@ sealed class ConditionalTest : ITestInfo
     }
 
     public string TestNameExpression { get; }
+
+    public string DisplayNameForFiltering { get; }
+
     public string Method { get; }
     public string ContainingType { get; }
 
@@ -193,6 +203,7 @@ sealed class MemberDataTest : ITestInfo
         TestNameExpression = innerTest.TestNameExpression;
         Method = innerTest.Method;
         ContainingType = innerTest.ContainingType;
+        DisplayNameForFiltering = $"{ContainingType}.{Method}(...)";
         _innerTest = innerTest;
         _loopVarIdentifier = argumentLoopVarIdentifier;
 
@@ -206,6 +217,7 @@ sealed class MemberDataTest : ITestInfo
     }
 
     public string TestNameExpression { get; }
+    public string DisplayNameForFiltering { get; }
     public string Method { get; }
     public string ContainingType { get; }
 
@@ -234,11 +246,14 @@ sealed class OutOfProcessTest : ITestInfo
     public OutOfProcessTest(string displayName, string relativeAssemblyPath)
     {
         Method = displayName;
+        DisplayNameForFiltering = displayName;
         TestNameExpression = $"@\"{displayName}\"";
         ExecutionStatement = $@"TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");";
     }
 
     public string TestNameExpression { get; }
+
+    public string DisplayNameForFiltering { get; }
 
     public string Method { get; }
 
@@ -259,15 +274,18 @@ sealed class NoTestReporting : ITestReporterWrapper
 sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 {
     private string _summaryLocalIdentifier;
+    private readonly string _filterLocalIdentifier;
 
-    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier)
+    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier, string filterLocalIdentifier)
     {
         _summaryLocalIdentifier = summaryLocalIdentifier;
+        _filterLocalIdentifier = filterLocalIdentifier;
     }
 
     public string WrapTestExecutionWithReporting(string testExecutionExpression, ITestInfo test)
     {
         StringBuilder builder = new();
+        builder.AppendLine($"if ({_filterLocalIdentifier} is null || {_filterLocalIdentifier}.ShouldRunTest(@\"{test.ContainingType}.{test.Method}\", {test.TestNameExpression}))");
         builder.AppendLine("{");
 
         builder.AppendLine($"TimeSpan testStart = stopwatch.Elapsed;");

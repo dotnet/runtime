@@ -75,12 +75,18 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .Collect()
             .Combine(outOfProcessTests.Collect())
             .Select((tests, ct) => tests.Left.AddRange(tests.Right))
-            .Combine(aliasMap)
             .Combine(context.AnalyzerConfigOptionsProvider)
+            .Select((data, ct) =>
+            {
+                var (tests, options) = data;
+                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter() ?? "");
+                return (ImmutableArray.CreateRange(tests.Where(test => filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>()))), options);
+            })
+            .Combine(aliasMap)
             .Combine(assemblyName),
             static (context, data) =>
             {
-                var (((methods, aliasMap), configOptions), assemblyName) = data;
+                var (((methods, configOptions), aliasMap), assemblyName) = data;
 
                 bool referenceCoreLib = configOptions.GlobalOptions.ReferenceSystemPrivateCoreLib();
 
@@ -103,9 +109,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         StringBuilder builder = new();
-        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary");
+        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter");
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
 
+        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = args.Length != 0 ? new XUnitWrapperLibrary.TestFilter(args[0]) : null;");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
 

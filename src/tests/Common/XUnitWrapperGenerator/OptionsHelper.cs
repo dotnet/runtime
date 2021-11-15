@@ -11,6 +11,7 @@ public static class OptionsHelper
     private const string PriorityOption = "build_property.Priority";
     private const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
     private const string IsOutOfProcessTestAssemblyOption = "build_metadata.AdditionalFiles.IsOutOfProcessTestAssembly";
+    private const string TestFilterOption = "build_metadata.AdditionalFiles.TestFilter";
     private const string TestAssemblyRelativePathOption = "build_metadata.AdditionalFiles.TestAssemblyRelativePath";
     private const string TestDisplayNameOption = "build_metadata.AdditionalFiles.TestDisplayName";
 
@@ -37,6 +38,8 @@ public static class OptionsHelper
     internal static string RuntimeFlavor(this AnalyzerConfigOptions options) => options.TryGetValue(RuntimeFlavorOption, out string? flavor) ? flavor : "CoreCLR";
 
     internal static bool IsOutOfProcessTestAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsOutOfProcessTestAssemblyOption);
+
+    internal static string? TestFilter(this AnalyzerConfigOptions options) => options.TryGetValue(TestFilterOption, out string? filter) ? filter : null;
 
     internal static string? TestAssemblyRelativePath(this AnalyzerConfigOptions options) => options.TryGetValue(TestAssemblyRelativePathOption, out string? flavor) ? flavor : null;
 

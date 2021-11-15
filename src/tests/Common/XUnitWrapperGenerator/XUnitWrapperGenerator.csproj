@@ -12,4 +12,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../XUnitWrapperLibrary/TestFilter.cs" Link="TestFilter.cs" />
+  </ItemGroup>
 </Project>
