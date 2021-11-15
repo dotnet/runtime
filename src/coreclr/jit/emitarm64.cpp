@@ -6985,6 +6985,14 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
     {
         shiftAmount = insOptsLSL(opt) ? scale : 0;
     }
+
+    // If target reg is ZR - it means we're doing an implicit nullcheck
+    // where target type was ignored and set to TYP_INT.
+    if ((reg1 == REG_ZR) && (shiftAmount > 0))
+    {
+        shiftAmount = scale;
+    }
+
     assert((shiftAmount == scale) || (shiftAmount == 0));
 
     reg2 = encodingSPtoZR(reg2);
@@ -8520,7 +8528,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
                            regMaskTP        byrefRegs,
-                           IL_OFFSETX       ilOffset /* = BAD_IL_OFFSET */,
+                           const DebugInfo& di /* = DebugInfo() */,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
@@ -8561,9 +8569,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
+    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -13481,8 +13489,23 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 }
                 else // no scale
                 {
-                    // Then load/store dataReg from/to [memBase + index]
-                    emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
+                    if (index->OperIs(GT_BFIZ) && index->isContained())
+                    {
+                        // Then load/store dataReg from/to [memBase + index*scale with sign/zero extension]
+                        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+
+                        // For now, this code only supports extensions from i32/u32
+                        assert(cast->isContained() && varTypeIsInt(cast->CastFromType()));
+
+                        emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
+                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW,
+                                          (int)index->gtGetOp2()->AsIntCon()->IconValue());
+                    }
+                    else
+                    {
+                        // Then load/store dataReg from/to [memBase + index]
+                        emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
+                    }
                 }
             }
         }
@@ -13596,44 +13619,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         assert(!src1->isContained());
         // src2 can only be a reg
         assert(!src2->isContained());
-    }
-    else if ((src1->OperIs(GT_MUL) && src1->isContained()) || (src2->OperIs(GT_MUL) && src2->isContained()))
-    {
-        assert(ins == INS_add);
-
-        GenTree* mul;
-        GenTree* c;
-        if (src1->OperIs(GT_MUL))
-        {
-            mul = src1;
-            c   = src2;
-        }
-        else
-        {
-            mul = src2;
-            c   = src1;
-        }
-
-        GenTree* a = mul->gtGetOp1();
-        GenTree* b = mul->gtGetOp2();
-
-        assert(varTypeIsIntegral(mul) && !mul->gtOverflow());
-
-        bool msub = false;
-        if (a->OperIs(GT_NEG) && a->isContained())
-        {
-            a    = a->gtGetOp1();
-            msub = true;
-        }
-        if (b->OperIs(GT_NEG) && b->isContained())
-        {
-            b    = b->gtGetOp1();
-            msub = !msub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
-        }
-
-        emitIns_R_R_R_R(msub ? INS_msub : INS_madd, attr, dst->GetRegNum(), a->GetRegNum(), b->GetRegNum(),
-                        c->GetRegNum());
-        return dst->GetRegNum();
     }
     else // not floating point
     {

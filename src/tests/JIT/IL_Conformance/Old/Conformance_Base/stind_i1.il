@@ -45,4 +45,4 @@ FAIL:
 	ret
 }
 }
-.assembly stind_i1.exe{}
+.assembly stind_i1{}

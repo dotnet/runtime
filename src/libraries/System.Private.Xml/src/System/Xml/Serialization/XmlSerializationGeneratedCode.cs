@@ -247,7 +247,7 @@ namespace System.Xml.Serialization
         internal string GenerateTypedSerializer(string? readMethod, string? writeMethod, XmlMapping mapping, CodeIdentifiers classes, string baseSerializer, string readerClass, string writerClass)
         {
             string serializerName = CodeIdentifier.MakeValid(Accessor.UnescapeName(mapping.Accessor.Mapping!.TypeDesc!.Name));
-            serializerName = classes.AddUnique(serializerName + "Serializer", mapping);
+            serializerName = classes.AddUnique($"{serializerName}Serializer", mapping);
 
             _writer.WriteLine();
             _writer.Write("public sealed class ");

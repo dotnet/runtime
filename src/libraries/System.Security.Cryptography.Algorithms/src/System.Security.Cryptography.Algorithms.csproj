@@ -108,8 +108,8 @@
              Link="Internal\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
              Link="Internal\Cryptography\Helpers.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyImportHelpers.cs"
-             Link="Common\Internal\Cryptography\PemKeyImportHelpers.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyHelpers.cs"
+             Link="Common\Internal\Cryptography\PemKeyHelpers.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\ILiteSymmetricCipher.cs"
              Link="Internal\Cryptography\ILiteSymmetricCipher.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricPadding.cs"

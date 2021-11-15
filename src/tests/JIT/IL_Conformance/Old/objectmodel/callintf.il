@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly callintf.exe{}
+.assembly callintf{}
 
 
 

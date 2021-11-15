@@ -10,7 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
-using TestLibrary;
+using Xunit;
 
 namespace BinderTracingTests
 {
@@ -110,7 +110,7 @@ namespace BinderTracingTests
                     // Run specific test - first argument should be the test method name
                     MethodInfo method = typeof(BinderTracingTest)
                         .GetMethod(args[0], BindingFlags.Public | BindingFlags.Static);
-                    Assert.IsTrue(method != null && method.GetCustomAttribute<BinderTestAttribute>() != null && method.ReturnType == typeof(BindOperation), "Invalid test method specified");
+                    Assert.True(method != null && method.GetCustomAttribute<BinderTestAttribute>() != null && method.ReturnType == typeof(BindOperation));
                     success = RunSingleTest(method);
                 }
             }
@@ -150,7 +150,7 @@ namespace BinderTracingTests
                 {
                     MethodInfo setupMethod = method.DeclaringType
                         .GetMethod(attribute.TestSetup, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-                    Assert.IsTrue(setupMethod != null);
+                    Assert.True(setupMethod != null);
                     setupMethod.Invoke(null, new object[0]);
                 }
 
@@ -209,7 +209,7 @@ namespace BinderTracingTests
         private static void ValidateSingleBind(BinderEventListener listener, AssemblyName assemblyName, BindOperation expected)
         {
             BindOperation[] binds = listener.WaitAndGetEventsForAssembly(assemblyName);
-            Assert.IsTrue(binds.Length == 1, $"Bind event count for {assemblyName} - expected: 1, actual: {binds.Length}");
+            Assert.True(binds.Length == 1, $"Bind event count for {assemblyName} - expected: 1, actual: {binds.Length}");
             BindOperation actual = binds[0];
 
             Helpers.ValidateBindOperation(expected, actual);

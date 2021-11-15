@@ -55,4 +55,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldind_u2.exe{}
+.assembly ldind_u2{}

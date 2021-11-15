@@ -10,12 +10,22 @@
 .assembly b56174
 {
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .class public auto ansi TestClass extends ['mscorlib']System.Object
 {
 .field static value class [mscorlib]System.RuntimeTypeHandle args
 
 .method public hidebysig static int32 Main(class [mscorlib]System.String[]) il managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.maxstack  8
 	.entrypoint
 	ldtoken int32

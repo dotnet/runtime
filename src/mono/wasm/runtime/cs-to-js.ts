@@ -7,7 +7,7 @@ import {
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
     MonoType, MonoTypeNull
 } from "./types";
-import { Module, runtimeHelpers } from "./modules";
+import { runtimeHelpers } from "./modules";
 import { conv_string } from "./strings";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
@@ -15,6 +15,7 @@ import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_
 import { mono_method_get_call_signature, call_method, wrap_error } from "./method-calls";
 import { _js_to_mono_obj } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
+import { getU32, getI32, getF32, getF64 } from "./memory";
 
 // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
 export enum MarshalType {
@@ -132,7 +133,7 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
 
     let typePtr = MonoTypeNull;
     if ((type === MarshalType.VT) || (type == MarshalType.OBJECT)) {
-        typePtr = <MonoType><any>Module.HEAPU32[<any>unbox_buffer >>> 2];
+        typePtr = <MonoType><any>getU32(unbox_buffer);
         if (<number><any>typePtr < 1024)
             throw new Error(`Got invalid MonoType ${typePtr} for object at address ${root.value} (root located at ${root.get_address()})`);
     }
@@ -148,20 +149,20 @@ export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
     const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type(root.value, unbox_buffer, runtimeHelpers._unbox_buffer_size);
     switch (type) {
         case MarshalType.INT:
-            return Module.HEAP32[<any>unbox_buffer >>> 2];
+            return getI32(unbox_buffer);
         case MarshalType.UINT32:
-            return Module.HEAPU32[<any>unbox_buffer >>> 2];
+            return getU32(unbox_buffer);
         case MarshalType.POINTER:
             // FIXME: Is this right?
-            return Module.HEAPU32[<any>unbox_buffer >>> 2];
+            return getU32(unbox_buffer);
         case MarshalType.FP32:
-            return Module.HEAPF32[<any>unbox_buffer >>> 2];
+            return getF32(unbox_buffer);
         case MarshalType.FP64:
-            return Module.HEAPF64[<any>unbox_buffer >>> 3];
+            return getF64(unbox_buffer);
         case MarshalType.BOOL:
-            return (Module.HEAP32[<any>unbox_buffer >>> 2]) !== 0;
+            return (getI32(unbox_buffer)) !== 0;
         case MarshalType.CHAR:
-            return String.fromCharCode(Module.HEAP32[<any>unbox_buffer >>> 2]);
+            return String.fromCharCode(getI32(unbox_buffer));
         case MarshalType.NULL:
             return null;
         default:

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
-namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
+namespace System.Security.Cryptography.Tests
 {
     public class CryptoStreamTests : WrappingConnectedStreamConformanceTests
     {

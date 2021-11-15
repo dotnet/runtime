@@ -28,6 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "simd.h"
 #include "namedintrinsiclist.h"
 #include "layout.h"
+#include "debuginfo.h"
 
 // Debugging GenTree is much easier if we add a magic virtual function to make the debugger able to figure out what type
 // it's got. This is enabled by default in DEBUG. To enable it in RET builds (temporarily!), you need to change the
@@ -530,6 +531,8 @@ enum GenTreeFlags : unsigned int
     GTF_RELOP_QMARK             = 0x20000000, // GT_<relop> -- the node is the condition for ?:
     GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
+    GTF_RELOP_SJUMP_OPT         = 0x04000000, // GT_<relop> -- Swap signed jl/jge with js/jns during emitter, reuses flags 
+                                              //               from previous instruction.
 
     GTF_JCMP_EQ                 = 0x80000000, // GTF_JCMP_EQ  -- Branch on equal rather than not equal
     GTF_JCMP_TST                = 0x40000000, // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
@@ -3027,6 +3030,13 @@ struct GenTreeOp : public GenTreeUnOp
     {
     }
 #endif
+
+    // True if this relop is marked for a transform during the emitter
+    // phase, e.g., jge => jns
+    bool MarkedForSignJumpOpt() const
+    {
+        return (gtFlags & GTF_RELOP_SJUMP_OPT) != 0;
+    }
 };
 
 struct GenTreeVal : public GenTree
@@ -4866,6 +4876,11 @@ struct GenTreeCall final : public GenTree
 
     // IL offset of the call wrt its parent method.
     IL_OFFSET gtRawILOffset;
+
+    // In DEBUG we report even non inline candidates in the inline tree in
+    // fgNoteNonInlineCandidate. We need to keep around the inline context for
+    // this as normally it's part of the candidate info.
+    class InlineContext* gtInlineContext;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     bool IsHelperCall() const
@@ -6132,18 +6147,17 @@ struct GenTreeRetExpr : public GenTree
 #endif
 };
 
-class InlineContext;
-
+// In LIR there are no longer statements so debug information is inserted linearly using these nodes.
 struct GenTreeILOffset : public GenTree
 {
-    IL_OFFSETX gtStmtILoffsx; // instr offset (if available)
+    DebugInfo gtStmtDI; // debug info
 #ifdef DEBUG
     IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt
 #endif
 
-    GenTreeILOffset(IL_OFFSETX offset DEBUGARG(IL_OFFSET lastOffset = BAD_IL_OFFSET))
+    GenTreeILOffset(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset = BAD_IL_OFFSET))
         : GenTree(GT_IL_OFFSET, TYP_VOID)
-        , gtStmtILoffsx(offset)
+        , gtStmtDI(di)
 #ifdef DEBUG
         , gtStmtLastILoffs(lastOffset)
 #endif
@@ -6216,13 +6230,11 @@ public:
 struct Statement
 {
 public:
-    Statement(GenTree* expr, IL_OFFSETX offset DEBUGARG(unsigned stmtID))
+    Statement(GenTree* expr DEBUGARG(unsigned stmtID))
         : m_rootNode(expr)
         , m_treeList(nullptr)
         , m_next(nullptr)
         , m_prev(nullptr)
-        , m_inlineContext(nullptr)
-        , m_ILOffsetX(offset)
 #ifdef DEBUG
         , m_lastILOffset(BAD_IL_OFFSET)
         , m_stmtID(stmtID)
@@ -6265,24 +6277,15 @@ public:
         return GenTreeList(GetTreeList());
     }
 
-    InlineContext* GetInlineContext() const
+    const DebugInfo& GetDebugInfo() const
     {
-        return m_inlineContext;
+        return m_debugInfo;
     }
 
-    void SetInlineContext(InlineContext* inlineContext)
+    void SetDebugInfo(const DebugInfo& di)
     {
-        m_inlineContext = inlineContext;
-    }
-
-    IL_OFFSETX GetILOffsetX() const
-    {
-        return m_ILOffsetX;
-    }
-
-    void SetILOffsetX(IL_OFFSETX offsetX)
-    {
-        m_ILOffsetX = offsetX;
+        m_debugInfo = di;
+        di.Validate();
     }
 
 #ifdef DEBUG
@@ -6363,9 +6366,7 @@ private:
     Statement* m_next;
     Statement* m_prev;
 
-    InlineContext* m_inlineContext; // The inline context for this statement.
-
-    IL_OFFSETX m_ILOffsetX; // The instr offset (if available).
+    DebugInfo m_debugInfo;
 
 #ifdef DEBUG
     IL_OFFSET m_lastILOffset; // The instr offset at the end of this statement.
