@@ -34,7 +34,7 @@
     <!-- Stabilizes provider key, using values from 6.0.0 release - do not change -->
     <CandleVariables Condition="'$(TargetArchitecture)' == 'arm64'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_48.3.31210_arm64" />
     <CandleVariables Condition="'$(TargetArchitecture)' == 'x64'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_48.3.31210_x64" />
-    <CandleVariables Condition="'$(TargetArchitecture)' == 'x86'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_48.3.31210_x64" />
+    <CandleVariables Condition="'$(TargetArchitecture)' == 'x86'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_48.3.31210_x86" />
   </ItemGroup>
 
   <ItemGroup>
