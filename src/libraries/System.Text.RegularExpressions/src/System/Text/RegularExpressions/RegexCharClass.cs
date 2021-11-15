@@ -1393,7 +1393,12 @@ namespace System.Text.RegularExpressions
                 // If the class now represents a single negated range, but does so by including every
                 // other character, invert it to produce a normalized form with a single range.  This
                 // is valuable for subsequent optimizations in most of the engines.
-                if (!isNonBacktracking && // TODO: Why is NonBacktracking special-cased?
+                // TODO: https://github.com/dotnet/runtime/issues/61048. The special-casing for NonBacktracking
+                // can be deleted once this issue is addressed.  The special-casing exists because NonBacktracking
+                // is on a different casing plan than the other engines and doesn't use ToLower on each input
+                // character at match time; this in turn can highlight differences between sets and their inverted
+                // versions of themselves, e.g. a difference between [0-AC-\uFFFF] and [^B].
+                if (!isNonBacktracking &&
                     !_negate &&
                     _subtractor is null &&
                     (_categories is null || _categories.Length == 0))
