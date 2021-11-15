@@ -22,7 +22,7 @@ jobs:
     - iOSSimulator_x64
     - tvOSSimulator_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
-    - ${{ if eq(variables['isFullMatrix'], true) }}:
+    - ${{ if eq(variables['isManualOrIsNotPR'], true) }}:
       - iOSSimulator_arm64
     variables:
       # map dependencies variables to local variables
@@ -52,6 +52,7 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -97,6 +98,7 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -300,7 +302,7 @@ jobs:
           eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # NOTE: Per PR test execution is not recommended for runtime tests 
-      ${{ if eq(variables['isFullMatrix'], true) }}:
+      ${{ if eq(variables['isManualOrIsNotPR'], true) }}:
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
         extraStepsParameters:
@@ -340,7 +342,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
-      ${{ if eq(variables['isFullMatrix'], true) }}:
+      ${{ if eq(variables['isManualOrIsNotPR'], true) }}:
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
         extraStepsParameters:
