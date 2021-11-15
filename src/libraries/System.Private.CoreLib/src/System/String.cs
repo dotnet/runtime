@@ -323,7 +323,7 @@ namespace System
             string result = FastAllocateString(count);
             if (c != '\0')
             {
-                  MemoryMarshal.CreateSpan(ref result._firstChar, count).Fill(c);
+                SpanHelpers.Fill(ref result._firstChar, (uint)count, c);
             }
             return result;
         }
