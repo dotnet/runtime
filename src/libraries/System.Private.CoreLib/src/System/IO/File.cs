@@ -526,7 +526,7 @@ namespace System.IO
             }
 
             // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
-            FileOptions options = (OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None) | FileOptions.Asynchronous;
+            FileOptions options = FileOptions.Asynchronous | (OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None);
             SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options);
 
             long fileLength = 0L;
