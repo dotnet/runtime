@@ -86,6 +86,21 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
+        public Task MaxArrayLengthAsync()
+        {
+            string path = GetTestFilePath();
+            using (FileStream fs = File.Create(path))
+            {
+                fs.SetLength(Array.MaxLength + 1L);
+            }
+
+            // File is too large for ReadAllBytes at once
+            return Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
+        }
+
+        [Fact]
         public async Task OverwriteAsync()
         {
             string path = GetTestFilePath();

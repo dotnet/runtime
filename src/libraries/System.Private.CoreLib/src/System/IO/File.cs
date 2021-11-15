@@ -260,6 +260,11 @@ namespace System.IO
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
+
+#if DEBUG
+                fileLength = 0; // improve the test coverage for ReadAllBytesUnknownLength
+#endif
+
                 if (fileLength == 0)
                 {
                     // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also there are non-seekable files.
@@ -530,6 +535,10 @@ namespace System.IO
                 sfh.Dispose();
                 return Task.FromException<byte[]>(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.IO_FileTooLong2GB)));
             }
+
+#if DEBUG
+            fileLength = 0; // improve the test coverage for InternalReadAllBytesUnknownLengthAsync
+#endif
 
             return fileLength > 0 ?
                 InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken) :
