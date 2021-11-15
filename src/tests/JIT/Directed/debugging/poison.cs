@@ -20,17 +20,19 @@ public class Program
         Unsafe.SkipInit(out poisoned2);
         result &= VerifyPoison(&poisoned2, sizeof(WithoutGCRef));
         
-        Massive poisoned3;
-        Unsafe.SkipInit(out poisoned3);
-        result &= VerifyPoison(&poisoned3, sizeof(Massive));
+        Massive notPoisoned;
+        Unsafe.SkipInit(out notPoisoned);
+        // too large to be poisoned, just expose it but don't check return value
+        VerifyPoison(&notPoisoned, sizeof(Massive));
 
         WithoutGCRef poisoned4;
         Unsafe.SkipInit(out poisoned4);
         result &= VerifyPoison(&poisoned4, sizeof(WithoutGCRef));
 
-        Massive poisoned5;
-        Unsafe.SkipInit(out poisoned5);
-        result &= VerifyPoison(&poisoned5, sizeof(Massive));
+        Massive notPoisoned2;
+        Unsafe.SkipInit(out notPoisoned2);
+        // too large to be poisoned, just expose it but don't check return value
+        VerifyPoison(&notPoisoned2, sizeof(Massive));
 
         GCRef zeroed2;
         Unsafe.SkipInit(out zeroed2);
