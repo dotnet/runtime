@@ -235,7 +235,10 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
 
-            yield return GenerateValuePropertyAssignment(info, context, subContext);
+            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                yield return GenerateValuePropertyAssignment(info, context, subContext);
+            }
 
             foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, subContext))
             {
@@ -450,7 +453,7 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshaller that enables support for a GetPinnableReference method on a native type, with a Value property fallback.
+    /// Marshaller that calls the GetPinnableReference method on the marshaller value and enables support for the Value property.
     /// </summary>
     internal sealed class PinnableMarshallerTypeMarshalling : ICustomNativeTypeMarshallingStrategy
     {
@@ -482,8 +485,11 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
 
-            // <marshalerIdentifier>.Value = <nativeIdentifier>;
-            yield return GenerateValuePropertyAssignment(info, context, subContext);
+            if (!context.AdditionalTemporaryStateLivesAcrossStages)
+            {
+                // <marshalerIdentifier>.Value = <nativeIdentifier>;
+                yield return GenerateValuePropertyAssignment(info, context, subContext);
+            }
 
             foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, subContext))
             {
@@ -562,8 +568,11 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
 
-            // <marshalerIdentifier>.Value = <nativeIdentifier>;
-            yield return GenerateValuePropertyAssignment(info, context, subContext);
+            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                // <marshalerIdentifier>.Value = <nativeIdentifier>;
+                yield return GenerateValuePropertyAssignment(info, context, subContext);
+            }
 
             foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, subContext))
             {
