@@ -21,7 +21,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "vartype.h"   // For "var_types"
 #include "target.h"    // For "regNumber"
 #include "ssaconfig.h" // For "SsaConfig::RESERVED_SSA_NUM"
-#include "reglist.h"
 #include "valuenumtype.h"
 #include "jitstd.h"
 #include "jithashtable.h"
@@ -528,7 +527,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_RELOP_NAN_UN            = 0x80000000, // GT_<relop> -- Is branch taken if ops are NaN?
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
-    GTF_RELOP_QMARK             = 0x20000000, // GT_<relop> -- the node is the condition for ?:
     GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
     GTF_RELOP_SJUMP_OPT         = 0x04000000, // GT_<relop> -- Swap signed jl/jge with js/jns during emitter, reuses flags 
@@ -4253,11 +4251,6 @@ struct GenTreeCall final : public GenTree
     {
         return UseList(gtCallLateArgs);
     }
-
-#if !FEATURE_FIXED_OUT_ARGS
-    int     regArgListCount;
-    regList regArgList;
-#endif
 
 #ifdef DEBUG
     // Used to register callsites with the EE
