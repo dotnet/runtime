@@ -2,12 +2,11 @@ name: Build and Test OSX x64
 
 agent:
   type: Unity::VM::osx
-  image: platform-foundation/mac-bokken:latest
+  image: slough-ops/macos-11-xcode:stable
   flavor: m1.mac
 
 commands:
-  - brew install pkg-config
-  - brew install openssl
+  - brew bundle --no-lock --file eng/Brewfile
   - ./build.sh -subset clr -a x64 -c release
   - ./build.sh libs -c release
   - ./src/tests/build.sh Release x64
