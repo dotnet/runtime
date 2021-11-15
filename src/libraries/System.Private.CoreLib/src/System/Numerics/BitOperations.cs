@@ -868,6 +868,14 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static uint Crc32C(uint crc, ulong data)
         {
+            if (Sse42.X64.IsSupported)
+            {
+                // unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
+                ulong result = Sse42.X64.Crc32(crc, data);
+
+                // Truncate redundant bytes and cast to uint
+                return Unsafe.As<ulong, uint>(ref result);
+            }
             if (Crc32.Arm64.IsSupported)
             {
                 // uint32_t __crc32d (uint32_t a, uint64_t b)
