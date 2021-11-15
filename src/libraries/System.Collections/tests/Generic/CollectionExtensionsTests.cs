@@ -130,14 +130,14 @@ namespace System.Collections.Tests
         public void AsReadOnly_NullIList_ThrowsArgumentNullException()
         {
             IList<string> list = null;
-            Assert.Throws<ArgumentNullException>(() => list.AsReadOnly());
+            Assert.Throws<ArgumentNullException>("list", () => list.AsReadOnly());
         }
 
         [Fact]
         public void AsReadOnly_NullIDictionary_ThrowsArgumentNullException()
         {
             IDictionary<string, string> dictionary = null;
-            Assert.Throws<ArgumentNullException>(() => dictionary.AsReadOnly());
+            Assert.Throws<ArgumentNullException>("dictionary", () => dictionary.AsReadOnly());
         }
     }
 }
