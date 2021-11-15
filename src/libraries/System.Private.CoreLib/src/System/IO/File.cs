@@ -260,7 +260,7 @@ namespace System.IO
                 }
                 if (fileLength == 0)
                 {
-                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also theree are non-seekable files.
+                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also there are non-seekable files.
                     // Thus we need to assume 0 doesn't mean empty.
                     return ReadAllBytesUnknownLength(sfh);
                 }
