@@ -324,6 +324,13 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[^\n]*", ".*")]
         [InlineData("(?>[^\n]*)", "(?>.*)")]
         [InlineData("[^\n]*?", ".*?")]
+        // Set reduction
+        [InlineData("[\u0001-\uFFFF]", "[^\u0000]")]
+        [InlineData("[\u0000-\uFFFE]", "[^\uFFFF]")]
+        [InlineData("[\u0000-AB-\uFFFF]", "[\u0000-\uFFFF]")]
+        [InlineData("[ABC-EG-J]", "[A-EG-J]")]
+        [InlineData("[\u0000-AC-\uFFFF]", "[^B]")]
+        [InlineData("[\u0000-AF-\uFFFF]", "[^B-E]")]
         // Large loop patterns
         [InlineData("a*a*a*a*a*a*a*b*b*?a+a*", "a*b*b*?a+")]
         [InlineData("a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "a{0,30}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
