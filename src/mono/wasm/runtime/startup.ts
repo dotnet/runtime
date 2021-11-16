@@ -59,30 +59,27 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
 async function _fetch_asset(url: string): Promise<Response> {
     if (typeof (fetch) === "function") {
         return fetch(url, { credentials: "same-origin" });
-    } else if (ENVIRONMENT_IS_NODE || typeof (read) === "function") {
-        let data: any = null;
-        try {
-            if (ENVIRONMENT_IS_NODE) {
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                const fs = require("fs");
-                data = await fs.promises.readFile(url);
-            }
-            else {
-                data = read(url, "binary");
-            }
-            return Promise.resolve(<Response><any> {
-                ok: !!data,
-                url: url,
-                arrayBuffer: () => Promise.resolve(new Uint8Array(data)),
-                json: () => Promise.resolve(JSON.parse(ENVIRONMENT_IS_NODE ? data : read(url)))
-            });
-        }
-        catch (exc) {
-            return Promise.reject(exc);
-        }
-    } else {
-        return Promise.reject(Error("No fetch implementation available"));
     }
+    else if (ENVIRONMENT_IS_NODE) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const fs = require("fs");
+        const arrayBuffer = await fs.readFileSync(url);
+        return <Response><any> {
+            ok: true,
+            url,
+            arrayBuffer: () => arrayBuffer,
+            json: () => JSON.parse(arrayBuffer)
+        };
+    }
+    else if (typeof (read) === "function") {
+        return <Response><any> {
+            ok: true,
+            url,
+            arrayBuffer: () => new Uint8Array(read(url, "binary")),
+            json: () => JSON.parse(read(url))
+        };
+    }
+    throw new Error("No fetch implementation available");
 }
 
 function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
