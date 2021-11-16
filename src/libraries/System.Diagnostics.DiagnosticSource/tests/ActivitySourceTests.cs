@@ -471,6 +471,12 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
             Assert.Equal("k=v", context.TraceState);
 
+            Assert.True(ActivityContext.TryParse(w3cId, null, out context, isRemote: true));
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.True(context.IsRemote);
+
             context = ActivityContext.Parse(w3cId, "k=v");
             Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
             Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());

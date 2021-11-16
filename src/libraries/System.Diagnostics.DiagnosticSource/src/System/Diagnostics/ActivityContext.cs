@@ -66,7 +66,8 @@ namespace System.Diagnostics
         /// <param name="traceParent">W3C trace parent header.</param>
         /// <param name="traceState">W3C trace state.</param>
         /// <param name="context">The ActivityContext object created from the parsing operation.</param>
-        public static bool TryParse(string? traceParent, string? traceState, out ActivityContext context)
+        /// <param name="isRemote">Indicate the context is propagated from remote parent.</param>
+        public static bool TryParse(string? traceParent, string? traceState, out ActivityContext context, bool isRemote = false)
         {
             if (traceParent is null)
             {
@@ -74,7 +75,7 @@ namespace System.Diagnostics
                 return false;
             }
 
-            return Activity.TryConvertIdToContext(traceParent, traceState, out context);
+            return Activity.TryConvertIdToContext(traceParent, traceState, out context, isRemote);
         }
 
         /// <summary>
