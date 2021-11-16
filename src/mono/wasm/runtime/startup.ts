@@ -56,6 +56,35 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
 }
 
+async function _fetch_asset(url: string): Promise<Response> {
+    if (typeof (fetch) === "function") {
+        return fetch(url, { credentials: "same-origin" });
+    } else if (ENVIRONMENT_IS_NODE || typeof (read) === "function") {
+        let data: any = null;
+        try {
+            if (ENVIRONMENT_IS_NODE) {
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                const fs = require("fs");
+                data = await fs.promises.readFile(url);
+            }
+            else {
+                data = read(url, "binary");
+            }
+            return Promise.resolve(<Response><any> {
+                ok: !!data,
+                url: url,
+                arrayBuffer: () => Promise.resolve(new Uint8Array(data)),
+                json: () => Promise.resolve(JSON.parse(ENVIRONMENT_IS_NODE ? data : read(url)))
+            });
+        }
+        catch (exc) {
+            return Promise.reject(exc);
+        }
+    } else {
+        return Promise.reject(Error("No fetch implementation available"));
+    }
+}
+
 function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
     const bytes = new Uint8Array(blob);
     if (ctx.tracing)
@@ -148,7 +177,7 @@ function _get_fetch_implementation(args: MonoConfig): (asset: string) => Promise
         return args.fetch_file_cb;
 
     return function (asset) {
-        return _fetch_data(asset);
+        return _fetch_asset(asset);
     };
 }
 
@@ -413,36 +442,6 @@ export function mono_wasm_load_data_archive(data: TypedArray, prefix: string): b
     return true;
 }
 
-async function _fetch_data (url: string): Promise<Response> {
-    if (typeof (fetch) === "function") {
-        return fetch(url, { credentials: "same-origin" });
-    } else if (ENVIRONMENT_IS_NODE || typeof (read) === "function") {
-        let data: any = null;
-        try {
-            if (ENVIRONMENT_IS_NODE) {
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                const fs = require("fs");
-                data = await fs.promises.readFile(url);
-            }
-            else {
-                data = read(url, "binary");
-            }
-        }
-        catch (exc) {
-            data = null;
-            return Promise.reject(exc);
-        }
-        return Promise.resolve(<Response><any>{
-            ok: !!data,
-            url: url,
-            arrayBuffer: () => Promise.resolve (new Uint8Array (data)),
-            json: () => Promise.resolve (JSON.parse (ENVIRONMENT_IS_NODE ? data : read(url))),
-        });
-    } else {
-        return Promise.reject(Error("No fetch implementation available"));
-    }
-}
-
 /**
  * Loads the mono config file (typically called mono-config.json) asynchroniously
  * Note: the run dependencies are so emsdk actually awaits it in order.
@@ -456,7 +455,7 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
     try {
         let config = null;
         // NOTE: when we add nodejs make sure to include the nodejs fetch package
-        const configRaw = await _fetch_data(configFilePath);
+        const configRaw = await _fetch_asset(configFilePath);
         config = await configRaw.json();
 
         runtimeHelpers.config = config;
