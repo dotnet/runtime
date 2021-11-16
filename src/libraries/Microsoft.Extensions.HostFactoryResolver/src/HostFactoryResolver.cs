@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Hosting
                 return TimeSpan.FromSeconds((int)timeoutInSeconds);
             }
 
-            return TimeSpan.FromSeconds(30);
+            return TimeSpan.FromMinutes(5);
         }
 
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
