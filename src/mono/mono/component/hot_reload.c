@@ -878,6 +878,33 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 
 }
 
+static gboolean
+effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, const MonoTableInfo **t, int *idx)
+{
+	GList *ptr =info->delta_image_last;
+	uint32_t exposed_gen = hot_reload_get_thread_generation ();
+	MonoImage *dmeta = NULL;
+	DeltaInfo *delta_info = NULL;
+
+	/* walk backward from the latest image until we find one that matches the current thread's exposed generation */
+	do {
+		dmeta = (MonoImage*)ptr->data;
+		delta_info = delta_info_lookup (dmeta);
+		if (delta_info->generation <= exposed_gen)
+			break;
+		ptr = ptr->prev;
+	} while (ptr);
+	if (!ptr)
+		return FALSE;
+	g_assert (dmeta != NULL);
+	g_assert (delta_info != NULL);
+
+	*t = &delta_info->mutants [tbl_index];
+	/* idx unchanged */
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "effective table[mutant] for %s: 0x%08x -> 0x%08x (rows = 0x%08x) (gen %d)", mono_meta_table_name (tbl_index), *idx, *idx, table_info_get_rows (*t), metadata_update_local_generation (base, info, dmeta));
+	return TRUE;
+}
+
 void
 hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
 {
@@ -891,6 +918,9 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
 		return;
 	BaselineInfo *info = baseline_info_lookup (base);
 	if (!info)
+		return;
+
+	if (effective_table_mutant (base, info, tbl_index, t, idx))
 		return;
 
 	gboolean any_modified = info->any_modified_rows[tbl_index];
@@ -1188,25 +1218,85 @@ delta_info_mutate_row (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo 
 
 	int delta_index = hot_reload_relative_delta_index_full (image_dmeta, cur_delta, log_token);
 
-	guint32 bitfield = image_base->tables [token_table].size_bitfield;
+	/* The complication here is that we want the mutant table to look like the table in
+	 * image_base with respect to column widths, but the delta tables are generally coming in
+	 * uncompressed (4-byte columns).  So we have to copy one column at a time and adjust the
+	 * widths as we go.
+	 */
 
-	const char *src_base = image_dmeta->tables [token_table].base + delta_index * image_dmeta->tables [token_table].row_size;
-	char *dst_base = (char*)cur_delta->mutants [token_table].base + token_index * image_base->tables [token_table].row_size;
+	guint32 dst_bitfield = image_base->tables [token_table].size_bitfield;
+	guint32 src_bitfield = image_dmeta->tables [token_table].size_bitfield;
 
-	guint32 offset = 0;
-	for (int col = 0; col < mono_metadata_table_count (bitfield); ++col) {
-		guint32 col_size = mono_metadata_table_size (bitfield, col);
+	const char *src_base = image_dmeta->tables [token_table].base + (delta_index - 1) * image_dmeta->tables [token_table].row_size;
+	char *dst_base = (char*)cur_delta->mutants [token_table].base + (token_index - 1) * image_base->tables [token_table].row_size;
+
+	guint32 src_offset = 0, dst_offset = 0;
+	for (int col = 0; col < mono_metadata_table_count (dst_bitfield); ++col) {
+		guint32 dst_col_size = mono_metadata_table_size (dst_bitfield, col);
+		guint32 src_col_size = mono_metadata_table_size (src_bitfield, col);
 		if ((m_SuppressedDeltaColumns [token_table] & (1 << col)) == 0) {
-			/* copy */
-			const char *src = src_base + offset;
-			char *dst = dst_base + offset;
-			memcpy (dst, src, col_size);
+			const char *src = src_base + src_offset;
+			char *dst = dst_base + dst_offset;
+
+			/* copy src to dst, via a temporary to adjust for size differences */
+			/* FIXME: unaligned access, endianness */
+			guint32 tmp;
+
+			switch (src_col_size) {
+			case 1:
+				tmp = *(guint8*)src;
+				break;
+			case 2:
+				tmp = *(guint16*)src;
+				break;
+			case 4:
+				tmp = *(guint32*)src;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+
+			/* FIXME: unaligned access, endianness */
+			switch (dst_col_size) {
+			case 1:
+				*(guint8*)dst = (guint8)tmp;
+				break;
+			case 2:
+				*(guint16*)dst = (guint16)tmp;
+				break;
+			case 4:
+				*(guint32*)dst = tmp;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+
 		}
-		offset += col_size;
+		src_offset += src_col_size;
+		dst_offset += dst_col_size;
 	}
-	g_assert (offset == image_base->tables [token_table].row_size);
+	g_assert (dst_offset == image_base->tables [token_table].row_size);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "mutate: table=0x%02x row=0x%04x delta row=0x%04x %s", token_table, token_index, delta_index, modified ? "Mod" : "Add");
+}
+
+static void
+prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info)
+{
+	int rows = table_info_get_rows (table_enclog);
+	/* Prepare the mutated metadata tables */
+	for (int i = 0; i < rows ; ++i) {
+		guint32 cols [MONO_ENCLOG_SIZE];
+		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
+
+		int log_token = cols [MONO_ENCLOG_TOKEN];
+		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
+
+		if (func_code != ENC_FUNC_DEFAULT)
+			continue;
+
+		delta_info_mutate_row (image_base, image_dmeta, delta_info, log_token);
+	}
 }
 
 /* Run some sanity checks first. If we detect unsupported scenarios, this
@@ -1484,6 +1574,26 @@ hot_reload_get_method_debug_information (MonoPPDBFile *ppdb_file, int idx)
 	return NULL;
 }
 
+static void G_GNUC_UNUSED
+dump_assembly_ref_names (MonoImage *image)
+{
+	if (!mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
+		return;
+	for (int i = 0; i < image->nreferences; ++i) {
+		ERROR_DECL(local_error);
+		MonoAssemblyName aname;
+		mono_assembly_get_assemblyref_checked (image, i, &aname, local_error);
+
+		if (is_ok (local_error))
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Reference[%02d] = '%s'", i, aname.name);
+		else {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Reference[%02d] error '%s'", i, mono_error_get_message (local_error));
+			mono_error_cleanup (local_error);
+		}
+	}
+}
+
+
 /* do actuall enclog application */
 static gboolean
 apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
@@ -1513,21 +1623,6 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 	 * Fortunately whether we get the delta from the debugger or from the runtime API, we always
 	 * have it in writable memory (and not mmap-ed pages), so we can rewrite the table values.
 	 */
-
-
-	/* Prepare the mutated metadata tables */
-	for (int i = 0; i < rows ; ++i) {
-		guint32 cols [MONO_ENCLOG_SIZE];
-		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
-
-		int log_token = cols [MONO_ENCLOG_TOKEN];
-		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
-
-		if (func_code != ENC_FUNC_DEFAULT)
-			continue;
-
-		delta_info_mutate_row (image_base, image_dmeta, delta_info, log_token);
-	}
 
 
 	MonoClass *add_method_klass = NULL;
@@ -1606,6 +1701,10 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			memcpy (image_base->references, old_array, sizeof (gpointer) * (old_rows + 1));
 			image_base->nreferences = old_rows + new_rows;
 			mono_image_unlock (image_base);
+
+#if 0
+			dump_assembly_ref_names (image_base);
+#endif
 
 			g_free (old_array);
 			break;
@@ -1752,6 +1851,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 
 	/* makes a copy of dil_bytes_orig */
 	gpointer dil_bytes = open_dil_data (image_base, dil_bytes_orig, dil_length);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta IL bytes copied to addr=%p", dil_bytes);
 
 	MonoPPDBFile *ppdb_file = NULL;
 	if (dpdb_length > 0)
@@ -1803,6 +1903,11 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	}
 
 	delta_info_initialize_mutants (image_base, base_info, prev_delta_info, delta_info);
+
+	prepare_mutated_rows (table_enclog, image_base, image_dmeta, delta_info);
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Populated mutated tables for delta image %p", image_dmeta);
+
 
 	if (!apply_enclog_pass1 (image_base, image_dmeta, dil_bytes, dil_length, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on sanity-checking delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
@@ -1949,8 +2054,6 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 	/* result row, 0-based */
 	int ridx;
 
-	int original_token = mono_metadata_make_token (table_index, token_index);
-
 	uint32_t exposed_gen = hot_reload_get_thread_generation ();
 	do {
 		if (!list)
@@ -1961,9 +2064,9 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 		if (delta_info->generation > exposed_gen)
 			return TRUE;
 		list = list->next;
-		table = &dmeta->tables [table_index];
-		/* mono_image_relative_delta_index returns a 1-based index */
-		ridx = hot_reload_relative_delta_index_full (dmeta, delta_info, original_token) - 1;
+
+		table = &delta_info->mutants [table_index];
+		ridx = token_index - 1;
 	} while (ridx < 0 || ridx >= table_info_get_rows (table));
 
 	return FALSE;
