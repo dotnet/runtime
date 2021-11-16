@@ -38,7 +38,7 @@ inline PTR_VOID EEClassHashTable::CompressClassDef(mdToken cl)
     }
 }
 
-inline DWORD EEClassHashTable::Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName)
+static DWORD HashName(LPCUTF8 pszNamespace, LPCUTF8 pszClassName)
 {
     CONTRACTL
     {
@@ -60,7 +60,87 @@ inline DWORD EEClassHashTable::Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName)
     while ((dwChar = *pszClassName++) != 0)
         dwHash = ((dwHash << 5) + dwHash) ^ dwChar;
 
-    return  dwHash;
+    // reseve 0 hash so that we could pass 0 in no-encloser case, 31 bit is still good for our needs
+    return  dwHash | 1;
+}
+
+static DWORD Combine(DWORD hash, DWORD encloserHash)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // NB: there are better ways to combine hashes, but here we need a commutative operator,
+    //     since we are not always combining hashes starting from the innermost name
+    hash = hash ^ encloserHash;
+
+    // reseve 0 hash so that we could pass 0 in no-encloser case, 31 bit is still good for our needs
+    return hash | 1;
+}
+
+inline DWORD EEClassHashTable::Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, DWORD encloserHash)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return Combine(HashName(pszNamespace, pszClassName), encloserHash);
+}
+
+// hashes the name specified by the token and names of all its containers
+inline DWORD EEClassHashTable::Hash(IMDInternalImport* pMDImport, mdToken token)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    _ASSERTE(TypeFromToken(token) == mdtTypeDef ||
+            TypeFromToken(token) == mdtTypeRef ||
+            TypeFromToken(token) == mdtExportedType);
+    _ASSERTE(!IsNilToken(token)); 
+
+    HRESULT hr;
+    LPCUTF8 szNamespace;
+    LPCUTF8 szName;
+    bool hasTypeToken = true;
+    DWORD hashcode = 0;
+
+    while (hasTypeToken)
+    {
+        if (IsNilToken(token))
+            return 0;
+
+        switch (TypeFromToken(token))
+        {
+        case mdtTypeDef:
+            IfFailThrow(pMDImport->GetNameOfTypeDef(token, &szName, &szNamespace));
+            hr = pMDImport->GetNestedClassProps(token, &token);
+            if (hr == CLDB_E_RECORD_NOTFOUND)
+                hasTypeToken = false;
+            else
+                IfFailThrow(hr);
+            break;
+
+        case mdtTypeRef:
+            IfFailThrow(pMDImport->GetNameOfTypeRef(token, &szNamespace, &szName));
+            IfFailThrow(pMDImport->GetResolutionScopeOfTypeRef(token, &token));
+            hasTypeToken = (TypeFromToken(token) == mdtTypeRef);
+            break;
+
+        case mdtExportedType:
+            IfFailThrow(pMDImport->GetExportedTypeProps(token, &szNamespace, &szName, &token, NULL, NULL));
+            hasTypeToken = (TypeFromToken(token) == mdtExportedType);
+            break;
+
+        default:
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_TOKEN_TYPE);
+        }
+
+        DWORD nameHash = HashName(szNamespace, szName);
+        hashcode = Combine(nameHash, hashcode);
+    }
+
+    return hashcode;
 }
 
 #endif // CLASSHASH_INL

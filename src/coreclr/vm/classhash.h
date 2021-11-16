@@ -39,6 +39,8 @@ typedef struct EEClassHashEntry
     PTR_VOID GetData();
     void SetData(PTR_VOID data) DAC_EMPTY();
 
+    int       m_hash;
+
 private:
     PTR_VOID    m_Data;     // Either the token (if EECLASSHASH_TYPEHANDLE_DISCR), or the type handle encoded
                             // as a relative pointer
@@ -69,19 +71,23 @@ public:
     EEClassHashEntry_t *InsertValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser, AllocMemTracker *pamTracker);
     EEClassHashEntry_t *InsertValueIfNotFound(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, EEClassHashEntry_t *pEncloser, BOOL IsNested, BOOL *pbFound, AllocMemTracker *pamTracker);
     EEClassHashEntry_t *InsertValueUsingPreallocatedEntry(EEClassHashEntry_t *pStorageForNewEntry, LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser);
-    EEClassHashEntry_t *GetValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
-    EEClassHashEntry_t *GetValue(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
-    EEClassHashEntry_t *GetValue(const NameHandle* pName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
+
+    EEClassHashEntry_t *GetValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, DWORD encloserHash, LookupContext *pContext);
+    EEClassHashEntry_t *GetValue(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, DWORD encloserHash, LookupContext *pContext);
+    EEClassHashEntry_t *GetValue(const NameHandle* pName, PTR_VOID *pData, DWORD encloserHash, LookupContext *pContext);
+    EEClassHashEntry_t *FindItem(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, DWORD encloserHash, LookupContext *pContext);
+
     EEClassHashEntry_t *AllocNewEntry(AllocMemTracker *pamTracker);
     EEClassHashTable   *MakeCaseInsensitiveTable(Module *pModule, AllocMemTracker *pamTracker);
-    EEClassHashEntry_t *FindItem(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, BOOL IsNested, LookupContext *pContext);
+
     EEClassHashEntry_t *FindNextNestedClass(const NameHandle* pName, PTR_VOID *pData, LookupContext *pContext);
     EEClassHashEntry_t *FindNextNestedClass(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, LookupContext *pContext);
     EEClassHashEntry_t *FindNextNestedClass(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, LookupContext *pContext);
 
     BOOL     CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2);
 
-    static DWORD    Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName);
+    static DWORD    Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, DWORD encloserHash);
+    static DWORD    Hash(IMDInternalImport* pMDImport, mdToken token);
 
     class ConstructKeyCallback
     {

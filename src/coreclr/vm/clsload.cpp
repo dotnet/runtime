@@ -578,7 +578,7 @@ BOOL ClassLoader::IsNested(Module *pModule, mdToken token, mdToken *mdEncloser)
     }
 }
 
-BOOL ClassLoader::IsNested(const NameHandle* pName, mdToken *mdEncloser)
+BOOL ClassLoader::IsNested(const NameHandle* pName, mdToken *mdEncloser, DWORD* encloserHash)
 {
     CONTRACTL
     {
@@ -595,14 +595,19 @@ BOOL ClassLoader::IsNested(const NameHandle* pName, mdToken *mdEncloser)
         if (TypeFromToken(pName->GetTypeToken()) == mdtBaseType)
         {
             if (!pName->GetBucket().IsNull())
+            {
+                *encloserHash = pName->GetBucket().GetClassHashBasedEntryValue()->m_hash;
                 return TRUE;
-            return FALSE;
+            }
         }
-        else
-            return IsNested(pName->GetTypeModule(), pName->GetTypeToken(), mdEncloser);
+        else if (IsNested(pName->GetTypeModule(), pName->GetTypeToken(), mdEncloser))
+        {
+            *encloserHash = EEClassHashTable::Hash(pName->GetTypeModule()->GetMDImport(), *mdEncloser);
+            return TRUE;
+        }
     }
-    else
-        return FALSE;
+
+    return FALSE;
 }
 
 void ClassLoader::GetClassValue(NameHandleTable nhTable,
@@ -627,9 +632,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
     CONTRACTL_END
 
 
-    mdToken             mdEncloser;
     EEClassHashEntry_t  *pBucket = NULL;
-
     needsToBuildHashtable = FALSE;
 
 #if _DEBUG
@@ -642,8 +645,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                  pName->GetNameSpace(), pName->GetName()));
     }
 #endif
-
-    BOOL isNested = IsNested(pName, &mdEncloser);
 
     PTR_Assembly assembly = GetAssembly();
     PREFIX_ASSUME(assembly != NULL);
@@ -719,13 +720,17 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
             }
             _ASSERTE(pTable);
 
+            mdToken mdEncloser;
+            DWORD encloserHash = 0;
+            BOOL isNested = IsNested(pName, &mdEncloser, &encloserHash);
+
             if (isNested)
             {
                 Module *pNameModule = pName->GetTypeModule();
                 PREFIX_ASSUME(pNameModule != NULL);
 
                 EEClassHashTable::LookupContext sContext;
-                if ((pBucket = pTable->GetValue(pName, pData, TRUE, &sContext)) != NULL)
+                if ((pBucket = pTable->GetValue(pName, pData, encloserHash, &sContext)) != NULL)
                 {
                     switch (TypeFromToken(pName->GetTypeToken()))
                     {
@@ -758,7 +763,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
             }
             else
             {
-                pBucket = pTable->GetValue(pName, pData, FALSE, NULL);
+                pBucket = pTable->GetValue(pName, pData, 0, NULL);
             }
 
             if (pBucket) // Return on the first success
@@ -1240,6 +1245,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
     {
         AvailableClasses_LockHolder lh(this);
 
+        // TODO: VS no need to try again
         // Try again with the lock.  This will protect against another thread reallocating
         // the hash table underneath us
         GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
@@ -1536,19 +1542,19 @@ ClassLoader::LoadTypeHandleThrowing(
             pClsLdr = pFoundModule->GetClassLoader();
             pLookInThisModuleOnly = NULL;
         }
+    }
 
 #ifndef DACCESS_COMPILE
-        // Replace AvailableClasses Module entry with found TypeHandle
-        if (!typeHnd.IsNull() &&
-            typeHnd.IsRestored() &&
-            foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
-            (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
-            (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
-        {
-            foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
-        }
-#endif // !DACCESS_COMPILE
+    // Replace AvailableClasses Module entry with found TypeHandle
+    if (!typeHnd.IsNull() &&
+        typeHnd.IsRestored() &&
+        foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
+        (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
+        (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
+    {
+        foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
     }
+#endif // !DACCESS_COMPILE
 
     RETURN typeHnd;
 } // ClassLoader::LoadTypeHandleThrowing
@@ -3765,6 +3771,9 @@ VOID ClassLoader::AddAvailableClassHaveLock(
         // Find this type's encloser's entry in the available table.
         // We'll save a pointer to it in the new hash entry for this type.
         BOOL fNestedEncl = SUCCEEDED(pMDImport->GetNestedClassProps(enclosing, &enclEnclosing));
+        int enclEnclosingHash = fNestedEncl ?
+            EEClassHashTable::Hash(pMDImport, enclEnclosing) :
+            0;
 
         EEClassHashTable::LookupContext sContext;
         if (FAILED(pMDImport->GetNameOfTypeDef(enclosing, &pszEnclosingName, &pszEnclosingNameSpace)))
@@ -3775,7 +3784,7 @@ VOID ClassLoader::AddAvailableClassHaveLock(
         if ((pBucket = pClassHash->GetValue(pszEnclosingNameSpace,
                                             pszEnclosingName,
                                             &ThrowawayData,
-                                            fNestedEncl,
+                                            enclEnclosingHash,
                                             &sContext)) != NULL) {
             if (fNestedEncl) {
                 // Find entry for enclosing class - NOTE, this assumes that the
@@ -3813,7 +3822,7 @@ VOID ClassLoader::AddAvailableClassHaveLock(
             pCaseInsEntry = pClassCaseInsHash->AllocNewEntry(pamTracker);
         }
 
-        EEClassHashEntry_t *pEntry = pClassHash->FindItem(pszNameSpace, pszName, FALSE, NULL);
+        EEClassHashEntry_t *pEntry = pClassHash->FindItem(pszNameSpace, pszName, 0, NULL);
         if (pEntry) {
             HashDatum Data = pEntry->GetData();
 
@@ -3922,6 +3931,10 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
             pManifestModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
         }
 
+        int enclosingHash = TypeFromToken(nextImpl) == mdtExportedType ?
+            EEClassHashTable::Hash(pAsmImport, nextImpl) :
+            0;
+
         // Find entry for enclosing class - NOTE, this assumes that the
         // enclosing class's ExportedType was inserted previously, which assumes that,
         // when enuming ExportedTypes, we get the enclosing class first
@@ -3930,7 +3943,7 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
         if ((pBucket = pManifestModule->GetAvailableClassHash()->GetValue(pszEnclosingNameSpace,
                                                                           pszEnclosingName,
                                                                           &ThrowawayData,
-                                                                          TypeFromToken(nextImpl) == mdtExportedType,
+                                                                          enclosingHash,
                                                                           &sContext)) != NULL) {
             do {
                 // check to see if this is the correct class

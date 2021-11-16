@@ -311,6 +311,9 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
 
 }
 
+// in a case-insensitive case, do not discriminate between encloser names when hashing.
+#define CASE_INSENSITIVE_ENCLOSER_HASH (1)
+
 #ifndef DACCESS_COMPILE
 
 EEClassHashEntry_t *EEClassHashTable::InsertValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser, AllocMemTracker *pamTracker)
@@ -339,7 +342,14 @@ EEClassHashEntry_t *EEClassHashTable::InsertValue(LPCUTF8 pszNamespace, LPCUTF8 
     pEntry->DebugKey[1] = pszClassName;
 #endif
 
-    BaseInsertEntry(Hash(pszNamespace, pszClassName), pEntry);
+    DWORD encloserHash = 0;
+    if (pEncloser != NULL)
+    {
+        encloserHash = m_bCaseInsensitive ? CASE_INSENSITIVE_ENCLOSER_HASH : pEncloser->m_hash;
+    }
+
+    pEntry->m_hash = Hash(pszNamespace, pszClassName, encloserHash);
+    BaseInsertEntry(pEntry->m_hash, pEntry);
 
     return pEntry;
 }
@@ -388,7 +398,14 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueUsingPreallocatedEntry(EEClassH
     pNewEntry->DebugKey[1] = pszClassName;
 #endif
 
-    BaseInsertEntry(Hash(pszNamespace, pszClassName), pNewEntry);
+    DWORD encloserHash = 0;
+    if (pEncloser != NULL)
+    {
+        encloserHash = m_bCaseInsensitive ? CASE_INSENSITIVE_ENCLOSER_HASH : pEncloser->m_hash;
+    }
+
+    pNewEntry->m_hash = Hash(pszNamespace, pszClassName, encloserHash);
+    BaseInsertEntry(pNewEntry->m_hash, pNewEntry);
 
     return pNewEntry;
 }
@@ -410,7 +427,13 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueIfNotFound(LPCUTF8 pszNamespace
     _ASSERTE(pszNamespace != NULL);
     _ASSERTE(pszClassName != NULL);
 
-    EEClassHashEntry_t * pNewEntry = FindItem(pszNamespace, pszClassName, IsNested, NULL);
+    DWORD encloserHash = 0;
+    if (pEncloser != NULL)
+    {
+        encloserHash = m_bCaseInsensitive ? CASE_INSENSITIVE_ENCLOSER_HASH : pEncloser->m_hash;
+    }
+
+    EEClassHashEntry_t * pNewEntry = FindItem(pszNamespace, pszClassName, encloserHash, NULL);
 
     if (pNewEntry)
     {
@@ -432,14 +455,15 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueIfNotFound(LPCUTF8 pszNamespace
     pNewEntry->DebugKey[1] = pszClassName;
 #endif
 
-    BaseInsertEntry(Hash(pszNamespace, pszClassName), pNewEntry);
+    pNewEntry->m_hash = Hash(pszNamespace, pszClassName, encloserHash);
+    BaseInsertEntry(pNewEntry->m_hash, pNewEntry);
 
     return pNewEntry;
 }
 
 #endif // !DACCESS_COMPILE
 
-EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, BOOL IsNested, LookupContext *pContext)
+EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, DWORD encloserHash, LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -464,9 +488,17 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
         pContext = &sAltContext;
 
     // The base class provides the ability to enumerate all entries with the same hash code. We call this and
-    // further check which of these entries actually match the full key (there can be multiple hits with
-    // nested types in the picture).
-    PTR_EEClassHashEntry pSearch = BaseFindFirstEntryByHash(Hash(pszNamespace, pszClassName), pContext);
+    // further check which of these entries actually match the full key
+
+    if (encloserHash && m_bCaseInsensitive)
+    {
+        encloserHash = CASE_INSENSITIVE_ENCLOSER_HASH;
+    }
+
+    DWORD hash = Hash(pszNamespace, pszClassName, encloserHash);
+    PTR_EEClassHashEntry pSearch = BaseFindFirstEntryByHash(hash, pContext);
+
+    _ASSERTE(pSearch == NULL || pSearch->m_hash == hash);
 
     while (pSearch)
     {
@@ -476,7 +508,7 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
         {
             // If (IsNested), then we're looking for a nested class
             // If (pSearch->pEncloser), we've found a nested class
-            if ((IsNested != FALSE) == (pSearch->GetEncloser() != NULL))
+            if ((encloserHash != 0) == (pSearch->GetEncloser() != NULL))
             {
                 if (m_bCaseInsensitive)
                     g_IBCLogger.LogClassHashTableAccess(dac_cast<PTR_EEClassHashEntry>(pSearch->GetData()));
@@ -599,7 +631,7 @@ EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(LPCUTF8 pszFullyQualif
 }
 
 
-EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext)
+EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, DWORD encloserHash, LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -638,13 +670,13 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszFullyQualifiedName, P
         p = pszFullyQualifiedName;
     }
 
-    EEClassHashEntry_t * ret = GetValue(pNamespace, p, pData, IsNested, pContext);
+    EEClassHashEntry_t * ret = GetValue(pNamespace, p, pData, encloserHash, pContext);
 
     return ret;
 }
 
 
-EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext)
+EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, DWORD encloserHash, LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -658,7 +690,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszNamespace, LPCUTF8 ps
 
 
     _ASSERTE(m_pModule != NULL);
-    EEClassHashEntry_t *pItem = FindItem(pszNamespace, pszClassName, IsNested, pContext);
+    EEClassHashEntry_t *pItem = FindItem(pszNamespace, pszClassName, encloserHash, pContext);
     if (pItem)
         *pData = pItem->GetData();
 
@@ -666,7 +698,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszNamespace, LPCUTF8 ps
 }
 
 
-EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext)
+EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOID *pData, DWORD encloserHash, LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -683,10 +715,10 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOI
     _ASSERTE(pName);
     _ASSERTE(m_pModule != NULL);
     if(pName->GetNameSpace() == NULL) {
-        return GetValue(pName->GetName(), pData, IsNested, pContext);
+        return GetValue(pName->GetName(), pData, encloserHash, pContext);
     }
     else {
-        return GetValue(pName->GetNameSpace(), pName->GetName(), pData, IsNested, pContext);
+        return GetValue(pName->GetNameSpace(), pName->GetName(), pData, encloserHash, pContext);
     }
 }
 

@@ -910,7 +910,7 @@ private:
     static void DECLSPEC_NORETURN  ThrowTypeLoadException(TypeKey *pKey, UINT resIDWhy);
 
 
-    BOOL IsNested(const NameHandle* pName, mdToken *mdEncloser);
+    BOOL IsNested(const NameHandle* pName, mdToken *mdEncloser, DWORD* encloserHash);
     static BOOL IsNested(Module *pModude, mdToken typeDefOrRef, mdToken *mdEncloser);
 
 public:
