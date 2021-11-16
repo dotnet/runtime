@@ -230,7 +230,6 @@ const App = {
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
 function set_exit_code(exit_code, reason) {
-    originalConsole.log(`Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} from ${(new Error()).stack}.`)
     if (reason) {
         console.error(reason.toString());
         if (reason.stack) {
@@ -238,6 +237,8 @@ function set_exit_code(exit_code, reason) {
         }
     }
     if (is_browser) {
+        originalConsole.log(`Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} from ${(new Error()).stack}.`)
+
         // Notify the selenium script
         Module.exit_code = exit_code;
 
