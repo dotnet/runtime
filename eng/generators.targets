@@ -41,6 +41,7 @@
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))
                         and '$(IncludeDllImportGeneratorSources)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
 
     <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
@@ -67,17 +68,6 @@
         <DllImportGenerator_UseInternalUnsafeType>true</DllImportGenerator_UseInternalUnsafeType>
         <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
     </PropertyGroup>
-
-    <MSBuild Projects="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
-             RemoveProperties="TargetFramework">
-      <Output TaskParameter="TargetOutputs" PropertyName="DllImportGeneratorOutputPath" />
-    </MSBuild>
-
-    <!-- We add the copy of Microsoft.Interop.SourceGeneration.dll that lives next to Microsoft.Interop.DllImportGenerator.dll
-         to work around https://github.com/dotnet/roslyn/issues/56442 -->
-    <ItemGroup>
-      <Analyzer Include="$([MSBuild]::NormalizePath('$([System.IO.Path]::GetDirectoryName('$(DllImportGeneratorOutputPath)'))', 'Microsoft.Interop.SourceGeneration.dll'))" />
-    </ItemGroup>
     <PropertyGroup>
       <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
     </PropertyGroup>
