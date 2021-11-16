@@ -705,8 +705,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_ConvertToInt32:
                 case NI_VectorT256_ConvertToInt32:
                 {
-                    NamedIntrinsic convert =
-                        (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
+                    NamedIntrinsic convert = (simdSize == 32) ? NI_AVX_ConvertToVector128Int32WithTruncation
+                                                              : NI_SSE2_ConvertToVector128Int32WithTruncation;
                     return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }
@@ -715,8 +715,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT256_ConvertToSingle:
                 {
                     assert(simdBaseType == TYP_INT);
-                    NamedIntrinsic convert = (simdSize == 32) ? NI_AVX_ConvertToVector128Int32WithTruncation
-                                                              : NI_SSE2_ConvertToVector128Int32WithTruncation;
+                    NamedIntrinsic convert =
+                        (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
                     return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }

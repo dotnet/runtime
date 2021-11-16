@@ -851,7 +851,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_ConvertToInt32:
         {
             assert(sig->numArgs == 1);
-            intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
+            intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector128Int32WithTruncation
+                                         : NI_SSE2_ConvertToVector128Int32WithTruncation;
 
             op1     = impPopStack().val;
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
@@ -865,8 +866,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdBaseType == TYP_INT)
             {
-                intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector128Int32WithTruncation
-                                             : NI_SSE2_ConvertToVector128Int32WithTruncation;
+                intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
 
                 op1     = impPopStack().val;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
