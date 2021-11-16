@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 /*
 if there are 3 classes A,B and C, and B inherits from A and C inherits from B, 
 and classes A and B have a public virtual newslot method M(), calling C::M() 

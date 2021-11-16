@@ -4,13 +4,7 @@
 // Test that inliner can now inline g1 and g2
 
 .assembly extern legacy library mscorlib {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 
 .assembly legacy library calli_inline {}
 .class private auto ansi beforefieldinit calli_test

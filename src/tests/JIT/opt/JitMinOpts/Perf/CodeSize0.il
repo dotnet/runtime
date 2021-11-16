@@ -6,13 +6,7 @@
 // TID 934: IL Code Size,Instr 59998,15513, Basic Block count 722, Local Variable Num,Ref count  17,5326 for method CodeSize0.Main():int
 
 .assembly extern mscorlib { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )

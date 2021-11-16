@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 // this test is also regression test for VSW 395780. The difference is that
 // .override directive in this case is in the class scope, whereas in testExplicitOverride
 // .override directive is in method scope.

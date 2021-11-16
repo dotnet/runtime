@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 // this test is the equivalent of Class_ImplicitOverrideVirtualNewslot.cs for structs.
 // The reason we are using IL is because C# doesn't allow struct to have virtual methods with 'virtual' keyword.
 // Methods that implement interface methods are by default virtual (which translates to 'virtual newslot final' in IL.

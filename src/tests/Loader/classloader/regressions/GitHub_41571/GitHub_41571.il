@@ -8,13 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 5:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .assembly '41571'
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
