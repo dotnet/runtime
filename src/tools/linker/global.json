@@ -1,6 +1,6 @@
 {
   "tools": {
-    "dotnet": "6.0.100-rc.1.21430.12"
+    "dotnet": "6.0.100"
   },
   "msbuild-sdks": {
     "Microsoft.DotNet.Arcade.Sdk": "7.0.0-beta.21559.3",
