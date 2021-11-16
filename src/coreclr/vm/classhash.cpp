@@ -40,7 +40,7 @@ PTR_VOID EEClassHashEntry::GetData()
     return m_Data;
 }
 
-int EEClassHashEntry::GetHash()
+DWORD EEClassHashEntry::GetHash()
 {
     CONTRACTL
     {
@@ -81,7 +81,7 @@ void EEClassHashEntry::SetEncloser(EEClassHashEntry *pEncloser)
     m_pEncloser = pEncloser;
 }
 
-void EEClassHashEntry::SetHash(int hash)
+void EEClassHashEntry::SetHash(DWORD hash)
 {
     CONTRACTL
     {

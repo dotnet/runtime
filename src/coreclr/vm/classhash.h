@@ -39,8 +39,8 @@ typedef struct EEClassHashEntry
     PTR_VOID GetData();
     void SetData(PTR_VOID data) DAC_EMPTY();
 
-    int GetHash();
-    void SetHash(int hash) DAC_EMPTY();
+    DWORD GetHash();
+    void SetHash(DWORD hash) DAC_EMPTY();
 
 private:
     PTR_VOID    m_Data;     // Either the token (if EECLASSHASH_TYPEHANDLE_DISCR), or the type handle encoded
@@ -50,7 +50,7 @@ private:
                                         // class, this field stores a
                                         // reference to the enclosing type
                                         // (which must be in this same table).
-    int       m_hash;
+    DWORD       m_hash;
 } EEClassHashEntry_t;
 
 // The hash type itself. All common logic is provided by the DacEnumerableHashTable templated base class. See
