@@ -284,7 +284,7 @@ namespace Microsoft.Extensions.Hosting
                     // Wait before throwing an exception
                     if (!_hostTcs.Task.Wait(_waitTimeout))
                     {
-                        throw new InvalidOperationException($"Timed out waiting for the entry point to build the IHost after {s_defaultWaitTimeout}.");
+                        throw new InvalidOperationException($"Timed out waiting for the entry point to build the IHost after {s_defaultWaitTimeout}. This timeout can be modified using the '{TimeoutEnvironmentKey}' environment variable.");
                     }
                 }
                 catch (AggregateException) when (_hostTcs.Task.IsCompleted)
