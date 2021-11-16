@@ -8,11 +8,20 @@ WORKDIR /app
 COPY . .
 WORKDIR /app/System.Net.Security/tests/StressTests/SslStress
 
+ARG VERSION=7.0
 ARG CONFIGURATION=Release
-RUN dotnet build -c $CONFIGURATION
+ARG ARCH=x64
+
+RUN dotnet build -c $CONFIGURATION \
+    -p:TargetingPacksTargetsLocation=/live-runtime-artifacts/targetingpacks.targets \
+    -p:MicrosoftNetCoreAppRefPackDir=/live-runtime-artifacts/microsoft.netcore.app.ref/ \
+    -p:MicrosoftNetCoreAppRuntimePackDir=/live-runtime-artifacts/microsoft.netcore.app.runtime.linux-$ARCH/$CONFIGURATION/
 
 EXPOSE 5001
 
+ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
+ENV ARCH=$ARCH
 ENV SSLSTRESS_ARGS=''
-CMD dotnet run --no-build -c $CONFIGURATION -- $SSLSTRESS_ARGS
+
+CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-$ARCH/dotnet exec ./bin/$CONFIGURATION/net$VERSION/SslStress.dll $SSLSTRESS_ARGS

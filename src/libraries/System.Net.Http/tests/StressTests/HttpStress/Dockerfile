@@ -19,8 +19,14 @@ RUN unzip $PACKAGES_DIR.zip
 RUN dpkg -i $PACKAGES_DIR/$MSQUIC_PACKAGE
 RUN rm -rf $PACKAGES_DIR*
 
+ARG VERSION=7.0
 ARG CONFIGURATION=Release
-RUN dotnet build -c $CONFIGURATION
+ARG ARCH=x64
+
+RUN dotnet build -c $CONFIGURATION \
+    -p:TargetingPacksTargetsLocation=/live-runtime-artifacts/targetingpacks.targets \
+    -p:MicrosoftNetCoreAppRefPackDir=/live-runtime-artifacts/microsoft.netcore.app.ref/ \
+    -p:MicrosoftNetCoreAppRuntimePackDir=/live-runtime-artifacts/microsoft.netcore.app.runtime.linux-$ARCH/$CONFIGURATION/
 
 # Enable dump collection
 ENV COMPlus_DbgEnableMiniDump=1
@@ -29,6 +35,8 @@ ENV COMPlus_DbgMiniDumpName="/share/coredump.%p"
 
 EXPOSE 5001
 
+ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
+ENV ARCH=$ARCH
 ENV HTTPSTRESS_ARGS=''
-CMD dotnet run --no-build -c $CONFIGURATION -- $HTTPSTRESS_ARGS
+CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-$ARCH/dotnet exec ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS

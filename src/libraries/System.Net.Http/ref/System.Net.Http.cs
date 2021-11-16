@@ -51,6 +51,7 @@ namespace System.Net.Http
         public HttpClient() : base (default(System.Net.Http.HttpMessageHandler)) { }
         public HttpClient(System.Net.Http.HttpMessageHandler handler) : base (default(System.Net.Http.HttpMessageHandler)) { }
         public HttpClient(System.Net.Http.HttpMessageHandler handler, bool disposeHandler) : base (default(System.Net.Http.HttpMessageHandler)) { }
+        public static bool DummyPropertyToTestLiveBuild { get; set; }
         public System.Uri? BaseAddress { get { throw null; } set { } }
         public static System.Net.IWebProxy DefaultProxy { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpRequestHeaders DefaultRequestHeaders { get { throw null; } }

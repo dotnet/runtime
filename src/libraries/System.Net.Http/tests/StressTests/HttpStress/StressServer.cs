@@ -41,6 +41,9 @@ namespace HttpStress
 
         public StressServer(Configuration configuration)
         {
+            // Force loading System.Security.Cryptography.Encoding
+            _ = new Oid();
+
             ServerUri = configuration.ServerUri;
             (string scheme, string hostname, int port) = ParseServerUri(configuration.ServerUri);
             IWebHostBuilder host = WebHost.CreateDefaultBuilder();

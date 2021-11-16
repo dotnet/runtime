@@ -1,5 +1,6 @@
 <Project>
     <PropertyGroup>
+        <TargetRid>$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
         <PackageRid>linux-x64</PackageRid>
         <PackageRid Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</PackageRid>
         <PackageRid Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx-x64</PackageRid>
