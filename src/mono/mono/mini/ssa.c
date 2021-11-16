@@ -377,7 +377,7 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb)
 			info->history = stack_history;
 			info->size = stack_history_size;
 			info->len = stack_history_len;
-			stack_history = stack_history += stack_history_len;
+			stack_history += stack_history_len;
 			stack_history_size -= stack_history_len;
 			blocks = bb->dominated;
 		} else {
