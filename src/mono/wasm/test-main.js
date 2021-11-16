@@ -237,7 +237,7 @@ function set_exit_code(exit_code, reason) {
         }
     }
     if (is_browser) {
-        const stack = (new Error()).stack.replace(/\n/g, "").replace(/[ ]*at/g, " at").replace(/https?:\/\/[0-9.:]*/, "").replace("Error", "");
+        const stack = (new Error()).stack.replace(/\n/g, "").replace(/[ ]*at/g, " at").replace(/https?:\/\/[0-9.:]*/g, "").replace("Error", "");
         const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} ${stack}.`;
 
         // Notify the selenium script
