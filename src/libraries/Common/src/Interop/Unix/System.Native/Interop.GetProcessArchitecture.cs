@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [SuppressGCTransition]
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetProcessArchitecture")]
-        internal static extern int GetProcessArchitecture();
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetProcessArchitecture")]
+        internal static partial int GetProcessArchitecture();
     }
 }

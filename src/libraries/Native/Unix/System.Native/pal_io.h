@@ -675,7 +675,7 @@ PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bu
  *
  * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd);
+PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength);
 
 /**
 * Initializes a new inotify instance and returns a file

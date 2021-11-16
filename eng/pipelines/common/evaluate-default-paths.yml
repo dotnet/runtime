@@ -98,6 +98,9 @@ jobs:
       - src/coreclr/vm/*
       exclude:
       - '*'
+    - subset: coreclr_jit
+      include:
+      - src/coreclr/jit/*
     - subset: wasmbuildtests
       include:
       - src/tasks/*
