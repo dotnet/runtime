@@ -11,7 +11,7 @@ namespace Internal.Cryptography
     internal static partial class Helpers
     {
         [UnsupportedOSPlatformGuard("browser")]
-        internal static readonly bool HasSymmetricEncryption =
+        internal static bool HasSymmetricEncryption { get; } =
 #if NET5_0_OR_GREATER
             !OperatingSystem.IsBrowser();
 #else
@@ -19,7 +19,7 @@ namespace Internal.Cryptography
 #endif
 
         [UnsupportedOSPlatformGuard("browser")]
-        internal static readonly bool HasHMAC =
+        internal static bool HasHMAC { get; } =
 #if NET5_0_OR_GREATER
             !OperatingSystem.IsBrowser();
 #else
