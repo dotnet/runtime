@@ -22,9 +22,7 @@
                         and (
                           ('@(Reference)' != ''
                             and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))
-                            and (@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe'))
-                              or ('@(ProjectReference)' != ''
-                                and @(ProjectReference->AnyHaveMetadataValue('Identity', $([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'System.Runtime.CompilerServices.Unsafe', 'src', 'System.Runtime.CompilerServices.Unsafe.ilproj'))))))
+                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe'))
                             and @(Reference->AnyHaveMetadataValue('Identity', 'System.Memory')))
                           or ('@(ProjectReference)' != ''
                             and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" />
@@ -40,8 +38,7 @@
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))
                         and '$(IncludeDllImportGeneratorSources)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
 
     <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
@@ -56,8 +53,7 @@
   <!-- Microsoft.Interop.DllImportGenerator -->
   <Target Name="ConfigureDllImportGenerator"
           Condition="'@(EnabledGenerators)' != '' and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))"
-          DependsOnTargets="ResolveReferences"
-          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
+          BeforeTargets="BeforeBuild">
     <PropertyGroup>
         <DllImportGenerator_UseMarshalType>true</DllImportGenerator_UseMarshalType>
     </PropertyGroup>
@@ -68,6 +64,26 @@
         <DllImportGenerator_UseInternalUnsafeType>true</DllImportGenerator_UseInternalUnsafeType>
         <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
     </PropertyGroup>
+
+    <!-- We binplace and add the copy of Microsoft.Interop.SourceGeneration.dll that lives next to Microsoft.Interop.DllImportGenerator.dll
+         to work around https://github.com/dotnet/roslyn/issues/56442, which is fixed in the 6.0 RTM SDK -->
+    <MSBuild Projects="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
+             Targets="GetTargetPath"
+             RemoveProperties="TargetFramework">
+      <Output TaskParameter="TargetOutputs" PropertyName="DllImportGeneratorTargetPath" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <DllImportGeneratorOutputPath>$([System.IO.Path]::GetDirectoryName('$(DllImportGeneratorTargetPath)'))</DllImportGeneratorOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference
+        Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"
+        Properties="OutputPath=$(DllImportGeneratorOutputPath)"
+        OutputItemType="Analyzer"
+        ReferenceOutputAssembly="false" />
+    </ItemGroup>
     <PropertyGroup>
       <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
     </PropertyGroup>

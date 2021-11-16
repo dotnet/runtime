@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" Private="true" />
+    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" />
   </ItemGroup>
 
   <ItemGroup>
