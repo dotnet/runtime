@@ -8,6 +8,7 @@ using System.Linq;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -143,6 +144,51 @@ namespace ILLink.RoslynAnalyzer
 
 					CheckCalledMember (operationContext, methodSymbol, incompatibleMembers);
 				}, OperationKind.DelegateCreation);
+
+				context.RegisterSyntaxNodeAction (syntaxNodeAnalysisContext => {
+					var model = syntaxNodeAnalysisContext.SemanticModel;
+					if (syntaxNodeAnalysisContext.ContainingSymbol is not ISymbol containingSymbol || containingSymbol.HasAttribute (RequiresAttributeName))
+						return;
+
+					GenericNameSyntax genericNameSyntaxNode = (GenericNameSyntax) syntaxNodeAnalysisContext.Node;
+					var typeParams = ImmutableArray<ITypeParameterSymbol>.Empty;
+					var typeArgs = ImmutableArray<ITypeSymbol>.Empty;
+					switch (model.GetSymbolInfo (genericNameSyntaxNode).Symbol) {
+					case INamedTypeSymbol typeSymbol:
+						typeParams = typeSymbol.TypeParameters;
+						typeArgs = typeSymbol.TypeArguments;
+						break;
+
+					case IMethodSymbol methodSymbol:
+						typeParams = methodSymbol.TypeParameters;
+						typeArgs = methodSymbol.TypeArguments;
+						break;
+
+					default:
+						return;
+					}
+
+					for (int i = 0; i < typeParams.Length; i++) {
+						var typeParam = typeParams[i];
+						var typeArg = typeArgs[i];
+						if (!typeParam.HasConstructorConstraint)
+							continue;
+
+						var typeArgCtors = ((INamedTypeSymbol) typeArg).InstanceConstructors;
+						foreach (var instanceCtor in typeArgCtors) {
+							if (instanceCtor.Arity > 0)
+								continue;
+
+							if (instanceCtor.TryGetAttribute (RequiresAttributeName, out var requiresUnreferencedCodeAttribute)) {
+								syntaxNodeAnalysisContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
+									syntaxNodeAnalysisContext.Node.GetLocation (),
+									containingSymbol.GetDisplayName (),
+									(string) requiresUnreferencedCodeAttribute.ConstructorArguments[0].Value!,
+									GetUrlFromAttribute (requiresUnreferencedCodeAttribute)));
+							}
+						}
+					}
+				}, SyntaxKind.GenericName);
 
 				// Register any extra operation actions supported by the analyzer.
 				foreach (var extraOperationAction in ExtraOperationActions)
