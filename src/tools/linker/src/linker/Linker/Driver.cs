@@ -763,7 +763,7 @@ namespace Mono.Linker
 		// to the error code.
 		// May propagate exceptions, which will result in the process getting an
 		// exit code determined by dotnet.
-		public int Run (ILogger? customLogger = null)
+		public int Run (ILogger? customLogger = null, bool throwOnFatalLinkerException = false)
 		{
 			int setupStatus = SetupContext (customLogger);
 			if (setupStatus > 0)
@@ -782,6 +782,8 @@ namespace Mono.Linker
 				Debug.Assert (lex.MessageContainer.Category == MessageCategory.Error);
 				Debug.Assert (lex.MessageContainer.Code != null);
 				Debug.Assert (lex.MessageContainer.Code.Value != 0);
+				if (throwOnFatalLinkerException)
+					throw;
 				return lex.MessageContainer.Code ?? 1;
 			} catch (ResolutionException e) {
 				Context.LogError ($"{e.Message}", 1040);

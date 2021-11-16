@@ -13,5 +13,11 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			if (string.IsNullOrEmpty (message))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (message));
 		}
+
+		/// <summary>
+		/// Property used by the result checkers of trimmer and analyzers to determine whether
+		/// the tool should have produced the specified warning on the annotated member.
+		/// </summary>
+		public ProducedBy ProducedBy { get; set; } = ProducedBy.TrimmerAndAnalyzer;
 	}
 }

@@ -11,6 +11,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[SetupCompileBefore ("lib.dll", new[] { "Dependencies/RequiresInCopyAssembly.cs" })]
 	[KeptAllTypesAndMembersInAssembly ("lib.dll")]
 	[LogDoesNotContain ("IL2026")]
+	[LogDoesNotContain ("IL3002")]
 	[LogDoesNotContain ("IL2027")]
 	public class RequiresCapabilityFromCopiedAssembly
 	{
