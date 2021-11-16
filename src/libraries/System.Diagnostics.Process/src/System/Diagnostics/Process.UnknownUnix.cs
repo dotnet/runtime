@@ -9,7 +9,7 @@ namespace System.Diagnostics
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
-        public static Process[] GetProcessesByName(string processName, string machineName)
+        public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             throw new PlatformNotSupportedException();
         }
@@ -82,5 +82,6 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException();
         }
 
+        private int ParentProcessId => throw new PlatformNotSupportedException();
     }
 }

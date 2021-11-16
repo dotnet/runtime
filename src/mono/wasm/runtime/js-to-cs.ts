@@ -15,6 +15,7 @@ import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./s
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
 import { Int32Ptr, JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
+import { setI32, setU32, setF64 } from "./memory";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): MonoObject {
@@ -109,22 +110,22 @@ function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObje
 }
 
 function _box_js_int(js_obj: number) {
-    Module.HEAP32[<any>runtimeHelpers._box_buffer >>> 2] = js_obj;
+    setI32(runtimeHelpers._box_buffer, js_obj);
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_int32, runtimeHelpers._box_buffer, 4);
 }
 
 function _box_js_uint(js_obj: number) {
-    Module.HEAPU32[<any>runtimeHelpers._box_buffer >>> 2] = js_obj;
+    setU32(runtimeHelpers._box_buffer, js_obj);
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_uint32, runtimeHelpers._box_buffer, 4);
 }
 
 function _box_js_double(js_obj: number) {
-    Module.HEAPF64[<any>runtimeHelpers._box_buffer >>> 3] = js_obj;
+    setF64(runtimeHelpers._box_buffer, js_obj);
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_double, runtimeHelpers._box_buffer, 8);
 }
 
 export function _box_js_bool(js_obj: boolean): MonoObject {
-    Module.HEAP32[<any>runtimeHelpers._box_buffer >>> 2] = js_obj ? 1 : 0;
+    setI32(runtimeHelpers._box_buffer, js_obj ? 1 : 0);
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4);
 }
 

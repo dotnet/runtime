@@ -450,7 +450,7 @@ namespace System.Speech.Internal.SapiInterop
             SPPHRASEELEMENT[] elements = new SPPHRASEELEMENT[words.Length];
 
             // build the unmanaged interop layer
-            int size = Marshal.SizeOf(typeof(SPPHRASEELEMENT));
+            int size = Marshal.SizeOf<SPPHRASEELEMENT>();
             List<GCHandle> handles = new();
 
             coMem = Marshal.AllocCoTaskMem(size * elements.Length);
@@ -496,7 +496,7 @@ namespace System.Speech.Internal.SapiInterop
                         elements[i].pszPronunciation = handle.AddrOfPinnedObject();
                     }
 
-                    Marshal.StructureToPtr(elements[i], new IntPtr((long)coMem + size * i), false);
+                    Marshal.StructureToPtr<SPPHRASEELEMENT>(elements[i], new IntPtr((long)coMem + size * i), false);
                 }
             }
             finally
@@ -505,7 +505,7 @@ namespace System.Speech.Internal.SapiInterop
             }
 
             SPPHRASE spPhrase = new();
-            spPhrase.cbSize = (uint)Marshal.SizeOf(spPhrase.GetType());
+            spPhrase.cbSize = (uint)Marshal.SizeOf<SPPHRASE>();
             spPhrase.LangID = (ushort)culture.LCID;
             spPhrase.Rule = new SPPHRASERULE
             {

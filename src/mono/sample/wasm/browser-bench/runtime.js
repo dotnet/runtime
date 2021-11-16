@@ -5,24 +5,16 @@
 var Module = {
     config: null,
     configSrc: "./mono-config.json",
-    onConfigLoaded: function () {
-        if (MONO.config.enable_profiler) {
-            MONO.config.aot_profiler_options = {
-                write_at: "Sample.Test::StopProfile",
-                send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
-            }
-        }
-    },
     onDotNetReady: function () {
         try {
             App.init();
         } catch (error) {
+            console.log("exception: " + error);
             test_exit(1);
             throw (error);
         }
     },
     onAbort: function (err) {
         test_exit(1);
-
     },
 };

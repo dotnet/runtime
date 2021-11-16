@@ -2,6 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly ILGEN_0xd01d9fe9 {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .assembly extern mscorlib{auto}
 
 .class ILGEN_0xd01d9fe9 {
@@ -295,6 +302,9 @@ neg
  ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	29
 ldc.i4 0x72960b5e 

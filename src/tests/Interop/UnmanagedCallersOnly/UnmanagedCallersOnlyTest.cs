@@ -8,7 +8,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using TestLibrary;
+using Xunit;
 using InvalidCSharp;
 
 public unsafe class Program
@@ -86,19 +86,19 @@ public unsafe class Program
     public static void TestUnmanagedCallersOnlyValid()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid)}...");
-        
+
         int n = 12345;
         int expected = DoubleImpl(n);
-        Assert.AreEqual(expected, UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));    
+        Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
     }
 
     public static void TestUnmanagedCallersOnlyValid_OnNewNativeThread()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_OnNewNativeThread)}...");
-    
+
         int n = 12345;
         int expected = DoubleImpl(n);
-        Assert.AreEqual(expected, UnmanagedCallersOnlyDll.CallManagedProcOnNewThread((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
+        Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProcOnNewThread((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
     }
 
     [UnmanagedCallersOnly]
@@ -147,7 +147,7 @@ public unsafe class Program
         {
             expected += DoubleImpl(n);
         }
-        Assert.AreEqual(expected, UnmanagedCallersOnlyDll.CallManagedProcMultipleTimes(callCount, (IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleInNativeCallback, n));
+        Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProcMultipleTimes(callCount, (IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleInNativeCallback, n));
     }
 
     private const int CallbackThrowsErrorCode = 27;
@@ -164,7 +164,7 @@ public unsafe class Program
 
         int n = 12345;
         // Method should have thrown and caught an exception.
-        Assert.AreEqual(-1, UnmanagedCallersOnlyDll.CallManagedProcCatchException((IntPtr)(delegate* unmanaged<int, int>)&CallbackThrows, n));
+        Assert.Equal(-1, UnmanagedCallersOnlyDll.CallManagedProcCatchException((IntPtr)(delegate* unmanaged<int, int>)&CallbackThrows, n));
     }
 
     public static void NegativeTest_ViaDelegate()
@@ -194,7 +194,7 @@ public unsafe class Program
     [UnmanagedCallersOnly]
     public static int CallbackMethodNonBlittable(bool x1)
     {
-        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have non-blittable arguments");
+        Assert.True(false, $"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have non-blittable arguments");
         return -1;
     }
 
@@ -210,7 +210,7 @@ public unsafe class Program
     public static void NegativeTest_InstantiatedGenericArguments()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_InstantiatedGenericArguments)}...");
-        
+
         int n = 12345;
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&Callbacks.CallbackMethodGeneric<int>, n); });
@@ -228,7 +228,7 @@ public unsafe class Program
     [UnmanagedCallersOnly]
     public static void CallbackViaCalli(int val)
     {
-        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot be called via calli");
+        Assert.True(false, $"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot be called via calli");
     }
 
     public static void NegativeTest_ViaCalli()
@@ -259,7 +259,7 @@ public unsafe class Program
         int n = 1234;
         int expected = DoubleImpl(n);
         delegate* unmanaged[Stdcall]<int, int> nativeMethod = &CallbackViaUnmanagedCalli;
-        Assert.AreEqual(expected, nativeMethod(n));
+        Assert.Equal(expected, nativeMethod(n));
     }
 
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
@@ -278,11 +278,11 @@ public unsafe class Program
         try
         {
             testNativeMethod(n);
-            Assert.Fail($"Function {nameof(CallbackViaUnmanagedCalliThrows)} should throw");
+            Assert.True(false, $"Function {nameof(CallbackViaUnmanagedCalliThrows)} should throw");
         }
         catch (Exception e)
         {
-            Assert.AreEqual(CallbackThrowsErrorCode, e.HResult);
+            Assert.Equal(CallbackThrowsErrorCode, e.HResult);
         }
     }
 

@@ -66,4 +66,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldarg_r4.exe{}
+.assembly ldarg_r4{}

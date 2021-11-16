@@ -57,12 +57,8 @@ namespace Microsoft.Win32.SafeHandles
 
         internal void EnsureThreadPoolBindingInitialized() { /* nop */ }
 
-        /// <summary>Opens the specified file with the requested flags and mode.</summary>
-        /// <param name="path">The path to the file.</param>
-        /// <param name="flags">The flags with which to open the file.</param>
-        /// <param name="mode">The mode for opening the file.</param>
-        /// <returns>A SafeFileHandle for the opened file.</returns>
-        private static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode)
+        private static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode,
+                                           Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException)
         {
             Debug.Assert(path != null);
             SafeFileHandle handle = Interop.Sys.Open(path, flags, mode);
@@ -72,6 +68,11 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
                 handle.Dispose();
+
+                if (createOpenException?.Invoke(error, flags, path) is Exception ex)
+                {
+                    throw ex;
+                }
 
                 // If we fail to open the file due to a path not existing, we need to know whether to blame
                 // the file itself or its directory.  If we're creating the file, then we blame the directory,
@@ -155,30 +156,52 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
-        {
-            // Translate the arguments into arguments for an open call.
-            Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, share, options);
-
-            // If the file gets created a new, we'll select the permissions for it.  Most Unix utilities by default use 666 (read and
-            // write for all), so we do the same (even though this doesn't match Windows, where by default it's possible to write out
-            // a file and then execute it). No matter what we choose, it'll be subject to the umask applied by the system, such that the
-            // actual permissions will typically be less than what we select here.
-            const Interop.Sys.Permissions OpenPermissions =
+        // If the file gets created a new, we'll select the permissions for it.  Most Unix utilities by default use 666 (read and
+        // write for all), so we do the same (even though this doesn't match Windows, where by default it's possible to write out
+        // a file and then execute it). No matter what we choose, it'll be subject to the umask applied by the system, such that the
+        // actual permissions will typically be less than what we select here.
+        private const Interop.Sys.Permissions DefaultOpenPermissions =
                 Interop.Sys.Permissions.S_IRUSR | Interop.Sys.Permissions.S_IWUSR |
                 Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
                 Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
+
+        // Specialized Open that returns the file length and permissions of the opened file.
+        // This information is retrieved from the 'stat' syscall that must be performed to ensure the path is not a directory.
+        internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out long fileLength, out Interop.Sys.Permissions filePermissions)
+        {
+            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultOpenPermissions, out fileLength, out filePermissions, null);
+            Debug.Assert(fileLength >= 0);
+            return handle;
+        }
+
+        internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
+                                            Interop.Sys.Permissions openPermissions = DefaultOpenPermissions,
+                                            Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
+        {
+            long fileLength;
+            Interop.Sys.Permissions filePermissions;
+            return Open(fullPath, mode, access, share, options, preallocationSize, openPermissions, out fileLength, out filePermissions, null);
+        }
+
+        private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
+                                            Interop.Sys.Permissions openPermissions,
+                                            out long fileLength,
+                                            out Interop.Sys.Permissions filePermissions,
+                                            Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
+        {
+            // Translate the arguments into arguments for an open call.
+            Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, share, options);
 
             SafeFileHandle? safeFileHandle = null;
             try
             {
                 while (true)
                 {
-                    safeFileHandle = Open(fullPath, openFlags, (int)OpenPermissions);
+                    safeFileHandle = Open(fullPath, openFlags, (int)openPermissions, createOpenException);
 
                     // When Init return false, the path has changed to another file entry, and
                     // we need to re-open the path to reflect that.
-                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize))
+                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize, out fileLength, out filePermissions))
                     {
                         return safeFileHandle;
                     }
@@ -275,10 +298,13 @@ namespace Microsoft.Win32.SafeHandles
             return flags;
         }
 
-        private bool Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        private bool Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
+                          out long fileLength, out Interop.Sys.Permissions filePermissions)
         {
             Interop.Sys.FileStatus status = default;
             bool statusHasValue = false;
+            fileLength = -1;
+            filePermissions = 0;
 
             // Make sure our handle is not a directory.
             // We can omit the check when write access is requested. open will have failed with EISDIR.
@@ -300,6 +326,9 @@ namespace Microsoft.Win32.SafeHandles
                     _canSeek = NullableBool.True;
                     Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
+
+                fileLength = status.Size;
+                filePermissions = (Interop.Sys.Permissions)(status.Mode & (int)Interop.Sys.Permissions.Mask);
             }
 
             IsAsync = (options & FileOptions.Asynchronous) != 0;

@@ -12,6 +12,13 @@
 }
 
 .assembly dynblk {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 
 .class public sequential ansi sealed beforefieldinit S8
        extends [mscorlib]System.ValueType
@@ -37,6 +44,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (valuetype S8 S, int32 retVal, int32 size)
               ldloca.s   S

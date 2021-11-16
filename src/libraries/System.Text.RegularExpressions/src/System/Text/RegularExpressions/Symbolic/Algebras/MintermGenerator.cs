@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -39,199 +38,64 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="preds">array of predicates</param>
         /// <returns>all minterms of the given predicate sequence</returns>
-        public List<TPredicate> GenerateMinterms(params TPredicate[] preds)
+        public List<TPredicate> GenerateMinterms(IEnumerable<TPredicate> preds)
         {
-            if (preds.Length == 0)
+            var tree = new PartitionTree(_algebra.True);
+            foreach (TPredicate pred in preds)
             {
-                return new List<TPredicate> { _algebra.True };
+                // Push each predicate into the partition tree
+                tree.Refine(_algebra, pred);
             }
-
-            // The minterms will be solved using non-equivalent predicates, i.e., the equivalence classes of preds. The
-            // following code maps each predicate to an equivalence class and also stores for each equivalence class the
-            // predicates belonging to it, so that a valuation for the original predicates may be reconstructed.
-
-            var tree = new PartitionTree(_algebra);
-
-            var seen = new HashSet<EquivalenceClass>();
-            for (int i = 0; i < preds.Length; i++)
-            {
-                // Use a wrapper that overloads Equals to be logical equivalence as the key
-                if (seen.Add(new EquivalenceClass(_algebra, preds[i])))
-                {
-                    // Push each equivalence class into the partition tree
-                    tree.Refine(preds[i]);
-                }
-            }
-
             // Return all minterms as the leaves of the partition tree
             return tree.GetLeafPredicates();
-        }
-
-        /// <summary>Wraps a predicate as an equivalence class object whose Equals method is equivalence checking.</summary>
-        private readonly struct EquivalenceClass
-        {
-            private readonly TPredicate _set;
-            private readonly IBooleanAlgebra<TPredicate> _algebra;
-
-            internal EquivalenceClass(IBooleanAlgebra<TPredicate> algebra, TPredicate set)
-            {
-                _set = set;
-                _algebra = algebra;
-            }
-
-            public override int GetHashCode() => _set.GetHashCode();
-
-            public override bool Equals([NotNullWhen(true)] object? obj) => obj is EquivalenceClass ec && _algebra.AreEquivalent(_set, ec._set);
         }
 
         /// <summary>A partition tree for efficiently solving minterms.</summary>
         /// <remarks>
         /// Predicates are pushed into the tree with Refine(), which creates leaves in the tree for all satisfiable
         /// and non-overlapping combinations with any previously pushed predicates. At the end of the process the
-        /// minterms can be read from the paths to the leaves of the tree.
-        ///
-        /// The valuations of the predicates are represented as follows. Given a path a^-1, a^0, a^1, ..., a^n, predicate
-        /// p^i is true in the corresponding minterm if and only if a^i is the left child of a^i-1.
-        ///
-        /// This class assumes that all predicates passed to Refine() are non-equivalent.
+        /// minterms can be read from the leaves of the tree.
         /// </remarks>
         private sealed class PartitionTree
         {
             internal readonly TPredicate _pred;
-            private readonly IBooleanAlgebra<TPredicate> _solver;
             private PartitionTree? _left;
-            private PartitionTree? _right; // complement
+            private PartitionTree? _right;
 
-            /// <summary>Create the root of the partition tree.</summary>
-            /// <remarks>Nodes below this will be indexed starting from 0. The initial predicate is true.</remarks>
-            internal PartitionTree(IBooleanAlgebra<TPredicate> solver) : this(solver, solver.True, null, null) { }
-
-            private PartitionTree(IBooleanAlgebra<TPredicate> solver, TPredicate pred, PartitionTree? left, PartitionTree? right)
+            internal PartitionTree(TPredicate pred)
             {
-                _solver = solver;
                 _pred = pred;
-                _left = left;
-                _right = right;
             }
 
-            internal void Refine(TPredicate other)
+            internal void Refine(IBooleanAlgebra<TPredicate> solver, TPredicate other)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
-                    StackHelper.CallOnEmptyStack(Refine, other);
+                    StackHelper.CallOnEmptyStack(Refine, solver, other);
                     return;
                 }
 
-                if (_left is null && _right is null)
+                TPredicate thisAndOther = solver.And(_pred, other);
+                if (solver.IsSatisfiable(thisAndOther))
                 {
-                    // If this is a leaf node create left and/or right children for the new predicate
-                    TPredicate thisAndOther = _solver.And(_pred, other);
-                    if (_solver.IsSatisfiable(thisAndOther))
+                    // The predicates overlap, now check if this is contained in other
+                    TPredicate thisMinusOther = solver.And(_pred, solver.Not(other));
+                    if (solver.IsSatisfiable(thisMinusOther))
                     {
-                        // The predicates overlap, now check if this is contained in other
-                        TPredicate thisMinusOther = _solver.And(_pred, _solver.Not(other));
-                        if (_solver.IsSatisfiable(thisMinusOther))
+                        // This is not contained in other, minterms may need to be split
+                        if (_left is null)
                         {
-                            // This is not contained in other, both children are needed
-                            _left = new PartitionTree(_solver, thisAndOther, null, null);
-
-                            // The right child corresponds to a conjunction with a negation, which matches thisMinusOther
-                            _right = new PartitionTree(_solver, thisMinusOther, null, null);
+                            Debug.Assert(_right is null);
+                            _left = new PartitionTree(thisAndOther);
+                            _right = new PartitionTree(thisMinusOther);
                         }
-                        else // [[this]] subset of [[other]]
+                        else
                         {
-                            // Other implies this, so populate the left child with this
-                            _left = new PartitionTree(_solver, _pred, null, null);
-                        }
-                    }
-                    else // [[this]] subset of [[not(other)]]
-                    {
-                        // negation of other implies this, so populate the right child with this
-                        _right = new PartitionTree(_solver, _pred, null, null); //other must be false
-                    }
-                }
-                else if (_left is null)
-                {
-                    // No choice has to be made here, refine the single child that exists
-                    _right!.Refine(other);
-                }
-                else if (_right is null)
-                {
-                    // No choice has to be made here, refine the single child that exists
-                    _left!.Refine(other);
-                }
-                else
-                {
-                    TPredicate thisAndOther = _solver.And(_pred, other);
-                    if (_solver.IsSatisfiable(thisAndOther))
-                    {
-                        // Other is satisfiable in this subtree
-                        TPredicate thisMinusOther = _solver.And(_pred, _solver.Not(other));
-                        if (_solver.IsSatisfiable(thisMinusOther))
-                        {
-                            // But other does not imply this whole subtree, refine both children
-                            _left.Refine(other);
-                            _right.Refine(other);
-                        }
-                        else // [[this]] subset of [[other]]
-                        {
-                            // And other implies the whole subtree, include it in all minterms under here
-                            _left.ExtendLeft();
-                            _right.ExtendLeft();
+                            Debug.Assert(_right is not null);
+                            _left.Refine(solver, other);
+                            _right.Refine(solver, other);
                         }
                     }
-                    else // [[this]] subset of [[not(other)]]
-                    {
-                        // Other is not satisfiable in this subtree, include its negation in all minterms under here
-                        _left.ExtendRight();
-                        _right.ExtendRight();
-                    }
-                }
-            }
-
-            /// <summary>
-            /// Include the next predicate in all minterms under this node. Assumes the next predicate implies the predicate
-            /// of this node.
-            /// </summary>
-            private void ExtendLeft()
-            {
-                if (!StackHelper.TryEnsureSufficientExecutionStack())
-                {
-                    StackHelper.CallOnEmptyStack(ExtendLeft);
-                    return;
-                }
-
-                if (_left is null && _right is null)
-                {
-                    _left = new PartitionTree(_solver, _pred, null, null);
-                }
-                else
-                {
-                    _left?.ExtendLeft();
-                    _right?.ExtendLeft();
-                }
-            }
-
-            /// <summary>
-            /// Include the negation of next predicate in all minterms under this node. Assumes the negation of the next
-            /// predicate implies the predicate of this node.
-            /// </summary>
-            private void ExtendRight()
-            {
-                if (!StackHelper.TryEnsureSufficientExecutionStack())
-                {
-                    StackHelper.CallOnEmptyStack(ExtendRight);
-                    return;
-                }
-
-                if (_left is null && _right is null)
-                {
-                    _right = new PartitionTree(_solver, _pred, null, null);
-                }
-                else
-                {
-                    _left?.ExtendRight();
-                    _right?.ExtendRight();
                 }
             }
 
@@ -250,15 +114,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                     else
                     {
-                        if (node._left is not null)
-                        {
-                            stack.Push(node._left);
-                        }
-
-                        if (node._right is not null)
-                        {
-                            stack.Push(node._right);
-                        }
+                        Debug.Assert(node._left is not null && node._right is not null);
+                        stack.Push(node._left);
+                        stack.Push(node._right);
                     }
                 }
 

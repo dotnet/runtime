@@ -29,12 +29,23 @@ namespace DllImportGenerator.IntegrationTests
         public static partial void DoubleIntFieldsOutReturn(
             IntFields input,
             out IntFields result);
+
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_byref")]
+        public static partial void IncrementInvertPointerFieldsByRef(ref PointerFields result);
+
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_byref")]
+        public static partial void IncrementInvertPointerFieldsByRefIn(in PointerFields result);
+
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_increment_invert_ptrfields_refreturn")]
+        public static partial void IncrementInvertPointerFieldsRefReturn(
+            PointerFields input,
+            ref PointerFields result);
     }
 
     public class BlittableStructTests
     {
         [Fact]
-        public void ValidateBlittableStruct()
+        public void ValidateIntFields()
         {
             const int A = 24, B = 37, C = 59;
             var initial = new IntFields()
@@ -80,6 +91,72 @@ namespace DllImportGenerator.IntegrationTests
                 input = initial;
                 NativeExportsNE.DoubleIntFieldsByRefIn(in input);
                 Assert.Equal(expected, input); // Updated even when passed with in keyword (matches built-in system)
+            }
+        }
+
+        [Fact]
+        public unsafe void ValidatePointerFields()
+        {
+            int iInitial = 31;
+            bool bInitial = false;
+            char cInitial = 'A';
+
+            int iExpected = iInitial + 1;
+            bool bExpected = !bInitial;
+            char cExpected = (char)(cInitial + 1);
+
+            int i = iInitial;
+            bool b = bInitial;
+            char c = cInitial;
+            var initial = new PointerFields()
+            {
+                i = &i,
+                b = &b,
+                c = &c,
+            };
+
+            PointerFields input = initial;
+            {
+                int iResult;
+                bool bResult;
+                char cResult;
+                var result = new PointerFields()
+                {
+                    i = &iResult,
+                    b = &bResult,
+                    c = &cResult
+                };
+                NativeExportsNE.IncrementInvertPointerFieldsRefReturn(input, ref result);
+                Assert.Equal(initial, input);
+                ValidateFieldValues(result);
+            }
+
+            {
+                ResetFieldValues(input);
+                NativeExportsNE.IncrementInvertPointerFieldsByRef(ref input);
+                Assert.Equal(initial, input);
+                ValidateFieldValues(input);
+            }
+
+            {
+                ResetFieldValues(input);
+                NativeExportsNE.IncrementInvertPointerFieldsByRefIn(in input);
+                Assert.Equal(initial, input);
+                ValidateFieldValues(input);
+            }
+
+            void ResetFieldValues(PointerFields input)
+            {
+                *(input.i) = iInitial;
+                *(input.b) = bInitial;
+                *(input.c) = cInitial;
+            }
+
+            void ValidateFieldValues(PointerFields result)
+            {
+                Assert.Equal(iExpected, *result.i);
+                Assert.Equal(bExpected, *result.b);
+                Assert.Equal(cExpected, *result.c);
             }
         }
     }

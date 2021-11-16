@@ -19,6 +19,13 @@
   
   
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module 'test.exe'
 // MVID: {37F05BF1-E8CC-42FA-A268-D866F07CFFF8}
 .namespace TestCase
@@ -81,6 +88,9 @@
 
     .method private hidebysig static int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       39 (0x27)
       .maxstack  2

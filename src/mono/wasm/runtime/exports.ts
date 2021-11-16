@@ -56,6 +56,12 @@ import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 import { ArgsMarshalString } from "./method-binding";
+import {
+    setI8, setI16, setI32, setI64,
+    setU8, setU16, setU32, setF32, setF64,
+    getI8, getI16, getI32, getI64,
+    getU8, getU16, getU32, getF32, getF64,
+} from "./memory";
 
 export const MONO: MONO = <any>{
     // current "public" MONO API
@@ -251,6 +257,26 @@ export const INTERNAL: any = {
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
+
+    // memory accessors
+    setI8,
+    setI16,
+    setI32,
+    setI64,
+    setU8,
+    setU16,
+    setU32,
+    setF32,
+    setF64,
+    getI8,
+    getI16,
+    getI32,
+    getI64,
+    getU8,
+    getU16,
+    getU32,
+    getF32,
+    getF64,
 };
 
 // this represents visibility in the javascript
