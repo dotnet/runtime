@@ -9,28 +9,18 @@ COPY . .
 
 RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURATION -ci
 
-# Mocks:
-# RUN mkdir -p /repo/artifacts/bin/testhost/net7.0-Linux-Release-x64
-# RUN echo 'lol' > /repo/artifacts/bin/testhost/lol.txt
-# 
-# RUN mkdir -p /repo/artifacts/bin/microsoft.netcore.app.ref
-# RUN echo 'rofl' > /repo/artifacts/bin/microsoft.netcore.app.ref/rofl.txt
-# 
-# RUN mkdir -p /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64
-# RUN echo 'haha' > /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64/haha.txt
-
 FROM $SDK_BASE_IMAGE as target
 
 # Install 7.0 SDK:
 RUN wget https://dot.net/v1/dotnet-install.sh
 RUN bash ./dotnet-install.sh --channel 7.0.1xx --quality daily --install-dir /usr/share/dotnet
 
-## Collect the following artifacts under /live-runtime-artifacts,
-## so projects can build and test against the live-built runtime:
-## 1. Reference assembly pack (microsoft.netcore.app.ref)
-## 2. Runtime pack (microsoft.netcore.app.runtime.linux-x64)
-## 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
-## 4. testhost
+# Collect the following artifacts under /live-runtime-artifacts,
+# so projects can build and test against the live-built runtime:
+# 1. Reference assembly pack (microsoft.netcore.app.ref)
+# 2. Runtime pack (microsoft.netcore.app.runtime.linux-x64)
+# 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
+# 4. testhost
 
 ARG VERSION=7.0
 ARG ARCH=x64
