@@ -237,7 +237,7 @@ function set_exit_code(exit_code, reason) {
         }
     }
     if (is_browser) {
-        originalConsole.log(`Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} from ${(new Error()).stack}.`)
+        const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} from ${(new Error()).stack.replaceAll("\n", "").replace("Error", "")}.`;
 
         // Notify the selenium script
         Module.exit_code = exit_code;
@@ -248,8 +248,14 @@ function set_exit_code(exit_code, reason) {
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        // tell xharness WasmTestMessagesProcessor we are done. 
-        console.log("WASM EXIT " + exit_code);
+        // flush
+        console.log(" ");
+        console.log('1 ' + messsage);
+        setTimeout(() => {
+            originalConsole.log('2 ' + messsage);
+            // tell xharness WasmTestMessagesProcessor we are done. 
+            console.log("WASM EXIT " + exit_code);
+        }, 1);
     } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }
