@@ -12474,7 +12474,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         assert(varDsc->lvOnFrame);
 
         unsigned int size = compiler->lvaLclSize(varNum);
-        if (size / TARGET_POINTER_SIZE > 16)
+        if ((size / TARGET_POINTER_SIZE) > 16)
         {
             // This will require more than 16 instructions, switch to rep stosd/memset call.
             CLANG_FORMAT_COMMENT_ANCHOR;
