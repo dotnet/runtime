@@ -14,13 +14,7 @@
 .assembly 'catchfault'// as "catchfault"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'catchfault.exe'
 // MVID: {FCE369B5-E876-4E32-B744-1740582FF3B2}
 .namespace JitTest

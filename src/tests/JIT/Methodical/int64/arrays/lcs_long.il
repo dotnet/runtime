@@ -16,13 +16,7 @@
 .assembly 'lcs_long'// as "lcs_long"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'lcs_long.exe'
 // MVID: {856A09FD-A814-4ED7-B594-E4AFD3850D67}
 .namespace JitTest

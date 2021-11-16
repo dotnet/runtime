@@ -8,13 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly ILGEN_0x7971e09f {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .class ILGEN_0x7971e09f {
 .field static	unsigned int16[] field_0x1
 .field static	int64[] field_0x2

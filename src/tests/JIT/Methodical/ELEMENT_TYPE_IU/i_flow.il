@@ -16,13 +16,7 @@
 .assembly 'qsort'// as "qsort"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'qsort.exe'
 // MVID: {3433C0F8-3BEA-4168-AB0C-C275EF054928}
 .namespace Test

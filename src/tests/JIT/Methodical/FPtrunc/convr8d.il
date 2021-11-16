@@ -8,13 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly convr8d {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .class public sealed VT extends [mscorlib]System.ValueType
 {
   .field public float64 f
