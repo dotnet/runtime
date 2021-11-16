@@ -378,6 +378,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         internal string GetArrayIndexString(int idx)
         {
+            if (idx < 0 || idx >= TotalLength)
+                return "Invalid Index";
             int boundLimit = 1;
             int lastBoundLimit = 1;
             int[] arrayStr = new int[Rank];
@@ -1496,7 +1498,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return null;
         }
-        public async Task<ArrayDimensions> GetArrayLength(SessionId sessionId, int object_id, CancellationToken token)
+        public async Task<ArrayDimensions> GetArrayDimensions(SessionId sessionId, int object_id, CancellationToken token)
         {
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
@@ -1507,7 +1509,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             for (int i = 0 ; i < length; i++)
             {
                 rank[i] = retDebuggerCmdReader.ReadInt32();
-                retDebuggerCmdReader.ReadInt32();
+                retDebuggerCmdReader.ReadInt32(); //lower_bound
             }
             return new ArrayDimensions(rank);
         }
@@ -1830,12 +1832,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             var objectId = retDebuggerCmdReader.ReadInt32();
             var className = await GetClassNameFromObject(sessionId, objectId, token);
             var arrayType = className.ToString();
-            var length = await GetArrayLength(sessionId, objectId, token);
+            var length = await GetArrayDimensions(sessionId, objectId, token);
             if (arrayType.LastIndexOf('[') > 0)
                 arrayType = arrayType.Insert(arrayType.LastIndexOf('[')+1, length.ToString());
             if (className.LastIndexOf('[') > 0)
                 className = className.Insert(arrayType.LastIndexOf('[')+1, new string(',', length.Rank-1));
-            return CreateJObject<string>(null, "object", arrayType, false, className.ToString(), "dotnet:array:" + objectId, null, length.Rank == 1 ? "array" : null);
+            return CreateJObject<string>(null, "object", description : arrayType, writable : false, className.ToString(), "dotnet:array:" + objectId, null, subtype : length.Rank == 1 ? "array" : null);
         }
 
         public async Task<JObject> CreateJObjectForObject(SessionId sessionId, MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
@@ -2261,17 +2263,17 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetArrayValues(SessionId sessionId, int arrayId, CancellationToken token)
         {
-            var length = await GetArrayLength(sessionId, arrayId, token);
+            var dimensions = await GetArrayDimensions(sessionId, arrayId, token);
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write(arrayId);
             commandParamsWriter.Write(0);
-            commandParamsWriter.Write(length.TotalLength);
+            commandParamsWriter.Write(dimensions.TotalLength);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdArray>(sessionId, CmdArray.GetValues, commandParams, token);
             JArray array = new JArray();
-            for (int i = 0 ; i < length.TotalLength; i++)
+            for (int i = 0 ; i < dimensions.TotalLength; i++)
             {
-                var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, length.GetArrayIndexString(i), false, -1, false, token);
+                var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, dimensions.GetArrayIndexString(i), isOwn : false, -1, forDebuggerDisplayAttribute : false, token);
                 array.Add(var_json);
             }
             return array;
@@ -2279,7 +2281,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JObject> GetArrayValuesProxy(SessionId sessionId, int arrayId, CancellationToken token)
         {
-            var length = await GetArrayLength(sessionId, arrayId, token);
+            var length = await GetArrayDimensions(sessionId, arrayId, token);
             var arrayProxy = JObject.FromObject(new
             {
                 items = await GetArrayValues(sessionId, arrayId, token),
