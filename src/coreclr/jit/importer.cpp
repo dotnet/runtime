@@ -11644,9 +11644,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
             setMethodHasPartialCompilationPatchpoint();
 
-            // We can't skip importing here and then change our minds later and decide not
-            // to have this be a PC patchpoint. So we have to get it right here.
+            // Change block to BBJ_THROW so we won't trigger importation of sucessors.
+            //
             block->bbJumpKind = BBJ_THROW;
+
+            // If this method has a explicit generic context, the only uses of it may be in
+            // the IL for this block. So assume it's used.
+            //
+            if (info.compMethodInfo->options &
+                (CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE))
+            {
+                lvaGenericsContextInUse = true;
+            }
+
             return;
         }
     }
