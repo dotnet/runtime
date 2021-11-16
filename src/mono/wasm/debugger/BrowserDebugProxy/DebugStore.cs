@@ -488,13 +488,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.type = type;
             methods = new List<MethodInfo>();
             Name = metadataReader.GetString(type.Name);
-            var declaringType = type;
-            while (declaringType.IsNested)
+            if (type.IsNested)
             {
-                declaringType = metadataReader.GetTypeDefinition(declaringType.GetDeclaringType());
-                Name = metadataReader.GetString(declaringType.Name) + "." + Name;
+                var declaringType = metadataReader.GetTypeDefinition(type.GetDeclaringType());
+                Name = metadataReader.GetString(declaringType.Name) + "/" + Name;
+                Namespace = metadataReader.GetString(declaringType.Namespace);
             }
-            Namespace = metadataReader.GetString(declaringType.Namespace);
+            else
+            {
+                Namespace = metadataReader.GetString(type.Namespace);
+            }
             if (Namespace.Length > 0)
                 FullName = Namespace + "." + Name;
             else
