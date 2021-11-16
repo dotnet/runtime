@@ -131,24 +131,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (searchResult != null)
                     typeId = (int)searchResult;
 
-                async Task<Tuple<bool, int?>> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
+                async Task<int?> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
                 {
-                    int typeId;
                     var type = assembly.GetTypeByName(typeName);
                     if (type == null)
-                        return new Tuple<bool, int?>(false, null);
-
-                    typeId = await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
-                    return new Tuple<bool, int?>(true, typeId); ;
+                        return null;
+                    return await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
                 }
 
                 async Task<int?> TryFindNameInAssembly(List<AssemblyInfo> assemblies, string name)
                 {
                     foreach (var asm in assemblies)
                     {
-                        var searchResult = await TryGetTypeIdFromName(name, asm);
-                        if (searchResult.Item1)
-                            return searchResult.Item2;
+                        var typeId = await TryGetTypeIdFromName(name, asm);
+                        if (typeId != null)
+                            return typeId;
                     }
                     return null;
                 }
