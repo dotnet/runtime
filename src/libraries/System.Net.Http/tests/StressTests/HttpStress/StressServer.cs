@@ -41,8 +41,7 @@ namespace HttpStress
 
         public StressServer(Configuration configuration)
         {
-            // Force loading System.Security.Cryptography.Encoding
-            _ = new Oid();
+            WorkaroundAssemblyResolutionIssues();
 
             ServerUri = configuration.ServerUri;
             (string scheme, string hostname, int port) = ParseServerUri(configuration.ServerUri);
@@ -316,6 +315,13 @@ namespace HttpStress
                 // Read the full request but don't send back a response body.
                 await context.Request.Body.CopyToAsync(Stream.Null);
             });
+        }
+
+        private static void WorkaroundAssemblyResolutionIssues()
+        {
+            // For some reason, System.Security.Cryptography.Encoding.dll fails to resolve when being loaded on-demand by AspNetCore.
+            // Enforce early-loading to workaround this issue.
+            _ = new Oid();
         }
 
         private static void AppendChecksumHeader(IHeaderDictionary headers, ulong checksum)

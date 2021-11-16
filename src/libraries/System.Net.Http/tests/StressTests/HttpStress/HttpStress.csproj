@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <!-- <TargetFramework>net6.0</TargetFramework> -->
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
-    <EnablePreviewFeatures>True</EnablePreviewFeatures>    
+    <EnablePreviewFeatures>True</EnablePreviewFeatures>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,26 +21,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Quic" Version="6.0.0-preview.5.21301.17" />
   </ItemGroup>
 
-   <Target Name="TestMessage"  AfterTargets="Build" >
-   
-    <Message Text="UseLocalTargetingRuntimePack: $(UseLocalTargetingRuntimePack)" Importance="High" />
-    <Message Text="TargetingpacksTargetsImported: $(TargetingpacksTargetsImported)" Importance="High" />
-    <Message Text="NetCoreAppCurrent: $(NetCoreAppCurrent)" Importance="High" />
-
-    <Message Text="TargetFrameworkVersion: $(TargetFrameworkVersion)" Importance="High" />
-    <Message Text="NetCoreAppCurrentVersion: $(NetCoreAppCurrentVersion)" Importance="High" />
-    
-    <Message Text="DisableImplicitFrameworkReferences: $(DisableImplicitFrameworkReferences)" Importance="High" />
-    <Message Text="TargetFrameworkIdentifier: $(TargetFrameworkIdentifier)" Importance="High" />
-
-    <Message Text="MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir)" Importance="High" />
-    <Message Text="MicrosoftNetCoreAppRuntimePackNativeDir: $(MicrosoftNetCoreAppRuntimePackNativeDir)" Importance="High" />
-    <Message Text="NetCoreAppCurrentRefPath: $(NetCoreAppCurrentRefPath)" Importance="High" />
-    <Message Text="NetCoreAppCurrentRuntimePath: $(NetCoreAppCurrentRuntimePath)" Importance="High" />
-    <Message Text="NetCoreAppCurrentTargetFrameworkMoniker: $(NetCoreAppCurrentTargetFrameworkMoniker)" Importance="High" />
-
-  </Target>
-
   <PropertyGroup>
     <!-- These may lead to duplicate generated classes with local (non-docker) Linux builds. -->
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
@@ -55,5 +33,4 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
-
 </Project>
