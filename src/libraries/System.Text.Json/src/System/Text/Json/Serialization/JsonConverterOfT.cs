@@ -320,11 +320,6 @@ namespace System.Text.Json.Serialization
 
         internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            if (writer.CurrentDepth >= options.EffectiveMaxDepth)
-            {
-                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
-            }
-
             if (default(T) is null && !HandleNullOnWrite && IsNull(value))
             {
                 // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
@@ -508,11 +503,6 @@ namespace System.Text.Json.Serialization
                 // Avoid a type reference to JsonObject and its converter to support trimming.
                 Debug.Assert(TypeToConvert == typeof(Nodes.JsonObject));
                 return TryWrite(writer, value, options, ref state);
-            }
-
-            if (writer.CurrentDepth >= options.EffectiveMaxDepth)
-            {
-                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
             bool isContinuation = state.IsContinuation;
