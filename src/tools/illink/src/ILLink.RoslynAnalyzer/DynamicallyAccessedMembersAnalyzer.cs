@@ -83,9 +83,13 @@ namespace ILLink.RoslynAnalyzer
 			// - a generic argument type,
 			// - a known type
 			// and a method symbol represents a method return.
+
+			if (source.Symbol.Kind is SymbolKind.NamedType && !(source.IsThisParameter || source.Symbol is ITypeParameterSymbol)) {
+				// TODO: support known types
+				return;
+			}
 			var damtOnSource = source.Symbol.Kind switch {
-				SymbolKind.NamedType when source.IsThisParameter || source.Symbol is ITypeParameterSymbol => context.ContainingSymbol.GetDynamicallyAccessedMemberTypes (),
-				SymbolKind.NamedType => throw new NotImplementedException ("known type flows into possibly annotated location"),
+				SymbolKind.NamedType => context.ContainingSymbol.GetDynamicallyAccessedMemberTypes (),
 				SymbolKind.Method => ((IMethodSymbol) source.Symbol).GetDynamicallyAccessedMemberTypesOnReturnType (),
 				_ => source.Symbol.GetDynamicallyAccessedMemberTypes ()
 			};

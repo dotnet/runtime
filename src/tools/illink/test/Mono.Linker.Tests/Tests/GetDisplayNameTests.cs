@@ -43,7 +43,7 @@ namespace Mono.Linker.Tests
 		public int Field;
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MultipleParameters(Int32, Int32)")]
-		public void MultipleParameters (int a, int b)
+		public static void MultipleParameters (int a, int b)
 		{
 		}
 
@@ -60,53 +60,53 @@ namespace Mono.Linker.Tests
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.SingleDimensionalArrayTypeParameter(Int32[])")]
-			public void SingleDimensionalArrayTypeParameter (int[] p)
+			public static void SingleDimensionalArrayTypeParameter (int[] p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.MultiDimensionalArrayTypeParameter(Int32[,])")]
-			public void MultiDimensionalArrayTypeParameter (int[,] p)
+			public static void MultiDimensionalArrayTypeParameter (int[,] p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.JaggedArrayTypeParameter(Int32[][,])")]
-			public void JaggedArrayTypeParameter (int[][,] p)
+			public static void JaggedArrayTypeParameter (int[][,] p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.JaggedArrayTypeParameter(Int32[,][])")]
-			public void JaggedArrayTypeParameter (int[,][] p)
+			public static void JaggedArrayTypeParameter (int[,][] p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.JaggedArrayTypeParameter(Int32[,][,,][,,,])")]
-			public void JaggedArrayTypeParameter (int[,][,,][,,,] p)
+			public static void JaggedArrayTypeParameter (int[,][,,][,,,] p)
 			{
 			}
 
 			// PointerType
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.CommonPointerPointerTypeParameter(Int32*)")]
-			public unsafe void CommonPointerPointerTypeParameter (int* p)
+			public static unsafe void CommonPointerPointerTypeParameter (int* p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.PointerToPointerPointerTypeParameter(Int32**)")]
-			public unsafe void PointerToPointerPointerTypeParameter (int** p)
+			public static unsafe void PointerToPointerPointerTypeParameter (int** p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.PointerToArrayPointerTypeParameter(Int32*[,,,])")]
-			public unsafe void PointerToArrayPointerTypeParameter (int*[,,,] p)
+			public static unsafe void PointerToArrayPointerTypeParameter (int*[,,,] p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.PointerToArrayPointerTypeParameter(Int32*[,][,,])")]
-			public unsafe void PointerToArrayPointerTypeParameter (int*[,][,,] p)
+			public static unsafe void PointerToArrayPointerTypeParameter (int*[,][,,] p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.PointerTypeToUnknownTypeParameter(Void*)")]
-			public unsafe void PointerTypeToUnknownTypeParameter (void* p)
+			public static unsafe void PointerTypeToUnknownTypeParameter (void* p)
 			{
 			}
 		}
@@ -175,7 +175,7 @@ namespace Mono.Linker.Tests
 		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithNestedGenericTypeArgumentsNoArgumentsOnLeaf(GetDisplayNameTests.GenericClassOneParameter<Int32>.B)")]
-		public void MethodWithNestedGenericTypeArgumentsNoArgumentsOnLeaf (GenericClassOneParameter<int>.B p) { }
+		public static void MethodWithNestedGenericTypeArgumentsNoArgumentsOnLeaf (GenericClassOneParameter<int>.B p) { }
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.GenericClassMultipleParameters<T,S>")]
 		public class GenericClassMultipleParameters<T, S>
@@ -187,24 +187,24 @@ namespace Mono.Linker.Tests
 		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithGenericTypeArgument(IList<GetDisplayNameTests.GenericClassOneParameter<Byte*[]>>)")]
-		public void MethodWithGenericTypeArgument (IList<GenericClassOneParameter<byte*[]>> p)
+		public static void MethodWithGenericTypeArgument (IList<GenericClassOneParameter<byte*[]>> p)
 		{
 		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithGenericTypeArguments(GetDisplayNameTests.GenericClassMultipleParameters<Char*[],Int32[,][]>)")]
-		public void MethodWithGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]> p)
+		public static void MethodWithGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]> p)
 		{
 		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithNestedGenericTypeArguments" +
 			"(GetDisplayNameTests.GenericClassMultipleParameters<Char*[],Int32[,][]>.NestedGenericClassMultipleParameters<Char*[],Int32[,][]>)")]
-		public void MethodWithNestedGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]>.NestedGenericClassMultipleParameters<char*[], int[,][]> p)
+		public static void MethodWithNestedGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]>.NestedGenericClassMultipleParameters<char*[], int[,][]> p)
 		{
 		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithPartiallyInstantiatedNestedGenericTypeArguments<MethodT,MethodV>" +
 			"(GetDisplayNameTests.GenericClassMultipleParameters<MethodT,String>.NestedGenericClassMultipleParameters<Int32,MethodV>)")]
-		public void MethodWithPartiallyInstantiatedNestedGenericTypeArguments<MethodT, MethodV> (
+		public static void MethodWithPartiallyInstantiatedNestedGenericTypeArguments<MethodT, MethodV> (
 			GenericClassMultipleParameters<MethodT, string>.NestedGenericClassMultipleParameters<int, MethodV> p)
 		{
 		}
@@ -227,7 +227,7 @@ public class GetDisplayNameTestsGlobalScope
 	public class TypeInGlobalScope
 	{
 		[DisplayName ("GetDisplayNameTestsGlobalScope.TypeInGlobalScope.Method()")]
-		public void Method ()
+		public static void Method ()
 		{
 		}
 	}

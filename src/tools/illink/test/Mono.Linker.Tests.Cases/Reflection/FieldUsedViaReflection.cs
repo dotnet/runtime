@@ -15,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNameBindingFlags ();
 			TestNameWrongBindingFlags ();
 			TestNameUnknownBindingFlags (BindingFlags.Public);
+			TestNameUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
@@ -64,6 +65,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Since the binding flags are not known linker should mark all fields on the type
 			var field = typeof (UnknownBindingFlags).GetField ("field", bindingFlags);
+		}
+
+		[Kept]
+		static void TestNameUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
+		{
+			// Since the binding flags and name are not known linker should mark all fields on the type
+			var field = typeof (UnknownBindingFlagsAndName).GetField (name, bindingFlags);
 		}
 
 		[Kept]
@@ -177,6 +185,17 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		private class UnknownBindingFlags
+		{
+			[Kept]
+			public static int field;
+			[Kept]
+			public int nonStatic;
+			[Kept]
+			private static int privatefield;
+		}
+
+		[Kept]
+		private class UnknownBindingFlagsAndName
 		{
 			[Kept]
 			public static int field;

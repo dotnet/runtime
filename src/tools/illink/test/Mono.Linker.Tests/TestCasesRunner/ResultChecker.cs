@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -395,7 +393,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
 		}
 
-		void VerifyCopyAssemblyIsKeptUnmodified (NPath outputDirectory, string assemblyName)
+		static void VerifyCopyAssemblyIsKeptUnmodified (NPath outputDirectory, string assemblyName)
 		{
 			string inputAssemblyPath = Path.Combine (Directory.GetParent (outputDirectory).ToString (), "input", assemblyName);
 			string outputAssemblyPath = Path.Combine (outputDirectory, assemblyName);
@@ -602,7 +600,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ());
 			var expectedReferenceNames = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[1].Value).Select (attr => (string) attr.Value).ToList ();
-			for (int i = 0; i < expectedReferenceNames.Count (); i++)
+			for (int i = 0; i < expectedReferenceNames.Count; i++)
 				if (expectedReferenceNames[i].EndsWith (".dll"))
 					expectedReferenceNames[i] = expectedReferenceNames[i].Substring (0, expectedReferenceNames[i].LastIndexOf ("."));
 
@@ -651,12 +649,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		bool IsProducedByLinker (CustomAttribute attr)
+		static bool IsProducedByLinker (CustomAttribute attr)
 		{
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((ProducedBy) producedBy).HasFlag (ProducedBy.Trimmer);
 		}
-		IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
+
+		static IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
 		{
 			foreach (var testType in assembly.AllDefinedTypes ()) {
 				foreach (var provider in testType.AllMembers ())
@@ -767,8 +766,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											return false;
 									}
 								} else if (isCompilerGeneratedCode == true) {
-									MethodDefinition methodDefinition = mc.Origin?.Provider as MethodDefinition;
-									if (methodDefinition != null) {
+									if (mc.Origin?.Provider is MethodDefinition methodDefinition) {
 										if (attrProvider is not IMemberDefinition expectedMember)
 											return false;
 
@@ -776,6 +774,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
 											actualName.Contains ("<" + expectedMember.Name + ">"))
+											return true;
+										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
+											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition))
 											return true;
 										if (methodDefinition.Name == ".ctor" &&
 											methodDefinition.DeclaringType.FullName == expectedMember.FullName)
@@ -943,7 +944,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								$"{expectedSourceMember}: Usage of {expectedReflectionMember} unrecognized " +
 								$"{(expectedMessageParts == null ? string.Empty : "and message contains " + string.Join (" ", expectedMessageParts.Select (p => "'" + p + "'")))}";
 
-							Assert.AreEqual (matchedMessages.Count (), matchedPatterns.Count (),
+							Assert.AreEqual (matchedMessages.Count, matchedPatterns.Count,
 								$"Inconsistency between logged messages and recorded patterns.{Environment.NewLine}{expectedUnrecognizedPatternMessage}{Environment.NewLine}" +
 								$"Matched messages: {Environment.NewLine}{string.Join (Environment.NewLine, matchedMessages.Select (mc => "\t" + mc.Text))}{Environment.NewLine}" +
 								$"Matched unrecognized patterns: {Environment.NewLine}{string.Join (Environment.NewLine, matchedPatterns.Select (p => "\t" + RecognizedReflectionAccessPatternToString (p)))}{Environment.NewLine}");
@@ -1342,7 +1343,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return attr.AttributeType.Resolve ()?.DerivesFrom (nameof (BaseInAssemblyAttribute)) ?? false;
 		}
 
-		bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
+		static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
 		{
 			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
 				return assembly.EntryPoint.DeclaringType.CustomAttributes

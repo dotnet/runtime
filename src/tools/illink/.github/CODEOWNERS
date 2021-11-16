@@ -7,5 +7,6 @@
 
 /src/analyzer/ @radekdoulik
 /src/ILLink.Tasks/ @sbomer
+/src/ILLink.RoslynAnalyzer/ @sbomer
 /src/linker/ @marek-safar @mrvoorhe
 /test/ @marek-safar @mrvoorhe
