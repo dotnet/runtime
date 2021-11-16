@@ -2,7 +2,7 @@
 
 This depends on `emsdk` to be installed.
 
-## emsdk on mac
+## emsdk on macOS
 
 * You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk` .
 Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
@@ -17,13 +17,7 @@ Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23
 
 Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
 
-### Windows dependencies
-
-Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md)
-
-If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically during the build.
-
-## Building on mac
+## Building on macOS
 
 * To build the whole thing, with libraries:
 
@@ -33,9 +27,17 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 `make runtime`
 
-### Note: Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
+**Note:** Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
 
-### Bulding on windows
+## emsdk on Windows
+
+Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md)
+
+If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically during the build.
+
+**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
+
+## Bulding on Windows
 
 * To build everything
 
@@ -47,7 +49,7 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)
 
-### Mac
+### macOS
 
 * Install npm with brew:
 
@@ -83,7 +85,7 @@ Add `~/.jsvu` to your `PATH`:
 
 Library tests can be run with js engines: `v8`, `SpiderMonkey`,or `JavaScriptCore`:
 
-### Mac
+### macOS
 
 * `v8`: `make run-tests-v8-$(lib_name)`
 * SpiderMonkey: `make run-tests-sm-$(lib_name)`
@@ -105,7 +107,7 @@ Examples of running tests for individual libraries:
 `.\dotnet.cmd build /t:Test /p:TargetOS=Browser src\libraries\System.Collections.Concurrent\tests`
 `.\dotnet.cmd build /t:Test /p:TargetOS=Browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
 
-### Browser tests on mac
+### Browser tests on macOS
 
 Or they can be run with a browser (Chrome):
 
@@ -125,9 +127,9 @@ The wrapper script used to actually run these tests, accepts:
 
 * set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
 
-### Note: Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
+**Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
-## Debugger tests on mac
+## Debugger tests on macOS
 
 Debugger tests need `Google Chrome` to be installed.
 
