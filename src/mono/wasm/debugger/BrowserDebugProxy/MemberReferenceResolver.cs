@@ -127,7 +127,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 async Task<int?> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
                 {
-                    int typeId;
                     var type = assembly.GetTypeByName(typeName);
                     if (type == null)
                         return null;
