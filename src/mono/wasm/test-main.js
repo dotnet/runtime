@@ -22,6 +22,8 @@ const originalConsole = {
     error: console.error
 };
 
+let isXUnitDoneCheck = false;
+
 function proxyMethod(prefix, func, asJson) {
     return function () {
         const args = [...arguments];
@@ -35,6 +37,9 @@ function proxyMethod(prefix, func, asJson) {
             } catch (e) {
                 payload = payload.toString();
             }
+        }
+        if (payload.indexOf("=== TEST EXECUTION SUMMARY ===") != -1) {
+            isXUnitDoneCheck = true;
         }
 
         if (asJson) {
@@ -218,6 +223,7 @@ const App = {
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
 function set_exit_code(exit_code, reason) {
+    console.log(`Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} from ${(new Error()).stack}.`)
     if (reason) {
         console.error(reason.toString());
         if (reason.stack) {
@@ -227,13 +233,18 @@ function set_exit_code(exit_code, reason) {
     if (is_browser) {
         // Notify the selenium script
         Module.exit_code = exit_code;
+
+        //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        // tell xharness stream procesor we are done
-        console.log("WASM EXIT " + exit_code);
+        // tell xharness WasmTestMessagesProcessor we are done. 
+        // Do it bit later in hope that it could finish streaming the testResults.xml
+        setTimeout(() => {
+            console.log("WASM EXIT " + exit_code);
+        }, 1);
     } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }
