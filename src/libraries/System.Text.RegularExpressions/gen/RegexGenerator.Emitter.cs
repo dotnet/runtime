@@ -1529,7 +1529,8 @@ namespace System.Text.RegularExpressions.Generator
                         while (byteStr.Length >= sizeof(ulong))
                         {
                             EmitOr();
-                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(byteSpan.Slice({textSpanPos * sizeof(char)})) != 0x{BinaryPrimitives.ReadUInt64LittleEndian(byteStr):X}ul");
+                            string byteSpan = textSpanPos > 0 ? $"byteSpan.Slice({textSpanPos * sizeof(char)})" : "byteSpan";
+                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian({byteSpan}) != 0x{BinaryPrimitives.ReadUInt64LittleEndian(byteStr):X}ul");
                             textSpanPos += sizeof(ulong) / sizeof(char);
                             byteStr = byteStr.Slice(sizeof(ulong));
                         }
@@ -1537,7 +1538,8 @@ namespace System.Text.RegularExpressions.Generator
                         while (byteStr.Length >= sizeof(uint))
                         {
                             EmitOr();
-                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(byteSpan.Slice({textSpanPos * sizeof(char)})) != 0x{BinaryPrimitives.ReadUInt32LittleEndian(byteStr):X}u");
+                            string byteSpan = textSpanPos > 0 ? $"byteSpan.Slice({textSpanPos * sizeof(char)})" : "byteSpan";
+                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian({byteSpan}) != 0x{BinaryPrimitives.ReadUInt32LittleEndian(byteStr):X}u");
                             textSpanPos += sizeof(uint) / sizeof(char);
                             byteStr = byteStr.Slice(sizeof(uint));
                         }
@@ -1565,7 +1567,8 @@ namespace System.Text.RegularExpressions.Generator
                     // character-by-character while respecting the culture.
                     if (!caseInsensitive)
                     {
-                        using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({textSpanLocal}.Slice({textSpanPos}), {Literal(node.Str)}))"))
+                        string sourceSpan = textSpanPos > 0 ? $"{textSpanLocal}.Slice({textSpanPos})" : textSpanLocal;
+                        using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(node.Str)}))"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
