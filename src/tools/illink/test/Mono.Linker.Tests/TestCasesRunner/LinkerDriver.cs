@@ -25,7 +25,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			Driver.ProcessResponseFile (args, out var queue);
 			using (var driver = new TestDriver (queue, customizations)) {
-				driver.Run (logger);
+				driver.Run (logger, throwOnFatalLinkerException: true);
 			}
 		}
 	}
