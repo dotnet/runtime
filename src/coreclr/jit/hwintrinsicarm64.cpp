@@ -477,7 +477,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToDouble:
         {
             assert(sig->numArgs == 1);
-            intrinsic = (simdSize ==  8) ? NI_AdvSimd_Arm64_ConvertToDoubleScalar : NI_AdvSimd_Arm64_ConvertToDouble;
+            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToDoubleScalar : NI_AdvSimd_Arm64_ConvertToDouble;
 
             op1     = impPopStack().val;
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
@@ -488,9 +488,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToInt32:
         {
             assert(sig->numArgs == 1);
-            op1     = impPopStack().val;
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero, simdBaseJitType,
-                                               simdSize);
+            op1 = impPopStack().val;
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero, simdBaseJitType, simdSize);
             break;
         }
 
@@ -498,8 +498,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToInt64:
         {
             assert(sig->numArgs == 1);
-            intrinsic = (simdSize ==  8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
-                                         : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
+                                        : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
 
             op1     = impPopStack().val;
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
@@ -529,8 +529,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
-            intrinsic = (simdSize ==  8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
-                                         : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
+                                        : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
 
             op1     = impPopStack().val;
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);

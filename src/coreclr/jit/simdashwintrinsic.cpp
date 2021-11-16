@@ -705,8 +705,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_ConvertToInt32:
                 case NI_VectorT256_ConvertToInt32:
                 {
-                    NamedIntrinsic convert = (simdSize == 32) ? NI_AVX_ConvertToVector256Single
-                                                              : NI_SSE2_ConvertToVector128Single;
+                    NamedIntrinsic convert =
+                        (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
                     return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }
@@ -806,8 +806,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT128_ConvertToInt32:
                 {
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero,
-                                                    simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero, simdBaseJitType,
+                                                    simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_ConvertToInt64:
@@ -818,8 +818,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT128_ConvertToSingle:
                 {
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToSingle, simdBaseJitType,
-                                                    simdSize, /* isSimdAsHWIntrinsic */ true);
+                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToSingle, simdBaseJitType, simdSize,
+                                                    /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_ConvertToUInt32:

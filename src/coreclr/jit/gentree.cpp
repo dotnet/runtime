@@ -19312,7 +19312,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
             }
 
             op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
-                                    /* isSimdAsHWIntrinsic */ false);
+                                     /* isSimdAsHWIntrinsic */ false);
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -19357,7 +19357,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
             }
 
             op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
-                                    /* isSimdAsHWIntrinsic */ false);
+                                     /* isSimdAsHWIntrinsic */ false);
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -19435,7 +19435,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
             intrinsic = (simdSize == 32) ? NI_Vector256_op_Inequality : NI_Vector128_op_Inequality;
 
             op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
-                                    /* isSimdAsHWIntrinsic */ false);
+                                     /* isSimdAsHWIntrinsic */ false);
 
             if (simdBaseType == TYP_FLOAT)
             {
@@ -19470,7 +19470,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
             intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
 
             op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
-                                    /* isSimdAsHWIntrinsic */ false);
+                                     /* isSimdAsHWIntrinsic */ false);
 
             if (simdBaseType == TYP_FLOAT)
             {
