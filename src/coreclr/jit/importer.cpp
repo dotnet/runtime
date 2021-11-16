@@ -11644,7 +11644,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
             setMethodHasPartialCompilationPatchpoint();
 
-            // Change block to BBJ_THROW so we won't trigger importation of sucessors.
+            // Change block to BBJ_THROW so we won't trigger importation of successors.
             //
             block->bbJumpKind = BBJ_THROW;
 
@@ -18855,7 +18855,7 @@ unsigned Compiler::impGetSpillTmpBase(BasicBlock* block)
     SetSpillTempsBase callback(baseTmp);
 
     // We do *NOT* need to reset the SpillClique*Members because a block can only be the predecessor
-    // to one spill clique, and similarly can only be the sucessor to one spill clique
+    // to one spill clique, and similarly can only be the successor to one spill clique
     impWalkSpillCliqueFromPred(block, &callback);
 
     return baseTmp;

@@ -5285,6 +5285,14 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->SecurityCookieOffset());
     }
 
+    if (lvaMonAcquired != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaMonAcquired);
+        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset());
+        JITDUMP("--OSR-- monitor acquired V%02u offset is FP %d\n", lvaMonAcquired,
+                patchpointInfo->MonitorAcquiredOffset());
+    }
+
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
 }
