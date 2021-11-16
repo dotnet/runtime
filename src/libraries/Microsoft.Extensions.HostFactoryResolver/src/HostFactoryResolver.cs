@@ -20,9 +20,25 @@ namespace Microsoft.Extensions.Hosting
         public const string BuildWebHost = nameof(BuildWebHost);
         public const string CreateWebHostBuilder = nameof(CreateWebHostBuilder);
         public const string CreateHostBuilder = nameof(CreateHostBuilder);
+        private const string TimeoutEnvironmentKey = "DOTNET_HOST_FACTORY_RESOLVER_DEFAULT_TIMEOUT_IN_SECONDS";
 
         // The amount of time we wait for the diagnostic source events to fire
-        private static readonly TimeSpan s_defaultWaitTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromMinutes(1);
+        private static readonly TimeSpan s_defaultWaitTimeout = SetupDefaultTimout();
+
+        private static TimeSpan SetupDefaultTimout()
+        {
+            if (Debugger.IsAttached)
+            {
+                return Timeout.InfiniteTimeSpan;
+            }
+            
+            if (uint.TryParse(Environment.GetEnvironmentVariable(TimeoutEnvironmentKey), out uint timeoutInSeconds))
+            {
+                return TimeSpan.FromSeconds((int)timeoutInSeconds);
+            }
+
+            return TimeSpan.FromSeconds(30);
+        }
 
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {
