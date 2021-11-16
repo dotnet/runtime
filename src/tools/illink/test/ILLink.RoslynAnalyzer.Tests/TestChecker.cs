@@ -63,7 +63,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			MemberSyntax = memberSyntax;
 		}
 
-		bool IsExpectedDiagnostic (AttributeSyntax attribute)
+		static bool IsExpectedDiagnostic (AttributeSyntax attribute)
 		{
 			switch (attribute.Name.ToString ()) {
 			case "ExpectedWarning":
@@ -218,7 +218,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 
-			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{(string.Join (Environment.NewLine, DiagnosticMessages))}";
+			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{string.Join (Environment.NewLine, DiagnosticMessages)}";
 			return false;
 		}
 

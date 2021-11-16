@@ -13,5 +13,4 @@ while [[ -h $source ]]; do
 done
 
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
-"$scriptroot/eng/dotnet.sh" tool restore
-"$scriptroot/eng/dotnet.sh" tool run dotnet-format -- illink.sln --fix-whitespace --exclude src/analyzer src/tuner external $@
+"$scriptroot/eng/dotnet.sh" format illink.sln --exclude src/analyzer src/tuner external $@

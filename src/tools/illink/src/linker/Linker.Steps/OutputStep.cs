@@ -32,7 +32,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
 using Mono.Cecil;
-using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Steps
 {
