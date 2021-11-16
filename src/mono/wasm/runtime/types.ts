@@ -190,8 +190,22 @@ export type EmscriptenModuleConfig = {
     onConfigLoaded?: () => void;
     onDotNetReady?: () => void;
 
-    /**
-     * @deprecated DEPRECATED! backward compatibility https://github.com/search?q=mono_bind_static_method&type=Code
-     */
-    mono_bind_static_method: (fqn: string, signature: string) => Function,
+    imports: {
+        require: (name: string) => any;
+        fs: {
+            promises: {
+                readFile: (path: string) => Promise<string>,
+                readFileSync: (path: string, options: string | undefined) => string,
+            }
+        };
+        crypto: {
+            randomBytes: (size: number) => Buffer
+        };
+        ws: WebSocket & { Server: any };
+        path: {
+            normalize: (path: string) => string,
+            dirname: (path: string) => string,
+        };
+        url: any;
+    }
 }

@@ -61,31 +61,29 @@ for (let m of methods) {
     }
 }
 
-function proxyJson(func) {
-    for (let m of ["log", ...methods])
-        console[m] = proxyMethod(`console.${m}`, func, true);
-}
-
 if (is_browser) {
     const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
     let consoleWebSocket = new WebSocket(consoleUrl);
-    // redirect output so that when emscripten starts it's already redirected
-    proxyJson(function (msg) {
-        if (consoleWebSocket.readyState === WebSocket.OPEN) {
-            consoleWebSocket.send(msg);
-        }
-        else {
-            originalConsole.log(msg);
-        }
-    });
-
     consoleWebSocket.onopen = function (event) {
         originalConsole.log("browser: Console websocket connected.");
     };
     consoleWebSocket.onerror = function (event) {
         originalConsole.error(`websocket error: ${event}`);
     };
+
+    const send = (msg) => {
+        if (consoleWebSocket.readyState === WebSocket.OPEN) {
+            consoleWebSocket.send(msg);
+        }
+        else {
+            originalConsole.log(msg);
+        }
+    }
+
+    // redirect output so that when emscripten starts it's already redirected
+    for (let m of ["log", ...methods])
+        console[m] = proxyMethod(`console.${m}`, send, true);
 }
 
 if (typeof globalThis.crypto === 'undefined') {
@@ -113,48 +111,56 @@ if (typeof globalThis.performance === 'undefined') {
         }
     }
 }
-var Module = {
-    config: null,
-    configSrc: "./mono-config.json",
-    onConfigLoaded: () => {
-        if (!Module.config) {
-            const err = new Error("Could not find ./mono-config.json. Cancelling run");
-            set_exit_code(1,);
-            throw err;
-        }
-        // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-        for (let variable in processedArguments.setenv) {
-            Module.config.environment_variables[variable] = processedArguments.setenv[variable];
-        }
+loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
+    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
+        disableDotNet6Compatibility: true,
+        config: null,
+        configSrc: "./mono-config.json",
+        onConfigLoaded: () => {
+            if (!Module.config) {
+                const err = new Error("Could not find ./mono-config.json. Cancelling run");
+                set_exit_code(1,);
+                throw err;
+            }
+            // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
+            for (let variable in processedArguments.setenv) {
+                Module.config.environment_variables[variable] = processedArguments.setenv[variable];
+            }
 
-        if (!processedArguments.enable_gc) {
-            INTERNAL.mono_wasm_enable_on_demand_gc(0);
-        }
-    },
-    onDotNetReady: () => {
-        let wds = Module.FS.stat(processedArguments.working_dir);
-        if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-            set_exit_code(1, `Could not find working directory ${processedArguments.working_dir}`);
-            return;
-        }
+            if (!processedArguments.enable_gc) {
+                INTERNAL.mono_wasm_enable_on_demand_gc(0);
+            }
+        },
+        onDotNetReady: () => {
+            let wds = Module.FS.stat(processedArguments.working_dir);
+            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
+                set_exit_code(1, `Could not find working directory ${processedArguments.working_dir}`);
+                return;
+            }
 
-        Module.FS.chdir(processedArguments.working_dir);
+            Module.FS.chdir(processedArguments.working_dir);
 
-        App.init();
-    },
-    onAbort: (error) => {
-        console.log("ABORT: " + error);
-        const err = new Error();
-        console.log("Stacktrace: \n");
-        console.error(err.stack);
-        set_exit_code(1, error);
-    },
-};
-
+            App.init({ MONO, INTERNAL, BINDING, Module });
+        },
+        onAbort: (error) => {
+            console.log("ABORT: " + error);
+            const err = new Error();
+            console.log("Stacktrace: \n");
+            console.error(err.stack);
+            set_exit_code(1, error);
+        },
+    }))
+}).catch(function (err) {
+    console.error(err);
+    set_exit_code(1, "failed to load the dotnet.js file");
+    throw err;
+});
 
 const App = {
-    init: async function () {
+    init: async function ({ MONO, INTERNAL, BINDING, Module }) {
         console.info("Initializing.....");
+        Object.assign(App, { MONO, INTERNAL, BINDING, Module });
+
         for (let i = 0; i < processedArguments.profilers.length; ++i) {
             const init = Module.cwrap('mono_wasm_load_profiler_' + processedArguments.profilers[i], 'void', ['string']);
             init("");
@@ -220,7 +226,7 @@ const App = {
 
         const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
         try {
-            return INTERNAL.call_static_method(fqn, args || [], signature);
+            return App.INTERNAL.call_static_method(fqn, args || [], signature);
         } catch (exc) {
             console.error("exception thrown in", fqn);
             throw exc;
@@ -236,12 +242,15 @@ function set_exit_code(exit_code, reason) {
             console.error(reason.stack);
         }
     }
+
     if (is_browser) {
         const stack = (new Error()).stack.replace(/\n/g, "").replace(/[ ]*at/g, " at").replace(/https?:\/\/[0-9.:]*/g, "").replace("Error", "");
         const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} ${stack}.`;
 
-        // Notify the selenium script
-        Module.exit_code = exit_code;
+        if (App.Module) {
+            // Notify the selenium script
+            App.Module.exit_code = exit_code;
+        }
 
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
@@ -257,8 +266,8 @@ function set_exit_code(exit_code, reason) {
             // tell xharness WasmTestMessagesProcessor we are done. 
             console.log("WASM EXIT " + exit_code);
         }, 1);
-    } else if (INTERNAL) {
-        INTERNAL.mono_wasm_exit(exit_code);
+    } else if (App.INTERNAL) {
+        App.INTERNAL.mono_wasm_exit(exit_code);
     }
 }
 
@@ -340,7 +349,7 @@ async function loadDotnet(file) {
     if (typeof WScript !== "undefined") { // Chakra
         loadScript = function (file) {
             WScript.LoadScriptFile(file);
-            return globalThis.Module;
+            return globalThis.createDotnetRuntime;
         };
     } else if (is_node) { // NodeJS
         loadScript = async function (file) {
@@ -354,8 +363,8 @@ async function loadDotnet(file) {
             let timeout = 100;
             // bysy spin waiting for script to load into global namespace
             while (timeout > 0) {
-                if (globalThis.Module) {
-                    return globalThis.Module;
+                if (globalThis.createDotnetRuntime) {
+                    return globalThis.createDotnetRuntime;
                 }
                 // delay 10ms
                 await new Promise(resolve => setTimeout(resolve, 10));
@@ -367,7 +376,7 @@ async function loadDotnet(file) {
     else if (typeof globalThis.load !== 'undefined') {
         loadScript = async function (file) {
             globalThis.load(file)
-            return globalThis.Module;
+            return globalThis.createDotnetRuntime;
         }
     }
     else {
@@ -376,9 +385,3 @@ async function loadDotnet(file) {
 
     return loadScript(file);
 }
-
-loadDotnet("./dotnet.js").catch(function (err) {
-    console.error(err);
-    set_exit_code(1, "failed to load the dotnet.js file");
-    throw err;
-});

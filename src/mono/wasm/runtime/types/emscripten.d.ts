@@ -52,6 +52,7 @@ declare interface EmscriptenModule {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
 
+    ready: Promise<unknown>;
     preInit?: (() => Promise<void>)[];
     onRuntimeInitialized?: () => void;
 }
