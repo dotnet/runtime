@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, MONO, runtimeHelpers } from "./modules";
+import { Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr } from "./types";

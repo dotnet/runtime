@@ -106,7 +106,9 @@ var Module = {
     configSrc: "./mono-config.json",
     onConfigLoaded: () => {
         if (!Module.config) {
-            set_exit_code(1, "Could not find ./mono-config.json. Cancelling run");
+            const err = new Error("Could not find ./mono-config.json. Cancelling run");
+            set_exit_code(1,);
+            throw err;
         }
         // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
         for (let variable in processedArguments.setenv) {

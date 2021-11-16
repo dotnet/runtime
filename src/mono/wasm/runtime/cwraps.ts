@@ -7,7 +7,7 @@ import {
     MonoMethod, MonoObject, MonoString,
     MonoType, VoidPtr
 } from "./types";
-import { Module } from "./modules";
+import { Module } from "./imports";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
     // MONO

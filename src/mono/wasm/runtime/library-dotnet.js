@@ -1,6 +1,6 @@
-/* eslint-disable no-undef */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+/* eslint-disable no-undef */
 
 "use strict";
 
@@ -9,8 +9,8 @@ const DotNetSupportLib = {
     $MONO: {},
     $BINDING: {},
     $INTERNAL: {},
-    // this line will be executed on runtime, populating the objects with methods
-    $DOTNET__postset: "__dotnet_runtime.__exportAPI(MONO, BINDING, INTERNAL, Module, true,  ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, locateFile);",
+    // this line will be executed early on runtime, passing import and export objects into __dotnet_runtime IFFE
+    $DOTNET__postset: "__dotnet_runtime.__initializeImportsAndExports({isGlobal:true, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile}, {mono:MONO, binding:BINDING, internal:INTERNAL, module:Module});",
 };
 
 // the methods would be visible to EMCC linker

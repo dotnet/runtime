@@ -20,7 +20,7 @@ import {
     mono_wasm_raise_debug_event,
     mono_wasm_fire_debugger_agent_message,
 } from "./debug";
-import { runtimeHelpers, setAPI } from "./modules";
+import { runtimeHelpers, setImportsAndExports } from "./imports";
 import { EmscriptenModuleMono, MonoArray, MonoConfig, MonoConfigError, MonoObject } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
@@ -115,26 +115,29 @@ const BINDING: BINDING = <any>{
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-function exportAPI(mono: any, binding: any, internal: any, module: any, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, glocateFile: Function): void {
-    const moduleExt = module as EmscriptenModuleMono;
+function initializeImportsAndExports(
+    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
+    exports: { mono: any, binding: any, internal: any, module: any },
+): void {
+    const module = exports.module as EmscriptenModuleMono;
     const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
-    setAPI(mono, binding, internal, module, isGlobal, isNode, isShell, isWeb, glocateFile);
+    setImportsAndExports(imports, exports);
 
     // here we merge methods from the local objects into exported objects
-    Object.assign(mono, MONO);
-    Object.assign(binding, BINDING);
-    Object.assign(internal, INTERNAL);
+    Object.assign(exports.mono, MONO);
+    Object.assign(exports.binding, BINDING);
+    Object.assign(exports.internal, INTERNAL);
 
-    const exports: DotNetExports = <any>{
-        MONO: mono,
-        BINDING: binding,
-        INTERNAL: internal,
+    const api: DotNetPublicAPI = <any>{
+        MONO: exports.mono,
+        BINDING: exports.binding,
+        INTERNAL: exports.internal,
         Module: module
     };
 
-    if (moduleExt.configSrc) {
+    if (module.configSrc) {
         // this could be overriden on Module
         if (!module.preInit) {
             module.preInit = [];
@@ -144,23 +147,23 @@ function exportAPI(mono: any, binding: any, internal: any, module: any, isGlobal
         module.preInit.unshift(mono_wasm_pre_init);
     }
     // this could be overriden on Module
-    if (!moduleExt.onRuntimeInitialized) {
-        moduleExt.onRuntimeInitialized = mono_wasm_on_runtime_initialized;
+    if (!module.onRuntimeInitialized) {
+        module.onRuntimeInitialized = mono_wasm_on_runtime_initialized;
     }
-    if (!moduleExt.print) {
-        moduleExt.print = console.log;
+    if (!module.print) {
+        module.print = console.log;
     }
-    if (!moduleExt.printErr) {
-        moduleExt.printErr = console.error;
+    if (!module.printErr) {
+        module.printErr = console.error;
     }
 
-    if (isGlobal || !moduleExt.disableDotNet6Compatibility) {
-        Object.assign(module, exports);
+    if (imports.isGlobal || !module.disableDotNet6Compatibility) {
+        Object.assign(module, api);
 
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        moduleExt.mono_bind_static_method = (fqn: string, signature: ArgsMarshalString): Function => {
+        module.mono_bind_static_method = (fqn: string, signature: ArgsMarshalString): Function => {
             console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };
@@ -184,10 +187,10 @@ function exportAPI(mono: any, binding: any, internal: any, module: any, isGlobal
                 }
             });
         };
-        globalThisAny.MONO = mono;
-        globalThisAny.BINDING = binding;
-        globalThisAny.INTERNAL = internal;
-        if (!isGlobal) {
+        globalThisAny.MONO = exports.mono;
+        globalThisAny.BINDING = exports.binding;
+        globalThisAny.INTERNAL = exports.internal;
+        if (!imports.isGlobal) {
             globalThisAny.Module = module;
         }
 
@@ -197,7 +200,7 @@ function exportAPI(mono: any, binding: any, internal: any, module: any, isGlobal
         warnWrap("removeRunDependency", () => module.removeRunDependency);
     }
 }
-export const __exportAPI: any = exportAPI; // don't want to export the type
+export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.lib.js ---
@@ -338,7 +341,7 @@ interface BINDING {
     call_assembly_entry_point: typeof mono_call_assembly_entry_point,
     unbox_mono_obj: typeof unbox_mono_obj
 }
-export interface DotNetExports {
+export interface DotNetPublicAPI {
     MONO: MONO,
     BINDING: BINDING,
     Module: any

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { AllAssetEntryTypes, AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./modules";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -215,11 +215,12 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
     if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
         try {
             cwraps.mono_wasm_load_runtime("unused", args.debug_level || 0);
-        } catch (ex: any) {
-            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + ex);
+        } catch (err: any) {
+            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
             Module.printErr("MONO_WASM: Stacktrace: \n");
-            Module.printErr(ex.stack);
+            Module.printErr(err.stack);
 
+            runtime_is_initialized_reject(err);
             const wasm_exit = cwraps.mono_wasm_exit;
             wasm_exit(1);
         }
@@ -248,6 +249,7 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
             Module.printErr("MONO_WASM: loaded_cb () failed: " + err);
             Module.printErr("MONO_WASM: Stacktrace: \n");
             Module.printErr(err.stack);
+            runtime_is_initialized_reject(err);
             throw err;
         }
     }
@@ -260,6 +262,7 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
             Module.printErr("MONO_WASM: onDotNetReady () failed: " + err);
             Module.printErr("MONO_WASM: Stacktrace: \n");
             Module.printErr(err.stack);
+            runtime_is_initialized_reject(err);
             throw err;
         }
     }
@@ -416,9 +419,10 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
         await Promise.all(fetch_promises);
 
         _finalize_startup(args, ctx);
-    } catch (exc: any) {
-        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", exc);
-        throw exc;
+    } catch (err: any) {
+        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", err);
+        runtime_is_initialized_reject(err);
+        throw err;
     }
 }
 
@@ -507,11 +511,12 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
         config.runtime_options = config.runtime_options || [];
         config.globalization_mode = config.globalization_mode || GlobalizationMode.AUTO;
 
-    } catch (exc) {
-        const errMessage = `Failed to load config file ${configFilePath} ${exc}`;
+    } catch (err) {
+        const errMessage = `Failed to load config file ${configFilePath} ${err}`;
         console.error(errMessage);
-        runtimeHelpers.config = { message: errMessage, error: exc, isError: true };
-        throw exc;
+        runtimeHelpers.config = { message: errMessage, error: err, isError: true };
+        runtime_is_initialized_reject(err);
+        throw err;
     } finally {
         Module.removeRunDependency(configFilePath);
     }
