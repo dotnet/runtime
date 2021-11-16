@@ -2511,7 +2511,7 @@ void Compiler::optIdentifyLoopsForAlignment()
                 {
                     // Sometimes with JitOptRepeat > 1, we might end up finding the loops twice. In such
                     // cases, make sure to count them just once.
-                    if (!first->isLoopAlign())
+                    if (!top->isLoopAlign())
                     {
                         loopAlignCandidates++;
                         top->bbFlags |= BBF_LOOP_ALIGN;
