@@ -64,7 +64,7 @@ async function _fetch_asset(url: string): Promise<Response> {
         else if (ENVIRONMENT_IS_NODE) {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const fs = require("fs");
-            const arrayBuffer = await fs.readFileSync(url);
+            const arrayBuffer = await fs.promises.readFile(url);
             return <Response><any> {
                 ok: true,
                 url,
@@ -73,15 +73,16 @@ async function _fetch_asset(url: string): Promise<Response> {
             };
         }
         else if (typeof (read) === "function") {
+            const arrayBuffer = new Uint8Array(read(url, "binary"));
             return <Response><any> {
                 ok: true,
                 url,
-                arrayBuffer: () => new Uint8Array(read(url, "binary")),
-                json: () => JSON.parse(read(url))
+                arrayBuffer: () => arrayBuffer,
+                json: () => JSON.parse(Module.UTF8ArrayToString(arrayBuffer, 0, arrayBuffer.length))
             };
         }
     }
-    catch (e) {
+    catch (e: any) {
         return <Response><any> {
             ok: false,
             url,
