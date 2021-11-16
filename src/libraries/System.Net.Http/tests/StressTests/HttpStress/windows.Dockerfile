@@ -5,18 +5,11 @@ FROM $SDK_BASE_IMAGE
 # Use powershell as the default shell
 SHELL ["pwsh", "-Command"]
 
-RUN echo "DOTNET_SDK_VERSION="$env:DOTNET_SDK_VERSION
-RUN echo "DOTNET_VERSION="$env:DOTNET_VERSION
-
 WORKDIR /app
 COPY . .
 
-# ARG CONFIGURATION=Release
-# RUN dotnet build -c $env:CONFIGURATION
 ARG VERSION=7.0
-ENV VERSION=$VERSION
 ARG CONFIGURATION=Release
-ENV CONFIGURATION=$CONFIGURATION
 
 RUN dotnet build -c $env:CONFIGURATION `
     -p:TargetingPacksTargetsLocation=C:/live-runtime-artifacts/targetingpacks.targets `
@@ -30,11 +23,9 @@ ENV COMPlus_DbgMiniDumpName="C:/share/coredump.%p"
 
 EXPOSE 5001
 
-# ENV CONFIGURATION=$CONFIGURATION
-# ENV HTTPSTRESS_ARGS=""
-# CMD dotnet run --no-build -c $env:CONFIGURATION -- $env:HTTPSTRESS_ARGS.Split()
-
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV HTTPSTRESS_ARGS=""
-CMD & C:/live-runtime-artifacts/testhost/net$env:VERSION-windows-$env:CONFIGURATION-x64/dotnet.exe exec ./bin/$env:CONFIGURATION/net$env:VERSION/HttpStress.dll $env:HTTPSTRESS_ARGS.Split()
+
+CMD & C:/live-runtime-artifacts/testhost/net$env:VERSION-windows-$env:CONFIGURATION-x64/dotnet.exe exec `
+    ./bin/$env:CONFIGURATION/net$env:VERSION/HttpStress.dll $env:HTTPSTRESS_ARGS.Split()

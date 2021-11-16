@@ -36,11 +36,6 @@ namespace HttpStress
             return (int)await Run(config);
         }
 
-        private static void ForceLoadingDependencies()
-        {
-            
-        }
-
         private static bool TryParseCli(string[] args, [NotNullWhen(true)] out Configuration? config)
         {
             var cmd = new RootCommand();
