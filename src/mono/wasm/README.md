@@ -129,7 +129,7 @@ The wrapper script used to actually run these tests, accepts:
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
-## Debugger tests on mac
+## Debugger tests on macOS
 
 Debugger tests need `Google Chrome` to be installed.
 
