@@ -20884,6 +20884,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
+    // Delegate Invoke method doesn't have a body and gets special cased instead.
+    // Don't even bother trying to inline it.
+    if (call->IsDelegateInvoke())
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
+        return;
+    }
+
     // Tail recursion elimination takes precedence over inlining.
     // TODO: We may want to do some of the additional checks from fgMorphCall
     // here to reduce the chance we don't inline a call that won't be optimized
