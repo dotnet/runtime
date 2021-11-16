@@ -6,6 +6,7 @@
     <title>TESTS</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
   </head>
   <body onload="onLoad()">
     <h3 id="header">Wasm Browser Sample - Simple Benchmark</h3>
@@ -41,10 +42,9 @@
         promise.then(ret => {
           document.getElementById("out").innerHTML += ret;
           if (ret.length > 0) {
-              document.getElementById("out").innerHTML += "<br>";
               setTimeout(function () { yieldBench(); }, 0);
           } else {
-              document.getElementById("out").innerHTML += "<br>Finished";
+              document.getElementById("out").innerHTML += "Finished";
           }
         });
       }
@@ -54,10 +54,31 @@
           if (tasks != '')
             INTERNAL.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks", tasks);
           yieldBench ();
+        },
+
+        PageShow: async function ()
+        {
+          AppStart.Construct();
+          try {
+            await AppStart.WaitForPageShow();
+          } finally {
+            AppStart.RemoveFrame();
+          }
+        },
+
+        ReachedManaged: async function ()
+        {
+          AppStart.Construct();
+          try {
+            await AppStart.WaitForReached();
+          } finally {
+            AppStart.RemoveFrame();
+          }
         }
       };
     </script>
     <script type="text/javascript" src="runtime.js"></script>
+    <script type="text/javascript" src="appstart.js"></script>
 
     <script defer src="dotnet.js"></script>
 

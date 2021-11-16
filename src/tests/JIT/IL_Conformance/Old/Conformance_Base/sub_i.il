@@ -39,4 +39,4 @@ END:
 
 
 
-.assembly sub_i.exe{}
+.assembly sub_i{}

@@ -58,10 +58,6 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.ByValueParameterWithModifier<byte>("Out"), 1, 0 };
             yield return new object[] { CodeSnippets.ByValueParameterWithModifier<byte>("In, Out"), 1, 0 };
 
-            // Unsupported named arguments
-            //  * BestFitMapping, ThrowOnUnmappableChar, CallingConvention
-            yield return new object[] { CodeSnippets.AllDllImportNamedArguments, 3, 0 };
-
             // LCIDConversion
             yield return new object[] { CodeSnippets.LCIDConversionAttribute, 1, 0 };
 

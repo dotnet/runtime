@@ -61,6 +61,14 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 #endif
 
+// The portable build is performed on RHEL7 which doesn't define FICLONE yet.
+// Ensure FICLONE is defined for all Linux builds.
+#ifdef __linux__
+#ifndef FICLONE
+#define FICLONE _IOW(0x94, 9, int)
+#endif
+#endif
+
 #if HAVE_STAT64
 #define stat_ stat64
 #define fstat_ fstat64
@@ -1138,8 +1146,10 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 }
 #endif // !HAVE_FCOPYFILE
 
-int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
+int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
 {
+    (void)sourceLength; // unused on some platforms.
+
     int inFd = ToFileDescriptor(sourceFd);
     int outFd = ToFileDescriptor(destinationFd);
 
@@ -1151,28 +1161,27 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
 #else
     // Get the stats on the source file.
     int ret;
-    struct stat_ sourceStat;
     bool copied = false;
-#if HAVE_SENDFILE_4
-    // If sendfile is available (Linux), try to use it, as the whole copy
-    // can be performed in the kernel, without lots of unnecessary copying.
-    while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
-    if (ret != 0)
-    {
-        return -1;
-    }
 
-    // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
-    // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
-    // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
-    uint64_t size = (uint64_t)sourceStat.st_size;
-    if (size != 0)
+    // Certain files (e.g. procfs) may return a size of 0 even though reading them will
+    // produce data. We use plain read/write for those.
+#ifdef FICLONE
+    // Try copying data using a copy-on-write clone. This shares storage between the files.
+    if (sourceLength != 0)
+    {
+        while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
+        copied = ret == 0;
+    }
+#endif
+#if HAVE_SENDFILE_4
+    // Try copying the data using sendfile.
+    if (!copied && sourceLength != 0)
     {
         // Note that per man page for large files, you have to iterate until the
         // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
-        while (size > 0)
+        do
         {
-            ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
+            ssize_t sent = sendfile(outFd, inFd, NULL, (sourceLength >= SSIZE_MAX ? SSIZE_MAX : (size_t)sourceLength));
             if (sent < 0)
             {
                 if (errno != EINVAL && errno != ENOSYS)
@@ -1184,36 +1193,31 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
                     break;
                 }
             }
+            else if (sent == 0)
+            {
+                // The file was truncated (or maybe some other condition occurred).
+                // Perform the remaining copying using read/write.
+                break;
+            }
             else
             {
-                assert((size_t)sent <= size);
-                size -= (size_t)sent;
+                assert(sent <= sourceLength);
+                sourceLength -= sent;
             }
-        }
+        } while (sourceLength > 0);
 
-        if (size == 0)
-        {
-            copied = true;
-        }
+        copied = sourceLength == 0;
     }
-
-    // sendfile couldn't be used; fall back to a manual copy below. This could happen
-    // if we're on an old kernel, for example, where sendfile could only be used
-    // with sockets and not regular files.  Additionally, certain files (e.g. procfs)
-    // may return a size of 0 even though reading from then will produce data.  As such,
-    // we avoid using sendfile with the queried size if the size is reported as 0.
 #endif // HAVE_SENDFILE_4
 
-    // Manually read all data from the source and write it to the destination.
+    // Perform a manual copy.
     if (!copied && CopyFile_ReadWrite(inFd, outFd) != 0)
     {
         return -1;
     }
 
-    // Now that the data from the file has been copied, copy over metadata
-    // from the source file.  First copy the file times.
-    // If futimes nor futimes are available on this platform, file times will
-    // not be copied over.
+    // Copy file times.
+    struct stat_ sourceStat;
     while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
     if (ret == 0)
     {
@@ -1242,7 +1246,10 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
     {
         return -1;
     }
-    // Then copy permissions.
+
+    // Copy permissions.
+    // Even though managed code created the file with permissions matching those of the source file,
+    // we need to copy permissions because the open permissions may be filtered by 'umask'.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
     if (ret != 0 && errno != EPERM) // See EPERM comment above
     {

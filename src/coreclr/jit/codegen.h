@@ -434,10 +434,10 @@ protected:
                      CORINFO_METHOD_HANDLE methHnd,
                      INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                      void*                 addr
-                     X86_ARG(int  argSize),
+                     X86_ARG(int argSize),
                      emitAttr              retSize
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     IL_OFFSETX            ilOffset,
+                     const DebugInfo&      di,
                      regNumber             base,
                      bool                  isJump);
     // clang-format on
@@ -447,10 +447,10 @@ protected:
                           CORINFO_METHOD_HANDLE methHnd,
                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                           GenTreeIndir*         indir
-                          X86_ARG(int  argSize),
+                          X86_ARG(int argSize),
                           emitAttr              retSize
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          IL_OFFSETX            ilOffset,
+                          const DebugInfo&      di,
                           bool                  isJump);
     // clang-format on
 
@@ -552,15 +552,16 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #ifdef DEBUG
-    void genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMapping);
+    void genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping);
     void genIPmappingListDisp();
 #endif // DEBUG
 
-    void genIPmappingAdd(IL_OFFSETX offset, bool isLabel);
-    void genIPmappingAddToFront(IL_OFFSETX offset);
+    IPmappingDsc* genCreateIPMapping(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
+    void genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
+    void genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingGen();
 
-    void genEnsureCodeEmitted(IL_OFFSETX offsx);
+    void genEnsureCodeEmitted(const DebugInfo& di);
 
     //-------------------------------------------------------------------------
     // scope info for the variables
@@ -967,9 +968,7 @@ protected:
                                regNumber       targetReg);
     void genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode);
     void genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode);
     void genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg);
-    void genSIMDIntrinsicWiden(GenTreeSIMD* simdNode);
     void genSIMDIntrinsic(GenTreeSIMD* simdNode);
 
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires

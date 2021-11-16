@@ -161,7 +161,7 @@ namespace System.Xml.Serialization
             LocalBuilder? localTmp;
             if (!_tmpLocals.TryGetValue(type, out localTmp))
             {
-                localTmp = DeclareLocal(type, "_tmp" + _tmpLocals.Count);
+                localTmp = DeclareLocal(type, $"_tmp{_tmpLocals.Count}");
                 _tmpLocals.Add(type, localTmp);
             }
             return localTmp;
@@ -1270,7 +1270,7 @@ namespace System.Xml.Serialization
             Type[] interfaces)
         {
             // parent is nullable if no base class
-            return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,
+            return moduleBuilder.DefineType($"{TempAssembly.GeneratedAssemblyNamespace}.{name}",
                 attributes, parent, interfaces);
         }
 

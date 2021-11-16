@@ -3,6 +3,13 @@
 
 .assembly extern mscorlib {}
 .assembly a {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module a.exe
 
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an asignment flag, when
@@ -59,6 +66,9 @@
     
     .method public static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
           ldc.r8     9.2233720368547758e+018
           call       int64 ILGEN_CLASS::DoubleToInt64(float64)

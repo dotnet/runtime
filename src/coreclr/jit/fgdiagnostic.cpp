@@ -1632,7 +1632,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 }
             }
 
-            // Add regions for the loops. Note that loops are assumed to be contiguous from `lpFirst` to `lpBottom`.
+            // Add regions for the loops. Note that loops are assumed to be contiguous from `lpTop` to `lpBottom`.
 
             if (includeLoops)
             {
@@ -1645,7 +1645,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         continue;
                     }
                     sprintf_s(name, sizeof(name), FMT_LP, loopNum);
-                    rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpFirst, loop.lpBottom);
+                    rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpTop, loop.lpBottom);
                 }
             }
 
@@ -2967,7 +2967,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 {
                     // Is this constant a handle of some kind?
                     //
-                    unsigned handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
+                    GenTreeFlags handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
                     if (handleKind != 0)
                     {
                         // Is the GTF_IND_INVARIANT flag set or unset?
@@ -3130,6 +3130,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
                 }
@@ -3142,6 +3144,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
                 }

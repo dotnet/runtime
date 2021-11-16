@@ -11,7 +11,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.InteropServices;
 
-using TestLibrary;
+using Xunit;
 
 namespace BinderTracingTests
 {

@@ -7,6 +7,13 @@
 .assembly extern mscorlib { auto }
 
 .assembly GitHub_15319_1 {}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 
 .class private auto ansi beforefieldinit Q
        extends [System.Runtime]System.Object
@@ -24,6 +31,9 @@
 
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+           01 00 00 00
+       )
        .entrypoint
        ldc.i4.s   100
        conv.i8

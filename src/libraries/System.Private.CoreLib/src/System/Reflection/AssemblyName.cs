@@ -77,6 +77,7 @@ namespace System.Reflection
             }
         }
 
+        [Obsolete(Obsoletions.AssemblyNameMembersMessage, DiagnosticId = Obsoletions.AssemblyNameMembersDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public ProcessorArchitecture ProcessorArchitecture
         {
             get
@@ -189,12 +190,14 @@ namespace System.Reflection
             }
         }
 
+        [Obsolete(Obsoletions.AssemblyNameMembersMessage, DiagnosticId = Obsoletions.AssemblyNameMembersDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AssemblyHashAlgorithm HashAlgorithm
         {
             get => _hashAlgorithm;
             set => _hashAlgorithm = value;
         }
 
+        [Obsolete(Obsoletions.AssemblyNameMembersMessage, DiagnosticId = Obsoletions.AssemblyNameMembersDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AssemblyVersionCompatibility VersionCompatibility
         {
             get => _versionCompatibility;

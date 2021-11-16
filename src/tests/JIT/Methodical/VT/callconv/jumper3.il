@@ -20,6 +20,13 @@
   
   
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module jumper.exe
 // MVID: {2E4A2D77-5614-4325-A9DC-CBB90842669E}
 .namespace MS
@@ -81,6 +88,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       96 (0x60)
       .maxstack  2

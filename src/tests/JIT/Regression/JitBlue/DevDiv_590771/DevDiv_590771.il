@@ -6,6 +6,13 @@
 .assembly extern System.Console { auto }
 
 .assembly DevDiv_590771 { }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 
 .class public auto ansi beforefieldinit DevDiv_590771
        extends [System.Runtime]System.Object
@@ -97,6 +104,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       36 (0x24)
     .maxstack  6

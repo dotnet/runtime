@@ -173,101 +173,106 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="context">kind info for previous and next characters</param>
         internal bool IsNullableFor(uint context)
         {
-            if (_nullabilityCache is null)
+            // if _nullabilityCache is null then IsNullable==CanBeNullable
+            // Observe that if IsNullable==true then CanBeNullable==true.
+            // but when the node does not start with an anchor
+            // and IsNullable==false then CanBeNullable==false.
+
+            return _nullabilityCache is null ?
+                _info.IsNullable :
+                WithCache(context);
+
+            // Separated out to enable the common case (no nullability cache) to be inlined
+            // and to avoid zero-init costs for generally unused state.
+            bool WithCache(uint context)
             {
-                // if _nullabilityCache is null then IsNullable==CanBeNullable
-                // Observe that if IsNullable==true then CanBeNullable==true.
-                // but when the node does not start with an anchor
-                // and IsNullable==false then CanBeNullable==false.
-                return _info.IsNullable;
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    return StackHelper.CallOnEmptyStack(IsNullableFor, context);
+                }
+
+                Debug.Assert(context < CharKind.ContextLimit);
+
+                // If nullablity has been computed for the given context then return it
+                byte b = Volatile.Read(ref _nullabilityCache[context]);
+                if (b != UndefinedByte)
+                {
+                    return b == TrueByte;
+                }
+
+                // Otherwise compute the nullability recursively for the given context
+                bool is_nullable;
+                switch (_kind)
+                {
+                    case SymbolicRegexKind.Loop:
+                        Debug.Assert(_left is not null);
+                        is_nullable = _lower == 0 || _left.IsNullableFor(context);
+                        break;
+
+                    case SymbolicRegexKind.Concat:
+                        Debug.Assert(_left is not null && _right is not null);
+                        is_nullable = _left.IsNullableFor(context) && _right.IsNullableFor(context);
+                        break;
+
+                    case SymbolicRegexKind.Or:
+                    case SymbolicRegexKind.And:
+                        Debug.Assert(_alts is not null);
+                        is_nullable = _alts.IsNullableFor(context);
+                        break;
+
+                    case SymbolicRegexKind.Not:
+                        Debug.Assert(_left is not null);
+                        is_nullable = !_left.IsNullableFor(context);
+                        break;
+
+                    case SymbolicRegexKind.StartAnchor:
+                        is_nullable = CharKind.Prev(context) == CharKind.StartStop;
+                        break;
+
+                    case SymbolicRegexKind.EndAnchor:
+                        is_nullable = CharKind.Next(context) == CharKind.StartStop;
+                        break;
+
+                    case SymbolicRegexKind.BOLAnchor:
+                        // Beg-Of-Line anchor is nullable when the previous character is Newline or Start
+                        // note: at least one of the bits must be 1, but both could also be 1 in case of very first newline
+                        is_nullable = (CharKind.Prev(context) & CharKind.NewLineS) != 0;
+                        break;
+
+                    case SymbolicRegexKind.EOLAnchor:
+                        // End-Of-Line anchor is nullable when the next character is Newline or Stop
+                        // note: at least one of the bits must be 1, but both could also be 1 in case of \Z
+                        is_nullable = (CharKind.Next(context) & CharKind.NewLineS) != 0;
+                        break;
+
+                    case SymbolicRegexKind.WBAnchor:
+                        // test that prev char is word letter iff next is not not word letter
+                        is_nullable = ((CharKind.Prev(context) & CharKind.WordLetter) ^ (CharKind.Next(context) & CharKind.WordLetter)) != 0;
+                        break;
+
+                    case SymbolicRegexKind.NWBAnchor:
+                        // test that prev char is word letter iff next is word letter
+                        is_nullable = ((CharKind.Prev(context) & CharKind.WordLetter) ^ (CharKind.Next(context) & CharKind.WordLetter)) == 0;
+                        break;
+
+                    case SymbolicRegexKind.EndAnchorZ:
+                        // \Z anchor is nullable when the next character is either the last Newline or Stop
+                        // note: CharKind.NewLineS == CharKind.Newline|CharKind.StartStop
+                        is_nullable = (CharKind.Next(context) & CharKind.StartStop) != 0;
+                        break;
+
+                    default: // SymbolicRegexKind.EndAnchorZRev:
+                             // EndAnchorZRev (rev(\Z)) anchor is nullable when the prev character is either the first Newline or Start
+                             // note: CharKind.NewLineS == CharKind.Newline|CharKind.StartStop
+                        Debug.Assert(_kind == SymbolicRegexKind.EndAnchorZRev);
+                        is_nullable = (CharKind.Prev(context) & CharKind.StartStop) != 0;
+                        break;
+                }
+
+                Volatile.Write(ref _nullabilityCache[context], is_nullable ? TrueByte : FalseByte);
+
+                return is_nullable;
             }
-
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
-            {
-                return StackHelper.CallOnEmptyStack(IsNullableFor, context);
-            }
-
-            Debug.Assert(context < CharKind.ContextLimit);
-
-            // If nullablity has been computed for the given context then return it
-            byte b = Volatile.Read(ref _nullabilityCache[context]);
-            if (b != UndefinedByte)
-            {
-                return b == TrueByte;
-            }
-
-            // Otherwise compute the nullability recursively for the given context
-            bool is_nullable;
-            switch (_kind)
-            {
-                case SymbolicRegexKind.Loop:
-                    Debug.Assert(_left is not null);
-                    is_nullable = _lower == 0 || _left.IsNullableFor(context);
-                    break;
-
-                case SymbolicRegexKind.Concat:
-                    Debug.Assert(_left is not null && _right is not null);
-                    is_nullable = _left.IsNullableFor(context) && _right.IsNullableFor(context);
-                    break;
-
-                case SymbolicRegexKind.Or:
-                case SymbolicRegexKind.And:
-                    Debug.Assert(_alts is not null);
-                    is_nullable = _alts.IsNullableFor(context);
-                    break;
-
-                case SymbolicRegexKind.Not:
-                    Debug.Assert(_left is not null);
-                    is_nullable = !_left.IsNullableFor(context);
-                    break;
-
-                case SymbolicRegexKind.StartAnchor:
-                    is_nullable = CharKind.Prev(context) == CharKind.StartStop;
-                    break;
-
-                case SymbolicRegexKind.EndAnchor:
-                    is_nullable = CharKind.Next(context) == CharKind.StartStop;
-                    break;
-
-                case SymbolicRegexKind.BOLAnchor:
-                    // Beg-Of-Line anchor is nullable when the previous character is Newline or Start
-                    // note: at least one of the bits must be 1, but both could also be 1 in case of very first newline
-                    is_nullable = (CharKind.Prev(context) & CharKind.NewLineS) != 0;
-                    break;
-
-                case SymbolicRegexKind.EOLAnchor:
-                    // End-Of-Line anchor is nullable when the next character is Newline or Stop
-                    // note: at least one of the bits must be 1, but both could also be 1 in case of \Z
-                    is_nullable = (CharKind.Next(context) & CharKind.NewLineS) != 0;
-                    break;
-
-                case SymbolicRegexKind.WBAnchor:
-                    // test that prev char is word letter iff next is not not word letter
-                    is_nullable = ((CharKind.Prev(context) & CharKind.WordLetter) ^ (CharKind.Next(context) & CharKind.WordLetter)) != 0;
-                    break;
-
-                case SymbolicRegexKind.NWBAnchor:
-                    // test that prev char is word letter iff next is word letter
-                    is_nullable = ((CharKind.Prev(context) & CharKind.WordLetter) ^ (CharKind.Next(context) & CharKind.WordLetter)) == 0;
-                    break;
-
-                case SymbolicRegexKind.EndAnchorZ:
-                    // \Z anchor is nullable when the next character is either the last Newline or Stop
-                    // note: CharKind.NewLineS == CharKind.Newline|CharKind.StartStop
-                    is_nullable = (CharKind.Next(context) & CharKind.StartStop) != 0;
-                    break;
-
-                default: // SymbolicRegexKind.EndAnchorZRev:
-                         // EndAnchorZRev (rev(\Z)) anchor is nullable when the prev character is either the first Newline or Start
-                         // note: CharKind.NewLineS == CharKind.Newline|CharKind.StartStop
-                    Debug.Assert(_kind == SymbolicRegexKind.EndAnchorZRev);
-                    is_nullable = (CharKind.Prev(context) & CharKind.StartStop) != 0;
-                    break;
-            }
-
-            Volatile.Write(ref _nullabilityCache[context], is_nullable ? TrueByte : FalseByte);
-
-            return is_nullable;
         }
 
         /// <summary>Returns true if this is equivalent to .* (the node must be eager also)</summary>
@@ -1222,10 +1227,6 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             var predicates = new HashSet<S>();
             CollectPredicates_helper(predicates);
-            if (predicates.Count == 0)
-            {
-                predicates.Add(_builder._solver.True);
-            }
             return predicates;
         }
 
@@ -1311,17 +1312,7 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(typeof(S).IsAssignableTo(typeof(IComparable)));
 
             HashSet<S> predicates = GetPredicates();
-            Debug.Assert(predicates.Count != 0);
-
-            S[] predicatesArray = new S[predicates.Count];
-            int i = 0;
-            foreach (S s in predicates)
-            {
-                predicatesArray[i++] = s;
-            }
-            Debug.Assert(i == predicatesArray.Length);
-
-            List<S> mt = _builder._solver.GenerateMinterms(predicatesArray);
+            List<S> mt = _builder._solver.GenerateMinterms(predicates);
             mt.Sort();
             return mt.ToArray();
         }

@@ -248,6 +248,15 @@ private:
             compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, helperArgs);
 
         compiler->fgNewStmtAtEnd(block, helperCall);
+
+        // This block will no longer have class probes.
+        // (They will appear in the OSR variant).
+        //
+        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
+        {
+            JITDUMP("No longer adding class probes to " FMT_BB "\n", block->bbNum);
+            block->bbFlags &= ~BBF_HAS_CLASS_PROFILE;
+        }
     }
 };
 

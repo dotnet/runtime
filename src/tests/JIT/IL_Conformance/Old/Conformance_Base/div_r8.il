@@ -604,4 +604,4 @@ FAIL:
 	ret
 }
 }
-.assembly div_r8.exe{}
+.assembly div_r8{}
