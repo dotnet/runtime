@@ -8,7 +8,8 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [GeneratedDllImport(Libraries.Crypt32, EntryPoint = "CryptDecodeObject", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static unsafe partial bool CryptDecodeObjectPointer(CertEncodingType dwCertEncodingType,
+        internal static unsafe partial bool CryptDecodeObjectPointer(
+            CertEncodingType dwCertEncodingType,
             [MarshalAs(UnmanagedType.LPStr)] string lpszStructType,
             byte[] pbEncoded, int cbEncoded,
             CryptDecodeObjectFlags dwFlags,

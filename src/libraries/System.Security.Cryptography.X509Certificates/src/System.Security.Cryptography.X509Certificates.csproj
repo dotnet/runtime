@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
@@ -299,8 +299,6 @@
              Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CHAIN_ENGINE_CONFIG.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CERT_CHAIN_ENGINE_CONFIG.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CHAIN_PARA.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CHAIN_PARA.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_EXTENSION.cs"

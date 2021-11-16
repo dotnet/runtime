@@ -9,7 +9,8 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static unsafe partial SafeCertContextHandle CertFindCertificateInStore(SafeCertStoreHandle hCertStore,
+        internal static unsafe partial SafeCertContextHandle CertFindCertificateInStore(
+            SafeCertStoreHandle hCertStore,
             CertEncodingType dwCertEncodingType,
             CertFindFlags dwFindFlags,
             CertFindType dwFindType,

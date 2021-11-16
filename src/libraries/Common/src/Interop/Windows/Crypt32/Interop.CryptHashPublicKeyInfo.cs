@@ -9,7 +9,8 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static partial bool CryptHashPublicKeyInfo(IntPtr hCryptProv,
+        internal static partial bool CryptHashPublicKeyInfo(
+            IntPtr hCryptProv,
             int algId,
             int dwFlags,
             CertEncodingType dwCertEncodingType,
