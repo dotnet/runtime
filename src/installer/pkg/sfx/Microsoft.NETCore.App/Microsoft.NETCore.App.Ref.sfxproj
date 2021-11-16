@@ -4,7 +4,7 @@
   <PropertyGroup>
     <PlatformPackageType>TargetingPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
-    <CreatePlatformManifest Condition="'$(PreReleaseVersionLabel)' == 'servicing'">false</CreatePlatformManifest>
+    <!-- <CreatePlatformManifest Condition="'$(PreReleaseVersionLabel)' == 'servicing'">false</CreatePlatformManifest> -->
     <ArchiveName>dotnet-targeting-pack</ArchiveName>
     <InstallerName>dotnet-targeting-pack</InstallerName>
     <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
