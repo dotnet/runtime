@@ -70,14 +70,21 @@ if (is_browser) {
     const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
     let consoleWebSocket = new WebSocket(consoleUrl);
-    consoleWebSocket.onopen = function (event) {
-        proxyJson(function (msg) {
+    // redirect output so that when emscripten starts it's already redirected
+    proxyJson(function (msg) {
+        if (consoleWebSocket.readyState === WebSocket.OPEN) {
             consoleWebSocket.send(msg);
-        });
-        console.log("browser: Console websocket connected.");
+        }
+        else {
+            originalConsole.log(msg);
+        }
+    });
+
+    consoleWebSocket.onopen = function (event) {
+        originalConsole.log("browser: Console websocket connected.");
     };
     consoleWebSocket.onerror = function (event) {
-        console.error(`websocket error: ${event}`);
+        originalConsole.error(`websocket error: ${event}`);
     };
 }
 
@@ -223,7 +230,7 @@ const App = {
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
 function set_exit_code(exit_code, reason) {
-    console.log(`Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} from ${(new Error()).stack}.`)
+    originalConsole.log(`Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} from ${(new Error()).stack}.`)
     if (reason) {
         console.error(reason.toString());
         if (reason.stack) {
@@ -241,10 +248,7 @@ function set_exit_code(exit_code, reason) {
         document.body.appendChild(tests_done_elem);
 
         // tell xharness WasmTestMessagesProcessor we are done. 
-        // Do it bit later in hope that it could finish streaming the testResults.xml
-        setTimeout(() => {
-            console.log("WASM EXIT " + exit_code);
-        }, 1);
+        console.log("WASM EXIT " + exit_code);
     } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }
