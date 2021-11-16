@@ -235,7 +235,7 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
 
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
             {
                 yield return GenerateValuePropertyAssignment(info, context, subContext);
             }
@@ -568,7 +568,7 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
 
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
             {
                 // <marshalerIdentifier>.Value = <nativeIdentifier>;
                 yield return GenerateValuePropertyAssignment(info, context, subContext);
