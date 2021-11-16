@@ -4666,12 +4666,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             skipUnmarkLoop = true;
         }
 
-        // Make sure that we don't double count the loop align candidates.
-        if (block->isLoopAlign())
-        {
-            loopAlignCandidates--;
-        }
-
         // If this is the first Cold basic block update fgFirstColdBlock
         if (block == fgFirstColdBlock)
         {
@@ -4807,6 +4801,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         fgUnlinkBlock(block);
         block->bbFlags |= BBF_REMOVED;
     }
+
+    // If this was marked for alignment, remove it
+    block->unmarkLoopAlign(this DEBUG_ARG("Removed block"));
 
     if (bPrev != nullptr)
     {

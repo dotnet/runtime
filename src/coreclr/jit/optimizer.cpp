@@ -379,15 +379,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 
     JITDUMP("\n");
 
-#if FEATURE_LOOP_ALIGN
-    if (begBlk->isLoopAlign())
-    {
-        // Clear the loop alignment bit on the head of a loop, since it's no longer a loop.
-        loopAlignCandidates--;
-        begBlk->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Removing LOOP_ALIGN flag from removed loop in " FMT_BB "\n", begBlk->bbNum);
-    }
-#endif
+    begBlk->unmarkLoopAlign(this DEBUG_ARG("Removed loop"));
 }
 
 /*****************************************************************************************************
@@ -3786,12 +3778,7 @@ PhaseStatus Compiler::optUnrollLoops()
 #if FEATURE_LOOP_ALIGN
         for (block = head->bbNext;; block = block->bbNext)
         {
-            if (block->isLoopAlign())
-            {
-                loopAlignCandidates--;
-                block->bbFlags &= ~BBF_LOOP_ALIGN;
-                JITDUMP("Removing LOOP_ALIGN flag from unrolled loop in " FMT_BB "\n", block->bbNum);
-            }
+            block->unmarkLoopAlign(this DEBUG_ARG("Unrolled loop"));
 
             if (block == bottom)
             {
@@ -7625,13 +7612,8 @@ void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
     if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
     {
         BasicBlock* top = optLoopTable[lnum].lpTop;
-        if (top->isLoopAlign())
-        {
-            loopAlignCandidates--;
-            top->bbFlags &= ~BBF_LOOP_ALIGN;
-            JITDUMP("Removing LOOP_ALIGN flag for " FMT_LP " that starts at " FMT_BB " because loop has a call.\n",
-                    lnum, top->bbNum);
-        }
+
+        top->unmarkLoopAlign(this DEBUG_ARG("Loop with call"));
     }
 #endif
 

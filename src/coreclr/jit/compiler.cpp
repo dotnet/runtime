@@ -5241,6 +5241,14 @@ void Compiler::placeLoopAlignInstructions()
     BasicBlock* bbHavingAlign = nullptr;
     for (BasicBlock* const block : Blocks())
     {
+        if ((block == fgFirstBB) && block->isLoopAlign())
+        {
+            // Adding align instruction in prolog is not supported
+            // hence skip the align block if it is the first block.
+            loopsToProcess--;
+            continue;
+        }
+
         // If there is a unconditional jump
         if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
         {
