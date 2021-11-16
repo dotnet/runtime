@@ -436,7 +436,7 @@ async function _fetch_data (url: string): Promise<Response> {
             ok: !!data,
             url: url,
             arrayBuffer: () => Promise.resolve (new Uint8Array (data)),
-            json: () => Promise.resolve(JSON.parse(data))
+            json: () => Promise.resolve (JSON.parse (ENVIRONMENT_IS_NODE ? data : read(url))),
         });
     } else {
         return Promise.reject(Error("No fetch implementation available"));
