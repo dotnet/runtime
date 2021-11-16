@@ -254,6 +254,10 @@ foreach ($argument in $PSBoundParameters.Keys)
 
 $failedBuilds = @()
 
+# Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
+# The later changes are ignored when using the cache.
+$env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
+
 if ($os -eq "Browser") {
   # override default arch for Browser, we only support wasm
   $arch = "wasm"

@@ -715,14 +715,13 @@ extern "C" PCODE STDCALL OnCallCountThresholdReached(TransitionBlock *transition
 
 PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(transitionBlock));
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    PCODE codeEntryPoint;
+
+    BEGIN_PRESERVE_LAST_ERROR;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -739,8 +738,6 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     FrameWithCookie<CallCountingHelperFrame> frameWithCookie(transitionBlock, methodDesc);
     CallCountingHelperFrame *frame = &frameWithCookie;
     frame->Push(CURRENT_THREAD);
-
-    PCODE codeEntryPoint;
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -786,6 +783,9 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     frame->Pop(CURRENT_THREAD);
+
+    END_PRESERVE_LAST_ERROR;
+
     return codeEntryPoint;
 }
 

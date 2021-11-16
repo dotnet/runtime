@@ -333,15 +333,15 @@ namespace System.IO
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
             using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
             {
-                long fileLength = fs.Length;
-                if (fileLength > int.MaxValue)
+                long fileLength = 0;
+                if (fs.CanSeek && (fileLength = fs.Length) > int.MaxValue)
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
-                else if (fileLength == 0)
+                if (fileLength == 0)
                 {
 #if !MS_IO_REDIST
-                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content.
+                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also there is non-seekable file stream.
                     // Thus we need to assume 0 doesn't mean empty.
                     return ReadAllBytesUnknownLength(fs);
 #endif
@@ -729,8 +729,8 @@ namespace System.IO
             bool returningInternalTask = false;
             try
             {
-                long fileLength = fs.Length;
-                if (fileLength > int.MaxValue)
+                long fileLength = 0L;
+                if (fs.CanSeek && (fileLength = fs.Length) > int.MaxValue)
                 {
                     var e = new IOException(SR.IO_FileTooLong2GB);
 #if !MS_IO_REDIST
