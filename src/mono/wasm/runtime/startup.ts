@@ -57,26 +57,36 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
 }
 
 async function _fetch_asset(url: string): Promise<Response> {
-    if (typeof (fetch) === "function") {
-        return fetch(url, { credentials: "same-origin" });
+    try {
+        if (typeof (fetch) === "function") {
+            return fetch(url, { credentials: "same-origin" });
+        }
+        else if (ENVIRONMENT_IS_NODE) {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const fs = require("fs");
+            const arrayBuffer = await fs.readFileSync(url);
+            return <Response><any> {
+                ok: true,
+                url,
+                arrayBuffer: () => arrayBuffer,
+                json: () => JSON.parse(arrayBuffer)
+            };
+        }
+        else if (typeof (read) === "function") {
+            return <Response><any> {
+                ok: true,
+                url,
+                arrayBuffer: () => new Uint8Array(read(url, "binary")),
+                json: () => JSON.parse(read(url))
+            };
+        }
     }
-    else if (ENVIRONMENT_IS_NODE) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const fs = require("fs");
-        const arrayBuffer = await fs.readFileSync(url);
+    catch (e) {
         return <Response><any> {
-            ok: true,
+            ok: false,
             url,
-            arrayBuffer: () => arrayBuffer,
-            json: () => JSON.parse(arrayBuffer)
-        };
-    }
-    else if (typeof (read) === "function") {
-        return <Response><any> {
-            ok: true,
-            url,
-            arrayBuffer: () => new Uint8Array(read(url, "binary")),
-            json: () => JSON.parse(read(url))
+            arrayBuffer: () => { throw e; },
+            json: () => { throw e; }
         };
     }
     throw new Error("No fetch implementation available");
@@ -167,15 +177,6 @@ function _apply_configuration_from_args(args: MonoConfig) {
 
     if (args.coverage_profiler_options)
         mono_wasm_init_coverage_profiler(args.coverage_profiler_options);
-}
-
-function _get_fetch_implementation(args: MonoConfig): (asset: string) => Promise<Response> {
-    if (typeof (args.fetch_file_cb) === "function")
-        return args.fetch_file_cb;
-
-    return function (asset) {
-        return _fetch_asset(asset);
-    };
 }
 
 function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
@@ -310,7 +311,7 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
 
         _apply_configuration_from_args(args);
 
-        const local_fetch = _get_fetch_implementation(args);
+        const local_fetch = typeof (args.fetch_file_cb) === "function" ? args.fetch_file_cb : _fetch_asset;
 
         const load_asset = async (asset: AllAssetEntryTypes): Promise<void> => {
             //TODO we could do module.addRunDependency(asset.name) and delay emscripten run() after all assets are loaded
