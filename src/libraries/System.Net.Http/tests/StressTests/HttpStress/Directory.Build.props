@@ -13,4 +13,3 @@
         <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">../../../../../../artifacts/bin/microsoft.netcore.app.runtime.$(PackageRid)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
 </Project>
-
