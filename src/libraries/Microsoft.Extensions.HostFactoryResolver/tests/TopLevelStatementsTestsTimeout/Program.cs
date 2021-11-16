@@ -6,5 +6,5 @@ using System.Threading;
 using Microsoft.Extensions.Hosting;
 
 var hostBuilder = new HostBuilder();
-Thread.Sleep(TimeSpan.FromMinutes(6));
+Thread.Sleep(TimeSpan.FromSeconds(30));
 hostBuilder.Build();
