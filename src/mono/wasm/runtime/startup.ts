@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { INTERNAL, Module, MONO, runtimeHelpers } from "./modules";
-import { AllAssetEntryTypes, AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, VoidPtr, wasm_type_symbol } from "./types";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
