@@ -32,6 +32,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void RSAOAEPFormatterRng()
         {
             using (RSA key = RSA.Create())
@@ -44,6 +45,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void RSAPKCS1FormatterRng()
         {
             using (RSA key = RSA.Create())
@@ -56,6 +58,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void RSAPKCS1DeformatterRng()
         {
             using (RSA key = RSA.Create())
