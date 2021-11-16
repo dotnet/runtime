@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         public void TopLevelStatementsTestsTimeout()
         {
             var assembly = Assembly.Load("TopLevelStatementsTestsTimeout");
-            var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, waitTimeout: null); // will use default timeout
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
 
             Assert.NotNull(factory);
             Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
