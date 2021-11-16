@@ -387,7 +387,7 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
 }
 
 // used from Blazor
-export function mono_wasm_load_data_archive(data: TypedArray, prefix: string): boolean {
+export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean {
     if (data.length < 8)
         return false;
 
@@ -451,10 +451,9 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
     const module = Module;
     module.addRunDependency(configFilePath);
     try {
-        let config = null;
         // NOTE: when we add nodejs make sure to include the nodejs fetch package
         const configRaw = await _fetch_asset(configFilePath);
-        config = await configRaw.json();
+        const config = await configRaw.json();
 
         runtimeHelpers.config = config;
         config.environment_variables = config.environment_variables || {};
