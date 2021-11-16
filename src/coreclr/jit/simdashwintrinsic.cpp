@@ -705,7 +705,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_ConvertToInt32:
                 case NI_VectorT256_ConvertToInt32:
                 {
-                    NamedIntrinsic convert = (simdSize == 32) ? NI_AVX_ConvertToVector128Int32WithTruncation
+                    assert(simdBaseType == TYP_FLOAT);
+                    NamedIntrinsic convert = (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
                                                               : NI_SSE2_ConvertToVector128Int32WithTruncation;
                     return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize,
                                                     /* isSimdAsHWIntrinsic */ true);
@@ -723,7 +724,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT128_Sum:
                 {
-
                     GenTree* tmp;
                     unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
                     int      haddCount    = genLog2(vectorLength);
@@ -800,36 +800,42 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT128_ConvertToDouble:
                 {
+                    assert((simdBaseType == TYP_LONG) || (simdBaseType == TYP_ULONG));
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_ConvertToDouble, simdBaseJitType,
                                                     simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_ConvertToInt32:
                 {
+                    assert(simdBaseType == TYP_FLOAT);
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero, simdBaseJitType,
                                                     simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_ConvertToInt64:
                 {
+                    assert(simdBaseType == TYP_DOUBLE);
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_ConvertToInt64RoundToZero,
                                                     simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_ConvertToSingle:
                 {
+                    assert((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT));
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToSingle, simdBaseJitType, simdSize,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_ConvertToUInt32:
                 {
+                    assert(simdBaseType == TYP_FLOAT);
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToUInt32RoundToZero,
                                                     simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_ConvertToUInt64:
                 {
+                    assert(simdBaseType == TYP_DOUBLE);
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero,
                                                     simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }

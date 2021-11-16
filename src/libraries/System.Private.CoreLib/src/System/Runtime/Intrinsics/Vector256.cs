@@ -348,11 +348,11 @@ namespace System.Runtime.Intrinsics
                 var upper = Avx2.ShiftRightLogical(vector, 32).AsDouble();              // get upper 32-bits of vector
                 var lower = Avx2.And(vector, Create(0x00000000_FFFFFFFFUL)).AsDouble(); // get lower 32-bits of vector
 
-                var magic1 = Create(0x45300000_00000000).AsDouble();
+                var magic1 = Create(0x45300000_00000000UL).AsDouble();
                 upper = Avx.Subtract(Avx.Or(upper, magic1), magic1);                    // convert upper 32-bits of vector
 
-                var magic2 = Create(0x43300000_00000000).AsDouble();
-                lower = Avx.Subtract(Avx.Or(upper, magic1), magic1);                    // convert lower 32-bits of vector
+                var magic2 = Create(0x43300000_00000000UL).AsDouble();
+                lower = Avx.Subtract(Avx.Or(lower, magic2), magic2);                    // convert lower 32-bits of vector
 
                 return Avx.Add(upper, lower);                                           // add upper and lower halves
             }

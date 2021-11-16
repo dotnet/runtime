@@ -851,10 +851,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_ConvertToInt32:
         {
             assert(sig->numArgs == 1);
-            intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector128Int32WithTruncation
+            assert(simdBaseType == TYP_FLOAT);
+
+            intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
                                          : NI_SSE2_ConvertToVector128Int32WithTruncation;
 
-            op1     = impPopStack().val;
+            op1     = impSIMDPopStack(retType);
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
@@ -868,12 +870,13 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             {
                 intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
 
-                op1     = impPopStack().val;
+                op1     = impSIMDPopStack(retType);
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             }
             else
             {
                 // TODO-XARCH-CQ: These intrinsics should be accelerated
+                assert(simdBaseType == TYP_UINT);
             }
             break;
         }
