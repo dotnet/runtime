@@ -249,14 +249,20 @@ function set_exit_code(exit_code, reason) {
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        // flush
-        console.log(" ");
+        // need to flush streams (stdout/stderr)
+        for (const stream of Module.FS.streams) {
+            if (stream && stream.stream_ops && stream.stream_ops.flush) {
+                stream.stream_ops.flush(stream);
+            }
+        }
+        console.log("Flushed stdout!");
+
         console.log('1 ' + messsage);
         setTimeout(() => {
             originalConsole.log('2 ' + messsage);
             // tell xharness WasmTestMessagesProcessor we are done. 
             console.log("WASM EXIT " + exit_code);
-        }, 1);
+        }, 100);
     } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }
