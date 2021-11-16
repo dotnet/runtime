@@ -43,7 +43,7 @@ namespace Mono.Linker.Tests
 		public int Field;
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MultipleParameters(Int32, Int32)")]
-		public void MultipleParameters (int a, int b)
+		public static void MultipleParameters (int a, int b)
 		{
 		}
 
