@@ -45,8 +45,8 @@ declare interface EmscriptenModule {
     setValue(ptr: VoidPtr, value: number, type: string, noSafe?: number | boolean): void;
     setValue(ptr: Int32Ptr, value: number, type: string, noSafe?: number | boolean): void;
     getValue(ptr: number, type: string, noSafe?: number | boolean): number;
-    UTF8ToString(arg: CharPtr): string;
-    UTF8ArrayToString(str: TypedArray, heap: number[] | number, outIdx: number, maxBytesToWrite?: number): string;
+    UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
+    UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     removeRunDependency(id: string): void;
