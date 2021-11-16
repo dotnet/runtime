@@ -1333,7 +1333,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyImportHelpers.ImportPem(input, label => {
+            PemKeyHelpers.ImportPem(input, label => {
                 if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
                 {
                     return ImportPkcs8PrivateKey;

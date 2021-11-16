@@ -2936,6 +2936,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			td->last_ins->next = NULL;
 		UnlockedIncrement (&mono_interp_stats.inline_failures);
 	} else {
+		MONO_PROFILER_RAISE (inline_method, (td->rtm->method, target_method));
 		if (td->verbose_level)
 			g_print ("Inline end method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 		UnlockedIncrement (&mono_interp_stats.inlined_methods);
@@ -3240,8 +3241,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	/* Intrinsics */
-	if (target_method && interp_handle_intrinsics (td, target_method, constrained_class, csignature, readonly, &op))
+	if (target_method && interp_handle_intrinsics (td, target_method, constrained_class, csignature, readonly, &op)) {
+		MONO_PROFILER_RAISE (inline_method, (td->rtm->method, target_method));
 		return TRUE;
+	}
 
 	if (constrained_class) {
 		if (m_class_is_enumtype (constrained_class) && !strcmp (target_method->name, "GetHashCode")) {
@@ -3269,8 +3272,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		g_print ("                    : %s::%s.  %s (%p)\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 #endif
 		/* Intrinsics: Try again, it could be that `mono_get_method_constrained_with_method` resolves to a method that we can substitute */
-		if (target_method && interp_handle_intrinsics (td, target_method, constrained_class, csignature, readonly, &op))
+		if (target_method && interp_handle_intrinsics (td, target_method, constrained_class, csignature, readonly, &op)) {
+			MONO_PROFILER_RAISE (inline_method, (td->rtm->method, target_method));
 			return TRUE;
+		}
 
 		return_val_if_nok (error, FALSE);
 		mono_class_setup_vtable (target_method->klass);
@@ -5770,6 +5775,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
 					!strcmp (m->name, ".ctor")) {
 				/* public ByReference(ref T value) */
+				MONO_PROFILER_RAISE (inline_method, (td->rtm->method, m));
 				g_assert (csignature->hasthis && csignature->param_count == 1);
 				td->sp--;
 				/* We already have the vt on top of the stack. Just do a dummy mov that should be optimized out */
@@ -5784,6 +5790,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					csignature->params [0]->type == MONO_TYPE_PTR &&
 					!type_has_references (mono_method_get_context (m)->class_inst->type_argv [0])) {
 				/* ctor frequently used with ReadOnlySpan over static arrays */
+				MONO_PROFILER_RAISE (inline_method, (td->rtm->method, m));
 				interp_add_ins (td, MINT_INTRINS_SPAN_CTOR);
 				td->sp -= 2;
 				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);

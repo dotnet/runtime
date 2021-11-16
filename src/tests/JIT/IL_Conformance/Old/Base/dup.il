@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly dup.exe{
+.assembly 'dup'{
 }
 
 .class public _dup {

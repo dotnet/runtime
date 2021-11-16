@@ -461,7 +461,7 @@ namespace DebuggerTests
 
                await EvaluateOnCallFrameFail(id,
                    ("me.foo", "ReferenceError"),
-                   ("this", "ReferenceError"),
+                   ("this", "CompilationError"),
                    ("this.NullIfAIsNotZero.foo", "ReferenceError"));
            });
 
@@ -542,6 +542,11 @@ namespace DebuggerTests
                     ("this.CallMethodWithParmBool(true)", TString("TRUE")),
                     ("this.CallMethodWithParmBool(false)", TString("FALSE")),
                     ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
+                    ("this.CallMethodWithParmString(\"\\\"\\\"\")", TString("str_const_\"\"")),
+                    ("this.CallMethodWithParmString(\"🛶\")", TString("str_const_🛶")),
+                    ("this.CallMethodWithParmString(\"\\uD83D\\uDEF6\")", TString("str_const_🛶")),
+                    ("this.CallMethodWithParmString(\"🚀\")", TString("str_const_🚀")),
+                    ("this.CallMethodWithParmString_λ(\"🚀\")", TString("λ_🚀")),
                     ("this.CallMethodWithParm(10) + this.a", TNumber(12)),
                     ("this.CallMethodWithObj(null)", TNumber(-1)),
                     ("this.CallMethodWithChar('a')", TString("str_const_a")));

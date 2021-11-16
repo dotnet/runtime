@@ -12794,8 +12794,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                op1 = impCheckForNullPointer(op1);
-
                 /* Mark the block as containing an index expression */
 
                 if (op1->gtOper == GT_LCL_VAR)
@@ -13008,8 +13006,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op2->gtType = TYP_I_IMPL;
                 }
-
-                op3 = impCheckForNullPointer(op3);
 
                 // Mark the block as containing an index expression
 
@@ -15220,8 +15216,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        obj = impCheckForNullPointer(obj);
-
                         // If the object is a struct, what we really want is
                         // for the field to operate on the address of the struct.
                         if (!varTypeGCtype(obj->TypeGet()) && impIsValueType(tiObj))
@@ -15550,8 +15544,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        obj = impCheckForNullPointer(obj);
-
                         /* Create the data member node */
                         op1             = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
                         DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
@@ -21254,10 +21246,19 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     assert(call->IsVirtual());
 
-    // Possibly instrument, if not optimizing.
+    // Possibly instrument. Note for OSR+PGO we will instrument when
+    // optimizing and (currently) won't devirtualize. We may want
+    // to revisit -- if we can devirtualize we should be able to
+    // suppress the probe.
     //
-    if (opts.OptimizationDisabled())
+    // We strip BBINSTR from inlinees currently, so we'll only
+    // do this for the root method calls.
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
+        assert(opts.OptimizationDisabled() || opts.IsOSR());
+        assert(!compIsForInlining());
+
         // During importation, optionally flag this block as one that
         // contains calls requiring class profiling. Ideally perhaps
         // we'd just keep track of the calls themselves, so we don't
@@ -21287,7 +21288,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             //
             compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
         }
-
         return;
     }
 

@@ -116,6 +116,7 @@ static bool IsJmpInstruction(instruction ins);
 bool AreUpper32BitsZero(regNumber reg);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
+bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* tree);
 
 bool hasRexPrefix(code_t code)
 {
@@ -190,6 +191,7 @@ void SetContains256bitAVX(bool value)
 bool IsDstDstSrcAVXInstruction(instruction ins);
 bool IsDstSrcSrcAVXInstruction(instruction ins);
 bool DoesWriteZeroFlag(instruction ins);
+bool DoesWriteSignFlag(instruction ins);
 bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool IsFlagsAlwaysModified(instrDesc* id);
 

@@ -21,7 +21,4 @@
       -->
     <CompilerVisibleProperty Include="DllImportGenerator_UseInternalUnsafeType" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(SetDllImportGeneratorConstants)' != 'false'">
-    <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
-  </PropertyGroup>
 </Project>

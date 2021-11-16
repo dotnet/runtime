@@ -554,7 +554,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     args["details"]  = await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token);
                     break;
                 case "array":
-                    args["details"]  = await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
+                    args["details"]  = await context.SdbAgent.GetArrayValuesProxy(int.Parse(objectId.Value), token);
                     break;
                 case "cfo_res":
                 {

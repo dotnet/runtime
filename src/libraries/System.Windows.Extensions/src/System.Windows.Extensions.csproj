@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>annotations</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides miscellaneous Windows-specific types
@@ -93,6 +94,7 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime" />

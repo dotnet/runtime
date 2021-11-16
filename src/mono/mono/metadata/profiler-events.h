@@ -106,3 +106,5 @@ MONO_PROFILER_EVENT_1(thread_exited, ThreadExited, uintptr_t, tid)
 MONO_PROFILER_EVENT_2(thread_name, ThreadName, uintptr_t, tid, const char *, name)
 
 MONO_PROFILER_EVENT_2(sample_hit, SampleHit, const mono_byte *, ip, const void *, context)
+
+MONO_PROFILER_EVENT_2(inline_method, InlineMethod, MonoMethod *, method, MonoMethod *, inlined_method)

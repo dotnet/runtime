@@ -75,6 +75,13 @@ class My {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 .module initializearray_enum.exe
 // MVID: {88A311DA-3D49-42AC-8FA7-6DB1266177BC}
 .imagebase 0x00400000
@@ -130,6 +137,9 @@ class My {
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       47 (0x2f)
     .maxstack  8

@@ -54,4 +54,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldind_i1.exe{}
+.assembly ldind_i1{}

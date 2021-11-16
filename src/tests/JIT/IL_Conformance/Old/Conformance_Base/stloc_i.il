@@ -29,4 +29,4 @@ FAIL:
 	ret
 }
 }
-.assembly stloc_i.exe{}
+.assembly stloc_i{}

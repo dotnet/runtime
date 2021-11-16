@@ -3,6 +3,13 @@
 .assembly extern common{}
 .assembly extern legacy library mscorlib {}
 .assembly call06{}
+.assembly extern xunit.core
+{
+    .publickeytoken = (
+        8d 05 b1 bb 7a 6f db 6c
+     )
+     .ver 2:4:2:0
+}
 
 .class private auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
@@ -10,6 +17,9 @@
   .field private static int32 locallocSize
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  11
     .locals (int32* intArray1,
