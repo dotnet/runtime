@@ -1361,7 +1361,7 @@ namespace System.DirectoryServices.AccountManagement
                         // directly. This allows us to override all existing elements without using Clear() and then Add(),
                         // as that order sends a Clear operation and then a number of Append operations, which will fail.
                         // Instead, setting the new list all at once will send a Clear operation and then an Update operation.
-                        var values = new List<object>();
+                        var propertyValueList = new List<object>();
 
                         foreach (object oVal in valueCollection)
                         {
@@ -1379,10 +1379,10 @@ namespace System.DirectoryServices.AccountManagement
                             if (p.unpersisted && null == oVal)
                                 continue;
 
-                            values.Add(oVal);
+                            propertyValueList.Add(oVal);
                         }
 
-                        de.Properties[kvp.Key].Value = values.ToArray();
+                        de.Properties[kvp.Key].Value = propertyValueList.ToArray();
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheToLdapConverter - Collection complete");
                     }
