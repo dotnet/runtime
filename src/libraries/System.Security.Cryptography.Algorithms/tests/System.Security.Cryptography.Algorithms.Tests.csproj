@@ -5,6 +5,8 @@
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
     <!-- SYSLIB0021: Derived cryptographic types are obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
