@@ -62,7 +62,8 @@ sealed class BasicTestMethod : ITestInfo
         return obj is BasicTestMethod other
             && TestNameExpression == other.TestNameExpression
             && Method == other.Method
-            && ContainingType == other.ContainingType;
+            && ContainingType == other.ContainingType
+            && ExecutionStatement == other.ExecutionStatement;
     }
 }
 sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo

@@ -504,7 +504,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             // Emit diagnostic
                             continue;
                         }
-                        var membersByName = method.ContainingType.GetMembers(memberName!);
+                        INamedTypeSymbol memberType = method.ContainingType;
+                        if (attr.NamedArguments.FirstOrDefault(p => p.Key == "MemberType").Value.Value is INamedTypeSymbol memberTypeOverride)
+                        {
+                            memberType = memberTypeOverride;
+                        }
+                        var membersByName = memberType.GetMembers(memberName!);
                         if (membersByName.Length != 1)
                         {
                             // Emit diagnostic

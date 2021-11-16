@@ -12,13 +12,11 @@
     <Compile Include="ILMethodTester.cs" />
     <Compile Include="ILTypeVerificationTester.cs" />
     <Compile Include="TestDataLoader.cs" />
-    <Compile Include="..\Common\XunitBase.cs" />
   </ItemGroup>
 
   <Import Project="..\..\coreclr\tools\ILVerification\ILVerification.projitems" />
 
   <ItemGroup>
-    <PackageReference Include="xunit" Version="$(XUnitVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
   </ItemGroup>
 

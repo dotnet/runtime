@@ -426,7 +426,7 @@
   </Target>
 
   <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestAssembly)' == 'true')">
-    <ReferenceXUnitWrapperGenerator>true</ReferenceXUnitWrapperGenerator>
+    <ReferenceXUnitWrapperGenerator Condition="'$(ReferenceXUnitWrapperGenerator)' == ''">true</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ReferenceXUnitWrapperGenerator)' == 'true'">
