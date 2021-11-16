@@ -2240,11 +2240,14 @@ namespace System.Text.RegularExpressions
                         supported = true;
                         break;
 
-                    // Single character greedy loops are supported if they're either they're actually a repeater
+                    // Single character greedy/lazy loops are supported if either they're actually a repeater
                     // or they're not contained in any construct other than simple nesting (e.g. concat, capture).
                     case Oneloop:
                     case Notoneloop:
                     case Setloop:
+                    case Onelazy:
+                    case Notonelazy:
+                    case Setlazy:
                         Debug.Assert(Next == null || Next.Type != Atomic, "Loop should have been transformed into an atomic type.");
                         supported = M == N || AncestorsAllowBacktracking(Next);
                         static bool AncestorsAllowBacktracking(RegexNode? node)
@@ -2266,12 +2269,6 @@ namespace System.Text.RegularExpressions
 
                             return true;
                         }
-                        break;
-
-                    case Onelazy:
-                    case Notonelazy:
-                    case Setlazy:
-                        supported = M == N || (Next != null && Next.Type == Atomic);
                         break;
 
                     // {Lazy}Loop repeaters are the same, except their child also needs to be supported.
