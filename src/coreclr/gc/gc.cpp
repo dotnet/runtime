@@ -23499,10 +23499,11 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 }
                 else
                 {
-                    dprintf (3,("mark stack overflow for object %Ix ", (size_t)oo));
+                    dprintf (3,("background mark stack overflow for object %Ix ", (size_t)oo));
 #ifdef USE_REGIONS
                     heap_segment* overflow_region = get_region_info_for_address (oo);
                     overflow_region->flags |= heap_segment_flags_overflow;
+                    dprintf (3,("setting overflow flag for region %p", heap_segment_mem (overflow_region)));
                     gc_heap* overflow_heap = heap_of (oo);
                     overflow_heap->background_overflow_p = TRUE;
                     if (heap_segment_gen_num (overflow_region) < max_generation)
@@ -23624,10 +23625,11 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 }
                 else
                 {
-                    dprintf (3,("mark stack overflow for object %Ix ", (size_t)oo));
+                    dprintf (3,("background mark stack overflow for object %Ix ", (size_t)oo));
 #ifdef USE_REGIONS
                     heap_segment* overflow_region = get_region_info_for_address (oo);
                     overflow_region->flags |= heap_segment_flags_overflow;
+                    dprintf (3,("setting overflow flag for region %p", heap_segment_mem (overflow_region)));
                     gc_heap* overflow_heap = heap_of (oo);
                     overflow_heap->background_overflow_p = TRUE;
                     if (heap_segment_gen_num (overflow_region) < max_generation)
@@ -23974,7 +23976,9 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
 
     exclusive_sync* loh_alloc_lock = 0;
 
+#ifndef USE_REGIONS
     dprintf (2,("Processing Mark overflow [%Ix %Ix]", (size_t)min_add, (size_t)max_add));
+#endif
 #ifdef MULTIPLE_HEAPS
     // We don't have each heap scan all heaps concurrently because we are worried about
     // multiple threads calling things like find_first_object.
@@ -24011,6 +24015,7 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
                     seg->flags &= ~heap_segment_flags_overflow;
                     current_min_add = heap_segment_mem (seg);
                     current_max_add = heap_segment_allocated (seg);
+                    dprintf (2,("Processing Mark overflow [%Ix %Ix]", (size_t)current_min_add, (size_t)current_max_add));
                 }
                 else
                 {
@@ -24065,10 +24070,15 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
                     }
                 }
 
-                dprintf (2, ("went through overflow objects in segment %Ix (%d) (so far %Id marked)",
-                    heap_segment_mem (seg), (small_object_segments ? 0 : 1), total_marked_objects));
-
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+                if (current_max_add != 0)
+                {
+#endif //USE_REGIONS
+                    dprintf (2, ("went through overflow objects in segment %Ix (%d) (so far %Id marked)",
+                        heap_segment_mem (seg), (small_object_segments ? 0 : 1), total_marked_objects));
+#ifdef USE_REGIONS
+                }
+#else 
                 if (concurrent_p && (seg == hp->saved_overflow_ephemeral_seg))
                 {
                     break;
