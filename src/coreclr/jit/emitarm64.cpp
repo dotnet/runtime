@@ -14620,6 +14620,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_ZERO;
                     break;
                 }
+            }
             else if (ins == INS_yield)
             {
                 // @ToDo - find out the actual latency, match x86/x64 for now
