@@ -16,15 +16,15 @@ pr:
 
 jobs:
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
-    buildConfig: checked
-    platforms:
-    - windows_x64
-    - windows_x86
-    jobParameters:
-      uploadAs: 'pipelineArtifacts'
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+#     buildConfig: checked
+#     platforms:
+#     - windows_x64
+#     - windows_x86
+#     jobParameters:
+#       uploadAs: 'pipelineArtifacts'
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -32,6 +32,6 @@ jobs:
     buildConfig: checked
     platforms:
     - windows_x64
-    - windows_x86
+    # - windows_x86
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

@@ -53,15 +53,15 @@
 
   <ItemGroup Condition="'$(Architecture)' == 'x64'">
     <SPMI_Partition Include="win-x64" Platform="windows" Architecture="x64" />
-    <SPMI_Partition Include="win-arm64" Platform="windows" Architecture="arm64" />
+    <!-- <SPMI_Partition Include="win-arm64" Platform="windows" Architecture="arm64" />
     <SPMI_Partition Include="unix-x64" Platform="Linux" Architecture="x64" />
-    <SPMI_Partition Include="unix-arm64" Platform="Linux" Architecture="arm64" />
+    <SPMI_Partition Include="unix-arm64" Platform="Linux" Architecture="arm64" /> -->
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Architecture)' == 'x86'">
+  <!-- <ItemGroup Condition="'$(Architecture)' == 'x86'">
     <SPMI_Partition Include="win-x86" Platform="windows" Architecture="x86" />
     <SPMI_Partition Include="unix-arm" Platform="Linux" Architecture="arm" />
-  </ItemGroup>
+  </ItemGroup> -->
 
   <ItemGroup>
     <HelixWorkItem Include="@(SPMI_Partition)">
