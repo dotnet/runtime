@@ -790,6 +790,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer)]
 			// TODO: Analyzer should suppress warnings when caller is anotated with RUC
 			// https://github.com/dotnet/linker/issues/2349
 			[ExpectedWarning ("IL2067", ProducedBy = ProducedBy.Analyzer)]
