@@ -15,7 +15,7 @@ steps:
       pipeline: 'runtime-coreclr superpmi-asmdiffs'
       buildVersionToDownload: specific
       branchName: 'refs/pull/61700/head'
-      buildId: '1472902'
+      buildId: '1472834'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
