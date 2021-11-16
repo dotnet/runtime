@@ -596,7 +596,7 @@ BOOL ClassLoader::IsNested(const NameHandle* pName, mdToken *mdEncloser, DWORD* 
         {
             if (!pName->GetBucket().IsNull())
             {
-                *encloserHash = pName->GetBucket().GetClassHashBasedEntryValue()->m_hash;
+                *encloserHash = pName->GetBucket().GetClassHashBasedEntryValue()->GetHash();
                 return TRUE;
             }
         }

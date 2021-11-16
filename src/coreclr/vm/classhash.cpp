@@ -40,6 +40,20 @@ PTR_VOID EEClassHashEntry::GetData()
     return m_Data;
 }
 
+int EEClassHashEntry::GetHash()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    return m_hash;
+}
+
 #ifndef DACCESS_COMPILE
 void EEClassHashEntry::SetData(void *data)
 {
@@ -66,6 +80,20 @@ void EEClassHashEntry::SetEncloser(EEClassHashEntry *pEncloser)
 
     m_pEncloser = pEncloser;
 }
+
+void EEClassHashEntry::SetHash(int hash)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    m_hash = hash;
+}
+
 
 /*static*/
 EEClassHashTable *EEClassHashTable::Create(Module *pModule, DWORD dwNumBuckets, BOOL bCaseInsensitive, AllocMemTracker *pamTracker)
@@ -347,11 +375,11 @@ EEClassHashEntry_t *EEClassHashTable::InsertValue(LPCUTF8 pszNamespace, LPCUTF8 
     DWORD encloserHash = 0;
     if (pEncloser != NULL)
     {
-        encloserHash = m_bCaseInsensitive ? CASE_INSENSITIVE_ENCLOSER_HASH : pEncloser->m_hash;
+        encloserHash = m_bCaseInsensitive ? CASE_INSENSITIVE_ENCLOSER_HASH : pEncloser->GetHash();
     }
 
-    pEntry->m_hash = Hash(pszNamespace, pszClassName, encloserHash);
-    BaseInsertEntry(pEntry->m_hash, pEntry);
+    pEntry->SetHash(Hash(pszNamespace, pszClassName, encloserHash));
+    BaseInsertEntry(pEntry->GetHash(), pEntry);
 
     return pEntry;
 }
@@ -406,8 +434,8 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueUsingPreallocatedEntry(EEClassH
         encloserHash = m_bCaseInsensitive ? CASE_INSENSITIVE_ENCLOSER_HASH : pEncloser->m_hash;
     }
 
-    pNewEntry->m_hash = Hash(pszNamespace, pszClassName, encloserHash);
-    BaseInsertEntry(pNewEntry->m_hash, pNewEntry);
+    pNewEntry->SetHash(Hash(pszNamespace, pszClassName, encloserHash));
+    BaseInsertEntry(pNewEntry->GetHash(), pNewEntry);
 
     return pNewEntry;
 }
@@ -449,8 +477,8 @@ EEClassHashEntry_t *EEClassHashTable::InsertTopLevelValueIfNotFound(LPCUTF8 pszN
     pNewEntry->DebugKey[1] = pszClassName;
 #endif
 
-    pNewEntry->m_hash = Hash(pszNamespace, pszClassName, /*encloserHash*/ 0);
-    BaseInsertEntry(pNewEntry->m_hash, pNewEntry);
+    pNewEntry->SetHash(Hash(pszNamespace, pszClassName,  /*encloserHash*/ 0));
+    BaseInsertEntry(pNewEntry->GetHash(), pNewEntry);
 
     return pNewEntry;
 }
@@ -492,7 +520,7 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
     DWORD hash = Hash(pszNamespace, pszClassName, encloserHash);
     PTR_EEClassHashEntry pSearch = BaseFindFirstEntryByHash(hash, pContext);
 
-    _ASSERTE(pSearch == NULL || pSearch->m_hash == hash);
+    _ASSERTE(pSearch == NULL || pSearch->GetHash() == hash);
 
     while (pSearch)
     {
