@@ -377,17 +377,41 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<double> ConvertToDouble(Vector128<ulong> vector)
         {
-            Unsafe.SkipInit(out Vector128<double> result);
-
-            for (int i = 0; i < Vector128<double>.Count; i++)
+            if (Sse2.IsSupported)
             {
-                var value = (double)vector.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                // NOTE: This algorithm isn't quite correct, but it matches what RyuJIT currently generates
+
+                var upper = Sse2.ShiftRightLogical(vector, 32).AsDouble();              // get upper 32-bits of vector
+                var lower = Sse2.And(vector, Create(0x00000000_FFFFFFFFUL)).AsDouble(); // get lower 32-bits of vector
+
+                var magic1 = Create(0x45300000_00000000).AsDouble();
+                upper = Sse2.Subtract(Sse2.Or(upper, magic1), magic1);                  // convert upper 32-bits of vector
+
+                var magic2 = Create(0x43300000_00000000).AsDouble();
+                lower = Sse2.Subtract(Sse2.Or(upper, magic1), magic1);                  // convert lower 32-bits of vector
+
+                return Sse2.Add(upper, lower);                                          // add upper and lower halves
+            }
+            else
+            {
+                return SoftwareFallback(vector);
             }
 
-            return result;
+            static Vector128<double> SoftwareFallback(Vector128<ulong> vector)
+            {
+                Unsafe.SkipInit(out Vector128<double> result);
+
+                for (int i = 0; i < Vector128<double>.Count; i++)
+                {
+                    var value = (double)vector.GetElementUnsafe(i);
+                    result.SetElementUnsafe(i, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{Int32}" />.</summary>
@@ -446,17 +470,40 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<float> ConvertToSingle(Vector128<uint> vector)
         {
-            Unsafe.SkipInit(out Vector128<float> result);
-
-            for (int i = 0; i < Vector128<float>.Count; i++)
+            if (Sse2.IsSupported)
             {
-                var value = (float)vector.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                // NOTE: This algorithm isn't quite correct, but it matches what RyuJIT currently generates
+
+                var magic = Create(0x53000000).AsSingle();
+
+                var upper = Sse2.ShiftRightLogical(vector, 16).AsSingle();      // get upper 16-bits of vector
+                var lower = Sse2.And(vector, Create(0x0000FFFFU)).AsSingle();   // get lower 16-bits of vector
+
+                upper = Sse.Subtract(Sse.Or(upper, magic), magic);              // convert upper 16-bits of vector
+                lower = Sse2.ConvertToVector128Single(lower.AsInt32());         // convert lower 16-bits of vector
+
+                return Sse.Add(upper, lower);                                   // add upper and lower halves
+            }
+            else
+            {
+                return SoftwareFallback(vector);
             }
 
-            return result;
+            static Vector128<float> SoftwareFallback(Vector128<uint> vector)
+            {
+                Unsafe.SkipInit(out Vector128<float> result);
+
+                for (int i = 0; i < Vector128<float>.Count; i++)
+                {
+                    var value = (float)vector.GetElementUnsafe(i);
+                    result.SetElementUnsafe(i, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{UInt32}" />.</summary>

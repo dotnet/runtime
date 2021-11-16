@@ -835,12 +835,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ConvertToDouble:
         case NI_Vector256_ConvertToDouble:
-        case NI_Vector128_ConvertToInt32:
-        case NI_Vector256_ConvertToInt32:
         case NI_Vector128_ConvertToInt64:
         case NI_Vector256_ConvertToInt64:
-        case NI_Vector128_ConvertToSingle:
-        case NI_Vector256_ConvertToSingle:
         case NI_Vector128_ConvertToUInt32:
         case NI_Vector256_ConvertToUInt32:
         case NI_Vector128_ConvertToUInt64:
@@ -848,6 +844,37 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             // TODO-XARCH-CQ: These intrinsics should be accelerated
+            break;
+        }
+
+        case NI_Vector128_ConvertToInt32:
+        case NI_Vector256_ConvertToInt32:
+        {
+            assert(sig->numArgs == 1);
+            intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
+
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_ConvertToSingle:
+        case NI_Vector256_ConvertToSingle:
+        {
+            assert(sig->numArgs == 1);
+
+            if (simdBaseType == TYP_INT)
+            {
+                intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector128Int32WithTruncation
+                                             : NI_SSE2_ConvertToVector128Int32WithTruncation;
+
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                // TODO-XARCH-CQ: These intrinsics should be accelerated
+            }
             break;
         }
 

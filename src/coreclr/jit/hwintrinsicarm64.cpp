@@ -475,19 +475,65 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_ConvertToDouble:
         case NI_Vector128_ConvertToDouble:
+        {
+            assert(sig->numArgs == 1);
+            intrinsic = (simdSize ==  8) ? NI_AdvSimd_Arm64_ConvertToDoubleScalar : NI_AdvSimd_Arm64_ConvertToDouble;
+
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_ConvertToInt32:
         case NI_Vector128_ConvertToInt32:
+        {
+            assert(sig->numArgs == 1);
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero, simdBaseJitType,
+                                               simdSize);
+            break;
+        }
+
         case NI_Vector64_ConvertToInt64:
         case NI_Vector128_ConvertToInt64:
+        {
+            assert(sig->numArgs == 1);
+            intrinsic = (simdSize ==  8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
+                                         : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_ConvertToSingle:
         case NI_Vector128_ConvertToSingle:
+        {
+            assert(sig->numArgs == 1);
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToSingle, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_ConvertToUInt32:
         case NI_Vector128_ConvertToUInt32:
+        {
+            assert(sig->numArgs == 1);
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToUInt32RoundToZero, simdBaseJitType,
+                                               simdSize);
+            break;
+        }
+
         case NI_Vector64_ConvertToUInt64:
         case NI_Vector128_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
-            // TODO-ARM64-CQ: These intrinsics should be accelerated.
+            intrinsic = (simdSize ==  8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
+                                         : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
