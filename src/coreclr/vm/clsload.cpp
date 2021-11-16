@@ -1243,18 +1243,10 @@ BOOL ClassLoader::FindClassModuleThrowing(
 
     if (pBucket == NULL)
     {
-        AvailableClasses_LockHolder lh(this);
-
-        // TODO: VS no need to try again
-        // Try again with the lock.  This will protect against another thread reallocating
-        // the hash table underneath us
-        GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
-        pBucket = foundEntry.GetClassHashBasedEntryValue();
-
 #ifndef DACCESS_COMPILE
-        if (needsToBuildHashtable && (pBucket == NULL) && (m_cUnhashedModules > 0))
+        if (needsToBuildHashtable && (m_cUnhashedModules > 0))
         {
-            _ASSERT(needsToBuildHashtable);
+            AvailableClasses_LockHolder lh(this);
 
             if (nhTable == nhCaseInsensitive)
             {
@@ -1274,7 +1266,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
 #endif
     }
 
-    // Same check as above, but this time we've checked with the lock so the table will be populated
+    // Same check as above, but this time we've ensured with the lock that the table is be populated
     if (pBucket == NULL)
     {
 #if defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
@@ -3972,7 +3964,7 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
         // ThrowawayData is an IN OUT param. Going in its the pointer to the new value if the entry needs
         // to be inserted. The OUT param points to the value stored in the hash table.
         BOOL bFound;
-        pManifestModule->GetAvailableClassHash()->InsertValueIfNotFound(pszNameSpace, pszName, &ThrowawayData, NULL, FALSE, &bFound, pamTracker);
+        pManifestModule->GetAvailableClassHash()->InsertTopLevelValueIfNotFound(pszNameSpace, pszName, &ThrowawayData, &bFound, pamTracker);
         if (bFound) {
 
             // Check for duplicate ExportedTypes

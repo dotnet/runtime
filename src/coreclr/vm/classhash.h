@@ -69,7 +69,7 @@ public:
     //        when you are sure you want to insert the value in 'this' table. This function does not deal
     //        with case (as often the class loader has to)
     EEClassHashEntry_t *InsertValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser, AllocMemTracker *pamTracker);
-    EEClassHashEntry_t *InsertValueIfNotFound(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, EEClassHashEntry_t *pEncloser, BOOL IsNested, BOOL *pbFound, AllocMemTracker *pamTracker);
+    EEClassHashEntry_t *InsertTopLevelValueIfNotFound(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, BOOL *pbFound, AllocMemTracker *pamTracker);
     EEClassHashEntry_t *InsertValueUsingPreallocatedEntry(EEClassHashEntry_t *pStorageForNewEntry, LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser);
 
     EEClassHashEntry_t *GetValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, DWORD encloserHash, LookupContext *pContext);

@@ -311,8 +311,10 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
 
 }
 
-// in a case-insensitive case, do not discriminate between encloser names when hashing.
-#define CASE_INSENSITIVE_ENCLOSER_HASH (1)
+// the case-insensitive table refers to the same enclosers as the case-sensitive table.
+// thus it cannot use enclosers` hashes, since encloser's case is not canonical.
+// for simplicity we will just use the same encloser hash for all nested types in case-insensitive case.
+#define CASE_INSENSITIVE_ENCLOSER_HASH (12345)
 
 #ifndef DACCESS_COMPILE
 
@@ -410,7 +412,7 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueUsingPreallocatedEntry(EEClassH
     return pNewEntry;
 }
 
-EEClassHashEntry_t *EEClassHashTable::InsertValueIfNotFound(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, EEClassHashEntry_t *pEncloser, BOOL IsNested, BOOL *pbFound, AllocMemTracker *pamTracker)
+EEClassHashEntry_t *EEClassHashTable::InsertTopLevelValueIfNotFound(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, BOOL *pbFound, AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
@@ -427,13 +429,7 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueIfNotFound(LPCUTF8 pszNamespace
     _ASSERTE(pszNamespace != NULL);
     _ASSERTE(pszClassName != NULL);
 
-    DWORD encloserHash = 0;
-    if (pEncloser != NULL)
-    {
-        encloserHash = m_bCaseInsensitive ? CASE_INSENSITIVE_ENCLOSER_HASH : pEncloser->m_hash;
-    }
-
-    EEClassHashEntry_t * pNewEntry = FindItem(pszNamespace, pszClassName, encloserHash, NULL);
+    EEClassHashEntry_t * pNewEntry = FindItem(pszNamespace, pszClassName, /*encloserHash*/ 0, /*pContext*/ NULL);
 
     if (pNewEntry)
     {
@@ -446,16 +442,14 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueIfNotFound(LPCUTF8 pszNamespace
     *pbFound = FALSE;
 
     pNewEntry = BaseAllocateEntry(pamTracker);
-
     pNewEntry->SetData(*pData);
-    pNewEntry->SetEncloser(pEncloser);
 
 #ifdef _DEBUG
     pNewEntry->DebugKey[0] = pszNamespace;
     pNewEntry->DebugKey[1] = pszClassName;
 #endif
 
-    pNewEntry->m_hash = Hash(pszNamespace, pszClassName, encloserHash);
+    pNewEntry->m_hash = Hash(pszNamespace, pszClassName, /*encloserHash*/ 0);
     BaseInsertEntry(pNewEntry->m_hash, pNewEntry);
 
     return pNewEntry;
