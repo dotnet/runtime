@@ -1,11 +1,5 @@
 .assembly extern mscorlib{}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .assembly rvastatic5{}
 .class public A{
  .method static native int Call1(int64) {.maxstack  50
