@@ -774,7 +774,7 @@ namespace System.Numerics
             int tableIndex = (int)((crc ^ data) & 0xFF);
             crc = s_crcTable[tableIndex] ^ (crc >> 8);
 
-            return crc ^ 0xFFFFFFFF;
+            return crc;
         }
 
         /// <summary>
@@ -813,7 +813,7 @@ namespace System.Numerics
                 crc = s_crcTable[tableIndex] ^ (crc >> 8);
             }
 
-            return crc ^ 0xFFFFFFFF;
+            return crc;
         }
 
         /// <summary>
@@ -852,7 +852,7 @@ namespace System.Numerics
                 crc = s_crcTable[tableIndex] ^ (crc >> 8);
             }
 
-            return crc ^ 0xFFFFFFFF;
+            return crc;
         }
 
         /// <summary>
@@ -892,7 +892,7 @@ namespace System.Numerics
                 crc = s_crcTable[tableIndex] ^ (crc >> 8);
             }
 
-            return crc ^ 0xFFFFFFFF;
+            return crc;
         }
     }
 }
