@@ -2,7 +2,7 @@
   <PropertyGroup>
       <IncludeXHarnessCli>true</IncludeXHarnessCli>
       <XharnessPath>%HELIX_CORRELATION_PAYLOAD%\microsoft.dotnet.xharness.cli\$(MicrosoftDotNetXHarnessCLIVersion)\tools\net6.0\any\Microsoft.DotNet.XHarness.CLI.dll</XharnessPath>
-      <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21511.3</MicrosoftDotNetXHarnessCLIVersion>
+      <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21566.2</MicrosoftDotNetXHarnessCLIVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>python3</Python>
@@ -52,7 +52,6 @@
       <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroidWithDiag.apk .;$(Python) pre.py</PreCommands>
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroidWithDiag.apk --package-name net.dot.HelloAndroid --exit-code 42 --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
-      <Timeout>00:20:00</Timeout>
     </HelixWorkItem>
   </ItemGroup>
 </Project>
