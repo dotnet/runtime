@@ -52,9 +52,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                UnsafeNativeMethods.LUID luid = default;
-                luid.low = 0;
-                luid.high = 0;
+                Interop.Advapi32.LUID luid = default;
 
                 _psMachineSid = new SafeMemoryPtr(Utils.GetMachineDomainSid());
                 _psUserSid = new SafeMemoryPtr(Utils.ConvertByteArrayToIntPtr(userSid));

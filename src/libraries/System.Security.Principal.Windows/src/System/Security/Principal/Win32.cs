@@ -122,7 +122,7 @@ namespace System.Security.Principal
 
             try
             {
-                if (FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out ByteArray))
+                if (Interop.BOOL.FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out ByteArray))
                 {
                     ErrorCode = Marshal.GetLastWin32Error();
                     goto Error;

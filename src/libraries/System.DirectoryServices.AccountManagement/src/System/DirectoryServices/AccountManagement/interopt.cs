@@ -11,23 +11,12 @@ namespace System.DirectoryServices.AccountManagement
 {
     using System.Runtime.InteropServices;
     using System;
-    using System.Security;
-    using System.Text;
 
     internal static class Constants
     {
         internal static byte[] GUID_USERS_CONTAINER_BYTE = new byte[] { 0xa9, 0xd1, 0xca, 0x15, 0x76, 0x88, 0x11, 0xd1, 0xad, 0xed, 0x00, 0xc0, 0x4f, 0xd8, 0xd5, 0xcd };
         internal static byte[] GUID_COMPUTRS_CONTAINER_BYTE = new byte[] { 0xaa, 0x31, 0x28, 0x25, 0x76, 0x88, 0x11, 0xd1, 0xad, 0xed, 0x00, 0xc0, 0x4f, 0xd8, 0xd5, 0xcd };
         internal static byte[] GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE = new byte[] { 0x22, 0xb7, 0x0c, 0x67, 0xd5, 0x6e, 0x4e, 0xfb, 0x91, 0xe9, 0x30, 0x0f, 0xca, 0x3d, 0xc1, 0xaa };
-    }
-
-    internal static class SafeNativeMethods
-    {
-        [DllImport(Interop.Libraries.Kernel32, CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentThreadId", CharSet = CharSet.Unicode)]
-        public static extern int GetCurrentThreadId();
-
-        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaNtStatusToWinError", CharSet = CharSet.Unicode)]
-        public static extern int LsaNtStatusToWinError(int ntStatus);
     }
 
     internal static class UnsafeNativeMethods
@@ -519,9 +508,6 @@ namespace System.DirectoryServices.AccountManagement
         [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "ConvertSidToStringSidW", CharSet = CharSet.Unicode)]
         public static extern bool ConvertSidToStringSid(IntPtr sid, ref string stringSid);
 
-        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "ConvertStringSidToSidW", CharSet = CharSet.Unicode)]
-        public static extern bool ConvertStringSidToSid(string stringSid, ref IntPtr sid);
-
         [DllImport(Interop.Libraries.Advapi32)]
         public static extern int GetLengthSid(IntPtr sid);
 
@@ -542,9 +528,6 @@ namespace System.DirectoryServices.AccountManagement
 
         [DllImport(Interop.Libraries.Advapi32, SetLastError = true)]
         public static extern bool CopySid(int destinationLength, IntPtr pSidDestination, IntPtr pSidSource);
-
-        [DllImport(Interop.Libraries.Kernel32)]
-        public static extern IntPtr LocalFree(IntPtr ptr);
 
         [DllImport(Interop.Libraries.Credui, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
         public static extern unsafe int CredUIParseUserName(
@@ -597,7 +580,7 @@ namespace System.DirectoryServices.AccountManagement
                                         IntPtr UserSid,
                                         IntPtr AuthzResourceManager,
                                         IntPtr pExpirationTime,
-                                        LUID Identitifier,
+                                        Interop.Advapi32.LUID Identitifier,
                                         IntPtr DynamicGroupArgs,
                                         out IntPtr pAuthzClientContext
                                         );
@@ -632,13 +615,6 @@ namespace System.DirectoryServices.AccountManagement
         public static extern bool AuthzFreeResourceManager(
                                         IntPtr rm
                                         );
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public struct LUID
-        {
-            public int low;
-            public int high;
-        }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class TOKEN_GROUPS
@@ -676,29 +652,10 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class LSA_OBJECT_ATTRIBUTES
-        {
-            public int length;
-            public IntPtr rootDirectory = IntPtr.Zero;
-            public IntPtr objectName = IntPtr.Zero;
-            public int attributes;
-            public IntPtr securityDescriptor = IntPtr.Zero;
-            public IntPtr securityQualityOfService = IntPtr.Zero;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class POLICY_ACCOUNT_DOMAIN_INFO
         {
-            public LSA_UNICODE_STRING domainName = new LSA_UNICODE_STRING();
+            public Interop.UNICODE_INTPTR_STRING domainName;
             public IntPtr domainSid = IntPtr.Zero;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class LSA_UNICODE_STRING
-        {
-            public ushort length;
-            public ushort maximumLength;
-            public IntPtr buffer = IntPtr.Zero;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -707,31 +664,6 @@ namespace System.DirectoryServices.AccountManagement
             public ushort length;
             public ushort maximumLength;
             public string buffer;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class LSA_TRANSLATED_NAME
-        {
-            public int use;
-            public LSA_UNICODE_STRING name = new LSA_UNICODE_STRING();
-            public int domainIndex;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class LSA_REFERENCED_DOMAIN_LIST
-        {
-            // To stop the compiler from autogenerating a constructor for this class
-            private LSA_REFERENCED_DOMAIN_LIST() { }
-
-            public int entries;
-            public IntPtr domains = IntPtr.Zero;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class LSA_TRUST_INFORMATION
-        {
-            public LSA_UNICODE_STRING name = new LSA_UNICODE_STRING();
-            private readonly IntPtr _pSid = IntPtr.Zero;
         }
 
         [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenThreadToken", CharSet = CharSet.Unicode)]
@@ -749,52 +681,28 @@ namespace System.DirectoryServices.AccountManagement
                                         ref IntPtr tokenHandle
                                         );
 
-        [DllImport(Interop.Libraries.Kernel32, CallingConvention = CallingConvention.StdCall, EntryPoint = "CloseHandle", CharSet = CharSet.Unicode)]
-        public static extern bool CloseHandle(IntPtr handle);
-
-        [DllImport(Interop.Libraries.Kernel32, CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentThread", CharSet = CharSet.Unicode)]
-        public static extern IntPtr GetCurrentThread();
-
-        [DllImport(Interop.Libraries.Kernel32, CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentProcess", CharSet = CharSet.Unicode)]
-        public static extern IntPtr GetCurrentProcess();
-
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "GetTokenInformation", CharSet = CharSet.Unicode)]
-        public static extern bool GetTokenInformation(
-                                        IntPtr tokenHandle,
-                                        int tokenInformationClass,
-                                        IntPtr buffer,
-                                        int bufferSize,
-                                        ref int returnLength
-                                        );
-
         [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode)]
-        public static extern int LsaOpenPolicy(
+        public static extern uint LsaOpenPolicy(
                                         IntPtr lsaUnicodeString,
                                         IntPtr lsaObjectAttributes,
                                         int desiredAccess,
                                         ref IntPtr policyHandle);
 
         [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaQueryInformationPolicy", CharSet = CharSet.Unicode)]
-        public static extern int LsaQueryInformationPolicy(
+        public static extern uint LsaQueryInformationPolicy(
                                         IntPtr policyHandle,
                                         int policyInformationClass,
                                         ref IntPtr buffer
                                         );
 
         [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaLookupSids", CharSet = CharSet.Unicode)]
-        public static extern int LsaLookupSids(
+        public static extern uint LsaLookupSids(
                                         IntPtr policyHandle,
                                         int count,
                                         IntPtr[] sids,
                                         out IntPtr referencedDomains,
                                         out IntPtr names
                                         );
-
-        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaFreeMemory", CharSet = CharSet.Unicode)]
-        public static extern int LsaFreeMemory(IntPtr buffer);
-
-        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaClose", CharSet = CharSet.Unicode)]
-        public static extern int LsaClose(IntPtr policyHandle);
 
         //
         // Impersonation
@@ -811,8 +719,5 @@ namespace System.DirectoryServices.AccountManagement
 
         [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "ImpersonateLoggedOnUser", CharSet = CharSet.Unicode)]
         public static extern int ImpersonateLoggedOnUser(IntPtr hToken);
-
-        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "RevertToSelf", CharSet = CharSet.Unicode)]
-        public static extern int RevertToSelf();
     }
 }

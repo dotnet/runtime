@@ -84,22 +84,22 @@ namespace System.DirectoryServices.AccountManagement
             IntPtr pPolicyHandle = IntPtr.Zero;
 
             IntPtr pDomains = IntPtr.Zero;
-            UnsafeNativeMethods.LSA_TRUST_INFORMATION[] domains;
+            Interop.LSA_TRUST_INFORMATION[] domains;
 
             IntPtr pNames = IntPtr.Zero;
-            UnsafeNativeMethods.LSA_TRANSLATED_NAME[] names;
+            Interop.LSA_TRANSLATED_NAME[] names;
 
             try
             {
                 //
                 // Get the policy handle
                 //
-                UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES oa = new UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES();
+                Interop.OBJECT_ATTRIBUTES oa = default;
 
-                pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES)));
+                pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Interop.OBJECT_ATTRIBUTES)));
                 Marshal.StructureToPtr(oa, pOA, false);
 
-                int err = 0;
+                uint err = 0;
                 if (target == null)
                 {
                     err = UnsafeNativeMethods.LsaOpenPolicy(
@@ -117,7 +117,7 @@ namespace System.DirectoryServices.AccountManagement
                     lsaTargetString.length = (ushort)(target.Length * 2);
                     lsaTargetString.maximumLength = lsaTargetString.length;
 
-                    IntPtr lsaTargetPr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_UNICODE_STRING)));
+                    IntPtr lsaTargetPr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Interop.UNICODE_INTPTR_STRING)));
 
                     try
                     {
@@ -133,12 +133,12 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         if (lsaTargetPr != IntPtr.Zero)
                         {
-                            UnsafeNativeMethods.LSA_UNICODE_STRING lsaTargetUnmanagedPtr =
-                                (UnsafeNativeMethods.LSA_UNICODE_STRING)Marshal.PtrToStructure(lsaTargetPr, typeof(UnsafeNativeMethods.LSA_UNICODE_STRING));
-                            if (lsaTargetUnmanagedPtr.buffer != IntPtr.Zero)
+                            Interop.UNICODE_INTPTR_STRING lsaTargetUnmanagedPtr =
+                                (Interop.UNICODE_INTPTR_STRING)Marshal.PtrToStructure(lsaTargetPr, typeof(Interop.UNICODE_INTPTR_STRING));
+                            if (lsaTargetUnmanagedPtr.Buffer != IntPtr.Zero)
                             {
-                                Marshal.FreeHGlobal(lsaTargetUnmanagedPtr.buffer);
-                                lsaTargetUnmanagedPtr.buffer = IntPtr.Zero;
+                                Marshal.FreeHGlobal(lsaTargetUnmanagedPtr.Buffer);
+                                lsaTargetUnmanagedPtr.Buffer = IntPtr.Zero;
                             }
                             Marshal.FreeHGlobal(lsaTargetPr);
                         }
@@ -151,7 +151,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     throw new PrincipalOperationException(SR.Format(
                                                                SR.AuthZErrorEnumeratingGroups,
-                                                               SafeNativeMethods.LsaNtStatusToWinError(err)));
+                                                               Interop.Advapi32.LsaNtStatusToWinError(err)));
                 }
 
                 Debug.Assert(pPolicyHandle != IntPtr.Zero);
@@ -167,31 +167,30 @@ namespace System.DirectoryServices.AccountManagement
                                     out pDomains,
                                     out pNames);
 
-                // ignore error STATUS_SOME_NOT_MAPPED = 0x00000107 and
-                // STATUS_NONE_MAPPED = 0xC0000073
-                if (err != 0 &&
-                     err != 263 &&
-                     err != -1073741709)
+                // Ignore error STATUS_SOME_NOT_MAPPED and STATUS_NONE_MAPPED
+                if (err != Interop.StatusOptions.STATUS_SUCCESS &&
+                     err != Interop.StatusOptions.STATUS_SOME_NOT_MAPPED &&
+                     err != Interop.StatusOptions.STATUS_NONE_MAPPED)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);
 
                     throw new PrincipalOperationException(SR.Format(
                                                                SR.AuthZErrorEnumeratingGroups,
-                                                               SafeNativeMethods.LsaNtStatusToWinError(err)));
+                                                               Interop.Advapi32.LsaNtStatusToWinError(err)));
                 }
 
                 //
                 // Get the group names in managed form
                 //
-                names = new UnsafeNativeMethods.LSA_TRANSLATED_NAME[sidCount];
+                names = new Interop.LSA_TRANSLATED_NAME[sidCount];
                 IntPtr pCurrentName = pNames;
 
                 for (int i = 0; i < sidCount; i++)
                 {
-                    names[i] = (UnsafeNativeMethods.LSA_TRANSLATED_NAME)
-                                    Marshal.PtrToStructure(pCurrentName, typeof(UnsafeNativeMethods.LSA_TRANSLATED_NAME));
+                    names[i] = (Interop.LSA_TRANSLATED_NAME)
+                                    Marshal.PtrToStructure(pCurrentName, typeof(Interop.LSA_TRANSLATED_NAME));
 
-                    pCurrentName = new IntPtr(pCurrentName.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_TRANSLATED_NAME)));
+                    pCurrentName = new IntPtr(pCurrentName.ToInt64() + Marshal.SizeOf(typeof(Interop.LSA_TRANSLATED_NAME)));
                 }
 
                 //
@@ -200,21 +199,21 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Extract LSA_REFERENCED_DOMAIN_LIST.Entries
 
-                UnsafeNativeMethods.LSA_REFERENCED_DOMAIN_LIST referencedDomains = (UnsafeNativeMethods.LSA_REFERENCED_DOMAIN_LIST)Marshal.PtrToStructure(pDomains, typeof(UnsafeNativeMethods.LSA_REFERENCED_DOMAIN_LIST));
+                Interop.LSA_REFERENCED_DOMAIN_LIST referencedDomains = (Interop.LSA_REFERENCED_DOMAIN_LIST)Marshal.PtrToStructure(pDomains, typeof(Interop.LSA_REFERENCED_DOMAIN_LIST));
 
-                int domainCount = referencedDomains.entries;
+                int domainCount = referencedDomains.Entries;
 
                 // Extract LSA_REFERENCED_DOMAIN_LIST.Domains, by iterating over the array and marshalling
                 // each native LSA_TRUST_INFORMATION into a managed LSA_TRUST_INFORMATION.
 
-                domains = new UnsafeNativeMethods.LSA_TRUST_INFORMATION[domainCount];
+                domains = new Interop.LSA_TRUST_INFORMATION[domainCount];
 
-                IntPtr pCurrentDomain = referencedDomains.domains;
+                IntPtr pCurrentDomain = referencedDomains.Domains;
 
                 for (int i = 0; i < domainCount; i++)
                 {
-                    domains[i] = (UnsafeNativeMethods.LSA_TRUST_INFORMATION)Marshal.PtrToStructure(pCurrentDomain, typeof(UnsafeNativeMethods.LSA_TRUST_INFORMATION));
-                    pCurrentDomain = new IntPtr(pCurrentDomain.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_TRUST_INFORMATION)));
+                    domains[i] = (Interop.LSA_TRUST_INFORMATION)Marshal.PtrToStructure(pCurrentDomain, typeof(Interop.LSA_TRUST_INFORMATION));
+                    pCurrentDomain = new IntPtr(pCurrentDomain.ToInt64() + Marshal.SizeOf(typeof(Interop.LSA_TRUST_INFORMATION)));
                 }
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: got {0} groups in {1} domains", sidCount, domainCount);
@@ -226,22 +225,22 @@ namespace System.DirectoryServices.AccountManagement
 
                 for (int i = 0; i < names.Length; i++)
                 {
-                    UnsafeNativeMethods.LSA_TRANSLATED_NAME name = names[i];
+                    Interop.LSA_TRANSLATED_NAME name = names[i];
 
                     // Build an entry.  Note that LSA_UNICODE_STRING.length is in bytes,
                     // while PtrToStringUni expects a length in characters.
                     SidListEntry entry = new SidListEntry();
 
-                    Debug.Assert(name.name.length % 2 == 0);
-                    entry.name = Marshal.PtrToStringUni(name.name.buffer, name.name.length / 2);
+                    Debug.Assert(name.Name.Length % 2 == 0);
+                    entry.name = Marshal.PtrToStringUni(name.Name.Buffer, name.Name.Length / 2);
 
                     // Get the domain associated with this name
-                    Debug.Assert(name.domainIndex < domains.Length);
-                    if (name.domainIndex >= 0)
+                    Debug.Assert(name.DomainIndex < domains.Length);
+                    if (name.DomainIndex >= 0)
                     {
-                        UnsafeNativeMethods.LSA_TRUST_INFORMATION domain = domains[name.domainIndex];
-                        Debug.Assert(domain.name.length % 2 == 0);
-                        entry.sidIssuerName = Marshal.PtrToStringUni(domain.name.buffer, domain.name.length / 2);
+                        Interop.LSA_TRUST_INFORMATION domain = domains[name.DomainIndex];
+                        Debug.Assert(domain.Name.Length % 2 == 0);
+                        entry.sidIssuerName = Marshal.PtrToStringUni(domain.Name.Buffer, domain.Name.Length / 2);
                     }
 
                     entry.pSid = pSids[i];
@@ -255,13 +254,13 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pDomains != IntPtr.Zero)
-                    UnsafeNativeMethods.LsaFreeMemory(pDomains);
+                    Interop.Advapi32.LsaFreeMemory(pDomains);
 
                 if (pNames != IntPtr.Zero)
-                    UnsafeNativeMethods.LsaFreeMemory(pNames);
+                    Interop.Advapi32.LsaFreeMemory(pNames);
 
                 if (pPolicyHandle != IntPtr.Zero)
-                    UnsafeNativeMethods.LsaClose(pPolicyHandle);
+                    Interop.Advapi32.LsaClose(pPolicyHandle);
 
                 if (pOA != IntPtr.Zero)
                     Marshal.FreeHGlobal(pOA);

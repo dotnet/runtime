@@ -352,7 +352,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Get the current thread's token
                 if (!UnsafeNativeMethods.OpenThreadToken(
-                                UnsafeNativeMethods.GetCurrentThread(),
+                                Interop.Kernel32.GetCurrentThread(),
                                 0x8, // TOKEN_QUERY
                                 true,
                                 ref pTokenHandle
@@ -364,7 +364,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         // Current thread doesn't have a token, try the process
                         if (!UnsafeNativeMethods.OpenProcessToken(
-                                        UnsafeNativeMethods.GetCurrentProcess(),
+                                        Interop.Kernel32.GetCurrentProcess(),
                                         0x8, // TOKEN_QUERY
                                         ref pTokenHandle
                                         ))
@@ -385,16 +385,16 @@ namespace System.DirectoryServices.AccountManagement
 
                 Debug.Assert(pTokenHandle != IntPtr.Zero);
 
-                int neededBufferSize = 0;
+                uint neededBufferSize = 0;
 
                 // Retrieve the user info from the current thread's token
                 // First, determine how big a buffer we need.
-                bool success = UnsafeNativeMethods.GetTokenInformation(
+                bool success = Interop.Advapi32.GetTokenInformation(
                                         pTokenHandle,
                                         1,   // TokenUser
                                         IntPtr.Zero,
                                         0,
-                                        ref neededBufferSize);
+                                        out neededBufferSize);
 
                 int getTokenInfoError = 0;
                 if ((getTokenInfoError = Marshal.GetLastWin32Error()) != 122) // ERROR_INSUFFICIENT_BUFFER
@@ -407,15 +407,15 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Allocate the necessary buffer.
                 Debug.Assert(neededBufferSize > 0);
-                pBuffer = Marshal.AllocHGlobal(neededBufferSize);
+                pBuffer = Marshal.AllocHGlobal((int)neededBufferSize);
 
                 // Load the user info into the buffer
-                success = UnsafeNativeMethods.GetTokenInformation(
+                success = Interop.Advapi32.GetTokenInformation(
                                         pTokenHandle,
                                         1,   // TokenUser
                                         pBuffer,
                                         neededBufferSize,
-                                        ref neededBufferSize);
+                                        out neededBufferSize);
 
                 if (!success)
                 {
@@ -454,7 +454,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pTokenHandle != IntPtr.Zero)
-                    UnsafeNativeMethods.CloseHandle(pTokenHandle);
+                    Interop.Kernel32.CloseHandle(pTokenHandle);
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -470,11 +470,11 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES oa = new UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES();
+                Interop.OBJECT_ATTRIBUTES oa = default;
 
-                pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES)));
+                pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Interop.OBJECT_ATTRIBUTES)));
                 Marshal.StructureToPtr(oa, pOA, false);
-                int err = UnsafeNativeMethods.LsaOpenPolicy(
+                uint err = UnsafeNativeMethods.LsaOpenPolicy(
                                 IntPtr.Zero,
                                 pOA,
                                 1,          // POLICY_VIEW_LOCAL_INFORMATION
@@ -482,11 +482,11 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (err != 0)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaOpenPolicy failed, gle=" + SafeNativeMethods.LsaNtStatusToWinError(err));
+                    GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaOpenPolicy failed, gle=" + Interop.Advapi32.LsaNtStatusToWinError(err));
 
                     throw new PrincipalOperationException(SR.Format(
                                                                SR.UnableToRetrievePolicy,
-                                                               SafeNativeMethods.LsaNtStatusToWinError(err)));
+                                                               Interop.Advapi32.LsaNtStatusToWinError(err)));
                 }
 
                 Debug.Assert(pPolicyHandle != IntPtr.Zero);
@@ -497,11 +497,11 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (err != 0)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaQueryInformationPolicy failed, gle=" + SafeNativeMethods.LsaNtStatusToWinError(err));
+                    GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaQueryInformationPolicy failed, gle=" + Interop.Advapi32.LsaNtStatusToWinError(err));
 
                     throw new PrincipalOperationException(SR.Format(
                                                                SR.UnableToRetrievePolicy,
-                                                               SafeNativeMethods.LsaNtStatusToWinError(err)));
+                                                               Interop.Advapi32.LsaNtStatusToWinError(err)));
                 }
 
                 Debug.Assert(pBuffer != IntPtr.Zero);
@@ -530,10 +530,10 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pPolicyHandle != IntPtr.Zero)
-                    UnsafeNativeMethods.LsaClose(pPolicyHandle);
+                    Interop.Advapi32.LsaClose(pPolicyHandle);
 
                 if (pBuffer != IntPtr.Zero)
-                    UnsafeNativeMethods.LsaFreeMemory(pBuffer);
+                    Interop.Advapi32.LsaFreeMemory(pBuffer);
 
                 if (pOA != IntPtr.Zero)
                     Marshal.FreeHGlobal(pOA);
@@ -778,7 +778,7 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "BeginImpersonation: ImpersonateLoggedOnUser failed, gle=" + lastError);
 
                 // Close the token the was created above....
-                UnsafeNativeMethods.CloseHandle(hToken);
+                Interop.Kernel32.CloseHandle(hToken);
 
                 throw new PrincipalOperationException(
                     SR.Format(SR.UnableToImpersonateCredentials, lastError));
@@ -792,8 +792,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Utils", "Entering EndImpersonation");
 
-            UnsafeNativeMethods.RevertToSelf();
-            UnsafeNativeMethods.CloseHandle(hUserToken);
+            Interop.Advapi32.RevertToSelf();
+            Interop.Kernel32.CloseHandle(hUserToken);
         }
 
         internal static bool IsMachineDC(string computerName)
