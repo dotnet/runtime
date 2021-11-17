@@ -14,6 +14,16 @@
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
+    "wasm-tools6": {
+      "description": ".NET WebAssembly build tools",
+      "packs": [
+        "Microsoft.NET.Runtime.WebAssembly.Sdk",
+        "Microsoft.NETCore.App.Runtime.Mono.browser-wasm.6",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm.6"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
+      "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
+    },
     "microsoft-net-runtime-android": {
       "abstract": true,
       "description": "Android Mono Runtime",
@@ -345,6 +355,23 @@
     "Microsoft.NETCore.App.Runtime.Mono.browser-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm.6": {
+      "kind": "Sdk",
+      "version": "6.0.0",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm",
+        "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.browser-wasm",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.browser-wasm.6" : {
+      "kind": "framework",
+      "version": "6.0.0",
+      "alias-to": {
+        "*" : "Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+      }
     },
   }
 }
