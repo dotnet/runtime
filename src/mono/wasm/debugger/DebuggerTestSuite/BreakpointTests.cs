@@ -27,8 +27,8 @@ namespace DebuggerTests
 
             Assert.NotNull(loc["scriptId"]);
             Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);
-            Assert.Equal(10, loc["lineNumber"]);
-            Assert.Equal(8, loc["columnNumber"]);
+            Assert.Equal(10, (int)loc["lineNumber"]);
+            Assert.Equal(8, (int)loc["columnNumber"]);
         }
 
         [Fact]
@@ -45,8 +45,8 @@ namespace DebuggerTests
             var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc["scriptId"]);
-            Assert.Equal(13, loc["lineNumber"]);
-            Assert.Equal(24, loc["columnNumber"]);
+            Assert.Equal(13, (int)loc["lineNumber"]);
+            Assert.Equal(24, (int)loc["columnNumber"]);
 
             var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
 
@@ -56,8 +56,8 @@ namespace DebuggerTests
             var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(33, loc2["columnNumber"]);
+            Assert.Equal(13, (int)loc2["lineNumber"]);
+            Assert.Equal(33, (int)loc2["columnNumber"]);
         }
 
         [Fact]
@@ -73,8 +73,8 @@ namespace DebuggerTests
             var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc["scriptId"]);
-            Assert.Equal(13, loc["lineNumber"]);
-            Assert.Equal(24, loc["columnNumber"]);
+            Assert.Equal(13, (int)loc["lineNumber"]);
+            Assert.Equal(24, (int)loc["columnNumber"]);
 
             var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
 
@@ -84,8 +84,8 @@ namespace DebuggerTests
             var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(33, loc2["columnNumber"]);
+            Assert.Equal(13, (int)loc2["lineNumber"]);
+            Assert.Equal(33, (int)loc2["columnNumber"]);
         }
 
         [Theory]

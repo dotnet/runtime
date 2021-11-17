@@ -22,20 +22,6 @@ declare interface CharPtrPtr extends NativePointer {
     __brand: "CharPtrPtr"
 }
 
-declare let ENVIRONMENT_IS_WEB: boolean;
-declare let ENVIRONMENT_IS_SHELL: boolean;
-declare let ENVIRONMENT_IS_NODE: boolean;
-declare let ENVIRONMENT_IS_WORKER: boolean;
-declare let LibraryManager: any;
-
-declare function autoAddDeps(a: object, b: string): void;
-declare function mergeInto(a: object, b: object): void;
-
-// TODO, what's wrong with EXPORTED_RUNTIME_METHODS ?
-declare function locateFile(path: string, prefix?: string): string;
-
-declare let Module: EmscriptenModule;
-
 declare interface EmscriptenModule {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
@@ -66,7 +52,7 @@ declare interface EmscriptenModule {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
 
-    preInit?: () => Promise<void>;
+    preInit?: (() => Promise<void>)[];
     onRuntimeInitialized?: () => void;
 }
 

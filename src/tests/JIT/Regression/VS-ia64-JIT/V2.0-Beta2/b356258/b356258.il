@@ -23,13 +23,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module foo.exe
 // MVID: {3C4B1460-B1C6-4337-8B12-587C5269CE8D}
 .imagebase 0x00400000

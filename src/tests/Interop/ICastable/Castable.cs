@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public interface IRetArg<T>
 {
@@ -113,21 +114,16 @@ public class BadCastable : ICastable
     }
 }
 
-
-public class Program
+public class CastableTests
 {
-    private static bool passed = true;
-
     public static void Assert(bool value, string message)
     {
-        if (!value)
-        {
-            Console.WriteLine("FAIL! " + message);
-            passed = false;
-        }
+        Xunit.Assert.True(value, message);
     }
 
-    public static int Main()
+    [Fact]
+    [SkipOnMono("ICastable is unsupported on Mono")]
+    public static void Test()
     {
         //Console.WriteLine("Execution started. Attach debugger and press enter.");
         //Console.ReadLine();
@@ -210,17 +206,5 @@ public class Program
        {
             Assert(false, e.ToString());
        }
-
-       if (passed)
-       {
-            Console.WriteLine("Test PASSED!");
-            return 100;
-       }
-       else
-       {
-            Console.WriteLine("Test FAILED!");
-            return -1;
-       }
-
     }
 }

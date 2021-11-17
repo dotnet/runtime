@@ -14,13 +14,7 @@
 .assembly 'catchfinally'// as "catchfinally"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'catchfinally.exe'
 // MVID: {15FE650F-7944-4B46-86D7-2ECCFDC924C2}
 .namespace JitTest

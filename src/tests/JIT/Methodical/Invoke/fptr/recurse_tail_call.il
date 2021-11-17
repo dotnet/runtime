@@ -19,13 +19,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'recurse.exe'
 // MVID: {885F4995-E80A-480B-BB9B-30139BED90E1}
 .namespace TestCase
