@@ -124,6 +124,7 @@ namespace SharedTypes
     {
         private ushort* allocated;
         private Span<ushort> span;
+        private bool isNullString;
 
         public Utf16StringMarshaler(string str)
             : this(str, default(Span<byte>))
@@ -132,10 +133,12 @@ namespace SharedTypes
 
         public Utf16StringMarshaler(string str, Span<byte> buffer)
         {
+            isNullString = false;
             if (str is null)
             {
                 allocated = null;
                 span = default;
+                isNullString = true;
             }
             else if ((str.Length + 1) < buffer.Length)
             {
@@ -168,6 +171,7 @@ namespace SharedTypes
             {
                 allocated = value;
                 span = new Span<ushort>(value, value == null ? 0 : FindStringLength(value));
+                isNullString = value == null;
 
                 static int FindStringLength(ushort* ptr)
                 {
@@ -180,7 +184,7 @@ namespace SharedTypes
 
         public string ToManaged()
         {
-            return MemoryMarshal.Cast<ushort, char>(span).ToString();
+            return isNullString ? null : MemoryMarshal.Cast<ushort, char>(span).ToString();
         }
 
         public void FreeNative()
