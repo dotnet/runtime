@@ -2330,112 +2330,75 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 unsigned resultOpNum = 0;
                 LIR::Use use;
+                GenTree* user = nullptr;
+
                 if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
                 {
-                    resultOpNum = intrinsicTree->GetResultOpNumForFMA(use.User(), op1, op2, op3);
+                    user = use.User();
                 }
+                resultOpNum = intrinsicTree->GetResultOpNumForFMA(user, op1, op2, op3);
 
                 // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
                 assert(!copiesUpperBits || !op1->isContained());
 
-                // Prioritize contained node by checking if any op is contained first.
-                // If none of them is contained, check if any op is regOptional.
-                bool     hasContainedOp = false;
                 unsigned containedOpNum = 0;
 
-                if (op1->isContained() || op2->isContained() || op3->isContained())
+                if (op1->isContained() || op1->IsRegOptional())
                 {
-                    hasContainedOp = true;
+                    containedOpNum = 1;
                 }
-                if (hasContainedOp)
+                else if (op2->isContained() || op2->IsRegOptional())
                 {
-                    if (op1->isContained())
-                    {
-                        containedOpNum = 1;
-                    }
-                    else if (op2->isContained())
-                    {
-                        containedOpNum = 2;
-                    }
-                    else
-                    {
-                        assert(op3->isContained());
-                        containedOpNum = 3;
-                    }
+                    containedOpNum = 2;
                 }
                 else
                 {
-                    if (op1->IsRegOptional())
-                    {
-                        containedOpNum = 1;
-                    }
-                    else if (op2->IsRegOptional())
-                    {
-                        containedOpNum = 2;
-                    }
-                    else
-                    {
-                        assert(op3->IsRegOptional());
-                        containedOpNum = 3;
-                    }
+                    assert(op3->isContained() || op3->IsRegOptional());
+                    containedOpNum = 3;
                 }
+
+                GenTree* emitOp1 = op1;
+                GenTree* emitOp2 = op2;
+                GenTree* emitOp3 = op3;
 
                 // Intrinsics with CopyUpperBits semantics must have op1 as target
                 if (containedOpNum == 1 && !copiesUpperBits)
                 {
-                    if (resultOpNum == 3)
+                    if (resultOpNum != 3)
                     {
-                        tgtPrefUse = BuildUse(op3);
-                        // op3 = ([op1] * op2) + op3
-                        srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op3);
-                        srcCount += BuildDelayFreeUses(op2, op3);
-                    }
-                    else
-                    {
-                        tgtPrefUse = BuildUse(op2);
                         // op2 = ([op1] * op2) + op3
-                        srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op2);
-                        srcCount += BuildDelayFreeUses(op3, op2);
+                        std::swap(emitOp2, emitOp3);
                     }
-                    srcCount += 1;
+
+                    // else: op3 = ([op1] * op2) + op3
+                    std::swap(emitOp1, emitOp3);
                 }
                 else if (containedOpNum == 3)
                 {
                     if (resultOpNum == 2 && !copiesUpperBits)
                     {
-                        tgtPrefUse = BuildUse(op2);
                         // op2 = (op1 * op2) + [op3]
-                        srcCount += BuildDelayFreeUses(op1, op2);
-                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+                        std::swap(emitOp1, emitOp2);
                     }
-                    else
-                    {
-                        tgtPrefUse = BuildUse(op1);
-                        // op1 = (op1 * op2) + [op3]
-                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
-                        srcCount += BuildDelayFreeUses(op2, op1);
-                    }
-                    srcCount += 1;
+                    // else: op1 = (op1 * op2) + [op3]
                 }
                 else
                 {
                     assert(containedOpNum == 2);
+                    // op1 = (op1 * [op2]) + op3
+                    std::swap(emitOp2, emitOp3);
+
                     if (resultOpNum == 3 && !copiesUpperBits)
                     {
-                        tgtPrefUse = BuildUse(op3);
                         // op3 = (op1 * [op2]) + op3
-                        srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op3);
-                        srcCount += BuildDelayFreeUses(op1, op3);
+                        std::swap(emitOp1, emitOp2);
                     }
-                    else
-                    {
-                        tgtPrefUse = BuildUse(op1);
-                        // op1 = (op1 * [op2]) + op3
-                        srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op1);
-                        srcCount += BuildDelayFreeUses(op3, op1);
-                    }
-                    srcCount += 1;
                 }
+                tgtPrefUse = BuildUse(emitOp1);
+
+                srcCount += 1;
+                srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
+                srcCount += emitOp3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
 
                 buildUses = false;
                 break;

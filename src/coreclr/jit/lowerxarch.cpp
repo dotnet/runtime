@@ -6340,11 +6340,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         bool     supportsOp3RegOptional = false;
                         unsigned resultOpNum            = 0;
                         LIR::Use use;
+                        GenTree* user = nullptr;
 
                         if (BlockRange().TryGetUse(node, &use))
                         {
-                            resultOpNum = node->GetResultOpNumForFMA(use.User(), op1, op2, op3);
+                            user = use.User();
                         }
+                        resultOpNum = node->GetResultOpNumForFMA(user, op1, op2, op3);
 
                         // Prioritize Containable op. Check if any one of the op is containable first.
                         // Set op regOptional only if none of them is containable.

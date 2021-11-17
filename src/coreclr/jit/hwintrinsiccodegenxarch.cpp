@@ -2124,18 +2124,13 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     argList      = argList->Rest();
     GenTree* op3 = argList->Current();
 
-    regNumber op1Reg;
-    regNumber op2Reg;
-
     regNumber op1NodeReg = op1->GetRegNum();
     regNumber op2NodeReg = op2->GetRegNum();
     regNumber op3NodeReg = op3->GetRegNum();
 
-    // For special case that targetReg equals to more than one op Regs
-    bool uniqueOverwrittenReg = true;
-    if ((op1NodeReg == op2NodeReg && targetReg == op1NodeReg) ||
-        (op1NodeReg == op3NodeReg && targetReg == op1NodeReg) || (op2NodeReg == op3NodeReg && targetReg == op2NodeReg))
-        uniqueOverwrittenReg = false;
+    GenTree* emitOp1 = op1;
+    GenTree* emitOp2 = op2;
+    GenTree* emitOp3 = op3;
 
     bool       isCommutative   = false;
     const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
@@ -2143,101 +2138,60 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
     assert(!copiesUpperBits || !op1->isContained());
 
-    // Intrinsics with CopyUpperBits semantics must have op1 as target
-    if ((targetReg == op1NodeReg || copiesUpperBits) && uniqueOverwrittenReg)
+    if (op1->isContained() || op1->isUsedFromSpillTemp())
     {
-        op1Reg = op1NodeReg;
-        if (op2->isContained() || op2->IsRegOptional())
+        if (targetReg == op2NodeReg)
         {
-            // op1 = (op1 * [op2]) + op3
-            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-            ins    = _132form;
-            op2Reg = op3NodeReg;
-            op3    = op2;
-        }
-        else
-        {
-            assert(op3->isContained() || op3->IsRegOptional());
-            // op1 = (op1 * op2) + [op3]
-            // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-            op2Reg        = op2NodeReg;
-            isCommutative = copiesUpperBits;
-        }
-    }
-    else if (targetReg == op3NodeReg && uniqueOverwrittenReg)
-    {
-        // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-        ins    = _231form;
-        op1Reg = op3NodeReg;
-        if (op1->isContained() || op1->IsRegOptional())
-        {
-            // op3 = ([op1] * op2) + op3
-            op2Reg = op2NodeReg;
-            op3    = op1;
-        }
-        else
-        {
-            assert(op2->isContained() || op2->IsRegOptional());
-            // op3 = (op1 * [op2]) + op3
-            op2Reg = op1NodeReg;
-            op3    = op2;
-        }
-    }
-    else if (targetReg == op2NodeReg && uniqueOverwrittenReg)
-    {
-        op1Reg = op2NodeReg;
-        if (op1->isContained() || op1->IsRegOptional())
-        {
+            std::swap(emitOp1, emitOp2);
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-            ins    = _132form;
-            op2Reg = op3NodeReg;
-            op3    = op1;
+            ins = _132form;
+            std::swap(emitOp2, emitOp3);
         }
         else
         {
-            assert(op3->isContained() || op3->IsRegOptional());
-            // op2 = (op1 * op2) + [op3]
-            // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-            op2Reg        = op1NodeReg;
-            isCommutative = copiesUpperBits;
+            // targetReg == op3NodeReg or targetReg == ?
+            // op3 = ([op1] * op2) + op3
+            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+            ins = _231form;
+            std::swap(emitOp1, emitOp3);
         }
+    }
+    else if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        if (targetReg == op3NodeReg)
+        {
+            // op3 = (op1 * [op2]) + op3
+            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+            ins = _231form;
+            std::swap(emitOp1, emitOp3);
+        }
+        else
+        {
+            // targetReg == op1NodeReg or targetReg == ?
+            // op1 = (op1 * [op2]) + op3
+            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+            ins = _132form;
+        }
+        std::swap(emitOp2, emitOp3);
     }
     else
     {
-        // For special case where targetReg is not euqal to any of the op*Reg
-        // or targetReg equals to more than one op Regs
-
-        if (op1->isContained() || op1->IsRegOptional())
+        // targetReg could be op1NodeReg, op2NodeReg, or not equal to any op
+        // op1 = (op1 * op2) + [op3] or op2 = (op1 * op2) + [op3]
+        // ? = (op1 * op2) + [op3] or ? = (op1 * op2) + op3
+        // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+        isCommutative = copiesUpperBits;
+        if (targetReg == op2NodeReg)
         {
-            // op2 = ([op1] * op2) + op3
-            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-            ins    = _132form;
-            op1Reg = op2NodeReg;
-            op2Reg = op3NodeReg;
-            op3    = op1;
-        }
-        else
-        {
-            op1Reg = op1NodeReg;
-            if (op2->isContained() || op2->IsRegOptional())
-            {
-                // op1 = (op1 * [op2]) + op3
-                // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-                ins    = _132form;
-                op2Reg = op3NodeReg;
-                op3    = op2;
-            }
-            else
-            {
-                assert(op3->isContained() || op3->IsRegOptional());
-                // op1 = (op1 * op2) + [op3]
-                // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-                op2Reg        = op2NodeReg;
-                isCommutative = copiesUpperBits;
-            }
+            // op2 = (op1 * op2) + [op3]
+            // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+            std::swap(emitOp1, emitOp2);
         }
     }
+
+    regNumber op1Reg = emitOp1->GetRegNum();
+    regNumber op2Reg = emitOp2->GetRegNum();
 
     if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
     {
@@ -2253,7 +2207,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         op2Reg = op1Reg;
         op1Reg = targetReg;
     }
-    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3);
+    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, emitOp3);
     genProduceReg(node);
 }
 

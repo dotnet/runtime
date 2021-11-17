@@ -21831,7 +21831,7 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
 {
     // only FMA intrinsic node should call into this function
     assert(HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) == InstructionSet_FMA);
-    if (use->OperIs(GT_STORE_LCL_VAR))
+    if (use != nullptr && use->OperIs(GT_STORE_LCL_VAR))
     {
         // For store_lcl_var, check if any op is overwritten
 
