@@ -33,7 +33,14 @@
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))
                         and '$(IncludeDllImportGeneratorSources)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference
+      Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
+      OutputItemType="InRepoSourceGenerator"
+      ReferenceOutputAssembly="false" />
+    <ProjectReference
+      Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"
+      OutputItemType="InRepoSourceGenerator"
+      ReferenceOutputAssembly="false" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
 
     <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
@@ -60,7 +67,8 @@
   <!-- Microsoft.Interop.DllImportGenerator -->
   <Target Name="ConfigureDllImportGenerator"
           Condition="'@(EnabledGenerators)' != '' and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))"
-          BeforeTargets="BeforeBuild">
+          DependsOnTargets="ResolveProjectReferences"
+          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
     <PropertyGroup>
         <DllImportGenerator_UseMarshalType>true</DllImportGenerator_UseMarshalType>
     </PropertyGroup>
@@ -72,25 +80,12 @@
         <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
     </PropertyGroup>
 
-    <!-- We binplace and add the copy of Microsoft.Interop.SourceGeneration.dll that lives next to Microsoft.Interop.DllImportGenerator.dll
-         to work around https://github.com/dotnet/roslyn/issues/56442, which is fixed in the 6.0 RTM SDK -->
-    <MSBuild Projects="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
-             Targets="GetTargetPath"
-             RemoveProperties="TargetFramework">
-      <Output TaskParameter="TargetOutputs" PropertyName="DllImportGeneratorTargetPath" />
-    </MSBuild>
-
-    <PropertyGroup>
-      <DllImportGeneratorOutputPath>$([System.IO.Path]::GetDirectoryName('$(DllImportGeneratorTargetPath)'))</DllImportGeneratorOutputPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference
-        Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"
-        Properties="OutputPath=$(DllImportGeneratorOutputPath)"
-        OutputItemType="Analyzer"
-        ReferenceOutputAssembly="false" />
-    </ItemGroup>
+    <!-- We binplace Microsoft.Interop.SourceGeneration.dll and Microsoft.Interop.DllImportGenerator.dll into a directory that we control and add them as Analyzer items from there
+         to work around https://github.com/dotnet/roslyn/issues/56442, which is fixed in the 6.0 RTM SDK. When we consume the 6.0 SDK, we can remove this and instead change the
+         ProjectReferences to the source generator projects to have OutputItemType="Analyzer" -->
+    <Copy SourceFiles="@(InRepoSourceGenerator)" DestinationFolder="$(IntermediateOutputPath)referencedGenerators" SkipUnchangedFiles="true">
+      <Output TaskParameter="DestinationFiles" ItemName="Analyzer" />
+    </Copy>
     <PropertyGroup>
       <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
     </PropertyGroup>
