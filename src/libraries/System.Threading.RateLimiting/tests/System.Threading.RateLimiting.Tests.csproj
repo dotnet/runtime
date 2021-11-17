@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Internal\TaskExtensions.cs" />
+    <Compile Include="BaseRateLimiterTests.cs" />
+    <Compile Include="ConcurrencyLimiterTests.cs" />
+    <Compile Include="TokenBucketRateLimiterTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Threading.RateLimiting.csproj" />
+  </ItemGroup>
+</Project>
