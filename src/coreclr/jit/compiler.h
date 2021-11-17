@@ -2538,8 +2538,8 @@ struct IPmappingDsc
 struct PreciseIPMapping
 {
     PreciseIPMapping* next;
-    emitLocation nativeLoc;
-    DebugInfo debugInfo;
+    emitLocation      nativeLoc;
+    DebugInfo         debugInfo;
 };
 
 /*

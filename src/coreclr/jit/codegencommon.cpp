@@ -10870,12 +10870,9 @@ void CodeGen::genDumpPreciseDebugInfo()
 
         first = false;
 
-        fprintf(
-            file,
-            "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
-            mapping->nativeLoc.CodeOffset(GetEmitter()),
-            mapping->debugInfo.GetInlineContext()->GetOrdinal(),
-            mapping->debugInfo.GetLocation().GetOffset());
+        fprintf(file, "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
+                mapping->nativeLoc.CodeOffset(GetEmitter()), mapping->debugInfo.GetInlineContext()->GetOrdinal(),
+                mapping->debugInfo.GetLocation().GetOffset());
     }
 
     fprintf(file, "]}\n");
@@ -10888,7 +10885,7 @@ void CodeGen::genDumpPreciseDebugInfo()
 void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
 {
     PreciseIPMapping* mapping = new (compiler, CMK_DebugInfo) PreciseIPMapping;
-    mapping->next = nullptr;
+    mapping->next             = nullptr;
     mapping->nativeLoc.CaptureLocation(GetEmitter());
     mapping->debugInfo = di;
 
