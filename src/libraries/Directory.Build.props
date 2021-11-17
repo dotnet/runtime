@@ -10,12 +10,6 @@
 
     <!-- Set OutDirName to change BaseOutputPath and BaseIntermediateOutputPath to include the ref subfolder. -->
     <OutDirName Condition="'$(IsReferenceAssembly)' == 'true'">$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref</OutDirName>
-
-    <!-- Set before common targets, we need to set these properties before importing arcade in order for arcade to import them
-    at the right order. -->
-    <CustomBeforeMicrosoftCommonTargets>$(MSBuildThisFileDirectory)\BeforeCommon.targets</CustomBeforeMicrosoftCommonTargets>
-    <!-- Since we don't have any before common targets specific to cross build, just set the same. -->
-    <CustomBeforeMicrosoftCommonCrossTargetingTargets>$(CustomBeforeMicrosoftCommonTargets)</CustomBeforeMicrosoftCommonCrossTargetingTargets>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
