@@ -39,16 +39,6 @@
     <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ServicingVersion)' != ''">
-    <!-- Always update the package version in servicing. -->
-    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</VersionPrefix>
-    <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
-    <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
-    <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
-    <!-- Assembly version do not get updated in non-netfx ref pack assemblies. -->
-    <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(EnablePackageValidation)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.Compatibility" Version="$(MicrosoftDotNetCompatibilityVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
@@ -270,6 +260,12 @@
           Condition="$(_AssemblyInTargetingPack) == 'true' and '$(PreReleaseVersionLabel)' == 'servicing'" 
           AfterTargets="CoreCompile" >
     <Error Condition="'$(AssemblyVersion)' != '$(LastReleasedStableAssemblyVersion)'" Text="AssemblyVersion should match last released assembly version $(LastReleasedStableAssemblyVersion)" />
+  </Target>
+
+  <Target Name="ValidateServicingVersionIsPropertlySet"
+          Condition="'$(PreReleaseVersionLabel)' == 'servicing'"
+          AfterTargets="GenerateNuspec">
+    <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
   </Target>
 
 </Project>
