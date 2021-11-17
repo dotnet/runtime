@@ -923,9 +923,9 @@ namespace System.Numerics.Tests
 
         [Theory]
         [InlineData(0, 0, 0)]
-        [InlineData(0, 120, 44758)]
-        [InlineData(0, ulong.MaxValue, 42721)]
-        [InlineData(123, ulong.MaxValue, 27055)]
+        [InlineData(0, 120, 3511526341)]
+        [InlineData(0, ulong.MaxValue, 3293575501)]
+        [InlineData(123, ulong.MaxValue, 3460750817)]
         public static void BitOps_Crc32C_ulong(uint crc, ulong data, uint expected)
         {
             uint obtained = BitOperations.Crc32C(crc, data);
