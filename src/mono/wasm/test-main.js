@@ -113,8 +113,10 @@ if (typeof globalThis.performance === 'undefined') {
         }
     }
 }
+
 var Module = {
     config: null,
+    preRun: [],
     configSrc: "./mono-config.json",
     onConfigLoaded: () => {
         if (!Module.config) {
@@ -150,7 +152,6 @@ var Module = {
         set_exit_code(1, error);
     },
 };
-
 
 const App = {
     init: async function () {
@@ -258,11 +259,10 @@ function set_exit_code(exit_code, reason) {
         console.log("Flushed stdout!");
 
         console.log('1 ' + messsage);
-        setTimeout(() => {
+        Promise.resolve().then(() => {
             originalConsole.log('2 ' + messsage);
-            // tell xharness WasmTestMessagesProcessor we are done. 
             console.log("WASM EXIT " + exit_code);
-        }, 100);
+        });
     } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }
@@ -356,23 +356,15 @@ async function loadDotnet(file) {
         loadScript = async function (file) {
             const script = document.createElement("script");
             script.src = file;
+            const moduleLoaded = new Promise(resolve => Module.preRun.push (resolve));
             document.head.appendChild(script);
-            let timeout = 100;
-            // bysy spin waiting for script to load into global namespace
-            while (timeout > 0) {
-                if (globalThis.Module) {
-                    return globalThis.Module;
-                }
-                // delay 10ms
-                await new Promise(resolve => setTimeout(resolve, 10));
-                timeout--;
-            }
-            throw new Error("Can't load " + file);
+            await moduleLoaded;
+            return globalThis.Module;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
         loadScript = async function (file) {
-            globalThis.load(file)
+            globalThis.load(file);
             return globalThis.Module;
         }
     }
