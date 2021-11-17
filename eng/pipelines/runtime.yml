@@ -328,9 +328,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    # BuildWasmApps should only happen on the rolling build. No need to duplicate the build on PR's
-    - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Browser_wasm
+    - Browser_wasm
     variables:
       # map dependencies variables to local variables
       - name: monoContainsChange
@@ -493,8 +491,8 @@ jobs:
       nameSuffix: AllSubsets_Mono_RuntimeTests
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 180
-      condition: >-
-        eq(variables['isFullMatrix'], true)
+      #condition: >-
+      #  eq(variables['isFullMatrix'], true)
       # NOTE: Per PR test execution is not recommended for mobile runtime tests
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/wasm-runtime-and-send-to-helix.yml
