@@ -331,7 +331,7 @@ namespace System.Runtime.Intrinsics
                 Vector256<int> lowerBits;
 
                 lowerBits = vector.AsInt32();
-                lowerBits = Avx2.Blend(Create(0x43300000_00000000).AsInt32(), lowerBits, 0b0101);               // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)
+                lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000).AsInt32(), 0b10101010);           // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)
 
                 var upperBits = Avx2.ShiftRightLogical(vector, 32);                                             // Extract the 32 most significant bits of vector
                 upperBits = Avx2.Xor(upperBits, Create(0x45300000_80000000));                                   // Flip the msb of upperBits and blend with the bit representation of double(2^84 + 2^63)
@@ -374,7 +374,7 @@ namespace System.Runtime.Intrinsics
                 Vector256<uint> lowerBits;
 
                 lowerBits = vector.AsUInt32();
-                lowerBits = Avx2.Blend(Create(0x43300000_00000000UL).AsUInt32(), lowerBits, 0b01010101);        // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)                                                 */
+                lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000UL).AsUInt32(), 0b10101010);        // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)                                                 */
 
                 var upperBits = Avx2.ShiftRightLogical(vector, 32);                                             // Extract the 32 most significant bits of vector
                 upperBits = Avx2.Xor(upperBits, Create(0x45300000_00000000UL));                                 // Blend upperBits with the bit representation of double(2^84)

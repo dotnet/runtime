@@ -372,7 +372,7 @@ namespace System.Runtime.Intrinsics
                 if (Avx2.IsSupported)
                 {
                     lowerBits = vector.AsInt32();
-                    lowerBits = Avx2.Blend(Create(0x43300000_00000000).AsInt32(), lowerBits, 0b0101);           // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)
+                    lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000).AsInt32(), 0b1010);           // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)
                 }
                 else
                 {
@@ -423,7 +423,7 @@ namespace System.Runtime.Intrinsics
                 if (Avx2.IsSupported)
                 {
                     lowerBits = vector.AsUInt32();
-                    lowerBits = Avx2.Blend(Create(0x43300000_00000000UL).AsUInt32(), lowerBits, 0b0101);        // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)                                                 */
+                    lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000UL).AsUInt32(), 0b1010);        // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)                                                 */
                 }
                 else
                 {
