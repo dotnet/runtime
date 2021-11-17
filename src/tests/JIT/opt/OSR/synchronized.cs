@@ -33,6 +33,10 @@ class X
 
         for (int i = 0; i < 100_000; i++)
         {
+            if (!Monitor.IsEntered(this))
+            {
+                throw new Exception();
+            }
             s = z.F();
         }
 
@@ -41,11 +45,22 @@ class X
 
     public static int Main()
     {
-        int result = Test();
-        if (result == 100) {
+        int result = -1;
+        try
+        {
+            result = Test();
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("EXCEPTION");
+        }
+
+        if (result == 100)
+        {
             Console.WriteLine("SUCCESS");
         }
-        else {
+        else
+        {
             Console.WriteLine("FAILURE");
         }
         return result;
