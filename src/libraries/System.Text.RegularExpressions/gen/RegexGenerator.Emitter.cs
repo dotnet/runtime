@@ -1580,7 +1580,8 @@ namespace System.Text.RegularExpressions.Generator
                         string i = NextLocalName("i");
                         using (EmitBlock(writer, $"for (int {i} = 0; {i} < {Literal(node.Str)}.Length; {i}++)"))
                         {
-                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos} + {i}]")} != {Literal(str)}[{i}])"))
+                            string textSpanIndex = textSpanPos > 0 ? $"{i} + {textSpanPos}" : i;
+                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{textSpanLocal}[{textSpanIndex}]")} != {Literal(str)}[{i}])"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
