@@ -113,7 +113,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
                 var store = await proxy.LoadStore(sessionId, token);
-                var methodInfo = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
+                var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
                 var classNameToFindWithNamespace =
                     string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace) ?
                     classNameToFind :
@@ -130,7 +130,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var type = assembly.GetTypeByName(typeName);
                     if (type == null)
                         return null;
-                    return await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
+                    return await context.SdbAgent.GetTypeIdFromToken(assembly.DebugId, type.Token, token);
                 }
 
                 async Task<int?> TryFindNameInAssembly(List<AssemblyInfo> assemblies, string name)
