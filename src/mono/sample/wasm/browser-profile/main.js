@@ -3,10 +3,8 @@
 
 "use strict";
 var Module = {
-    is_testing: false,
-    config: null,
     configSrc: "./mono-config.json",
-    onConfigLoaded: function () {
+    onConfigLoaded: () => {
         if (MONO.config.enable_profiler) {
             MONO.config.aot_profiler_options = {
                 write_at: "Sample.Test::StopProfile",
@@ -14,42 +12,37 @@ var Module = {
             }
         }
     },
-    onDotNetReady: function () {
+    onDotNetReady: () => {
         try {
             Module.init();
         } catch (error) {
-            test_exit(1);
+            set_exit_code(1, error);
             throw (error);
         }
     },
-    onAbort: function (err) {
-        test_exit(1);
+    onAbort: (error) => {
+        set_exit_code(1, error);
     },
 
-    init: function () {
+    init: () => {
         console.log("not ready yet")
-        const ret = INTERNAL.call_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:TestMeaning", []);
+        const testMeaning = BINDING.bind_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:TestMeaning");
+        const stopProfile = BINDING.bind_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:StopProfile");
+        const ret = testMeaning();
         document.getElementById("out").innerHTML = ret;
         console.log("ready");
 
-        if (Module.is_testing) {
-            console.debug(`ret: ${ret}`);
-            let exit_code = ret == 42 ? 0 : 1;
-            Module.test_exit(exit_code);
-        }
+        console.debug(`ret: ${ret}`);
+        let exit_code = ret == 42 ? 0 : 1;
+        Module.set_exit_code(exit_code);
 
         if (MONO.config.enable_profiler) {
-            INTERNAL.call_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:StopProfile", []);
+            stopProfile();
             Module.saveProfile();
         }
     },
 
-    test_exit: function (exit_code) {
-        if (!Module.is_testing) {
-            console.log(`test_exit: ${exit_code}`);
-            return;
-        }
-
+    set_exit_code: (exit_code, reason) => {
         /* Set result in a tests_done element, to be read by xharness */
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
@@ -59,7 +52,7 @@ var Module = {
         console.log(`WASM EXIT ${exit_code}`);
     },
 
-    saveProfile: function () {
+    saveProfile: () => {
         const a = document.createElement('a');
         const blob = new Blob([INTERNAL.aot_profile_data]);
         a.href = URL.createObjectURL(blob);

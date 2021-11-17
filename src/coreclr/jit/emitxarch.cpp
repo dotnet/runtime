@@ -2898,7 +2898,8 @@ void emitter::emitIns(instruction ins)
              ins == INS_r_movsp || ins == INS_r_stosb || ins == INS_r_stosd || ins == INS_r_stosp || ins == INS_ret ||
              ins == INS_sahf || ins == INS_stosb || ins == INS_stosd || ins == INS_stosp
              // These instructions take zero operands
-             || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence);
+             || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence ||
+             ins == INS_pause);
 
         assert(assertCond);
     }
@@ -12333,8 +12334,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         // Due to elided register moves, we can't have the following assert.
                         // For example, consider:
                         //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
-                        //        /--*  t85    byref                                                       
-                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx                 
+                        //        /--*  t85    byref
+                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx
                         // Here, V01 is type `long` on entry, then is stored as a byref. But because
                         // the register allocator assigned the same register, no instruction was
                         // generated, and we only (currently) make gcref/byref changes in emitter GC info
@@ -16103,6 +16104,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_prefetchnta:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;
+
+        case INS_pause:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_140C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_140C;
+            break;
+        }
 
         default:
             // unhandled instruction insFmt combination

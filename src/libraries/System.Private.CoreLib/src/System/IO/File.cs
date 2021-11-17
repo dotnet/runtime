@@ -251,19 +251,25 @@ namespace System.IO
 
         public static byte[] ReadAllBytes(string path)
         {
-            // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
+            // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
+            FileOptions options = OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None;
+            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options))
             {
                 long fileLength = 0;
-                if (fs.CanSeek && (fileLength = fs.Length) > int.MaxValue)
+                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
+
+#if DEBUG
+                fileLength = 0; // improve the test coverage for ReadAllBytesUnknownLength
+#endif
+
                 if (fileLength == 0)
                 {
-                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also there is non-seekable file stream.
+                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also there are non-seekable files.
                     // Thus we need to assume 0 doesn't mean empty.
-                    return ReadAllBytesUnknownLength(fs);
+                    return ReadAllBytesUnknownLength(sfh);
                 }
 
                 int index = 0;
@@ -271,7 +277,7 @@ namespace System.IO
                 byte[] bytes = new byte[count];
                 while (count > 0)
                 {
-                    int n = fs.Read(bytes, index, count);
+                    int n = RandomAccess.ReadAtOffset(sfh, bytes.AsSpan(index, count), index);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();
@@ -519,44 +525,35 @@ namespace System.IO
                 return Task.FromCanceled<byte[]>(cancellationToken);
             }
 
-            var fs = new FileStream(
-                path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
+            // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
+            FileOptions options = FileOptions.Asynchronous | (OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None);
+            SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options);
 
-            bool returningInternalTask = false;
-            try
+            long fileLength = 0L;
+            if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
             {
-                long fileLength = 0L;
-                if (fs.CanSeek && (fileLength = fs.Length) > int.MaxValue)
-                {
-                    var e = new IOException(SR.IO_FileTooLong2GB);
-                    ExceptionDispatchInfo.SetCurrentStackTrace(e);
-                    return Task.FromException<byte[]>(e);
-                }
+                sfh.Dispose();
+                return Task.FromException<byte[]>(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.IO_FileTooLong2GB)));
+            }
 
-                returningInternalTask = true;
-                return fileLength > 0 ?
-                    InternalReadAllBytesAsync(fs, (int)fileLength, cancellationToken) :
-                    InternalReadAllBytesUnknownLengthAsync(fs, cancellationToken);
-            }
-            finally
-            {
-                if (!returningInternalTask)
-                {
-                    fs.Dispose();
-                }
-            }
+#if DEBUG
+            fileLength = 0; // improve the test coverage for InternalReadAllBytesUnknownLengthAsync
+#endif
+
+            return fileLength > 0 ?
+                InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken) :
+                InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken);
         }
 
-        private static async Task<byte[]> InternalReadAllBytesAsync(FileStream fs, int count, CancellationToken cancellationToken)
+        private static async Task<byte[]> InternalReadAllBytesAsync(SafeFileHandle sfh, int count, CancellationToken cancellationToken)
         {
-            using (fs)
+            using (sfh)
             {
                 int index = 0;
                 byte[] bytes = new byte[count];
                 do
                 {
-                    int n = await fs.ReadAsync(new Memory<byte>(bytes, index, count - index), cancellationToken).ConfigureAwait(false);
+                    int n = await RandomAccess.ReadAtOffsetAsync(sfh, bytes.AsMemory(index), index, cancellationToken).ConfigureAwait(false);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();
@@ -569,7 +566,7 @@ namespace System.IO
             }
         }
 
-        private static async Task<byte[]> InternalReadAllBytesUnknownLengthAsync(FileStream fs, CancellationToken cancellationToken)
+        private static async Task<byte[]> InternalReadAllBytesUnknownLengthAsync(SafeFileHandle sfh, CancellationToken cancellationToken)
         {
             byte[] rentedArray = ArrayPool<byte>.Shared.Rent(512);
             try
@@ -595,7 +592,7 @@ namespace System.IO
                     }
 
                     Debug.Assert(bytesRead < rentedArray.Length);
-                    int n = await fs.ReadAsync(rentedArray.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false);
+                    int n = await RandomAccess.ReadAtOffsetAsync(sfh, rentedArray.AsMemory(bytesRead), bytesRead, cancellationToken).ConfigureAwait(false);
                     if (n == 0)
                     {
                         return rentedArray.AsSpan(0, bytesRead).ToArray();
@@ -605,7 +602,7 @@ namespace System.IO
             }
             finally
             {
-                fs.Dispose();
+                sfh.Dispose();
                 ArrayPool<byte>.Shared.Return(rentedArray);
             }
         }
@@ -775,7 +772,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
         }
 
-        private static byte[] ReadAllBytesUnknownLength(FileStream fs)
+        private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
         {
             byte[]? rentedArray = null;
             Span<byte> buffer = stackalloc byte[512];
@@ -803,7 +800,7 @@ namespace System.IO
                     }
 
                     Debug.Assert(bytesRead < buffer.Length);
-                    int n = fs.Read(buffer.Slice(bytesRead));
+                    int n = RandomAccess.ReadAtOffset(sfh, buffer.Slice(bytesRead), bytesRead);
                     if (n == 0)
                     {
                         return buffer.Slice(0, bytesRead).ToArray();

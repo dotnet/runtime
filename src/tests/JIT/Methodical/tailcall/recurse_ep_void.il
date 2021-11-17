@@ -7,6 +7,7 @@
 .assembly extern mscorlib { auto }
 
 .assembly recurse_ep_void { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit Test
@@ -17,6 +18,9 @@
     .method private hidebysig static
             void Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (int32 V_0)

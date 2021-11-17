@@ -16,12 +16,16 @@
 .assembly nan
 {
 }
+.assembly extern xunit.core {}
 
 .class private abstract auto ansi sealed beforefieldinit NaN
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  10
     .locals init (float64 nnan, float64 pnan, float64 pzero, float64 nzero, int32 returnValue)

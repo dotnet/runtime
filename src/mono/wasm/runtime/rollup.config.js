@@ -11,13 +11,15 @@ const isDebug = process.env.Configuration !== "Release";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const terserConfig = {
     compress: {
-        defaults: false,// to agressive minification breaks subsequent emcc compilation
+        defaults: false,// too agressive minification breaks subsequent emcc compilation
         drop_debugger: false,// we invoke debugger
         drop_console: false,// we log to console
         unused: false,// this breaks stuff
         // below are minification features which seems to work fine
         collapse_vars: true,
         conditionals: true,
+        computed_props: true,
+        properties: true,
         dead_code: true,
         if_return: true,
         inline: true,
@@ -32,39 +34,40 @@ const terserConfig = {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
         keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message)/,
     },
-    // we export ES5 because emcc parser has trouble parsing it otherwise
-    ecma: 5,
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
+const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
+// emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
+const format = "iife";
+const name = "__dotnet_runtime";
 
 export default defineConfig([
     {
         treeshake: !isDebug,
         input: "exports.ts",
         output: [{
-            banner: "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n",
-            name: "__dotnet_runtime",
             file: nativeBinDir + "/src/" + outputFileName,
-
-            // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
-            format: "iife",
-            plugins: plugins
+            name,
+            banner,
+            format,
+            plugins,
         }],
         plugins: [typescript()]
     },
     {
-        input: "./exports.ts",
+        input: "./export-types.ts",
         output: [
+            // dotnet.d.ts
             {
                 format: "es",
                 file: nativeBinDir + "/src/" + "dotnet.d.ts",
             }
         ],
         plugins: [dts()],
-    },
+    }
 ]);
 
-// this would create .md5 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
+// this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
 function writeOnChangePlugin() {
     return {
         name: "writeOnChange",

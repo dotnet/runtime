@@ -1405,7 +1405,7 @@ struct Native<T>
         }
 
         [ConditionalFact]
-        public async Task ValueTypeContainingPointerBlittableType_DoesNotReportDiagnostic()
+        public async Task ValueTypeContainingPointers_DoesNotReportDiagnostic()
         {
             var source = @"
 using System.Runtime.InteropServices;
@@ -1413,24 +1413,10 @@ using System.Runtime.InteropServices;
 [BlittableType]
 unsafe struct S
 {
-    private int* ptr;
+    private int* intPtr;
+    private bool* boolPtr;
 }";
             await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task ValueTypeContainingPointerToNonBlittableType_ReportsDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[{|#0:BlittableType|}]
-unsafe struct S
-{
-    private bool* ptr;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("S"));
         }
 
         [ConditionalFact]

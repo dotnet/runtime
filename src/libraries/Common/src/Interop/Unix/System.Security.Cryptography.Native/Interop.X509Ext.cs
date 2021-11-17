@@ -15,8 +15,8 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] bool isCritical,
             SafeAsn1OctetStringHandle data);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionDestroy")]
-        internal static extern int X509ExtensionDestroy(IntPtr x);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionDestroy")]
+        internal static partial int X509ExtensionDestroy(IntPtr x);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509V3ExtPrint")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -34,7 +34,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeExtendedKeyUsage")]
         internal static partial SafeEkuExtensionHandle DecodeExtendedKeyUsage(byte[] buf, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ExtendedKeyUsageDestory")]
-        internal static extern void ExtendedKeyUsageDestory(IntPtr a);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ExtendedKeyUsageDestory")]
+        internal static partial void ExtendedKeyUsageDestory(IntPtr a);
     }
 }

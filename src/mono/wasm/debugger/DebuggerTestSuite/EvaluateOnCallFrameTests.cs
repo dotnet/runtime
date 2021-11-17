@@ -36,6 +36,12 @@ namespace DebuggerTests
             }
         }
 
+        public static IEnumerable<object[]> EvaluateStaticClassFromStaticMethodTestData(string type_name)
+        {
+            yield return new object[] { type_name, "EvaluateAsyncMethods", "EvaluateAsyncMethods", true };
+            yield return new object[] { type_name, "EvaluateMethods", "EvaluateMethods", false };
+        }
+
         [Theory]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
@@ -461,7 +467,7 @@ namespace DebuggerTests
 
                await EvaluateOnCallFrameFail(id,
                    ("me.foo", "ReferenceError"),
-                   ("this", "ReferenceError"),
+                   ("this", "CompilationError"),
                    ("this.NullIfAIsNotZero.foo", "ReferenceError"));
            });
 
@@ -542,6 +548,11 @@ namespace DebuggerTests
                     ("this.CallMethodWithParmBool(true)", TString("TRUE")),
                     ("this.CallMethodWithParmBool(false)", TString("FALSE")),
                     ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
+                    ("this.CallMethodWithParmString(\"\\\"\\\"\")", TString("str_const_\"\"")),
+                    ("this.CallMethodWithParmString(\"🛶\")", TString("str_const_🛶")),
+                    ("this.CallMethodWithParmString(\"\\uD83D\\uDEF6\")", TString("str_const_🛶")),
+                    ("this.CallMethodWithParmString(\"🚀\")", TString("str_const_🚀")),
+                    ("this.CallMethodWithParmString_λ(\"🚀\")", TString("λ_🚀")),
                     ("this.CallMethodWithParm(10) + this.a", TNumber(12)),
                     ("this.CallMethodWithObj(null)", TNumber(-1)),
                     ("this.CallMethodWithChar('a')", TString("str_const_a")));
@@ -693,6 +704,69 @@ namespace DebuggerTests
                     ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
                 await EvaluateOnCallFrameAndCheck(id,
                     ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+           });
+
+        [Theory]
+        [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
+        [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "EvaluateMethodTestsClass")]
+        public async Task EvaluateStaticClassFromStaticMethod(string type, string method, string bp_function_name, bool is_async)
+        => await CheckInspectLocalsAtBreakpointSite(
+            type, method, 1, bp_function_name,
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] {type}:{method}'); }})",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")),
+                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+           });
+
+        [Fact]
+        public async Task EvaluateNonStaticClassWithStaticFields() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass", "EvaluateAsyncMethods", 3, "EvaluateAsyncMethods",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)),
+                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")),
+                    ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")),
+                    ("EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)),
+                    ("EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")));
+           });
+
+        [Fact]
+        public async Task EvaluateStaticClassesFromDifferentNamespaceInDifferentFrames() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTestsV2.EvaluateStaticClass", "Run", 1, "Run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id_top = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var frame = pause_location["callFrames"][0];
+
+                await EvaluateOnCallFrameAndCheck(id_top,
+                    ("EvaluateStaticClass.StaticField1", TNumber(20)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty2")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+
+                var id_second = pause_location["callFrames"][1]["callFrameId"].Value<string>();
+
+                await EvaluateOnCallFrameAndCheck(id_second,
+                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
         [Fact]

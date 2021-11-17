@@ -44,7 +44,7 @@ internal static partial class Interop
             while (true);
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGroups", SetLastError = true)]
-        private static extern unsafe int GetGroups(int ngroups, uint* groups);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGroups", SetLastError = true)]
+        private static unsafe partial int GetGroups(int ngroups, uint* groups);
     }
 }

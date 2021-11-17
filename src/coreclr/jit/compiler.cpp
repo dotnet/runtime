@@ -1873,6 +1873,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compJmpOpUsed         = false;
     compLongUsed          = false;
     compTailCallUsed      = false;
+    compLocallocSeen      = false;
     compLocallocUsed      = false;
     compLocallocOptimized = false;
     compQmarkRationalized = false;
@@ -2775,6 +2776,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
     {
         verboseDump = (JitConfig.JitDumpTier0() > 0);
+    }
+
+    // Optionally suppress dumping some OSR jit requests.
+    //
+    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        const int desiredOffset = JitConfig.JitDumpAtOSROffset();
+
+        if (desiredOffset != -1)
+        {
+            verboseDump = (((IL_OFFSET)desiredOffset) == info.compILEntry);
+        }
     }
 
     if (verboseDump)
@@ -4447,6 +4460,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
+    // Expand any patchpoints
+    //
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -4457,10 +4474,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform indirect calls that require control flow expansion.
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
-
-    // Expand any patchpoints
-    //
-    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
 
     // PostImportPhase: cleanup inlinees
     //
@@ -4877,14 +4890,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
-        // Discover and classify natural loops
-        // (e.g. mark iterative loops as such). Also marks loop blocks
-        // and sets bbWeight to the loop nesting levels
+        // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
+        // and sets bbWeight to the loop nesting levels.
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
-        // Clone loops with optimization opportunities, and
-        // choose one based on dynamic condition evaluation.
+        // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
         DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
@@ -6375,9 +6386,21 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
     {
+        enum
+        {
+            BUFSIZE = 20
+        };
+        char osrBuffer[BUFSIZE] = {0};
+        if (opts.IsOSR())
+        {
+            // Tiering name already includes "OSR", we just want the IL offset
+            //
+            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
+        }
+
         printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
                info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), opts.IsOSR() ? " OSR" : "", compGetStressMessage());
+               compGetTieringName(), osrBuffer, compGetStressMessage());
     }
     if (compIsForInlining())
     {
@@ -8675,7 +8698,6 @@ void cLoop(Compiler* comp, Compiler::LoopDsc* loop)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== Loop %u\n", sequenceNumber++);
     printf("HEAD   " FMT_BB "\n", loop->lpHead->bbNum);
-    printf("FIRST  " FMT_BB "\n", loop->lpFirst->bbNum);
     printf("TOP    " FMT_BB "\n", loop->lpTop->bbNum);
     printf("ENTRY  " FMT_BB "\n", loop->lpEntry->bbNum);
     if (loop->lpExitCnt == 1)
@@ -9126,10 +9148,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_RELOP_JMP_USED)
                 {
                     chars += printf("[RELOP_JMP_USED]");
-                }
-                if (tree->gtFlags & GTF_RELOP_QMARK)
-                {
-                    chars += printf("[RELOP_QMARK]");
                 }
                 break;
 

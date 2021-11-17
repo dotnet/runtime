@@ -18,6 +18,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module branchbackwardswithfinally.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -76,6 +77,9 @@
     .method public hidebysig static int32 
             Main(string[] args) cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals init (int32 V_0,

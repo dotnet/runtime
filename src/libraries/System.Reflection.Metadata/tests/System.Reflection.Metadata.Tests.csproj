@@ -2,7 +2,9 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExternallyShipping>false</ExternallyShipping>
-    <NoWarn>436</NoWarn> <!-- Type conflicts on "Interop" due to InternalsVisibleTo access -->
+    <!-- 436: Type conflicts on "Interop" due to InternalsVisibleTo access
+         SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
+    <NoWarn>$(NoWarn);436;SYSLIB0037</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>

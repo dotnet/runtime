@@ -10,10 +10,7 @@
     <!-- If the current project is not System.Private.CoreLib, we enable the DllImportGenerator source generator
          when the project is a C# source project that either:
          - references System.Private.CoreLib, or
-         - references the following assemblies:
-          - System.Runtime.InteropServices
-          - System.Runtime.CompilerServices.Unsafe
-          - System.Memory -->
+         - references System.Runtime.InteropServices -->
     <EnabledGenerators Include="DllImportGenerator"
                        Condition="'$(EnableDllImportGenerator)' == ''
                         and '$(IsFrameworkSupportFacade)' != 'true'
@@ -21,9 +18,7 @@
                         and '$(MSBuildProjectExtension)' == '.csproj'
                         and (
                           ('@(Reference)' != ''
-                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))
-                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe'))
-                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Memory')))
+                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices')))
                           or ('@(ProjectReference)' != ''
                             and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" />
     <EnabledGenerators Include="DllImportGenerator"
@@ -43,7 +38,19 @@
 
     <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
     <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedMarshallingAttribute.cs" />
-    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
+
+    <!-- Only add the following files if we are on the latest TFM (that is, net7) and the project is SPCL or has references to System.Runtime.CompilerServices.Unsafe and System.Memory -->
+    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'
+                        and (
+                          '$(MSBuildProjectName)' == 'System.Private.CoreLib'
+                          or '$(EnableDllImportGenerator)' == 'true'
+                          or ('@(Reference)' != ''
+                            and (@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe'))
+                              or ('@(ProjectReference)' != ''
+                                and @(ProjectReference->AnyHaveMetadataValue('Identity', $([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'System.Runtime.CompilerServices.Unsafe', 'src', 'System.Runtime.CompilerServices.Unsafe.ilproj'))))))
+                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Memory')))
+                          or ('@(ProjectReference)' != ''
+                            and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"

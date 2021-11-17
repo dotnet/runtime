@@ -30,11 +30,11 @@ internal static partial class Interop
             delegate* unmanaged<int, int, NativeOverlapped*, void> lpCompletionRoutine,
             IntPtr* lpNameHandle);
 
-        [DllImport(Libraries.Ws2_32, ExactSpelling = true)]
-        internal static extern unsafe int GetAddrInfoExCancel([In] IntPtr* lpHandle);
+        [GeneratedDllImport(Libraries.Ws2_32, ExactSpelling = true)]
+        internal static unsafe partial int GetAddrInfoExCancel(IntPtr* lpHandle);
 
-        [DllImport(Libraries.Ws2_32, ExactSpelling = true)]
-        internal static extern unsafe void FreeAddrInfoExW(AddressInfoEx* pAddrInfo);
+        [GeneratedDllImport(Libraries.Ws2_32, ExactSpelling = true)]
+        internal static unsafe partial void FreeAddrInfoExW(AddressInfoEx* pAddrInfo);
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct AddressInfoEx

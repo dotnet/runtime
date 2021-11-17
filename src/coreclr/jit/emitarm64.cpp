@@ -14588,6 +14588,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
                 result.insLatency    = PERFSCORE_LATENCY_ZERO;
             }
+            else if (ins == INS_yield)
+            {
+                // @ToDo - find out the actual latency, match x86/x64 for now
+                result.insThroughput = PERFSCORE_THROUGHPUT_140C;
+                result.insLatency    = PERFSCORE_LATENCY_140C;
+            }
             else
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;

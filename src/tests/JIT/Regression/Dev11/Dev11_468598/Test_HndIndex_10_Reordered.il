@@ -21,6 +21,7 @@
   .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 ) 
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module Test_HndIndex_10_Reordered.exe
 // MVID: {68AEE7ED-2AC8-4330-9EC7-4EBFD6BD74E0}
 .imagebase 0x00400000
@@ -39,6 +40,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       106 (0x6a)
     .maxstack  8

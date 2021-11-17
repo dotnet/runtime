@@ -2,6 +2,7 @@
 // ProcessName - 'ILGEN'
 .assembly extern mscorlib{}
 .assembly DevDiv_362706{}
+.assembly extern xunit.core {}
 .class C extends [mscorlib]System.Object
 {
    .method static unsigned int64 M(float32, int32) cil managed noinlining
@@ -138,6 +139,9 @@ IL_011a:
 
    .method static int32 Main() cil managed
    {
+       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+           01 00 00 00
+       )
        .entrypoint
 
        .try

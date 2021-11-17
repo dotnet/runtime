@@ -366,6 +366,24 @@ namespace Internal.JitInterface
 #endif
             }
 
+            if (codeSize < _code.Length)
+            {
+                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64)
+                {
+                    // For xarch/arm32, the generated code is sometimes smaller than the memory allocated.
+                    // In that case, trim the codeBlock to the actual value.
+                    //
+                    // For arm64, the allocation request of `hotCodeSize` also includes the roData size
+                    // while the `codeSize` returned just contains the size of the native code. As such,
+                    // there is guarantee that for armarch, (codeSize == _code.Length) is always true.
+                    //
+                    // Currently, hot/cold splitting is not done and hence `codeSize` just includes the size of
+                    // hotCode. Once hot/cold splitting is done, need to trim respective `_code` or `_coldCode`
+                    // accordingly.
+                    Debug.Assert(codeSize != 0);
+                    Array.Resize(ref _code, (int)codeSize);
+                }
+            }
             PublishCode();
             PublishROData();
         }

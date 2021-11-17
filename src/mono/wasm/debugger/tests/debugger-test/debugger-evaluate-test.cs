@@ -378,6 +378,11 @@ namespace DebuggerTests
                 return str + parm;
             }
 
+            public string CallMethodWithParmString_λ(string parm)
+            {
+                return "λ_" + parm;
+            }
+
             public string CallMethodWithParmBool(bool parm)
             {
                 if (parm)
@@ -403,6 +408,14 @@ namespace DebuggerTests
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
+            DebuggerTestsV2.EvaluateStaticClass.Run();
+            var a = 0;
+        }
+
+        public static void EvaluateAsyncMethods()
+        {
+            var staticClass = new EvaluateNonStaticClassWithStaticFields();
+            staticClass.run();
         }
 
     }
@@ -412,6 +425,23 @@ namespace DebuggerTests
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
 		public static string StaticPropertyWithError => throw new Exception("not implemented");
+    }
+
+    public class EvaluateNonStaticClassWithStaticFields
+    {
+        public static int StaticField1 = 10;
+        public static string StaticProperty1 => "StaticProperty1";
+        public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        private int HelperMethod()
+        {
+            return 5;
+        }
+
+        public async void run()
+        {
+            var makeAwaitable = await Task.Run(() => HelperMethod());
+        }
     }
 
     public class EvaluateLocalsWithElementAccessTests
@@ -453,4 +483,19 @@ namespace DebuggerTests
         }
     }
 
+}
+
+namespace DebuggerTestsV2
+{
+    public static class EvaluateStaticClass
+    {
+        public static int StaticField1 = 20;
+        public static string StaticProperty1 => "StaticProperty2";
+        public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        public static void Run()
+        {
+            var a = 0;
+        }
+    }
 }

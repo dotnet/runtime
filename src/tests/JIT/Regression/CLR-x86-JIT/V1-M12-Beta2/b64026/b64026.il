@@ -11,6 +11,7 @@
 .assembly 'ldvirtftncalli'
 {
 }
+.assembly extern xunit.core {}
 .class private auto ansi beforefieldinit A
        extends [mscorlib]System.Object
 {
@@ -70,6 +71,9 @@
 
   .method public hidebysig static int32 Main() 
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       279 (0x117)
     .maxstack  2

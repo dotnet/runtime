@@ -48,13 +48,22 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //    True if the immediate can be folded into an instruction,
 //    for example small enough and non-relocatable.
 //
-// TODO-CQ: we can contain a floating point 0.0 constant in a compare instruction
-// (vcmp on arm, fcmp on arm64).
-//
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
     if (!varTypeIsFloating(parentNode->TypeGet()))
     {
+#ifdef TARGET_ARM64
+        if (parentNode->OperIsRelop() && childNode->IsFPZero())
+        {
+            // Contain 0.0 constant in fcmp on arm64
+            // TODO: Enable for arm too (vcmp)
+
+            // We currently don't emit these for floating points
+            assert(!parentNode->OperIs(GT_TEST_EQ, GT_TEST_NE));
+            return true;
+        }
+#endif
+
         // Make sure we have an actual immediate
         if (!childNode->IsCnsIntOrI())
             return false;

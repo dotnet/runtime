@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib { auto }
 .assembly GitHub_16041 { }
+.assembly extern xunit.core {}
 
 // The test originally hit a problem with "Extra flags on tree" on amd64,
 // because "fgMorphBlockOperand" did not set flags when morphing comma for addr exposed lcl_Var.
@@ -14,6 +15,9 @@
 {
   .method private hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       10 (0xa)
     .maxstack  8
