@@ -10844,7 +10844,7 @@ void CodeGen::genDumpPreciseDebugInfo()
         return;
 
     static CritSecObject s_critSect;
-    CritSecHolder holder(s_critSect);
+    CritSecHolder        holder(s_critSect);
 
     FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
     if (file == nullptr)
