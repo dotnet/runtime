@@ -31,8 +31,7 @@
 
   <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
-                        and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))
-                        and '$(IncludeDllImportGeneratorSources)' == 'true'">
+                        and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))">
     <ProjectReference
       Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
       OutputItemType="InRepoSourceGenerator"
@@ -41,6 +40,10 @@
       Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"
       OutputItemType="InRepoSourceGenerator"
       ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'@(EnabledGenerators)' != ''
+                        and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))
+                        and '$(IncludeDllImportGeneratorSources)' == 'true'">
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
 
     <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
