@@ -63,10 +63,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public SampleProfile GetProfile(MethodDesc md)
             => _methodInf.GetValueOrDefault(md)?.Profile;
 
-        public void SmootheAllProfiles()
+        public void SmoothAllProfiles()
         {
             foreach (PerMethodInfo pmi in _methodInf.Values)
-                pmi.Profile.SmootheFlow();
+                pmi.Profile.SmoothFlow();
         }
 
         public void AttributeSamplesToIP(ulong ip, long numSamples)

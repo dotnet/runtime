@@ -52,7 +52,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             AttributedSamples += count;
         }
 
-        public void SmootheFlow()
+        public void SmoothFlow()
         {
             foreach (BasicBlock bb in FlowGraph.BasicBlocks)
             {
