@@ -16,13 +16,7 @@
 .assembly 'box'// as "box"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'box.exe'
 // MVID: {8CBD3D83-F5B6-41AC-9D7A-099A59884AC4}
 .namespace JitTest

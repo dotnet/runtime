@@ -14,13 +14,7 @@
 .assembly array1// as "array1"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module array1.exe
 // MVID: {F8BFB824-C7D0-485F-A06E-07B6D1F1151B}
 .namespace JitTest

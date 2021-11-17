@@ -20,13 +20,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module precise2.exe
 // MVID: {C486E388-5E60-42FA-B093-89857CB047D8}
 .imagebase 0x00400000

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 //DDB187632: generic types and generic methods with more than 0xFFFF generic arguments should throw a TypeLoadException
 
 .assembly extern mscorlib
@@ -102,6 +103,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       155 (0x9b)
     .maxstack  2

@@ -17,13 +17,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'rotate_u2.exe'
 // MVID: {D13C2D0A-FC17-423E-926F-6A239416DD1C}
 .namespace Rotate

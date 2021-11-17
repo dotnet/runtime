@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.50110.00
 //  Copyright (C) Microsoft Corporation. All rights reserved.
@@ -64,6 +65,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       61 (0x3d)
     .maxstack  2

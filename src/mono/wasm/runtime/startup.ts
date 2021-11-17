@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, MONO, runtimeHelpers } from "./modules";
 import { AllAssetEntryTypes, AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, VoidPtr, wasm_type_symbol } from "./types";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -12,11 +12,25 @@ import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
 
+export let runtime_is_initialized_resolve: Function;
+export let runtime_is_initialized_reject: Function;
+export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) => {
+    runtime_is_initialized_resolve = resolve;
+    runtime_is_initialized_reject = reject;
+});
+
+
 export async function mono_wasm_pre_init(): Promise<void> {
     const moduleExt = Module as EmscriptenModuleMono;
     if (moduleExt.configSrc) {
-        // sets MONO.config implicitly
-        await mono_wasm_load_config(moduleExt.configSrc);
+        try {
+            // sets MONO.config implicitly
+            await mono_wasm_load_config(moduleExt.configSrc);
+        }
+        catch (err: any) {
+            runtime_is_initialized_reject(err);
+            throw err;
+        }
 
         if (moduleExt.onConfigLoaded) {
             try {
@@ -26,6 +40,7 @@ export async function mono_wasm_pre_init(): Promise<void> {
                 Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
                 Module.printErr("MONO_WASM: Stacktrace: \n");
                 Module.printErr(err.stack);
+                runtime_is_initialized_reject(err);
                 throw err;
             }
         }
@@ -62,10 +77,11 @@ async function _fetch_asset(url: string): Promise<Response> {
             return fetch(url, { credentials: "same-origin" });
         }
         else if (ENVIRONMENT_IS_NODE) {
+            //const fs = (<any>globalThis).require("fs");
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const fs = require("fs");
             const arrayBuffer = await fs.promises.readFile(url);
-            return <Response><any> {
+            return <Response><any>{
                 ok: true,
                 url,
                 arrayBuffer: () => arrayBuffer,
@@ -74,7 +90,7 @@ async function _fetch_asset(url: string): Promise<Response> {
         }
         else if (typeof (read) === "function") {
             const arrayBuffer = new Uint8Array(read(url, "binary"));
-            return <Response><any> {
+            return <Response><any>{
                 ok: true,
                 url,
                 arrayBuffer: () => arrayBuffer,
@@ -83,7 +99,7 @@ async function _fetch_asset(url: string): Promise<Response> {
         }
     }
     catch (e: any) {
-        return <Response><any> {
+        return <Response><any>{
             ok: false,
             url,
             arrayBuffer: () => { throw e; },
@@ -196,11 +212,12 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
     if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
         try {
             cwraps.mono_wasm_load_runtime("unused", args.debug_level || 0);
-        } catch (ex: any) {
-            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + ex);
+        } catch (err: any) {
+            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
             Module.printErr("MONO_WASM: Stacktrace: \n");
-            Module.printErr(ex.stack);
+            Module.printErr(err.stack);
 
+            runtime_is_initialized_reject(err);
             const wasm_exit = cwraps.mono_wasm_exit;
             wasm_exit(1);
         }
@@ -219,6 +236,21 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
     mono_wasm_setenv("TZ", tz || "UTC");
     mono_wasm_runtime_ready();
 
+    //legacy config loading
+    const argsAny: any = args;
+    if (argsAny.loaded_cb) {
+        try {
+            argsAny.loaded_cb();
+        }
+        catch (err: any) {
+            Module.printErr("MONO_WASM: loaded_cb () failed: " + err);
+            Module.printErr("MONO_WASM: Stacktrace: \n");
+            Module.printErr(err.stack);
+            runtime_is_initialized_reject(err);
+            throw err;
+        }
+    }
+
     if (moduleExt.onDotNetReady) {
         try {
             moduleExt.onDotNetReady();
@@ -227,9 +259,12 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
             Module.printErr("MONO_WASM: onDotNetReady () failed: " + err);
             Module.printErr("MONO_WASM: Stacktrace: \n");
             Module.printErr(err.stack);
+            runtime_is_initialized_reject(err);
             throw err;
         }
     }
+
+    runtime_is_initialized_resolve();
 }
 
 export function bindings_lazy_init(): void {
@@ -381,9 +416,10 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
         await Promise.all(fetch_promises);
 
         _finalize_startup(args, ctx);
-    } catch (exc: any) {
-        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", exc);
-        throw exc;
+    } catch (err: any) {
+        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", err);
+        runtime_is_initialized_reject(err);
+        throw err;
     }
 }
 
@@ -462,11 +498,12 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
         config.runtime_options = config.runtime_options || [];
         config.globalization_mode = config.globalization_mode || GlobalizationMode.AUTO;
 
-    } catch (exc) {
-        const errMessage = `Failed to load config file ${configFilePath} ${exc}`;
+    } catch (err) {
+        const errMessage = `Failed to load config file ${configFilePath} ${err}`;
         console.error(errMessage);
-        runtimeHelpers.config = { message: errMessage, error: exc, isError: true };
-        throw exc;
+        runtimeHelpers.config = { message: errMessage, error: err, isError: true };
+        runtime_is_initialized_reject(err);
+        throw err;
     } finally {
         Module.removeRunDependency(configFilePath);
     }
