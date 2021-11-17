@@ -320,6 +320,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<double> ConvertToDouble(Vector256<long> vector)
         {
             if (Avx2.IsSupported)
