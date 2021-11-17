@@ -10843,10 +10843,8 @@ void CodeGen::genDumpPreciseDebugInfo()
     if (JitConfig.JitDumpPreciseDebugInfoFile() == nullptr)
         return;
 
-    static unsigned int s_flag;
-
-    while (InterlockedCompareExchange(&s_flag, 1, 0) != 0)
-        System_YieldProcessor();
+    static CritSecObject s_critSect;
+    CritSecHolder holder(s_critSect);
 
     FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
     if (file == nullptr)
@@ -10878,8 +10876,6 @@ void CodeGen::genDumpPreciseDebugInfo()
     fprintf(file, "]}\n");
 
     fclose(file);
-
-    InterlockedCompareExchange(&s_flag, 0, 1);
 }
 
 void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)

@@ -623,21 +623,46 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 if (options.DumpWorstOverlapGraphsTo != null)
                 {
-                    IEnumerable<(MethodDesc Method, double Overlap)> toDump;
+                    IEnumerable<MethodDesc> toDump;
                     if (options.DumpWorstOverlapGraphs == -1)
-                        toDump = blockOverlaps.OrderBy(t => t.Overlap).TakeWhile(t => t.Overlap < 0.5);
+                    {
+                        // Take all with less than 0.5 overlap in order.
+                        toDump =
+                            blockOverlaps
+                            .Concat(edgeOverlaps)
+                            .OrderBy(t => t.Overlap)
+                            .TakeWhile(t => t.Overlap < 0.5)
+                            .Select(t => t.Method)
+                            .Distinct();
+                    }
                     else
-                        toDump = blockOverlaps.OrderBy(t => t.Overlap).Take(options.DumpWorstOverlapGraphs);
+                    {
+                        // Take the first N methods ordered by min(blockOverlap, edgeOverlap).
+                        toDump =
+                            blockOverlaps
+                            .Concat(edgeOverlaps)
+                            .GroupBy(t => t.Method)
+                            .Select(g => (Method: g.Key, Overlap: g.Select(t => t.Overlap).Min()))
+                            .OrderBy(t => t.Overlap)
+                            .Select(t => t.Method)
+                            .Take(options.DumpWorstOverlapGraphs);
+                    }
 
-                    foreach ((MethodDesc method, double overlap) in toDump)
+                    foreach (MethodDesc method in toDump)
                     {
                         PgoCompareMethodFlowGraph fg = fgMatches[method];
 
                         string title = $"Flowgraph for {method}\\n{name1} vs {name2}";
                         if (fg.ProfilesHadBasicBlocks)
+                        {
                             title += $"\\nBasic block counts: {fg.TotalBlockCount1} vs {fg.TotalEdgeCount2}";
+                            title += $"\\nBasic block count overlap: {fg.ComputeBlockOverlap() * 100:F2}%";
+                        }
                         if (fg.ProfilesHadEdges)
-                            title += $"\\Edge counts: {fg.TotalEdgeCount1} vs {fg.TotalEdgeCount2}";
+                        {
+                            title += $"\\nEdge counts: {fg.TotalEdgeCount1} vs {fg.TotalEdgeCount2}";
+                            title += $"\\nEdge count overlap: {fg.ComputeEdgeOverlap() * 100:F2}%";
+                        }
 
                         string dot = fg.Dump(title);
 
@@ -1290,7 +1315,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             tsc,
                             idParser,
                             clrInstanceId.Value,
-                            commandLineOptions.PreciseDebugInfoFile?.FullName,
+                            commandLineOptions.PreciseDebugInfoFile,
                             s_logger);
                     }
 

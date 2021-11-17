@@ -14,7 +14,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
     /// <summary>
-    /// A class that handles correlation IP samples/LBR samples back to managed methods.
+    /// A class that handles correlating IP samples/LBR samples back to managed methods.
     /// </summary>
     internal class SampleCorrelator
     {
