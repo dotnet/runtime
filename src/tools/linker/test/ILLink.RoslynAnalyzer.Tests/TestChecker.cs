@@ -68,7 +68,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			switch (attribute.Name.ToString ()) {
 			case "ExpectedWarning":
 			case "LogContains":
-				var args = TestCaseUtils.GetAttributeArguments (attribute);
+				var args = LinkerTestBase.GetAttributeArguments (attribute);
 				if (args.TryGetValue ("ProducedBy", out var producedBy)) {
 					// Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
 					return GetProducedBy (producedBy).HasFlag (ProducedBy.Analyzer);
@@ -154,15 +154,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			missingDiagnosticMessage = null;
 			matchIndex = null;
-			var args = TestCaseUtils.GetAttributeArguments (attribute);
-			string expectedWarningCode = TestCaseUtils.GetStringFromExpression (args["#0"]);
+			var args = LinkerTestBase.GetAttributeArguments (attribute);
+			string expectedWarningCode = LinkerTestBase.GetStringFromExpression (args["#0"]);
 
 			if (!expectedWarningCode.StartsWith ("IL"))
 				throw new InvalidOperationException ($"Expected warning code should start with \"IL\" prefix.");
 
 			List<string> expectedMessages = args
 				.Where (arg => arg.Key.StartsWith ("#") && arg.Key != "#0")
-				.Select (arg => TestCaseUtils.GetStringFromExpression (arg.Value, SemanticModel))
+				.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, SemanticModel))
 				.ToList ();
 
 			for (int i = 0; i < diagnostics.Count; i++) {
@@ -193,8 +193,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			missingDiagnosticMessage = null;
 			matchIndex = null;
-			var args = TestCaseUtils.GetAttributeArguments (attribute);
-			var text = TestCaseUtils.GetStringFromExpression (args["#0"]);
+			var args = LinkerTestBase.GetAttributeArguments (attribute);
+			var text = LinkerTestBase.GetStringFromExpression (args["#0"]);
 
 			// If the text starts with `warning IL...` then it probably follows the pattern
 			//	'warning <diagId>: <location>:'
@@ -224,8 +224,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		private void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, List<Diagnostic> diagnosticMessages)
 		{
-			var arg = Assert.Single (TestCaseUtils.GetAttributeArguments (attribute));
-			var text = TestCaseUtils.GetStringFromExpression (arg.Value);
+			var arg = Assert.Single (LinkerTestBase.GetAttributeArguments (attribute));
+			var text = LinkerTestBase.GetStringFromExpression (arg.Value);
 			foreach (var diagnostic in DiagnosticMessages)
 				Assert.DoesNotContain (text, diagnostic.GetMessage ());
 		}
@@ -234,21 +234,21 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			missingDiagnosticMessage = null;
 			matchIndex = null;
-			var args = TestCaseUtils.GetAttributeArguments (attribute);
+			var args = LinkerTestBase.GetAttributeArguments (attribute);
 
 			MemberDeclarationSyntax sourceMember = attribute.Ancestors ().OfType<MemberDeclarationSyntax> ().First ();
 			if (SemanticModel.GetDeclaredSymbol (sourceMember) is not ISymbol memberSymbol)
 				return false;
 
 			string sourceMemberName = memberSymbol!.GetDisplayName ();
-			string expectedReflectionMemberMethodType = TestCaseUtils.GetStringFromExpression (args["#0"], SemanticModel);
-			string expectedReflectionMemberMethodName = TestCaseUtils.GetStringFromExpression (args["#1"], SemanticModel);
+			string expectedReflectionMemberMethodType = LinkerTestBase.GetStringFromExpression (args["#0"], SemanticModel);
+			string expectedReflectionMemberMethodName = LinkerTestBase.GetStringFromExpression (args["#1"], SemanticModel);
 
 			var reflectionMethodParameters = new List<string> ();
 			if (args.TryGetValue ("#2", out var reflectionMethodParametersExpr) || args.TryGetValue ("reflectionMethodParameters", out reflectionMethodParametersExpr)) {
 				if (reflectionMethodParametersExpr is ArrayCreationExpressionSyntax arrayReflectionMethodParametersExpr) {
 					foreach (var rmp in arrayReflectionMethodParametersExpr.Initializer!.Expressions)
-						reflectionMethodParameters.Add (TestCaseUtils.GetStringFromExpression (rmp, SemanticModel));
+						reflectionMethodParameters.Add (LinkerTestBase.GetStringFromExpression (rmp, SemanticModel));
 				}
 			}
 
@@ -256,13 +256,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			if (args.TryGetValue ("#3", out var messageExpr) || args.TryGetValue ("message", out messageExpr)) {
 				if (messageExpr is ArrayCreationExpressionSyntax arrayMessageExpr) {
 					foreach (var m in arrayMessageExpr.Initializer!.Expressions)
-						expectedStringsInMessage.Add (TestCaseUtils.GetStringFromExpression (m, SemanticModel));
+						expectedStringsInMessage.Add (LinkerTestBase.GetStringFromExpression (m, SemanticModel));
 				}
 			}
 
 			string expectedWarningCode = string.Empty;
 			if (args.TryGetValue ("#4", out var messageCodeExpr) || args.TryGetValue ("messageCode", out messageCodeExpr)) {
-				expectedWarningCode = TestCaseUtils.GetStringFromExpression (messageCodeExpr);
+				expectedWarningCode = LinkerTestBase.GetStringFromExpression (messageCodeExpr);
 				Assert.True (expectedWarningCode.StartsWith ("IL"),
 					$"The warning code specified in {messageCodeExpr.ToString ()} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'");
 			}

@@ -28,34 +28,28 @@ namespace ILLink.RoslynAnalyzer.Tests
 			Attributes = attributes;
 		}
 
-		public void Run (params (string, string)[] MSBuildProperties)
+		public void Run ((CompilationWithAnalyzers, SemanticModel) compAndModel)
 		{
-			var testSyntaxTree = MemberSyntax.SyntaxTree.GetRoot ().SyntaxTree;
+			var testSyntaxTree = MemberSyntax.SyntaxTree;
 			var testDependenciesSource = GetTestDependencies (testSyntaxTree)
 				.Select (testDependency => CSharpSyntaxTree.ParseText (File.ReadAllText (testDependency)));
 
-			var test = new TestChecker (
-				MemberSyntax,
-				TestCaseCompilation.CreateCompilation (
-					testSyntaxTree,
-					MSBuildProperties,
-					additionalSources: testDependenciesSource).Result);
-
+			var test = new TestChecker (MemberSyntax, compAndModel);
 			test.ValidateAttributes (Attributes);
 		}
 
-		private static IEnumerable<string> GetTestDependencies (SyntaxTree testSyntaxTree)
+		public static IEnumerable<string> GetTestDependencies (SyntaxTree testSyntaxTree)
 		{
-			TestCaseUtils.GetDirectoryPaths (out var rootSourceDir, out _);
+			LinkerTestBase.GetDirectoryPaths (out var rootSourceDir, out _);
 			foreach (var attribute in testSyntaxTree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
 				if (attribute.Name.ToString () != "SetupCompileBefore")
 					continue;
 
 				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().Single ().Name.ToString ();
 				var testSuiteName = testNamespace.Substring (testNamespace.LastIndexOf ('.') + 1);
-				var args = TestCaseUtils.GetAttributeArguments (attribute);
+				var args = LinkerTestBase.GetAttributeArguments (attribute);
 				foreach (var sourceFile in ((ImplicitArrayCreationExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
-					yield return Path.Combine (rootSourceDir, testSuiteName, TestCaseUtils.GetStringFromExpression (sourceFile));
+					yield return Path.Combine (rootSourceDir, testSuiteName, LinkerTestBase.GetStringFromExpression (sourceFile));
 			}
 		}
 	}
