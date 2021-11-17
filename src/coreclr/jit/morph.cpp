@@ -11501,7 +11501,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
     // Perform strength reduction prior to preorder op1, op2 operand processing
     if (opts.OptimizationEnabled() && fgGlobalMorph)
     {
-        GenTree *morphed = gtReduceStrength(tree);
+        GenTree* morphed = gtReduceStrength(tree);
         if (morphed != tree)
             return fgMorphTree(morphed);
     }

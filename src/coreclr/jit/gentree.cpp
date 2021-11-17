@@ -22026,11 +22026,12 @@ GenTree* Compiler::gtReduceStrength(GenTree* tree)
     // V0 + V0 ... + V0 becomes V0 * foldCount, where postorder transform will optimize
     // accordingly
     GenTree* lclVarTree = tree->AsOp()->gtOp2;
-    GenTree *consTree   = tree->AsOp()->gtOp1;
+    GenTree* consTree   = tree->AsOp()->gtOp1;
     consTree->BashToConst(foldCount, lclVarTree->TypeGet());
 
     /* GT_MUL operators can later be transformed into 'GT_CALL' */
-    GenTree *morphed = new (this, GT_CALL) GenTreeOp(GT_MUL, tree->TypeGet(), lclVarTree, consTree DEBUGARG(/*largeNode*/ true));
+    GenTree* morphed =
+        new (this, GT_CALL) GenTreeOp(GT_MUL, tree->TypeGet(), lclVarTree, consTree DEBUGARG(/*largeNode*/ true));
     if (vnStore != nullptr)
     {
         fgValueNumberTreeConst(consTree);
