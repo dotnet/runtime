@@ -791,9 +791,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			[ExpectedWarning ("IL2026")]
 			[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer)]
-			// TODO: Analyzer should suppress warnings when caller is anotated with RUC
-			// https://github.com/dotnet/linker/issues/2349
-			[ExpectedWarning ("IL2067", ProducedBy = ProducedBy.Analyzer)]
 			static void TestSuppressionLocalFunction ()
 			{
 				LocalFunction (); // This will produce a warning since the location function has Requires on it
@@ -931,7 +928,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				Action _ = () => MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2067", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2067", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			[RequiresAssemblyFiles ("Suppress in body")]
 			static void TestCallWithReflectionAnalysisWarning ()
@@ -1001,7 +998,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// TODO: Fix the discrepancy between linker and analyzer
 			// https://github.com/dotnet/linker/issues/2350
 			[ExpectedWarning ("IL2077", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2067", ProducedBy = ProducedBy.Analyzer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			[RequiresAssemblyFiles ("Suppress in body")]
 			static async void TestMethodParameterWithRequirements (Type unknownType = null)

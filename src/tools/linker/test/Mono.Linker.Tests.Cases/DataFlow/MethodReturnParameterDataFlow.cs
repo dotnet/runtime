@@ -141,15 +141,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// These warnings require dataflow analysis which the analyzer doesn't have yet: https://github.com/dotnet/linker/issues/2273
 		[ExpectedWarning ("IL2072",
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)")]
 		[ExpectedWarning ("IL2072",
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors) + "(Type)",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)")]
 		void PropagateReturnPublicParameterlessConstructor ()
 		{
 			Type t = ReturnPublicParameterlessConstructor (typeof (TestType), typeof (TestType), typeof (TestType));
@@ -159,15 +156,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			t.RequiresNone ();
 		}
 
-		// These warnings require dataflow analysis which the analyzer doesn't have yet: https://github.com/dotnet/linker/issues/2273
 		[ExpectedWarning ("IL2072",
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructorFromConstant) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructorFromConstant) + "()")]
 		[ExpectedWarning ("IL2072",
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors) + "(Type)",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructorFromConstant) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructorFromConstant) + "()")]
 		void PropagateReturnPublicParameterlessConstructorFromConstant ()
 		{
 			Type t = ReturnPublicParameterlessConstructorFromConstant ();

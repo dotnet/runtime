@@ -103,7 +103,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (IReflectDataflow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task LocalDataFlow ()
 		{
 			return RunTest (nameof (LocalDataFlow));
