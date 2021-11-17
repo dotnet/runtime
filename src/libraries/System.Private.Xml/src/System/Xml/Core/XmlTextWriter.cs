@@ -464,9 +464,9 @@ namespace System.Xml
                 }
                 if (subset != null)
                 {
-                    _textWriter.Write("[");
+                    _textWriter.Write('[');
                     _textWriter.Write(subset);
-                    _textWriter.Write("]");
+                    _textWriter.Write(']');
                 }
                 _textWriter.Write('>');
             }
