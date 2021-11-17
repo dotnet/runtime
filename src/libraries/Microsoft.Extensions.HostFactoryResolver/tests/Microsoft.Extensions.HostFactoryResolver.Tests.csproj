@@ -28,6 +28,7 @@
     <ProjectReference Include="NoSpecialEntryPointPatternHangs\NoSpecialEntryPointPatternHangs.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternMainNoArgs\NoSpecialEntryPointPatternMainNoArgs.csproj" />
     <ProjectReference Include="TopLevelStatements\TopLevelStatements.csproj" />
+    <ProjectReference Include="TopLevelStatementsTestsTimeout\TopLevelStatementsTestsTimeout.csproj" />
   </ItemGroup>
 
   <ItemGroup>
