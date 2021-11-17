@@ -834,6 +834,9 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     }
     CONTRACTL_END;
 
+
+    _ASSERT(m_cUnhashedModules > 0);
+
     AllocMemTracker amTracker;
     ModuleIterator i = GetAssembly()->IterateModules();
 
@@ -909,6 +912,8 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
                 amTracker.SuppressRelease();
                 pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
                 FastInterlockDecrement((LONG*)&m_cUnhashedModules);
+
+                _ASSERT(m_cUnhashedModules >= 0);
             }
         }
     }
@@ -1238,18 +1243,18 @@ BOOL ClassLoader::FindClassModuleThrowing(
 
     if (pBucket == NULL)
     {
+        // Take the lock. To make sure the table is not being built by another thread.
         AvailableClasses_LockHolder lh(this);
 
-        // Try again with the lock.  This will protect against another thread reallocating
-        // the hash table underneath us
-        GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
-        pBucket = foundEntry.GetClassHashBasedEntryValue();
-
-#ifndef DACCESS_COMPILE
-        if (needsToBuildHashtable && (pBucket == NULL) && (m_cUnhashedModules > 0))
+        if (!needsToBuildHashtable || (m_cUnhashedModules == 0))
         {
-            _ASSERT(needsToBuildHashtable);
-
+            // the table should be finished now, try again
+            GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
+            pBucket = foundEntry.GetClassHashBasedEntryValue();
+        }
+#ifndef DACCESS_COMPILE
+        else
+        {
             if (nhTable == nhCaseInsensitive)
             {
                 LazyPopulateCaseInsensitiveHashTables();
@@ -1268,7 +1273,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
 #endif
     }
 
-    // Same check as above, but this time we've checked with the lock so the table will be populated
+    // Same check as above, but this time we've ensured that the tables are populated
     if (pBucket == NULL)
     {
 #if defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
