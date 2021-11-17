@@ -1175,7 +1175,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
 #endif
 
 #if HAVE_FALLOCATE // Linux
-    if (sourceLength > 81920) // BufferSize used by CopyFile_ReadWrite (would require more than 1 sys-call)
+    if (!copied && sourceLength > 81920) // BufferSize used by CopyFile_ReadWrite (would require more than 1 sys-call)
     {
         // try to pre-allocate disk space for large destination files
         while ((ret = fallocate(outFd, FALLOC_FL_KEEP_SIZE, (off_t)0, (off_t)sourceLength)) == -1 && errno == EINTR);
