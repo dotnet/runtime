@@ -42,16 +42,28 @@ const format = "iife";
 const name = "__dotnet_runtime";
 
 export default defineConfig([
+
     {
         treeshake: !isDebug,
         input: "exports.ts",
-        output: [{
-            file: nativeBinDir + "/src/" + outputFileName,
-            name,
-            banner,
-            format,
-            plugins,
-        }],
+        output: [
+            // cjs/runtime.iffe.js
+            {
+                file: nativeBinDir + "/src/cjs/" + outputFileName,
+                name,
+                banner,
+                format,
+                plugins,
+            },
+            // es6/runtime.iffe.js
+            {
+                file: nativeBinDir + "/src/es6/" + outputFileName,
+                name,
+                banner,
+                format,
+                plugins,
+            }
+        ],
         plugins: [typescript()]
     },
     {
@@ -91,8 +103,11 @@ async function writeWhenChanged(options, bundle) {
             isOutputChanged = oldHash !== newHash;
         }
         if (isOutputChanged) {
-            if (!await checkFileExists(hashFileName)) {
-                await mkdir(nativeBinDir + "/src", { recursive: true });
+            if (!await checkFileExists(nativeBinDir + "/src/cjs")) {
+                await mkdir(nativeBinDir + "/src/cjs", { recursive: true });
+            }
+            if (!await checkFileExists(nativeBinDir + "/src/es6")) {
+                await mkdir(nativeBinDir + "/src/es6", { recursive: true });
             }
             await writeFile(hashFileName, newHash);
         } else {

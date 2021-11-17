@@ -47,12 +47,22 @@ export async function mono_wasm_pre_init(): Promise<void> {
     }
 }
 
-export function mono_wasm_on_runtime_initialized(): void {
-    const moduleExt = Module as EmscriptenModuleMono;
-    if (!moduleExt.config || moduleExt.config.isError) {
+export async function mono_wasm_on_runtime_initialized(): Promise<void> {
+    /* TODO
+    if (ENVIRONMENT_IS_NODE) {
+        const importFn = new Function("module", "name", "return (async () => { if (!module.imports[name]) try { module.imports[name] = await import(name); } catch (err) { } })();");
+        await importFn(Module, "fs");
+        await importFn(Module, "path");
+        await importFn(Module, "fetch");
+        await importFn(Module, "crypto");
+        await importFn(Module, "ws");
+        await importFn(Module, "url");
+    }*/
+
+    if (!Module.config || Module.config.isError) {
         return;
     }
-    mono_load_runtime_and_bcl_args(moduleExt.config);
+    await mono_load_runtime_and_bcl_args(Module.config);
 }
 
 // Set environment variable NAME to VALUE
@@ -347,7 +357,12 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
 
         _apply_configuration_from_args(args);
 
-        const local_fetch = typeof (args.fetch_file_cb) === "function" ? args.fetch_file_cb : _fetch_asset;
+        // TODO move polyfills out into separate module
+        const local_fetch = typeof (Module.imports.fetch) === "function"
+            ? Module.imports.fetch
+            : typeof (args.fetch_file_cb) === "function"
+                ? args.fetch_file_cb
+                : _fetch_asset;
 
         const load_asset = async (asset: AllAssetEntryTypes): Promise<void> => {
             //TODO we could do module.addRunDependency(asset.name) and delay emscripten run() after all assets are loaded

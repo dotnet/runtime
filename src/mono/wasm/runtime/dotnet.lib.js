@@ -6,11 +6,8 @@
 
 const DotNetSupportLib = {
     $DOTNET: {},
-    $MONO: {},
-    $BINDING: {},
-    $INTERNAL: {},
     // this line will be executed early on runtime, passing import and export objects into __dotnet_runtime IFFE
-    $DOTNET__postset: "__dotnet_runtime.__initializeImportsAndExports({isGlobal:true, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile}, {mono:MONO, binding:BINDING, internal:INTERNAL, module:Module});",
+    $DOTNET__postset: "__dotnet_runtime.__initializeImportsAndExports({isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile}, {mono:MONO, binding:BINDING, internal:INTERNAL, module:Module});",
 };
 
 // the methods would be visible to EMCC linker
@@ -66,7 +63,4 @@ for (let linked_function of linked_functions) {
 }
 
 autoAddDeps(DotNetSupportLib, "$DOTNET");
-autoAddDeps(DotNetSupportLib, "$MONO");
-autoAddDeps(DotNetSupportLib, "$BINDING");
-autoAddDeps(DotNetSupportLib, "$INTERNAL");
 mergeInto(LibraryManager.library, DotNetSupportLib);

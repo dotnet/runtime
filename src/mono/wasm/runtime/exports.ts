@@ -28,7 +28,8 @@ import {
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
     mono_wasm_set_main_args,
     mono_wasm_pre_init,
-    mono_wasm_on_runtime_initialized
+    mono_wasm_on_runtime_initialized,
+    mono_wasm_runtime_is_initialized
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -149,12 +150,29 @@ function initializeImportsAndExports(
     // this could be overriden on Module
     if (!module.onRuntimeInitialized) {
         module.onRuntimeInitialized = mono_wasm_on_runtime_initialized;
+        module.ready = module.ready.then(() => {
+            return mono_wasm_runtime_is_initialized;
+        });
     }
     if (!module.print) {
         module.print = console.log;
     }
     if (!module.printErr) {
         module.printErr = console.error;
+    }
+    if (!module.imports) {
+        module.imports = <any>{};
+    }
+    if (!module.imports.require) {
+        module.imports.require = globalThis.require;
+    }
+    if (!module.imports.require) {
+        module.imports.require = (name) => {
+            const resolve = (<any>module.imports)[name];
+            if (!resolve)
+                throw new Error(`Please provide Module.imports.${name}`);
+            return resolve;
+        };
     }
 
     if (imports.isGlobal || !module.disableDotNet6Compatibility) {
@@ -341,6 +359,7 @@ interface BINDING {
     call_assembly_entry_point: typeof mono_call_assembly_entry_point,
     unbox_mono_obj: typeof unbox_mono_obj
 }
+
 export interface DotNetPublicAPI {
     MONO: MONO,
     BINDING: BINDING,

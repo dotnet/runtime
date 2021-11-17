@@ -24,7 +24,7 @@ export let locateFile: Function;
 export function setImportsAndExports(
     imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
-) {
+): void {
     MONO = exports.mono;
     BINDING = exports.binding;
     INTERNAL = exports.internal;
