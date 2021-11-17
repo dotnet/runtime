@@ -21,12 +21,20 @@
     <RpmScriptsDirectory>$(MSBuildThisFileDirectory)rpm_scripts/host</RpmScriptsDirectory>
     <RpmAfterInstallScript>$(RpmScriptsDirectory)/after_install.sh</RpmAfterInstallScript>
     <RpmAfterRemoveScript>$(RpmScriptsDirectory)/after_remove.sh</RpmAfterRemoveScript>
+    <!-- Stabilizes upgrade codes, using values from 6.0.0 release - do not change -->
+    <UpgradeCode Condition="'$(TargetArchitecture)' == 'arm64'">{FD6988BF-5CCB-4202-3752-072442B1070B}</UpgradeCode>
+    <UpgradeCode Condition="'$(TargetArchitecture)' == 'x64'">{97C9F490-5379-6902-7B80-D2723CA59D95}</UpgradeCode>
+    <UpgradeCode Condition="'$(TargetArchitecture)' == 'x86'">{181630A5-53EA-4D70-E563-06F64946DE38}</UpgradeCode>
   </PropertyGroup>
 
   <ItemGroup>
     <WixSrcFile Include="host.wxs" />
     <WixExtraComponentGroupRefId Include="InstallSharedHostandDetectionKeys" />
     <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
+    <!-- Stabilizes provider key, using values from 6.0.0 release - do not change -->
+    <CandleVariables Condition="'$(TargetArchitecture)' == 'arm64'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_48.3.31210_arm64" />
+    <CandleVariables Condition="'$(TargetArchitecture)' == 'x64'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_48.3.31210_x64" />
+    <CandleVariables Condition="'$(TargetArchitecture)' == 'x86'" Include="DependencyKey" Value="Dotnet_CLI_SharedHost_48.3.31210_x86" />
   </ItemGroup>
 
   <ItemGroup>

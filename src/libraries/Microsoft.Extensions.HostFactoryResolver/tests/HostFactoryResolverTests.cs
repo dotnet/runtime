@@ -254,6 +254,16 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void TopLevelStatementsTestsTimeout()
+        {
+            var assembly = Assembly.Load("TopLevelStatementsTestsTimeout");
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
+
+            Assert.NotNull(factory);
+            Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ApplicationNameSetFromAgrument()
         {
             Assembly assembly = Assembly.Load("ApplicationNameSetFromAgrument");
