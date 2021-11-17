@@ -1,0 +1,8 @@
+<Project>
+
+  <Target Name="DisallowPacking" BeforeTargets="Pack">
+    <Error Text="System.Runtime.Internal should never be shipped outside of this repository so building a NuGet package for it is blocked as there is no use case for a NuGet package of an entirely repo-local assembly." />
+  </Target>
+
+  <Import Project="..\Directory.Build.targets" />
+</Project>
