@@ -356,10 +356,9 @@ async function loadDotnet(file) {
         loadScript = async function (file) {
             const script = document.createElement("script");
             script.src = file;
-            const moduleLoaded = new Promise(resolve => Module.preRun.push (resolve));
+            const moduleLoaded = new Promise(resolve => Module.preRun.push(() => { resolve(Module); }));
             document.head.appendChild(script);
-            await moduleLoaded;
-            return globalThis.Module;
+            return await moduleLoaded;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
