@@ -51,12 +51,7 @@ namespace System.Security.Cryptography
     internal sealed class SafeBignumHandle : Interop.JObjectLifetime.SafeJObjectHandle
     {
         public SafeBignumHandle()
-            : base(IntPtr.Zero, ownsHandle: true)
         {
         }
-
-        public SafeBignumHandle(IntPtr ptr)
-            : base(IntPtr.Zero, ownsHandle: true)
-        { }
     }
 }
