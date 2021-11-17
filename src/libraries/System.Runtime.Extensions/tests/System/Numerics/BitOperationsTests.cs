@@ -926,7 +926,7 @@ namespace System.Numerics.Tests
         [InlineData(0, 120, 44758)]
         [InlineData(0, ulong.MaxValue, 42721)]
         [InlineData(123, ulong.MaxValue, 27055)]
-        public static void BitOps_Crc32C_ulong(uint crc, uint data, uint expected)
+        public static void BitOps_Crc32C_ulong(uint crc, ulong data, uint expected)
         {
             uint obtained = BitOperations.Crc32C(crc, data);
             Assert.Equal(expected, obtained);
