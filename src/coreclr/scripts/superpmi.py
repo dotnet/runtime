@@ -1630,7 +1630,7 @@ class SuperPMIReplayAsmDiffs:
                                 all_md_summary_files.append(summary_file_info)
                                 command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
                                 if self.coreclr_args.retainOnlyTopFiles:
-                                    command += [ "-retainOnlyTopFiles" ]
+                                    command += [ "--retainOnlyTopFiles" ]
                                 if self.coreclr_args.metrics:
                                     command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
                                 elif base_bytes is not None and diff_bytes is not None:
