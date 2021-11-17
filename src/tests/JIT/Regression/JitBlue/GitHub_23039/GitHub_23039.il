@@ -8,13 +8,7 @@
 .assembly GitHub_23039
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 
 // Bug where assertion prop was tripped up because morph swapped arg
 // order on an isinst helper call that fed into a conditional jump,

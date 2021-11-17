@@ -14,13 +14,7 @@
 .assembly stress2// as "stress2"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module stress2.exe
 // MVID: {5A1483AA-BABB-44FA-9E05-6A081C8BFE56}
 .namespace JitTest

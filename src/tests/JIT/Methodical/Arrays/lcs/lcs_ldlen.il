@@ -21,13 +21,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'lcs.exe'
 // MVID: {52ED7FCA-78F1-42F6-8DE5-7388302AFAA6}
 .namespace JitTest

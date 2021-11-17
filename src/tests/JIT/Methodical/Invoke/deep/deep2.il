@@ -14,13 +14,7 @@
 .assembly 'deep'// as "deep"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'deep.exe'
 // MVID: {AA806490-3696-4693-BEEE-68E449C58639}
 .namespace JitTest
