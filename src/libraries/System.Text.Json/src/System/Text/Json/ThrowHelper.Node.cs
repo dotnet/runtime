@@ -61,10 +61,10 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowNotSupportedException_NodeCollectionIsReadOnly()
         {
-            throw NotSupportedException_NodeCollectionIsReadOnly();
+            throw GetNotSupportedException_NodeCollectionIsReadOnly();
         }
 
-        public static NotSupportedException NotSupportedException_NodeCollectionIsReadOnly()
+        public static NotSupportedException GetNotSupportedException_NodeCollectionIsReadOnly()
         {
             return new NotSupportedException(SR.NodeCollectionIsReadOnly);
         }

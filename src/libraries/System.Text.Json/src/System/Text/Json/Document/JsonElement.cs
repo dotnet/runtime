@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -333,7 +334,13 @@ namespace System.Text.Json
             return
                 type == JsonTokenType.True ? true :
                 type == JsonTokenType.False ? false :
-                throw ThrowHelper.GetJsonElementWrongTypeException(nameof(Boolean), type);
+                ThrowJsonElementWrongTypeException(type);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool ThrowJsonElementWrongTypeException(JsonTokenType actualType)
+            {
+                throw ThrowHelper.GetJsonElementWrongTypeException(nameof(Boolean), actualType.ToValueKind());
+            }
         }
 
         /// <summary>
@@ -400,12 +407,12 @@ namespace System.Text.Json
         /// <seealso cref="ToString"/>
         public byte[] GetBytesFromBase64()
         {
-            if (TryGetBytesFromBase64(out byte[]? value))
+            if (!TryGetBytesFromBase64(out byte[]? value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -645,12 +652,12 @@ namespace System.Text.Json
         /// </exception>
         public int GetInt32()
         {
-            if (TryGetInt32(out int value))
+            if (!TryGetInt32(out int value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -697,12 +704,12 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public uint GetUInt32()
         {
-            if (TryGetUInt32(out uint value))
+            if (!TryGetUInt32(out uint value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -747,12 +754,12 @@ namespace System.Text.Json
         /// </exception>
         public long GetInt64()
         {
-            if (TryGetInt64(out long value))
+            if (!TryGetInt64(out long value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -799,12 +806,12 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public ulong GetUInt64()
         {
-            if (TryGetUInt64(out ulong value))
+            if (!TryGetUInt64(out ulong value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -866,12 +873,12 @@ namespace System.Text.Json
         /// </exception>
         public double GetDouble()
         {
-            if (TryGetDouble(out double value))
+            if (!TryGetDouble(out double value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -933,12 +940,12 @@ namespace System.Text.Json
         /// </exception>
         public float GetSingle()
         {
-            if (TryGetSingle(out float value))
+            if (!TryGetSingle(out float value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -985,12 +992,12 @@ namespace System.Text.Json
         /// <seealso cref="GetRawText"/>
         public decimal GetDecimal()
         {
-            if (TryGetDecimal(out decimal value))
+            if (!TryGetDecimal(out decimal value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -1036,12 +1043,12 @@ namespace System.Text.Json
         /// <seealso cref="ToString"/>
         public DateTime GetDateTime()
         {
-            if (TryGetDateTime(out DateTime value))
+            if (!TryGetDateTime(out DateTime value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -1087,12 +1094,12 @@ namespace System.Text.Json
         /// <seealso cref="ToString"/>
         public DateTimeOffset GetDateTimeOffset()
         {
-            if (TryGetDateTimeOffset(out DateTimeOffset value))
+            if (!TryGetDateTimeOffset(out DateTimeOffset value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         /// <summary>
@@ -1138,12 +1145,12 @@ namespace System.Text.Json
         /// <seealso cref="ToString"/>
         public Guid GetGuid()
         {
-            if (TryGetGuid(out Guid value))
+            if (!TryGetGuid(out Guid value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw ThrowHelper.GetFormatException();
+            return value;
         }
 
         internal string GetPropertyName()
@@ -1326,7 +1333,7 @@ namespace System.Text.Json
 
             if (tokenType != JsonTokenType.StartArray)
             {
-                throw ThrowHelper.GetJsonElementWrongTypeException(JsonTokenType.StartArray, tokenType);
+                ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType.StartArray, tokenType);
             }
 
             return new ArrayEnumerator(this);
@@ -1352,7 +1359,7 @@ namespace System.Text.Json
 
             if (tokenType != JsonTokenType.StartObject)
             {
-                throw ThrowHelper.GetJsonElementWrongTypeException(JsonTokenType.StartObject, tokenType);
+                ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType.StartObject, tokenType);
             }
 
             return new ObjectEnumerator(this);

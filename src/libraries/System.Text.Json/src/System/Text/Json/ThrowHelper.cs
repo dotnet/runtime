@@ -12,9 +12,11 @@ namespace System.Text.Json
         // If the exception source is this value, the serializer will re-throw as JsonException.
         public const string ExceptionSourceValueToRethrowAsJsonException = "System.Text.Json.Rethrowable";
 
-        public static ArgumentOutOfRangeException GetArgumentOutOfRangeException_MaxDepthMustBePositive(string parameterName)
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(string parameterName)
         {
-            return GetArgumentOutOfRangeException(parameterName, SR.MaxDepthMustBePositive);
+            throw GetArgumentOutOfRangeException(parameterName, SR.MaxDepthMustBePositive);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -23,9 +25,11 @@ namespace System.Text.Json
             return new ArgumentOutOfRangeException(parameterName, message);
         }
 
-        public static ArgumentOutOfRangeException GetArgumentOutOfRangeException_CommentEnumMustBeInRange(string parameterName)
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowArgumentOutOfRangeException_CommentEnumMustBeInRange(string parameterName)
         {
-            return GetArgumentOutOfRangeException(parameterName, SR.CommentHandlingMustBeValid);
+            throw GetArgumentOutOfRangeException(parameterName, SR.CommentHandlingMustBeValid);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -35,6 +39,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException(string message)
         {
             throw GetArgumentException(message);
@@ -46,30 +51,35 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_PropertyNameTooLarge(int tokenLength)
         {
             throw GetArgumentException(SR.Format(SR.PropertyNameTooLarge, tokenLength));
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_ValueTooLarge(int tokenLength)
         {
             throw GetArgumentException(SR.Format(SR.ValueTooLarge, tokenLength));
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_ValueNotSupported()
         {
             throw GetArgumentException(SR.SpecialNumberValuesNotSupported);
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_NeedLargerSpan()
         {
             throw GetInvalidOperationException(SR.FailedToGetLargerSpan);
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> value)
         {
             if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)
@@ -84,6 +94,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException(ReadOnlySpan<byte> propertyName, ReadOnlySpan<char> value)
         {
             if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)
@@ -98,6 +109,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> value)
         {
             if (propertyName.Length > JsonConstants.MaxCharacterTokenSize)
@@ -112,6 +124,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException(ReadOnlySpan<char> propertyName, ReadOnlySpan<char> value)
         {
             if (propertyName.Length > JsonConstants.MaxCharacterTokenSize)
@@ -149,6 +162,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException(string message)
         {
             throw GetInvalidOperationException(message);
@@ -163,6 +177,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_DepthNonZeroOrEmptyJson(int currentDepth)
         {
             throw GetInvalidOperationException(currentDepth);
@@ -207,35 +222,46 @@ namespace System.Text.Json
             return GetInvalidOperationException("object", tokenType);
         }
 
-        public static InvalidOperationException GetInvalidOperationException_ExpectedNumber(JsonTokenType tokenType)
-        {
-            return GetInvalidOperationException("number", tokenType);
-        }
-
-        public static InvalidOperationException GetInvalidOperationException_ExpectedBoolean(JsonTokenType tokenType)
-        {
-            return GetInvalidOperationException("boolean", tokenType);
-        }
-
-        public static InvalidOperationException GetInvalidOperationException_ExpectedString(JsonTokenType tokenType)
-        {
-            return GetInvalidOperationException("string", tokenType);
-        }
-
-        public static InvalidOperationException GetInvalidOperationException_ExpectedStringComparison(JsonTokenType tokenType)
-        {
-            return GetInvalidOperationException(tokenType);
-        }
-
-        public static InvalidOperationException GetInvalidOperationException_ExpectedComment(JsonTokenType tokenType)
-        {
-            return GetInvalidOperationException("comment", tokenType);
-        }
-
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static InvalidOperationException GetInvalidOperationException_CannotSkipOnPartial()
+        public static void ThrowInvalidOperationException_ExpectedNumber(JsonTokenType tokenType)
         {
-            return GetInvalidOperationException(SR.CannotSkip);
+            throw GetInvalidOperationException("number", tokenType);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ExpectedBoolean(JsonTokenType tokenType)
+        {
+            throw GetInvalidOperationException("boolean", tokenType);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ExpectedString(JsonTokenType tokenType)
+        {
+            throw GetInvalidOperationException("string", tokenType);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ExpectedStringComparison(JsonTokenType tokenType)
+        {
+            throw GetInvalidOperationException(tokenType);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ExpectedComment(JsonTokenType tokenType)
+        {
+            throw GetInvalidOperationException("comment", tokenType);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_CannotSkipOnPartial()
+        {
+            throw GetInvalidOperationException(SR.CannotSkip);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -250,20 +276,13 @@ namespace System.Text.Json
             return GetInvalidOperationException(SR.Format(SR.InvalidComparison, tokenType));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static InvalidOperationException GetJsonElementWrongTypeException(
+        internal static void ThrowJsonElementWrongTypeException(
             JsonTokenType expectedType,
             JsonTokenType actualType)
         {
-            return GetJsonElementWrongTypeException(expectedType.ToValueKind(), actualType.ToValueKind());
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static InvalidOperationException GetJsonElementWrongTypeException(
-            string expectedTypeName,
-            JsonTokenType actualType)
-        {
-            return GetJsonElementWrongTypeException(expectedTypeName, actualType.ToValueKind());
+            throw GetJsonElementWrongTypeException(expectedType.ToValueKind(), actualType.ToValueKind());
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -285,6 +304,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
         {
             throw GetJsonReaderException(ref json, resource, nextByte, bytes);
@@ -439,12 +459,14 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_InvalidCommentValue()
         {
             throw new ArgumentException(SR.CannotWriteCommentWithEmbeddedDelimiter);
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_InvalidUTF8(ReadOnlySpan<byte> value)
         {
             var builder = new StringBuilder();
@@ -473,18 +495,21 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_InvalidUTF16(int charAsInt)
         {
             throw new ArgumentException(SR.Format(SR.CannotEncodeInvalidUTF16, $"0x{charAsInt:X2}"));
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_ReadInvalidUTF16(int charAsInt)
         {
             throw GetInvalidOperationException(SR.Format(SR.CannotReadInvalidUTF16, $"0x{charAsInt:X2}"));
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_ReadInvalidUTF16()
         {
             throw GetInvalidOperationException(SR.CannotReadIncompleteUTF16);
@@ -517,6 +542,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowOutOfMemoryException(uint capacity)
         {
             throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
@@ -563,15 +589,15 @@ namespace System.Text.Json
             return message;
         }
 
-        public static FormatException GetFormatException()
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowFormatException()
         {
-            var ex = new FormatException();
-            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
-            return ex;
+            throw new FormatException { Source = ExceptionSourceValueToRethrowAsJsonException };
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static FormatException GetFormatException(NumericType numericType)
+        public static void ThrowFormatException(NumericType numericType)
         {
             string message = "";
 
@@ -615,13 +641,12 @@ namespace System.Text.Json
                     break;
             }
 
-            var ex = new FormatException(message);
-            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
-            return ex;
+            throw new FormatException(message) { Source = ExceptionSourceValueToRethrowAsJsonException };
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static FormatException GetFormatException(DataType dateType)
+        public static void ThrowFormatException(DataType dateType)
         {
             string message = "";
 
@@ -653,14 +678,14 @@ namespace System.Text.Json
                     break;
             }
 
-            var ex = new FormatException(message);
-            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
-            return ex;
+            throw new FormatException(message) { Source = ExceptionSourceValueToRethrowAsJsonException };
         }
 
-        public static InvalidOperationException GetInvalidOperationException_ExpectedChar(JsonTokenType tokenType)
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ExpectedChar(JsonTokenType tokenType)
         {
-            return GetInvalidOperationException("char", tokenType);
+            throw GetInvalidOperationException("char", tokenType);
         }
     }
 
