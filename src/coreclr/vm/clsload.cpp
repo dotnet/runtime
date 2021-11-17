@@ -1536,19 +1536,19 @@ ClassLoader::LoadTypeHandleThrowing(
             pClsLdr = pFoundModule->GetClassLoader();
             pLookInThisModuleOnly = NULL;
         }
+    }
 
 #ifndef DACCESS_COMPILE
-        // Replace AvailableClasses Module entry with found TypeHandle
-        if (!typeHnd.IsNull() &&
-            typeHnd.IsRestored() &&
-            foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
-            (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
-            (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
-        {
-            foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
-        }
-#endif // !DACCESS_COMPILE
+    // Replace AvailableClasses Module entry with found TypeHandle
+    if (!typeHnd.IsNull() &&
+        typeHnd.IsRestored() &&
+        foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
+        (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
+        (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
+    {
+        foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
     }
+#endif // !DACCESS_COMPILE
 
     RETURN typeHnd;
 } // ClassLoader::LoadTypeHandleThrowing
