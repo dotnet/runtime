@@ -302,18 +302,6 @@ namespace System.Text.RegularExpressions.Generator
                             EmitFixedSet_RightToLeft();
                             break;
 
-                        // Already emitted earlier
-                        case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
-                        case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
-                        case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
-                        case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
-                        case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
-                        case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
-                        case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
-                        case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
-                            Debug.Assert(code.FindOptimizations.LeadingAnchor != 0);
-                            goto case FindNextStartingPositionMode.NoSearch;
-
                         default:
                             Debug.Fail($"Unexpected mode: {code.FindOptimizations.FindMode}");
                             goto case FindNextStartingPositionMode.NoSearch;
@@ -402,7 +390,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine("return true;");
                             return true;
 
-                        case RegexPrefixAnalyzer.End when minRequiredLength == 0: // if it's > 0, we already output a more stringent check
+                        case RegexPrefixAnalyzer.End:
                             writer.WriteLine("// End \\z anchor");
                             if (!rtl)
                             {
