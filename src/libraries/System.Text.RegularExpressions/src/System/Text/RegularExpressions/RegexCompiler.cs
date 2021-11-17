@@ -1012,10 +1012,13 @@ namespace System.Text.RegularExpressions
             Ret();
             MarkLabel(finishedLengthCheck);
 
-            // Some anchors help to advance the position but don't terminate the operation.
-            // As such, we do the anchors check first, and then treat them below the same
-            // as if there's no special searching enabled.
-            GenerateAnchors();
+            // Emit any anchors.
+            if (GenerateAnchors())
+            {
+                return;
+            }
+
+            // Either anchors weren't specified, or they don't completely root all matches to a specific location.
 
             switch (_code.FindOptimizations.FindMode)
             {
@@ -1066,7 +1069,9 @@ namespace System.Text.RegularExpressions
                     break;
             }
 
-            void GenerateAnchors()
+            // Emits any anchors.  Returns true if the anchor roots any match to a specific location and thus no further
+            // searching is required; otherwise, false.
+            bool GenerateAnchors()
             {
                 // Generate anchor checks.
                 if ((_code.FindOptimizations.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
@@ -1095,7 +1100,7 @@ namespace System.Text.RegularExpressions
                             }
                             Ldc(1);
                             Ret();
-                            return;
+                            return true;
 
                         case RegexPrefixAnalyzer.Start:
                             {
@@ -1115,7 +1120,7 @@ namespace System.Text.RegularExpressions
                             }
                             Ldc(1);
                             Ret();
-                            return;
+                            return true;
 
                         case RegexPrefixAnalyzer.EndZ:
                             {
@@ -1157,7 +1162,7 @@ namespace System.Text.RegularExpressions
                             }
                             Ldc(1);
                             Ret();
-                            return;
+                            return true;
 
                         case RegexPrefixAnalyzer.End when minRequiredLength == 0:  // if it's > 0, we already output a more stringent check
                             {
@@ -1180,7 +1185,7 @@ namespace System.Text.RegularExpressions
                             }
                             Ldc(1);
                             Ret();
-                            return;
+                            return true;
 
                         case RegexPrefixAnalyzer.Bol:
                             {
@@ -1241,6 +1246,8 @@ namespace System.Text.RegularExpressions
                             break;
                     }
                 }
+
+                return false;
             }
 
             void GenerateIndexOf_LeftToRight(string prefix)

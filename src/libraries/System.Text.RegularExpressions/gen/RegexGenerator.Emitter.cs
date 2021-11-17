@@ -265,62 +265,63 @@ namespace System.Text.RegularExpressions.Generator
                 };
             using (EmitBlock(writer, clause))
             {
-                // Some anchors help to advance the position but don't terminate the operation.
-                // As such, we do the anchors check first, and then treat them below the same
-                // as if there's no special searching enabled.
-                EmitAnchors();
-
-                // If whatever search operation we need to perform entails case-insensitive operations
-                // that weren't already handled via creation of sets, we need to get an store the
-                // TextInfo object to use (unless RegexOptions.CultureInvariant was specified).
-                EmitTextInfo(writer, ref hasTextInfo, rm);
-
-                // Emit the code for whatever find mode has been determined.
-                switch (code.FindOptimizations.FindMode)
+                // Emit any anchors.
+                if (!EmitAnchors())
                 {
-                    case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
-                        Debug.Assert(!string.IsNullOrEmpty(code.FindOptimizations.LeadingCaseSensitivePrefix));
-                        EmitIndexOf_LeftToRight(code.FindOptimizations.LeadingCaseSensitivePrefix);
-                        break;
+                    // Either anchors weren't specified, or they don't completely root all matches to a specific location.
 
-                    case FindNextStartingPositionMode.LeadingPrefix_RightToLeft_CaseSensitive:
-                        Debug.Assert(!string.IsNullOrEmpty(code.FindOptimizations.LeadingCaseSensitivePrefix));
-                        EmitIndexOf_RightToLeft(code.FindOptimizations.LeadingCaseSensitivePrefix);
-                        break;
+                    // If whatever search operation we need to perform entails case-insensitive operations
+                    // that weren't already handled via creation of sets, we need to get an store the
+                    // TextInfo object to use (unless RegexOptions.CultureInvariant was specified).
+                    EmitTextInfo(writer, ref hasTextInfo, rm);
 
-                    case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
-                    case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive:
-                    case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
-                    case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
-                        Debug.Assert(code.FindOptimizations.FixedDistanceSets is { Count: > 0 });
-                        EmitFixedSet_LeftToRight();
-                        break;
+                    // Emit the code for whatever find mode has been determined.
+                    switch (code.FindOptimizations.FindMode)
+                    {
+                        case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
+                            Debug.Assert(!string.IsNullOrEmpty(code.FindOptimizations.LeadingCaseSensitivePrefix));
+                            EmitIndexOf_LeftToRight(code.FindOptimizations.LeadingCaseSensitivePrefix);
+                            break;
 
-                    case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive:
-                    case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive:
-                        Debug.Assert(code.FindOptimizations.FixedDistanceSets is { Count: > 0 });
-                        EmitFixedSet_RightToLeft();
-                        break;
+                        case FindNextStartingPositionMode.LeadingPrefix_RightToLeft_CaseSensitive:
+                            Debug.Assert(!string.IsNullOrEmpty(code.FindOptimizations.LeadingCaseSensitivePrefix));
+                            EmitIndexOf_RightToLeft(code.FindOptimizations.LeadingCaseSensitivePrefix);
+                            break;
 
-                    // Already emitted earlier
-                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
-                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
-                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
-                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
-                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
-                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
-                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
-                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
-                        Debug.Assert(code.FindOptimizations.LeadingAnchor != 0);
-                        goto case FindNextStartingPositionMode.NoSearch;
+                        case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
+                        case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive:
+                        case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
+                        case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
+                            Debug.Assert(code.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+                            EmitFixedSet_LeftToRight();
+                            break;
 
-                    default:
-                        Debug.Fail($"Unexpected mode: {code.FindOptimizations.FindMode}");
-                        goto case FindNextStartingPositionMode.NoSearch;
+                        case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive:
+                        case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive:
+                            Debug.Assert(code.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+                            EmitFixedSet_RightToLeft();
+                            break;
 
-                    case FindNextStartingPositionMode.NoSearch:
-                        writer.WriteLine("return true;");
-                        break;
+                        // Already emitted earlier
+                        case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                        case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                        case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                        case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                        case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
+                        case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
+                        case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
+                        case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
+                            Debug.Assert(code.FindOptimizations.LeadingAnchor != 0);
+                            goto case FindNextStartingPositionMode.NoSearch;
+
+                        default:
+                            Debug.Fail($"Unexpected mode: {code.FindOptimizations.FindMode}");
+                            goto case FindNextStartingPositionMode.NoSearch;
+
+                        case FindNextStartingPositionMode.NoSearch:
+                            writer.WriteLine("return true;");
+                            break;
+                    }
                 }
             }
             writer.WriteLine();
@@ -330,7 +331,9 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine(!rm.Code.RightToLeft ? "base.runtextpos = runtextend;" : "base.runtextpos = runtextbeg;");
             writer.WriteLine("return false;");
 
-            void EmitAnchors()
+            // Emits any anchors.  Returns true if the anchor roots any match to a specific location and thus no further
+            // searching is required; otherwise, false.
+            bool EmitAnchors()
             {
                 // Generate anchor checks.
                 if ((code.FindOptimizations.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
@@ -356,7 +359,7 @@ namespace System.Text.RegularExpressions.Generator
                                 }
                             }
                             writer.WriteLine("return true;");
-                            return;
+                            return true;
 
                         case RegexPrefixAnalyzer.Start:
                             writer.WriteLine("// Start \\G anchor");
@@ -376,7 +379,7 @@ namespace System.Text.RegularExpressions.Generator
                                 }
                             }
                             writer.WriteLine("return true;");
-                            return;
+                            return true;
 
                         case RegexPrefixAnalyzer.EndZ:
                             // TODO: Why are the LTR and RTL cases inconsistent here with RegexOptions.Compiled?
@@ -397,7 +400,7 @@ namespace System.Text.RegularExpressions.Generator
                                 }
                             }
                             writer.WriteLine("return true;");
-                            return;
+                            return true;
 
                         case RegexPrefixAnalyzer.End when minRequiredLength == 0: // if it's > 0, we already output a more stringent check
                             writer.WriteLine("// End \\z anchor");
@@ -416,7 +419,7 @@ namespace System.Text.RegularExpressions.Generator
                                 }
                             }
                             writer.WriteLine("return true;");
-                            return;
+                            return true;
 
                         case RegexPrefixAnalyzer.Bol:
                             // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
@@ -438,6 +441,8 @@ namespace System.Text.RegularExpressions.Generator
                             break;
                     }
                 }
+
+                return false;
             }
 
             // Emits a case-sensitive left-to-right prefix search for a string at the beginning of the pattern.
