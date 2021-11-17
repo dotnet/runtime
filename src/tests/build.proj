@@ -392,8 +392,6 @@
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages">
     <Message Text="$(MsgPrefix)Building Targeting Pack" Importance="High" />
-    <Error Text="$(ErrMsgPrefix)$(MsgPrefix)ERROR: TargetOS has not been specified. Please do that then run build again."
-      Condition="'$(TargetOS)' == 'AnyOS'" />
     <MSBuild Projects="Common\external\external.csproj"
              Targets="Build" />
   </Target>
