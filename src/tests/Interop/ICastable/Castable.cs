@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-using Console = Internal.Console;
-
 public interface IRetArg<T>
 {
     T ReturnArg(T t);
@@ -114,7 +112,7 @@ public class BadCastable : ICastable
         return default(RuntimeTypeHandle);
     }
 }
- 
+
 
 public class Program
 {
@@ -145,7 +143,7 @@ public class Program
                      { typeof(IExtra), null }, //we should never use it
                  }
             );
-            
+
             // testing simple cases
             Assert(implProxy is IRetThis, "implProxy should be castable to IRetThis via is");
             Assert(!(implProxy is IUnimplemented), "implProxy should not be castable to IUnimplemented via is");
@@ -158,7 +156,7 @@ public class Program
             Assert(!(implProxy is IUnimplemented), "implProxy should not be castable to IUnimplemented via is");
             Assert((implProxy as IUnimplemented) == null, "implProxy should not be castable to IUnimplemented via as");
 
-            
+
             // testing generics
             IRetArg<string> retArgStr = (IRetArg<string>)implProxy;
             Assert(retArgStr.ReturnArg("hohoho") == "hohoho", "retArgStr.ReturnArg() should return arg");
@@ -184,7 +182,7 @@ public class Program
             {
                 var _ = (IRetThis)nullCastable;
                 Assert(false, "Exceptions should be thrown from IsInstanceOfInterface");
-            } 
+            }
             catch (CastableException) {}
 
             Assert(!(nullCastable is IRetThis), "null castable shouldn't be allowed to be casted to anything");
@@ -198,7 +196,7 @@ public class Program
                 var r = (IRetThis)badCastable;
                 r.ReturnThis();
                 Assert(false, "Exceptions should be thrown from ReturnThis()");
-            } 
+            }
             catch (EntryPointNotFoundException) {}
 
             //delegate testing
@@ -223,6 +221,6 @@ public class Program
             Console.WriteLine("Test FAILED!");
             return -1;
        }
-        
+
     }
 }

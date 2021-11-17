@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(RuntimeFlavor)' == 'Mono'">SR.PlatformNotSupported_System_Runtime_Internal</GeneratePlatformNotSupportedAssemblyMessage>
+    <OmitResources Condition="'$(RuntimeFlavor)' != 'Mono'">true</OmitResources>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CoreLibProject)" />
+  </ItemGroup>
+</Project>

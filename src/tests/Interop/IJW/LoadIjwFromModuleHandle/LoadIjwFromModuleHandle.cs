@@ -9,8 +9,6 @@ using Internal.Runtime.InteropServices;
 using TestLibrary;
 using Xunit;
 
-using Console = Internal.Console;
-
 namespace LoadIjwFromModuleHandle
 {
     class LoadIjwFromModuleHandle

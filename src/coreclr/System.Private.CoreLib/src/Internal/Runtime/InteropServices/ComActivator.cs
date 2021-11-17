@@ -60,8 +60,7 @@ namespace Internal.Runtime.InteropServices
     public partial struct ComActivationContext
     {
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
-        [CLSCompliant(false)]
-        public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
+        internal static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
         {
             if (!Marshal.IsBuiltInComSupported)
             {

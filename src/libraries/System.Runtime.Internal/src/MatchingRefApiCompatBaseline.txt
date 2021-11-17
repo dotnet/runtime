@@ -1,0 +1,4 @@
+# APIs that we don't need to expose since they're [UnmanagedCallersOnly]
+MembersMustExist : Member 'public System.Int32 Internal.Runtime.InteropServices.ComActivator.GetClassFactoryForTypeInternal(Internal.Runtime.InteropServices.ComActivationContextInternal*)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Int32 Internal.Runtime.InteropServices.ComActivator.RegisterClassForTypeInternal(Internal.Runtime.InteropServices.ComActivationContextInternal*)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Int32 Internal.Runtime.InteropServices.ComActivator.UnregisterClassForTypeInternal(Internal.Runtime.InteropServices.ComActivationContextInternal*)' does not exist in the reference but it does exist in the implementation.

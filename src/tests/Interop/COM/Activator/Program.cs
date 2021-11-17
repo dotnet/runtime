@@ -12,7 +12,19 @@ namespace Activator
     using TestLibrary;
     using Xunit;
 
-    using Console = Internal.Console;
+    [ComImport]
+    [ComVisible(false)]
+    [Guid("00000001-0000-0000-C000-000000000046")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IClassFactory
+    {
+        void CreateInstance(
+            [MarshalAs(UnmanagedType.Interface)] object pUnkOuter,
+            ref Guid riid,
+            out IntPtr ppvObject);
+
+        void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock);
+    }
 
     class Program
     {
