@@ -4,17 +4,19 @@
 "use strict";
 
 var Module = {
-    config: null,
     configSrc: "./mono-config.json",
-    onDotNetReady: function () {
+    onConfigLoaded: () => {
+        MONO.config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+    },
+    onDotNetReady: () => {
         try {
             App.init();
         } catch (error) {
-            test_exit(1);
+            set_exit_code(1, error);
             throw (error);
         }
     },
-    onAbort: function () {
-        test_exit(1);
+    onAbort: (error) => {
+        set_exit_code(1, error);
     },
 };

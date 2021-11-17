@@ -116,6 +116,14 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly HashSet<TypeGenerationSpec> _implicitlyRegisteredTypes = new();
 
+            /// <summary>
+            /// A list of diagnostics emitted at the type level. This is cached and emitted between the processing of context types
+            /// in order to properly retrieve [JsonSerializable] attribute applications for top-level types (since a type might occur
+            /// both at top-level and in nested object graphs, with no guarantee of the order that we will see the type).
+            /// The element tuple types specifies the serializable type, the kind of diagnostic to emit, and the diagnostic message.
+            /// </summary>
+            private readonly List<(Type, DiagnosticDescriptor, string[])> _typeLevelDiagnostics = new();
+
             private JsonKnownNamingPolicy _currentContextNamingPolicy;
 
             private static DiagnosticDescriptor ContextClassesMustBePartial { get; } = new DiagnosticDescriptor(
@@ -244,6 +252,11 @@ namespace System.Text.Json.SourceGeneration
 
                 foreach (ClassDeclarationSyntax classDeclarationSyntax in classDeclarationSyntaxList)
                 {
+                    // Ensure context-scoped metadata caches are empty.
+                    Debug.Assert(_typeGenerationSpecCache.Count == 0);
+                    Debug.Assert(_implicitlyRegisteredTypes.Count == 0);
+                    Debug.Assert(_typeLevelDiagnostics.Count == 0);
+
                     CompilationUnitSyntax compilationUnitSyntax = classDeclarationSyntax.FirstAncestorOrSelf<CompilationUnitSyntax>();
                     SemanticModel compilationSemanticModel = compilation.GetSemanticModel(compilationUnitSyntax.SyntaxTree);
 
@@ -285,15 +298,18 @@ namespace System.Text.Json.SourceGeneration
                     INamedTypeSymbol contextTypeSymbol = (INamedTypeSymbol)compilationSemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
                     Debug.Assert(contextTypeSymbol != null);
 
+                    Location contextLocation = contextTypeSymbol.Locations.Length > 0 ? contextTypeSymbol.Locations[0] : Location.None;
+
                     if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
                     {
                         // Class or one of its containing types is not partial so we can't add to it.
-                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
+                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, contextLocation, new string[] { contextTypeSymbol.Name }));
                         continue;
                     }
 
                     ContextGenerationSpec contextGenSpec = new()
                     {
+                        Location = contextLocation,
                         GenerationOptions = options ?? new JsonSourceGenerationOptionsAttribute(),
                         ContextType = contextTypeSymbol.AsType(_metadataLoadContext),
                         ContextClassDeclarationList = classDeclarationList
@@ -316,14 +332,31 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
+                    // Emit type-level diagnostics
+                    foreach ((Type Type, DiagnosticDescriptor Descriptor, string[] MessageArgs) diagnostic in _typeLevelDiagnostics)
+                    {
+                        Type type = diagnostic.Type;
+                        Location location = type.GetDiagnosticLocation();
+
+                        if (location == null)
+                        {
+                            TypeGenerationSpec spec = _typeGenerationSpecCache[type];
+                            location = spec.AttributeLocation;
+                        }
+
+                        location ??= contextLocation;
+                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(diagnostic.Descriptor, location, diagnostic.MessageArgs));
+                    }
+
                     contextGenSpec.ImplicitlyRegisteredTypes.UnionWith(_implicitlyRegisteredTypes);
 
                     contextGenSpecList ??= new List<ContextGenerationSpec>();
                     contextGenSpecList.Add(contextGenSpec);
 
-                    // Clear the cache of generated metadata between the processing of context classes.
+                    // Clear the caches of generated metadata between the processing of context classes.
                     _typeGenerationSpecCache.Clear();
                     _implicitlyRegisteredTypes.Clear();
+                    _typeLevelDiagnostics.Clear();
                 }
 
                 if (contextGenSpecList == null)
@@ -486,6 +519,8 @@ namespace System.Text.Json.SourceGeneration
                 {
                     typeGenerationSpec.GenerationMode = generationMode;
                 }
+
+                typeGenerationSpec.AttributeLocation = attributeSyntax.GetLocation();
 
                 return typeGenerationSpec;
             }
@@ -877,7 +912,7 @@ namespace System.Text.Json.SourceGeneration
                     if (!type.TryGetDeserializationConstructor(useDefaultCtorInAnnotatedStructs, out ConstructorInfo? constructor))
                     {
                         classType = ClassType.TypeUnsupportedBySourceGen;
-                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonConstructorAttribute, Location.None, new string[] { $"{type}" }));
+                        _typeLevelDiagnostics.Add((type, MultipleJsonConstructorAttribute, new string[] { $"{type}" }));
                     }
                     else
                     {
@@ -944,7 +979,7 @@ namespace System.Text.Json.SourceGeneration
                                 }
 
                                 spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
-                                CacheMemberHelper();
+                                CacheMemberHelper(propertyInfo.GetDiagnosticLocation());
                             }
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
@@ -955,10 +990,10 @@ namespace System.Text.Json.SourceGeneration
                                 }
 
                                 spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
-                                CacheMemberHelper();
+                                CacheMemberHelper(fieldInfo.GetDiagnosticLocation());
                             }
 
-                            void CacheMemberHelper()
+                            void CacheMemberHelper(Location memberLocation)
                             {
                                 CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
 
@@ -972,13 +1007,13 @@ namespace System.Text.Json.SourceGeneration
                                 {
                                     if (dataExtensionPropGenSpec != null)
                                     {
-                                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonExtensionDataAttribute, Location.None, new string[] { type.Name }));
+                                        _typeLevelDiagnostics.Add((type, MultipleJsonExtensionDataAttribute, new string[] { type.Name }));
                                     }
 
                                     Type propType = spec.TypeGenerationSpec.Type;
                                     if (!IsValidDataExtensionPropertyType(propType))
                                     {
-                                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DataExtensionPropertyInvalid, Location.None, new string[] { type.Name, spec.ClrName }));
+                                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DataExtensionPropertyInvalid, memberLocation, new string[] { type.Name, spec.ClrName }));
                                     }
 
                                     dataExtensionPropGenSpec = GetOrAddTypeGenerationSpec(propType, generationMode);
@@ -987,13 +1022,13 @@ namespace System.Text.Json.SourceGeneration
 
                                 if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter)
                                 {
-                                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, Location.None, new string[] { type.Name }));
+                                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, memberLocation, new string[] { type.Name }));
                                     hasInitOnlyProperties = true;
                                 }
 
                                 if (spec.HasJsonInclude && (!spec.CanUseGetter || !spec.CanUseSetter || !spec.IsPublic))
                                 {
-                                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InaccessibleJsonIncludePropertiesNotSupported, Location.None, new string[] { type.Name, spec.ClrName }));
+                                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InaccessibleJsonIncludePropertiesNotSupported, memberLocation, new string[] { type.Name, spec.ClrName }));
                                 }
                             }
                         }

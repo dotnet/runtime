@@ -303,6 +303,7 @@ namespace System.Text.Json
         public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
+        public static System.Text.Json.JsonSerializerOptions Default { get { throw null; } }
         public int DefaultBufferSize { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? DictionaryKeyPolicy { get { throw null; } set { } }

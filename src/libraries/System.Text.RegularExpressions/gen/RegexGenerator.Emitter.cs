@@ -1529,7 +1529,8 @@ namespace System.Text.RegularExpressions.Generator
                         while (byteStr.Length >= sizeof(ulong))
                         {
                             EmitOr();
-                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(byteSpan.Slice({textSpanPos * sizeof(char)})) != 0x{BinaryPrimitives.ReadUInt64LittleEndian(byteStr):X}ul");
+                            string byteSpan = textSpanPos > 0 ? $"byteSpan.Slice({textSpanPos * sizeof(char)})" : "byteSpan";
+                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian({byteSpan}) != 0x{BinaryPrimitives.ReadUInt64LittleEndian(byteStr):X}ul");
                             textSpanPos += sizeof(ulong) / sizeof(char);
                             byteStr = byteStr.Slice(sizeof(ulong));
                         }
@@ -1537,7 +1538,8 @@ namespace System.Text.RegularExpressions.Generator
                         while (byteStr.Length >= sizeof(uint))
                         {
                             EmitOr();
-                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(byteSpan.Slice({textSpanPos * sizeof(char)})) != 0x{BinaryPrimitives.ReadUInt32LittleEndian(byteStr):X}u");
+                            string byteSpan = textSpanPos > 0 ? $"byteSpan.Slice({textSpanPos * sizeof(char)})" : "byteSpan";
+                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian({byteSpan}) != 0x{BinaryPrimitives.ReadUInt32LittleEndian(byteStr):X}u");
                             textSpanPos += sizeof(uint) / sizeof(char);
                             byteStr = byteStr.Slice(sizeof(uint));
                         }
@@ -1565,7 +1567,8 @@ namespace System.Text.RegularExpressions.Generator
                     // character-by-character while respecting the culture.
                     if (!caseInsensitive)
                     {
-                        using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({textSpanLocal}.Slice({textSpanPos}), {Literal(node.Str)}))"))
+                        string sourceSpan = textSpanPos > 0 ? $"{textSpanLocal}.Slice({textSpanPos})" : textSpanLocal;
+                        using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(node.Str)}))"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
@@ -1577,7 +1580,8 @@ namespace System.Text.RegularExpressions.Generator
                         string i = NextLocalName("i");
                         using (EmitBlock(writer, $"for (int {i} = 0; {i} < {Literal(node.Str)}.Length; {i}++)"))
                         {
-                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos} + {i}]")} != {Literal(str)}[{i}])"))
+                            string textSpanIndex = textSpanPos > 0 ? $"{i} + {textSpanPos}" : i;
+                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{textSpanLocal}[{textSpanIndex}]")} != {Literal(str)}[{i}])"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
@@ -3419,8 +3423,8 @@ namespace System.Text.RegularExpressions.Generator
             // characters other than that some might be included, for example if the character class
             // were [\w\d], so since ch >= 128, we need to fall back to calling CharInClass.
             return invariant ?
-                $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : CharInClass(char.ToLowerInvariant((char)ch), {Literal(charClass)}))" :
-                $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : CharInClass((char)ch, {Literal(charClass)}))";
+                $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : global::System.Text.RegularExpressions.RegexRunner.CharInClass(char.ToLowerInvariant((char)ch), {Literal(charClass)}))" :
+                $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : global::System.Text.RegularExpressions.RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
         }
 
         private static string Literal(char c) => SymbolDisplay.FormatLiteral(c, quote: true);

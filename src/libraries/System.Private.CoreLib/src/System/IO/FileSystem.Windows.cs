@@ -191,12 +191,18 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_PathIsVolume, "path");
             }
 
+            int dwFlagsAndAttributes = Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT;
+            if (asDirectory)
+            {
+                dwFlagsAndAttributes |= Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS;
+            }
+
             SafeFileHandle handle = Interop.Kernel32.CreateFile(
                 fullPath,
                 Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 FileShare.ReadWrite | FileShare.Delete,
                 FileMode.Open,
-                asDirectory ? Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : 0);
+                dwFlagsAndAttributes);
 
             if (handle.IsInvalid)
             {

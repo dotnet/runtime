@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
-        <target state="needs-review-translation">ScanRegex에 내부 오류가 있습니다.</target>
+        <target state="translated">ScanRegex에 내부 오류가 있습니다.</target>
         <note>{Locked="ScanRegex"}</note>
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="needs-review-translation">RegexGeneratorAttribute의 형식이 잘못되었습니다.</target>
+        <target state="translated">RegexGeneratorAttribute의 형식이 잘못되었습니다.</target>
         <note>{Locked="RegexGeneratorAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
-        <target state="needs-review-translation">잘못된 RegexGenerator 사용</target>
+        <target state="translated">잘못된 RegexGenerator 사용</target>
         <note>{Locked="RegexGenerator"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
         <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
+        <target state="translated">RegexOptions.NonBacktracking에서는 그룹을 대체하는 Regex 대체가 지원되지 않습니다.</target>
         <note>{Locked="RegexOptions.NonBacktracking"}</note>
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
@@ -219,7 +219,7 @@
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="needs-review-translation">캡처 그룹 번호는 Int32.MaxValue보다 작거나 같아야 합니다.</target>
+        <target state="translated">캡처 그룹 번호는 Int32.MaxValue보다 작거나 같아야 합니다.</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">

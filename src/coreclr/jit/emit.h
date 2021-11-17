@@ -1240,21 +1240,22 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
-#define PERFSCORE_THROUGHPUT_2C 2.0f   // slower - 2 cycles
-#define PERFSCORE_THROUGHPUT_3C 3.0f   // slower - 3 cycles
-#define PERFSCORE_THROUGHPUT_4C 4.0f   // slower - 4 cycles
-#define PERFSCORE_THROUGHPUT_5C 5.0f   // slower - 5 cycles
-#define PERFSCORE_THROUGHPUT_6C 6.0f   // slower - 6 cycles
-#define PERFSCORE_THROUGHPUT_7C 7.0f   // slower - 7 cycles
-#define PERFSCORE_THROUGHPUT_8C 8.0f   // slower - 8 cycles
-#define PERFSCORE_THROUGHPUT_9C 9.0f   // slower - 9 cycles
-#define PERFSCORE_THROUGHPUT_10C 10.0f // slower - 10 cycles
-#define PERFSCORE_THROUGHPUT_13C 13.0f // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_19C 19.0f // slower - 19 cycles
-#define PERFSCORE_THROUGHPUT_25C 25.0f // slower - 25 cycles
-#define PERFSCORE_THROUGHPUT_33C 33.0f // slower - 33 cycles
-#define PERFSCORE_THROUGHPUT_52C 52.0f // slower - 52 cycles
-#define PERFSCORE_THROUGHPUT_57C 57.0f // slower - 57 cycles
+#define PERFSCORE_THROUGHPUT_2C 2.0f     // slower - 2 cycles
+#define PERFSCORE_THROUGHPUT_3C 3.0f     // slower - 3 cycles
+#define PERFSCORE_THROUGHPUT_4C 4.0f     // slower - 4 cycles
+#define PERFSCORE_THROUGHPUT_5C 5.0f     // slower - 5 cycles
+#define PERFSCORE_THROUGHPUT_6C 6.0f     // slower - 6 cycles
+#define PERFSCORE_THROUGHPUT_7C 7.0f     // slower - 7 cycles
+#define PERFSCORE_THROUGHPUT_8C 8.0f     // slower - 8 cycles
+#define PERFSCORE_THROUGHPUT_9C 9.0f     // slower - 9 cycles
+#define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
+#define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
+#define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
+#define PERFSCORE_THROUGHPUT_52C 52.0f   // slower - 52 cycles
+#define PERFSCORE_THROUGHPUT_57C 57.0f   // slower - 57 cycles
+#define PERFSCORE_THROUGHPUT_140C 140.0f // slower - 140 cycles
 
 #define PERFSCORE_LATENCY_ILLEGAL -1024.0f
 
@@ -1281,6 +1282,7 @@ protected:
 #define PERFSCORE_LATENCY_26C 26.0f
 #define PERFSCORE_LATENCY_62C 62.0f
 #define PERFSCORE_LATENCY_69C 69.0f
+#define PERFSCORE_LATENCY_140C 140.0f
 #define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instuctions
 
 #define PERFSCORE_LATENCY_BRANCH_DIRECT 1.0f   // cost of an unconditional branch

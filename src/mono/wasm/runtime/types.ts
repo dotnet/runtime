@@ -75,7 +75,7 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 export type MonoConfig = {
     isError: false,
     assembly_root: string, // the subfolder containing managed assemblies and pdbs
-    assets: (AssetEntry | AssemblyEntry | SatelliteAssemblyEntry | VfsEntry | IcuData)[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
+    assets: AllAssetEntryTypes[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
     debug_level?: number, // Either this or the next one needs to be set
     enable_debugging?: number, // Either this or the previous one needs to be set
     fetch_file_cb?: Request, // a function (string) invoked to fetch a given file. If no callback is provided a default implementation appropriate for the current environment will be selected (readFileSync in node, fetch elsewhere). If no default implementation is available this call will fail.
@@ -96,6 +96,8 @@ export type MonoConfigError = {
     message: string,
     error: any
 }
+
+export type AllAssetEntryTypes = AssetEntry | AssemblyEntry | SatelliteAssemblyEntry | VfsEntry | IcuData;
 
 // Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export type AssetEntry = {
@@ -177,7 +179,9 @@ export type CoverageProfilerOptions = {
 }
 
 // how we extended emscripten Module
-export type EmscriptenModuleMono = EmscriptenModule & {
+export type EmscriptenModuleMono = EmscriptenModule & EmscriptenModuleConfig;
+
+export type EmscriptenModuleConfig = {
     disableDotNet6Compatibility?: boolean,
 
     // backward compatibility

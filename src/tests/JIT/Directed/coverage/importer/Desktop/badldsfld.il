@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .assembly badldslfd { }
 .class Test_badldsfld extends [mscorlib]System.Object
 {
@@ -13,6 +14,9 @@ ret
 }
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .try
 {

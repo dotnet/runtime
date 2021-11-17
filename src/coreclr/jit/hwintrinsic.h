@@ -804,7 +804,7 @@ private:
 
         if (baseType == TYP_UNKNOWN)
         {
-            assert(category == HW_Category_Scalar);
+            assert((category == HW_Category_Scalar) || (category == HW_Category_Special));
 
             if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
             {
