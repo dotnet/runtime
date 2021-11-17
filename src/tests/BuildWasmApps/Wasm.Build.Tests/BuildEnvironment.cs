@@ -111,6 +111,9 @@ namespace Wasm.Build.Tests
             EnvVars["MSBuildSDKsPath"] = string.Empty;
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
 
+            // helps with debugging
+            EnvVars["WasmNativeStrip"] = "false";
+
             if (OperatingSystem.IsWindows())
             {
                 EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
