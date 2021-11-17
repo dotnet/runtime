@@ -2296,6 +2296,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void Kill_EntireProcessTree_True_ProcessNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -2325,6 +2326,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void Kill_EntireProcessTree_True_CalledOnCallingProcess_ThrowsInvalidOperationException()
         {
             var process = Process.GetCurrentProcess();
