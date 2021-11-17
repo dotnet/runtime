@@ -26,7 +26,7 @@
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Bytemark\Bytemark.csproj" />
     <_SpmiTestProjects Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
     <ProjectReference Include="@(_SpmiTestProjects)">
-      <Targets>Build;CreateExecuteScript</Targets>
+      <Targets>Build</Targets>
       <OutputItemType>_SpmiTest</OutputItemType>
       <TargetPath>%(FileName)</TargetPath>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -54,13 +54,12 @@
   </ItemGroup>
 
   <Target Name="_CopySpmiTestsToOutput" DependsOnTargets="ResolveProjectReferences" BeforeTargets="AssignTargetPaths">
-    <PropertyGroup>
-      <_SpmiPathsToCopyPattern>@(_SpmiTest->'%(RootDir)%(Directory)**')</_SpmiPathsToCopyPattern>
-    </PropertyGroup>
-    <ItemGroup>
-      <_SpmiPathsToCopy Include="$(_SpmiPathsToCopyPattern)"  />
-      <_SpmiPathsToCopy DirectoryWithoutSeparator="$([System.IO.Path]::TrimEndingDirectorySeparator('%(Directory)'))" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_SpmiPathsToCopy)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(OutputPath)'))/$([System.IO.Path]::GetFileName('%(DirectoryWithoutSeparator)'))" SkipUnchangedFiles="True" />
+    <Copy SourceFiles="@(_SpmiTest)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(OutputPath)'))/$([System.IO.Path]::GetFileName('%(FileName)'))" SkipUnchangedFiles="True" />
+  </Target>
+
+  <!-- This target builds the executables and test running scripts for the _SpmiTestProjects
+      to the output directory of the current project. -->
+  <Target Name="_BuildSpmiTestProjectScripts" BeforeTargets="CreateExecuteScript">
+    <MSBuild Projects="@(_SpmiTestProjects)" Targets="CreateExecuteScript" Properties="OutputPath=$(OutputPath)\%(FileName)" />
   </Target>
 </Project>
