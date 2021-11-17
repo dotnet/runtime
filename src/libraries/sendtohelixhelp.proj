@@ -491,7 +491,7 @@
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$(XHarnessOutput) -- --run %(FileName).dll</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=main.js --output-directory=$(XHarnessOutput) -- --run %(FileName).dll</Command>
       </HelixWorkItem>
     </ItemGroup>
 
@@ -501,7 +501,7 @@
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- %(FileName).dll --testing</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- %(FileName).dll</Command>
       </HelixWorkItem>
     </ItemGroup>
 

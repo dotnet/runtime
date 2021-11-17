@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // this test is also regression test for VSW 395780. The difference is that
 // .override directive in this case is in the class scope, whereas in testExplicitOverride
 // .override directive is in method scope.
@@ -83,6 +84,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       105 (0x69)
     .maxstack  2

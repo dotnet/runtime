@@ -20,13 +20,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'huge_strcut.exe'
 // MVID: {23E3D49B-6CFD-4DA0-8C9D-A611CE0BA103}
 .namespace JitTest

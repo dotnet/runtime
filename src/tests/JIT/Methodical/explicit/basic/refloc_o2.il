@@ -17,13 +17,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'refloc_o.exe'
 // MVID: {3CF0A869-1266-4091-97CF-DEFA0C36E038}
 .namespace Test

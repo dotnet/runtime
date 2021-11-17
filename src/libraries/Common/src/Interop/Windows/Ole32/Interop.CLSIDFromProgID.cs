@@ -9,6 +9,7 @@ internal static partial class Interop
     internal static partial class Ole32
     {
         [DllImport(Interop.Libraries.Ole32, CharSet = CharSet.Unicode)]
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
         internal static extern int CLSIDFromProgID(string lpszProgID, out Guid lpclsid);
     }
 }

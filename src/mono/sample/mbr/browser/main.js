@@ -3,7 +3,6 @@
 
 "use strict";
 var Module = {
-    config: null,
     configSrc: "./mono-config.json",
     onConfigLoaded: function () {
         MONO.config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
