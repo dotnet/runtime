@@ -179,7 +179,9 @@ export type CoverageProfilerOptions = {
 }
 
 // how we extended emscripten Module
-export type EmscriptenModuleMono = EmscriptenModule & {
+export type EmscriptenModuleMono = EmscriptenModule & EmscriptenModuleConfig;
+
+export type EmscriptenModuleConfig = {
     disableDotNet6Compatibility?: boolean,
 
     // backward compatibility

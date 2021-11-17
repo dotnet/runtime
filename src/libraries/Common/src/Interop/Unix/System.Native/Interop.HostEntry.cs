@@ -35,7 +35,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForName", CharSet = CharSet.Ansi)]
         internal static unsafe partial int GetHostEntryForName(string address, AddressFamily family, HostEntry* entry);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
-        internal static extern unsafe void FreeHostEntry(HostEntry* entry);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
+        internal static unsafe partial void FreeHostEntry(HostEntry* entry);
     }
 }

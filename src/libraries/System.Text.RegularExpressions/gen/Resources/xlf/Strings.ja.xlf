@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
-        <target state="needs-review-translation">ScanRegex に内部エラーが発生しました。</target>
+        <target state="translated">ScanRegex に内部エラーが発生しました。</target>
         <note>{Locked="ScanRegex"}</note>
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="needs-review-translation">RegexGeneratorAttribute の形式に誤りがあります</target>
+        <target state="translated">RegexGeneratorAttribute の形式に誤りがあります</target>
         <note>{Locked="RegexGeneratorAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
-        <target state="needs-review-translation">RegexGenerator の使用法が無効です</target>
+        <target state="translated">RegexGenerator の使用法が無効です</target>
         <note>{Locked="RegexGenerator"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
         <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
+        <target state="translated">RegexOptions.NonBacktracking では、グループの置換による正規表現の置換はサポートされていません。</target>
         <note>{Locked="RegexOptions.NonBacktracking"}</note>
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
@@ -219,7 +219,7 @@
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="needs-review-translation">キャプチャ グループ数は、Int32.MaxValue 以下でなければなりません。</target>
+        <target state="translated">キャプチャ グループ数は、Int32.MaxValue 以下でなければなりません。</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">

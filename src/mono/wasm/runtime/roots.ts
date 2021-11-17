@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { Module } from "./modules";
+import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types";
 
 const maxScratchRoots = 8192;

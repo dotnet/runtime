@@ -113,13 +113,35 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
                 var store = await proxy.LoadStore(sessionId, token);
-                foreach (var asm in store.assemblies)
+                var methodInfo = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
+                var classNameToFindWithNamespace =
+                    string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace) ?
+                    classNameToFind :
+                    methodInfo.TypeInfo.Namespace + "." + classNameToFind;
+
+                var searchResult = await TryFindNameInAssembly(store.assemblies, classNameToFindWithNamespace);
+                if (searchResult == null)
+                    searchResult = await TryFindNameInAssembly(store.assemblies, classNameToFind);
+                if (searchResult != null)
+                    typeId = (int)searchResult;
+
+                async Task<int?> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
                 {
-                    var type = asm.GetTypeByName(classNameToFind);
-                    if (type != null)
+                    var type = assembly.GetTypeByName(typeName);
+                    if (type == null)
+                        return null;
+                    return await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
+                }
+
+                async Task<int?> TryFindNameInAssembly(List<AssemblyInfo> assemblies, string name)
+                {
+                    foreach (var asm in assemblies)
                     {
-                        typeId = await context.SdbAgent.GetTypeIdFromToken(asm.DebugId, type.Token, token);
+                        var typeId = await TryGetTypeIdFromName(name, asm);
+                        if (typeId != null)
+                            return typeId;
                     }
+                    return null;
                 }
             }
             return null;
@@ -190,12 +212,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            rootObject = await TryToRunOnLoadedClasses(varName, token);
-                            return rootObject;
+                            break;
                         }
                     }
                 }
             }
+            if (rootObject == null)
+                rootObject = await TryToRunOnLoadedClasses(varName, token);
             scopeCache.MemberReferences[varName] = rootObject;
             return rootObject;
         }

@@ -14,13 +14,7 @@
 .assembly bug // // as "bug"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module bug.exe
 // MVID: {A29CDE84-6701-43B3-B56A-DE8480CE7421}
 .namespace JitTest

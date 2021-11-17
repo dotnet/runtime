@@ -12,8 +12,8 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_NewX509Stack")]
         internal static partial SafeX509StackHandle NewX509Stack();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RecursiveFreeX509Stack")]
-        internal static extern void RecursiveFreeX509Stack(IntPtr stack);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RecursiveFreeX509Stack")]
+        internal static partial void RecursiveFreeX509Stack(IntPtr stack);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackFieldCount")]
         internal static partial int GetX509StackFieldCount(SafeX509StackHandle stack);

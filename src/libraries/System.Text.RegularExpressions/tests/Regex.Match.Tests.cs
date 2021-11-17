@@ -239,6 +239,8 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     yield return ("aaa(?i:match this)bbb", "aaaMaTcH ThIsbbb", RegexOptions.None, 0, 16, true, "aaaMaTcH ThIsbbb");
                 }
+                yield return ("(?i:a)b(?i:c)d", "aaaaAbCdddd", RegexOptions.None, 0, 11, true, "AbCd");
+                yield return ("(?i:[\u0000-\u1000])[Bb]", "aaaaAbCdddd", RegexOptions.None, 0, 11, true, "Ab");
 
                 // Turning off case insensitive option in mid-pattern : Actual - "aaa(?-i:match this)bbb", "i"
                 yield return ("aAa(?-i:match this)bbb", "AaAmatch thisBBb", RegexOptions.IgnoreCase, 0, 16, true, "AaAmatch thisBBb");
@@ -274,6 +276,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"\p{Ll}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
                 yield return (@"\p{Lt}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
                 yield return (@"\p{Lo}", "1bc", RegexOptions.IgnoreCase, 0, 3, false, string.Empty);
+                yield return (".[abc]", "xYZAbC", RegexOptions.IgnoreCase, 0, 6, true, "ZA");
+                yield return (".[abc]", "xYzXyZx", RegexOptions.IgnoreCase, 0, 6, false, "");
 
                 // "\D+"
                 yield return (@"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty);
@@ -360,7 +364,6 @@ namespace System.Text.RegularExpressions.Tests
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                 }
                 yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
-                yield return (@"a\w*a|def", "aaaaa", RegexOptions.None, 0, 5, true, "aaaaa");
 
                 // No Negation
                 yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -516,6 +519,8 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2FoO");
                     yield return (@".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1Foo should 2fOo");
                     yield return (@".*\dfoo", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 8, 4, true, "2FOO");
+                    yield return (@"[\w\s].*", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 30, true, "1fooThis2FOO should 1foo match");
+                    yield return (@"i.*", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 30, true, "is2FOO should 1foo match");
                 }
 
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/36149")]
@@ -536,6 +541,29 @@ namespace System.Text.RegularExpressions.Tests
                 //    yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24D0' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "");
                 //    yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString());
                 //}
+
+                // Long inputs
+                string longCharacterRange = string.Concat(Enumerable.Range(1, 0x2000).Select(c => (char)c));
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
+                {
+                    yield return ("\u1000", longCharacterRange, options, 0, 0x2000, true, "\u1000");
+                    yield return ("[\u1000-\u1001]", longCharacterRange, options, 0, 0x2000, true, "\u1000");
+                    yield return ("[\u0FF0-\u0FFF][\u1000-\u1001]", longCharacterRange, options, 0, 0x2000, true, "\u0FFF\u1000");
+
+                    yield return ("\uA640", longCharacterRange, options, 0, 0x2000, false, "");
+                    yield return ("[\u3000-\u3001]", longCharacterRange, options, 0, 0x2000, false, "");
+                    yield return ("[\uA640-\uA641][\u3000-\u3010]", longCharacterRange, options, 0, 0x2000, false, "");
+
+                    if (!RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        yield return ("\u1000", longCharacterRange, options | RegexOptions.RightToLeft, 0, 0x2000, true, "\u1000");
+                        yield return ("[\u1000-\u1001]", longCharacterRange, options | RegexOptions.RightToLeft, 0, 0x2000, true, "\u1001");
+                        yield return ("[\u1000][\u1001-\u1010]", longCharacterRange, options, 0, 0x2000, true, "\u1000\u1001");
+
+                        yield return ("\uA640", longCharacterRange, options | RegexOptions.RightToLeft, 0, 0x2000, false, "");
+                        yield return ("[\u3000-\u3001][\uA640-\uA641]", longCharacterRange, options | RegexOptions.RightToLeft, 0, 0x2000, false, "");
+                    }
+                }
 
                 foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline })
                 {
@@ -1283,13 +1311,11 @@ namespace System.Text.RegularExpressions.Tests
 
                 // Repeaters
                 Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{2147483647,}")).IsMatch("a"));
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in debug
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{51,}")).IsMatch("a"));
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50,}")).IsMatch("a"));
                 Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_000,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in release
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_001,}")).IsMatch("a"));
 
                 // Multis
-                foreach (int length in new[] { 50, 51, 50_000, 50_001, char.MaxValue + 1 }) // based on knowledge of cut-offs used in Boyer-Moore
+                foreach (int length in new[] { 50, 50_000, char.MaxValue + 1 })
                 {
                     // The large counters are too slow for counting a's in NonBacktracking engine
                     // They will incur a constant of size length because in .*a{k} after reading n a's the

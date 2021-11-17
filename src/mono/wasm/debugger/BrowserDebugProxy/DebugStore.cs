@@ -331,6 +331,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
         public int IsAsync { get; set; }
         public bool IsHiddenFromDebugger { get; }
+        public TypeInfo TypeInfo { get; }
+
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
             this.IsAsync = -1;
@@ -343,6 +345,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.Name = asmMetadataReader.GetString(methodDef.Name);
             this.pdbMetadataReader = pdbMetadataReader;
             this.IsEnCMethod = false;
+            this.TypeInfo = type;
             if (!DebugInformation.SequencePointsBlob.IsNil)
             {
                 var sps = DebugInformation.GetSequencePoints();
@@ -475,6 +478,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private TypeDefinition type;
         private List<MethodInfo> methods;
         internal int Token { get; }
+        internal string Namespace { get; }
 
         public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
         {
@@ -484,21 +488,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.type = type;
             methods = new List<MethodInfo>();
             Name = metadataReader.GetString(type.Name);
-            var namespaceName = "";
             if (type.IsNested)
             {
                 var declaringType = metadataReader.GetTypeDefinition(type.GetDeclaringType());
                 Name = metadataReader.GetString(declaringType.Name) + "/" + Name;
-                namespaceName = metadataReader.GetString(declaringType.Namespace);
+                Namespace = metadataReader.GetString(declaringType.Namespace);
             }
             else
             {
-                namespaceName = metadataReader.GetString(type.Namespace);
+                Namespace = metadataReader.GetString(type.Namespace);
             }
-
-            if (namespaceName.Length > 0)
-                namespaceName += ".";
-            FullName = namespaceName + Name;
+            if (Namespace.Length > 0)
+                FullName = Namespace + "." + Name;
+            else
+                FullName = Name;
         }
 
         public TypeInfo(AssemblyInfo assembly, string name)

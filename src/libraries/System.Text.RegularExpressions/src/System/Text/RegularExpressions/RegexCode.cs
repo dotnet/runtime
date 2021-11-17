@@ -16,6 +16,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -96,35 +97,25 @@ namespace System.Text.RegularExpressions
         public readonly RegexTree Tree;                                                 // the optimized parse tree
         public readonly int[] Codes;                                                    // the code
         public readonly string[] Strings;                                               // the string/set table
-        public readonly int[]?[] StringsAsciiLookup;                                    // the ASCII lookup table optimization for the sets in Strings
+        public readonly uint[]?[] StringsAsciiLookup;                                   // the ASCII lookup table optimization for the sets in Strings
         public readonly int TrackCount;                                                 // how many instructions use backtracking
         public readonly Hashtable? Caps;                                                // mapping of user group numbers -> impl group slots
         public readonly int CapSize;                                                    // number of impl group slots
-        public readonly (string CharClass, bool CaseInsensitive)[]? LeadingCharClasses; // the set of candidate first characters, if available.  Each entry corresponds to the next char in the input.
-        public int[]? LeadingCharClassAsciiLookup;                                      // the ASCII lookup table optimization for LeadingCharClasses[0], if it exists; only used by the interpreter
-        public readonly RegexBoyerMoore? BoyerMoorePrefix;                              // the fixed prefix string as a Boyer-Moore machine, if available
-        public readonly int LeadingAnchor;                                              // the leading anchor, if one exists (RegexPrefixAnalyzer.Bol, etc)
         public readonly bool RightToLeft;                                               // true if right to left
+        public readonly RegexFindOptimizations FindOptimizations;
 
-        public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
-                         Hashtable? caps, int capsize,
-                         RegexBoyerMoore? boyerMoorePrefix,
-                         (string CharClass, bool CaseInsensitive)[]? leadingCharClasses,
-                         int leadingAnchor, bool rightToLeft)
+        public RegexCode(RegexTree tree, CultureInfo culture, int[] codes, string[] strings, int trackcount,
+                         Hashtable? caps, int capsize)
         {
-            Debug.Assert(boyerMoorePrefix is null || leadingCharClasses is null);
-
             Tree = tree;
             Codes = codes;
             Strings = strings;
-            StringsAsciiLookup = new int[strings.Length][];
+            StringsAsciiLookup = new uint[strings.Length][];
             TrackCount = trackcount;
             Caps = caps;
             CapSize = capsize;
-            BoyerMoorePrefix = boyerMoorePrefix;
-            LeadingCharClasses = leadingCharClasses;
-            LeadingAnchor = leadingAnchor;
-            RightToLeft = rightToLeft;
+            RightToLeft = (tree.Options & RegexOptions.RightToLeft) != 0;
+            FindOptimizations = new RegexFindOptimizations(tree, culture);
         }
 
         public static bool OpcodeBacktracks(int Op)
@@ -409,26 +400,8 @@ namespace System.Text.RegularExpressions
             var sb = new StringBuilder();
 
             sb.AppendLine($"Direction:  {(RightToLeft ? "right-to-left" : "left-to-right")}");
-            sb.AppendLine($"Anchor:     {RegexPrefixAnalyzer.AnchorDescription(LeadingAnchor)}");
+            sb.AppendLine($"Anchor:     {RegexPrefixAnalyzer.AnchorDescription(FindOptimizations.LeadingAnchor)}");
             sb.AppendLine();
-
-            if (BoyerMoorePrefix != null)
-            {
-                sb.AppendLine("Boyer-Moore:");
-                sb.AppendLine(BoyerMoorePrefix.Dump("    "));
-                sb.AppendLine();
-            }
-
-            if (LeadingCharClasses != null)
-            {
-                sb.AppendLine("First Chars:");
-                for (int i = 0; i < LeadingCharClasses.Length; i++)
-                {
-                    sb.AppendLine($"{i}: {RegexCharClass.SetDescription(LeadingCharClasses[i].CharClass)}");
-                }
-                sb.AppendLine();
-            }
-
             for (int i = 0; i < Codes.Length; i += OpcodeSize(Codes[i]))
             {
                 sb.AppendLine(OpcodeDescription(i));

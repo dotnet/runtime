@@ -1873,6 +1873,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compJmpOpUsed         = false;
     compLongUsed          = false;
     compTailCallUsed      = false;
+    compLocallocSeen      = false;
     compLocallocUsed      = false;
     compLocallocOptimized = false;
     compQmarkRationalized = false;
