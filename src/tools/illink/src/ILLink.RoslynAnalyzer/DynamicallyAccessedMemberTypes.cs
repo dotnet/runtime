@@ -10,7 +10,7 @@ namespace System.Diagnostics.CodeAnalysis
 	/// bitwise combination of its member values.
 	/// </summary>
 	[Flags]
-	internal enum DynamicallyAccessedMemberTypes
+	public enum DynamicallyAccessedMemberTypes
 	{
 		/// <summary>
 		/// Specifies no members.

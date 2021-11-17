@@ -138,8 +138,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// (Dataflow analysis is not supported by the analyzer yet)
 		[ExpectedWarning ("IL2067",
 			nameof (MethodParametersDataFlow) + "." + nameof (RequirePublicConstructors) + "(Type)",
-			"type",
-			ProducedBy = ProducedBy.Trimmer)]
+			"type")]
 		private void TwoAnnotatedParametersIntoOneValue (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type,
