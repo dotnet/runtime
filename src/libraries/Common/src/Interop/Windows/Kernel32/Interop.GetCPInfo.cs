@@ -16,7 +16,7 @@ internal static partial class Interop
             internal fixed byte LeadByte[12 /* MAX_LEADBYTES */];
         }
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern unsafe Interop.BOOL GetCPInfo(uint codePage, CPINFO* lpCpInfo);
+        [GeneratedDllImport(Libraries.Kernel32)]
+        internal static unsafe partial Interop.BOOL GetCPInfo(uint codePage, CPINFO* lpCpInfo);
     }
 }

@@ -3,7 +3,7 @@
 
 import { mono_wasm_new_root_buffer, WasmRootBuffer } from "./roots";
 import { CharPtr, MonoString, MonoStringNull, NativePointer } from "./types";
-import { Module } from "./modules";
+import { Module } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
 import { getI32 } from "./memory";
@@ -187,7 +187,7 @@ export function js_string_to_mono_string(string: string): MonoString | null {
     return js_string_to_mono_string_new(string);
 }
 
-export function js_string_to_mono_string_new(string: string) : MonoString {
+export function js_string_to_mono_string_new(string: string): MonoString {
     const buffer = Module._malloc((string.length + 1) * 2);
     const buffer16 = (<any>buffer >>> 1) | 0;
     for (let i = 0; i < string.length; i++)
