@@ -1479,11 +1479,12 @@ class SuperPMIReplayAsmDiffs:
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
                 if return_code != 0:
-                    result = False
+
                     # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
                     # reported as a replay failure.
                     if return_code != 2 and return_code != 3:
+                        result = False
                         files_with_replay_failures.append(mch_file)
 
                         if is_nonzero_length_file(fail_mcl_file):
