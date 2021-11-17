@@ -448,7 +448,9 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetArchitecture=$(TargetArchitecture)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesTargetOSConfigurationArchitecture=$(LibrariesTargetOSConfigurationArchitecture)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetOS=$(TargetOS)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeOS=$(RuntimeOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
@@ -456,6 +458,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
