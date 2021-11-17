@@ -1925,7 +1925,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field;
 
 				// `field` cannot be used as named attribute argument because is static, and if accessed via
-				// a property the property will be the one generating the warning, but then the warning will 
+				// a property the property will be the one generating the warning, but then the warning will
 				// be suppresed by the Requires on the declaring type
 				public int PropertyOnAttribute {
 					get { return field; }
