@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class OleAut32
     {
-        [DllImport(Libraries.OleAut32)]
-        internal static extern void VariantClear(IntPtr variant);
+        [GeneratedDllImport(Libraries.OleAut32)]
+        internal static partial void VariantClear(IntPtr variant);
     }
 }
