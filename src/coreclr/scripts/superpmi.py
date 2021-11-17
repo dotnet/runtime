@@ -318,7 +318,7 @@ asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option t
 asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
-asm_diff_parser.add_argument("-ci_run", action="store_true", help="Is this a CI-run? If yes, it will pass a flag to jit-analyze to delete unnecessary .dasm files.")
+asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Is passed, it will retain only top .dasm files that has largest diffs and delete remaining files.")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1629,7 +1629,7 @@ class SuperPMIReplayAsmDiffs:
                                 summary_file_info = ( mch_file, md_summary_file )
                                 all_md_summary_files.append(summary_file_info)
                                 command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
-                                if self.coreclr_args.ci_run:
+                                if self.coreclr_args.retainOnlyTopFiles:
                                     command += [ "-retainOnlyTopFiles" ]
                                 if self.coreclr_args.metrics:
                                     command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
@@ -3265,9 +3265,9 @@ def setup_args(args):
                             "Unable to set metrics.")
 
         coreclr_args.verify(args,
-                            "ci_run",
+                            "retainOnlyTopFiles",
                             lambda unused: True,
-                            "Unable to set ci_run.")
+                            "Unable to set retainOnlyTopFiles.")
 
         process_base_jit_path_arg(coreclr_args)
 
