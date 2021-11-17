@@ -89,9 +89,13 @@ jobs:
       - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
         - name: liveRuntimeBuildParams
           value: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+        - name: liveRuntimeArtifactsPathArg
+          value: ${{ format('/p:CoreCLROverridePath={0}/artifacts/bin/coreclr/{1}{2}.{3}.{4}', $(Build.SourcesDirectory), parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
       - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
         - name: liveRuntimeBuildParams
           value: ${{ format('mono.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+        - name: liveRuntimeArtifactsPathArg
+          value: ${{ format('/p:MonoOverridePath={0}/artifacts/bin/mono/{1}{2}.{3}.{4}', $(Build.SourcesDirectory), parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
       - name: compilerArg
         value: ''
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
@@ -135,7 +139,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci $(librariesOverrideArg) /p:RuntimeOS=${{ parameters.osGroup }}${{ parameters.osSubgroup }} /p:LibrariesTargetOSConfigurationArchitecture=${{ parameters.osGroup }}${{ parameters.osSubgroup }}-${{ parameters.liveLibrariesBuildConfig }}-${{ parameters.archType }} /p:TargetOS=AnyOS
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci $(librariesOverrideArg) /p:RuntimeOS=${{ parameters.osGroup }}${{ parameters.osSubgroup }} /p:LibrariesTargetOSConfigurationArchitecture=${{ parameters.osGroup }}${{ parameters.osSubgroup }}-${{ parameters.liveLibrariesBuildConfig }}-${{ parameters.archType }} $(liveRuntimeArtifactsPathArg) /p:TargetOS=AnyOS
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
