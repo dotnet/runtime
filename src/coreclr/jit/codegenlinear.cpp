@@ -440,7 +440,13 @@ void CodeGen::genCodeForBBlist()
                     genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
                     firstMapping = false;
                 }
+
 #ifdef DEBUG
+                if ((JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) && ilOffset->gtStmtDI.IsValid())
+                {
+                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                }
+
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
