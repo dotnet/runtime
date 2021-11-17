@@ -2132,7 +2132,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     GenTree* emitOp2 = op2;
     GenTree* emitOp3 = op3;
 
-    bool       isCommutative   = false;
     const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
@@ -2181,7 +2180,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         // op1 = (op1 * op2) + [op3] or op2 = (op1 * op2) + [op3]
         // ? = (op1 * op2) + [op3] or ? = (op1 * op2) + op3
         // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-        isCommutative = copiesUpperBits;
         if (targetReg == op2NodeReg)
         {
             // op2 = (op1 * op2) + [op3]
@@ -2190,10 +2188,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         }
     }
 
-    regNumber op1Reg = emitOp1->GetRegNum();
-    regNumber op2Reg = emitOp2->GetRegNum();
-
-    if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
+    if (!copiesUpperBits && (emitOp2->GetRegNum() == targetReg))
     {
         assert(node->isRMWHWIntrinsic(compiler));
 
@@ -2204,10 +2199,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         // as target. However, for commutative intrinsics, we can just swap the operands
         // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
 
-        op2Reg = op1Reg;
-        op1Reg = targetReg;
+        std::swap(emitOp1, emitOp2);
     }
-    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, emitOp3);
+    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3);
     genProduceReg(node);
 }
 

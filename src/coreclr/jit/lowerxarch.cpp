@@ -6351,36 +6351,36 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         // Prioritize Containable op. Check if any one of the op is containable first.
                         // Set op regOptional only if none of them is containable.
 
-                        if (resultOpNum != 1 && IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional) &&
-                            !HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
+                        // Prefer to make op3 contained,
+                        if (resultOpNum != 3 && IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
                         {
-                            // result = ([op1] * op2) + op3
-                            MakeSrcContained(node, op1);
+                            // result = (op1 * op2) + [op3]
+                            MakeSrcContained(node, op3);
                         }
                         else if (resultOpNum != 2 && IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                         {
                             // result = (op1 * [op2]) + op3
                             MakeSrcContained(node, op2);
                         }
-                        else if (resultOpNum != 3 && IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
+                        else if (resultOpNum != 1 && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId) &&
+                                 IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                         {
-                            // result = (op1 * op2) + [op3]
-                            MakeSrcContained(node, op3);
+                            // result = ([op1] * op2) + op3
+                            MakeSrcContained(node, op1);
                         }
-                        else if (resultOpNum != 1 && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
+                        else if (supportsOp3RegOptional)
                         {
-                            assert(supportsOp1RegOptional);
-                            op1->SetRegOptional();
+                            assert(resultOpNum != 3);
+                            op3->SetRegOptional();
                         }
-                        else if (resultOpNum != 2)
+                        else if (supportsOp2RegOptional)
                         {
-                            assert(supportsOp2RegOptional);
+                            assert(resultOpNum != 2);
                             op2->SetRegOptional();
                         }
-                        else
+                        else if (supportsOp1RegOptional)
                         {
-                            assert(supportsOp3RegOptional);
-                            op3->SetRegOptional();
+                            op1->SetRegOptional();
                         }
                     }
                     else

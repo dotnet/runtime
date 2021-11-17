@@ -2338,11 +2338,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 resultOpNum = intrinsicTree->GetResultOpNumForFMA(user, op1, op2, op3);
 
-                // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
-                assert(!copiesUpperBits || !op1->isContained());
-
                 unsigned containedOpNum = 0;
 
+                // containedOpNum remains 0 when no op is contianed or regOptional
                 if (op1->isContained() || op1->IsRegOptional())
                 {
                     containedOpNum = 1;
@@ -2351,9 +2349,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     containedOpNum = 2;
                 }
-                else
+                else if (op3->isContained() || op3->IsRegOptional())
                 {
-                    assert(op3->isContained() || op3->IsRegOptional());
                     containedOpNum = 3;
                 }
 
@@ -2362,36 +2359,53 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 GenTree* emitOp3 = op3;
 
                 // Intrinsics with CopyUpperBits semantics must have op1 as target
-                if (containedOpNum == 1 && !copiesUpperBits)
+                assert(containedOpNum != 1 || !copiesUpperBits);
+
+                if (containedOpNum == 1)
                 {
-                    if (resultOpNum != 3)
+                    assert(containedOpNum != resultOpNum);
+                    // resultOpNum is 3 or 0: op3/? = ([op1] * op2) + op3
+                    std::swap(emitOp1, emitOp3);
+
+                    if (resultOpNum == 2)
                     {
                         // op2 = ([op1] * op2) + op3
                         std::swap(emitOp2, emitOp3);
                     }
-
-                    // else: op3 = ([op1] * op2) + op3
-                    std::swap(emitOp1, emitOp3);
                 }
                 else if (containedOpNum == 3)
                 {
+                    assert(containedOpNum != resultOpNum);
                     if (resultOpNum == 2 && !copiesUpperBits)
                     {
                         // op2 = (op1 * op2) + [op3]
                         std::swap(emitOp1, emitOp2);
                     }
-                    // else: op1 = (op1 * op2) + [op3]
+                    // else: op1/? = (op1 * op2) + [op3]
                 }
-                else
+                else if (containedOpNum == 2)
                 {
-                    assert(containedOpNum == 2);
-                    // op1 = (op1 * [op2]) + op3
-                    std::swap(emitOp2, emitOp3);
+                    assert(containedOpNum != resultOpNum);
 
+                    // op1/? = (op1 * [op2]) + op3
+                    std::swap(emitOp2, emitOp3);
                     if (resultOpNum == 3 && !copiesUpperBits)
                     {
                         // op3 = (op1 * [op2]) + op3
                         std::swap(emitOp1, emitOp2);
+                    }
+                }
+                else
+                {
+                    // containedOpNum == 0
+                    // no extra work when resultOpNum is 0 or 1
+                    if (resultOpNum == 2)
+                    {
+                        std::swap(emitOp1, emitOp2);
+                    }
+                    else if (resultOpNum == 3)
+                    {
+                        std::swap(emitOp1, emitOp3);
                     }
                 }
                 tgtPrefUse = BuildUse(emitOp1);

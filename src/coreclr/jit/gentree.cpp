@@ -21855,10 +21855,10 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
 
     if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
         return 1;
-    else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
-        return 3;
     else if (op2->OperIs(GT_LCL_VAR) && op2->IsLastUse(0))
         return 2;
+    else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
+        return 3;
 
     return 0;
 }
