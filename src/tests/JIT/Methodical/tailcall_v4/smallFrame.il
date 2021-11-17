@@ -29,13 +29,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module retbuf_bug.exe
 // MVID: {FD923469-B98F-4B21-ABCA-4105B0A8ED94}
 .imagebase 0x00400000

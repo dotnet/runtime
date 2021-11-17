@@ -4717,6 +4717,45 @@ inline void LclVarDsc::setLvRefCntWtd(weight_t newValue, RefCountState state)
     m_lvRefCntWtd = newValue;
 }
 
+//------------------------------------------------------------------------------
+// compCanHavePatchpoints: return true if patchpoints are supported in this
+//   method.
+//
+// Arguments:
+//    reason - [out, optional] reason why patchpoints are not supported
+//
+// Returns:
+//    True if patchpoints are supported in this method.
+//
+inline bool Compiler::compCanHavePatchpoints(const char** reason)
+{
+    const char* whyNot = nullptr;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (compLocallocSeen)
+    {
+        whyNot = "localloc";
+    }
+    else if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    {
+        whyNot = "synchronized method";
+    }
+    else if (opts.IsReversePInvoke())
+    {
+        whyNot = "reverse pinvoke";
+    }
+#else
+    whyNot = "OSR feature not defined in build";
+#endif
+
+    if (reason != nullptr)
+    {
+        *reason = whyNot;
+    }
+
+    return whyNot == nullptr;
+}
+
 /*****************************************************************************/
 #endif //_COMPILER_HPP_
 /*****************************************************************************/

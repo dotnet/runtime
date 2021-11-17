@@ -16,13 +16,7 @@
 .assembly 'addsub'// as "addsub"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'addsub.exe'
 // MVID: {1BE54EA1-760A-4C23-A736-FE6F3A427E3E}
 .namespace JitTest

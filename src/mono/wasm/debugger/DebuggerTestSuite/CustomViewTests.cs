@@ -51,7 +51,7 @@ namespace DebuggerTests
             var props = await GetObjectOnFrame(frame, "myList");
             Assert.Equal(1, props.Count());
 
-            CheckArray(props, "Items", "int[]", 4);
+            CheckArray(props, "Items", "int[]", "int[4]");
 
             CheckObject(locals, "b", "DebuggerTests.WithProxy", description:"DebuggerTests.WithProxy");
             props = await GetObjectOnFrame(frame, "b");

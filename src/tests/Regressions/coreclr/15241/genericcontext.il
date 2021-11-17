@@ -1,4 +1,5 @@
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 
 .assembly extern System.Runtime {  }
 
@@ -58,6 +59,9 @@
 
 .method public hidebysig static int32 Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
 
   ldstr "DefaultImplementationsOfInterfaces"

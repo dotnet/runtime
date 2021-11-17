@@ -10939,7 +10939,8 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
         var_types toType     = op1->AsCast()->CastToType();
         bool      isUnsigned = op1->IsUnsigned();
 
-        if ((op2->CastFromType() != fromType) || (op2->CastToType() != toType) || (op2->IsUnsigned() != isUnsigned))
+        if (varTypeIsFloating(fromType) || (op2->CastFromType() != fromType) || (op2->CastToType() != toType) ||
+            (op2->IsUnsigned() != isUnsigned))
         {
             return nullptr;
         }

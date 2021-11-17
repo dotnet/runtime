@@ -419,6 +419,13 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
     """ Check for and import the Azure libraries.
         We do this lazily, only when we decide we're actually going to need them.
         Once we've done it once, we don't do it again.
+
+        For this to work for cross-module usage, after you call this function, you need to add a line like:
+            from jitutil import BlobClient, AzureCliCredential
+        naming all the types you want to use.
+
+        The full set of types this function loads:
+            BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
     """
     global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
 

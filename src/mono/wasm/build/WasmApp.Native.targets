@@ -223,7 +223,7 @@
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
       <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" Exclude="$(_WasmRuntimePackSrcDir)\*.iffe.js"/>
-      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js" Kind="pre-js" />
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js" Kind="extern-pre-js" />
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 
@@ -353,8 +353,9 @@
 
       <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
       <_EmccLinkStepArgs Include="--pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
+      <_EmccLinkStepArgs Include="--extern-pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'extern-pre-js'" />
       <_EmccLinkStepArgs Include="--post-js &quot;%(_WasmExtraJSFile.Identity)&quot;"    Condition="'%(_WasmExtraJSFile.Kind)' == 'post-js'" />
-      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library' or '%(_WasmExtraJSFile.Kind)' == 'pre-js' or '%(_WasmExtraJSFile.Kind)' == 'post-js'" />
+      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library' or '%(_WasmExtraJSFile.Kind)' == 'pre-js' or '%(_WasmExtraJSFile.Kind)' == 'post-js' or '%(_WasmExtraJSFile.Kind)' == 'extern-post-js'" />
 
       <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />

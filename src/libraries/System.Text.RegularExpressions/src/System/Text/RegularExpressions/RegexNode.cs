@@ -41,6 +41,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Threading;
 
 namespace System.Text.RegularExpressions
@@ -151,11 +152,49 @@ namespace System.Text.RegularExpressions
             N = n;
         }
 
-        public bool UseOptionR() => (Options & RegexOptions.RightToLeft) != 0;
-
-        public RegexNode ReverseLeft()
+        /// <summary>Creates a RegexNode representing a single character.</summary>
+        /// <param name="ch">The character.</param>
+        /// <param name="options">The node's options.</param>
+        /// <param name="culture">The culture to use to perform any required transformations.</param>
+        /// <returns>The created RegexNode.  This might be a RegexNode.One or a RegexNode.Set.</returns>
+        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture)
         {
-            if (UseOptionR() && Type == Concatenate && ChildCount() > 1)
+            // If the options specify case-insensitivity, we try to create a node that fully encapsulates that.
+            if ((options & RegexOptions.IgnoreCase) != 0)
+            {
+                Debug.Assert(culture is not null);
+
+                // If the character is part of a Unicode category that doesn't participate in case conversion,
+                // we can simply strip out the IgnoreCase option and make the node case-sensitive.
+                if (!RegexCharClass.ParticipatesInCaseConversion(ch))
+                {
+                    return new RegexNode(One, options & ~RegexOptions.IgnoreCase, ch);
+                }
+
+                // Create a set for the character, trying to include all case-insensitive equivalent characters.
+                // If it's successful in doing so, resultIsCaseInsensitive will be false and we can strip
+                // out RegexOptions.IgnoreCase as part of creating the set.
+                string stringSet = RegexCharClass.OneToStringClass(ch, culture, out bool resultIsCaseInsensitive);
+                if (!resultIsCaseInsensitive)
+                {
+                    return new RegexNode(Set, options & ~RegexOptions.IgnoreCase, stringSet);
+                }
+
+                // Otherwise, until we can get rid of ToLower usage at match time entirely (https://github.com/dotnet/runtime/issues/61048),
+                // lowercase the character and proceed to create an IgnoreCase One node.
+                ch = culture.TextInfo.ToLower(ch);
+            }
+
+            // Create a One node for the character.
+            return new RegexNode(One, options, ch);
+        }
+
+        /// <summary>Reverses all children of a concatenation when in RightToLeft mode.</summary>
+        public RegexNode ReverseConcatenationIfRightToLeft()
+        {
+            if ((Options & RegexOptions.RightToLeft) != 0 &&
+                Type == Concatenate &&
+                ChildCount() > 1)
             {
                 ((List<RegexNode>)Children!).Reverse();
             }
@@ -203,13 +242,26 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode node = toExamine.Pop();
 
+                // Add all children to be examined
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    RegexNode child = node.Child(i);
+                    Debug.Assert(child.Next == node, $"{child.Description()} missing reference to parent {node.Description()}");
+
+                    toExamine.Push(child);
+                }
+
                 // Validate that we never see certain node types.
                 Debug.Assert(Type != Group, "All Group nodes should have been removed.");
 
-                // Validate expected child counts.
-                int childCount = node.ChildCount();
+                // Validate node types and expected child counts.
                 switch (node.Type)
                 {
+                    case Group:
+                        Debug.Fail("All Group nodes should have been removed.");
+                        break;
+
                     case Beginning:
                     case Bol:
                     case Boundary:
@@ -247,25 +299,20 @@ namespace System.Text.RegularExpressions
                     case Prevent:
                     case Require:
                         Debug.Assert(childCount == 1, $"Expected one and only one child for {node.TypeName}, got {childCount}.");
-                        toExamine.Push(node.Child(0));
                         break;
 
                     case Testref:
                     case Testgroup:
                         Debug.Assert(childCount >= 1, $"Expected at least one child for {node.TypeName}, got {childCount}.");
-                        for (int i = 0; i < childCount; i++)
-                        {
-                            toExamine.Push(node.Child(i));
-                        }
                         break;
 
                     case Concatenate:
                     case Alternate:
                         Debug.Assert(childCount >= 2, $"Expected at least two children for {node.TypeName}, got {childCount}.");
-                        for (int i = 0; i < childCount; i++)
-                        {
-                            toExamine.Push(node.Child(i));
-                        }
+                        break;
+
+                    default:
+                        Debug.Fail($"Unexpected node type: {node.Type}");
                         break;
                 }
 
@@ -273,6 +320,10 @@ namespace System.Text.RegularExpressions
                 switch (node.Type)
                 {
                     case Multi:
+                        Debug.Assert(node.Str is not null, "Expect non-null multi string");
+                        Debug.Assert(node.Str.Length >= 2, $"Expected {node.Str} to be at least two characters");
+                        break;
+
                     case Set:
                     case Setloop:
                     case Setloopatomic:
@@ -881,8 +932,10 @@ namespace System.Text.RegularExpressions
 
                 default:
                     ReduceSingleLetterAndNestedAlternations();
-                    RegexNode newThis = ReplaceNodeIfUnnecessary(Nothing);
-                    return newThis != this ? newThis : ExtractCommonPrefixes();
+                    RegexNode node = ReplaceNodeIfUnnecessary(Nothing);
+                    node = ExtractCommonPrefixText(node);
+                    node = ExtractCommonPrefixOneNotoneSet(node);
+                    return node;
             }
 
             // This function performs two optimizations:
@@ -952,7 +1005,6 @@ namespace System.Text.RegularExpressions
                                 break;
                             }
 
-
                             // The last node was a Set or a One, we're a Set or One and our options are the same.
                             // Merge the two nodes.
                             j--;
@@ -981,6 +1033,12 @@ namespace System.Text.RegularExpressions
 
                             prev.Type = Set;
                             prev.Str = prevCharClass.ToStringClass(Options);
+                            if ((prev.Options & RegexOptions.IgnoreCase) != 0 &&
+                                RegexCharClass.MakeCaseSensitiveIfPossible(prev.Str, RegexParser.GetTargetCulture(prev.Options)) is string newSetString)
+                            {
+                                prev.Str = newSetString;
+                                prev.Options &= ~RegexOptions.IgnoreCase;
+                            }
                         }
                         else if (at.Type == Nothing)
                         {
@@ -1001,6 +1059,106 @@ namespace System.Text.RegularExpressions
                 }
             }
 
+            // This function optimizes out prefix nodes from alternation branches that are
+            // the same across multiple contiguous branches.
+            // e.g. \w12|\d34|\d56|\w78|\w90 => \w12|\d(?:34|56)|\w(?:78|90)
+            static RegexNode ExtractCommonPrefixOneNotoneSet(RegexNode alternation)
+            {
+                if (alternation.Type != Alternate)
+                {
+                    return alternation;
+                }
+
+                Debug.Assert(alternation.Children is List<RegexNode> { Count: >= 2 });
+                var children = (List<RegexNode>)alternation.Children;
+
+                // Only process left-to-right prefixes.
+                if ((alternation.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    return alternation;
+                }
+
+                // Only handle the case where each branch is a concatenation
+                foreach (RegexNode child in children)
+                {
+                    if (child.Type != Concatenate || child.ChildCount() < 2)
+                    {
+                        return alternation;
+                    }
+                }
+
+                for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
+                {
+                    Debug.Assert(children[startingIndex].Children is List<RegexNode> { Count: >= 2 });
+
+                    // Only handle the case where each branch begins with the same One, Notone, or Set (individual or loop).
+                    // Note that while we can do this for individual characters, fixed length loops, and atomic loops, doing
+                    // it for non-atomic variable length loops could change behavior as each branch could otherwise have a
+                    // different number of characters consumed by the loop based on what's after it.
+                    RegexNode required = children[startingIndex].Child(0);
+                    switch (required.Type)
+                    {
+                        case One or Notone or Set:
+                        case Oneloopatomic or Notoneloopatomic or Setloopatomic:
+                        case Oneloop or Notoneloop or Setloop or Onelazy or Notonelazy or Setlazy when required.M == required.N:
+                            break;
+
+                        default:
+                            continue;
+                    }
+
+                    // Only handle the case where each branch begins with the exact same node value
+                    int endingIndex = startingIndex + 1;
+                    for (; endingIndex < children.Count; endingIndex++)
+                    {
+                        RegexNode other = children[endingIndex].Child(0);
+                        if (required.Type != other.Type ||
+                            required.Options != other.Options ||
+                            required.M != other.M ||
+                            required.N != other.N ||
+                            required.Ch != other.Ch ||
+                            required.Str != other.Str)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (endingIndex - startingIndex <= 1)
+                    {
+                        // Nothing to extract from this starting index.
+                        continue;
+                    }
+
+                    // Remove the prefix node from every branch, adding it to a new alternation
+                    var newAlternate = new RegexNode(Alternate, alternation.Options);
+                    for (int i = startingIndex; i < endingIndex; i++)
+                    {
+                        ((List<RegexNode>)children[i].Children!).RemoveAt(0);
+                        newAlternate.AddChild(children[i]);
+                    }
+
+                    // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
+                    if (alternation.Next is RegexNode parent && parent.Type == Atomic)
+                    {
+                        var atomic = new RegexNode(Atomic, alternation.Options);
+                        atomic.AddChild(newAlternate);
+                        newAlternate = atomic;
+                    }
+
+                    // Now create a concatenation of the prefix node with the new alternation for the combined
+                    // branches, and replace all of the branches in this alternation with that new concatenation.
+                    var newConcat = new RegexNode(Concatenate, alternation.Options);
+                    newConcat.AddChild(required);
+                    newConcat.AddChild(newAlternate);
+                    alternation.ReplaceChild(startingIndex, newConcat);
+                    children.RemoveRange(startingIndex + 1, endingIndex - startingIndex - 1);
+                }
+
+                // If we've reduced this alternation to just a single branch, return it.
+                // Otherwise, return the alternation.
+                return alternation.ChildCount() == 1 ? alternation.Child(0) : alternation;
+            }
+
             // Analyzes all the branches of the alternation for text that's identical at the beginning
             // of every branch.  That text is then pulled out into its own one or multi node in a
             // concatenation with the alternation (whose branches are updated to remove that prefix).
@@ -1010,22 +1168,25 @@ namespace System.Text.RegularExpressions
             // by sets that can be merged.  Third, it reduces the amount of duplicated comparisons required
             // if we end up backtracking into subsequent branches.
             // e.g. abc|ade => a(?bc|de)
-            RegexNode ExtractCommonPrefixes()
+            static RegexNode ExtractCommonPrefixText(RegexNode alternation)
             {
+                if (alternation.Type != Alternate)
+                {
+                    return alternation;
+                }
+
+                Debug.Assert(alternation.Children is List<RegexNode> { Count: >= 2 });
+                var children = (List<RegexNode>)alternation.Children;
+
                 // To keep things relatively simple, we currently only handle:
                 // - Left to right (e.g. we don't process alternations in lookbehinds)
                 // - Branches that are one or multi nodes, or that are concatenations beginning with one or multi nodes.
                 // - All branches having the same options.
-                // - Text, rather than also trying to combine identical sets that start each branch.
-
-                Debug.Assert(Children is List<RegexNode>);
-                var children = (List<RegexNode>)Children;
-                Debug.Assert(children.Count >= 2);
 
                 // Only extract left-to-right prefixes.
-                if ((Options & RegexOptions.RightToLeft) != 0)
+                if ((alternation.Options & RegexOptions.RightToLeft) != 0)
                 {
-                    return this;
+                    return alternation;
                 }
 
                 Span<char> scratchChar = stackalloc char[1];
@@ -1036,7 +1197,7 @@ namespace System.Text.RegularExpressions
                     RegexNode? startingNode = children[startingIndex].FindBranchOneOrMultiStart();
                     if (startingNode is null)
                     {
-                        return this;
+                        return alternation;
                     }
 
                     RegexOptions startingNodeOptions = startingNode.Options;
@@ -1159,7 +1320,7 @@ namespace System.Text.RegularExpressions
                         }
                     }
 
-                    if (Next is RegexNode parent && parent.Type == Atomic)
+                    if (alternation.Next is RegexNode parent && parent.Type == Atomic)
                     {
                         var atomic = new RegexNode(Atomic, startingNodeOptions);
                         atomic.AddChild(newAlternate);
@@ -1169,11 +1330,11 @@ namespace System.Text.RegularExpressions
                     var newConcat = new RegexNode(Concatenate, startingNodeOptions);
                     newConcat.AddChild(prefix);
                     newConcat.AddChild(newAlternate);
-                    ReplaceChild(startingIndex, newConcat);
+                    alternation.ReplaceChild(startingIndex, newConcat);
                     children.RemoveRange(startingIndex + 1, endingIndex - startingIndex - 1);
                 }
 
-                return ChildCount() == 1 ? Child(0) : this;
+                return alternation.ChildCount() == 1 ? alternation.Child(0) : alternation;
             }
         }
 
