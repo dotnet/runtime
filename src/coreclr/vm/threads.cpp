@@ -6431,18 +6431,21 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
             return FALSE;
         }
 
+        _ASSERTE(m_CacheStackBase >= m_CacheStackLimit);
+        const UINT_PTR MaxStackSize =
+            reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit);
+
         // Compute the limit used by EnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
         // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and
         // garbage collection. Used for probing for available stack space through RuntimeImports.EnsureSufficientExecutionStack,
         // among other things.
 #ifdef HOST_64BIT
-        const UINT_PTR MinExecutionStackSize = 128 * 1024;
+        const UINT_PTR DefaultMinExecutionStackSize = 128 * 1024;
 #else // !HOST_64BIT
-        const UINT_PTR MinExecutionStackSize = 64 * 1024;
+        const UINT_PTR DefaultMinExecutionStackSize = 64 * 1024;
 #endif // HOST_64BIT
-        _ASSERTE(m_CacheStackBase >= m_CacheStackLimit);
-        if ((reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit)) >
-            MinExecutionStackSize)
+        const UINT_PTR MinExecutionStackSize = Min(DefaultMinExecutionStackSize, Max<UINT_PTR>(MaxStackSize / 4, 1 * 1024));
+        if (MaxStackSize > MinExecutionStackSize)
         {
             m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackLimit) + MinExecutionStackSize;
         }
@@ -6451,14 +6454,15 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
             m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackBase);
         }
 
-        // Compute the limit used by CheckCanUseStackAllocand cache it on the thread. This minimum stack size should
+        // Compute the limit used by CheckCanUseStackAlloc and cache it on the thread. This minimum stack size should
         // be sufficient to avoid all significant risk of a moderate size stack alloc interfering with application behavior
-        const UINT_PTR StackAllocNonRiskyExecutionStackSize = 512 * 1024;
-        _ASSERTE(m_CacheStackBase >= m_CacheStackLimit);
-        if ((reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit)) >
-            StackAllocNonRiskyExecutionStackSize)
+        const UINT_PTR DefaultStackAllocNonRiskyExecutionStackSize = 512 * 1024;
+        const UINT_PTR StackAllocNonRiskyExecutionStackSize =
+            Min(DefaultStackAllocNonRiskyExecutionStackSize, Max<UINT_PTR>(MaxStackSize / 2, 1 * 1024));
+        if (MaxStackSize > StackAllocNonRiskyExecutionStackSize)
         {
-            m_CacheStackStackAllocNonRiskyExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackLimit) + StackAllocNonRiskyExecutionStackSize;
+            m_CacheStackStackAllocNonRiskyExecutionLimit =
+                reinterpret_cast<UINT_PTR>(m_CacheStackLimit) + StackAllocNonRiskyExecutionStackSize;
         }
         else
         {
