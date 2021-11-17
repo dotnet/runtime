@@ -21,13 +21,8 @@ internal static partial class Interop
             HEAP_GENERATE_EXCEPTIONS = 0x00000004,
         }
 
-        internal static SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, int dwBytes)
-        {
-            return HeapAlloc(hHeap, dwFlags, dwBytes);
-        }
-
         [GeneratedDllImport(Libraries.Kernel32)]
-        private static partial SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, nint dwBytes);
+        internal static partial SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, nint dwBytes);
 
         [GeneratedDllImport(Libraries.Kernel32)]
         internal static partial bool HeapFree(IntPtr hHeap, HeapAllocFlags dwFlags, IntPtr lpMem);
