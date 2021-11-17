@@ -627,7 +627,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
     CONTRACTL_END
 
 
-    mdToken             mdEncloser;
     EEClassHashEntry_t  *pBucket = NULL;
 
     needsToBuildHashtable = FALSE;
@@ -642,8 +641,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                  pName->GetNameSpace(), pName->GetName()));
     }
 #endif
-
-    BOOL isNested = IsNested(pName, &mdEncloser);
 
     PTR_Assembly assembly = GetAssembly();
     PREFIX_ASSUME(assembly != NULL);
@@ -718,6 +715,9 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                 }
             }
             _ASSERTE(pTable);
+
+            mdToken             mdEncloser;
+            BOOL isNested = IsNested(pName, &mdEncloser);
 
             if (isNested)
             {
