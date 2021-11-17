@@ -667,6 +667,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         string dot = fg.Dump(title);
 
                         string fileName = DebugNameFormatter.Instance.FormatName(method.OwningType, DebugNameFormatter.FormatOptions.NamespaceQualify) + "." + method.DiagnosticName;
+                        foreach (char c in Path.GetInvalidFileNameChars())
+                            fileName = fileName.Replace(c, '_');
+
                         File.WriteAllText(Path.Combine(options.DumpWorstOverlapGraphsTo.FullName, fileName + ".dot"), dot);
                     }
                 }
