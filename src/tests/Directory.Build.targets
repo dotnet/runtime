@@ -423,41 +423,22 @@
 
   </Target>
 
-
-  <Target Name="PrepublishTrimmerRoots" BeforeTargets="Publish" Condition=" '$(EnablePrePublishProperties)' != '' " >
-        <ItemGroup>
-          <TrimmerRootAssembly Include="$(MSBuildProjectName)" />
-          <TrimmerRootAssembly Include="System.Private.Corelib" />
-          <TrimmerRootAssembly Include="mscorlib" />
-        </ItemGroup>
-
-        <PropertyGroup>
-          <TrimmerSingleWarn>false</TrimmerSingleWarn>
-          <PublishTrimmed>true</PublishTrimmed>
-      </PropertyGroup>
-  </Target>
-
   <!-- TODO: I don't know why some of these conditions are required/a more principled way-->
-  <Target Name="PublishAfterBuild" AfterTargets="Build"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
+  <Target Name="WasmSetPublishProperties" AfterTargets="Build"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
 
       <ItemGroup>
         <TrimmerRootAssembly Include="$(MSBuildProjectName)" />
-        <TrimmerRootAssembly Include="System.Private.Corelib" />
-        <TrimmerRootAssembly Include="mscorlib" />
+        <TrimmerRootAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidDir)/native/System.Private.CoreLib.dll" />
+        <TrimmerRootAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidDir)/lib/net7.0/System.Private.Runtime.InteropServices.JavaScript.dll" />
       </ItemGroup>
 
       <PropertyGroup>
         <TrimmerSingleWarn>false</TrimmerSingleWarn>
         <PublishTrimmed>true</PublishTrimmed>
+        <SelfContained>true</SelfContained>
       </PropertyGroup>
 
       <Message Text="!!!naricc_debug!!! PublishAfterBuild: $(MSBuildProjectFullPath) priority: $(CLRTestPriority) TrimmerRootAssembly: @(TrimmerRootAssembly)" Importance="High" />
-      <MSBuild Targets="Restore;Publish"
-              Projects="$(RepoRoot)/src/tests/Common/wasm-test-runner/WasmTestBuilder.proj"
-              BuildInParallel="true"
-              ContinueOnError="ErrorAndContinue"
-              Properties="TestTarget=$(MSBuildProjectFullPath)"
-              />
   </Target>
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />

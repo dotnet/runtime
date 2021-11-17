@@ -446,7 +446,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) "/binlog:$(__TestGroupToBuild)_build.binlog"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/bl:$(__TestGroupToBuild)_build.binlog"</GroupBuildCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />

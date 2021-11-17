@@ -3,7 +3,8 @@
 
   <Target Name="BuildAllProjects">
     <PropertyGroup>
-      <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'==''">$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
+      <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'=='' and '$(TargetArchitecture)' != 'wasm'" >$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
+      <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'=='' and '$(TargetArchitecture)' == 'wasm'" >Publish</DefaultBuildAllTarget>
     </PropertyGroup>
 
     <Message Text="!!!naricc_debug!!!: BuildAllProjects: Project: @(Project)"  Importance="High"/>
