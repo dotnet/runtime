@@ -563,7 +563,7 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 1) // Allow to enregister locals with struct type.
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0) // Allow to enregister locals with struct type.
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING
