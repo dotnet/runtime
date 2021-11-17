@@ -369,7 +369,7 @@ namespace System.Xml.Serialization
 
                     writer.Write("[assembly:");
                     writer.Write(typeof(XmlSerializerVersionAttribute).FullName);
-                    writer.Write("(");
+                    writer.Write('(');
                     writer.Write("ParentAssemblyId=");
                     ReflectionAwareCodeGen.WriteQuotedCSharpString(writer, GenerateAssemblyId(types[0]!));
                     writer.Write(", Version=");
