@@ -69,6 +69,10 @@ import {
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
+import {
+    _JSObject_Invoke, _JSObject_GetProperty, _JSObject_SetProperty,
+    _invoke_js_function_by_qualified_name_impl
+} from "./invoke-api";
 
 const MONO = {
     // current "public" MONO API
@@ -309,6 +313,7 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
+    _invoke_js_function_by_qualified_name_impl,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args,
@@ -369,6 +374,32 @@ const INTERNAL: any = {
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
+
+    // memory accessors
+    setI8,
+    setI16,
+    setI32,
+    setI64,
+    setU8,
+    setU16,
+    setU32,
+    setF32,
+    setF64,
+    getI8,
+    getI16,
+    getI32,
+    getI64,
+    getU8,
+    getU16,
+    getU32,
+    getF32,
+    getF64,
+
+    // new invoke API
+    _JSObject_Invoke,
+    _JSObject_GetProperty,
+    _JSObject_SetProperty,
+    _invoke_js_function_by_qualified_name_impl,
 };
 
 

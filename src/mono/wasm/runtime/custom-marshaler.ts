@@ -33,9 +33,22 @@ export const _custom_marshaler_name_table : { [key: string] : string } = {};
 const _temp_unbox_buffer_cache = new Map<MonoType, VoidPtr>();
 let _has_logged_custom_marshaler_table = false;
 
+export function unbox_struct_at_address (address : VoidPtr, typePtr : MonoType) : any {
+    if (!typePtr)
+        throw new Error(`Got no typePtr for struct at address ${address}`);
+
+    const converter = _get_struct_unboxer_for_type (typePtr);
+    if (converter)
+        return converter(address);
+    else
+        throw new Error (`No CustomJavaScriptMarshaler found for type ${_get_type_name(typePtr)}`);
+}
+
 function extract_js_obj_root_with_converter_impl (root : WasmRoot<MonoObject>, typePtr : MonoType, unbox_buffer : VoidPtr, optional: boolean) : any {
     if (root.value === MonoObjectNull)
         return null;
+    if (!typePtr)
+        throw new Error(`Got no typePtr for object at address ${root.value}`);
 
     const converter = _get_struct_unboxer_for_type (typePtr);
 

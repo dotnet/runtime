@@ -37,8 +37,8 @@ export function _release_temp_frame(): void {
     alloca_offset = <VoidPtr>alloca_stack.pop();
 }
 
-type _MemOffset = number | NativePointer;
-type _MemValue = number | NativePointer | ManagedPointer;
+type _MemOffset = number | VoidPtr | NativePointer;
+type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 
 export function setU8(offset: _MemOffset, value: number): void {
     Module.HEAPU8[<any>offset] = value;
@@ -48,7 +48,7 @@ export function setU16(offset: _MemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
-export function setU32 (offset: _MemOffset, value: _MemValue) : void {
+export function setU32 (offset: _MemOffset, value: _NumberOrPointer) : void {
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
@@ -60,8 +60,8 @@ export function setI16(offset: _MemOffset, value: number): void {
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
-export function setI32(offset: _MemOffset, value: number): void {
-    Module.HEAP32[<any>offset >>> 2] = value;
+export function setI32 (offset: _MemOffset, value: _NumberOrPointer) : void {
+    Module.HEAP32[<any>offset >>> 2] = <number><any>value;
 }
 
 // NOTE: Accepts a number, not a BigInt, so values over Number.MAX_SAFE_INTEGER will be corrupted

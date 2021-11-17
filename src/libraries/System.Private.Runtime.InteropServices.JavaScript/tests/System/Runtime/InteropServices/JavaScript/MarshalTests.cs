@@ -1197,5 +1197,188 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(5.5, HelperMarshal._vec3Value.Y);
             Assert.Equal(6, HelperMarshal._vec3Value.Z);
         }
+
+        [Fact]
+        public static void InvokeByNameBasic()
+        {
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("globalThis._test_function = function () { App.call_test_method ('InvokeString', [ 'test' ], 's') }");
+            var result = Runtime.InvokeJSFunctionByName("_test_function");
+            Assert.Equal(InvokeJSResult.Success, result);
+            Assert.Equal("test", HelperMarshal._stringResource);
+        }
+
+        [Fact]
+        public static void InvokeByNameIntArgument()
+        {
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS("globalThis._test_function_int = function (i) { App.call_test_method ('InvokeInt', [ i ], 'i') }");
+            var result = Runtime.InvokeJSFunctionByName("_test_function_int", 7);
+            Assert.Equal(InvokeJSResult.Success, result);
+            Assert.Equal(7, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static void InvokeByNameIntPtrArgument()
+        {
+            var expected = new IntPtr(42);
+            HelperMarshal._intPtrValue = IntPtr.Zero;
+            Runtime.InvokeJS("globalThis._test_function_intptr = function (i) { App.call_test_method ('InvokeIntPtr', [ i ], 'i') }");
+            var result = Runtime.InvokeJSFunctionByName("_test_function_intptr", expected);
+            Assert.Equal(InvokeJSResult.Success, result);
+            Assert.Equal(expected, HelperMarshal._intPtrValue);
+        }
+
+        [Fact]
+        public static void InvokeByNameStringArgument()
+        {
+            var expected = "hello world";
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("globalThis._test_function_string = function (s) { App.call_test_method ('InvokeString', [ s ], 's') }");
+            var result = Runtime.InvokeJSFunctionByName("_test_function_string", expected);
+            Assert.Equal(InvokeJSResult.Success, result);
+            Assert.Equal(expected, HelperMarshal._stringResource);
+        }
+
+        [Fact]
+        public static void InvokeByNameUriArgument()
+        {
+            var expected = new System.Uri("https://www.example.com/");
+            HelperMarshal._uriValue = default(System.Uri);
+            Runtime.InvokeJS("globalThis._test_function_uri = function (uri) { App.call_test_method ('InvokeUri', [ uri ], 'u') }");
+            var result = Runtime.InvokeJSFunctionByName("_test_function_uri", expected);
+            Assert.Equal(InvokeJSResult.Success, result);
+            Assert.Equal(expected, HelperMarshal._uriValue);
+        }
+
+        [Fact]
+        public static void InvokeByName3Arguments()
+        {
+            int a = 3;
+            DateTime b = ExpectedDateTime;
+            string c = "hello\0world";
+            HelperMarshal._intValue = 0;
+            HelperMarshal._dateTimeValue = default(DateTime);
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("globalThis._test_function_3arg = function (a, b, c) { " +
+                "App.call_test_method ('InvokeInt', [ a ], 'i'); " +
+                "App.call_test_method ('InvokeDateTime', [ b ], 'a'); " +
+                "App.call_test_method ('InvokeString', [ c ], 's'); " +
+            "}");
+            var result = Runtime.InvokeJSFunctionByName("_test_function_3arg", a, b, c);
+            Assert.Equal(InvokeJSResult.Success, result);
+            Assert.Equal(a, HelperMarshal._intValue);
+            Assert.Equal(b, HelperMarshal._dateTimeValue);
+            Assert.Equal(c, HelperMarshal._stringResource);
+        }
+
+        [Fact]
+        public static void InvokeByNameTraversesObjects()
+        {
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS("globalThis._foo = { _bar: { _func: function (i) { App.call_test_method ('InvokeInt', [ i ], 'i') } } };");
+            var result = Runtime.InvokeJSFunctionByName("_foo._bar._func", 12);
+            Assert.Equal(InvokeJSResult.Success, result);
+            Assert.Equal(12, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static void InvokeByNameRejectsInvalidNames()
+        {
+            // Invalid function names
+            Assert.Equal(InvokeJSResult.InvalidFunctionName, Runtime.InvokeJSFunctionByName(null));
+            Assert.Equal(InvokeJSResult.InvalidFunctionName, Runtime.InvokeJSFunctionByName(""));
+
+            // Function name must be interned
+            var temp = new string('a', 3);
+            Assert.Equal(InvokeJSResult.InvalidFunctionName, Runtime.InvokeJSFunctionByName(temp));
+        }
+
+        [Fact]
+        public static void InvokeByNameCachesValueForName()
+        {
+            Runtime.InvokeJS("globalThis._bar = undefined;");
+            var result = Runtime.InvokeJSFunctionByName("_bar");
+            Assert.Equal(InvokeJSResult.FunctionNotFound, result);
+
+            // The initial value of _bar should be cached, preventing this new one from being found and called
+            Runtime.InvokeJS("globalThis._bar = function () { throw new Error('should not be called'); }");
+            result = Runtime.InvokeJSFunctionByName("_bar");
+            Assert.Equal(InvokeJSResult.FunctionNotFound, result);
+        }
+
+        [Fact]
+        public static void InvokeByNameRejectsMisuse()
+        {
+            Runtime.InvokeJS(
+                // Call target should never return a value (it will be dropped)
+                "globalThis._misbehavior_return_value = function () { return 7; }; " +
+                // Call target should not throw exceptions
+                "globalThis._misbehavior_throw = function () { throw new Error(); }; "
+            );
+
+            Assert.Equal(
+                InvokeJSResult.FunctionHadReturnValue,
+                Runtime.InvokeJSFunctionByName("_misbehavior_return_value")
+            );
+
+            // NOTE: This is not a behavior the consumer should rely on, it exists
+            //  to aid debugging and so that we can potentially remove the
+            //  exception handler entirely if it improves performance
+            Assert.Equal(
+                InvokeJSResult.FunctionThrewException,
+                Runtime.InvokeJSFunctionByName("_misbehavior_throw")
+            );
+        }
+
+        [Fact]
+        public static void InvokeByNameRejectsOutOfRangeArgumentCounts()
+        {
+            Assert.Equal(
+                InvokeJSResult.InvalidArgumentCount,
+                Runtime.InvokeJSFunctionByName(
+                    "nonexistent_function", 4,
+                    null, IntPtr.Zero,
+                    null, IntPtr.Zero,
+                    null, IntPtr.Zero
+                )
+            );
+
+            Assert.Equal(
+                InvokeJSResult.InvalidArgumentCount,
+                Runtime.InvokeJSFunctionByName(
+                    "nonexistent_function", -1,
+                    null, IntPtr.Zero,
+                    null, IntPtr.Zero,
+                    null, IntPtr.Zero
+                )
+            );
+        }
+
+        [Fact]
+        public static void InvokeByNameChecksWhetherArgumentsHaveTypeInfo()
+        {
+            Assert.Equal(
+                InvokeJSResult.MissingArgumentType,
+                Runtime.InvokeJSFunctionByName(
+                    "nonexistent_function", 2,
+                    typeof(string), IntPtr.Zero,
+                    null, IntPtr.Zero,
+                    null, IntPtr.Zero
+                )
+            );
+        }
+
+        [Fact]
+        public static void JSObjectInvokeProperlyRethrowsExceptions() {
+            Runtime.InvokeJS(
+                "globalThis.testObj1 = { throwingMethod: function () { throw new Error('test'); } }; "
+            );
+            var o = (JSObject)Runtime.GetGlobalObject("testObj1");
+            var exc = Assert.Throws<System.Runtime.InteropServices.JavaScript.JSException>(() => {
+                var res = o.Invoke("throwingMethod");
+            });
+            Assert.Equal("test", exc.Message);
+        }
     }
 }

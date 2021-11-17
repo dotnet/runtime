@@ -10,16 +10,16 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
     let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
     let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-        { isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
+        { isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile },
         { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
         __dotnet_replacements);
-    
+
     // here we replace things which are not exposed in another way
     scriptDirectory = __dotnet_replacements.scriptDirectory;
     readAsync = __dotnet_replacements.readAsync;
     var fetch = __dotnet_replacements.fetch;
-    if (ENVIRONMENT_IS_NODE) { 
-        __dirname = __dotnet_replacements.scriptDirectory; 
+    if (ENVIRONMENT_IS_NODE) {
+        __dirname = __dotnet_replacements.scriptDirectory;
     }
     `,
 };
@@ -43,6 +43,9 @@ const linked_functions = [
     "mono_wasm_invoke_js",
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
+    "mono_wasm_invoke_js_marshalled",
+    "mono_wasm_invoke_js_unmarshalled",
+    "_invoke_js_function_by_qualified_name_impl",
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args",

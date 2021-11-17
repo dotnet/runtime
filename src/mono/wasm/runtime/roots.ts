@@ -10,6 +10,7 @@ let _scratch_root_buffer: WasmRootBuffer | null = null;
 let _scratch_root_free_indices: Int32Array | null = null;
 let _scratch_root_free_indices_count = 0;
 const _scratch_root_free_instances: WasmRoot<any>[] = [];
+const _external_root_free_instances: WasmExternalRoot<any>[] = [];
 
 /**
  * Allocates a block of memory that can safely contain pointers into the managed heap.
@@ -50,6 +51,26 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
     _zero_region(offset, capacityBytes);
 
     return new WasmRootBuffer(offset, capacity, false, name);
+}
+
+/**
+ * Allocates a WasmRoot pointing to a root provided and controlled by external code.
+ * Releasing this root will not do anything, but you still need to call .release().
+ */
+export function mono_wasm_new_external_root<T extends ManagedPointer | NativePointer>(address: VoidPtr): WasmExternalRoot<T> {
+    let result: WasmExternalRoot<T>;
+
+    if (!address)
+        throw new Error("address must be a location in the native heap");
+
+    if (_external_root_free_instances.length > 0) {
+        result = _external_root_free_instances.pop()!;
+        result._set_address(address);
+    } else {
+        result = new WasmExternalRoot<T>(address);
+    }
+
+    return result;
 }
 
 /**
@@ -299,5 +320,58 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
 
     toString(): string {
         return `[root @${this.get_address()}]`;
+    }
+}
+
+export class WasmExternalRoot<T extends ManagedPointer | NativePointer> extends WasmRoot<T> {
+    // @ts-ignore
+    private __external_address: NativePointer;
+    // @ts-ignore
+    private __external_address_32: number;
+
+    constructor (address : NativePointer) {
+        super(<WasmRootBuffer><any>null, 0);
+        this._set_address(address);
+    }
+
+    _set_address(address : NativePointer) {
+        this.__external_address = address;
+        this.__external_address_32 = <number><any>address >>> 2;
+    }
+
+    get_address(): NativePointer {
+        return this.__external_address;
+    }
+
+    get_address_32(): number {
+        return this.__external_address_32;
+    }
+
+    get(): T {
+        const result = Module.HEAPU32[this.__external_address_32];
+        return <any>result;
+    }
+
+    set(value: T): T {
+        Module.HEAPU32[this.__external_address_32] = <number><any>value;
+        return value;
+    }
+
+    get value(): T {
+        return this.get();
+    }
+
+    set value(value: T) {
+        this.set(value);
+    }
+
+    release(): void {
+        const maxPooledInstances = 128;
+        if (_external_root_free_instances.length < maxPooledInstances)
+            _external_root_free_instances.push(this);
+    }
+
+    toString(): string {
+        return `[external root @${this.get_address()}]`;
     }
 }

@@ -319,6 +319,8 @@ sgen_memgov_collection_start (int generation)
 static void
 sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 {
+	return;
+
 	char full_timing_buff [1024];
 	full_timing_buff [0] = '\0';
 

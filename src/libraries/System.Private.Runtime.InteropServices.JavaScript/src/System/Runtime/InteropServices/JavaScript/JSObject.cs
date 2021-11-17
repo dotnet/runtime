@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+using Console = System.Diagnostics.Debug;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace System.Runtime.InteropServices.JavaScript
 {
     public interface IJSObject
@@ -15,6 +20,30 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </summary>
     public partial class JSObject : IJSObject, IDisposable
     {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct InvokeRecord {
+            public object?[] Arguments;
+            // FIXME: Make this object? and update Invoke
+            public object Result;
+            public string? ErrorMessage;
+            public string? ErrorStack;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct GetPropertyRecord {
+            public object Value;
+            public string? ErrorMessage;
+            public string? ErrorStack;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SetPropertyRecord {
+            public object? Value;
+            public string? ErrorMessage;
+            public string? ErrorStack;
+            public int CreateIfNotExists;
+        }
+
         /// <summary>
         ///   Invoke a named method of the object, or throws a JSException on error.
         /// </summary>
@@ -34,15 +63,23 @@ namespace System.Runtime.InteropServices.JavaScript
         ///     valuews.
         ///   </para>
         /// </returns>
-        public object Invoke(string method, params object?[] args)
+        // FIXME: This should be object?, but if we correct it lots of stuff breaks
+        public unsafe object Invoke(string method, params object?[] args)
         {
-            AssertNotDisposed();
-
-            object res = Interop.Runtime.InvokeJSWithArgs(JSHandle, method, args, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-            Interop.Runtime.ReleaseInFlight(res);
-            return res;
+            var record = new InvokeRecord {
+                Arguments = args
+            };
+            var pRecord = (IntPtr)Unsafe.AsPointer(ref record);
+            var invokeResult = Runtime.InvokeJSFunctionByName("INTERNAL._JSObject_Invoke", (IntPtr)JSHandle, method, pRecord);
+            if (invokeResult != InvokeJSResult.Success)
+                throw new JSException($"Invoke result was {invokeResult}");
+            else if (record.ErrorMessage != null)
+                throw new JSException(record.ErrorMessage, record.ErrorStack);
+            else {
+                var result = record.Result;
+                Interop.Runtime.ReleaseInFlight(result);
+                return result;
+            }
         }
 
         public struct EventListenerOptions {
@@ -128,15 +165,21 @@ namespace System.Runtime.InteropServices.JavaScript
         ///     valuews.
         ///   </para>
         /// </returns>
-        public object GetObjectProperty(string name)
+        public unsafe object GetObjectProperty(string name)
         {
-            AssertNotDisposed();
-
-            object propertyValue = Interop.Runtime.GetObjectProperty(JSHandle, name, out int exception);
-            if (exception != 0)
-                throw new JSException((string)propertyValue);
-            Interop.Runtime.ReleaseInFlight(propertyValue);
-            return propertyValue;
+            var record = new GetPropertyRecord {
+            };
+            var pRecord = (IntPtr)Unsafe.AsPointer(ref record);
+            var invokeResult = Runtime.InvokeJSFunctionByName("INTERNAL._JSObject_GetProperty", (IntPtr)JSHandle, name, pRecord);
+            if (invokeResult != InvokeJSResult.Success)
+                throw new JSException($"Invoke result was {invokeResult}");
+            else if (record.ErrorMessage != null)
+                throw new JSException(record.ErrorMessage, record.ErrorStack);
+            else {
+                var result = record.Value;
+                Interop.Runtime.ReleaseInFlight(result);
+                return result;
+            }
         }
 
         /// <summary>
@@ -149,14 +192,20 @@ namespace System.Runtime.InteropServices.JavaScript
         /// array that will be surfaced as a typed ArrayBuffer (byte[], sbyte[], short[], ushort[],
         /// float[], double[]) </param>
         /// <param name="createIfNotExists">Defaults to <see langword="true"/> and creates the property on the javascript object if not found, if set to <see langword="false"/> it will not create the property if it does not exist.  If the property exists, the value is updated with the provided value.</param>
-        /// <param name="hasOwnProperty"></param>
-        public void SetObjectProperty(string name, object value, bool createIfNotExists = true, bool hasOwnProperty = false)
+        /// <param name="hasOwnProperty">does nothing</param>
+        // FIXME: hasOwnProperty is unused.
+        public unsafe void SetObjectProperty(string name, object value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
-            AssertNotDisposed();
-
-            object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
-            if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}')");
+            var record = new SetPropertyRecord {
+                Value = value,
+                CreateIfNotExists = createIfNotExists ? 1 : 0
+            };
+            var pRecord = (IntPtr)Unsafe.AsPointer(ref record);
+            var invokeResult = Runtime.InvokeJSFunctionByName("INTERNAL._JSObject_SetProperty", (IntPtr)JSHandle, name, pRecord);
+            if (invokeResult != InvokeJSResult.Success)
+                throw new JSException($"Invoke result was {invokeResult}");
+            else if (record.ErrorMessage != null)
+                throw new JSException(record.ErrorMessage, record.ErrorStack);
         }
 
         /// <summary>
