@@ -428,7 +428,6 @@ namespace System.Text.Json
                   && JsonHelpers.IsFinite(value)))
             {
                 ThrowHelper.ThrowFormatException(NumericType.Single);
-                Debug.Assert(false);
             }
 
             return value;
@@ -486,7 +485,6 @@ namespace System.Text.Json
                   && JsonHelpers.IsFinite(value)))
             {
                 ThrowHelper.ThrowFormatException(NumericType.Double);
-                Debug.Assert(false);
             }
 
             return value;
