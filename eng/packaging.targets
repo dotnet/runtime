@@ -29,10 +29,12 @@
     <GeneratePackageOnBuild Condition="('$(BuildAllConfigurations)' == 'true' or
                                        '$(IsRIDSpecificProject)' == 'true') and
                                        '$(PreReleaseVersionLabel)' != 'servicing' and
+                                       '$(PreReleaseVersionLabel)' != 'mauipreview' and
                                        '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
     <GeneratePackageOnBuild Condition="'$(BuildAllConfigurations)' != 'true' and
                                        '$(IsRIDSpecificProject)' != 'true' and
-                                       '$(PreReleaseVersionLabel)' == 'servicing' and
+                                       ('$(PreReleaseVersionLabel)' == 'servicing' or
+                                       '$(PreReleaseVersionLabel)' == 'mauipreview') and
                                        '$(GitHubRepositoryName)' != 'runtimelab'">false</GeneratePackageOnBuild>
     <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
     <LibIntellisenseDocumentationFilePath>$(XmlDocFileRoot)1033\$(AssemblyName).xml</LibIntellisenseDocumentationFilePath>
@@ -267,7 +269,7 @@
   </Target>
 
   <Target Name="ValidateAssemblyVersionsInRefPack" 
-          Condition="$(_AssemblyInTargetingPack) == 'true' and '$(PreReleaseVersionLabel)' == 'servicing'" 
+          Condition="$(_AssemblyInTargetingPack) == 'true' and ('$(PreReleaseVersionLabel)' == 'servicing' or '$(PreReleaseVersionLabel)' == 'mauipreview')" 
           AfterTargets="CoreCompile" >
     <Error Condition="'$(AssemblyVersion)' != '$(LastReleasedStableAssemblyVersion)'" Text="AssemblyVersion should match last released assembly version $(LastReleasedStableAssemblyVersion)" />
   </Target>
