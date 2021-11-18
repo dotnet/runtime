@@ -2,14 +2,16 @@
     <PropertyGroup>
         <PackageRid>linux-x64</PackageRid>
         <PackageRid Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</PackageRid>
-        <PackageRid Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx-x64</PackageRid>
         
-        <TargetingPacksTargetsLocation Condition="'$(TargetingPacksTargetsLocation)' == ''">../../../../../../eng/targetingpacks.targets</TargetingPacksTargetsLocation>
+        <!-- Stress projects have their own global.json, the directory above that also has it is the repository root. -->
+        <RepositoryRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, global.json))/</RepositoryRoot>
+
+        <TargetingPacksTargetsLocation Condition="'$(TargetingPacksTargetsLocation)' == ''">$(RepositoryRoot)eng/targetingpacks.targets</TargetingPacksTargetsLocation>
         <ProductVersion>7.0.0</ProductVersion>
         <NetCoreAppCurrent>net7.0</NetCoreAppCurrent>
         <NetCoreAppCurrentVersion>7.0</NetCoreAppCurrentVersion>
         <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
-        <MicrosoftNetCoreAppRefPackDir Condition="'$(MicrosoftNetCoreAppRefPackDir)' == ''" >../../../../../../artifacts/bin/microsoft.netcore.app.ref/</MicrosoftNetCoreAppRefPackDir>
-        <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">../../../../../../artifacts/bin/microsoft.netcore.app.runtime.$(PackageRid)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>
+        <MicrosoftNetCoreAppRefPackDir Condition="'$(MicrosoftNetCoreAppRefPackDir)' == ''" >$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.ref/</MicrosoftNetCoreAppRefPackDir>
+        <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.runtime.$(PackageRid)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
 </Project>
