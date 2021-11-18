@@ -298,10 +298,19 @@ namespace System.IO
             {
                 return; // Path already exists and it's a directory.
             }
-            else if (errorInfo.Error == Interop.Error.ENOENT)
+            else if (errorInfo.Error == Interop.Error.ENOENT) // Some parts of the path don't exist yet.
             {
-                // Some parts of the path don't exist yet.
-                CreateParentsAndDirectory(fullPath);
+                // Try create parents bottom to top and track those that could not
+                // be created due to missing parents. Then create them top to bottom.
+                ValueListBuilder<int> stackDir = new(stackalloc int[32]); // 32 arbitrarily chosen
+                try
+                {
+                    CreateParentsAndDirectory(fullPath, stackDir);
+                }
+                finally
+                {
+                    stackDir.Dispose();
+                }
             }
             else
             {
@@ -309,13 +318,9 @@ namespace System.IO
             }
         }
 
-        public static void CreateParentsAndDirectory(string fullPath)
+        public static void CreateParentsAndDirectory(string fullPath, ValueListBuilder<int> stackDir)
         {
-            // Try create parents bottom to top and track those that could not
-            // be created due to missing parents. Then create them top to bottom.
-            List<int> stackDir = new();
-
-            stackDir.Add(fullPath.Length);
+            stackDir.Append(fullPath.Length);
 
             int i = fullPath.Length - 1;
             // Trim trailing separator.
@@ -348,7 +353,7 @@ namespace System.IO
                     // We'll try to create its parent on the next iteration.
 
                     // Track this path for later creation.
-                    stackDir.Add(mkdirPath.Length);
+                    stackDir.Append(mkdirPath.Length);
                 }
                 else if (errorInfo.Error == Interop.Error.EEXIST)
                 {
@@ -364,7 +369,7 @@ namespace System.IO
             } while (i > 0);
 
             // Create directories that had missing parents.
-            for (i = stackDir.Count - 1; i >= 0; i--)
+            for (i = stackDir.Length - 1; i >= 0; i--)
             {
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, stackDir[i]);
                 int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
