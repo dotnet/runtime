@@ -782,8 +782,7 @@ namespace System.Diagnostics
 
             if (euid == 0)
             {
-                // We're root.
-                return true;
+                return true; // We're root.
             }
 
             if (euid == fileinfo.Uid)

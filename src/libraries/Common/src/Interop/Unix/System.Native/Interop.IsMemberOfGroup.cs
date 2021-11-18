@@ -8,27 +8,13 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal static bool IsMemberOfGroup(uint gid)
+        internal static unsafe bool IsMemberOfGroup(uint gid)
         {
             if (gid == GetEGid())
             {
                 return true;
             }
 
-            uint[]? groups = GetGroups();
-            if (groups == null)
-            {
-                return false;
-            }
-
-            return Array.IndexOf(groups, gid) >= 0;
-        }
-
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetEGid")]
-        private static partial uint GetEGid();
-
-        private static unsafe uint[]? GetGroups()
-        {
             const int InitialGroupsLength =
 #if DEBUG
                 1;
@@ -47,7 +33,7 @@ internal static partial class Interop
                 if (rv >= 0)
                 {
                     // success
-                    return groups.Slice(0, rv).ToArray();
+                    return groups.Slice(0, rv).IndexOf(gid) >= 0;
                 }
                 else if (rv == -1 && Interop.Sys.GetLastError() == Interop.Error.EINVAL)
                 {
@@ -56,12 +42,15 @@ internal static partial class Interop
                 }
                 else
                 {
-                    // failure
-                    return null;
+                    // failure (unexpected)
+                    return false;
                 }
             }
             while (true);
         }
+
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetEGid")]
+        private static partial uint GetEGid();
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGroups", SetLastError = true)]
         private static unsafe partial int GetGroups(int ngroups, uint* groups);
