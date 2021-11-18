@@ -336,7 +336,6 @@ namespace System.Text.Json
                 type == JsonTokenType.False ? false :
                 ThrowJsonElementWrongTypeException(type);
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
             static bool ThrowJsonElementWrongTypeException(JsonTokenType actualType)
             {
                 throw ThrowHelper.GetJsonElementWrongTypeException(nameof(Boolean), actualType.ToValueKind());
