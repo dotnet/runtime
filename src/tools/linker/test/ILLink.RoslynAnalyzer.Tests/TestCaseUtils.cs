@@ -50,44 +50,29 @@ namespace ILLink.RoslynAnalyzer.Tests
 				SourceText.From (File.OpenRead (testPath), Encoding.UTF8),
 				path: testPath);
 
-			var testDependenciesSource = TestCase.GetTestDependencies (tree)
+			var testDependenciesSource = GetTestDependencies (rootSourceDir, tree)
 				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
-			var comp = await TestCaseCompilation.CreateCompilation (
+			var (comp, model) = await TestCaseCompilation.CreateCompilation (
 					tree,
 					msbuildProperties,
 					additionalSources: testDependenciesSource);
-			foreach (var testCase in BuildTestCasesForTree (tree)) {
-				testCase.Run (comp);
-			}
+
+			var diags = await comp.GetAnalyzerDiagnosticsAsync ();
+			var testChecker = new TestChecker ((CSharpSyntaxTree) tree, model, diags);
+			testChecker.Check ();
 		}
 
-		/// <summary>
-		/// Builds a <see cref="TestCase" /> for each member in the tree.
-		/// </summary>
-		private static IEnumerable<TestCase> BuildTestCasesForTree (SyntaxTree tree)
+		private static IEnumerable<string> GetTestDependencies (string rootSourceDir, SyntaxTree testSyntaxTree)
 		{
-			var root = tree.GetRoot ();
-			foreach (var node in root.DescendantNodes ()) {
-				if (node is MemberDeclarationSyntax m) {
-					var attrs = m.AttributeLists.SelectMany (al => al.Attributes.Where (IsWellKnown)).ToList ();
-					if (attrs.Count > 0) {
-						yield return new TestCase (m, attrs);
-					}
-				}
-			}
+			foreach (var attribute in testSyntaxTree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
+				if (attribute.Name.ToString () != "SetupCompileBefore")
+					continue;
 
-			static bool IsWellKnown (AttributeSyntax attr)
-			{
-				switch (attr.Name.ToString ()) {
-				// Currently, the analyzer's test infra only understands these attributes when placed on methods.
-				case "ExpectedWarning":
-				case "LogContains":
-				case "LogDoesNotContain":
-				case "UnrecognizedReflectionAccessPattern":
-					return true;
-				}
-
-				return false;
+				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().Single ().Name.ToString ();
+				var testSuiteName = testNamespace.Substring (testNamespace.LastIndexOf ('.') + 1);
+				var args = LinkerTestBase.GetAttributeArguments (attribute);
+				foreach (var sourceFile in ((ImplicitArrayCreationExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
+					yield return Path.Combine (rootSourceDir, testSuiteName, LinkerTestBase.GetStringFromExpression (sourceFile));
 			}
 		}
 
