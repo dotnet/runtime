@@ -29,7 +29,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 builder.AddSimpleConsole(options => options.SingleLine = true)
                        .AddFilter(null, LogLevel.Information)
             );
-            FirefoxProxyServer proxyFirefox = new FirefoxProxyServer(loggerFactory, 7000, 6000);
+
+            FirefoxProxyServer proxyFirefox = new FirefoxProxyServer(loggerFactory, 6000);
             proxyFirefox.Run();
 
             IWebHost host = new WebHostBuilder()

@@ -361,28 +361,27 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     public class FirefoxProxyServer
     {
-        private int portProxy;
         private int portBrowser;
         private ILoggerFactory loggerFactory;
 
-        public FirefoxProxyServer(ILoggerFactory loggerFactory, int portProxy, int portBrowser)
+        public FirefoxProxyServer(ILoggerFactory loggerFactory, int portBrowser)
         {
             this.portBrowser = portBrowser;
-            this.portProxy = portProxy;
             this.loggerFactory = loggerFactory;
         }
 
         public async void Run()
         {
-            var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), portProxy);
+            var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), 0);
             _server.Start();
-            // wait for client connection
-            TcpClient newClient = await _server.AcceptTcpClientAsync();
-
-            // client found.
-            // create a thread to handle communication
-            var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
-            monoProxy.Run(newClient);
+            var port = ((IPEndPoint)_server.LocalEndpoint).Port;
+            System.Console.WriteLine($"Now listening on: 127.0.0.1:{port} for Firefox debugging");
+            while (true)
+            {
+                TcpClient newClient = await _server.AcceptTcpClientAsync();
+                var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
+                monoProxy.Run(newClient);
+            }
         }
     }
 }
