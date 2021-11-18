@@ -208,8 +208,8 @@ namespace System.DirectoryServices.AccountManagement
             // Get the issuing authority and the first RID
             IntPtr pIdentAuth = Interop.Advapi32.GetSidIdentifierAuthority(pSid);
 
-            UnsafeNativeMethods.SID_IDENTIFIER_AUTHORITY identAuth =
-                (UnsafeNativeMethods.SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(UnsafeNativeMethods.SID_IDENTIFIER_AUTHORITY));
+            Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth =
+                (Interop.Advapi32.SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(Interop.Advapi32.SID_IDENTIFIER_AUTHORITY));
 
             IntPtr pRid = Interop.Advapi32.GetSidSubAuthority(pSid, 0);
             int rid = Marshal.ReadInt32(pRid);
@@ -427,8 +427,8 @@ namespace System.DirectoryServices.AccountManagement
                 }
 
                 // Retrieve the user's SID from the user info
-                UnsafeNativeMethods.TOKEN_USER tokenUser = (UnsafeNativeMethods.TOKEN_USER)Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.TOKEN_USER));
-                IntPtr pUserSid = tokenUser.sidAndAttributes.pSid;   // this is a reference into the NATIVE memory (into pBuffer)
+                Interop.TOKEN_USER tokenUser = (Interop.TOKEN_USER)Marshal.PtrToStructure(pBuffer, typeof(Interop.TOKEN_USER));
+                IntPtr pUserSid = tokenUser.sidAndAttributes.Sid;   // this is a reference into the NATIVE memory (into pBuffer)
 
                 Debug.Assert(Interop.Advapi32.IsValidSid(pUserSid));
 

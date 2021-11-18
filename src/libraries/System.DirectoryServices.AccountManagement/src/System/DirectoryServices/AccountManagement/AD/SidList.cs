@@ -47,7 +47,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        internal SidList(UnsafeNativeMethods.SID_AND_ATTR[] sidAndAttr)
+        internal SidList(Interop.SID_AND_ATTRIBUTES[] sidAndAttr)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: processing {0} Sid+Attr SIDs", sidAndAttr.Length);
 
@@ -57,7 +57,7 @@ namespace System.DirectoryServices.AccountManagement
 
             for (int i = 0; i < sidCount; i++)
             {
-                pSids[i] = sidAndAttr[i].pSid;
+                pSids[i] = sidAndAttr[i].Sid;
             }
 
             TranslateSids(null, pSids);

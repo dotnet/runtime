@@ -552,7 +552,7 @@ namespace System.DirectoryServices.AccountManagement
                                         IntPtr UserSid,
                                         IntPtr AuthzResourceManager,
                                         IntPtr pExpirationTime,
-                                        Interop.Advapi32.LUID Identitifier,
+                                        Interop.LUID Identitifier,
                                         IntPtr DynamicGroupArgs,
                                         out IntPtr pAuthzClientContext
                                         );
@@ -587,41 +587,6 @@ namespace System.DirectoryServices.AccountManagement
         public static extern bool AuthzFreeResourceManager(
                                         IntPtr rm
                                         );
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class TOKEN_GROUPS
-        {
-            public int groupCount;
-            public IntPtr groups = IntPtr.Zero;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class SID_AND_ATTR
-        {
-            public IntPtr pSid = IntPtr.Zero;
-            public int attrs;
-        }
-
-        //
-        // Token
-        //
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class TOKEN_USER
-        {
-            public SID_AND_ATTR sidAndAttributes = new SID_AND_ATTR();
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class SID_IDENTIFIER_AUTHORITY
-        {
-            public byte b1;
-            public byte b2;
-            public byte b3;
-            public byte b4;
-            public byte b5;
-            public byte b6;
-        }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class POLICY_ACCOUNT_DOMAIN_INFO
