@@ -137,7 +137,7 @@ namespace Internal.NativeCrypto
         }
     }
 
-    internal sealed class SafeAlgorithmHandle : SafeBCryptHandle
+    internal sealed partial class SafeAlgorithmHandle : SafeBCryptHandle
     {
         protected sealed override bool ReleaseHandle()
         {
@@ -145,11 +145,11 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [DllImport(Libraries.BCrypt)]
-        private static extern uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
+        [GeneratedDllImport(Libraries.BCrypt)]
+        private static partial uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
     }
 
-    internal sealed class SafeKeyHandle : SafeBCryptHandle
+    internal sealed partial class SafeKeyHandle : SafeBCryptHandle
     {
         private SafeAlgorithmHandle? _parentHandle;
 
@@ -177,7 +177,7 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [DllImport(Libraries.BCrypt)]
-        private static extern uint BCryptDestroyKey(IntPtr hKey);
+        [GeneratedDllImport(Libraries.BCrypt)]
+        private static partial uint BCryptDestroyKey(IntPtr hKey);
     }
 }

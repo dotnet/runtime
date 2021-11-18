@@ -3,13 +3,7 @@
 
 .assembly extern mscorlib{}
 .assembly ILGEN_MODULE{}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 
 // This test originally failed compilation during CSE due to value numbers that were discarded during remorphing.
 // The arguments to and return value from `ILGEN_METHOD` are not meaningful; it is enough that this function

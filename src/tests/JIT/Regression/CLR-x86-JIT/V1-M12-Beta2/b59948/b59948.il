@@ -13,13 +13,7 @@
 {
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module '1'
 // MVID: {9A90DFD6-02B6-45EC-9CEF-25C2CAF3BF19}
 

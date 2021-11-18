@@ -127,6 +127,9 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     compiler->genIPmappingLast         = nullptr;
     compiler->genCallSite2DebugInfoMap = nullptr;
 
+    compiler->genPreciseIPMappingsHead = nullptr;
+    compiler->genPreciseIPMappingsTail = nullptr;
+
     /* Assume that we not fully interruptible */
 
     SetInterruptible(false);
@@ -2445,6 +2448,8 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     /* Finalize the line # tracking logic after we know the exact block sizes/offsets */
 
     genIPmappingGen();
+
+    INDEBUG(genDumpPreciseDebugInfo());
 
     /* Finalize the Local Var info in terms of generated code */
 
@@ -10800,6 +10805,98 @@ void CodeGen::genIPmappingGen()
 
     compiler->eeSetLIdone();
 }
+
+#ifdef DEBUG
+void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first)
+{
+    if (context->GetSibling() != nullptr)
+    {
+        genDumpPreciseDebugInfoInlineTree(file, context->GetSibling(), first);
+    }
+
+    if (context->IsSuccess())
+    {
+        if (!*first)
+        {
+            fprintf(file, ",");
+        }
+
+        *first = false;
+
+        fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
+        fprintf(file, "\"MethodID\":%lld,", (INT64)context->GetCallee());
+        const char* className;
+        const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
+        fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        fprintf(file, "\"Inlinees\":[");
+        if (context->GetChild() != nullptr)
+        {
+            bool childFirst = true;
+            genDumpPreciseDebugInfoInlineTree(file, context->GetChild(), &childFirst);
+        }
+        fprintf(file, "]}");
+    }
+}
+
+void CodeGen::genDumpPreciseDebugInfo()
+{
+    if (JitConfig.JitDumpPreciseDebugInfoFile() == nullptr)
+        return;
+
+    static CritSecObject s_critSect;
+    CritSecHolder        holder(s_critSect);
+
+    FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
+    if (file == nullptr)
+        return;
+
+    // MethodID in ETW events are the method handles.
+    fprintf(file, "{\"MethodID\":%lld,", (INT64)compiler->info.compMethodHnd);
+    // Print inline tree.
+    fprintf(file, "\"InlineTree\":");
+
+    bool first = true;
+    genDumpPreciseDebugInfoInlineTree(file, compiler->compInlineContext, &first);
+    fprintf(file, ",\"Mappings\":[");
+    first = true;
+    for (PreciseIPMapping* mapping = compiler->genPreciseIPMappingsHead; mapping != nullptr; mapping = mapping->next)
+    {
+        if (!first)
+        {
+            fprintf(file, ",");
+        }
+
+        first = false;
+
+        fprintf(file, "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
+                mapping->nativeLoc.CodeOffset(GetEmitter()), mapping->debugInfo.GetInlineContext()->GetOrdinal(),
+                mapping->debugInfo.GetLocation().GetOffset());
+    }
+
+    fprintf(file, "]}\n");
+
+    fclose(file);
+}
+
+void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
+{
+    PreciseIPMapping* mapping = new (compiler, CMK_DebugInfo) PreciseIPMapping;
+    mapping->next             = nullptr;
+    mapping->nativeLoc.CaptureLocation(GetEmitter());
+    mapping->debugInfo = di;
+
+    if (compiler->genPreciseIPMappingsTail != nullptr)
+    {
+        compiler->genPreciseIPMappingsTail->next = mapping;
+    }
+    else
+    {
+        compiler->genPreciseIPMappingsHead = mapping;
+    }
+
+    compiler->genPreciseIPMappingsTail = mapping;
+}
+#endif
 
 /*============================================================================
  *
