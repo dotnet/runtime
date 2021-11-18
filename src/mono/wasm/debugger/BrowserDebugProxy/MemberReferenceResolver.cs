@@ -205,6 +205,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             async Task<JObject> ResolveAsLocalOrThisMember(string name)
             {
+                var nameTrimmed = name.Trim();
                 if (scopeCache.Locals.Count == 0 && !localsFetched)
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
@@ -213,7 +214,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     localsFetched = true;
                 }
 
-                if (scopeCache.Locals.TryGetValue(name, out JObject obj))
+                if (scopeCache.Locals.TryGetValue(nameTrimmed, out JObject obj))
                     return obj["value"]?.Value<JObject>();
 
                 if (!scopeCache.Locals.TryGetValue("this", out JObject objThis))
@@ -223,7 +224,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
 
                 var rootResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == name);
+                var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == nameTrimmed);
                 if (objRet != null)
                     return await GetValueFromObject(objRet, token);
 
