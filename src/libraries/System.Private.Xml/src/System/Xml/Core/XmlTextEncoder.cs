@@ -15,6 +15,7 @@ namespace System.Xml
     // it will replace special characters with entities whenever necessary.
     internal sealed class XmlTextEncoder
     {
+        private const int ChunkSize = 256;
         //
         // Fields
         //
@@ -301,12 +302,11 @@ namespace System.Xml
                 break;
             }
 
-            char[] helperBuffer = new char[256];
             while (true)
             {
                 if (startPos < i)
                 {
-                    WriteStringFragment(text, startPos, i - startPos, helperBuffer);
+                    WriteStringFragment(text, startPos, i - startPos);
                 }
                 if (i == len)
                 {
@@ -520,19 +520,18 @@ namespace System.Xml
         // for fragment of a string such as Write( string, offset, count).
         // The string fragment will be written out by copying into a small helper buffer and then
         // calling textWriter to write out the buffer.
-        private void WriteStringFragment(string str, int offset, int count, char[] helperBuffer)
+        private void WriteStringFragment(ReadOnlySpan<char> str, int offset, int count)
         {
-            int bufferSize = helperBuffer.Length;
             while (count > 0)
             {
                 int copyCount = count;
-                if (copyCount > bufferSize)
+
+                if (copyCount > ChunkSize)
                 {
-                    copyCount = bufferSize;
+                    copyCount = ChunkSize;
                 }
 
-                str.CopyTo(offset, helperBuffer, 0, copyCount);
-                _textWriter.Write(helperBuffer, 0, copyCount);
+                _textWriter.Write(str.Slice(offset, copyCount));
                 offset += copyCount;
                 count -= copyCount;
             }
