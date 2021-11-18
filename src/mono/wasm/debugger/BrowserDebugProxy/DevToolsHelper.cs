@@ -314,6 +314,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ExecutionContext
     {
+        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData)
+        {
+            Id = id;
+            AuxData = auxData;
+            SdbAgent = sdbAgent;
+        }
+
         public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
 
@@ -330,6 +337,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
+        internal MonoSDBHelper SdbAgent { get; init; }
         public TaskCompletionSource<DebugStore> Source { get; } = new TaskCompletionSource<DebugStore>();
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
@@ -358,6 +366,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public void ClearState()
         {
             CallStack = null;
+            SdbAgent.ClearCache();
             perScopeCaches.Clear();
         }
     }

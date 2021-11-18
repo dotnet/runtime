@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, ExactSpelling = true)]
-        internal static extern int EventWriteString(
+        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Ansi, ExactSpelling = true)]
+        internal static partial int EventWriteString(
             long registrationHandle,
             byte level,
             long keyword,

@@ -4,13 +4,7 @@
 .assembly extern mscorlib { auto }
 .assembly extern System.Console { auto }
 .assembly GitHub_15949 { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 
 // Ensure that shifting a 64 bit value by 64 bits produces the same value. The ECMA spec doesn't specify
 // what should happen in this case but it would be preferable to have the same behavior for all shift

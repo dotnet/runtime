@@ -9,6 +9,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ICustomMarshaler.cs" />
-    <Compile Include="..\..\..\Common\XunitBase.cs" />
   </ItemGroup>
 </Project>

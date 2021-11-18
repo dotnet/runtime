@@ -627,7 +627,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
     CONTRACTL_END
 
 
-    mdToken             mdEncloser;
     EEClassHashEntry_t  *pBucket = NULL;
 
     needsToBuildHashtable = FALSE;
@@ -642,8 +641,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                  pName->GetNameSpace(), pName->GetName()));
     }
 #endif
-
-    BOOL isNested = IsNested(pName, &mdEncloser);
 
     PTR_Assembly assembly = GetAssembly();
     PREFIX_ASSUME(assembly != NULL);
@@ -718,6 +715,9 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                 }
             }
             _ASSERTE(pTable);
+
+            mdToken             mdEncloser;
+            BOOL isNested = IsNested(pName, &mdEncloser);
 
             if (isNested)
             {
@@ -834,6 +834,9 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     }
     CONTRACTL_END;
 
+
+    _ASSERT(m_cUnhashedModules > 0);
+
     AllocMemTracker amTracker;
     ModuleIterator i = GetAssembly()->IterateModules();
 
@@ -909,6 +912,8 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
                 amTracker.SuppressRelease();
                 pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
                 FastInterlockDecrement((LONG*)&m_cUnhashedModules);
+
+                _ASSERT(m_cUnhashedModules >= 0);
             }
         }
     }
@@ -1238,18 +1243,18 @@ BOOL ClassLoader::FindClassModuleThrowing(
 
     if (pBucket == NULL)
     {
+        // Take the lock. To make sure the table is not being built by another thread.
         AvailableClasses_LockHolder lh(this);
 
-        // Try again with the lock.  This will protect against another thread reallocating
-        // the hash table underneath us
-        GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
-        pBucket = foundEntry.GetClassHashBasedEntryValue();
-
-#ifndef DACCESS_COMPILE
-        if (needsToBuildHashtable && (pBucket == NULL) && (m_cUnhashedModules > 0))
+        if (!needsToBuildHashtable || (m_cUnhashedModules == 0))
         {
-            _ASSERT(needsToBuildHashtable);
-
+            // the table should be finished now, try again
+            GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
+            pBucket = foundEntry.GetClassHashBasedEntryValue();
+        }
+#ifndef DACCESS_COMPILE
+        else
+        {
             if (nhTable == nhCaseInsensitive)
             {
                 LazyPopulateCaseInsensitiveHashTables();
@@ -1268,7 +1273,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
 #endif
     }
 
-    // Same check as above, but this time we've checked with the lock so the table will be populated
+    // Same check as above, but this time we've ensured that the tables are populated
     if (pBucket == NULL)
     {
 #if defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
@@ -1536,19 +1541,19 @@ ClassLoader::LoadTypeHandleThrowing(
             pClsLdr = pFoundModule->GetClassLoader();
             pLookInThisModuleOnly = NULL;
         }
+    }
 
 #ifndef DACCESS_COMPILE
-        // Replace AvailableClasses Module entry with found TypeHandle
-        if (!typeHnd.IsNull() &&
-            typeHnd.IsRestored() &&
-            foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
-            (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
-            (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
-        {
-            foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
-        }
-#endif // !DACCESS_COMPILE
+    // Replace AvailableClasses Module entry with found TypeHandle
+    if (!typeHnd.IsNull() &&
+        typeHnd.IsRestored() &&
+        foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
+        (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
+        (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
+    {
+        foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
     }
+#endif // !DACCESS_COMPILE
 
     RETURN typeHnd;
 } // ClassLoader::LoadTypeHandleThrowing

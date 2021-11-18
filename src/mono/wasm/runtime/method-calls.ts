@@ -7,7 +7,7 @@ import {
     MonoObjectNull, MonoString, coerceNull as coerceNull,
     VoidPtr, VoidPtrNull, Int32Ptr, MonoStringNull
 } from "./types";
-import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./modules";
+import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from "./js-to-cs";

@@ -11,7 +11,7 @@
     <h3 id="header">Wasm Browser Sample - App task frame</h3>
     <span id="out"></span>
     <script type='text/javascript'>
-      var test_exit = function(exit_code)
+      function set_exit_code (exit_code, reason)
       {
         /* Set result in a tests_done element, to be read by xharness */
         var tests_done_elem = document.createElement("label");
@@ -35,7 +35,7 @@
       };
 
     </script>
-    <script type="text/javascript" src="runtime.js"></script>
+    <script type="text/javascript" src="main.js"></script>
     <script defer src="dotnet.js"></script>
   </body>
 </html>

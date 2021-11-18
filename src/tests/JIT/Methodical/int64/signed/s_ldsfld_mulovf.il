@@ -16,13 +16,7 @@
 .assembly 'ldsfld_mulovf'// as "ldsfld_mulovf"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'ldsfld_mulovf.exe'
 // MVID: {54816B74-C516-4067-93B9-A895F5F3D4AA}
 .namespace JitTest

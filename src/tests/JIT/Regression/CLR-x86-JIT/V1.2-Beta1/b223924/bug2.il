@@ -8,13 +8,7 @@
 }
 
 .assembly ILGEN_0xef3a9aea {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class ILGEN_0xef3a9aea {
 
