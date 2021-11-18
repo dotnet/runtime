@@ -487,6 +487,5 @@ internal static partial class Interop
             in SecPkgCred_ClientCertPolicy pBuffer,
             long cbBuffer);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-
     }
 }
