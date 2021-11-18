@@ -1490,14 +1490,12 @@ namespace System.Xml
 
         internal static Exception CreateException(string res, ExceptionType exceptionType, int lineNo, int linePos)
         {
-            switch (exceptionType)
+            return exceptionType switch
             {
-                case ExceptionType.ArgumentException:
-                    return new ArgumentException(res);
-                case ExceptionType.XmlException:
-                default:
-                    return new XmlException(res, string.Empty, lineNo, linePos);
-            }
+                ExceptionType.ArgumentException => new ArgumentException(res),
+                ExceptionType.XmlException => new XmlException(res, string.Empty, lineNo, linePos),
+                _ => new XmlException(res, string.Empty, lineNo, linePos)
+            };
         }
 
         internal static Exception CreateException(string res, string arg, ExceptionType exceptionType)
@@ -1507,14 +1505,12 @@ namespace System.Xml
 
         internal static Exception CreateException(string res, string arg, ExceptionType exceptionType, int lineNo, int linePos)
         {
-            switch (exceptionType)
+            return exceptionType switch
             {
-                case ExceptionType.ArgumentException:
-                    return new ArgumentException(string.Format(res, arg));
-                case ExceptionType.XmlException:
-                default:
-                    return new XmlException(res, arg, lineNo, linePos);
-            }
+                ExceptionType.ArgumentException => new ArgumentException(string.Format(res, arg)),
+                ExceptionType.XmlException => new XmlException(res, arg, lineNo, linePos),
+                _ => new XmlException(res, arg, lineNo, linePos)
+            };
         }
 
         internal static Exception CreateException(string res, string[] args, ExceptionType exceptionType)
