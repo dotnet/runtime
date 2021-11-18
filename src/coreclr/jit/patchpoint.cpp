@@ -26,7 +26,6 @@
 //
 //   * no patchpoints in handler regions
 //   * no patchpoints for localloc methods
-//   * no patchpoints for synchronized methods (workaround)
 //
 class PatchpointTransformer
 {
