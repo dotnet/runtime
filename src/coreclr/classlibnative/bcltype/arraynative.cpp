@@ -1154,7 +1154,7 @@ FCIMPL2_IV(void, ArrayNative::InitializeArray, ArrayBase* pArrayRef, FCALLRuntim
 }
 FCIMPLEND
 
-FCIMPL4(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetType, void** data, INT32* count)
+FCIMPL3(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetType, INT32* count)
 {
     FCALL_CONTRACT;
     struct
@@ -1162,6 +1162,7 @@ FCIMPL4(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField,
         REFLECTFIELDREF refField;
     } gc;
     gc.refField = (REFLECTFIELDREF)ObjectToOBJECTREF(FCALL_RFH_TO_REFLECTFIELD(structField));
+    void* data;
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
     FieldDesc* pField = (FieldDesc*)gc.refField->GetField();
@@ -1180,7 +1181,11 @@ FCIMPL4(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField,
     g_IBCLogger.LogRVADataAccess(pField);
 
     _ASSERTE(data != NULL && count != NULL);
-    *data = pField->GetStaticAddressHandle(NULL);
+    data = pField->GetStaticAddressHandle(NULL);
+
+    if (AlignUp((UINT_PTR)data, targetTypeSize) != (UINT_PTR)data)
+        COMPlusThrow(kArgumentException);
+
     *count = (INT32)totalSize / targetTypeSize;
 
 #if BIGENDIAN
@@ -1188,5 +1193,6 @@ FCIMPL4(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField,
 #endif
 
    HELPER_METHOD_FRAME_END();
+   return data;
 }
 FCIMPLEND

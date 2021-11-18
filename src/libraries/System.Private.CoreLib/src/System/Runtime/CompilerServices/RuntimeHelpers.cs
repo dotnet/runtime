@@ -116,15 +116,6 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentException"><paramref name="fldHandle"/> does not refer to a field which is an Rva, is misaligned, or T is of an invalid type.</exception>
         /// <remarks>This method is intended for compiler user rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
         [Intrinsic]
-        public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
-        {
-            unsafe
-            {
-                void* data = default;
-                int count = default;
-                GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, &data, &count);
-                return new ReadOnlySpan<T>(data, count);
-            }
-        }
+        public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
     }
 }

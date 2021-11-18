@@ -942,24 +942,25 @@ ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, size_t byte_lengt
 	memset (p, 0, byte_length);
 }
 
-void
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoClassField *field_handle, MonoType_ptr targetTypeHandle, gpointer dataPtr, gpointer countPtr, MonoError *error)
+gpointer
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoClassField *field_handle, MonoType_ptr targetTypeHandle, gpointer countPtr, MonoError *error)
 {
 	gint32* count = (gint32*)countPtr;
-	const char **data = (const char **)dataPtr;
 	MonoType *field_type = mono_field_get_type_checked (field_handle, error);
-	if (!field_type)
-		return;
+	if (!field_type) {
+		mono_error_set_argument (error, "fldHandle", "fldHandle invalid");
+		return NULL;
+	}
 
 	if (!(field_type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
 		mono_error_set_argument_format (error, "field_handle", "Field '%s' doesn't have an RVA", mono_field_get_name (field_handle));
-		return;
+		return NULL;
 	}
 
 	MonoType *type = targetTypeHandle;
 	if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_VALUETYPE) {
 		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
-		return;
+		return NULL;
 	}
 
 	int swizzle = 1;
@@ -968,9 +969,9 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoCl
 	swizzle = mono_type_size (type, &align);
 #endif
 
-	*data = mono_field_get_rva (field_handle, swizzle);
 	int dummy;
 	*count = mono_type_size (field_type, &dummy)/mono_type_size (type, &align);
+	return (gpointer)mono_field_get_rva (field_handle, swizzle);
 }
 
 void

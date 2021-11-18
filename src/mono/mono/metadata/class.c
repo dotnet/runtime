@@ -5457,25 +5457,21 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 	if (!def_values [field_index].data) {
 		const char *rvaData;
 
-		if (!image_is_dynamic (m_class_get_image (klass)))
-		{
+		if (!image_is_dynamic (m_class_get_image (klass))) {
 			int first_field_idx = mono_class_get_first_field_idx (klass);
 			mono_metadata_field_info (m_class_get_image (field->parent), first_field_idx + field_index, NULL, &rva, NULL);
 			if (!rva)
 				g_warning ("field %s in %s should have RVA data, but hasn't", mono_field_get_name (field), m_class_get_name (field->parent));
 
 			rvaData = mono_image_rva_map (m_class_get_image (field->parent), rva);
-		}
-		else
-		{
+		} else {
 			rvaData = mono_field_get_data (field);
 		}
 
 		if (rvaData == NULL)
 			return NULL;
 
-		if (swizzle != 1)
-		{
+		if (swizzle != 1) {
 			int dummy;
 			int dataSizeInBytes =  mono_type_size (field->type, &dummy);
 			char *swizzledRvaData = mono_class_alloc0 (klass, dataSizeInBytes);
@@ -5490,23 +5486,16 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 		data[i] = read ## n (&src[i]);					\
 	} 									\
 }
-			if (swizzle == 2)
-			{
+			if (swizzle == 2) {
 				SWAP (16);
-			}
-			else if (swizzle == 4)
-			{
+			} else if (swizzle == 4) {
 				SWAP (32);
-			}
-			else
-			{
+			} else {
 				SWAP (64);
 			}
-			def_values [field_index].data = swizzledRvaData;
-		}
-		else
 #undef SWAP
-		{
+			def_values [field_index].data = swizzledRvaData;
+		} else {
 			def_values [field_index].data = rvaData;
 		}
 	}

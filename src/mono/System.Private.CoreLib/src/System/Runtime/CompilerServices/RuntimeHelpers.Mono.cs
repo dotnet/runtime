@@ -19,13 +19,15 @@ namespace System.Runtime.CompilerServices
             InitializeArray(array, fldHandle.Value);
         }
 
-        private static unsafe void GetSpanDataFrom(
+        private static unsafe void* GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
-            void** data,
-            int* count)
+            out int count)
         {
-            GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(data), new IntPtr(count));
+            fixed (int *pCount = &count)
+            {
+                return (void*)GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(pCount));
+            }
         }
 
         public static int OffsetToStringData
@@ -175,10 +177,9 @@ namespace System.Runtime.CompilerServices
         private static extern void InitializeArray(Array array, IntPtr fldHandle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void GetSpanDataFrom(
+        private static extern unsafe IntPtr GetSpanDataFrom(
             IntPtr fldHandle,
             IntPtr targetTypeHandle,
-            IntPtr data,
             IntPtr count);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -18,11 +18,10 @@ namespace System.Runtime.CompilerServices
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void GetSpanDataFrom(
+        private static extern unsafe void* GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
-            void** data,
-            int* count);
+            out int count);
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
