@@ -15,8 +15,11 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Retrieves the metadata section of the assembly, for use with <see cref="T:System.Reflection.Metadata.MetadataReader" />.
         /// </summary>
+        /// <param name="assembly">The assembly for which retrieve metadata.</param>
+        /// <param name="blob">When this method returns, contains the pointer to the metadata section blob.</param>
+        /// <param name="length">When this method returns, contains the length of the metadata section blob.</param>
         /// <returns>
-        /// <see langword="true" /> if the metadata retrieved successfully; <see langword="false" /> upon failure. 
+        /// <see langword="true" /> if the metadata retrieved successfully; <see langword="false" /> upon failure.
         /// Metadata might not be available for some assemblies, such as <see cref="System.Reflection.Emit.AssemblyBuilder" />, AOT images, etc.
         /// </returns>
         /// <remarks>
