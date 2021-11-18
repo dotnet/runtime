@@ -249,7 +249,7 @@ namespace System.Xml
             _textWriter.Write(';');
         }
 
-        internal void Write(string text)
+        internal void Write(string? text)
         {
             if (text == null)
             {
