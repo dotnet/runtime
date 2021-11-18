@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Primitives;
 using Moq;
@@ -169,6 +172,44 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider2.IsDisposed);
             Assert.True(provider4.IsDisposed);
             Assert.True(provider5.IsDisposed);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task ProvidersCanBlockLoadWhileWaitingOnAConcurrentRead()
+        {
+            // Lose xUnit's MaxConcurrencySyncContext
+            //await LoseExecutionContextAwaitable.Instance;
+
+            using var mre = new ManualResetEventSlim(false);
+            var provider = new BlockLoadOnMREProvider(mre, timeout: TimeSpan.FromSeconds(5));
+            var source = new TestConfigurationSource(provider);
+
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            // The first load when the source is added is ignored by the provider.
+            builder.Add(source);
+
+            var loadTask = Task.Run(() =>
+            {
+                ((IConfigurationRoot)config).Reload();
+
+                //foreach (var provider in ((IConfigurationRoot)config).Providers)
+                //{
+                //    provider.Load();
+                //}
+            });
+
+            await provider.LoadStartedTask;
+
+            // Read configuration while provider.Load() is blocked waiting on us.
+            _ = config["key"];
+
+            // Unblock provider.Load()
+            mre.Set();
+
+            // This will throw if provider.Load() timed out instead of unblocking gracefully after the read.
+            await loadTask;
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
@@ -1128,6 +1169,54 @@ namespace Microsoft.Extensions.Configuration.Test
         {
             public TestConfigurationProvider(string key, string value)
                 => Data.Add(key, value);
+        }
+
+        private class BlockLoadOnMREProvider : ConfigurationProvider
+        {
+            private readonly ManualResetEventSlim _mre;
+            private readonly TaskCompletionSource<object> _loadStartedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly TimeSpan _timeout;
+
+            private int _loadCount;
+
+            public BlockLoadOnMREProvider(ManualResetEventSlim mre, TimeSpan timeout)
+            {
+                _mre = mre;
+                _timeout = timeout;
+            }
+
+            public Task LoadStartedTask => _loadStartedTcs.Task;
+
+            public override void Load()
+            {
+                _loadCount++;
+
+                Assert.True(_loadCount <= 2, "BlockLoadOnMREProvider.Load() was called more than twice.");
+
+                // Ignore first load when the source was added so we can set the test up.
+                if (_loadCount == 2)
+                {
+                    _loadStartedTcs.SetResult(null);
+                    Assert.True(_mre.Wait(_timeout), "BlockLoadOnMREProvider.Load() timed out.");
+                }
+            }
+        }
+
+        private class LoseExecutionContextAwaitable : INotifyCompletion
+        {
+            public static readonly LoseExecutionContextAwaitable Instance = new();
+
+            public LoseExecutionContextAwaitable GetAwaiter() => this;
+            public bool IsCompleted => false;
+
+            public void GetResult()
+            {
+            }
+
+            public void OnCompleted(Action continuation)
+            {
+                ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state!)(), continuation);
+            }
         }
 
         private class DisposableTestConfigurationProvider : ConfigurationProvider, IDisposable
