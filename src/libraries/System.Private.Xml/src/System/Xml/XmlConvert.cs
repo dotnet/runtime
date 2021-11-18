@@ -138,8 +138,7 @@ namespace System.Xml
                             if (u <= 0x0010ffff)
                             { //convert to two chars
                                 copyPosition = position + EncodedCharLength + 4;
-                                char lowChar, highChar;
-                                XmlCharType.SplitSurrogateChar(u, out lowChar, out highChar);
+                                XmlCharType.SplitSurrogateChar(u, out char lowChar, out char highChar);
                                 bufBld.Append(highChar);
                                 bufBld.Append(lowChar);
                             }
