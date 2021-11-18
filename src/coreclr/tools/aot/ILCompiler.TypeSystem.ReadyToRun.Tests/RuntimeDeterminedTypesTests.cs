@@ -23,7 +23,7 @@ namespace TypeSystemTests
 
         public RuntimeDeterminedTypesTests()
         {
-            _context = new TestTypeSystemContext(TargetArchitecture.Unknown);
+            _context = new TestTypeSystemContext(TargetArchitecture.Unknown, supportsUniversalCanon: true);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
             

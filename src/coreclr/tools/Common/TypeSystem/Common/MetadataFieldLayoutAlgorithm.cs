@@ -175,7 +175,7 @@ namespace Internal.TypeSystem
             }
             // Sequential layout has to be respected for blittable types only. We use approximation and respect it for
             // all types without GC references (ie C# unmanaged types). Universal canonical instances might be blittable.
-            else if (type.IsSequentialLayout && (type.IsCanonicalSubtype(CanonicalFormKind.Universal) || !type.ContainsGCPointers))
+            else if (type.IsSequentialLayout && (type.Context.SupportsUniversalCanon || !type.ContainsGCPointers))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
