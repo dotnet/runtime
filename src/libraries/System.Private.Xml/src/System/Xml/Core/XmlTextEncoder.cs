@@ -541,7 +541,7 @@ namespace System.Xml
         private void WriteCharEntityImpl(char ch)
         {
             Span<char> span = stackalloc char[8];
-            bool result = ((int)ch).TryFormat(span, out int charsWritten, "X");
+            bool result = ((int)ch).TryFormat(span, out int charsWritten, "X", NumberFormatInfo.InvariantInfo);
             Debug.Assert(result);
             WriteCharEntityImpl(span[..charsWritten]);
         }
