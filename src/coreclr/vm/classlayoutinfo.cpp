@@ -291,7 +291,7 @@ namespace
                 pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
             }
 
-            return !pNestedType.GetMethodTable()->IsManagedSequential();
+            return !pNestedType.GetMethodTable()->ContainsPointers();
         }
 
         // No other type permitted for ManagedSequential.
