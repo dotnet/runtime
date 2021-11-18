@@ -1363,7 +1363,8 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.debuginfo:
             asm_complus_vars.update({
                 "COMPlus_JitDebugDump": "*",
-                "COMPlus_NgenDebugDump": "*" })
+                "COMPlus_NgenDebugDump": "*",
+                "COMPlus_JitDisasmWithDebugInfo": "1" })
 
         jit_dump_complus_vars = asm_complus_vars.copy()
         jit_dump_complus_vars.update({

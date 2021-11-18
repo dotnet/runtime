@@ -91,7 +91,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             string getLabel(PgoCompareMethodBasicBlock bb)
             {
-                string label = $"@ {bb.ILOffset:000}";
+                string label = $"@ {bb.ILOffset:x3}";
                 if (ProfilesHadBasicBlocks && (totalBlockCount1 != 0 || totalBlockCount2 != 0))
                 {
                     label += $"\\n{createWeightLabel(bb.BlockCount1, totalBlockCount1, bb.BlockCount2, totalBlockCount2)}";
