@@ -48,8 +48,12 @@ namespace System.Threading.RateLimiting
         /// <inheritdoc/>
         public bool Equals(MetadataName<T>? other)
         {
+            if (other is null)
+            {
+                return false;
+            }
             // NOTE: intentionally ordinal and case sensitive, matches CNG.
-            return _name == other?._name;
+            return _name == other._name;
         }
 
         /// <summary>

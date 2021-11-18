@@ -42,7 +42,6 @@ namespace System.Threading.RateLimiting
             var successful = TryGetMetadata(metadataName.Name, out var rawMetadata);
             if (successful)
             {
-                // TODO: is null metadata allowed?
                 metadata = rawMetadata is null ? default : (T)rawMetadata;
                 return true;
             }
