@@ -197,7 +197,7 @@ namespace System.Xml
             {
                 s_encodeCharPattern ??= new Regex("(?<=_)[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
 
-                MatchCollection? mc = s_encodeCharPattern.Matches(name, underscorePos);
+                MatchCollection mc = s_encodeCharPattern.Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
 
