@@ -13,10 +13,10 @@
 ################################################################################
 
 import argparse
-import os
+from os import walk, path
 import shutil
 from coreclr_arguments import *
-from jitutil import run_command
+from jitutil import run_command, TempDir
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -65,6 +65,54 @@ def setup_args(args):
                         "log_directory doesn't exist")
 
     return coreclr_args
+
+def copy_dasm_files(spmi_location, upload_directory, tag_name):
+    """Copies .dasm files to a tempDirectory, zip it, and copy the compressed file to the upload directory.
+
+    Args:
+        spmi_location (string): Location where .dasm files are present
+        upload_directory (string): Upload directory
+        tag_name (string): tag_name used in zip file name.
+    """
+
+    print("Copy .dasm files")
+
+    # Create upload_directory
+    if not os.path.isdir(upload_directory):
+        os.makedirs(upload_directory)
+
+    # Create temp directory to copy all issues to upload. We don't want to create a sub-folder
+    # inside issues_directory because that will also get included twice.
+    with TempDir() as prep_directory:
+        for file_path, dirs, files in walk(spmi_location, topdown=True):
+            # Credit: https://stackoverflow.com/a/19859907
+            dirs[:] = [d for d in dirs]
+            for name in files:
+                if not name.lower().endswith(".dasm"):
+                    continue
+
+                dasm_src_file = path.join(file_path, name)
+                dasm_dst_file = dasm_src_file.replace(spmi_location, prep_directory)
+                dst_directory = path.dirname(dasm_dst_file)
+                if not os.path.exists(dst_directory):
+                    os.makedirs(dst_directory)
+                try:
+                    shutil.copy2(dasm_src_file, dasm_dst_file)
+                except PermissionError as pe_error:
+                    print('Ignoring PermissionError: {0}'.format(pe_error))
+
+        # Zip compress the files we will upload
+        zip_path = os.path.join(prep_directory, "Asmdiffs_" + tag_name)
+        print("Creating archive: " + zip_path)
+        shutil.make_archive(zip_path, 'zip', prep_directory)
+
+        zip_path += ".zip"
+        dst_zip_path = os.path.join(upload_directory, "Asmdiffs_" + tag_name + ".zip")
+        print("Copying {} to {}".format(zip_path, dst_zip_path))
+        try:
+            shutil.copy2(zip_path, dst_zip_path)
+        except PermissionError as pe_error:
+            print('Ignoring PermissionError: {0}'.format(pe_error))
 
 
 def main(main_args):
@@ -156,7 +204,8 @@ def main(main_args):
         "-spmi_location", spmi_location,
         "-error_limit", "100",
         "-log_level", "debug",
-        "-log_file", log_file])
+        "-log_file", log_file,
+        "-retainOnlyTopFiles"])
 
     # If there are asm diffs, and jit-analyze ran, we'll get a diff_summary.md file in the spmi_location directory.
     # We make sure the file doesn't exist before we run diffs, so we don't need to worry about superpmi.py creating
@@ -169,6 +218,8 @@ def main(main_args):
             shutil.copy2(overall_md_summary_file, overall_md_summary_file_target)
         except PermissionError as pe_error:
             print('Ignoring PermissionError: {0}'.format(pe_error))
+
+        copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
     else:
         # Write a basic summary file. Ideally, we should not generate a summary.md file. However, currently I'm seeing
         # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
@@ -177,9 +228,6 @@ def main(main_args):
             f.write("""\
 No diffs found
 """)
-
-    # TODO: the superpmi.py asmdiffs command returns a failure code if there are MISSING data even if there are
-    # no asm diffs. We should probably only fail if there are actual failures (not MISSING or asm diffs).
 
     if return_code != 0:
         print("Failure in {}".format(log_file))
