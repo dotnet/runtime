@@ -41,9 +41,15 @@
     <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ServicingVersion)' != ''">
+  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
+    <!-- If no servicing version is set we need to default to 0 in order for dependency versions to
+    be calculated propertly, if we don't set it to 0, we would get the dependency version using the
+    product Patch Version -->
+    <ServicingVersion Condition="'$(ServicingVersion)' == ''">0</ServicingVersion>
+
     <!-- Always update the package version in servicing. -->
-    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</VersionPrefix>
+    <Version>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</Version>
+    <Version Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</Version>
     <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
     <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
     <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
@@ -269,9 +275,15 @@
   </Target>
 
   <Target Name="ValidateAssemblyVersionsInRefPack" 
-          Condition="$(_AssemblyInTargetingPack) == 'true' and ('$(PreReleaseVersionLabel)' == 'servicing' or '$(PreReleaseVersionLabel)' == 'mauipreview')" 
+          Condition="'$(SkipValidateAssemblyVersion)' != 'true' and '$(_AssemblyInTargetingPack)' == 'true' and ('$(PreReleaseVersionLabel)' == 'servicing' or '$(PreReleaseVersionLabel)' == 'mauipreview')"
           AfterTargets="CoreCompile" >
     <Error Condition="'$(AssemblyVersion)' != '$(LastReleasedStableAssemblyVersion)'" Text="AssemblyVersion should match last released assembly version $(LastReleasedStableAssemblyVersion)" />
+  </Target>
+
+  <Target Name="ValidateServicingVersionIsPropertlySet"
+          Condition="'$(PreReleaseVersionLabel)' == 'servicing'"
+          AfterTargets="GenerateNuspec">
+    <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
   </Target>
 
 </Project>
