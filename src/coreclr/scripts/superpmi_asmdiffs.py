@@ -67,11 +67,12 @@ def setup_args(args):
     return coreclr_args
 
 def copy_dasm_files(spmi_location, upload_directory, tag_name):
-    """Copyes .dasm files in a tempDirectory, zip it and copy the compressed file in upload directory.
+    """Copies .dasm files to a tempDirectory, zip it, and copy the compressed file to the upload directory.
 
     Args:
         spmi_location (string): Location where .dasm files are present
         upload_directory (string): Upload directory
+        tag_name (string): tag_name used in zip file name.
     """
 
     print("Copy .dasm files")
