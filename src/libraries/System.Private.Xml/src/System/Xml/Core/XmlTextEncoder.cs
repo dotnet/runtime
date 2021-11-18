@@ -540,13 +540,16 @@ namespace System.Xml
 
         private void WriteCharEntityImpl(char ch)
         {
-            WriteCharEntityImpl(((int)ch).ToString("X", NumberFormatInfo.InvariantInfo));
+            Span<char> span = stackalloc char[8];
+            bool result = ((int)ch).TryFormat(span, out int charsWritten, "X");
+            Debug.Assert(result);
+            WriteCharEntityImpl(span[..charsWritten]);
         }
 
-        private void WriteCharEntityImpl(string strVal)
+        private void WriteCharEntityImpl(ReadOnlySpan<char> ros)
         {
             _textWriter.Write("&#x");
-            _textWriter.Write(strVal);
+            _textWriter.Write(ros);
             _textWriter.Write(';');
         }
 
