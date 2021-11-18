@@ -2534,6 +2534,13 @@ struct IPmappingDsc
     bool             ipmdIsLabel;   // Can this code be a branch label?
 };
 
+struct PreciseIPMapping
+{
+    PreciseIPMapping* next;
+    emitLocation      nativeLoc;
+    DebugInfo         debugInfo;
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8268,6 +8275,9 @@ public:
 
     IPmappingDsc* genIPmappingList;
     IPmappingDsc* genIPmappingLast;
+
+    PreciseIPMapping* genPreciseIPMappingsHead;
+    PreciseIPMapping* genPreciseIPMappingsTail;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points
