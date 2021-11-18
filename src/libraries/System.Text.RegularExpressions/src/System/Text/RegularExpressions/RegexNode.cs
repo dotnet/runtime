@@ -216,17 +216,21 @@ namespace System.Text.RegularExpressions
         {
             switch (Type)
             {
-                case Oneloop:
-                    Type = Oneloopatomic;
+                case Oneloop or Notoneloop or Setloop:
+                    // For loops, we simply change the Type to the atomic variant.
+                    // Atomic greedy loops should consume as many values as they can.
+                    Type += Oneloopatomic - Oneloop;
                     break;
-                case Notoneloop:
-                    Type = Notoneloopatomic;
+
+                case Onelazy or Notonelazy or Setlazy:
+                    // For lazy, we not only change the Type, we also lower the max number of iterations
+                    // to the minimum number of iterations, as they should end up matching as little as possible.
+                    Type += Oneloopatomic - Onelazy;
+                    N = M;
                     break;
+
                 default:
-#if DEBUG
-                    Debug.Assert(Type == Setloop, $"Unexpected type: {TypeName}");
-#endif
-                    Type = Setloopatomic;
+                    Debug.Fail($"Unexpected type: {Type}");
                     break;
             }
         }
@@ -445,11 +449,15 @@ namespace System.Text.RegularExpressions
             {
                 switch (node.Type)
                 {
-                    // {One/Notone/Set}loops can be upgraded to {One/Notone/Set}loopatomic nodes,
-                    // e.g. [abc]* => (?>[abc]*)
+                    // {One/Notone/Set}loops can be upgraded to {One/Notone/Set}loopatomic nodes, e.g. [abc]* => (?>[abc]*).
+                    // And {One/Notone/Set}lazys can similarly be upgraded to be atomic, which really makes them into repeaters
+                    // or even empty nodes.
                     case Oneloop:
                     case Notoneloop:
                     case Setloop:
+                    case Onelazy:
+                    case Notonelazy:
+                    case Setlazy:
                         node.MakeLoopAtomic();
                         break;
 
@@ -642,11 +650,14 @@ namespace System.Text.RegularExpressions
                 case Setloopatomic:
                     return child;
 
-                // If an atomic subexpression contains only a {one/notone/set}loop,
+                // If an atomic subexpression contains only a {one/notone/set}{loop/lazy},
                 // change it to be an {one/notone/set}loopatomic and remove the atomic node.
                 case Oneloop:
                 case Notoneloop:
                 case Setloop:
+                case Onelazy:
+                case Notonelazy:
+                case Setlazy:
                     child.MakeLoopAtomic();
                     return child;
 
@@ -2229,11 +2240,14 @@ namespace System.Text.RegularExpressions
                         supported = true;
                         break;
 
-                    // Single character greedy loops are supported if they're either they're actually a repeater
+                    // Single character greedy/lazy loops are supported if either they're actually a repeater
                     // or they're not contained in any construct other than simple nesting (e.g. concat, capture).
                     case Oneloop:
                     case Notoneloop:
                     case Setloop:
+                    case Onelazy:
+                    case Notonelazy:
+                    case Setlazy:
                         Debug.Assert(Next == null || Next.Type != Atomic, "Loop should have been transformed into an atomic type.");
                         supported = M == N || AncestorsAllowBacktracking(Next);
                         static bool AncestorsAllowBacktracking(RegexNode? node)
@@ -2255,12 +2269,6 @@ namespace System.Text.RegularExpressions
 
                             return true;
                         }
-                        break;
-
-                    case Onelazy:
-                    case Notonelazy:
-                    case Setlazy:
-                        supported = M == N || (Next != null && Next.Type == Atomic);
                         break;
 
                     // {Lazy}Loop repeaters are the same, except their child also needs to be supported.

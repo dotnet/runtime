@@ -2122,7 +2122,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Onelazy:
                     case RegexNode.Notonelazy:
                     case RegexNode.Setlazy:
-                        EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                        EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Concatenate:
@@ -2556,6 +2556,121 @@ namespace System.Text.RegularExpressions
                 LoadTextSpanLocal();
 
                 MarkLabel(endLoop);
+            }
+
+            void EmitSingleCharLazy(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
+            {
+                // Emit the min iterations as a repeater.  Any failures here don't necessitate backtracking,
+                // as the lazy itself failed to match.
+                if (node.M > 0)
+                {
+                    EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                }
+
+                // If the whole thing was actually that repeater, we're done.
+                if (node.M == node.N)
+                {
+                    return;
+                }
+
+                Debug.Assert(node.M < node.N);
+
+                // We now need to match one character at a time, each time allowing the remainder of the expression
+                // to try to match, and only matching another character if the subsequent expression fails to match.
+
+                // We're about to enter a loop, so ensure our text position is 0.
+                TransferTextSpanPosToRunTextPos();
+
+                // If the loop isn't unbounded, track the number of iterations and the max number to allow.
+                LocalBuilder? iterationCount = null;
+                LocalBuilder? maxIterations = null;
+                if (node.N != int.MaxValue)
+                {
+                    // int iterationCount = 0;
+                    // int maxIterations = node.N - node.M;
+                    iterationCount = DeclareInt32();
+                    maxIterations = DeclareInt32();
+                    Ldc(0);
+                    Stloc(iterationCount);
+                    Ldc(node.N - node.M);
+                    Stloc(maxIterations);
+                }
+
+                // Track the current crawl position.  Upon backtracking, we'll unwind any captures beyond this point.
+                LocalBuilder? crawlPos = null;
+                if (expressionHasCaptures)
+                {
+                    // int crawlPos = base.Crawlpos();
+                    crawlPos = DeclareInt32();
+                    Ldthis();
+                    Call(s_crawlposMethod);
+                    Stloc(crawlPos);
+                }
+
+                // Track the current runtextpos.  Each time we backtrack, we'll reset to the stored position, which
+                // is also incremented each time we match another character in the loop.
+                // int nextPos = runtextpos;
+                LocalBuilder nextPos = DeclareInt32();
+                Ldloc(runtextposLocal);
+                Stloc(nextPos);
+
+                // Skip the backtracking section for the initial subsequent matching.  We've already matched the
+                // minimum number of iterations, which means we can successfully match with zero additional iterations.
+                // goto endLoopLabel;
+                Label endLoopLabel = DefineLabel();
+                BrFar(endLoopLabel);
+
+                // Backtracking section. Subsequent failures will jump to here.
+                Label backtrackingLabel = DefineLabel();
+                MarkLabel(backtrackingLabel);
+
+                // Uncapture any captures if the expression has any.  It's possible the captures it has
+                // are before this node, in which case this is wasted effort, but still functionally correct.
+                if (expressionHasCaptures)
+                {
+                    EmitUncaptureUntil(crawlPos!);
+                }
+
+                // If there's a max number of iterations, see if we've exceeded the maximum number of characters
+                // to match.  If we haven't, increment the iteration count.
+                if (maxIterations is not null)
+                {
+                    // if (iterationCount >= maxIterations) goto doneLabel;
+                    Ldloc(iterationCount!);
+                    Ldloc(maxIterations);
+                    BgeFar(doneLabel);
+
+                    // iterationCount++;
+                    Ldloc(iterationCount!);
+                    Ldc(1);
+                    Add();
+                    Stloc(iterationCount!);
+                }
+
+                // Now match the next character in the lazy loop.  We need to reset the runtextpos to the position
+                // just after the last character in this loop was matched, and we need to store the resulting position
+                // for the next time we backtrack.
+
+                // runtextpos = nextPos;
+                // MatchSingleChar();
+                // nextpos = runtextpos;
+                Ldloc(nextPos);
+                Stloc(runtextposLocal);
+                LoadTextSpanLocal();
+                EmitSingleChar(node);
+                TransferTextSpanPosToRunTextPos();
+                Ldloc(runtextposLocal);
+                Stloc(nextPos);
+
+                // Update the done label for everything that comes after this node.  This is done after we emit the single char
+                // matching, as that failing indicates the loop itself has failed to match.
+                Label originalDoneLabel = doneLabel;
+                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
+
+                MarkLabel(endLoopLabel);
+
+                // We explicitly do not reset doneLabel back to originalDoneLabel.
+                // It's left pointing to the backtracking label for everything subsequent in the expression.
             }
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
