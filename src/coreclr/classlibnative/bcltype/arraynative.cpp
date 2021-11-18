@@ -1163,7 +1163,7 @@ FCIMPL3(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField
     } gc;
     gc.refField = (REFLECTFIELDREF)ObjectToOBJECTREF(FCALL_RFH_TO_REFLECTFIELD(structField));
     void* data;
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+    HELPER_METHOD_FRAME_BEGIN_RET_1(gc);
 
     FieldDesc* pField = (FieldDesc*)gc.refField->GetField();
 
