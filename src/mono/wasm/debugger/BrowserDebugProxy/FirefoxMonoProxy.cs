@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
@@ -22,6 +23,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private bool pausedOnWasm;
         private string actorName = "";
         private string threadName = "";
+        private string globalName = "";
 
         public FirefoxMonoProxy(ILoggerFactory loggerFactory, int portBrowser) : base(loggerFactory, null)
         {
@@ -31,13 +33,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         private async Task<string> ReadOne(TcpClient socket, CancellationToken token)
         {
 #pragma warning disable CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
-            byte[] buff = new byte[4000];
-            var mem = new MemoryStream();
             try
             {
                 while (true)
                 {
-                    byte[] buffer = new byte[100000];
+                    byte[] buffer = new byte[1000000];
                     var stream = socket.GetStream();
                     int bytesRead = 0;
                     while (bytesRead == 0 || Convert.ToChar(buffer[bytesRead - 1]) != ':')
@@ -48,6 +48,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var str = Encoding.ASCII.GetString(buffer, 0, bytesRead - 1);
                     int len = int.Parse(str);
                     bytesRead = await stream.ReadAsync(buffer, 0, len, token);
+                    while (bytesRead != len)
+                        bytesRead += await stream.ReadAsync(buffer, bytesRead, len - bytesRead, token);
                     str = Encoding.ASCII.GetString(buffer, 0, len);
                     Console.WriteLine($"{len}:{str}");
                     return str;
@@ -140,7 +142,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             NetworkStream toStream = to.GetStream();
 
-            var msg = o.ToString();
+            var msg = o.ToString(Formatting.None);
             msg = $"{msg.Length}:{msg}";
             toStream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
             toStream.Flush();
@@ -275,29 +277,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return;
             }
             Send(this.ide, args, token);
-            /*var o = JObject.FromObject(new
-            {
-                method,
-                @params = args
-            })
-            if (sessionId.sessionId != null)
-                o["sessionId"] = sessionId.sessionId;
-            */
-            //Send(this.ide, o, token);
-        }
-
-        internal override void SendResponse(MessageId id, Result result, CancellationToken token)
-        {
-            SendResponseInternal(id, result, token);
-        }
-
-        internal override void SendResponseInternal(MessageId id, Result result, CancellationToken token)
-        {
-            JObject o = result.ToJObject(id);
-            if (result.IsErr)
-                logger.LogError($"sending error response for id: {id} -> {result}");
-
-            //Send(this.ide, o, token);
         }
 
         protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
@@ -355,6 +334,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (message["resourceType"].Value<string>() != "console-message")
                                 continue;
                             var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
+                            globalName = args["from"].Value<string>();
                             if (messageArgs != null && messageArgs.Count == 2)
                             {
                                 if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
@@ -380,22 +360,46 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "resume":
                     {
-                        if (args["resumeLimit"]["type"].Value<string>() == "next")
+                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                            return false;
+                        if (args["resumeLimit"]?["type"]?.Value<string>() != null)
                         {
-                            return await Step(sessionId, StepKind.Over, token);
+                            await OnResume(sessionId, token);
+                            return true;
                         }
-                        break;
+                        switch (args["resumeLimit"]["type"].Value<string>())
+                        {
+                            case "next":
+                                await SdbHelper.Step(sessionId, context.ThreadId, StepKind.Over, token);
+                                break;
+                            case "finish":
+                                await SdbHelper.Step(sessionId, context.ThreadId, StepKind.Out, token);
+                                break;
+                            case "step":
+                                await SdbHelper.Step(sessionId, context.ThreadId, StepKind.Into, token);
+                                break;
+                        }
+                        await SendResume(sessionId, token);
+                        return true;
                     }
                 case "attach":
                     {
                         threadName = args["to"].Value<string>();
                         break;
                     }
+                case "source":
+                    {
+                        if (args["to"].Value<string>().StartsWith("dotnet://"))
+                        {
+                            return await OnGetScriptSource(sessionId, args["to"].Value<string>(), token);
+                        }
+                        break;
+                    }
                 case "getBreakableLines":
                     {
                         if (args["to"].Value<string>().StartsWith("dotnet://"))
                         {
-                            return true;
+                            return await OnGetBreakableLines(sessionId, args["to"].Value<string>(), token);
                         }
                         break;
                     }
@@ -460,25 +464,87 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         break;
                     }
+                case "prototypeAndProperties":
+                case "slice":
+                    {
+                        var to = args?["to"].Value<string>().Replace("propertyIterator", "");
+                        if (!DotnetObjectId.TryParse(to, out DotnetObjectId objectId))
+                            return false;
+                        var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
+                        var variables = ConvertToFirefoxContent(res);
+                        var o = JObject.FromObject(new
+                        {
+                            ownProperties = variables,
+                            from = args["to"].Value<string>()
+                        });
+                        if (args["type"].Value<string>() == "prototypeAndProperties")
+                            o.Add("prototype", GetPrototype(objectId, args));
+                        SendEvent(sessionId, "", o, token);
+                        return true;
+                    }
+                case "prototype":
+                    {
+                        if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
+                            return false;
+                        var o = JObject.FromObject(new
+                        {
+                            prototype = GetPrototype(objectId, args),
+                            from = args["to"].Value<string>()
+                        });
+                        SendEvent(sessionId, "", o, token);
+                        return true;
+                    }
+                case "enumSymbols":
+                    {
+                        if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
+                            return false;
+                        var o = JObject.FromObject(new
+                        {
+                            type = "symbolIterator",
+                            count = 0,
+                            actor = args["to"].Value<string>() + "symbolIterator"
+                        });
+
+                        var iterator = JObject.FromObject(new
+                        {
+                            iterator = o,
+                            from = args["to"].Value<string>()
+                        });
+
+                        SendEvent(sessionId, "", iterator, token);
+                        return true;
+                    }
+                case "enumProperties":
+                    {
+                        //{"iterator":{"type":"propertyIterator","actor":"server1.conn19.child63/propertyIterator73","count":3},"from":"server1.conn19.child63/obj71"}
+                        if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
+                            return false;
+                        var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
+                        var variables = ConvertToFirefoxContent(res);
+                        var o = JObject.FromObject(new
+                        {
+                            type = "propertyIterator",
+                            count = variables.Count,
+                            actor = args["to"].Value<string>() + "propertyIterator"
+                        });
+
+                        var iterator = JObject.FromObject(new
+                        {
+                            iterator = o,
+                            from = args["to"].Value<string>()
+                        });
+
+                        SendEvent(sessionId, "", iterator, token);
+                        return true;
+                    }
                 case "getEnvironment":
-                {
+                    {
                         if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
                             return false;
                         ExecutionContext ctx = GetContext(sessionId);
                         Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == int.Parse(objectId.Value));
                         var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
-                        var variables = new JObject();
-                        foreach (var variable in res)
-                        {
-                            var variableDesc = JObject.FromObject(new
-                            {
-                                writable = variable["writable"],
-                                value = variable["value"]["value"],
-                                enumerable = true,
-                                configurable = false
-                            });
-                            variables.Add(variable["name"].Value<string>(), variableDesc);
-                        }
+                        var variables = ConvertToFirefoxContent(res);
                         var o = JObject.FromObject(new
                         {
                             actor = args["to"].Value<string>() + "_0",
@@ -498,33 +564,84 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         SendEvent(sessionId, "", o, token);
                         return true;
-                }
-                case "frames":
-                {
-                    if (pausedOnWasm)
-                    {
-                            try
-                            {
-                                return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
-                            }
-                            catch (Exception) //if the page is refreshed maybe it stops here.
-                            {
-                                await SendCommand(sessionId, "", JObject.FromObject(new
-                                {
-                                    to = threadName,
-                                    type = "resume"
-                                }), token);
-                                return true;
-                            }
                     }
-                    return false;
-                }
+                case "frames":
+                    {
+                        if (pausedOnWasm)
+                        {
+                                try
+                                {
+                                    return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
+                                }
+                                catch (Exception) //if the page is refreshed maybe it stops here.
+                                {
+                                    await SendResume(sessionId, token);
+                                    return true;
+                                }
+                        }
+                        return false;
+                    }
                 default:
                     return false;
             }
             return false;
         }
 
+        private JObject GetPrototype(DotnetObjectId objectId, JObject args)
+        {
+            var o = JObject.FromObject(new
+            {
+                type = "object",
+                @class = objectId.Scheme,
+                actor = args?["to"],
+                from = args?["to"]
+            });
+            return o;
+        }
+
+        private JObject ConvertToFirefoxContent(JToken res)
+        {
+            JObject variables = new JObject();
+            foreach (var variable in res)
+            {
+                JObject variableDesc;
+                if (variable["value"]["objectId"] != null)
+                {
+                    variableDesc = JObject.FromObject(new
+                    {
+                        value = JObject.FromObject(new
+                        {
+                            @class = variable["value"]?["description"]?.Value<string>(),
+                            actor = variable["value"]["objectId"].Value<string>(),
+                            type = "object"
+                        }),
+                        enumerable = true,
+                        configurable = false,
+                        actor = variable["value"]["objectId"].Value<string>()
+                    });
+                }
+                else
+                {
+                    variableDesc = JObject.FromObject(new
+                    {
+                        writable = variable["writable"],
+                        value = variable["value"]["value"],
+                        enumerable = true,
+                        configurable = false
+                    });
+                }
+                variables.Add(variable["name"].Value<string>(), variableDesc);
+            }
+            return variables;
+        }
+        private async Task SendResume(SessionId id, CancellationToken token)
+        {
+            await SendCommand(id, "", JObject.FromObject(new
+            {
+                to = threadName,
+                type = "resume"
+            }), token);
+        }
         internal override Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token)
         {
             // {"to":"server1.conn0.child10/consoleActor2","type":"evaluateJSAsync","text":"console.log(\"oi thays \")","frameActor":"server1.conn0.child10/frame36"}
@@ -539,23 +656,36 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal override async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
         {
+            //different behavior when debugging from VSCode and from Firefox
             Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
-
             var obj = JObject.FromObject(new
             {
                 actor = source.SourceId.ToString(),
-                extensionName = JTokenType.Null,
+                extensionName = (string)null,
                 url = source.Url,
                 isBlackBoxed = false,
-                introductionType = "scriptElement"
+                introductionType = "scriptElement",
+                resourceType = "source"
             });
-
-            var sourcesJObj = JObject.FromObject(new
+            JObject sourcesJObj;
+            if (globalName != "")
             {
-                type = "newSource",
-                source = obj,
-                from = threadName
-            });
+                sourcesJObj = JObject.FromObject(new
+                {
+                    type = "resource-available-form",
+                    resources = new JArray(obj),
+                    from = globalName
+                });
+            }
+            else
+            {
+                sourcesJObj = JObject.FromObject(new
+                {
+                    type = "newSource",
+                    source = obj,
+                    from = threadName
+                });
+            }
             SendEvent(sessionId, "", sourcesJObj, token);
 
             foreach (var req in context.BreakpointRequests.Values)
@@ -643,14 +773,57 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!await EvaluateCondition(sessionId, context, context.CallStack.First(), bp, token))
             {
                 context.ClearState();
-                await SendCommand(sessionId, "", JObject.FromObject(new
-                {
-                    to = threadName,
-                    type = "resume"
-                }), token);
+                await SendResume(sessionId, token);
                 return true;
             }
             SendEvent(sessionId, "", o, token);
+            return true;
+        }
+        internal async Task<bool> OnGetBreakableLines(MessageId msg_id, string script_id, CancellationToken token)
+        {
+            if (!SourceId.TryParse(script_id, out SourceId id))
+                return false;
+
+            SourceFile src_file = (await LoadStore(msg_id, token)).GetFileById(id);
+
+            SendEvent(msg_id, "", JObject.FromObject(new { lines = src_file.BreakableLines.ToArray(), from = script_id }), token);
+            return true;
+        }
+
+        internal override async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
+        {
+            if (!SourceId.TryParse(script_id, out SourceId id))
+                return false;
+
+            SourceFile src_file = (await LoadStore(msg_id, token)).GetFileById(id);
+
+            try
+            {
+                var uri = new Uri(src_file.Url);
+                string source = $"// Unable to find document {src_file.SourceUri}";
+
+                using (Stream data = await src_file.GetSourceAsync(checkHash: false, token: token))
+                {
+                    if (data.Length == 0)
+                        return false;
+
+                    using (var reader = new StreamReader(data))
+                        source = await reader.ReadToEndAsync();
+                }
+                SendEvent(msg_id, "", JObject.FromObject(new { source, from = script_id }), token);
+            }
+            catch (Exception e)
+            {
+                var o = JObject.FromObject(new
+                {
+                    source = $"// Unable to read document ({e.Message})\n" +
+                    $"Local path: {src_file?.SourceUri}\n" +
+                    $"SourceLink path: {src_file?.SourceLinkUri}\n",
+                    from = script_id
+                });
+
+                SendEvent(msg_id, "", o, token);
+            }
             return true;
         }
 

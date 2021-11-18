@@ -972,7 +972,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await RuntimeReady(sessionId, token);
         }
 
-        private async Task OnResume(MessageId msg_id, CancellationToken token)
+        protected async Task OnResume(MessageId msg_id, CancellationToken token)
         {
             ExecutionContext ctx = GetContext(msg_id);
             if (ctx.CallStack != null)
@@ -1350,7 +1350,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendResponse(msg_id, Result.OkFromObject(new { }), token);
         }
 
-        private async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
+        internal virtual async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
         {
             if (!SourceId.TryParse(script_id, out SourceId id))
                 return false;

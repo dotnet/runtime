@@ -328,9 +328,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Token { get; }
         internal bool IsEnCMethod;
         internal LocalScopeHandleCollection localScopes;
-        public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
-        public int IsAsync { get; set; }
-        public bool IsHiddenFromDebugger { get; }
+        internal bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
+        internal int IsAsync { get; set; }
+        internal bool IsHiddenFromDebugger { get; }
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
             this.IsAsync = -1;
@@ -348,9 +348,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var sps = DebugInformation.GetSequencePoints();
                 SequencePoint start = sps.First();
                 SequencePoint end = sps.First();
-
+                source.BreakableLines.Add(start.StartLine);
                 foreach (SequencePoint sp in sps)
                 {
+                    if (source.BreakableLines.Last<int>() != sp.StartLine)
+                        source.BreakableLines.Add(sp.StartLine);
                     if (sp.StartLine < start.StartLine)
                         start = sp;
                     else if (sp.StartLine == start.StartLine && sp.StartColumn < start.StartColumn)
@@ -741,6 +743,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Document doc;
         private DocumentHandle docHandle;
         private string url;
+        internal List<int> BreakableLines { get; }
 
         internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, Uri sourceLinkUri, string url)
         {
@@ -752,6 +755,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.docHandle = docHandle;
             this.url = url;
             this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
+            this.BreakableLines = new List<int>();
 
             this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + url, UriKind.RelativeOrAbsolute);
             if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
