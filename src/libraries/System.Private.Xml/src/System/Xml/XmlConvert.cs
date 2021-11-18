@@ -946,12 +946,7 @@ namespace System.Xml
 
             float f = float.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
 
-            if (f == 0 && s[0] == '-')
-            {
-                return -0f;
-            }
-
-            return f;
+            return f == 0 && s[0] == '-' ? -0f : f;
         }
 
         internal static Exception? TryToSingle(string s, out float result)
@@ -998,12 +993,7 @@ namespace System.Xml
 
             double dVal = double.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
 
-            if (dVal == 0 && s[0] == '-')
-            {
-                return -0d;
-            }
-
-            return dVal;
+            return dVal == 0 && s[0] == '-' ? -0d : dVal;
         }
 
         internal static Exception? TryToDouble(string s, out double result)
@@ -1301,22 +1291,17 @@ namespace System.Xml
 
         internal static Exception? TryToUri(string s, out Uri? result)
         {
-            result = null;
-
             if (!string.IsNullOrEmpty(s))
             { //string.Empty is a valid uri but not "   "
                 s = TrimString(s);
                 if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
                 {
+                    result = null;
                     return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
             }
-            if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out result))
-            {
-                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
-            }
 
-            return null;
+            return Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out result) ? null : new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
         }
 
         // Compares the given character interval and string and returns true if the characters are identical
@@ -1370,11 +1355,7 @@ namespace System.Xml
         private static bool IsNegativeZero(double value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
-            if (value == 0 && BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(-0e0))
-            {
-                return true;
-            }
-            return false;
+            return value == 0 && BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(-0e0);
         }
 
         internal static void VerifyCharData(string? data, ExceptionType exceptionType)
