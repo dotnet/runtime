@@ -7,6 +7,10 @@ using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
+    /// <summary>
+    /// Represents the abstract class from which elliptic-curve asymmetric
+    /// algorithms can inherit from.
+    /// </summary>
     public abstract class ECAlgorithm : AsymmetricAlgorithm
     {
         private static readonly string[] s_validOids =
@@ -70,6 +74,51 @@ namespace System.Security.Cryptography
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         }
 
+        /// <summary>
+        /// Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo
+        /// format into a provided buffer, using a byte-based password.
+        /// </summary>
+        /// <param name="passwordBytes">
+        /// The bytes to use as a password when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        /// The password-based encryption (PBE) parameters to use when encrypting
+        /// the key material.
+        /// </param>
+        /// <param name="destination">
+        /// The byte span to receive the PKCS#8 EncryptedPrivateKeyInfo data.
+        /// </param>
+        /// <param name="bytesWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of bytes written to <paramref name="destination" />. This parameter
+        /// is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="pbeParameters" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ExportParameters" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// <p>
+        ///   The key could not be exported.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   <paramref name="pbeParameters" /> indicates that <see cref="PbeEncryptionAlgorithm.TripleDes3KeyPkcs12" />
+        ///   should be used, which requires <see langword="char" />-based passwords.
+        /// </p>
+        /// </exception>
+        /// <remarks>
+        /// The password bytes are passed directly into the Key Derivation Function (KDF)
+        /// used by the algorithm indicated by <paramref name="pbeParameters" />. This
+        /// enables compatibility with other systems which use a text encoding other than
+        /// UTF-8 when processing passwords with PBKDF2 (Password-Based Key Derivation Function 2).
+        /// </remarks>
         public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters,
@@ -106,6 +155,43 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo
+        /// format into a provided buffer, using a char-based password.
+        /// </summary>
+        /// <param name="password">
+        /// The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        /// The password-based encryption (PBE) parameters to use when encrypting
+        /// the key material.
+        /// </param>
+        /// <param name="destination">
+        /// The byte span to receive the PKCS#8 EncryptedPrivateKeyInfo data.
+        /// </param>
+        /// <param name="bytesWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of bytes written to <paramref name="destination" />. This parameter
+        /// is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="pbeParameters" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ExportParameters" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="pbeParameters" /> indicates an algorithm that uses PBKDF2
+        /// (Password-Based Key Derivation Function 2), the password is converted
+        /// to bytes via the UTF-8 encoding.
+        /// </remarks>
         public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters,
@@ -142,6 +228,26 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Attempts to export the current key in the PKCS#8 PrivateKeyInfo format
+        /// into a provided buffer.
+        /// </summary>
+        /// <param name="destination">The byte span to receive the PKCS#8 PrivateKeyInfo data.</param>
+        /// <param name="bytesWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of bytes written to <paramref name="destination" />. This parameter
+        /// is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ExportParameters" />.
+        /// </exception>
         public override unsafe bool TryExportPkcs8PrivateKey(
             Span<byte> destination,
             out int bytesWritten)
@@ -162,6 +268,26 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Attempts to export the current key in the X.509 SubjectPublicKeyInfo
+        /// format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">The byte span to receive the X.509 SubjectPublicKeyInfo data.</param>
+        /// <param name="bytesWritten">
+        /// When this method returns, contains a value
+        /// that indicates the number of bytes written to <paramref name="destination" />.
+        /// This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ExportParameters" />.
+        /// </exception>
         public override bool TryExportSubjectPublicKeyInfo(
             Span<byte> destination,
             out int bytesWritten)
@@ -172,6 +298,61 @@ namespace System.Security.Cryptography
             return writer.TryEncode(destination, out bytesWritten);
         }
 
+        /// <summary>
+        /// Imports the public/private keypair from a PKCS#8 EncryptedPrivateKeyInfo
+        /// structure after decrypting with a byte-based password, replacing the
+        /// keys for this object.
+        /// </summary>
+        /// <param name="passwordBytes">The bytes to use as a password when decrypting the key material.</param>
+        /// <param name="source">
+        /// The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <param name="bytesRead">
+        /// When this method returns, contains a value that indicates the number
+        /// of bytes read from <paramref name="source" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// <p>The password is incorrect.</p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> indicate the Key Derivation Function (KDF)
+        ///   to apply is the legacy PKCS#12 KDF, which requires <see langword="char" />-based passwords.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> do not represent an
+        ///   ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> indicate the key is for
+        ///   an algorithm other than the algorithm represented by this instance.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> represent the key in a format
+        ///   that is not supported.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>The algorithm-specific key import failed.</p>
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ImportParameters" />.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   The password bytes are passed directly into the Key Derivation Function (KDF)
+        ///   used by the algorithm indicated by the EncryptedPrivateKeyInfo contents.
+        ///   This enables compatibility with other systems which use a text encoding
+        ///   other than UTF-8 when processing passwords with PBKDF2 (Password-Based Key Derivation Function 2).
+        /// </p>
+        /// <p>
+        ///   This method only supports the binary (BER/CER/DER) encoding of EncryptedPrivateKeyInfo.
+        ///   If the value is Base64-encoded, the caller must Base64-decode the contents before calling this method.
+        ///   If the contents are PEM-encoded, <see cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{byte})" />
+        ///   should be used.
+        /// </p>
+        /// </remarks>
         public override unsafe void ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
             ReadOnlySpan<byte> source,
@@ -199,6 +380,53 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Imports the public/private keypair from a PKCS#8 EncryptedPrivateKeyInfo
+        /// structure after decrypting with a byte-based password, replacing the
+        /// keys for this object.
+        /// </summary>
+        /// <param name="password">The password to use when decrypting the key material.</param>
+        /// <param name="source">
+        /// The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <param name="bytesRead">
+        /// When this method returns, contains a value that indicates the number
+        /// of bytes read from <paramref name="source" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// <p>
+        ///   The contents of <paramref name="source" /> do not represent an
+        ///   ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> indicate the key is for
+        ///   an algorithm other than the algorithm represented by this instance.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> represent the key in a format
+        ///   that is not supported.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>The algorithm-specific key import failed.</p>
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ImportParameters" />.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   When the contents of <paramref name="source" /> indicate an algorithm that uses PBKDF1
+        ///   (Password-Based Key Derivation Function 1) or PBKDF2 (Password-Based Key Derivation Function 2),
+        ///   the password is converted to bytes via the UTF-8 encoding.
+        /// </p>
+        /// <p>
+        ///   This method only supports the binary (BER/CER/DER) encoding of EncryptedPrivateKeyInfo.
+        ///   If the value is Base64-encoded, the caller must Base64-decode the contents before calling this method.
+        ///   If the contents are PEM-encoded, <see cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />
+        ///   should be used.
+        /// </p>
+        /// </remarks>
         public override unsafe void ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> source,
@@ -226,6 +454,40 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Imports the public/private keypair from a PKCS#8 PrivateKeyInfo structure
+        /// after decryption, replacing the keys for this object.
+        /// </summary>
+        /// <param name="source">The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.</param>
+        /// <param name="bytesRead">
+        /// When this method returns, contains a value that indicates the number
+        /// of bytes read from <paramref name="source" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ImportParameters" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// <p>
+        ///   The contents of <paramref name="source" /> do not represent an ASN.1-BER-encoded
+        ///   PKCS#8 PrivateKeyInfo structure.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> indicate the key is for an algorithm
+        ///   other than the algorithm represented by this instance.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>The contents of <paramref name="source" /> represent the key in a format that is not supported.</p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The algorithm-specific key import failed.
+        /// </p>
+        /// </exception>
+        /// <remarks>
+        /// This method only supports the binary (BER/CER/DER) encoding of PrivateKeyInfo.
+        /// If the value is Base64-encoded, the caller must Base64-decode the contents before calling this method.
+        /// If the value is PEM-encoded, <see cref="ImportFromPem" /> should be used.
+        /// </remarks>
         public override unsafe void ImportPkcs8PrivateKey(
             ReadOnlySpan<byte> source,
             out int bytesRead)
@@ -251,6 +513,40 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Imports the public key from an X.509 SubjectPublicKeyInfo structure after decryption,
+        /// replacing the keys for this object
+        /// </summary>
+        /// <param name="source">The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.</param>
+        /// <param name="bytesRead">
+        /// When this method returns, contains a value that indicates the number
+        /// of bytes read from <paramref name="source" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ImportParameters" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// <p>
+        ///   The contents of <paramref name="source" /> do not represent an
+        ///   ASN.1-DER-encoded X.509 SubjectPublicKeyInfo structure.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> indicate the key is for an algorithm
+        /// other than the algorithm represented by this instance.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>
+        ///   The contents of <paramref name="source" /> represent the key in a format that is not supported.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>The algorithm-specific key import failed.</p>
+        /// </exception>
+        /// <remarks>
+        /// This method only supports the binary (DER) encoding of SubjectPublicKeyInfo.
+        /// If the value is Base64-encoded, the caller must Base64-decode the contents before calling this method.
+        /// If this value is PEM-encoded, <see cref="ImportFromPem" /> should be used.
+        /// </remarks>
         public override void ImportSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,
             out int bytesRead)
@@ -266,6 +562,31 @@ namespace System.Security.Cryptography
             bytesRead = localRead;
         }
 
+        /// <summary>
+        /// Imports the public/private keypair from an ECPrivateKey structure,
+        /// replacing the keys for this object.
+        /// </summary>
+        /// <param name="source">The bytes of an ECPrivateKey structure in the ASN.1-BER encoding.</param>
+        /// <param name="bytesRead">
+        /// When this method returns, contains a value that indicates the number
+        /// of bytes read from <paramref name="source" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ImportParameters" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        /// <p>
+        ///   The contents of <paramref name="source" /> do not represent an
+        ///   ASN.1-BER-encoded PKCS#8 ECPrivateKey structure.
+        /// </p>
+        /// <p>-or-</p>
+        /// <p>The key import failed.</p>
+        /// </exception>
+        /// <remarks>
+        /// This method only supports the binary (BER/CER/DER) encoding of ECPrivateKey.
+        /// If the value is Base64-encoded, the caller must Base64-decode the contents before calling this method.
+        /// If the value is PEM-encoded, <see cref="ImportFromPem" /> should be used.
+        /// </remarks>
         public virtual unsafe void ImportECPrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             ECParameters ecParameters = EccKeyFormatHelper.FromECPrivateKey(source, out int localRead);
@@ -284,6 +605,9 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>Exports the current key in the ECPrivateKey format.</summary>
+        /// <returns>A byte array containing the ECPrivateKey representation of this key.</returns>
+        /// <exception cref="CryptographicException">The key could not be exported.</exception>
         public virtual unsafe byte[] ExportECPrivateKey()
         {
             ECParameters ecParameters = ExportParameters(true);
@@ -302,6 +626,24 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Attempts to export the current key in the ECPrivateKey format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">The byte span to receive the ECPrivateKey data.</param>
+        /// <param name="bytesWritten">When this method returns, contains a value
+        /// that indicates the number of bytes written to <paramref name="destination" />.
+        /// This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// A derived class has not provided an implementation for <see cref="ExportParameters" />.
+        /// </exception>
         public virtual unsafe bool TryExportECPrivateKey(Span<byte> destination, out int bytesWritten)
         {
             ECParameters ecParameters = ExportParameters(true);
