@@ -615,7 +615,7 @@ namespace System.Xml.Xsl.XsltOld
                             int bytes = _utf8Encoding.GetBytes(value, i - 1, 1, _byteBuffer!, 0);
                             for (int j = 0; j < bytes; j++)
                             {
-                                Write("%");
+                                Write('%');
                                 Write(((uint)_byteBuffer![j]).ToString("X2", CultureInfo.InvariantCulture));
                             }
                         }
@@ -757,7 +757,7 @@ namespace System.Xml.Xsl.XsltOld
             Write(s_EndOfLine);
             for (int i = 2 * depth; 0 < i; i--)
             {
-                Write(" ");
+                Write(' ');
             }
         }
 

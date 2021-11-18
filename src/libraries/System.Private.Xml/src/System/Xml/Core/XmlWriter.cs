@@ -237,7 +237,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
                 }
                 WriteString(prefix);
-                WriteString(":");
+                WriteCharEntity(':');
             }
             WriteString(localName);
         }

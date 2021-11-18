@@ -109,13 +109,13 @@ namespace System.Xml.Serialization
         internal void GenerateHashtableGetBegin(string privateName, string publicName)
         {
             _writer.Write(typeof(Hashtable).FullName);
-            _writer.Write(" ");
+            _writer.Write(' ');
             _writer.Write(privateName);
             _writer.WriteLine(" = null;");
             _writer.Write("public override ");
             _writer.Write(typeof(Hashtable).FullName);
 
-            _writer.Write(" ");
+            _writer.Write(' ');
             _writer.Write(publicName);
             _writer.WriteLine(" {");
             _writer.Indent++;
@@ -291,7 +291,7 @@ namespace System.Xml.Serialization
                 _writer.Write(writerClass);
                 _writer.Write(")writer).");
                 _writer.Write(writeMethod);
-                _writer.Write("(");
+                _writer.Write('(');
                 if (mapping is XmlMembersMapping)
                 {
                     _writer.Write("(object[])");

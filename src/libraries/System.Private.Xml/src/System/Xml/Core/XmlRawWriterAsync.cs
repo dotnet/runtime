@@ -197,7 +197,7 @@ namespace System.Xml
             if (prefix.Length != 0)
             {
                 await WriteStringAsync(prefix).ConfigureAwait(false);
-                await WriteStringAsync(":").ConfigureAwait(false);
+                await WriteCharEntityAsync(':').ConfigureAwait(false);
             }
 
             await WriteStringAsync(localName).ConfigureAwait(false);

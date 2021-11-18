@@ -815,7 +815,7 @@ namespace System.Xml.Serialization
                                 {
                                     if (shouldAppendWhitespace)
                                     {
-                                        Writer.WriteString(" ");
+                                        Writer.WriteCharEntity(' ');
                                     }
 
                                     if (ai is byte[])

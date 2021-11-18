@@ -223,7 +223,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
                 }
                 await WriteStringAsync(prefix).ConfigureAwait(false);
-                await WriteStringAsync(":").ConfigureAwait(false);
+                await WriteCharEntityAsync(':').ConfigureAwait(false);
             }
             await WriteStringAsync(localName).ConfigureAwait(false);
         }

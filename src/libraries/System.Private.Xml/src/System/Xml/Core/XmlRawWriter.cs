@@ -274,7 +274,7 @@ namespace System.Xml
             if (prefix.Length != 0)
             {
                 WriteString(prefix);
-                WriteString(":");
+                WriteCharEntity(':');
             }
 
             WriteString(localName);

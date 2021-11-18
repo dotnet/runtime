@@ -1821,7 +1821,7 @@ namespace System.Xml.Serialization
             _writer.Write(GetStringForTypeof(CodeIdentifier.GetCSharpName(type), collectionUseReflection));
             _writer.Write(".GetProperty(");
             WriteQuotedCSharpString(defaultIndexer.Name);
-            _writer.Write(",");
+            _writer.Write(',');
             //defaultIndexer.PropertyType is same as TypeDesc.ElementTypeDesc
             _writer.Write(GetStringForTypeof(CodeIdentifier.GetCSharpName(defaultIndexer.PropertyType), elementUseReflection));
             _writer.Write(",new ");
@@ -2027,7 +2027,7 @@ namespace System.Xml.Serialization
             if (useReflection)
                 typeFullName = "object";
             _writer.Write(typeFullName);
-            _writer.Write(" ");
+            _writer.Write(' ');
             _writer.Write(variableName);
             if (initValue != null)
             {
@@ -2044,7 +2044,7 @@ namespace System.Xml.Serialization
         internal void WriteCreateInstance(string escapedName, string source, bool useReflection, bool ctorInaccessible)
         {
             _writer.Write(useReflection ? "object" : escapedName);
-            _writer.Write(" ");
+            _writer.Write(' ');
             _writer.Write(source);
             _writer.Write(" = ");
             _writer.Write(GetStringForCreateInstance(escapedName, useReflection, ctorInaccessible, !useReflection && ctorInaccessible));
@@ -2077,7 +2077,7 @@ namespace System.Xml.Serialization
                     typeName = typeof(Array).FullName!;
             }
             _writer.Write(typeName);
-            _writer.Write(" ");
+            _writer.Write(' ');
             _writer.Write(variableName);
             if (initValue != null)
             {
@@ -2117,7 +2117,7 @@ namespace System.Xml.Serialization
                 _writer.Write(variable);
                 _writer.Write(" == typeof(");
                 _writer.Write(escapedTypeName);
-                _writer.Write(")");
+                _writer.Write(')');
                 return;
             }
             _writer.Write(variable);
@@ -2349,8 +2349,7 @@ namespace System.Xml.Serialization
                 Writer.Indent++;
             }
             string suffix = IsSoap ? "Encoded" : "Literal";
-            Writer.Write(nullable ? ("WriteNullableQualifiedName" + suffix) : "WriteElementQualifiedName");
-            Writer.Write("(");
+            Writer.Write(nullable ? $"WriteNullableQualifiedName {suffix}(" : "WriteElementQualifiedName(");
             WriteQuotedCSharpString(name);
             if (ns != null)
             {
@@ -2366,7 +2365,7 @@ namespace System.Xml.Serialization
                 WriteQuotedCSharpString(mapping.TypeName);
                 Writer.Write(", ");
                 WriteQuotedCSharpString(mapping.Namespace);
-                Writer.Write(")");
+                Writer.Write(')');
             }
 
             Writer.WriteLine(");");
@@ -2388,9 +2387,9 @@ namespace System.Xml.Serialization
 #endif
 
             Writer.Write(methodName);
-            Writer.Write("(");
+            Writer.Write('(');
             Writer.Write(source);
-            Writer.Write(")");
+            Writer.Write(')');
         }
 
         private void WritePrimitiveValue(TypeDesc typeDesc, string source, bool isElement)
@@ -2406,17 +2405,17 @@ namespace System.Xml.Serialization
                     Writer.Write(typeof(XmlConvert).FullName);
                     Writer.Write(".ToString((");
                     Writer.Write(typeDesc.CSharpName);
-                    Writer.Write(")");
+                    Writer.Write(')');
                     Writer.Write(source);
-                    Writer.Write(")");
+                    Writer.Write(')');
                 }
                 else
                 {
                     Writer.Write("From");
                     Writer.Write(typeDesc.FormatterName);
-                    Writer.Write("(");
+                    Writer.Write('(');
                     Writer.Write(source);
-                    Writer.Write(")");
+                    Writer.Write(')');
                 }
             }
         }
@@ -2443,7 +2442,7 @@ namespace System.Xml.Serialization
                     Writer.Write(" != ");
                     if (((EnumMapping)mapping).IsFlags)
                     {
-                        Writer.Write("(");
+                        Writer.Write('(');
                         string[] values = ((string)defaultValue!).Split(null);
                         for (int i = 0; i < values.Length; i++)
                         {
@@ -2453,13 +2452,13 @@ namespace System.Xml.Serialization
                                 Writer.WriteLine(" | ");
                             Writer.Write(RaCodeGen.GetStringForEnumCompare((EnumMapping)mapping, values[i], mapping.TypeDesc.UseReflection));
                         }
-                        Writer.Write(")");
+                        Writer.Write(')');
                     }
                     else
                     {
                         Writer.Write(RaCodeGen.GetStringForEnumCompare((EnumMapping)mapping, (string)defaultValue!, mapping.TypeDesc.UseReflection));
                     }
-                    Writer.Write(")");
+                    Writer.Write(')');
                 }
                 else
                 {
@@ -2470,7 +2469,7 @@ namespace System.Xml.Serialization
             }
 
             Writer.Write(method);
-            Writer.Write("(");
+            Writer.Write('(');
             WriteQuotedCSharpString(name);
             if (ns != null)
             {
@@ -2495,7 +2494,7 @@ namespace System.Xml.Serialization
                 WriteQuotedCSharpString(mapping.TypeName);
                 Writer.Write(", ");
                 WriteQuotedCSharpString(mapping.Namespace);
-                Writer.Write(")");
+                Writer.Write(')');
             }
 
             Writer.WriteLine(");");
@@ -2510,7 +2509,7 @@ namespace System.Xml.Serialization
         private void WriteTag(string methodName, string name, string? ns)
         {
             Writer.Write(methodName);
-            Writer.Write("(");
+            Writer.Write('(');
             WriteQuotedCSharpString(name);
             Writer.Write(", ");
             if (ns == null)
@@ -2527,7 +2526,7 @@ namespace System.Xml.Serialization
         private void WriteTag(string methodName, string name, string? ns, bool writePrefixed)
         {
             Writer.Write(methodName);
-            Writer.Write("(");
+            Writer.Write('(');
             WriteQuotedCSharpString(name);
             Writer.Write(", ");
             if (ns == null)
@@ -2853,7 +2852,7 @@ namespace System.Xml.Serialization
             {
                 Writer.Write("string ");
                 Writer.Write(methodName);
-                Writer.Write("(");
+                Writer.Write('(');
                 Writer.Write(mapping.TypeDesc.UseReflection ? "object" : fullTypeName);
                 Writer.WriteLine(" v) {");
             }
@@ -2969,11 +2968,10 @@ namespace System.Xml.Serialization
                 Writer.Write(methodName);
                 Writer.Write("(n, ns,");
                 if (!derived.TypeDesc.UseReflection) Writer.Write($"({fullTypeName})");
-                Writer.Write("o");
+                Writer.Write('o');
                 if (derived.TypeDesc.IsNullable)
                     Writer.Write(", isNullable");
-                Writer.Write(", true");
-                Writer.WriteLine(");");
+                Writer.WriteLine(", true);");
                 Writer.WriteLine("return;");
                 Writer.Indent--;
                 Writer.WriteLine("}");
@@ -3012,7 +3010,7 @@ namespace System.Xml.Serialization
                         Writer.WriteLine(");");
                         Writer.Write("Writer.WriteString(");
                         Writer.Write(methodName);
-                        Writer.Write("(");
+                        Writer.Write('(');
                         if (!mapping.TypeDesc.UseReflection) Writer.Write($"({fullTypeName})");
                         Writer.WriteLine("o));");
                         Writer.WriteLine("Writer.WriteEndElement();");
@@ -3321,9 +3319,9 @@ namespace System.Xml.Serialization
                         if (memberTypeDesc.UseReflection)
                         {
                             // we use wildcard method name for generic GetEnumerator method, so we cannot use GetStringForMethodInvoke call here
-                            Writer.Write("(");
+                            Writer.Write('(');
                             Writer.Write(typeof(IEnumerator).FullName);
-                            Writer.Write(")");
+                            Writer.Write(')');
                             Writer.Write(RaCodeGen.GetReflectionVariable(memberTypeDesc.CSharpName, "System.Collections.Generic.IEnumerable*"));
                             Writer.WriteLine(".Invoke(a, new object[0]);");
                         }
@@ -3338,9 +3336,9 @@ namespace System.Xml.Serialization
                     {
                         if (memberTypeDesc.UseReflection)
                         {
-                            Writer.Write("(");
+                            Writer.Write('(');
                             Writer.Write(typeof(IEnumerator).FullName);
-                            Writer.Write(")");
+                            Writer.Write(')');
                         }
                         Writer.Write(RaCodeGen.GetStringForMethodInvoke("a", memberTypeDesc.CSharpName, "GetEnumerator", memberTypeDesc.UseReflection));
                         Writer.WriteLine(";");
@@ -3523,7 +3521,7 @@ namespace System.Xml.Serialization
                 {
                     Writer.Write("((");
                     Writer.Write(typeof(IEnumerable).FullName);
-                    Writer.Write(")");
+                    Writer.Write(')');
                     Writer.Write(arrayName);
                     Writer.WriteLine(").GetEnumerator();");
                 }
@@ -3532,9 +3530,9 @@ namespace System.Xml.Serialization
                     if (arrayTypeDesc.UseReflection)
                     {
                         // we use wildcard method name for generic GetEnumerator method, so we cannot use GetStringForMethodInvoke call here
-                        Writer.Write("(");
+                        Writer.Write('(');
                         Writer.Write(typeof(IEnumerator).FullName);
-                        Writer.Write(")");
+                        Writer.Write(')');
                         Writer.Write(RaCodeGen.GetReflectionVariable(arrayTypeDesc.CSharpName, "System.Collections.Generic.IEnumerable*"));
                         Writer.Write(".Invoke(");
                         Writer.Write(arrayName);
@@ -3553,9 +3551,9 @@ namespace System.Xml.Serialization
                 {
                     if (arrayTypeDesc.UseReflection)
                     {
-                        Writer.Write("(");
+                        Writer.Write('(');
                         Writer.Write(typeof(IEnumerator).FullName);
-                        Writer.Write(")");
+                        Writer.Write(')');
                     }
                     Writer.Write(RaCodeGen.GetStringForMethodInvoke(arrayName, arrayTypeDesc.CSharpName, "GetEnumerator", arrayTypeDesc.UseReflection));
                     Writer.WriteLine(";");
@@ -3583,7 +3581,7 @@ namespace System.Xml.Serialization
                 {
                     Writer.Write("((");
                     Writer.Write(typeof(ICollection).FullName);
-                    Writer.Write(")");
+                    Writer.Write(')');
                     Writer.Write(arrayName);
                     Writer.Write(").Count");
                 }
@@ -3723,7 +3721,7 @@ namespace System.Xml.Serialization
                     Writer.Write(fullTypeName);
                     Writer.Write(" elem = (");
                     Writer.Write(fullTypeName);
-                    Writer.Write(")");
+                    Writer.Write(')');
                     Writer.Write(source);
                     Writer.WriteLine(";");
 
@@ -3977,7 +3975,7 @@ namespace System.Xml.Serialization
                     {
                         Writer.Write("((");
                         Writer.Write(typeof(ICollection).FullName);
-                        Writer.Write(")");
+                        Writer.Write(')');
                         Writer.Write(elementArrayName);
                         Writer.Write(").Count");
                     }
@@ -4039,7 +4037,7 @@ namespace System.Xml.Serialization
                     WriteQuotedCSharpString(ns);
                     Writer.WriteLine(");");
                     Writer.Write(methodName);
-                    Writer.Write("(");
+                    Writer.Write('(');
                     Writer.Write(source);
                     Writer.WriteLine(");");
                     WriteEndElement();
@@ -4095,7 +4093,7 @@ namespace System.Xml.Serialization
                     if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc!.Name) + Environment.StackTrace);
 #endif
                     Writer.Write(methodName);
-                    Writer.Write("(");
+                    Writer.Write('(');
                     WriteQuotedCSharpString(name);
                     Writer.Write(", ");
                     if (ns == null)
@@ -4160,7 +4158,7 @@ namespace System.Xml.Serialization
             Writer.Write(func);
             Writer.Write("((");
             Writer.Write(cast.FullName);
-            Writer.Write(")");
+            Writer.Write(')');
             Writer.Write(source);
             Writer.Write(", ");
             WriteQuotedCSharpString(name);
@@ -4181,7 +4179,7 @@ namespace System.Xml.Serialization
             if (value is string && ((string)value).Length == 0)
             {
                 // special case for string compare
-                Writer.Write("(");
+                Writer.Write('(');
                 Writer.Write(source);
                 if (isNullable)
                     Writer.Write(" == null) || (");
@@ -4192,12 +4190,12 @@ namespace System.Xml.Serialization
             }
             else if (value is double || value is float)
             {
-                Writer.Write("!");
+                Writer.Write('!');
                 Writer.Write(source);
                 Writer.Write(".Equals(");
                 Type? type = Type.GetType(mapping.TypeDesc!.Type!.FullName!);
                 WriteValue(type != null ? Convert.ChangeType(value, type) : value);
-                Writer.Write(")");
+                Writer.Write(')');
             }
             else
             {
@@ -4206,7 +4204,7 @@ namespace System.Xml.Serialization
                 Type? type = Type.GetType(mapping.TypeDesc!.Type!.FullName!);
                 WriteValue(type != null ? Convert.ChangeType(value, type) : value);
             }
-            Writer.Write(")");
+            Writer.Write(')');
         }
 
         private void WriteChoiceTypeCheck(string source, string fullTypeName, bool useReflection, ChoiceIdentifierAccessor choice, string enumName, TypeDesc typeDesc)
@@ -4287,12 +4285,12 @@ namespace System.Xml.Serialization
                     Writer.Write((bool)value ? "true" : "false");
                 else if ((type == typeof(short)) || (type == typeof(long)) || (type == typeof(ushort)) || (type == typeof(uint)) || (type == typeof(ulong)) || (type == typeof(byte)) || (type == typeof(sbyte)))
                 {
-                    Writer.Write("(");
+                    Writer.Write('(');
                     Writer.Write(type.FullName);
-                    Writer.Write(")");
-                    Writer.Write("(");
+                    Writer.Write(')');
+                    Writer.Write('(');
                     Writer.Write(Convert.ToString(value, NumberFormatInfo.InvariantInfo));
-                    Writer.Write(")");
+                    Writer.Write(')');
                 }
                 else if (type == typeof(float))
                 {
@@ -4311,31 +4309,31 @@ namespace System.Xml.Serialization
                     else
                     {
                         Writer.Write(((float)value).ToString("R", NumberFormatInfo.InvariantInfo));
-                        Writer.Write("f");
+                        Writer.Write('f');
                     }
                 }
                 else if (type == typeof(decimal))
                 {
                     Writer.Write(((decimal)value).ToString(null, NumberFormatInfo.InvariantInfo));
-                    Writer.Write("m");
+                    Writer.Write('m');
                 }
                 else if (type == typeof(DateTime))
                 {
                     Writer.Write(" new ");
                     Writer.Write(type.FullName);
-                    Writer.Write("(");
+                    Writer.Write('(');
                     Writer.Write(((DateTime)value).Ticks.ToString(CultureInfo.InvariantCulture));
-                    Writer.Write(")");
+                    Writer.Write(')');
                 }
                 else if (type == typeof(DateTimeOffset))
                 {
                     Writer.Write(" new ");
                     Writer.Write(type.FullName);
-                    Writer.Write("(");
+                    Writer.Write('(');
                     Writer.Write(((DateTimeOffset)value).Ticks.ToString(CultureInfo.InvariantCulture));
                     Writer.Write(", new ");
                     Writer.Write(((DateTimeOffset)value).Offset.GetType().FullName);
-                    Writer.Write("(");
+                    Writer.Write('(');
                     Writer.Write(((DateTimeOffset)value).Offset.Ticks.ToString(CultureInfo.InvariantCulture));
                     Writer.Write("))");
                 }
@@ -4343,9 +4341,9 @@ namespace System.Xml.Serialization
                 {
                     Writer.Write(" new ");
                     Writer.Write(type.FullName);
-                    Writer.Write("(");
+                    Writer.Write('(');
                     Writer.Write(((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture));
-                    Writer.Write(")");
+                    Writer.Write(')');
                 }
                 else
                 {
