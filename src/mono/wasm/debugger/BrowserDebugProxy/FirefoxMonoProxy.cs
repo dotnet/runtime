@@ -318,8 +318,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     pausedOnWasm = true;
                                     return false;
                                 }
+                            default:
+                                pausedOnWasm = false;
+                                return false;
                         }
-                        break;
                     }
                 //when debugging from firefox
                 case "resource-available-form":
@@ -357,6 +359,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "resume":
                     {
                         if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                            return false;
+                        if (context.CallStack == null)
                             return false;
                         if (args["resumeLimit"] == null || args["resumeLimit"].Type == JTokenType.Null)
                         {
@@ -588,7 +592,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var o = JObject.FromObject(new
             {
                 type = "object",
-                @class = objectId.Scheme,
+                @class = "Object",
                 actor = args?["to"],
                 from = args?["to"]
             });
@@ -621,10 +625,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                     variableDesc = JObject.FromObject(new
                     {
                         writable = variable["writable"],
-                        value = variable["value"]["value"],
                         enumerable = true,
-                        configurable = false
+                        configurable = false,
+                        type = variable["value"]?["type"]?.Value<string>()
                     });
+                    if (variable["value"]["value"].Type != JTokenType.Null)
+                        variableDesc.Add("value", variable["value"]["value"]);
+                    else //{"type":"null"}
+                    {
+                        variableDesc.Add("value", JObject.FromObject(new { type = "null"}));
+                    }
                 }
                 variables.Add(variable["name"].Value<string>(), variableDesc);
             }
