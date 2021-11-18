@@ -1121,7 +1121,7 @@ bool RangeCheck::MultiplyOverflows(Limit& limit1, Limit& limit2)
         return true;
     }
 
-    return CheckedOps::MulOverflows(max1, max2, false);
+    return CheckedOps::MulOverflows(max1, max2, CheckedOps::Signed);
 }
 
 // Does the bin operation overflow.

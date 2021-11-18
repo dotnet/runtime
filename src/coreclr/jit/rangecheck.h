@@ -155,7 +155,7 @@ struct Limit
                 return true;
             case keBinOpArray:
             case keConstant:
-                if (CheckedOps::MulOverflows(cns, i, false))
+                if (CheckedOps::MulOverflows(cns, i, CheckedOps::Signed))
                 {
                     return false;
                 }
