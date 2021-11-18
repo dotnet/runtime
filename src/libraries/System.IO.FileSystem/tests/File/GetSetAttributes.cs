@@ -76,7 +76,7 @@ namespace System.IO.Tests
         {
             Assert.Throws<DirectoryNotFoundException>(() =>
             {
-                using var fileHandle = File.OpenHandle(Path.Combine(GetTestFilePath(), "dir" + trailingChar));
+                using var fileHandle = File.OpenHandle(Path.Combine(GetTestFilePath(), "dir" + trailingChar), access: FileAccess.ReadWrite);
                 GetAttributes(fileHandle);
             });
         }
