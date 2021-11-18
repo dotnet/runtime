@@ -72,14 +72,6 @@ static bool IntAddOverflows(int max1, int max2)
     return false;
 }
 
-static bool IntMultiplyOverflows(int max1, int max2)
-{
-    if (max1 == 0 || max2 == 0)
-        return false;
-    int res = max1 * max2;
-    return !(max1 == res / max2);
-}
-
 struct Limit
 {
     enum LimitType
@@ -163,7 +155,7 @@ struct Limit
                 return true;
             case keBinOpArray:
             case keConstant:
-                if (IntMultiplyOverflows(cns, i))
+                if (CheckedOps::MulOverflows(cns, i, false))
                 {
                     return false;
                 }

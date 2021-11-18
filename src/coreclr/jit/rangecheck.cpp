@@ -358,7 +358,8 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     switch (op2->OperGet())
     {
         case GT_LCL_VAR:
-            // When adding two local variables, we also must ensure that any constant is non-negative.
+            // When adding/multiplying/shifting two local variables, we also must ensure that any constant is
+            // non-negative.
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
@@ -1120,7 +1121,7 @@ bool RangeCheck::MultiplyOverflows(Limit& limit1, Limit& limit2)
         return true;
     }
 
-    return IntMultiplyOverflows(max1, max2);
+    return CheckedOps::MulOverflows(max1, max2, false);
 }
 
 // Does the bin operation overflow.
