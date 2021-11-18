@@ -51,7 +51,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     while (bytesRead != len)
                         bytesRead += await stream.ReadAsync(buffer, bytesRead, len - bytesRead, token);
                     str = Encoding.ASCII.GetString(buffer, 0, len);
-                    Console.WriteLine($"{len}:{str}");
                     return str;
                 }
             }
@@ -272,10 +271,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal override void SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             if (method != "")
-            {
-                Console.WriteLine("O que faremos");
                 return;
-            }
             Send(this.ide, args, token);
         }
 
@@ -291,7 +287,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
                         {
-                            await OnDefaultContext(sessionId, new ExecutionContext { Id = 0, AuxData = actorName }, token);
+                            await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, actorName), token);
                             await RuntimeReady(sessionId, token);
                         }
                     }
@@ -339,7 +335,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
                                 {
-                                    await OnDefaultContext(sessionId, new ExecutionContext { Id = 0, AuxData = actorName }, token);
+                                    await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, actorName), token);
                                     await RuntimeReady(sessionId, token);
                                 }
                             }
@@ -362,21 +358,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
                             return false;
-                        if (args["resumeLimit"]?["type"]?.Value<string>() != null)
+                        if (args["resumeLimit"] == null || args["resumeLimit"].Type == JTokenType.Null)
                         {
                             await OnResume(sessionId, token);
-                            return true;
+                            return false;
                         }
                         switch (args["resumeLimit"]["type"].Value<string>())
                         {
                             case "next":
-                                await SdbHelper.Step(sessionId, context.ThreadId, StepKind.Over, token);
+                                await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
                                 break;
                             case "finish":
-                                await SdbHelper.Step(sessionId, context.ThreadId, StepKind.Out, token);
+                                await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);
                                 break;
                             case "step":
-                                await SdbHelper.Step(sessionId, context.ThreadId, StepKind.Into, token);
+                                await context.SdbAgent.Step(context.ThreadId, StepKind.Into, token);
                                 break;
                         }
                         await SendResume(sessionId, token);
@@ -702,12 +698,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             var orig_callframes = args?["callFrames"]?.Values<JObject>();
             var callFrames = new List<object>();
             var frames = new List<Frame>();
-            var commandParams = new MemoryStream();
-            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(thread_id);
             commandParamsWriter.Write(0);
             commandParamsWriter.Write(-1);
-            var retDebuggerCmdReader = await SdbHelper.SendDebuggerAgentCommand<CmdThread>(sessionId, CmdThread.GetFrameInfo, commandParams, token);
+            var retDebuggerCmdReader = await context.SdbAgent.SendDebuggerAgentCommand(CmdThread.GetFrameInfo, commandParamsWriter, token);
             var frame_count = retDebuggerCmdReader.ReadInt32();
             for (int j = 0; j < frame_count; j++)
             {
@@ -716,7 +711,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var il_pos = retDebuggerCmdReader.ReadInt32();
                 var flags = retDebuggerCmdReader.ReadByte();
                 DebugStore store = await LoadStore(sessionId, token);
-                var method = await SdbHelper.GetMethodInfo(sessionId, methodId, token);
+                var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
                 if (location == null)
