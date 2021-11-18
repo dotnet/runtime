@@ -104,7 +104,7 @@ namespace System.Collections.Immutable
         /// <returns>The <see cref="ReadOnlySpan{T}"/> representation of the <see cref="ImmutableArray{T}"/></returns>
         public ReadOnlySpan<T> AsSpan(int start, int length) => new ReadOnlySpan<T>(array, start, length);
 
-        /*
+#if !NETSTANDARD2_0 && !NET461
         public ReadOnlySpan<T> AsSpan(Range range)
         {
             var self = this;
@@ -113,7 +113,7 @@ namespace System.Collections.Immutable
             (int start, int length) = range.GetOffsetAndLength(self.Length);
             return new ReadOnlySpan<T>(self.array, start, length);
         }
-        */
+#endif
 
         public ReadOnlyMemory<T> AsMemory() => new ReadOnlyMemory<T>(array);
 

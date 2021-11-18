@@ -125,7 +125,9 @@ namespace System.Collections.Immutable
         public System.ReadOnlyMemory<T> AsMemory() { throw null; }
         public System.ReadOnlySpan<T> AsSpan() { throw null; }
         public System.ReadOnlySpan<T> AsSpan(int start, int length) { throw null; }
-        // public System.ReadOnlySpan<T> AsSpan(System.Range range) { throw null; }
+#if !NETSTANDARD2_0 && !NET461
+        public System.ReadOnlySpan<T> AsSpan(System.Range range) { throw null; }
+#endif        
         public System.Collections.Immutable.ImmutableArray<
 #nullable disable
             TOther
