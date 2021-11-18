@@ -279,120 +279,110 @@ namespace System.IO
 
             if (fullPath.Length == 1)
             {
-                // fullPath is '/'.
-                return;
+                return; // fullPath is '/'.
             }
 
-            string mkdirPath = fullPath;
-            int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+            int result = Interop.Sys.MkDir(fullPath, (int)Interop.Sys.Permissions.Mask);
             if (result == 0)
             {
-                // Created directory.
-                return;
+                return; // Created directory.
             }
 
             Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-            if (errorInfo.Error == Interop.Error.EEXIST)
+            if (errorInfo.Error == Interop.Error.EEXIST && DirectoryExists(fullPath))
             {
-                // Path already exists. Ensure it's a directory.
-                if (DirectoryExists(fullPath))
-                {
-                    return;
-                }
+                return; // Path already exists and it's a directory.
             }
             else if (errorInfo.Error == Interop.Error.ENOENT)
             {
                 // Some parts of the path don't exist yet.
+                CreateParentsAndDirectory(fullPath);
+            }
+            else
+            {
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
+            }
+        }
 
-                // Try create parents bottom to top and track those that could not
-                // be created due to missing parents. Then create them top to bottom.
+        public static void CreateParentsAndDirectory(string fullPath)
+        {
+            // Try create parents bottom to top and track those that could not
+            // be created due to missing parents. Then create them top to bottom.
+            List<string> stackDir = new List<string>();
 
-                List<string> stackDir = new List<string>();
+            stackDir.Add(fullPath);
 
-                stackDir.Add(fullPath);
-
-                int i = fullPath.Length - 1;
-                // Trim trailing separator.
-                if (PathInternal.IsDirectorySeparator(fullPath[i]))
+            int i = fullPath.Length - 1;
+            // Trim trailing separator.
+            if (PathInternal.IsDirectorySeparator(fullPath[i]))
+            {
+                i--;
+            }
+            do
+            {
+                // Find the end of the parent directory.
+                Debug.Assert(!PathInternal.IsDirectorySeparator(fullPath[i]));
+                while (!PathInternal.IsDirectorySeparator(fullPath[i]))
                 {
                     i--;
                 }
-                do
-                {
-                    // Find the end of the parent directory.
-                    Debug.Assert(!PathInternal.IsDirectorySeparator(fullPath[i]));
-                    while (!PathInternal.IsDirectorySeparator(fullPath[i]))
-                    {
-                        i--;
-                    }
 
-                    // Try create it.
-                    mkdirPath = fullPath.Substring(0, i);
-                    result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
-                    if (result == 0)
-                    {
-                        // Created parent.
-                        break;
-                    }
-
-                    errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error == Interop.Error.ENOENT)
-                    {
-                        // Some parts of the path don't exist yet.
-                        // We'll try to create its parent on the next iteration.
-
-                        // Track this path for later creation.
-                        stackDir.Add(mkdirPath);
-                    }
-                    else if (errorInfo.Error == Interop.Error.EEXIST)
-                    {
-                        // Parent exists.
-                        // If it is not a directory, MkDir will fail when we create a child directory.
-                        result = 0;
-                        break;
-                    }
-                    else
-                    {
-                        // Fail.
-                        break;
-                    }
-                    i--;
-                } while (i > 0);
-
+                // Try create it.
+                string mkdirPath = fullPath.Substring(0, i);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
                 if (result == 0)
                 {
-                    // Create directories that had missing parents.
-                    for (i = stackDir.Count - 1; i >= 0; i--)
-                    {
-                        mkdirPath = stackDir[i];
-                        result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
-                        if (result < 0)
-                        {
-                            errorInfo = Interop.Sys.GetLastErrorInfo();
+                    // Created parent.
+                    break;
+                }
 
-                            if (errorInfo.Error == Interop.Error.EEXIST)
-                            {
-                                // Path was created since we last checked.
-                                // Continue, and for the last item, which is fullPath,
-                                // verify it is actually a directory.
-                                if (i == 0 && DirectoryExists(mkdirPath))
-                                {
-                                    return;
-                                }
-                            }
-                            else
-                            {
-                                // Fail.
-                                break;
-                            }
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.ENOENT)
+                {
+                    // Some parts of the path don't exist yet.
+                    // We'll try to create its parent on the next iteration.
+
+                    // Track this path for later creation.
+                    stackDir.Add(mkdirPath);
+                }
+                else if (errorInfo.Error == Interop.Error.EEXIST)
+                {
+                    // Parent exists.
+                    // If it is not a directory, MkDir will fail when we create a child directory.
+                    break;
+                }
+                else
+                {
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
+                }
+                i--;
+            } while (i > 0);
+
+            // Create directories that had missing parents.
+            for (i = stackDir.Count - 1; i >= 0; i--)
+            {
+                string mkdirPath = stackDir[i];
+                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                if (result < 0)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error == Interop.Error.EEXIST)
+                    {
+                        // Path was created since we last checked.
+                        // Continue, and for the last item, which is fullPath,
+                        // verify it is actually a directory.
+                        if (i != 0)
+                        {
+                            continue;
+                        }
+                        if (DirectoryExists(mkdirPath))
+                        {
+                            return;
                         }
                     }
-                }
-            }
 
-            if (result < 0)
-            {
-                throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
+                }
             }
         }
 
