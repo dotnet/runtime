@@ -4,31 +4,14 @@
 
 // Zip Spec here: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
 
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Text;
 
 namespace System.IO.Compression
 {
     public class ZipArchive : IDisposable
     {
-        private readonly Stream _archiveStream;
-        private ZipArchiveEntry? _archiveStreamOwner;
-        private BinaryReader? _archiveReader;
-        private ZipArchiveMode _mode;
-        private List<ZipArchiveEntry> _entries;
-        private ReadOnlyCollection<ZipArchiveEntry> _entriesCollection;
-        private Dictionary<string, ZipArchiveEntry> _entriesDictionary;
-        private bool _readEntries;
-        private bool _leaveOpen;
-        private long _centralDirectoryStart; //only valid after ReadCentralDirectory
-        private bool _isDisposed;
-        private uint _numberOfThisDisk; //only valid after ReadCentralDirectory
-        private long _expectedNumberOfEntries;
-        private Stream? _backingStream;
-        private byte[]? _archiveComment;
-        private Encoding? _entryNameEncoding;
+        internal IZipArchiveStrategy Strategy { get; }
 
 #if DEBUG_FORCE_ZIP64
         public bool _forceZip64;
@@ -119,96 +102,11 @@ namespace System.IO.Compression
         public ZipArchive(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
         {
             if (stream == null)
+            {
                 throw new ArgumentNullException(nameof(stream));
-
-            EntryNameEncoding = entryNameEncoding;
-            Stream? extraTempStream = null;
-
-            try
-            {
-                _backingStream = null;
-
-                // check stream against mode
-                switch (mode)
-                {
-                    case ZipArchiveMode.Create:
-                        if (!stream.CanWrite)
-                            throw new ArgumentException(SR.CreateModeCapabilities);
-                        break;
-                    case ZipArchiveMode.Read:
-                        if (!stream.CanRead)
-                            throw new ArgumentException(SR.ReadModeCapabilities);
-                        if (!stream.CanSeek)
-                        {
-                            _backingStream = stream;
-                            extraTempStream = stream = new MemoryStream();
-                            _backingStream.CopyTo(stream);
-                            stream.Seek(0, SeekOrigin.Begin);
-                        }
-                        break;
-                    case ZipArchiveMode.Update:
-                        if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek)
-                            throw new ArgumentException(SR.UpdateModeCapabilities);
-                        break;
-                    default:
-                        // still have to throw this, because stream constructor doesn't do mode argument checks
-                        throw new ArgumentOutOfRangeException(nameof(mode));
-                }
-
-                _mode = mode;
-                if (mode == ZipArchiveMode.Create && !stream.CanSeek)
-                    _archiveStream = new PositionPreservingWriteOnlyStreamWrapper(stream);
-                else
-                    _archiveStream = stream;
-                _archiveStreamOwner = null;
-                if (mode == ZipArchiveMode.Create)
-                    _archiveReader = null;
-                else
-                    _archiveReader = new BinaryReader(_archiveStream);
-                _entries = new List<ZipArchiveEntry>();
-                _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
-                _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();
-                _readEntries = false;
-                _leaveOpen = leaveOpen;
-                _centralDirectoryStart = 0; // invalid until ReadCentralDirectory
-                _isDisposed = false;
-                _numberOfThisDisk = 0; // invalid until ReadCentralDirectory
-                _archiveComment = null;
-
-                switch (mode)
-                {
-                    case ZipArchiveMode.Create:
-                        _readEntries = true;
-                        break;
-                    case ZipArchiveMode.Read:
-                        ReadEndOfCentralDirectory();
-                        break;
-                    case ZipArchiveMode.Update:
-                    default:
-                        Debug.Assert(mode == ZipArchiveMode.Update);
-                        if (_archiveStream.Length == 0)
-                        {
-                            _readEntries = true;
-                        }
-                        else
-                        {
-                            ReadEndOfCentralDirectory();
-                            EnsureCentralDirectoryRead();
-                            foreach (ZipArchiveEntry entry in _entries)
-                            {
-                                entry.ThrowIfNotOpenable(needToUncompress: false, needToLoadIntoMemory: true);
-                            }
-                        }
-                        break;
-                }
             }
-            catch
-            {
-                if (extraTempStream != null)
-                    extraTempStream.Dispose();
 
-                throw;
-            }
+            Strategy = ChooseStrategy(stream, mode, leaveOpen, entryNameEncoding);
         }
 
         /// <summary>
@@ -218,29 +116,13 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
         /// <exception cref="InvalidDataException">The Zip archive is corrupt and the entries cannot be retrieved.</exception>
         public ReadOnlyCollection<ZipArchiveEntry> Entries
-        {
-            get
-            {
-                if (_mode == ZipArchiveMode.Create)
-                    throw new NotSupportedException(SR.EntriesInCreateMode);
-
-                ThrowIfDisposed();
-
-                EnsureCentralDirectoryRead();
-                return _entriesCollection;
-            }
-        }
+            => Strategy.EntriesCollection;
 
         /// <summary>
         /// The ZipArchiveMode that the ZipArchive was initialized with.
         /// </summary>
         public ZipArchiveMode Mode
-        {
-            get
-            {
-                return _mode;
-            }
-        }
+            => Strategy.Mode;
 
         /// <summary>
         /// Creates an empty entry in the Zip archive with the specified entry name.
@@ -258,9 +140,7 @@ namespace System.IO.Compression
         /// <param name="entryName">A path relative to the root of the archive, indicating the name of the entry to be created.</param>
         /// <returns>A wrapper for the newly created file entry in the archive.</returns>
         public ZipArchiveEntry CreateEntry(string entryName)
-        {
-            return DoCreateEntry(entryName, null);
-        }
+            => Strategy.CreateEntry(entryName, null);
 
         /// <summary>
         /// Creates an empty entry in the Zip archive with the specified entry name. There are no restrictions on the names of entries. The last write time of the entry is set to the current time. If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.
@@ -273,39 +153,14 @@ namespace System.IO.Compression
         /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
         /// <returns>A wrapper for the newly created file entry in the archive.</returns>
         public ZipArchiveEntry CreateEntry(string entryName, CompressionLevel compressionLevel)
-        {
-            return DoCreateEntry(entryName, compressionLevel);
-        }
+            => Strategy.CreateEntry(entryName, compressionLevel);
 
         /// <summary>
         /// Releases the unmanaged resources used by ZipArchive and optionally finishes writing the archive and releases the managed resources.
         /// </summary>
         /// <param name="disposing">true to finish writing the archive and release unmanaged and managed resources, false to release only unmanaged resources.</param>
         protected virtual void Dispose(bool disposing)
-        {
-            if (disposing && !_isDisposed)
-            {
-                try
-                {
-                    switch (_mode)
-                    {
-                        case ZipArchiveMode.Read:
-                            break;
-                        case ZipArchiveMode.Create:
-                        case ZipArchiveMode.Update:
-                        default:
-                            Debug.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
-                            WriteFile();
-                            break;
-                    }
-                }
-                finally
-                {
-                    CloseStreams();
-                    _isDisposed = true;
-                }
-            }
-        }
+            => Strategy.Dispose(disposing);
 
         /// <summary>
         /// Finishes writing the archive and releases all resources used by the ZipArchive object, unless the object was constructed with leaveOpen as true. Any streams from opened entries in the ZipArchive still open will throw exceptions on subsequent writes, as the underlying streams will have been closed.
@@ -327,365 +182,17 @@ namespace System.IO.Compression
         /// <param name="entryName">A path relative to the root of the archive, identifying the desired entry.</param>
         /// <returns>A wrapper for the file entry in the archive. If no entry in the archive exists with the specified name, null will be returned.</returns>
         public ZipArchiveEntry? GetEntry(string entryName)
+            => Strategy.GetEntry(entryName);
+
+        private IZipArchiveStrategy ChooseStrategy(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
         {
-            if (entryName == null)
-                throw new ArgumentNullException(nameof(entryName));
-
-            if (_mode == ZipArchiveMode.Create)
-                throw new NotSupportedException(SR.EntriesInCreateMode);
-
-            EnsureCentralDirectoryRead();
-            _entriesDictionary.TryGetValue(entryName, out ZipArchiveEntry? result);
-            return result;
-        }
-
-        internal BinaryReader? ArchiveReader => _archiveReader;
-
-        internal Stream ArchiveStream => _archiveStream;
-
-        internal uint NumberOfThisDisk => _numberOfThisDisk;
-
-        internal Encoding? EntryNameEncoding
-        {
-            get { return _entryNameEncoding; }
-
-            private set
+            return mode switch
             {
-                // value == null is fine. This means the user does not want to overwrite default encoding picking logic.
-
-                // The Zip file spec [http://www.pkware.com/documents/casestudies/APPNOTE.TXT] specifies a bit in the entry header
-                // (specifically: the language encoding flag (EFS) in the general purpose bit flag of the local file header) that
-                // basically says: UTF8 (1) or CP437 (0). But in reality, tools replace CP437 with "something else that is not UTF8".
-                // For instance, the Windows Shell Zip tool takes "something else" to mean "the local system codepage".
-                // We default to the same behaviour, but we let the user explicitly specify the encoding to use for cases where they
-                // understand their use case well enough.
-                // Since the definition of acceptable encodings for the "something else" case is in reality by convention, it is not
-                // immediately clear, whether non-UTF8 Unicode encodings are acceptable. To determine that we would need to survey
-                // what is currently being done in the field, but we do not have the time for it right now.
-                // So, we artificially disallow non-UTF8 Unicode encodings for now to make sure we are not creating a compat burden
-                // for something other tools do not support. If we realise in future that "something else" should include non-UTF8
-                // Unicode encodings, we can remove this restriction.
-
-                if (value != null &&
-                        (value.Equals(Encoding.BigEndianUnicode)
-                        || value.Equals(Encoding.Unicode)))
-                {
-                    throw new ArgumentException(SR.EntryNameEncodingNotSupported, nameof(EntryNameEncoding));
-                }
-
-                _entryNameEncoding = value;
-            }
-        }
-
-        private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
-        {
-            if (entryName == null)
-                throw new ArgumentNullException(nameof(entryName));
-
-            if (string.IsNullOrEmpty(entryName))
-                throw new ArgumentException(SR.CannotBeEmpty, nameof(entryName));
-
-            if (_mode == ZipArchiveMode.Read)
-                throw new NotSupportedException(SR.CreateInReadMode);
-
-            ThrowIfDisposed();
-
-
-            ZipArchiveEntry entry = compressionLevel.HasValue ?
-                new ZipArchiveEntry(this, entryName, compressionLevel.Value) :
-                new ZipArchiveEntry(this, entryName);
-
-            AddEntry(entry);
-
-            return entry;
-        }
-
-        internal void AcquireArchiveStream(ZipArchiveEntry entry)
-        {
-            // if a previous entry had held the stream but never wrote anything, we write their local header for them
-            if (_archiveStreamOwner != null)
-            {
-                if (!_archiveStreamOwner.EverOpenedForWrite)
-                {
-                    _archiveStreamOwner.WriteAndFinishLocalEntry();
-                }
-                else
-                {
-                    throw new IOException(SR.CreateModeCreateEntryWhileOpen);
-                }
-            }
-
-            _archiveStreamOwner = entry;
-        }
-
-        private void AddEntry(ZipArchiveEntry entry)
-        {
-            _entries.Add(entry);
-
-            string entryName = entry.FullName;
-            if (!_entriesDictionary.ContainsKey(entryName))
-            {
-                _entriesDictionary.Add(entryName, entry);
-            }
-        }
-
-        [Conditional("DEBUG")]
-        internal void DebugAssertIsStillArchiveStreamOwner(ZipArchiveEntry entry) => Debug.Assert(_archiveStreamOwner == entry);
-
-        internal void ReleaseArchiveStream(ZipArchiveEntry entry)
-        {
-            Debug.Assert(_archiveStreamOwner == entry);
-
-            _archiveStreamOwner = null;
-        }
-
-        internal void RemoveEntry(ZipArchiveEntry entry)
-        {
-            _entries.Remove(entry);
-
-            _entriesDictionary.Remove(entry.FullName);
-        }
-
-        internal void ThrowIfDisposed()
-        {
-            if (_isDisposed)
-                throw new ObjectDisposedException(GetType().ToString());
-        }
-
-        private void CloseStreams()
-        {
-            if (!_leaveOpen)
-            {
-                _archiveStream.Dispose();
-                _backingStream?.Dispose();
-                _archiveReader?.Dispose();
-            }
-            else
-            {
-                // if _backingStream isn't null, that means we assigned the original stream they passed
-                // us to _backingStream (which they requested we leave open), and _archiveStream was
-                // the temporary copy that we needed
-                if (_backingStream != null)
-                    _archiveStream.Dispose();
-            }
-        }
-
-        private void EnsureCentralDirectoryRead()
-        {
-            if (!_readEntries)
-            {
-                ReadCentralDirectory();
-                _readEntries = true;
-            }
-        }
-
-        private void ReadCentralDirectory()
-        {
-            try
-            {
-                // assume ReadEndOfCentralDirectory has been called and has populated _centralDirectoryStart
-
-                _archiveStream.Seek(_centralDirectoryStart, SeekOrigin.Begin);
-
-                long numberOfEntries = 0;
-
-                Debug.Assert(_archiveReader != null);
-                //read the central directory
-                ZipCentralDirectoryFileHeader currentHeader;
-                bool saveExtraFieldsAndComments = Mode == ZipArchiveMode.Update;
-                while (ZipCentralDirectoryFileHeader.TryReadBlock(_archiveReader,
-                                                        saveExtraFieldsAndComments, out currentHeader))
-                {
-                    AddEntry(new ZipArchiveEntry(this, currentHeader));
-                    numberOfEntries++;
-                }
-
-                if (numberOfEntries != _expectedNumberOfEntries)
-                    throw new InvalidDataException(SR.NumEntriesWrong);
-            }
-            catch (EndOfStreamException ex)
-            {
-                throw new InvalidDataException(SR.Format(SR.CentralDirectoryInvalid, ex));
-            }
-        }
-
-        // This function reads all the EOCD stuff it needs to find the offset to the start of the central directory
-        // This offset gets put in _centralDirectoryStart and the number of this disk gets put in _numberOfThisDisk
-        // Also does some verification that this isn't a split/spanned archive
-        // Also checks that offset to CD isn't out of bounds
-        private void ReadEndOfCentralDirectory()
-        {
-            try
-            {
-                // This seeks backwards almost to the beginning of the EOCD, one byte after where the signature would be
-                // located if the EOCD had the minimum possible size (no file zip comment)
-                _archiveStream.Seek(-ZipEndOfCentralDirectoryBlock.SizeOfBlockWithoutSignature, SeekOrigin.End);
-
-                // If the EOCD has the minimum possible size (no zip file comment), then exactly the previous 4 bytes will contain the signature
-                // But if the EOCD has max possible size, the signature should be found somewhere in the previous 64K + 4 bytes
-                if (!ZipHelper.SeekBackwardsToSignature(_archiveStream,
-                        ZipEndOfCentralDirectoryBlock.SignatureConstant,
-                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.SignatureSize))
-                    throw new InvalidDataException(SR.EOCDNotFound);
-
-                long eocdStart = _archiveStream.Position;
-
-                Debug.Assert(_archiveReader != null);
-                // read the EOCD
-                ZipEndOfCentralDirectoryBlock eocd;
-                bool eocdProper = ZipEndOfCentralDirectoryBlock.TryReadBlock(_archiveReader, out eocd);
-                Debug.Assert(eocdProper); // we just found this using the signature finder, so it should be okay
-
-                if (eocd.NumberOfThisDisk != eocd.NumberOfTheDiskWithTheStartOfTheCentralDirectory)
-                    throw new InvalidDataException(SR.SplitSpanned);
-
-                _numberOfThisDisk = eocd.NumberOfThisDisk;
-                _centralDirectoryStart = eocd.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
-
-                if (eocd.NumberOfEntriesInTheCentralDirectory != eocd.NumberOfEntriesInTheCentralDirectoryOnThisDisk)
-                    throw new InvalidDataException(SR.SplitSpanned);
-
-                _expectedNumberOfEntries = eocd.NumberOfEntriesInTheCentralDirectory;
-
-                // only bother saving the comment if we are in update mode
-                if (_mode == ZipArchiveMode.Update)
-                    _archiveComment = eocd.ArchiveComment;
-
-                TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
-
-                if (_centralDirectoryStart > _archiveStream.Length)
-                {
-                    throw new InvalidDataException(SR.FieldTooBigOffsetToCD);
-                }
-            }
-            catch (EndOfStreamException ex)
-            {
-                throw new InvalidDataException(SR.CDCorrupt, ex);
-            }
-            catch (IOException ex)
-            {
-                throw new InvalidDataException(SR.CDCorrupt, ex);
-            }
-        }
-
-        // Tries to find the Zip64 End of Central Directory Locator, then the Zip64 End of Central Directory, assuming the
-        // End of Central Directory block has already been found, as well as the location in the stream where the EOCD starts.
-        private void TryReadZip64EndOfCentralDirectory(ZipEndOfCentralDirectoryBlock eocd, long eocdStart)
-        {
-            // Only bother looking for the Zip64-EOCD stuff if we suspect it is needed because some value is FFFFFFFFF
-            // because these are the only two values we need, we only worry about these
-            // if we don't find the Zip64-EOCD, we just give up and try to use the original values
-            if (eocd.NumberOfThisDisk == ZipHelper.Mask16Bit ||
-                eocd.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber == ZipHelper.Mask32Bit ||
-                eocd.NumberOfEntriesInTheCentralDirectory == ZipHelper.Mask16Bit)
-            {
-                // Read Zip64 End of Central Directory Locator
-
-                // This seeks forwards almost to the beginning of the Zip64-EOCDL, one byte after where the signature would be located
-                _archiveStream.Seek(eocdStart - Zip64EndOfCentralDirectoryLocator.SizeOfBlockWithoutSignature, SeekOrigin.Begin);
-
-                // Exactly the previous 4 bytes should contain the Zip64-EOCDL signature
-                // if we don't find it, assume it doesn't exist and use data from normal EOCD
-                if (ZipHelper.SeekBackwardsToSignature(_archiveStream,
-                        Zip64EndOfCentralDirectoryLocator.SignatureConstant,
-                        Zip64EndOfCentralDirectoryLocator.SignatureSize))
-                {
-                    Debug.Assert(_archiveReader != null);
-
-                    // use locator to get to Zip64-EOCD
-                    Zip64EndOfCentralDirectoryLocator locator;
-                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveReader, out locator);
-                    Debug.Assert(zip64eocdLocatorProper); // we just found this using the signature finder, so it should be okay
-
-                    if (locator.OffsetOfZip64EOCD > long.MaxValue)
-                        throw new InvalidDataException(SR.FieldTooBigOffsetToZip64EOCD);
-
-                    long zip64EOCDOffset = (long)locator.OffsetOfZip64EOCD;
-
-                    _archiveStream.Seek(zip64EOCDOffset, SeekOrigin.Begin);
-
-                    // Read Zip64 End of Central Directory Record
-
-                    Zip64EndOfCentralDirectoryRecord record;
-                    if (!Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveReader, out record))
-                        throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
-
-                    _numberOfThisDisk = record.NumberOfThisDisk;
-
-                    if (record.NumberOfEntriesTotal > long.MaxValue)
-                        throw new InvalidDataException(SR.FieldTooBigNumEntries);
-
-                    if (record.OffsetOfCentralDirectory > long.MaxValue)
-                        throw new InvalidDataException(SR.FieldTooBigOffsetToCD);
-
-                    if (record.NumberOfEntriesTotal != record.NumberOfEntriesOnThisDisk)
-                        throw new InvalidDataException(SR.SplitSpanned);
-
-                    _expectedNumberOfEntries = (long)record.NumberOfEntriesTotal;
-                    _centralDirectoryStart = (long)record.OffsetOfCentralDirectory;
-                }
-            }
-        }
-
-        private void WriteFile()
-        {
-            // if we are in create mode, we always set readEntries to true in Init
-            // if we are in update mode, we call EnsureCentralDirectoryRead, which sets readEntries to true
-            Debug.Assert(_readEntries);
-
-            if (_mode == ZipArchiveMode.Update)
-            {
-                List<ZipArchiveEntry> markedForDelete = new List<ZipArchiveEntry>();
-                foreach (ZipArchiveEntry entry in _entries)
-                {
-                    if (!entry.LoadLocalHeaderExtraFieldAndCompressedBytesIfNeeded())
-                        markedForDelete.Add(entry);
-                }
-                foreach (ZipArchiveEntry entry in markedForDelete)
-                    entry.Delete();
-
-                _archiveStream.Seek(0, SeekOrigin.Begin);
-                _archiveStream.SetLength(0);
-            }
-
-            foreach (ZipArchiveEntry entry in _entries)
-            {
-                entry.WriteAndFinishLocalEntry();
-            }
-
-            long startOfCentralDirectory = _archiveStream.Position;
-
-            foreach (ZipArchiveEntry entry in _entries)
-            {
-                entry.WriteCentralDirectoryFileHeader();
-            }
-
-            long sizeOfCentralDirectory = _archiveStream.Position - startOfCentralDirectory;
-
-            WriteArchiveEpilogue(startOfCentralDirectory, sizeOfCentralDirectory);
-        }
-
-        // writes eocd, and if needed, zip 64 eocd, zip64 eocd locator
-        // should only throw an exception in extremely exceptional cases because it is called from dispose
-        private void WriteArchiveEpilogue(long startOfCentralDirectory, long sizeOfCentralDirectory)
-        {
-            // determine if we need Zip 64
-            if (startOfCentralDirectory >= uint.MaxValue
-                || sizeOfCentralDirectory >= uint.MaxValue
-                || _entries.Count >= ZipHelper.Mask16Bit
-#if DEBUG_FORCE_ZIP64
-                || _forceZip64
-#endif
-                )
-            {
-                // if we need zip 64, write zip 64 eocd and locator
-                long zip64EOCDRecordStart = _archiveStream.Position;
-                Zip64EndOfCentralDirectoryRecord.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory);
-                Zip64EndOfCentralDirectoryLocator.WriteBlock(_archiveStream, zip64EOCDRecordStart);
-            }
-
-            // write normal eocd
-            ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment);
+                ZipArchiveMode.Create => new ZipArchiveCreateStrategy(this, stream, leaveOpen, entryNameEncoding),
+                ZipArchiveMode.Read => new ZipArchiveReadStrategy(this, stream, leaveOpen, entryNameEncoding),
+                ZipArchiveMode.Update => new ZipArchiveUpdateStrategy(this, stream, leaveOpen, entryNameEncoding),
+                _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+            };
         }
     }
 }
