@@ -90,12 +90,12 @@ jobs:
         - name: liveRuntimeBuildParams
           value: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
         - name: liveRuntimeArtifactsPathArg
-          value: ${{ format('/p:CoreCLROverridePath={0}/artifacts/bin/coreclr/{1}{2}.{3}.{4}', Build.SourcesDirectory, parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
+          value: ${{ format('/p:CoreCLROverridePath=$(Build.SourcesDirectory)/artifacts/bin/mono/{0}{1}.{2}.{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
       - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
         - name: liveRuntimeBuildParams
           value: ${{ format('mono.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
         - name: liveRuntimeArtifactsPathArg
-          value: ${{ format('/p:MonoOverridePath={0}/artifacts/bin/mono/{1}{2}.{3}.{4}', Build.SourcesDirectory, parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
+          value: ${{ format('/p:MonoOverridePath=$(Build.SourcesDirectory)/artifacts/bin/mono/{0}{1}.{2}.{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
       - name: compilerArg
         value: ''
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
