@@ -101,7 +101,7 @@ namespace WasmTestRunner
                         }
 
                         // Console.WriteLine($"After copy to output (in {chunks} chunks)");
-                        Console.Out.Flush();
+                        // Console.Out.Flush();
                     }
 
                     // resultsXml.Save(Console.Out);
