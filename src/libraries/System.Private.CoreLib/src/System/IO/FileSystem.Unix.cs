@@ -434,8 +434,12 @@ namespace System.IO
 
         public static void RemoveDirectory(string fullPath, bool recursive)
         {
-            if (!TryRemoveDirectory(fullPath, topLevel: true, throwWhenNotEmpty: !recursive))
+            // Delete the directory.
+            // If we're recursing, don't throw when it is not empty, and perform a recursive remove.
+            if (!RemoveEmptyDirectory(fullPath, topLevel: true, throwWhenNotEmpty: !recursive))
             {
+                Debug.Assert(recursive);
+
                 RemoveDirectoryRecursive(fullPath);
             }
         }
@@ -446,17 +450,16 @@ namespace System.IO
 
             try
             {
-                foreach ((string childPath, bool isDirectory) in
-                            new FileSystemEnumerable<(string, bool)>(
-                                fullPath,
-                                static (ref FileSystemEntry entry) =>
-                                {
-                                    // Don't report symlinks to directories as directories.
-                                    bool isRealDirectory = !entry.IsSymbolicLink && entry.IsDirectory;
+                var fse = new FileSystemEnumerable<(string, bool)>(fullPath,
+                            static (ref FileSystemEntry entry) =>
+                            {
+                                // Don't report symlinks to directories as directories.
+                                bool isRealDirectory = !entry.IsSymbolicLink && entry.IsDirectory;
+                                return (entry.ToFullPath(), isRealDirectory);
+                            },
+                            EnumerationOptions.Compatible);
 
-                                    return (entry.ToFullPath(), isRealDirectory);
-                                },
-                                EnumerationOptions.Compatible))
+                foreach ((string childPath, bool isDirectory) in fse)
                 {
                     try
                     {
@@ -485,11 +488,10 @@ namespace System.IO
                 throw firstException;
             }
 
-            bool removed = TryRemoveDirectory(fullPath);
-            Debug.Assert(removed);
+            RemoveEmptyDirectory(fullPath);
         }
 
-        private static bool TryRemoveDirectory(string fullPath, bool topLevel = false, bool throwWhenNotEmpty = true)
+        private static bool RemoveEmptyDirectory(string fullPath, bool topLevel = false, bool throwWhenNotEmpty = true)
         {
             if (Interop.Sys.RmDir(fullPath) < 0)
             {
@@ -502,12 +504,15 @@ namespace System.IO
                     case Interop.Error.EISDIR:
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath)); // match Win32 exception
                     case Interop.Error.ENOENT:
+                        // When we're recursing, don't throw for items that go missing.
                         if (!topLevel)
                         {
                             return true;
                         }
                         goto default;
                     case Interop.Error.ENOTDIR:
+                        // When the top-level path is a symlink to a directory, delete the link.
+                        // In other cases, throw because we expect path to be a real directory.
                         if (topLevel)
                         {
                             if (!DirectoryExists(fullPath))
@@ -515,7 +520,6 @@ namespace System.IO
                                 throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
                             }
 
-                            // Path is symbolic link to a directory.
                             DeleteFile(fullPath);
                             return true;
                         }
