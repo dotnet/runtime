@@ -150,22 +150,22 @@ namespace TypeSystemTests
                 switch (f.Name)
                 {
                     case "MyInt":
-                        Assert.Equal(0x20, f.Offset.AsInt);
-                        break;
-                    case "MyBool":
-                        Assert.Equal(0x26, f.Offset.AsInt);
-                        break;
-                    case "MyChar":
-                        Assert.Equal(0x24, f.Offset.AsInt);
-                        break;
-                    case "MyString":
                         Assert.Equal(0x8, f.Offset.AsInt);
                         break;
-                    case "MyByteArray":
+                    case "MyBool":
+                        Assert.Equal(0xC, f.Offset.AsInt);
+                        break;
+                    case "MyChar":
+                        Assert.Equal(0xE, f.Offset.AsInt);
+                        break;
+                    case "MyString":
                         Assert.Equal(0x10, f.Offset.AsInt);
                         break;
-                    case "MyClass1SelfRef":
+                    case "MyByteArray":
                         Assert.Equal(0x18, f.Offset.AsInt);
+                        break;
+                    case "MyClass1SelfRef":
+                        Assert.Equal(0x20, f.Offset.AsInt);
                         break;
                     default:
                         Assert.True(false);
@@ -226,19 +226,19 @@ namespace TypeSystemTests
                 switch (f.Name)
                 {
                     case "b1":
-                        Assert.Equal(0xC, f.Offset.AsInt);
+                        Assert.Equal(0x0, f.Offset.AsInt);
                         break;
                     case "b2":
-                        Assert.Equal(0xD, f.Offset.AsInt);
+                        Assert.Equal(0x1, f.Offset.AsInt);
                         break;
                     case "b3":
-                        Assert.Equal(0xE, f.Offset.AsInt);
+                        Assert.Equal(0x2, f.Offset.AsInt);
                         break;
                     case "i1":
-                        Assert.Equal(0x8, f.Offset.AsInt);
+                        Assert.Equal(0x4, f.Offset.AsInt);
                         break;
                     case "s1":
-                        Assert.Equal(0x0, f.Offset.AsInt);
+                        Assert.Equal(0x8, f.Offset.AsInt);
                         break;
                     default:
                         Assert.True(false);
@@ -269,10 +269,10 @@ namespace TypeSystemTests
                 switch (f.Name)
                 {
                     case "MyStruct0":
-                        Assert.Equal(0x8, f.Offset.AsInt);
+                        Assert.Equal(0x0, f.Offset.AsInt);
                         break;
                     case "MyBool":
-                        Assert.Equal(0x0, f.Offset.AsInt);
+                        Assert.Equal(0x10, f.Offset.AsInt);
                         break;
                     default:
                         Assert.True(false);
