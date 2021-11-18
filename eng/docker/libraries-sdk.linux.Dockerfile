@@ -5,6 +5,7 @@ ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 FROM $BUILD_BASE_IMAGE as corefxbuild
 
 ARG CONFIGURATION=Release
+ENV _DOTNET_INSTALL_CHANNEL="$VERSION.1xx"
 ARG VERSION=7.0
 
 WORKDIR /repo
@@ -15,7 +16,7 @@ FROM $SDK_BASE_IMAGE as target
 
 # Install latest daily SDK:
 RUN wget https://dot.net/v1/dotnet-install.sh
-RUN bash ./dotnet-install.sh --channel $VERSION.1xx --quality daily --install-dir /usr/share/dotnet
+RUN bash ./dotnet-install.sh --channel $_DOTNET_INSTALL_CHANNEL --quality daily --install-dir /usr/share/dotnet
 
 # Collect the following artifacts under /live-runtime-artifacts,
 # so projects can build and test against the live-built runtime:
