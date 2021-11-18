@@ -15,7 +15,6 @@ namespace System.Xml
     // it will replace special characters with entities whenever necessary.
     internal sealed class XmlTextEncoder
     {
-        private const int ChunkSize = 256;
         //
         // Fields
         //
@@ -518,15 +517,17 @@ namespace System.Xml
         //
         private void WriteStringFragment(ReadOnlySpan<char> ros)
         {
+            const int chunkSize = 256;
             int offset = 0;
             int count = ros.Length;
+
             while (count > 0)
             {
                 int copyCount = count;
 
-                if (copyCount > ChunkSize)
+                if (copyCount > chunkSize)
                 {
-                    copyCount = ChunkSize;
+                    copyCount = chunkSize;
                 }
 
                 _textWriter.Write(ros.Slice(offset, copyCount));
