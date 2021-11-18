@@ -826,7 +826,7 @@ namespace System.Numerics
         ///
         /// Uses following Hardware Intrinsics, if supported:
         /// * unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
-        /// * uint32_t __crc32d (uint32_t a, uint64_t b)
+        /// * uint32_t __crc32cd (uint32_t a, uint64_t b)
         /// </summary>
         /// <param name="crc">The base value to calculate checksum on</param>
         /// <param name="data">The checksum data</param>
@@ -843,8 +843,8 @@ namespace System.Numerics
             }
             if (Crc32.Arm64.IsSupported)
             {
-                // uint32_t __crc32d (uint32_t a, uint64_t b)
-                return Crc32.Arm64.ComputeCrc32(crc, data);
+                // uint32_t __crc32cd (uint32_t a, uint64_t b)
+                return Crc32.Arm64.ComputeCrc32C(crc, data);
             }
 
             // Software fallback
