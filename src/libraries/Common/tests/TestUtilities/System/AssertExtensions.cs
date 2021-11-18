@@ -270,28 +270,6 @@ namespace System
         }
 
         /// <summary>
-        /// Validate that a given value is equal to another value.
-        /// </summary>
-        /// <param name="expected">The expected value.</param>
-        /// <param name="actual">The value to be compared against.</param>
-        public static void EqualTo<T>(T expected, T actual, string userMessage = null)
-        {
-            if (expected == null && actual == null)
-                return;
-
-            bool equal = expected != null && expected switch
-            {
-                IEquatable<T> equatable => equatable.Equals(actual),
-                IComparable<T> comparableT => comparableT.CompareTo(actual) == 0,
-                IComparable comparable => comparable.CompareTo(actual) == 0,
-                _ => throw new NotSupportedException($"{nameof(EqualTo)} is not supported for {typeof(T)}.")
-            };
-
-            if (!equal)
-                throw new XunitException(AddOptionalUserMessage($"Expected: {expected} is not equal to {actual}", userMessage));
-        }
-
-        /// <summary>
         /// Validate that a given value is greater than another value.
         /// </summary>
         /// <param name="actual">The value that should be greater than <paramref name="greaterThan"/>.</param>

@@ -92,45 +92,45 @@ namespace System.IO.Tests.Enumeration
                 entry = enumerator.Current;
 
                 // Names and paths.
-                AssertExtensions.EqualTo(expected.Name, entry.FileName, "Name");
-                AssertExtensions.EqualTo(testDirectory.FullName, entry.Directory, "Directory");
-                AssertExtensions.EqualTo(expected.FullName, entry.FullPath, "FullPath");
-                AssertExtensions.EqualTo(expected.FullName, entry.SpecifiedFullPath, "SpecifiedFullPath");
+                Assert.Equal(expected.Name, entry.FileName);
+                Assert.Equal(testDirectory.FullName, entry.Directory);
+                Assert.Equal(expected.FullName, entry.FullPath);
+                Assert.Equal(expected.FullName, entry.SpecifiedFullPath);
 
                 // Values determined during enumeration.
                 if (PlatformDetection.IsBrowser)
                 {
                     // For Browser, all items are typed as DT_UNKNOWN.
-                    AssertExtensions.EqualTo(false, entry.IsDirectory, "IsDirectory");
-                    AssertExtensions.EqualTo(entry.FileName.StartsWith('.') ? FileAttributes.Hidden : FileAttributes.Normal, entry.Attributes, "Attributes");
+                    Assert.False(entry.IsDirectory);
+                    Assert.Equal(entry.FileName.StartsWith('.') ? FileAttributes.Hidden : FileAttributes.Normal, entry.Attributes);
                 }
                 else
                 {
-                    AssertExtensions.EqualTo(expected is DirectoryInfo, entry.IsDirectory, "IsDirectory");
-                    AssertExtensions.EqualTo(expected.Attributes, entry.Attributes, "Attributes");
+                    Assert.Equal(expected is DirectoryInfo, entry.IsDirectory);
+                    Assert.Equal(expected.Attributes, entry.Attributes);
                 }
 
                 if (PlatformDetection.IsWindows)
                 {
-                    AssertExtensions.EqualTo((expected.Attributes & FileAttributes.Hidden) != 0, entry.IsHidden, "IsHidden");
-                    AssertExtensions.EqualTo(expected.CreationTimeUtc, entry.CreationTimeUtc, "CreationTimeUtc");
-                    AssertExtensions.EqualTo(expected.LastAccessTimeUtc, entry.LastAccessTimeUtc, "LastAccessTimeUtc");
-                    AssertExtensions.EqualTo(expected.LastWriteTimeUtc, entry.LastWriteTimeUtc, "LastWriteTimeUtc");
+                    Assert.Equal((expected.Attributes & FileAttributes.Hidden) != 0, entry.IsHidden);
+                    Assert.Equal(expected.CreationTimeUtc, entry.CreationTimeUtc);
+                    Assert.Equal(expected.LastAccessTimeUtc, entry.LastAccessTimeUtc);
+                    Assert.Equal(expected.LastWriteTimeUtc, entry.LastWriteTimeUtc);
                     if (expected is FileInfo fileInfo)
                     {
-                        AssertExtensions.EqualTo(fileInfo.Length, entry.Length, "Length");
+                        Assert.Equal(fileInfo.Length, entry.Length);
                     }
                 }
                 else
                 {
                     // On Unix, these values were not determined during enumeration.
                     // Because the file was deleted, the values can no longer be retrieved and sensible defaults are returned.
-                    AssertExtensions.EqualTo(entry.FileName.StartsWith('.'), entry.IsHidden, "IsHidden");
+                    Assert.Equal(entry.FileName.StartsWith('.'), entry.IsHidden);
                     DateTimeOffset defaultTime = new DateTimeOffset(DateTime.FromFileTimeUtc(0));
-                    AssertExtensions.EqualTo(defaultTime, entry.CreationTimeUtc, "CreationTimeUtc");
-                    AssertExtensions.EqualTo(defaultTime, entry.LastAccessTimeUtc, "LastAccessTimeUtc");
-                    AssertExtensions.EqualTo(defaultTime, entry.LastWriteTimeUtc, "LastWriteTimeUtc");
-                    AssertExtensions.EqualTo(0, entry.Length, "Length");
+                    Assert.Equal(defaultTime, entry.CreationTimeUtc);
+                    Assert.Equal(defaultTime, entry.LastAccessTimeUtc);
+                    Assert.Equal(defaultTime, entry.LastWriteTimeUtc);
+                    Assert.Equal(0, entry.Length);
                 }
 
                 Assert.False(enumerator.MoveNext(), "Move final");
