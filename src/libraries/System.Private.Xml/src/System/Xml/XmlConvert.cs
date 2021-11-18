@@ -831,16 +831,7 @@ namespace System.Xml
 
         internal static Exception? TryToDecimal(string s, out decimal result)
         {
-            if (!decimal.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingSign
-                | NumberStyles.AllowDecimalPoint
-                | NumberStyles.AllowLeadingWhite
-                | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Decimal"));
             }
@@ -855,13 +846,7 @@ namespace System.Xml
 
         internal static Exception? TryToInteger(string s, out decimal result)
         {
-            if (!decimal.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Integer"));
             }
@@ -877,13 +862,7 @@ namespace System.Xml
 
         internal static Exception? TryToSByte(string s, out sbyte result)
         {
-            if (!sbyte.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!sbyte.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "SByte"));
             }
@@ -898,13 +877,7 @@ namespace System.Xml
 
         internal static Exception? TryToInt16(string s, out short result)
         {
-            if (!short.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!short.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int16"));
             }
@@ -919,13 +892,7 @@ namespace System.Xml
 
         internal static Exception? TryToInt32(string s, out int result)
         {
-            if (!int.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!int.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int32"));
             }
@@ -940,13 +907,7 @@ namespace System.Xml
 
         internal static Exception? TryToInt64(string s, out long result)
         {
-            if (!long.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!long.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int64"));
             }
@@ -961,13 +922,7 @@ namespace System.Xml
 
         internal static Exception? TryToByte(string s, out byte result)
         {
-            if (!byte.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!byte.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Byte"));
             }
@@ -983,13 +938,7 @@ namespace System.Xml
 
         internal static Exception? TryToUInt16(string s, out ushort result)
         {
-            if (!ushort.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!ushort.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt16"));
             }
@@ -1005,13 +954,7 @@ namespace System.Xml
 
         internal static Exception? TryToUInt32(string s, out uint result)
         {
-            if (!uint.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!uint.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt32"));
             }
@@ -1027,13 +970,7 @@ namespace System.Xml
 
         internal static Exception? TryToUInt64(string s, out ulong result)
         {
-            if (!ulong.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!ulong.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt64"));
             }
@@ -1055,12 +992,7 @@ namespace System.Xml
                 return float.PositiveInfinity;
             }
 
-            float f = float.Parse
-            (
-                s,
-                NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
-                NumberFormatInfo.InvariantInfo
-            );
+            float f = float.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
 
             if (f == 0 && s[0] == '-')
             {
@@ -1085,13 +1017,7 @@ namespace System.Xml
                 return null;
             }
 
-            if (!float.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!float.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Single"));
             }
@@ -1118,16 +1044,7 @@ namespace System.Xml
                 return double.PositiveInfinity;
             }
 
-            double dVal = double.Parse
-            (
-                s,
-                NumberStyles.AllowLeadingSign
-                | NumberStyles.AllowDecimalPoint
-                | NumberStyles.AllowExponent
-                | NumberStyles.AllowLeadingWhite
-                | NumberStyles.AllowTrailingWhite,
-                NumberFormatInfo.InvariantInfo
-            );
+            double dVal = double.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
 
             if (dVal == 0 && s[0] == '-')
             {
@@ -1155,13 +1072,7 @@ namespace System.Xml
                 return null;
             }
 
-            if (!double.TryParse
-            (
-                s,
-                NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
-                NumberFormatInfo.InvariantInfo,
-                out result
-            ))
+            if (!double.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Double"));
             }
@@ -1179,22 +1090,11 @@ namespace System.Xml
             if (o is string str)
             {
                 str = TrimString(str);
-                if (str.Length != 0 && str[0] != '+')
-                {
-                    if (double.TryParse
-                    (
-                        str,
-                        NumberStyles.AllowLeadingSign
-                        | NumberStyles.AllowDecimalPoint
-                        | NumberStyles.AllowTrailingWhite,
-                        NumberFormatInfo.InvariantInfo,
-                        out double d
-                    ))
-                    {
-                        return d;
-                    }
-                }
-                return double.NaN;
+
+                return str.Length != 0
+                       && str[0] != '+'
+                       && double.TryParse(str, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out double d)
+                    ? d : double.NaN;
             }
 
             if (o is double oDouble)
@@ -1284,8 +1184,10 @@ namespace System.Xml
             }
         }
 
+        [MemberNotNull(nameof(s_allDateTimeFormats))]
         private static void CreateAllDateTimeFormats()
         {
+            // no locking; the array is immutable so it's not a problem that it may get initialized more than once
             s_allDateTimeFormats ??= new[]
             {
                 "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
