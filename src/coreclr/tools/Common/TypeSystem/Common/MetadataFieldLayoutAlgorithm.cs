@@ -173,9 +173,7 @@ namespace Internal.TypeSystem
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            // Sequential layout has to be respected for blittable types only. We use approximation and respect it for
-            // all types without GC references (ie C# unmanaged types).
-            else if (type.IsSequentialLayout && !type.ContainsGCPointers)
+            else if (type.IsSequentialLayout || type.IsEnum || type.Context.Target.Abi == TargetAbi.CppCodegen)
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
