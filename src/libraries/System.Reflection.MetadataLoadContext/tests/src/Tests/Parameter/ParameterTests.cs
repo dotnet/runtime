@@ -78,6 +78,9 @@ namespace System.Reflection.Tests
             Assert.True(p2.HasDefaultValue);
             object dv2 = p2.RawDefaultValue;
             Assert.Equal("", dv2);
+            ParameterInfo p3 = parameters[2];
+            Assert.True(p3.HasDefaultValue);
+            Assert.Null(p3.RawDefaultValue);
         }
 
         [Fact]
