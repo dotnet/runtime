@@ -313,9 +313,9 @@ namespace System.IO
         {
             // Try create parents bottom to top and track those that could not
             // be created due to missing parents. Then create them top to bottom.
-            List<string> stackDir = new List<string>();
+            List<int> stackDir = new();
 
-            stackDir.Add(fullPath);
+            stackDir.Add(fullPath.Length);
 
             int i = fullPath.Length - 1;
             // Trim trailing separator.
@@ -333,7 +333,7 @@ namespace System.IO
                 }
 
                 // Try create it.
-                string mkdirPath = fullPath.Substring(0, i);
+                ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, i);
                 int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
                 if (result == 0)
                 {
@@ -348,7 +348,7 @@ namespace System.IO
                     // We'll try to create its parent on the next iteration.
 
                     // Track this path for later creation.
-                    stackDir.Add(mkdirPath);
+                    stackDir.Add(mkdirPath.Length);
                 }
                 else if (errorInfo.Error == Interop.Error.EEXIST)
                 {
@@ -358,7 +358,7 @@ namespace System.IO
                 }
                 else
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString(), isDirectory: true);
                 }
                 i--;
             } while (i > 0);
@@ -366,7 +366,7 @@ namespace System.IO
             // Create directories that had missing parents.
             for (i = stackDir.Count - 1; i >= 0; i--)
             {
-                string mkdirPath = stackDir[i];
+                ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, stackDir[i]);
                 int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
                 if (result < 0)
                 {
@@ -386,7 +386,7 @@ namespace System.IO
                         }
                     }
 
-                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString(), isDirectory: true);
                 }
             }
         }
