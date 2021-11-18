@@ -8,6 +8,7 @@
 // and niters it the number of type/method instantiations to create each thread
 using System;
 using System.Threading;
+using Xunit;
 
 // Spice things up a bit with some mutual recursion between instantiations
 class C<T>
@@ -63,7 +64,7 @@ public class P
     genmeth2<string>(ninsts);
   }
 
-  public static int Test(int threads, int insts)
+  public static void Test(int threads, int insts)
   {
     nthreads = threads;
     ninsts = insts;
@@ -74,13 +75,13 @@ public class P
       t.Name = "Thread " + i;	
       t.Start();
     }
-    
+
     Console.WriteLine("Main thread exited");
-    return 100;
   }
-  
-  public static int Main()
+
+  [Fact]
+  public static void Test_4_50()
   {
-    return Test(4, 50);
+    Test(4, 50);
   }
 }
