@@ -3,17 +3,19 @@ ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df2
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
+
 ARG CONFIGURATION=Release
+ARG VERSION=7.0
+
 WORKDIR /repo
 COPY . .
-
 RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURATION -ci
 
 FROM $SDK_BASE_IMAGE as target
 
-# Install 7.0 SDK:
+# Install latest daily SDK:
 RUN wget https://dot.net/v1/dotnet-install.sh
-RUN bash ./dotnet-install.sh --channel 7.0.1xx --quality daily --install-dir /usr/share/dotnet
+RUN bash ./dotnet-install.sh --channel $VERSION.1xx --quality daily --install-dir /usr/share/dotnet
 
 # Collect the following artifacts under /live-runtime-artifacts,
 # so projects can build and test against the live-built runtime:
@@ -22,17 +24,13 @@ RUN bash ./dotnet-install.sh --channel 7.0.1xx --quality daily --install-dir /us
 # 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
 # 4. testhost
 
-ARG VERSION=7.0
-ARG ARCH=x64
-ARG CONFIGURATION=Release
-
 COPY --from=corefxbuild \
     /repo/artifacts/bin/microsoft.netcore.app.ref \
     /live-runtime-artifacts/microsoft.netcore.app.ref
 
 COPY --from=corefxbuild \
-    /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-$ARCH \
-    /live-runtime-artifacts/microsoft.netcore.app.runtime.linux-$ARCH
+    /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64 \
+    /live-runtime-artifacts/microsoft.netcore.app.runtime.linux-x64
 
 COPY --from=corefxbuild \
     /repo/eng/targetingpacks.targets \
@@ -43,5 +41,5 @@ COPY --from=corefxbuild \
     /live-runtime-artifacts/testhost
 
 # Add AspNetCore bits to testhost:
-RUN mkdir -p /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-$ARCH/shared/Microsoft.AspNetCore.App
-RUN cp -r /usr/share/dotnet/shared/Microsoft.AspNetCore.App/$VERSION* /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-$ARCH/shared/Microsoft.AspNetCore.App
+RUN mkdir -p /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App
+RUN cp -r /usr/share/dotnet/shared/Microsoft.AspNetCore.App/$VERSION* /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App
