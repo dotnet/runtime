@@ -3759,8 +3759,8 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
 
     // Now append a few statements the initialize the span
-    impAppendTree(lengthFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
-    impAppendTree(pointerFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+    impAppendTree(lengthFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(pointerFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
     // And finally create a tree that points at the span.
     return impCreateLocalNode(spanTempNum DEBUGARG(0));
