@@ -60,15 +60,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         public void Kill()
         {
-            if (OperatingSystem.IsMacCatalyst())
-            {
-                // TODO Sandbox detection hasn't been implemented yet (https://github.com/dotnet/runtime/issues/61504)
-                // if (OperatingSystem.IsSandboxMode())
-                // {
-                //     throw new PlatformNotSupportedException();
-                // }
-            }
-            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
             {
                 throw new PlatformNotSupportedException();
             }
@@ -380,15 +372,7 @@ namespace System.Diagnostics
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
-            if (OperatingSystem.IsMacCatalyst())
-            {
-                // TODO Sandbox detection hasn't been implemented yet (https://github.com/dotnet/runtime/issues/61504)
-                // if (OperatingSystem.IsSandboxMode())
-                // {
-                //     throw new PlatformNotSupportedException();
-                // }
-            }
-            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
             {
                 throw new PlatformNotSupportedException();
             }
