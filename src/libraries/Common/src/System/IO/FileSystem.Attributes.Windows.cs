@@ -114,17 +114,16 @@ namespace System.IO
 
         internal static int FillAttributeInfo(SafeFileHandle fileHandle, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data)
         {
-            if (fileHandle.IsInvalid)
+
+            if (!Interop.Kernel32.GetFileInformationByHandle(
+                fileHandle, 
+                out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInformationData))
             {
                 return Marshal.GetLastWin32Error();
             }
-            else
-            {
-                Interop.Kernel32.GetFileInformationByHandle(fileHandle, out var fileInformationData);
-                data.PopulateFrom(ref fileInformationData);
 
-                return Interop.Errors.ERROR_SUCCESS;
-            }
+            data.PopulateFrom(ref fileInformationData);
+            return Interop.Errors.ERROR_SUCCESS;
         }
 
         internal static bool IsPathUnreachableError(int errorCode)
