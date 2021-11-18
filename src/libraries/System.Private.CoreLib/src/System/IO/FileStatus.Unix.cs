@@ -123,7 +123,7 @@ namespace System.IO
             return HasHiddenFlag;
         }
 
-        internal bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
+        internal static bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
 
         // Returns true if the path points to a directory, or if the path is a symbolic link
         // that points to a directory
@@ -139,9 +139,9 @@ namespace System.IO
             return HasSymbolicLinkFlag;
         }
 
-        internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
+        internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path);
+            EnsureCachesInitialized(path, continueOnError);
 
             if (!_exists)
                 return (FileAttributes)(-1);
@@ -342,8 +342,11 @@ namespace System.IO
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
         {
+            // For symbolic links, on Windows, Length returns zero and not the target file size.
+            // On Unix, it returns the length of the path stored in the link.
+
             EnsureCachesInitialized(path, continueOnError);
-            return _fileCache.Size;
+            return IsFileCacheInitialized ? _fileCache.Size : 0;
         }
 
         // Tries to refresh the lstat cache (_fileCache).
