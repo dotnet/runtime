@@ -82,7 +82,9 @@ namespace System.Xml
         public static string? DecodeName(string? name)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 return name;
+            }
 
             StringBuilder? bufBld = null;
 
