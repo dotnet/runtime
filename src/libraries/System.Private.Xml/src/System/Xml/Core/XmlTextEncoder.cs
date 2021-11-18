@@ -249,9 +249,9 @@ namespace System.Xml
             _textWriter.Write(';');
         }
 
-        internal void Write(string? text)
+        internal void Write(ReadOnlySpan<char> text)
         {
-            if (string.IsNullOrEmpty(text))
+            if (text.IsEmpty)
             {
                 return;
             }
@@ -304,7 +304,7 @@ namespace System.Xml
             {
                 if (startPos < i)
                 {
-                    _textWriter.Write(text.AsSpan(startPos, i - startPos));
+                    _textWriter.Write(text.Slice(startPos, i - startPos));
                 }
 
                 if (i == len)
