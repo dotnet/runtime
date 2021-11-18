@@ -50,10 +50,10 @@ static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
 
 int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
 {
-    abort_if_invalid_pointer_argument (source);
-
     if (!type || !md || !mdSize || sourceSize < 0)
         return FAIL;
+
+    abort_if_invalid_pointer_argument (source);
 
     JNIEnv* env = GetJNIEnv();
 
