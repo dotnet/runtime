@@ -813,5 +813,7 @@ namespace Internal.TypeSystem
         /// Determine if the type implements <code>IDynamicInterfaceCastable</code>
         /// </summary>
         protected internal abstract bool IsIDynamicInterfaceCastableInterface(DefType type);
+
+        internal partial void InternalGetSupportsUniversalCanon(ref bool flag);
     }
 }
