@@ -11,10 +11,14 @@
 { }
 .assembly 'test'
 { }
-.class private auto ansi Test extends [mscorlib]System.Object
+.assembly extern xunit.core {}
+.class private auto ansi Test_i_array_merge_ia64 extends [mscorlib]System.Object
 {
 .method private hidebysig static int32 Main() il managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack  8
 	.locals (int64[0...], native int[0...], native int, native int)

@@ -6,7 +6,7 @@ namespace NetClient
     using System;
     using System.Threading;
     using System.Runtime.InteropServices;
-    using TestLibrary;
+    using Xunit;
 
     class Program
     {

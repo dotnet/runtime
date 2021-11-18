@@ -20,4 +20,4 @@ PASS:
 }
 }
 
-.assembly brtrue_s.exe {}
+.assembly brtrue_s {}

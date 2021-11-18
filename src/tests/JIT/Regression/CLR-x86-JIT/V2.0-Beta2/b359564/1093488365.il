@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly Test1 {}
+.assembly extern xunit.core {}
 
 .assembly extern System.Console
 {
@@ -22,6 +23,9 @@
 
 .method public static int32  Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack 3
 	.try

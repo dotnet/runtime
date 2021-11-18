@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly gcval_sideeffect { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private sequential ansi sealed beforefieldinit LargeVT
@@ -50,6 +51,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       46 (0x2e)
       .maxstack  2

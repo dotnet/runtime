@@ -11,6 +11,7 @@
 .assembly extern System {}
 .assembly extern common{}
 .assembly EHTest {}
+.assembly extern xunit.core {}
 .class public EHTest
 {
 	.field private static class [common]TestUtil.TestLog testLog
@@ -125,6 +126,9 @@
 
 	.method public static int32 Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		
 		ldsfld     class [common]TestUtil.TestLog EHTest::testLog

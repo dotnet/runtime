@@ -3,7 +3,7 @@
     <TestRuntime>true</TestRuntime>
     <Scenario>WasmTestOnBrowser</Scenario>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 
 // Test for https://github.com/dotnet/runtime/issues/13816
-public class Test
+public class Test_CastThenBinop
 {
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int DowncastOr(int a, int b)
@@ -36,6 +36,18 @@ public class Test
         {
             return (byte)a & (byte)b;
         }
+    }
+
+    // github issue 60597
+    // https://github.com/dotnet/runtime/issues/60597
+    //
+    // I can only seem to reproduce the bug when _xorLeft and _xorRight are fields
+    static sbyte _xorLeft = 0;
+    static sbyte _xorRight = -1;
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static ushort UpcastXor_SignExtension()
+    {
+        return (ushort)(_xorLeft ^ (long)_xorRight);
     }
 
     public static int Main()
@@ -73,6 +85,14 @@ public class Test
         {
             var result = UpcastAnd_SideEffect(0x0FF, 0xFF0, out var out1, out var out2);
             if (result != 0xF0 || out1 != 0x0FF || out2 != 0xFF0)
+            {
+                return Fail;
+            }
+        }
+
+        {
+            var result = UpcastXor_SignExtension();
+            if (result != 65535)
             {
                 return Fail;
             }

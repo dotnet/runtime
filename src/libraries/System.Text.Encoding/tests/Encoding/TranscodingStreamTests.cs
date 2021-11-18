@@ -39,7 +39,8 @@ namespace System.Text.Tests
             }
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AsyncMethods_ReturnCanceledTaskIfCancellationTokenTripped()
         {
             // Arrange
@@ -77,7 +78,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("outerStreamEncoding", () => Encoding.CreateTranscodingStream(Stream.Null, Encoding.UTF8, null));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanRead_DelegatesToInnerStream(bool expectedCanRead)
@@ -100,7 +101,7 @@ namespace System.Text.Tests
             Assert.False(actualCanReadAfterDispose);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanWrite_DelegatesToInnerStream(bool expectedCanWrite)
@@ -198,7 +199,8 @@ namespace System.Text.Tests
             innerStream.Read(Span<byte>.Empty); // shouldn't throw
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Flush_FlushesInnerStreamButNotDecodedState()
         {
             // Arrange
@@ -391,7 +393,7 @@ namespace System.Text.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public Task ReadApm()
         {
             // Tests TranscodingStream.BeginRead / EndRead
@@ -432,7 +434,7 @@ namespace System.Text.Tests
             suppressExpectedCancellationTokenAsserts: true); // APM pattern doesn't allow flowing CancellationToken
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public Task ReadAsync_ByteArray(int bufferLength)
         {
@@ -451,7 +453,7 @@ namespace System.Text.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public async Task ReadAsync_Memory(int bufferLength)
         {
@@ -717,7 +719,7 @@ namespace System.Text.Tests
             Assert.Equal(0, innerStream.Position);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Write_WithPartialData()
         {
             MemoryStream innerStream = new MemoryStream();
@@ -765,7 +767,8 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => transcodingStream.Write(new byte[5], 6, 0));
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WriteAsync_WithFullData()
         {
             MemoryStream sink = new MemoryStream();
@@ -824,7 +827,8 @@ namespace System.Text.Tests
             Assert.Equal(0, sink.Position);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WriteAsync_WithPartialData()
         {
             MemoryStream sink = new MemoryStream();
@@ -879,7 +883,8 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => (object)transcodingStream.WriteAsync(new byte[5], 6, 0));
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void WriteApm()
         {
             // Arrange

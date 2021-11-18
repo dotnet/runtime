@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib { auto }
 .assembly GitHub_18176 { }
+.assembly extern xunit.core {}
 
 // Ensure the jit is not tripped up by a foldable zero-length localloc
 
@@ -16,6 +17,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (int32* V_0)

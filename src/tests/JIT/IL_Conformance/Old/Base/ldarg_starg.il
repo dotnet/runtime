@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly ldarg_starg.exe{
+.assembly ldarg_starg{
 }
 
 .class public ldarg_starg {

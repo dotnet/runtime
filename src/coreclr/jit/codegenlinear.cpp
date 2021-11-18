@@ -174,6 +174,7 @@ void CodeGen::genCodeForBBlist()
 
     for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
+
 #ifdef DEBUG
         if (compiler->verbose)
         {
@@ -376,7 +377,7 @@ void CodeGen::genCodeForBBlist()
             !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
                                              // emit a NO_MAPPING entry, immediately after the prolog.
         {
-            genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::NO_MAPPING, true);
+            genIPmappingAdd(IPmappingDscKind::NoMapping, DebugInfo(), true);
         }
 
         bool firstMapping = true;
@@ -425,18 +426,28 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
-        IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
+        DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))
         {
             // Do we have a new IL offset?
             if (node->OperGet() == GT_IL_OFFSET)
             {
                 GenTreeILOffset* ilOffset = node->AsILOffset();
-                genEnsureCodeEmitted(currentILOffset);
-                currentILOffset = ilOffset->gtStmtILoffsx;
-                genIPmappingAdd(currentILOffset, firstMapping);
-                firstMapping = false;
+                DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
+                if (rootDI.IsValid())
+                {
+                    genEnsureCodeEmitted(currentDI);
+                    currentDI = rootDI;
+                    genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
+                    firstMapping = false;
+                }
+
 #ifdef DEBUG
+                if ((JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) && ilOffset->gtStmtDI.IsValid())
+                {
+                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                }
+
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
@@ -529,7 +540,7 @@ void CodeGen::genCodeForBBlist()
         //
         // This can lead to problems when debugging the generated code. To prevent these issues, make sure
         // we've generated code for the last IL offset we saw in the block.
-        genEnsureCodeEmitted(currentILOffset);
+        genEnsureCodeEmitted(currentDI);
 
         /* Is this the last block, and are there any open scopes left ? */
 
@@ -778,21 +789,29 @@ void CodeGen::genCodeForBBlist()
         }
 
 #if FEATURE_LOOP_ALIGN
+        if (block->hasAlign())
+        {
+            // If this block has 'align' instruction in the end (identified by BBF_HAS_ALIGN),
+            // then need to add align instruction in the current "block".
+            //
+            // For non-adaptive alignment, add alignment instruction of size depending on the
+            // compJitAlignLoopBoundary.
+            // For adaptive alignment, alignment instruction will always be of 15 bytes for xarch
+            // and 16 bytes for arm64.
+            assert(ShouldAlignLoops());
 
-        // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
-        // then need to add align instruction in current "block". Also mark the
-        // corresponding IG with IGF_LOOP_ALIGN to know that there will be align
-        // instructions at the end of that IG.
-        //
-        // For non-adaptive alignment, add alignment instruction of size depending on the
-        // compJitAlignLoopBoundary.
-        // For adaptive alignment, alignment instruction will always be of 15 bytes.
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->bbJumpKind == BBJ_ALWAYS));
+        }
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
-            assert(ShouldAlignLoops());
-
-            GetEmitter()->emitLoopAlignment();
+            if (compiler->opts.compJitHideAlignBehindJmp)
+            {
+                // The current IG is the one that is just before the IG having loop start.
+                // Establish a connection of recent align instruction emitted to the loop
+                // it actually is aligning using 'idaLoopHeadPredIG'.
+                GetEmitter()->emitConnectAlignInstrWithCurIG();
+            }
         }
 #endif
 
@@ -1574,6 +1593,15 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree);
         }
+#ifdef TARGET_ARM64
+        else if (tree->OperIs(GT_BFIZ))
+        {
+            // Can be contained as part of LEA on ARM64
+            GenTreeCast* cast = tree->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+            genConsumeAddress(cast->CastOp());
+        }
+#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -1608,9 +1636,14 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG))
         {
-            genConsumeReg(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp1());
+        }
+        else if (tree->OperIs(GT_MUL))
+        {
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
         }
         else
         {
@@ -1898,7 +1931,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         if (!blkNode->OperIs(GT_STORE_DYN_BLK))
         {
             assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            genSetRegToIcon(sizeReg, blockSize);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, sizeReg, blockSize);
         }
         else
         {
@@ -2297,7 +2330,7 @@ void CodeGen::genEmitCall(int                   callType,
                           X86_ARG(int argSize),
                           emitAttr              retSize
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          IL_OFFSETX            ilOffset,
+                          const DebugInfo& di,
                           regNumber             base,
                           bool                  isJump)
 {
@@ -2319,7 +2352,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               ilOffset, base, REG_NA, 0, 0, isJump);
+                               di, base, REG_NA, 0, 0, isJump);
 }
 // clang-format on
 
@@ -2335,7 +2368,7 @@ void CodeGen::genEmitCallIndir(int                   callType,
                                X86_ARG(int argSize),
                                emitAttr              retSize
                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                               IL_OFFSETX            ilOffset,
+                               const DebugInfo&      di,
                                bool                  isJump)
 {
 #if !defined(TARGET_X86)
@@ -2360,7 +2393,7 @@ void CodeGen::genEmitCallIndir(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               ilOffset,
+                               di,
                                iReg,
                                xReg,
                                indir->Scale(),
@@ -2613,6 +2646,16 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 
         condition = GenCondition(GenCondition::P);
     }
+
+    if (relop->MarkedForSignJumpOpt())
+    {
+        // If relop was previously marked for a signed jump check optimization because of SF flag
+        // reuse, replace jge/jl with jns/js.
+
+        assert(relop->OperGet() == GT_LT || relop->OperGet() == GT_GE);
+        condition = (relop->OperGet() == GT_LT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
+    }
+
 #endif
 
     inst_JCC(condition, compiler->compCurBB->bbJumpDest);

@@ -75,5 +75,5 @@ END:
 }
 
 
-.assembly c_switch.exe {}
+.assembly c_switch {}
 

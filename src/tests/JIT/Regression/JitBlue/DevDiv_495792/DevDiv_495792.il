@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly a {}
+.assembly extern xunit.core {}
 .module a.exe
 
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an asignment flag, when
@@ -104,6 +105,9 @@
     
     .method private static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack  3
         .locals init ([0] class [mscorlib]System.OverflowException e,

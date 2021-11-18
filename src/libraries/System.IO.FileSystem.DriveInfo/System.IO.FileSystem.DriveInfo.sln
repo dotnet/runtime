@@ -11,6 +11,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServ
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj", "{0DF4EEAD-A1DF-4543-98B0-8975CC1AC8C8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{355B2E23-3EA6-4C16-A153-3E9574220F6E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{B9E98144-5561-4CED-BC68-93021B390983}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F74D982D-DFE5-48DA-87C0-245FC612F118}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{4626E870-1F74-4ED4-AF80-DDDD42DEF47E}"
@@ -47,6 +51,14 @@ Global
 		{0DF4EEAD-A1DF-4543-98B0-8975CC1AC8C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0DF4EEAD-A1DF-4543-98B0-8975CC1AC8C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0DF4EEAD-A1DF-4543-98B0-8975CC1AC8C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{355B2E23-3EA6-4C16-A153-3E9574220F6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{355B2E23-3EA6-4C16-A153-3E9574220F6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{355B2E23-3EA6-4C16-A153-3E9574220F6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{355B2E23-3EA6-4C16-A153-3E9574220F6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9E98144-5561-4CED-BC68-93021B390983}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9E98144-5561-4CED-BC68-93021B390983}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9E98144-5561-4CED-BC68-93021B390983}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9E98144-5561-4CED-BC68-93021B390983}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -58,6 +70,8 @@ Global
 		{A0FB000A-C607-4CBB-9223-A5FCA85DF23F} = {4626E870-1F74-4ED4-AF80-DDDD42DEF47E}
 		{03A51C60-B41B-409B-97AA-4084042C78D7} = {F20F7286-4DFA-42EE-947B-8ABC6B7E088F}
 		{0DF4EEAD-A1DF-4543-98B0-8975CC1AC8C8} = {F20F7286-4DFA-42EE-947B-8ABC6B7E088F}
+		{355B2E23-3EA6-4C16-A153-3E9574220F6E} = {F20F7286-4DFA-42EE-947B-8ABC6B7E088F}
+		{B9E98144-5561-4CED-BC68-93021B390983} = {F20F7286-4DFA-42EE-947B-8ABC6B7E088F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AF704C7D-836B-41D4-919E-B0874D934A08}

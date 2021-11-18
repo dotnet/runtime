@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const double log10DoubleDelta = 0.0004;
         private const double log10DoubleExpectedResult = -664.07384902184072;
-
-        [Benchmark(InnerIterationCount = Log10DoubleIterations)]
-        public static void Log10DoubleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        Log10DoubleTest();
-                    }
-                }
-            }
-        }
 
         public static void Log10DoubleTest()
         {

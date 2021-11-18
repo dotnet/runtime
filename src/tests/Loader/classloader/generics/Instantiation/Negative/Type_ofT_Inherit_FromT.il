@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // this test makes sure a generic type of form X<T> can't inherit from T
 
 // class X_ofT<T> extends T
@@ -92,7 +93,7 @@
 
 
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_Type_ofT_Inherit_FromT
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  LoadX_ofT_ExtendsT() cil managed
@@ -139,6 +140,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       239 (0xef)
     .maxstack  2
@@ -156,7 +160,7 @@
       ldstr      "Test1: class X<T> extends T"
       call       void [System.Console]System.Console::WriteLine(string)
 
-      IL_0004:  call       void Test::LoadX_ofT_ExtendsT()
+      IL_0004:  call       void Test_Type_ofT_Inherit_FromT::LoadX_ofT_ExtendsT()
       IL_0009:  nop
       IL_000a:  ldstr      "Did not catch expected TypeLoadException"
       IL_000f:  call       void [System.Console]System.Console::WriteLine(string)
@@ -203,7 +207,7 @@
       call       void [System.Console]System.Console::WriteLine(string)
 
 
-      IL_0044:  call       void Test::LoadY_ofT_ImplementsT()
+      IL_0044:  call       void Test_Type_ofT_Inherit_FromT::LoadY_ofT_ImplementsT()
       IL_0049:  nop
       IL_004a:  ldstr      "Did not catch expected TypeLoadException"
       IL_004f:  call       void [System.Console]System.Console::WriteLine(string)
@@ -250,7 +254,7 @@
       call       void [System.Console]System.Console::WriteLine(string)
 
 
-      IL_0084:  call       void Test::LoadInterface_ofT_ImplementsT()
+      IL_0084:  call       void Test_Type_ofT_Inherit_FromT::LoadInterface_ofT_ImplementsT()
       IL_0089:  nop
       IL_008a:  ldstr      "Did not catch expected TypeLoadException"
       IL_008f:  call       void [System.Console]System.Console::WriteLine(string)
@@ -296,7 +300,7 @@
       ldstr      "Test1: class X<T,M> extends T"
       call       void [System.Console]System.Console::WriteLine(string)
 
-      call       void Test::LoadX_ofT_M_ExtendsT()
+      call       void Test_Type_ofT_Inherit_FromT::LoadX_ofT_M_ExtendsT()
       
       ldstr      "Did not catch expected TypeLoadException"
       call       void [System.Console]System.Console::WriteLine(string)

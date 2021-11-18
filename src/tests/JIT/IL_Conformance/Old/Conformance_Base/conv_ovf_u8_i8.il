@@ -177,4 +177,4 @@ END:
 }
 }
 
-.assembly conv_ovf_u8_i8.exe{}
+.assembly conv_ovf_u8_i8{}

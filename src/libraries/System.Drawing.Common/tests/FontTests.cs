@@ -800,7 +800,7 @@ namespace System.Drawing.Tests
                 Assert.Equal(font.Italic ? 1 : 0, logFont.lfItalic);
                 Assert.Equal(font.Underline ? 1 : 0, logFont.lfUnderline);
                 Assert.Equal(font.Strikeout ? 1 : 0, logFont.lfStrikeOut);
-                Assert.Equal(font.GdiCharSet, logFont.lfCharSet);
+                Assert.Equal(SystemFonts.DefaultFont.GdiCharSet <= 2 ? font.GdiCharSet : SystemFonts.DefaultFont.GdiCharSet, logFont.lfCharSet);
                 Assert.Equal(0, logFont.lfOutPrecision);
                 Assert.Equal(0, logFont.lfClipPrecision);
                 Assert.Equal(0, logFont.lfQuality);
@@ -837,7 +837,7 @@ namespace System.Drawing.Tests
                 Assert.Equal(0, logFont.lfItalic);
                 Assert.Equal(0, logFont.lfUnderline);
                 Assert.Equal(0, logFont.lfStrikeOut);
-                Assert.Equal(1, logFont.lfCharSet);
+                Assert.Equal(SystemFonts.DefaultFont.GdiCharSet <= 2 ? font.GdiCharSet : SystemFonts.DefaultFont.GdiCharSet, logFont.lfCharSet);
                 Assert.Equal(0, logFont.lfOutPrecision);
                 Assert.Equal(0, logFont.lfClipPrecision);
                 Assert.Equal(0, logFont.lfQuality);

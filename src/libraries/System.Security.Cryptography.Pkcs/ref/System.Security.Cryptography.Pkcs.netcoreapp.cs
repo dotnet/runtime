@@ -15,7 +15,9 @@ namespace System.Security.Cryptography.Pkcs
     public sealed partial class CmsSigner
     {
         public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.AsymmetricAlgorithm? privateKey) { }
+        public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.RSA? privateKey, System.Security.Cryptography.RSASignaturePadding? signaturePadding) { }
         public System.Security.Cryptography.AsymmetricAlgorithm? PrivateKey { get { throw null; } set { } }
+        public System.Security.Cryptography.RSASignaturePadding? SignaturePadding { get { throw null; } set { } }
     }
     public sealed partial class ContentInfo
     {

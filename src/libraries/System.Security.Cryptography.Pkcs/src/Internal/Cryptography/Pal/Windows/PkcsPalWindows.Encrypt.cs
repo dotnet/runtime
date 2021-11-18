@@ -377,7 +377,7 @@ namespace Internal.Cryptography.Pal.Windows
                     pEncryptedKey->RecipientPublicKey = pCertInfo->SubjectPublicKeyInfo.PublicKey;
 
                     pEncryptedKey->RecipientId = EncodeRecipientId(recipient, hCertContext, pCertContext, pCertInfo, hb);
-                    pEncryptedKey->Date = default(FILETIME);
+                    pEncryptedKey->Date = default(Interop.Crypt32.FILETIME);
                     pEncryptedKey->pOtherAttr = null;
 
                     CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO** ppEncryptedKey = (CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO**)(hb.Alloc(sizeof(CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO*)));

@@ -1,0 +1,1 @@
+﻿; Shipped analyzer releases

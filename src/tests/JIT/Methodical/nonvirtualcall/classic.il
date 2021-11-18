@@ -22,6 +22,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module program.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -31,7 +32,7 @@
 
 
 
-.class public abstract auto ansi beforefieldinit Test.Base
+.class public abstract auto ansi beforefieldinit Test_classic.Base
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -163,8 +164,8 @@
 
 } // end of class Test.Base
 
-.class public auto ansi beforefieldinit Test.Child
-       extends Test.Base
+.class public auto ansi beforefieldinit Test_classic.Child
+       extends Test_classic.Base
 {
   .method public hidebysig virtual final 
           instance string  AbstractFinal() cil managed
@@ -288,74 +289,74 @@
     IL_000b:  nop
     IL_000c:  ldstr      "Child.AbstractFinal"
     IL_0011:  ldarg.0
-    IL_0012:  call   instance string Test.Child::AbstractFinal()
-    IL_0017:  call       void Test.Assert::AreEqual(string,
+    IL_0012:  call   instance string Test_classic.Child::AbstractFinal()
+    IL_0017:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_001c:  nop
     IL_001d:  ldstr      "Child.AbstractOverrideFinal"
     IL_0022:  ldarg.0
-    IL_0023:  call   instance string Test.Child::AbstractOverrideFinal()
-    IL_0028:  call       void Test.Assert::AreEqual(string,
+    IL_0023:  call   instance string Test_classic.Child::AbstractOverrideFinal()
+    IL_0028:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_002d:  nop
     IL_002e:  ldstr      "Child.AbstractOverrideOverride"
     IL_0033:  ldarg.0
-    IL_0034:  call   instance string Test.Child::AbstractOverrideOverride()
-    IL_0039:  call       void Test.Assert::AreEqual(string,
+    IL_0034:  call   instance string Test_classic.Child::AbstractOverrideOverride()
+    IL_0039:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_003e:  nop
     IL_003f:  ldstr      "Child.AbstractOverrideNil"
     IL_0044:  ldarg.0
-    IL_0045:  call   instance string Test.Child::AbstractOverrideNil()
-    IL_004a:  call       void Test.Assert::AreEqual(string,
+    IL_0045:  call   instance string Test_classic.Child::AbstractOverrideNil()
+    IL_004a:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_004f:  nop
     IL_0050:  ldstr      "Base.VirtualFinal"
     IL_0055:  ldarg.0
-    IL_0056:  call       instance string Test.Base::VirtualFinal()
-    IL_005b:  call       void Test.Assert::AreEqual(string,
+    IL_0056:  call       instance string Test_classic.Base::VirtualFinal()
+    IL_005b:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0060:  nop
     IL_0061:  ldstr      "Child.VirtualFinal"
     IL_0066:  ldarg.0
-    IL_0067:  call   instance string Test.Child::VirtualFinal()
-    IL_006c:  call       void Test.Assert::AreEqual(string,
+    IL_0067:  call   instance string Test_classic.Child::VirtualFinal()
+    IL_006c:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0071:  nop
     IL_0072:  ldstr      "Base.VirtualOverrideFinal"
     IL_0077:  ldarg.0
-    IL_0078:  call       instance string Test.Base::VirtualOverrideFinal()
-    IL_007d:  call       void Test.Assert::AreEqual(string,
+    IL_0078:  call       instance string Test_classic.Base::VirtualOverrideFinal()
+    IL_007d:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0082:  nop
     IL_0083:  ldstr      "Child.VirtualOverrideFinal"
     IL_0088:  ldarg.0
-    IL_0089:  call   instance string Test.Child::VirtualOverrideFinal()
-    IL_008e:  call       void Test.Assert::AreEqual(string,
+    IL_0089:  call   instance string Test_classic.Child::VirtualOverrideFinal()
+    IL_008e:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0093:  nop
     IL_0094:  ldstr      "Base.VirtualOverrideOverride"
     IL_0099:  ldarg.0
-    IL_009a:  call       instance string Test.Base::VirtualOverrideOverride()
-    IL_009f:  call       void Test.Assert::AreEqual(string,
+    IL_009a:  call       instance string Test_classic.Base::VirtualOverrideOverride()
+    IL_009f:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00a4:  nop
     IL_00a5:  ldstr      "Child.VirtualOverrideOverride"
     IL_00aa:  ldarg.0
-    IL_00ab:  call   instance string Test.Child::VirtualOverrideOverride()
-    IL_00b0:  call       void Test.Assert::AreEqual(string,
+    IL_00ab:  call   instance string Test_classic.Child::VirtualOverrideOverride()
+    IL_00b0:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00b5:  nop
     IL_00b6:  ldstr      "Base.VirtualOverrideNil"
     IL_00bb:  ldarg.0
-    IL_00bc:  call       instance string Test.Base::VirtualOverrideNil()
-    IL_00c1:  call       void Test.Assert::AreEqual(string,
+    IL_00bc:  call       instance string Test_classic.Base::VirtualOverrideNil()
+    IL_00c1:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00c6:  nop
     IL_00c7:  ldstr      "Child.VirtualOverrideNil"
     IL_00cc:  ldarg.0
-    IL_00cd:  call   instance string Test.Child::VirtualOverrideNil()
-    IL_00d2:  call       void Test.Assert::AreEqual(string,
+    IL_00cd:  call   instance string Test_classic.Child::VirtualOverrideNil()
+    IL_00d2:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00d7:  nop
     IL_00d8:  ret
@@ -366,14 +367,14 @@
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void Test.Base::.ctor()
+    IL_0001:  call       instance void Test_classic.Base::.ctor()
     IL_0006:  ret
   } // end of method Child::.ctor
 
 } // end of class Test.Child
 
-.class public auto ansi beforefieldinit Test.GrandChild
-       extends Test.Child
+.class public auto ansi beforefieldinit Test_classic.GrandChild
+       extends Test_classic.Child
 {
   .method public hidebysig virtual final 
           instance string  AbstractOverrideFinal() cil managed
@@ -469,80 +470,80 @@
     IL_001c:  nop
     IL_001d:  ldstr      "Child.AbstractFinal"
     IL_0022:  ldarg.0
-    IL_0023:  call   instance string Test.Child::AbstractFinal()
-    IL_0028:  call       void Test.Assert::AreEqual(string,
+    IL_0023:  call   instance string Test_classic.Child::AbstractFinal()
+    IL_0028:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_002d:  nop
     IL_002e:  ldstr      "Child.AbstractOverrideFinal"
     IL_0033:  ldarg.0
-    IL_0034:  call       instance string Test.Child::AbstractOverrideFinal()
-    IL_0039:  call       void Test.Assert::AreEqual(string,
+    IL_0034:  call       instance string Test_classic.Child::AbstractOverrideFinal()
+    IL_0039:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_003e:  nop
     IL_003f:  ldstr      "GrandChild.AbstractOverrideFinal"
     IL_0044:  ldarg.0
-    IL_0045:  call   instance string Test.GrandChild::AbstractOverrideFinal()
-    IL_004a:  call       void Test.Assert::AreEqual(string,
+    IL_0045:  call   instance string Test_classic.GrandChild::AbstractOverrideFinal()
+    IL_004a:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_004f:  nop
     IL_0050:  ldstr      "Child.AbstractOverrideOverride"
     IL_0055:  ldarg.0
-    IL_0056:  call       instance string Test.Child::AbstractOverrideOverride()
-    IL_005b:  call       void Test.Assert::AreEqual(string,
+    IL_0056:  call       instance string Test_classic.Child::AbstractOverrideOverride()
+    IL_005b:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0060:  nop
     IL_0061:  ldstr      "GrandChild.AbstractOverrideOverride"
     IL_0066:  ldarg.0
-    IL_0067:  call   instance string Test.GrandChild::AbstractOverrideOverride()
-    IL_006c:  call       void Test.Assert::AreEqual(string,
+    IL_0067:  call   instance string Test_classic.GrandChild::AbstractOverrideOverride()
+    IL_006c:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0071:  nop
     IL_0072:  ldstr      "Child.AbstractOverrideNil"
     IL_0077:  ldarg.0
-    IL_0078:  call       instance string Test.Child::AbstractOverrideNil()
-    IL_007d:  call       void Test.Assert::AreEqual(string,
+    IL_0078:  call       instance string Test_classic.Child::AbstractOverrideNil()
+    IL_007d:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0093:  nop
     IL_0094:  ldstr      "Child.VirtualFinal"
     IL_0099:  ldarg.0
-    IL_009a:  call       instance string Test.Child::VirtualFinal()
-    IL_009f:  call       void Test.Assert::AreEqual(string,
+    IL_009a:  call       instance string Test_classic.Child::VirtualFinal()
+    IL_009f:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00b5:  nop
     IL_00b6:  ldstr      "Child.VirtualOverrideFinal"
     IL_00bb:  ldarg.0
-    IL_00bc:  call       instance string Test.Child::VirtualOverrideFinal()
-    IL_00c1:  call       void Test.Assert::AreEqual(string,
+    IL_00bc:  call       instance string Test_classic.Child::VirtualOverrideFinal()
+    IL_00c1:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00c6:  nop
     IL_00c7:  ldstr      "GrandChild.VirtualOverrideFinal"
     IL_00cc:  ldarg.0
-    IL_00cd:  call   instance string Test.GrandChild::VirtualOverrideFinal()
-    IL_00d2:  call       void Test.Assert::AreEqual(string,
+    IL_00cd:  call   instance string Test_classic.GrandChild::VirtualOverrideFinal()
+    IL_00d2:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00d7:  nop
     IL_00d8:  ldstr      "Child.VirtualOverrideOverride"
     IL_00dd:  ldarg.0
-    IL_00de:  call       instance string Test.Child::VirtualOverrideOverride()
-    IL_00e3:  call       void Test.Assert::AreEqual(string,
+    IL_00de:  call       instance string Test_classic.Child::VirtualOverrideOverride()
+    IL_00e3:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00e8:  nop
     IL_00e9:  ldstr      "GrandChild.VirtualOverrideOverride"
     IL_00ee:  ldarg.0
-    IL_00ef:  call   instance string Test.GrandChild::VirtualOverrideOverride()
-    IL_00f4:  call       void Test.Assert::AreEqual(string,
+    IL_00ef:  call   instance string Test_classic.GrandChild::VirtualOverrideOverride()
+    IL_00f4:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00f9:  nop
     IL_00fa:  ldstr      "Child.VirtualOverrideNil"
     IL_00ff:  ldarg.0
-    IL_0100:  call       instance string Test.Child::VirtualOverrideNil()
-    IL_0105:  call       void Test.Assert::AreEqual(string,
+    IL_0100:  call       instance string Test_classic.Child::VirtualOverrideNil()
+    IL_0105:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_010a:  nop
     IL_010b:  ldstr      "Child.VirtualOverrideNil"
     IL_0110:  ldarg.0
-    IL_0111:  call   instance string Test.Child::VirtualOverrideNil()
-    IL_0116:  call       void Test.Assert::AreEqual(string,
+    IL_0111:  call   instance string Test_classic.Child::VirtualOverrideNil()
+    IL_0116:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_011b:  nop
     IL_011c:  ret
@@ -553,103 +554,103 @@
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void Test.Child::.ctor()
+    IL_0001:  call       instance void Test_classic.Child::.ctor()
     IL_0006:  ret
   } // end of method GrandChild::.ctor
 
 } // end of class Test.GrandChild
 
-.class public auto ansi sealed beforefieldinit Test.SealedGrandChild
-       extends Test.GrandChild
+.class public auto ansi sealed beforefieldinit Test_classic.SealedGrandChild
+       extends Test_classic.GrandChild
 {
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void Test.GrandChild::.ctor()
+    IL_0001:  call       instance void Test_classic.GrandChild::.ctor()
     IL_0006:  ret
   } // end of method SealedGrandChild::.ctor
 
 } // end of class Test.SealedGrandChild
 
-.class public abstract auto ansi sealed beforefieldinit Test.Program
+.class public abstract auto ansi sealed beforefieldinit Test_classic.Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallSealedGrandChild() cil managed
   {
     .maxstack  2
-    .locals init (class Test.SealedGrandChild V_0)
+    .locals init (class Test_classic.SealedGrandChild V_0)
     IL_0000:  nop
     IL_0001:  ldstr      "Call SealedGrandChild from outside"
     IL_0006:  call       void [System.Console]System.Console::WriteLine(string)
     IL_000b:  nop
-    IL_000c:  newobj     instance void Test.SealedGrandChild::.ctor()
+    IL_000c:  newobj     instance void Test_classic.SealedGrandChild::.ctor()
     IL_0011:  stloc.0
     IL_0012:  ldstr      "Child.AbstractFinal"
     IL_0017:  ldloc.0
-    IL_0018:  call   instance string Test.Child::AbstractFinal()
-    IL_001d:  call       void Test.Assert::AreEqual(string,
+    IL_0018:  call   instance string Test_classic.Child::AbstractFinal()
+    IL_001d:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0022:  nop
     IL_0023:  ldstr      "GrandChild.AbstractOverrideFinal"
     IL_0028:  ldloc.0
-    IL_0029:  call   instance string Test.GrandChild::AbstractOverrideFinal()
-    IL_002e:  call       void Test.Assert::AreEqual(string,
+    IL_0029:  call   instance string Test_classic.GrandChild::AbstractOverrideFinal()
+    IL_002e:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0033:  nop
     IL_0034:  ldstr      "GrandChild.AbstractOverrideOverride"
     IL_0039:  ldloc.0
-    IL_003a:  call   instance string Test.GrandChild::AbstractOverrideOverride()
-    IL_003f:  call       void Test.Assert::AreEqual(string,
+    IL_003a:  call   instance string Test_classic.GrandChild::AbstractOverrideOverride()
+    IL_003f:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0044:  nop
     IL_0045:  ldstr      "Child.AbstractOverrideNil"
     IL_004a:  ldloc.0
-    IL_004b:  call   instance string Test.Child::AbstractOverrideNil()
-    IL_0050:  call       void Test.Assert::AreEqual(string,
+    IL_004b:  call   instance string Test_classic.Child::AbstractOverrideNil()
+    IL_0050:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0055:  nop
     IL_0056:  ldstr      "Child.VirtualFinal"
     IL_005b:  ldloc.0
-    IL_005c:  call   instance string Test.Child::VirtualFinal()
-    IL_0061:  call       void Test.Assert::AreEqual(string,
+    IL_005c:  call   instance string Test_classic.Child::VirtualFinal()
+    IL_0061:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0066:  nop
     IL_0067:  ldstr      "GrandChild.VirtualNilFinal"
     IL_006c:  ldloc.0
-    IL_006d:  call   instance string Test.GrandChild::VirtualNilFinal()
-    IL_0072:  call       void Test.Assert::AreEqual(string,
+    IL_006d:  call   instance string Test_classic.GrandChild::VirtualNilFinal()
+    IL_0072:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0077:  nop
     IL_0078:  ldstr      "GrandChild.VirtualOverrideFinal"
     IL_007d:  ldloc.0
-    IL_007e:  call   instance string Test.GrandChild::VirtualOverrideFinal()
-    IL_0083:  call       void Test.Assert::AreEqual(string,
+    IL_007e:  call   instance string Test_classic.GrandChild::VirtualOverrideFinal()
+    IL_0083:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0088:  nop
     IL_0089:  ldstr      "GrandChild.VirtualNilOverride"
     IL_008e:  ldloc.0
-    IL_008f:  call   instance string Test.GrandChild::VirtualNilOverride()
-    IL_0094:  call       void Test.Assert::AreEqual(string,
+    IL_008f:  call   instance string Test_classic.GrandChild::VirtualNilOverride()
+    IL_0094:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_0099:  nop
     IL_009a:  ldstr      "Base.VirtualNilNil"
     IL_009f:  ldloc.0
-    IL_00a0:  call   instance string Test.Base::VirtualNilNil()
-    IL_00a5:  call       void Test.Assert::AreEqual(string,
+    IL_00a0:  call   instance string Test_classic.Base::VirtualNilNil()
+    IL_00a5:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00aa:  nop
     IL_00ab:  ldstr      "GrandChild.VirtualOverrideOverride"
     IL_00b0:  ldloc.0
-    IL_00b1:  call   instance string Test.GrandChild::VirtualOverrideOverride()
-    IL_00b6:  call       void Test.Assert::AreEqual(string,
+    IL_00b1:  call   instance string Test_classic.GrandChild::VirtualOverrideOverride()
+    IL_00b6:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00bb:  nop
     IL_00bc:  ldstr      "Child.VirtualOverrideNil"
     IL_00c1:  ldloc.0
-    IL_00c2:  call   instance string Test.Child::VirtualOverrideNil()
-    IL_00c7:  call       void Test.Assert::AreEqual(string,
+    IL_00c2:  call   instance string Test_classic.Child::VirtualOverrideNil()
+    IL_00c7:  call       void Test_classic.Assert::AreEqual(string,
                                                     string)
     IL_00cc:  nop
     IL_00cd:  ret
@@ -658,12 +659,12 @@
   .method public hidebysig static void  CallFromInsideChild() cil managed
   {
     .maxstack  1
-    .locals init (class Test.Child V_0)
+    .locals init (class Test_classic.Child V_0)
     IL_0000:  nop
-    IL_0001:  newobj     instance void Test.Child::.ctor()
+    IL_0001:  newobj     instance void Test_classic.Child::.ctor()
     IL_0006:  stloc.0
     IL_0007:  ldloc.0
-    IL_0008:  call   instance void Test.Child::TestChild()
+    IL_0008:  call   instance void Test_classic.Child::TestChild()
     IL_000d:  nop
     IL_000e:  ret
   } // end of method Program::CallFromInsideChild
@@ -671,18 +672,21 @@
   .method public hidebysig static void  CallFromInsideGrandChild() cil managed
   {
     .maxstack  1
-    .locals init (class Test.GrandChild V_0)
+    .locals init (class Test_classic.GrandChild V_0)
     IL_0000:  nop
-    IL_0001:  newobj     instance void Test.GrandChild::.ctor()
+    IL_0001:  newobj     instance void Test_classic.GrandChild::.ctor()
     IL_0006:  stloc.0
     IL_0007:  ldloc.0
-    IL_0008:  call   instance void Test.GrandChild::TestGrandChild()
+    IL_0008:  call   instance void Test_classic.GrandChild::TestGrandChild()
     IL_000d:  nop
     IL_000e:  ret
   } // end of method Program::CallFromInsideGrandChild
 
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     .locals init (class [mscorlib]System.Exception V_0,
@@ -691,11 +695,11 @@
     .try
     {
       IL_0001:  nop
-      IL_0002:  call       void Test.Program::CallSealedGrandChild()
+      IL_0002:  call       void Test_classic.Program::CallSealedGrandChild()
       IL_0007:  nop
-      IL_0008:  call       void Test.Program::CallFromInsideChild()
+      IL_0008:  call       void Test_classic.Program::CallFromInsideChild()
       IL_000d:  nop
-      IL_000e:  call       void Test.Program::CallFromInsideGrandChild()
+      IL_000e:  call       void Test_classic.Program::CallFromInsideGrandChild()
       IL_0013:  nop
       IL_0014:  ldstr      "Test SUCCESS"
       IL_0019:  call       void [System.Console]System.Console::WriteLine(string)
@@ -727,7 +731,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test.Assert
+.class public abstract auto ansi sealed beforefieldinit Test_classic.Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,

@@ -7,6 +7,7 @@
 // This needs to succeed no matter whether default interfaces are supported.
 //
 .assembly extern mscorlib { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime { auto }
 
 .assembly DefaultImplementationsOfInterfaces{}
@@ -58,6 +59,9 @@
 .method private hidebysig static int32
         Main() cil managed
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     ldstr      "DefaultImplementationsOfInterfaces"

@@ -25,4 +25,4 @@ FAIL:
 	ret
 }
 }
-.assembly dupi.exe{}
+.assembly dupi{}

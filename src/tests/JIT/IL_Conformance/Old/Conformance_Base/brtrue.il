@@ -145,4 +145,4 @@ FAIL:
 
 }
 }
-.assembly brtrue.exe{}
+.assembly 'brtrue'{}

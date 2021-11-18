@@ -23,6 +23,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module template.exe
 // MVID: {01E12E66-85BE-40B5-9C1D-CEDDD038DB2C}
 .imagebase 0x00400000
@@ -35,11 +36,14 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_static_object
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main(string[] args) cil managed noinlining
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       90 (0x5a)
     .maxstack  3

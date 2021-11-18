@@ -12,6 +12,10 @@
 #endif
 #include "ep-getter-setter.h"
 
+extern const ep_char8_t *_ep_os_info;
+extern const ep_char8_t *_ep_arch_info;
+extern EventPipeEventSource _ep_event_source_instance;
+
 /*
  * EventPipeEventSource.
  */
@@ -38,7 +42,6 @@ inline
 const ep_char8_t *
 ep_event_source_get_os_info (void)
 {
-	extern const ep_char8_t *_ep_os_info;
 	return _ep_os_info;
 }
 
@@ -47,7 +50,6 @@ inline
 const ep_char8_t *
 ep_event_source_get_arch_info (void)
 {
-	extern const ep_char8_t *_ep_arch_info;
 	return _ep_arch_info;
 }
 
@@ -75,7 +77,6 @@ EventPipeEventSource *
 ep_event_source_get (void)
 {
 	// Singelton.
-	extern EventPipeEventSource _ep_event_source_instance;
 	return &_ep_event_source_instance;
 }
 

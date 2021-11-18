@@ -14,4 +14,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
+  <PropertyGroup>
+    <!-- By default the SDK produces ref assembly for 5.0 or later -->
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+  </PropertyGroup>
+
 </Project>

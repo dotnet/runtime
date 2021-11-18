@@ -59,7 +59,6 @@ public:
         ApartmentUnknown = 2
     };
 
-    static void QCALLTYPE Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
     static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
     static FCDECL1(void,    Interrupt,         ThreadBaseObject* pThisUNSAFE);
@@ -68,7 +67,6 @@ public:
 #undef Sleep
     static FCDECL1(void,    Sleep,             INT32 iTime);
 #define Sleep(a) Dont_Use_Sleep(a)
-    static void QCALLTYPE   UninterruptibleSleep0();
     static FCDECL1(void,    Initialize,        ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetBackground,     ThreadBaseObject* pThisUNSAFE, CLR_BOOL isBackground);
     static FCDECL1(FC_BOOL_RET, IsBackground,  ThreadBaseObject* pThisUNSAFE);
@@ -79,18 +77,11 @@ public:
     static FCDECL2(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-    static
-    void QCALLTYPE InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
-
-    static
-    UINT64 QCALLTYPE GetProcessDefaultStackSize();
 
     static FCDECL1(INT32,   GetManagedThreadId, ThreadBaseObject* th);
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
     static FCDECL1(void,    SpinWait,                       int iterations);
-    static BOOL QCALLTYPE YieldThread();
     static FCDECL0(Object*, GetCurrentThread);
-    static UINT64 QCALLTYPE GetCurrentOSThreadId();
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
 #ifdef FEATURE_COMINTEROP
     static FCDECL1(void,    DisableComObjectEagerCleanup,   ThreadBaseObject* pThis);
@@ -100,6 +91,8 @@ public:
 
     static FCDECL0(INT32,   GetCurrentProcessorNumber);
 
+    static void Start(Thread* pNewThread, int threadStackSize, int priority, PCWSTR pThreadName);
+    static void InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 len);
 private:
 
     struct KickOffThread_Args {
@@ -113,6 +106,12 @@ private:
     static BOOL DoJoin(THREADBASEREF DyingThread, INT32 timeout);
 };
 
+extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
+extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0();
+extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
+extern "C" UINT64 QCALLTYPE ThreadNative_GetProcessDefaultStackSize();
+extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
+extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 
 #endif // _COMSYNCHRONIZABLE_H
 

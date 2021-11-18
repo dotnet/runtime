@@ -142,10 +142,11 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Memory" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.Text.Encoding.Extensions" />

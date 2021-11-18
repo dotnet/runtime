@@ -1090,12 +1090,7 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (_disposed)
-            {
-                ThrowObjectDisposedException();
-            }
-
-            void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

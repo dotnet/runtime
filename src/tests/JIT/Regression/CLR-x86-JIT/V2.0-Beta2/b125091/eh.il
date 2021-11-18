@@ -9,6 +9,7 @@
 .assembly extern mscorlib {}
 .assembly extern System {}
 .assembly EHTest {}
+.assembly extern xunit.core {}
 .class public EHTest
 {
   .field private static int64 fld0
@@ -135,6 +136,9 @@ ret
 
 .method public static int32 Main() cil managed
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack 500
 .maxstack 500

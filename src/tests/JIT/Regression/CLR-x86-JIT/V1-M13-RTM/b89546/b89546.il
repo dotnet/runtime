@@ -10,6 +10,7 @@
 .assembly test
 {
 }
+.assembly extern xunit.core {}
 .module test.exe
 // MVID: {611FA85E-B08F-4BA6-A5ED-1EFCE48EC6D9}
 
@@ -34,7 +35,7 @@
 } // end of class RangeTest
 
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_b89546
        extends [mscorlib]System.Object
 {
 .method public hidebysig specialname rtspecialname 
@@ -50,6 +51,9 @@
 
 .method private hidebysig static int32 Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       33 (0x21)
   .maxstack  2
