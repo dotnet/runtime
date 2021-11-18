@@ -3,7 +3,7 @@
 
 namespace System.Numerics
 {
-    internal class Crc32ReflectedTable
+    internal static class Crc32ReflectedTable
     {
         internal static uint[] Generate(uint reflectedPolynomial)
         {
