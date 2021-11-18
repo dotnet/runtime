@@ -306,7 +306,7 @@ namespace System.Xml
             {
                 if (startPos < i)
                 {
-                    WriteStringFragment(text, startPos, i - startPos);
+                    WriteStringFragment(text.AsSpan(startPos, i - startPos));
                 }
                 if (i == len)
                 {
@@ -516,8 +516,10 @@ namespace System.Xml
         //
         // Private implementation methods
         //
-        private void WriteStringFragment(ReadOnlySpan<char> ros, int offset, int count)
+        private void WriteStringFragment(ReadOnlySpan<char> ros)
         {
+            int offset = 0;
+            int count = ros.Length;
             while (count > 0)
             {
                 int copyCount = count;
