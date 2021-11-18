@@ -50,8 +50,6 @@ namespace Microsoft.Interop.Analyzers
                         return;
 
                     INamedTypeSymbol? marshalAsAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute);
-                    if (marshalAsAttrType == null)
-                        return;
 
                     var knownUnsupportedTypes = new List<ITypeSymbol>(s_unsupportedTypeNames.Length);
                     foreach (string typeName in s_unsupportedTypeNames)
@@ -106,8 +104,11 @@ namespace Microsoft.Interop.Analyzers
             context.ReportDiagnostic(method.CreateDiagnostic(ConvertToGeneratedDllImport, method.Name));
         }
 
-        private static bool HasUnsupportedUnmanagedTypeValue(ImmutableArray<AttributeData> attributes, INamedTypeSymbol marshalAsAttrType)
+        private static bool HasUnsupportedUnmanagedTypeValue(ImmutableArray<AttributeData> attributes, INamedTypeSymbol? marshalAsAttrType)
         {
+            if (marshalAsAttrType == null)
+                return false;
+
             AttributeData? marshalAsAttr = null;
             foreach (AttributeData attr in attributes)
             {
