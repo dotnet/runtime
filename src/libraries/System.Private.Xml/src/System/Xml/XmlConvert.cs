@@ -210,7 +210,7 @@ namespace System.Xml
 
             if (first)
             {
-                if (!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || name[0] != ':') || matchPos == 0)
+                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) || matchPos == 0)
                 {
                     bufBld ??= new StringBuilder(length + 20);
 
@@ -243,9 +243,9 @@ namespace System.Xml
             }
             for (; position < length; position++)
             {
-                if (local && !XmlCharType.IsNCNameCharXml4e(name[position]) ||
-                    !local && !XmlCharType.IsNameCharXml4e(name[position]) ||
-                    matchPos == position)
+                if ((local && !XmlCharType.IsNCNameCharXml4e(name[position])) ||
+                    (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
+                    (matchPos == position))
                 {
                     bufBld ??= new StringBuilder(length + 20);
                     if (matchPos == position)
