@@ -13,8 +13,8 @@ struct Gen : IGen
 	public void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);			
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread17.Eval(typeof(U)!=null);			
+		Interlocked.Increment(ref Test_thread17.Xcounter);
 	}
 	public static void DelegateTest<U>()
 	{
@@ -23,12 +23,12 @@ struct Gen : IGen
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread17.Eval(Test_thread17.Xcounter==1);
+		Test_thread17.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread17
 {
 	public static int nThreads =50;
 	public static int counter = 0;

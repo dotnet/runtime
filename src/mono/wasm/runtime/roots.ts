@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { Module } from "./modules";
+import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types";
 
 const maxScratchRoots = 8192;
@@ -196,13 +196,18 @@ export class WasmRootBuffer {
         return this.__offset32 + index;
     }
 
+    // NOTE: These functions do not use the helpers from memory.ts because WasmRoot.get and WasmRoot.set
+    //  are hot-spots when you profile any application that uses the bindings extensively.
+
     get(index: number): ManagedPointer {
         this._check_in_range(index);
-        return <any>Module.HEAP32[this.get_address_32(index)];
+        const offset = this.get_address_32(index);
+        return <any>Module.HEAP32[offset];
     }
 
     set(index: number, value: ManagedPointer): ManagedPointer {
-        Module.HEAP32[this.get_address_32(index)] = <any>value;
+        const offset = this.get_address_32(index);
+        Module.HEAP32[offset] = <any>value;
         return value;
     }
 

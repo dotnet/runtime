@@ -34,6 +34,10 @@ namespace Microsoft.Interop
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => true;
 
+        public bool SupportsTargetFramework { get; init; }
+
+        public bool StubIsBasicForwarder { get; init; }
+
         /// <summary>
         /// Identifier for managed return value
         /// </summary>
@@ -58,9 +62,8 @@ namespace Microsoft.Interop
         private readonly List<BoundGenerator> _sortedMarshallers;
         private readonly bool _stubReturnsVoid;
 
-        public bool StubIsBasicForwarder { get; }
-
         public PInvokeStubCodeGenerator(
+            StubEnvironment environment,
             IEnumerable<TypePositionInfo> argTypes,
             bool setLastError,
             Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
@@ -68,6 +71,19 @@ namespace Microsoft.Interop
         {
             _setLastError = setLastError;
 
+            // Support for SetLastError logic requires .NET 6+. Initialize the
+            // supports target framework value with this value.
+            if (_setLastError)
+            {
+                SupportsTargetFramework = environment.TargetFramework == TargetFramework.Net
+                    && environment.TargetFrameworkVersion.Major >= 6;
+            }
+            else
+            {
+                SupportsTargetFramework = true;
+            }
+
+            bool noMarshallingNeeded = true;
             List<BoundGenerator> allMarshallers = new();
             List<BoundGenerator> paramMarshallers = new();
             bool foundNativeRetMarshaller = false;
@@ -78,6 +94,14 @@ namespace Microsoft.Interop
             foreach (TypePositionInfo argType in argTypes)
             {
                 BoundGenerator generator = CreateGenerator(argType);
+
+                // Check each marshaler if the current target framework is supported or not.
+                SupportsTargetFramework &= generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
+
+                // Check if generator is either blittable or just a forwarder.
+                noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }
+                        or { Generator: Forwarder };
+
                 allMarshallers.Add(generator);
                 if (argType.IsManagedReturnPosition)
                 {
@@ -139,9 +163,7 @@ namespace Microsoft.Interop
 
             StubIsBasicForwarder = !setLastError
                 && managedRetMarshaller.TypeInfo.IsNativeReturnPosition // If the managed return has native return position, then it's the return for both.
-                && _sortedMarshallers.All(
-                    m => m is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }
-                        or { Generator: Forwarder });
+                && noMarshallingNeeded;
 
             if (managedRetMarshaller.Generator.UsesNativeIdentifier(managedRetMarshaller.TypeInfo, this))
             {
@@ -175,6 +197,15 @@ namespace Microsoft.Interop
             {
                 try
                 {
+                    // TODO: Remove once helper types (like ArrayMarshaller) are part of the runtime
+                    // This check is to help with enabling the source generator for runtime libraries without making each
+                    // library directly reference System.Memory and System.Runtime.CompilerServices.Unsafe unless it needs to
+                    if (p.MarshallingAttributeInfo is MissingSupportMarshallingInfo
+                        && (environment.TargetFramework == TargetFramework.Net && environment.TargetFrameworkVersion.Major >= 7))
+                    {
+                        throw new MarshallingNotSupportedException(p, this);
+                    }
+
                     return new BoundGenerator(p, generatorFactory.Create(p, this));
                 }
                 catch (MarshallingNotSupportedException e)

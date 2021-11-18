@@ -1817,7 +1817,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, OR and XOR
+// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR and XOR
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
@@ -1826,8 +1826,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     var_types        targetType = treeNode->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(oper == GT_ADD || oper == GT_SUB || oper == GT_MUL || oper == GT_DIV || oper == GT_UDIV || oper == GT_AND ||
-           oper == GT_OR || oper == GT_XOR);
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
@@ -1845,6 +1844,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
                 break;
             case GT_AND:
                 ins = INS_ands;
+                break;
+            case GT_AND_NOT:
+                ins = INS_bics;
                 break;
             default:
                 noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
@@ -3119,6 +3121,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             case GT_AND:
                 ins = INS_and;
                 break;
+            case GT_AND_NOT:
+                ins = INS_bic;
+                break;
             case GT_DIV:
                 ins = INS_sdiv;
                 break;
@@ -3566,7 +3571,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     var_types op2Type = genActualType(op2->TypeGet());
 
     assert(!op1->isUsedFromMemory());
-    assert(!op2->isUsedFromMemory());
 
     genConsumeOperands(tree);
 
@@ -3580,7 +3584,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         assert(!op1->isContained());
         assert(op1Type == op2Type);
 
-        if (op2->IsIntegralConst(0))
+        if (op2->IsFPZero())
         {
             assert(op2->isContained());
             emit->emitIns_R_F(INS_fcmp, cmpSize, op1->GetRegNum(), 0.0);
@@ -3841,10 +3845,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     GetEmitter()->emitIns_Call(callType, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) addr, argSize,
                                retSize, EA_UNKNOWN, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur, BAD_IL_OFFSET, /* IL offset */
-                               callTarget,                             /* ireg */
-                               REG_NA, 0, 0,                           /* xreg, xmul, disp */
-                               false                                   /* isJump */
+                               gcInfo.gcRegByrefSetCur, DebugInfo(), callTarget, /* ireg */
+                               REG_NA, 0, 0,                                     /* xreg, xmul, disp */
+                               false                                             /* isJump */
                                );
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
@@ -3892,15 +3895,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt64:
             genSIMDIntrinsicUnOp(simdNode);
-            break;
-
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
-            genSIMDIntrinsicWiden(simdNode);
-            break;
-
-        case SIMDIntrinsicNarrow:
-            genSIMDIntrinsicNarrow(simdNode);
             break;
 
         case SIMDIntrinsicSub:
@@ -3991,19 +3985,8 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicEqual:
                 result = INS_fcmeq;
                 break;
-            case SIMDIntrinsicNarrow:
-                // Use INS_fcvtn lower bytes of result followed by INS_fcvtn2 for upper bytes
-                // Return lower bytes instruction here
-                result = INS_fcvtn;
-                break;
             case SIMDIntrinsicSub:
                 result = INS_fsub;
-                break;
-            case SIMDIntrinsicWidenLo:
-                result = INS_fcvtl;
-                break;
-            case SIMDIntrinsicWidenHi:
-                result = INS_fcvtl2;
                 break;
             default:
                 assert(!"Unsupported SIMD intrinsic");
@@ -4032,19 +4015,8 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicEqual:
                 result = INS_cmeq;
                 break;
-            case SIMDIntrinsicNarrow:
-                // Use INS_xtn lower bytes of result followed by INS_xtn2 for upper bytes
-                // Return lower bytes instruction here
-                result = INS_xtn;
-                break;
             case SIMDIntrinsicSub:
                 result = INS_sub;
-                break;
-            case SIMDIntrinsicWidenLo:
-                result = isUnsigned ? INS_uxtl : INS_sxtl;
-                break;
-            case SIMDIntrinsicWidenHi:
-                result = isUnsigned ? INS_uxtl2 : INS_sxtl2;
                 break;
             default:
                 assert(!"Unsupported SIMD intrinsic");
@@ -4221,113 +4193,6 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
     {
         GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, genGetSimdInsOpt(attr, baseType));
     }
-    genProduceReg(simdNode);
-}
-
-//--------------------------------------------------------------------------------
-// genSIMDIntrinsicWiden: Generate code for SIMD Intrinsic Widen operations
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Notes:
-//    The Widen intrinsics are broken into separate intrinsics for the two results.
-//
-void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
-{
-    assert((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenLo) ||
-           (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi));
-
-    GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types simdType = simdNode->TypeGet();
-
-    genConsumeOperands(simdNode);
-    regNumber op1Reg   = op1->GetRegNum();
-    regNumber srcReg   = op1Reg;
-    emitAttr  emitSize = emitActualTypeSize(simdType);
-
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-
-    emitAttr attr = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi) ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt  = genGetSimdInsOpt(attr, baseType);
-
-    GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
-
-    genProduceReg(simdNode);
-}
-
-//--------------------------------------------------------------------------------
-// genSIMDIntrinsicNarrow: Generate code for SIMD Intrinsic Narrow operations
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Notes:
-//    This intrinsic takes two arguments. The first operand is narrowed to produce the
-//    lower elements of the results, and the second operand produces the high elements.
-//
-void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicNarrow);
-
-    GenTree*  op1       = simdNode->gtGetOp1();
-    GenTree*  op2       = simdNode->gtGetOp2();
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types simdType = simdNode->TypeGet();
-    emitAttr  emitSize = emitTypeSize(simdType);
-
-    genConsumeOperands(simdNode);
-    regNumber op1Reg = op1->GetRegNum();
-    regNumber op2Reg = op2->GetRegNum();
-
-    assert(genIsValidFloatReg(op1Reg));
-    assert(genIsValidFloatReg(op2Reg));
-    assert(genIsValidFloatReg(targetReg));
-    assert(op2Reg != targetReg);
-    assert(simdNode->GetSimdSize() == 16);
-
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-    assert((ins == INS_fcvtn) || (ins == INS_xtn));
-
-    instruction ins2 = (ins == INS_fcvtn) ? INS_fcvtn2 : INS_xtn2;
-
-    insOpts opt  = INS_OPTS_NONE;
-    insOpts opt2 = INS_OPTS_NONE;
-
-    // This is not the same as genGetSimdInsOpt()
-    // Basetype is the soure operand type
-    // However encoding is based on the destination operand type which is 1/2 the basetype.
-    switch (baseType)
-    {
-        case TYP_ULONG:
-        case TYP_LONG:
-        case TYP_DOUBLE:
-            opt  = INS_OPTS_2S;
-            opt2 = INS_OPTS_4S;
-            break;
-        case TYP_UINT:
-        case TYP_INT:
-            opt  = INS_OPTS_4H;
-            opt2 = INS_OPTS_8H;
-            break;
-        case TYP_USHORT:
-        case TYP_SHORT:
-            opt  = INS_OPTS_8B;
-            opt2 = INS_OPTS_16B;
-            break;
-        default:
-            assert(!"Unsupported narrowing element type");
-            unreached();
-    }
-
-    GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg, opt);
-    GetEmitter()->emitIns_R_R(ins2, EA_16BYTE, targetReg, op2Reg, opt2);
-
     genProduceReg(simdNode);
 }
 
@@ -9562,6 +9427,78 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     {
         GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
     }
+}
+
+//-----------------------------------------------------------------------------------
+// genCodeForMadd: Emit a madd/msub (Multiply-Add) instruction
+//
+// Arguments:
+//     tree - GT_MADD tree where op1 or op2 is GT_ADD
+//
+void CodeGen::genCodeForMadd(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MADD) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
+
+    GenTree* a;
+    GenTree* b;
+    GenTree* c;
+    if (tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
+    {
+        a = tree->gtGetOp1()->gtGetOp1();
+        b = tree->gtGetOp1()->gtGetOp2();
+        c = tree->gtGetOp2();
+    }
+    else
+    {
+        assert(tree->gtGetOp2()->OperIs(GT_MUL) && tree->gtGetOp2()->isContained());
+        a = tree->gtGetOp2()->gtGetOp1();
+        b = tree->gtGetOp2()->gtGetOp2();
+        c = tree->gtGetOp1();
+    }
+
+    bool useMsub = false;
+    if (a->OperIs(GT_NEG) && a->isContained())
+    {
+        a       = a->gtGetOp1();
+        useMsub = true;
+    }
+    if (b->OperIs(GT_NEG) && b->isContained())
+    {
+        b       = b->gtGetOp1();
+        useMsub = !useMsub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
+    }
+
+    GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
+                                  a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBfiz: Generates the code sequence for a GenTree node that
+// represents a bitfield insert in zero with sign/zero extension.
+//
+// Arguments:
+//    tree - the bitfield insert in zero node.
+//
+void CodeGen::genCodeForBfiz(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_BFIZ));
+
+    emitAttr     size       = emitActualTypeSize(tree);
+    unsigned     shiftBy    = (unsigned)tree->gtGetOp2()->AsIntCon()->IconValue();
+    unsigned     shiftByImm = shiftBy & (emitter::getBitWidth(size) - 1);
+    GenTreeCast* cast       = tree->gtGetOp1()->AsCast();
+    GenTree*     castOp     = cast->CastOp();
+
+    genConsumeRegs(castOp);
+    unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                          : genTypeSize(castOp) * BITS_PER_BYTE;
+    const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
+    GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
+                                  (int)shiftByImm, (int)srcBits);
+
+    genProduceReg(tree);
 }
 
 #endif // TARGET_ARM64

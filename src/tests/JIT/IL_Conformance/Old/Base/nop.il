@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly nop.exe{}
+.assembly 'nop'{}
 
 .class public _nop {
 

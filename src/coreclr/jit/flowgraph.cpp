@@ -278,7 +278,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             if (nextStmt != nullptr)
             {
                 // Is it possible for gtNextStmt to be NULL?
-                newStmt->SetILOffsetX(nextStmt->GetILOffsetX());
+                newStmt->SetDebugInfo(nextStmt->GetDebugInfo());
             }
         }
 
@@ -1362,7 +1362,7 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
  *  execute a call or not.
  */
 
-inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
+void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 {
     /* Bail if this is not a backward edge */
 
@@ -1436,7 +1436,7 @@ void Compiler::fgLoopCallMark()
  *  Note the fact that the given block is a loop header.
  */
 
-inline void Compiler::fgMarkLoopHead(BasicBlock* block)
+void Compiler::fgMarkLoopHead(BasicBlock* block)
 {
 #ifdef DEBUG
     if (verbose)

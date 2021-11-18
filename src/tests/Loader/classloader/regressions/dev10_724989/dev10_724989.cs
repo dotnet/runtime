@@ -91,7 +91,7 @@ class Derived4<T> : Base4<T>
 }
 
 
-public class Test
+public class Test_dev10_724989
 {
     static bool Success = true;
 

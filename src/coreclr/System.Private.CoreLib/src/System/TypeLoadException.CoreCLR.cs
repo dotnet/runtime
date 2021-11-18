@@ -46,7 +46,7 @@ namespace System
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall)]
         private static extern void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
     }
 }

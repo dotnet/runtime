@@ -155,7 +155,7 @@
           TargetDir="wasm-test-runner/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(MonoProjectRoot)\wasm\runtime-test.js"
+          Include="$(MonoProjectRoot)\wasm\test-main.js"
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal

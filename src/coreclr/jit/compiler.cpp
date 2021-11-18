@@ -174,128 +174,6 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
     va_end(args);
 }
 
-void Compiler::compDspSrcLinesByLineNum(unsigned line, bool seek)
-{
-    if (!jitSrcFilePtr)
-    {
-        return;
-    }
-
-    if (jitCurSrcLine == line)
-    {
-        return;
-    }
-
-    if (jitCurSrcLine > line)
-    {
-        if (!seek)
-        {
-            return;
-        }
-
-        if (fseek(jitSrcFilePtr, 0, SEEK_SET) != 0)
-        {
-            printf("Compiler::compDspSrcLinesByLineNum:  fseek returned an error.\n");
-        }
-        jitCurSrcLine = 0;
-    }
-
-    if (!seek)
-    {
-        printf(";\n");
-    }
-
-    do
-    {
-        char   temp[128];
-        size_t llen;
-
-        if (!fgets(temp, sizeof(temp), jitSrcFilePtr))
-        {
-            return;
-        }
-
-        if (seek)
-        {
-            continue;
-        }
-
-        llen = strlen(temp);
-        if (llen && temp[llen - 1] == '\n')
-        {
-            temp[llen - 1] = 0;
-        }
-
-        printf(";   %s\n", temp);
-    } while (++jitCurSrcLine < line);
-
-    if (!seek)
-    {
-        printf(";\n");
-    }
-}
-
-/*****************************************************************************/
-
-void Compiler::compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP)
-{
-    static IPmappingDsc* nextMappingDsc;
-    static unsigned      lastLine;
-
-    if (!opts.dspLines)
-    {
-        return;
-    }
-
-    if (curIP == 0)
-    {
-        if (genIPmappingList)
-        {
-            nextMappingDsc = genIPmappingList;
-            lastLine       = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            unsigned firstLine = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            unsigned earlierLine = (firstLine < 5) ? 0 : firstLine - 5;
-
-            compDspSrcLinesByLineNum(earlierLine, true); // display previous 5 lines
-            compDspSrcLinesByLineNum(firstLine, false);
-        }
-        else
-        {
-            nextMappingDsc = nullptr;
-        }
-
-        return;
-    }
-
-    if (nextMappingDsc)
-    {
-        UNATIVE_OFFSET offset = nextMappingDsc->ipmdNativeLoc.CodeOffset(GetEmitter());
-
-        if (offset <= curIP)
-        {
-            IL_OFFSET nextOffs = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            if (lastLine < nextOffs)
-            {
-                compDspSrcLinesByLineNum(nextOffs);
-            }
-            else
-            {
-                // This offset corresponds to a previous line. Rewind to that line
-
-                compDspSrcLinesByLineNum(nextOffs - 2, true);
-                compDspSrcLinesByLineNum(nextOffs);
-            }
-
-            lastLine       = nextOffs;
-            nextMappingDsc = nextMappingDsc->ipmdNext;
-        }
-    }
-}
-
-/*****************************************************************************/
 #endif // DEBUG
 
 /*****************************************************************************/
@@ -1995,6 +1873,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compJmpOpUsed         = false;
     compLongUsed          = false;
     compTailCallUsed      = false;
+    compLocallocSeen      = false;
     compLocallocUsed      = false;
     compLocallocOptimized = false;
     compQmarkRationalized = false;
@@ -2616,7 +2495,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS));
     }
@@ -2744,6 +2622,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     verboseSsa       = verbose && shouldUseVerboseSsa();
     asciiTrees       = shouldDumpASCIITrees();
     opts.dspDiffable = compIsForInlining() ? impInlineInfo->InlinerCompiler->opts.dspDiffable : false;
+
 #endif
 
     opts.altJit = false;
@@ -2897,6 +2776,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
     {
         verboseDump = (JitConfig.JitDumpTier0() > 0);
+    }
+
+    // Optionally suppress dumping some OSR jit requests.
+    //
+    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        const int desiredOffset = JitConfig.JitDumpAtOSROffset();
+
+        if (desiredOffset != -1)
+        {
+            verboseDump = (((IL_OFFSET)desiredOffset) == info.compILEntry);
+        }
     }
 
     if (verboseDump)
@@ -3740,8 +3631,6 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 
 void Compiler::compInitDebuggingInfo()
 {
-    assert(!compIsForInlining());
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -4571,6 +4460,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
+    // Expand any patchpoints
+    //
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -4581,10 +4474,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform indirect calls that require control flow expansion.
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
-
-    // Expand any patchpoints
-    //
-    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
 
     // PostImportPhase: cleanup inlinees
     //
@@ -5001,14 +4890,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
-        // Discover and classify natural loops
-        // (e.g. mark iterative loops as such). Also marks loop blocks
-        // and sets bbWeight to the loop nesting levels
+        // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
+        // and sets bbWeight to the loop nesting levels.
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
-        // Clone loops with optimization opportunities, and
-        // choose one based on dynamic condition evaluation.
+        // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
         DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
@@ -6207,7 +6094,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         assert((methAttr_Old & (~flagsToIgnore)) == (methAttr_New & (~flagsToIgnore)));
 #endif
 
-        info.compFlags = impInlineInfo->inlineCandidateInfo->methAttr;
+        info.compFlags    = impInlineInfo->inlineCandidateInfo->methAttr;
+        compInlineContext = impInlineInfo->inlineContext;
     }
     else
     {
@@ -6215,6 +6103,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef PSEUDORANDOM_NOP_INSERTION
         info.compChecksum = getMethodBodyChecksum((char*)methodInfo->ILCode, methodInfo->ILCodeSize);
 #endif
+        compInlineContext = m_inlineStrategy->GetRootContext();
     }
 
     compSwitchedToOptimized = false;
@@ -6352,10 +6241,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     lvaInitTypeRef();
 
-    if (!compIsForInlining())
-    {
-        compInitDebuggingInfo();
-    }
+    compInitDebuggingInfo();
 
 #ifdef DEBUG
     if (compIsForInlining())
@@ -6500,9 +6386,21 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
     {
+        enum
+        {
+            BUFSIZE = 20
+        };
+        char osrBuffer[BUFSIZE] = {0};
+        if (opts.IsOSR())
+        {
+            // Tiering name already includes "OSR", we just want the IL offset
+            //
+            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
+        }
+
         printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
                info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), opts.IsOSR() ? " OSR" : "", compGetStressMessage());
+               compGetTieringName(), osrBuffer, compGetStressMessage());
     }
     if (compIsForInlining())
     {
@@ -8800,7 +8698,6 @@ void cLoop(Compiler* comp, Compiler::LoopDsc* loop)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== Loop %u\n", sequenceNumber++);
     printf("HEAD   " FMT_BB "\n", loop->lpHead->bbNum);
-    printf("FIRST  " FMT_BB "\n", loop->lpFirst->bbNum);
     printf("TOP    " FMT_BB "\n", loop->lpTop->bbNum);
     printf("ENTRY  " FMT_BB "\n", loop->lpEntry->bbNum);
     if (loop->lpExitCnt == 1)
@@ -9252,10 +9149,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[RELOP_JMP_USED]");
                 }
-                if (tree->gtFlags & GTF_RELOP_QMARK)
-                {
-                    chars += printf("[RELOP_QMARK]");
-                }
                 break;
 
             case GT_QMARK:
@@ -9277,7 +9170,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_CNS_INT:
 
             {
-                unsigned handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
+                GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
 
                 switch (handleKind)
                 {
@@ -9360,6 +9253,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_FIELD_OFF:
 
                         chars += printf("[ICON_FIELD_OFF]");
+                        break;
+
+                    default:
+                        assert(!"a forgotten handle flag");
                         break;
                 }
             }
@@ -9517,7 +9414,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             default:
 
             {
-                unsigned flags = (tree->gtFlags & (~(unsigned)(GTF_COMMON_MASK | GTF_OVERFLOW)));
+                GenTreeFlags flags = (tree->gtFlags & (~(GTF_COMMON_MASK | GTF_OVERFLOW)));
                 if (flags != 0)
                 {
                     chars += printf("[%08X]", flags);

@@ -48,13 +48,22 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //    True if the immediate can be folded into an instruction,
 //    for example small enough and non-relocatable.
 //
-// TODO-CQ: we can contain a floating point 0.0 constant in a compare instruction
-// (vcmp on arm, fcmp on arm64).
-//
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
     if (!varTypeIsFloating(parentNode->TypeGet()))
     {
+#ifdef TARGET_ARM64
+        if (parentNode->OperIsRelop() && childNode->IsFPZero())
+        {
+            // Contain 0.0 constant in fcmp on arm64
+            // TODO: Enable for arm too (vcmp)
+
+            // We currently don't emit these for floating points
+            assert(!parentNode->OperIs(GT_TEST_EQ, GT_TEST_NE));
+            return true;
+        }
+#endif
+
         // Make sure we have an actual immediate
         if (!childNode->IsCnsIntOrI())
             return false;
@@ -74,6 +83,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_ADD:
             case GT_SUB:
 #ifdef TARGET_ARM64
+                return emitter::emitIns_valid_imm_for_add(immVal, size);
             case GT_CMPXCHG:
             case GT_LOCKADD:
             case GT_XORR:
@@ -1567,6 +1577,48 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
     // Check and make op2 contained (if it is a containable immediate)
     CheckImmedAndMakeContained(node, node->gtOp2);
+
+#ifdef TARGET_ARM64
+    // Find "a * b + c" or "c + a * b" in order to emit MADD/MSUB
+    if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_ADD) &&
+        !node->gtOverflow() && (node->gtGetOp1()->OperIs(GT_MUL) || node->gtGetOp2()->OperIs(GT_MUL)))
+    {
+        GenTree* mul;
+        GenTree* c;
+        if (node->gtGetOp1()->OperIs(GT_MUL))
+        {
+            mul = node->gtGetOp1();
+            c   = node->gtGetOp2();
+        }
+        else
+        {
+            mul = node->gtGetOp2();
+            c   = node->gtGetOp1();
+        }
+
+        GenTree* a = mul->gtGetOp1();
+        GenTree* b = mul->gtGetOp2();
+
+        if (!mul->isContained() && !mul->gtOverflow() && !a->isContained() && !b->isContained() && !c->isContained() &&
+            varTypeIsIntegral(mul))
+        {
+            if (a->OperIs(GT_NEG) && !a->gtGetOp1()->isContained() && !a->gtGetOp1()->IsRegOptional())
+            {
+                // "-a * b + c" to MSUB
+                MakeSrcContained(mul, a);
+            }
+            if (b->OperIs(GT_NEG) && !b->gtGetOp1()->isContained())
+            {
+                // "a * -b + c" to MSUB
+                MakeSrcContained(mul, b);
+            }
+            // If both 'a' and 'b' are GT_NEG - MADD will be emitted.
+
+            node->ChangeOper(GT_MADD);
+            MakeSrcContained(node, mul);
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------

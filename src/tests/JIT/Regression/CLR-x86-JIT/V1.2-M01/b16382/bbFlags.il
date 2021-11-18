@@ -3,6 +3,7 @@
 .assembly extern mscorlib {}
 .assembly extern System {}
 .assembly bbFlags {}
+.assembly extern xunit.core {}
 .class public bbFlags
 {
 .method public static int32 f() cil managed
@@ -45,6 +46,9 @@ leave OUT
 
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .maxstack 5
 .entrypoint
 .try

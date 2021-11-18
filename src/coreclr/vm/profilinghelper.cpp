@@ -1172,7 +1172,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // Check if this profiler is notification only and load as appropriate
         BOOL notificationOnly = FALSE;
         {
-            HRESULT callHr = profilerInfo.pProfInterface->LoadAsNotficationOnly(&notificationOnly);
+            HRESULT callHr = profilerInfo.pProfInterface->LoadAsNotificationOnly(&notificationOnly);
             if (FAILED(callHr))
             {
                 notificationOnly = FALSE;

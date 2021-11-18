@@ -139,8 +139,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            ContainCheckBinary(node->AsOp());
-            break;
+            return LowerBinaryArithmetic(node->AsOp());
 
         case GT_MUL:
         case GT_MULHI:
@@ -5034,6 +5033,28 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
         }
     }
 
+#ifdef TARGET_ARM64
+    // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
+    if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
+        index->gtGetOp2()->IsCnsIntOrI() && varTypeIsIntegral(targetType))
+    {
+        // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
+        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+        assert(cast->isContained());
+
+        const unsigned shiftBy = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
+
+        // 'scale' and 'offset' have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
+        // where there is no room for additional offsets/scales on ARM64. 'shiftBy' has to match target's width.
+        if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && (genTypeSize(targetType) == (1U << shiftBy)) &&
+            (scale == 1) && (offset == 0))
+        {
+            // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
+            MakeSrcContained(addrMode, index);
+        }
+    }
+#endif
+
     JITDUMP("New addressing mode node:\n  ");
     DISPNODE(addrMode);
     JITDUMP("\n");
@@ -5102,6 +5123,55 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         ContainCheckBinary(node);
     }
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// LowerBinaryArithmetic: lowers the given binary arithmetic node.
+//
+// Recognizes opportunities for using target-independent "combined" nodes
+// (currently AND_NOT on ARMArch). Performs containment checks.
+//
+// Arguments:
+//    node - the arithmetic node to lower
+//
+// Returns:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* node)
+{
+    // TODO-CQ-XArch: support BMI2 "andn" in codegen and condition
+    // this logic on the support for the instruction set on XArch.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef TARGET_ARMARCH
+    if (comp->opts.OptimizationEnabled() && node->OperIs(GT_AND))
+    {
+        GenTree* opNode  = nullptr;
+        GenTree* notNode = nullptr;
+        if (node->gtGetOp1()->OperIs(GT_NOT))
+        {
+            notNode = node->gtGetOp1();
+            opNode  = node->gtGetOp2();
+        }
+        else if (node->gtGetOp2()->OperIs(GT_NOT))
+        {
+            notNode = node->gtGetOp2();
+            opNode  = node->gtGetOp1();
+        }
+
+        if (notNode != nullptr)
+        {
+            node->gtOp1 = opNode;
+            node->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+            node->ChangeOper(GT_AND_NOT);
+            BlockRange().Remove(notNode);
+        }
+    }
+#endif // TARGET_ARMARCH
+
+    ContainCheckBinary(node);
+
+    return node->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -5753,6 +5823,35 @@ void Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2->ClearContained();
     }
     ContainCheckShiftRotate(shift);
+
+#ifdef TARGET_ARM64
+    // Try to recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) tree
+    if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_LSH) && shift->gtGetOp1()->OperIs(GT_CAST) &&
+        shift->gtGetOp2()->IsCnsIntOrI() && !shift->isContained())
+    {
+        GenTreeIntCon* cns  = shift->gtGetOp2()->AsIntCon();
+        GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
+
+        if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
+            // Smaller CastOp is most likely an IND(X) node which is lowered to a zero-extend load
+            cast->CastOp()->TypeIs(TYP_LONG, TYP_INT))
+        {
+            // Cast is either "TYP_LONG <- TYP_INT" or "TYP_INT <- %SMALL_INT% <- TYP_INT" (signed or unsigned)
+            unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
+            unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                                  : genTypeSize(cast->CastOp()) * BITS_PER_BYTE;
+            assert(!cast->CastOp()->isContained());
+
+            // It has to be an upcast and CNS must be in [1..srcBits) range
+            if ((srcBits < dstBits) && (cns->IconValue() > 0) && (cns->IconValue() < srcBits))
+            {
+                JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
+                shift->ChangeOper(GT_BFIZ);
+                MakeSrcContained(shift, cast);
+            }
+        }
+    }
+#endif
 }
 
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)

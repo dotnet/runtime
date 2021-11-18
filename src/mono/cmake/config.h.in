@@ -510,14 +510,11 @@
 /* Define to 1 if you have the `strerror_r' function. */
 #cmakedefine HAVE_STRERROR_R 1
 
-/* Define to 1 if strerror_r returns char *. */
-#cmakedefine STRERROR_R_CHAR_P 1
-
 /* Have GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY */
 #cmakedefine GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY 1
 
 /* GLIBC has CPU_COUNT macro in sched.h */
-#cmakedefine GLIBC_HAS_CPU_COUNT 1
+#cmakedefine HAVE_GNU_CPU_COUNT
 
 /* Have large file support */
 #cmakedefine HAVE_LARGE_FILE_SUPPORT 1
@@ -711,6 +708,8 @@
 
 /* The size of `size_t', as computed by sizeof. */
 #define SIZEOF_SIZE_T @SIZEOF_SIZE_T@
+
+#cmakedefine01 HAVE_GNU_STRERROR_R
 
 /* Define to 1 if the system has the type `struct sockaddr'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR 1

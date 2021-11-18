@@ -2148,7 +2148,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     // All the format specifiers for the fields in the stat file are provided by 'man proc'.
     int sscanfRet = sscanf_s(scanStartPosition,
-        "%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+        "%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
          &starttime);
 
     if (sscanfRet != 1)

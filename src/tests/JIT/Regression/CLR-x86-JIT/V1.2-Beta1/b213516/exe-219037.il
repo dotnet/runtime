@@ -16,6 +16,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .class public auto ansi beforefieldinit ClientType
        extends [mscorlib]System.Object
 {
@@ -31,6 +32,9 @@
 
   .method public static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  100
     IL_0000:  ldstr      "Main..."

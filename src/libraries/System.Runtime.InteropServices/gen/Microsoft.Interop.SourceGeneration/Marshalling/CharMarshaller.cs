@@ -20,6 +20,8 @@ namespace Microsoft.Interop
         {
         }
 
+        public bool IsSupported(TargetFramework target, Version version) => true;
+
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
@@ -94,7 +96,7 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Setup:
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.IsByRef && info.RefKind != RefKind.Out)
+                    if ((info.IsByRef && info.RefKind != RefKind.Out) || !context.SingleFrameSpansNativeContext)
                     {
                         yield return ExpressionStatement(
                             AssignmentExpression(

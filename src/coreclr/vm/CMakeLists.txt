@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+include_directories(${CLR_SRC_NATIVE_DIR})
 
 # needed when zLib compression is used
 include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
@@ -363,6 +364,7 @@ set(VM_SOURCES_WKS
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
     qcall.cpp
+    qcallentrypoints.cpp
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
@@ -935,9 +937,11 @@ list(APPEND VM_SOURCES_DAC
 # gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
 # treat it in a special way when statically linking with both VM and JIT
 if(CLR_CMAKE_TARGET_ARCH_I386)
-    list(APPEND VM_SOURCES_DAC
-        gcdecode.cpp
-    )
+    if(CLR_CMAKE_TARGET_WIN32)
+        list(APPEND VM_SOURCES_DAC
+            gcdecode.cpp
+        )
+    endif()
     list(APPEND VM_SOURCES_WKS_SPECIAL
         gcdecode.cpp
     )

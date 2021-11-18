@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly ILGEN_0x9e05cbcc {}
+.assembly extern xunit.core {}
 .class ILGEN_0x9e05cbcc {
 .field static	native int field_0x5
 .method static unsigned int8  Method_0xa3eeac4e(unsigned int64 Arg_0x0, unsigned int16 Arg_0x1, int16 Arg_0x2, int8 Arg_0x3, float32 Arg_0x4, unsigned int32 Arg_0x5, float32 Arg_0x6, int32 Arg_0x7) {
@@ -38,6 +39,9 @@ pop
 ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	17
 .try {

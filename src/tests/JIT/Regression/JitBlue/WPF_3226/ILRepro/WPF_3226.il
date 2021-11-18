@@ -14,6 +14,7 @@
 .assembly extern System.Diagnostics.Debug {}
 
 .assembly WPF_3226 {}
+.assembly extern xunit.core {}
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
@@ -55,6 +56,9 @@
 
 .method public hidebysig static int32  Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       56 (0x38)
   .maxstack  2

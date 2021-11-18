@@ -1139,12 +1139,12 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectI
 	}
 
 	if (m_class_is_abstract (klass) || m_class_is_interface (klass) || m_class_is_gtd (klass)) {
-		mono_error_set_member_access (error, NULL, NULL);
+		mono_error_set_member_access (error, NULL);
 		return NULL_HANDLE;
 	}
 
 	if (m_class_is_byreflike (klass)) {
-		mono_error_set_not_supported (error, NULL, NULL);
+		mono_error_set_not_supported (error, NULL);
 		return NULL_HANDLE;
 	}
 
@@ -3403,12 +3403,8 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	 */
 	MonoMethod *m = method->method;
 	MonoMethodSignature* const sig = mono_method_signature_internal (m);
-	MonoImage *image = NULL;
 	int pcount = 0;
 	void *obj = this_arg;
-	char *this_name = NULL;
-	char *target_name = NULL;
-	char *msg = NULL;
 	MonoObject *result = NULL;
 	MonoArray *arr = NULL;
 	MonoException *exception = NULL;
@@ -3436,8 +3432,7 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		}
 	}
 
-	image = m_class_get_image (m->klass);
-	
+	/* Array constructor */
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
 		int i;
 		pcount = mono_span_length (params_span);
@@ -3471,12 +3466,12 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 			g_assert (pcount == (m_class_get_rank (m->klass) * 2));
 			/* The arguments are lower-bound-length pairs */
 			intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
-
+	
 			for (i = 0; i < pcount / 2; ++i) {
 				lower_bounds [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
 				lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
 			}
-
+	
 			arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);
 			goto_if_nok (error, return_null);
 			goto exit;
@@ -3492,9 +3487,6 @@ exit:
 		MONO_HANDLE_NEW (MonoException, exception); // FIXME? overkill?
 		mono_gc_wbarrier_generic_store_internal (MONO_HANDLE_REF (exception_out), (MonoObject*)exception);
 	}
-	g_free (target_name);
-	g_free (this_name);
-	g_free (msg);
 	g_assert (!result || !arr); // only one, or neither, should be set
 	return result ? MONO_HANDLE_NEW (MonoObject, result) : arr ? MONO_HANDLE_NEW (MonoObject, (MonoObject*)arr) : NULL_HANDLE;
 }
@@ -6603,7 +6595,6 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 	MonoType *type = MONO_HANDLE_GETVAL (rt, type);
 	MonoClass *member_class = mono_handle_class (member);
 	MonoMethod *method = NULL;
-	MonoImage *image;
 	MonoMethodSignature *sig;
 
 	if (mono_class_is_reflection_method_or_constructor (member_class)) {
@@ -6626,7 +6617,6 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		return NULL_HANDLE_ARRAY;
 	}
 
-	image = m_class_get_image (method->klass);
 	sig = mono_method_signature_internal (method);
 	if (pos == -1)
 		type = sig->ret;

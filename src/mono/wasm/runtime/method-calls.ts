@@ -7,7 +7,7 @@ import {
     MonoObjectNull, MonoString, coerceNull as coerceNull,
     VoidPtr, VoidPtrNull, Int32Ptr, MonoStringNull
 } from "./types";
-import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./modules";
+import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from "./js-to-cs";
@@ -541,21 +541,18 @@ export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): M
     if (code === MonoStringNull)
         return MonoStringNull;
 
-    const js_code = conv_string(code);
+    const js_code = conv_string(code)!;
 
     try {
-        const closure = {
-            Module, MONO, BINDING, INTERNAL
+        const closedEval = function (Module: EmscriptenModule, MONO: any, BINDING: any, INTERNAL: any, code: string) {
+            return eval(code);
         };
-        const fn_body_template = `const {Module, MONO, BINDING, INTERNAL} = __closure; const __fn = function(){ ${js_code} }; return __fn.call(__closure);`;
-        const fn_defn = new Function("__closure", fn_body_template);
-        const res = fn_defn(closure);
+        const res = closedEval(Module, MONO, BINDING, INTERNAL, js_code);
         Module.setValue(is_exception, 0, "i32");
         if (typeof res === "undefined" || res === null)
             return MonoStringNull;
-        if (typeof res !== "string")
-            return wrap_error(is_exception, `Return type of InvokeJS is string. Can't marshal response of type ${typeof res}.`);
-        return js_string_to_mono_string(res);
+
+        return js_string_to_mono_string(res.toString());
     } catch (ex) {
         return wrap_error(is_exception, ex);
     }

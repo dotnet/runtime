@@ -125,7 +125,7 @@ public struct E
 
 }
 
-public class Test
+public class Test_CircularCctorFourThreads
 {
 
 	public static void RunGetA()

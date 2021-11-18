@@ -81,10 +81,6 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            // Ignore QCalls
-            if (dllImportData.ModuleName == "QCall")
-                return;
-
             // Ignore methods with unsupported parameters
             foreach (IParameterSymbol parameter in method.Parameters)
             {

@@ -6,7 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-using TestLibrary;
+using Xunit;
 
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 public class CallbackTests
@@ -40,8 +40,8 @@ public class CallbackTests
         DllImportResolver resolver = Resolver.Instance.Callback;
 
         // Invalid arguments
-        Assert.Throws<ArgumentNullException>(() => NativeLibrary.SetDllImportResolver(null, resolver), "Exception expected for null assembly parameter");
-        Assert.Throws<ArgumentNullException>(() => NativeLibrary.SetDllImportResolver(assembly, null), "Exception expected for null resolver parameter");
+        Assert.Throws<ArgumentNullException>(() => NativeLibrary.SetDllImportResolver(null, resolver));
+        Assert.Throws<ArgumentNullException>(() => NativeLibrary.SetDllImportResolver(assembly, null));
 
         // No callback registered yet
         Assert.Throws<DllNotFoundException>(() => NativeSum(10, 10));
@@ -50,13 +50,13 @@ public class CallbackTests
         NativeLibrary.SetDllImportResolver(assembly, resolver);
 
         // Try to set the resolver again on the same assembly
-        Assert.Throws<InvalidOperationException>(() => NativeLibrary.SetDllImportResolver(assembly, resolver), "Should not be able to re-register resolver");
+        Assert.Throws<InvalidOperationException>(() => NativeLibrary.SetDllImportResolver(assembly, resolver));
 
         // Try to set another resolver on the same assembly
         DllImportResolver anotherResolver =
             (string libraryName, Assembly asm, DllImportSearchPath? dllImportSearchPath) =>
                 IntPtr.Zero;
-        Assert.Throws<InvalidOperationException>(() => NativeLibrary.SetDllImportResolver(assembly, anotherResolver), "Should not be able to register another resolver");
+        Assert.Throws<InvalidOperationException>(() => NativeLibrary.SetDllImportResolver(assembly, anotherResolver));
     }
 
     public static void ValidatePInvoke()
@@ -69,7 +69,7 @@ public class CallbackTests
         Resolver.Instance.Reset();
         int value = NativeSum(addend1, addend2);
         Resolver.Instance.Validate(NativeLibraryToLoad.InvalidName);
-        Assert.AreEqual(expected, value, $"Unexpected return value from {nameof(NativeSum)}");
+        Assert.Equal(expected, value);
     }
 
     private class Resolver
@@ -87,9 +87,9 @@ public class CallbackTests
 
         public void Validate(params string[] expectedNames)
         {
-            Assert.AreEqual(expectedNames.Length, invocations.Count, $"Unexpected invocation count for registered {nameof(DllImportResolver)}.");
+            Assert.Equal(expectedNames.Length, invocations.Count);
             for (int i = 0; i < expectedNames.Length; i++)
-                Assert.AreEqual(expectedNames[i], invocations[i], $"Unexpected library name received by registered resolver.");
+                Assert.Equal(expectedNames[i], invocations[i]);
         }
 
         private IntPtr ResolveDllImport(string libraryName, Assembly asm, DllImportSearchPath? dllImportSearchPath)
@@ -98,7 +98,7 @@ public class CallbackTests
 
             if (string.Equals(libraryName, NativeLibraryToLoad.InvalidName))
             {
-                Assert.AreEqual(DllImportSearchPath.System32, dllImportSearchPath, $"Unexpected {nameof(dllImportSearchPath)}: {dllImportSearchPath.ToString()}");
+                Assert.Equal(DllImportSearchPath.System32, dllImportSearchPath);
                 return NativeLibrary.Load(NativeLibraryToLoad.Name, asm, null);
             }
 

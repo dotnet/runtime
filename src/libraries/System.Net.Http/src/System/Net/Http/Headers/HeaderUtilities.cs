@@ -25,7 +25,7 @@ namespace System.Net.Http.Headers
         // Validator
         internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
-        internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
+        internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
 
@@ -125,7 +125,7 @@ namespace System.Net.Http.Headers
             destination.Append(HexConverter.ToCharUpper(c));
         }
 
-        internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
+        internal static double? GetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters)
         {
             Debug.Assert(parameters != null);
 
@@ -377,12 +377,12 @@ namespace System.Net.Http.Headers
             CheckValidToken(value, "item");
         }
 
-        internal static ObjectCollection<NameValueHeaderValue>? Clone(this ObjectCollection<NameValueHeaderValue>? source)
+        internal static UnvalidatedObjectCollection<NameValueHeaderValue>? Clone(this UnvalidatedObjectCollection<NameValueHeaderValue>? source)
         {
             if (source == null)
                 return null;
 
-            var copy = new ObjectCollection<NameValueHeaderValue>();
+            var copy = new UnvalidatedObjectCollection<NameValueHeaderValue>();
             foreach (NameValueHeaderValue item in source)
             {
                 copy.Add(new NameValueHeaderValue(item));

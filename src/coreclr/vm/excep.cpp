@@ -5782,7 +5782,7 @@ static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCateg
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -5801,7 +5801,7 @@ void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnSt
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -5817,7 +5817,7 @@ void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 

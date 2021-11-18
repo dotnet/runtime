@@ -3442,19 +3442,14 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 	MonoJitInfo *jinfo;
 	guint8 *code, *ex_info, *p;
 	guint32 *table;
-	int nmethods;
 	gpointer *methods;
 	guint8 *code1, *code2;
 	int methods_len;
 	gboolean async;
-	gpointer orig_addr;
 
 	if (!amodule)
 		return NULL;
 
-	nmethods = amodule->info.nmethods;
-
-	orig_addr = addr;
 	addr = MINI_FTNPTR_TO_ADDR (addr);
 
 	if (!amodule_contains_code_addr (amodule, (guint8 *)addr))

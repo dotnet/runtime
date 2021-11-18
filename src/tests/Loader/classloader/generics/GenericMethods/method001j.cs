@@ -19,7 +19,7 @@ public class Foo<U> : Base<U>
 		
 }
 
-public class Test
+public class Test_method001j
 {
 	public static int counter = 0;
 	public static bool result = true;

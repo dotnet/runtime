@@ -72,6 +72,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platforms:
+    - Linux_x86
     - Linux_x64
     - Linux_arm
     - Linux_arm64
@@ -93,8 +94,8 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Build CoreCLR checked using GCC toolchain
-# Only when CoreCLR is changed
+# Build the whole product using GNU compiler toolchain
+# When CoreCLR, Mono, Libraries, Installer and src/tests are changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -109,6 +110,9 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
@@ -189,7 +193,7 @@ jobs:
             eq(variables['Build.SourceBranchName'], 'main'),
             eq(variables['System.PullRequest.TargetBranch'], 'main')),
           or(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
             eq(variables['isFullMatrix'], true)))
 
 # Build and test clr tools
@@ -292,7 +296,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -305,7 +309,6 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         - wasmtestonbrowser
