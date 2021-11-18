@@ -151,7 +151,7 @@ namespace System.Speech.Recognition
                     {
                         IntPtr audioBuffer = gc.AddrOfPinnedObject();
 
-                        SPWAVEFORMATEX audioHeader = (SPWAVEFORMATEX)Marshal.PtrToStructure(audioBuffer, typeof(SPWAVEFORMATEX));
+                        SPWAVEFORMATEX audioHeader = Marshal.PtrToStructure<SPWAVEFORMATEX>(audioBuffer);
 
                         IntPtr rawDataBuffer = new((long)audioBuffer + audioHeader.cbUsed);
                         byte[] rawAudioData = new byte[audioLength - audioHeader.cbUsed];
@@ -296,15 +296,15 @@ namespace System.Speech.Recognition
 
                 int headerSize = Marshal.ReadInt32(buffer, 4); // Read header size directly from buffer - 4 is the offset of cbHeaderSize.
 
-                if (headerSize == Marshal.SizeOf(typeof(SPRESULTHEADER_Sapi51))) // SAPI 5.1 size
+                if (headerSize == Marshal.SizeOf<SPRESULTHEADER_Sapi51>()) // SAPI 5.1 size
                 {
-                    SPRESULTHEADER_Sapi51 legacyHeader = (SPRESULTHEADER_Sapi51)Marshal.PtrToStructure(buffer, typeof(SPRESULTHEADER_Sapi51));
+                    SPRESULTHEADER_Sapi51 legacyHeader = Marshal.PtrToStructure<SPRESULTHEADER_Sapi51>(buffer);
                     _header = new SPRESULTHEADER(legacyHeader);
                     _isSapi53Header = false;
                 }
                 else
                 {
-                    _header = (SPRESULTHEADER)Marshal.PtrToStructure(buffer, typeof(SPRESULTHEADER));
+                    _header = Marshal.PtrToStructure<SPRESULTHEADER>(buffer);
                     _isSapi53Header = true;
                 }
 
@@ -355,12 +355,12 @@ namespace System.Speech.Recognition
                 {
                     IntPtr buffer = gc.AddrOfPinnedObject();
 
-                    int sizeOfSpSerializedPhraseAlt = Marshal.SizeOf(typeof(SPSERIALIZEDPHRASEALT));
+                    int sizeOfSpSerializedPhraseAlt = Marshal.SizeOf<SPSERIALIZEDPHRASEALT>();
                     int offset = 0;
                     for (int i = 0; i < numberOfAlternates; i++)
                     {
                         IntPtr altBuffer = new((long)buffer + offset);
-                        SPSERIALIZEDPHRASEALT alt = (SPSERIALIZEDPHRASEALT)Marshal.PtrToStructure(altBuffer, typeof(SPSERIALIZEDPHRASEALT));
+                        SPSERIALIZEDPHRASEALT alt = Marshal.PtrToStructure<SPSERIALIZEDPHRASEALT>(altBuffer);
 
                         offset += sizeOfSpSerializedPhraseAlt; // advance over SPSERIALIZEDPHRASEALT
                         if (isSapi53Header)

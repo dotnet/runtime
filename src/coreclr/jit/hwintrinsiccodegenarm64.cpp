@@ -255,6 +255,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitSize = emitActualTypeSize(intrin.baseType);
         opt      = INS_OPTS_NONE;
     }
+    else if (intrin.category == HW_Category_Special)
+    {
+        assert(intrin.id == NI_ArmBase_Yield);
+
+        emitSize = EA_UNKNOWN;
+        opt      = INS_OPTS_NONE;
+    }
     else
     {
         emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
@@ -442,6 +449,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubw2 : INS_ssubw2;
                 }
                 break;
+
+            case NI_ArmBase_Yield:
+            {
+                ins = INS_yield;
+                break;
+            }
 
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
@@ -734,6 +747,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 }
                 break;
+
+            case NI_ArmBase_Yield:
+            {
+                GetEmitter()->emitIns(ins);
+                break;
+            }
 
             // mvni doesn't support the range of element types, so hard code the 'opts' value.
             case NI_Vector64_get_Zero:

@@ -556,10 +556,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     void genIPmappingListDisp();
 #endif // DEBUG
 
-    IPmappingDsc* genCreateIPMapping(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingGen();
+
+#ifdef DEBUG
+    void genDumpPreciseDebugInfo();
+    void genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first);
+    void genAddPreciseIPMappingHere(const DebugInfo& di);
+#endif
 
     void genEnsureCodeEmitted(const DebugInfo& di);
 

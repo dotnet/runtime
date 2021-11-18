@@ -127,6 +127,9 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     compiler->genIPmappingLast         = nullptr;
     compiler->genCallSite2DebugInfoMap = nullptr;
 
+    compiler->genPreciseIPMappingsHead = nullptr;
+    compiler->genPreciseIPMappingsTail = nullptr;
+
     /* Assume that we not fully interruptible */
 
     SetInterruptible(false);
@@ -2446,6 +2449,8 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     /* Finalize the line # tracking logic after we know the exact block sizes/offsets */
 
     genIPmappingGen();
+
+    INDEBUG(genDumpPreciseDebugInfo());
 
     /* Finalize the Local Var info in terms of generated code */
 
@@ -10802,6 +10807,98 @@ void CodeGen::genIPmappingGen()
     compiler->eeSetLIdone();
 }
 
+#ifdef DEBUG
+void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first)
+{
+    if (context->GetSibling() != nullptr)
+    {
+        genDumpPreciseDebugInfoInlineTree(file, context->GetSibling(), first);
+    }
+
+    if (context->IsSuccess())
+    {
+        if (!*first)
+        {
+            fprintf(file, ",");
+        }
+
+        *first = false;
+
+        fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
+        fprintf(file, "\"MethodID\":%lld,", (INT64)context->GetCallee());
+        const char* className;
+        const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
+        fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        fprintf(file, "\"Inlinees\":[");
+        if (context->GetChild() != nullptr)
+        {
+            bool childFirst = true;
+            genDumpPreciseDebugInfoInlineTree(file, context->GetChild(), &childFirst);
+        }
+        fprintf(file, "]}");
+    }
+}
+
+void CodeGen::genDumpPreciseDebugInfo()
+{
+    if (JitConfig.JitDumpPreciseDebugInfoFile() == nullptr)
+        return;
+
+    static CritSecObject s_critSect;
+    CritSecHolder        holder(s_critSect);
+
+    FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
+    if (file == nullptr)
+        return;
+
+    // MethodID in ETW events are the method handles.
+    fprintf(file, "{\"MethodID\":%lld,", (INT64)compiler->info.compMethodHnd);
+    // Print inline tree.
+    fprintf(file, "\"InlineTree\":");
+
+    bool first = true;
+    genDumpPreciseDebugInfoInlineTree(file, compiler->compInlineContext, &first);
+    fprintf(file, ",\"Mappings\":[");
+    first = true;
+    for (PreciseIPMapping* mapping = compiler->genPreciseIPMappingsHead; mapping != nullptr; mapping = mapping->next)
+    {
+        if (!first)
+        {
+            fprintf(file, ",");
+        }
+
+        first = false;
+
+        fprintf(file, "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
+                mapping->nativeLoc.CodeOffset(GetEmitter()), mapping->debugInfo.GetInlineContext()->GetOrdinal(),
+                mapping->debugInfo.GetLocation().GetOffset());
+    }
+
+    fprintf(file, "]}\n");
+
+    fclose(file);
+}
+
+void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
+{
+    PreciseIPMapping* mapping = new (compiler, CMK_DebugInfo) PreciseIPMapping;
+    mapping->next             = nullptr;
+    mapping->nativeLoc.CaptureLocation(GetEmitter());
+    mapping->debugInfo = di;
+
+    if (compiler->genPreciseIPMappingsTail != nullptr)
+    {
+        compiler->genPreciseIPMappingsTail->next = mapping;
+    }
+    else
+    {
+        compiler->genPreciseIPMappingsHead = mapping;
+    }
+
+    compiler->genPreciseIPMappingsTail = mapping;
+}
+#endif
+
 /*============================================================================
  *
  *   These are empty stubs to help the late dis-assembler to compile
@@ -12447,7 +12544,19 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 {
     assert(compiler->compShouldPoisonFrame());
-    assert((regLiveIn & genRegMask(REG_SCRATCH)) == 0);
+#if defined(TARGET_XARCH)
+    regNumber poisonValReg = REG_EAX;
+    assert((regLiveIn & (RBM_EDI | RBM_ECX | RBM_EAX)) == 0);
+#else
+    regNumber poisonValReg = REG_SCRATCH;
+    assert((regLiveIn & (genRegMask(REG_SCRATCH) | RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2)) == 0);
+#endif
+
+#ifdef TARGET_64BIT
+    const ssize_t poisonVal = (ssize_t)0xcdcdcdcdcdcdcdcd;
+#else
+    const ssize_t poisonVal = (ssize_t)0xcdcdcdcd;
+#endif
 
     // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that
     // we can fit.
@@ -12462,39 +12571,63 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 
         assert(varDsc->lvOnFrame);
 
-        if (!hasPoisonImm)
+        unsigned int size = compiler->lvaLclSize(varNum);
+        if ((size / TARGET_POINTER_SIZE) > 16)
         {
-#ifdef TARGET_64BIT
-            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd);
+            // This will require more than 16 instructions, switch to rep stosd/memset call.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_XARCH)
+            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_EDI, (int)varNum, 0);
+            assert(size % 4 == 0);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ECX, size / 4);
+            // On xarch we can leave the value in eax and only set eax once
+            // since rep stosd does not kill eax.
+            if (!hasPoisonImm)
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_EAX, poisonVal);
+                hasPoisonImm = true;
+            }
+            instGen(INS_r_stosd);
 #else
-            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_SCRATCH, (ssize_t)0xcdcdcdcd);
+            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_2, size);
+            genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
+            // May kill REG_SCRATCH, so we need to reload it.
+            hasPoisonImm = false;
 #endif
-            hasPoisonImm = true;
         }
+        else
+        {
+            if (!hasPoisonImm)
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, poisonValReg, poisonVal);
+                hasPoisonImm = true;
+            }
 
 // For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
 #ifdef TARGET_64BIT
-        bool fpBased;
-        int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
+            bool fpBased;
+            int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
 #else
-        int addr = 0;
+            int addr     = 0;
 #endif
-        int size = (int)compiler->lvaLclSize(varNum);
-        int end  = addr + size;
-        for (int offs = addr; offs < end;)
-        {
-#ifdef TARGET_64BIT
-            if ((offs % 8) == 0 && end - offs >= 8)
+            int end = addr + (int)size;
+            for (int offs = addr; offs < end;)
             {
-                GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
-                offs += 8;
-                continue;
-            }
+#ifdef TARGET_64BIT
+                if ((offs % 8) == 0 && end - offs >= 8)
+                {
+                    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                    offs += 8;
+                    continue;
+                }
 #endif
 
-            assert((offs % 4) == 0 && end - offs >= 4);
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
-            offs += 4;
+                assert((offs % 4) == 0 && end - offs >= 4);
+                GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                offs += 4;
+            }
         }
     }
 }

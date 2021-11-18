@@ -14,7 +14,7 @@
   .ver 4:0:0:0
 }
 
-.assembly NestedExcept.exe{}
+.assembly NestedExcept{}
 
 .class		NestedExcept {
 

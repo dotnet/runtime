@@ -300,10 +300,10 @@ public:
     virtual void BuildSchemaElements(BasicBlock* block, Schema& schema)
     {
     }
-    virtual void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
+    virtual void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
     {
     }
-    virtual void InstrumentMethodEntry(Schema& schema, BYTE* profileMemory)
+    virtual void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory)
     {
     }
     virtual void SuppressProbes()
@@ -349,8 +349,8 @@ public:
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
-    void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory) override;
-    void InstrumentMethodEntry(Schema& schema, BYTE* profileMemory) override;
+    void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
+    void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory) override;
 };
 
 //------------------------------------------------------------------------
@@ -428,7 +428,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
 //   schema -- instrumentation schema
 //   profileMemory -- profile data slab
 //
-void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
+void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
     const ICorJitInfo::PgoInstrumentationSchema& entry = schema[block->bbCountSchemaIndex];
 
@@ -464,7 +464,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE*
 // Notes:
 //   When prejitting, add the method entry callback node
 //
-void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profileMemory)
+void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory)
 {
     Compiler::Options& opts = m_comp->opts;
     Compiler::Info&    info = m_comp->info;
@@ -1002,7 +1002,7 @@ public:
         return ((block->bbFlags & BBF_IMPORTED) == BBF_IMPORTED);
     }
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
-    void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory) override;
+    void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
 
     void Badcode() override
     {
@@ -1136,7 +1136,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
 //   schema -- instrumentation schema
 //   profileMemory -- profile data slab
 //
-void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
+void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
     // Inlinee compilers build their blocks in the root compiler's
     // graph. So for NumSucc, we use the root compiler instance.
@@ -1311,12 +1311,12 @@ public:
 class ClassProbeInserter
 {
     Schema&   m_schema;
-    BYTE*     m_profileMemory;
+    uint8_t*  m_profileMemory;
     int*      m_currentSchemaIndex;
     unsigned& m_instrCount;
 
 public:
-    ClassProbeInserter(Schema& schema, BYTE* profileMemory, int* pCurrentSchemaIndex, unsigned& instrCount)
+    ClassProbeInserter(Schema& schema, uint8_t* profileMemory, int* pCurrentSchemaIndex, unsigned& instrCount)
         : m_schema(schema)
         , m_profileMemory(profileMemory)
         , m_currentSchemaIndex(pCurrentSchemaIndex)
@@ -1353,7 +1353,7 @@ public:
 
         // Figure out where the table is located.
         //
-        BYTE* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
+        uint8_t* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
         // Grab a temp to hold the 'this' object as it will be used three times
@@ -1430,7 +1430,7 @@ public:
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
-    void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory) override;
+    void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
     void SuppressProbes() override;
 };
 
@@ -1494,7 +1494,7 @@ void ClassProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
 //   schema -- instrumentation schema
 //   profileMemory -- profile data slab
 //
-void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
+void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
     if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
     {
@@ -1567,21 +1567,43 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // Choose instrumentation technology.
     //
     // We enable edge profiling by default, except when:
+    //
     // * disabled by option
     // * we are prejitting
-    // * we are jitting osr methods
+    // * we are jitting tier0 methods with patchpoints
+    // * we are jitting an OSR method
     //
-    // Currently, OSR is incompatible with edge profiling. So if OSR is enabled,
-    // always do block profiling.
+    // OSR is incompatible with edge profiling. Only portions of the Tier0
+    // method will be executed, and the bail-outs at patchpoints won't be obvious
+    // exit points from the method. So for OSR we always do block profiling.
     //
     // Note this incompatibility only exists for methods that actually have
-    // patchpoints, but we won't know that until we import.
+    // patchpoints. Currently we will only place patchponts in methods with
+    // backwards jumps.
+    //
+    // And because we want the Tier1 method to see the full set of profile data,
+    // when OSR is enabled, both Tier0 and any OSR methods need to contribute to
+    // the same profile data set. Since Tier0 has laid down a dense block-based
+    // schema, the OSR methods must use this schema as well.
+    //
+    // Note that OSR methods may also inline. We currently won't instrument
+    // any inlinee contributions (which would also need to carefully "share"
+    // the profile data segment with any Tier0 version and/or any other equivalent
+    // inlnee), so we'll lose a bit of their profile data. We can support this
+    // eventually if it turns out to matter.
+    //
+    // Similar issues arise with partially jitted methods. Because we currently
+    // only defer jitting for throw blocks, we currently ignore the impact of partial
+    // jitting on PGO. If we ever implement a broader pattern of deferral -- say deferring
+    // based on static PGO -- we will need to reconsider.
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-    const bool prejit = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool osr    = (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0));
-    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !osr;
+    const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                      (JitConfig.TC_OnStackReplacement() > 0) && compHasBackwardJump;
+    const bool osrMethod       = opts.IsOSR();
+    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !osrMethod;
 
     if (useEdgeProfiles)
     {
@@ -1590,7 +1612,9 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     else
     {
         JITDUMP("Using block profiling, because %s\n",
-                (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled" : prejit ? "prejitting" : "OSR");
+                (JitConfig.JitEdgeProfiling() > 0)
+                    ? "edge profiles disabled"
+                    : prejit ? "prejitting" : osrMethod ? "OSR" : "tier0 with patchpoints");
 
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
@@ -1640,7 +1664,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 {
     noway_assert(!compIsForInlining());
 
-    // Make post-importpreparations.
+    // Make post-import preparations.
     //
     const bool isPreImport = false;
     fgCountInstrumentor->Prepare(isPreImport);
@@ -1665,7 +1689,17 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Verify we created schema for the calls needing class probes.
     // (we counted those when importing)
     //
-    assert(fgClassInstrumentor->SchemaCount() == info.compClassProbeCount);
+    // This is not true when we do partial compilation; it can/will erase class probes,
+    // and there's no easy way to figure out how many should be left.
+    //
+    if (doesMethodHavePartialCompilationPatchpoints())
+    {
+        assert(fgClassInstrumentor->SchemaCount() <= info.compClassProbeCount);
+    }
+    else
+    {
+        assert(fgClassInstrumentor->SchemaCount() == info.compClassProbeCount);
+    }
 
     // Optionally, when jitting, if there were no class probes and only one count probe,
     // suppress instrumentation.
@@ -1698,11 +1732,16 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
     assert(schema.size() > 0);
 
-    // Allocate the profile buffer
+    // Allocate/retrieve the profile buffer.
     //
-    BYTE* profileMemory;
-
-    HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
+    // If this is an OSR method, we should use the same buffer that the Tier0 method used.
+    //
+    // This is supported by allocPgoInsrumentationDataBySchema, which will verify the schema
+    // we provide here matches the one from Tier0, and will fill in the data offsets in
+    // our schema properly.
+    //
+    uint8_t* profileMemory;
+    HRESULT  res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
                                                                     (UINT32)schema.size(), &profileMemory);
 
     // Deal with allocation failures.
@@ -1923,6 +1962,14 @@ void Compiler::fgIncorporateBlockCounts()
         {
             fgSetProfileWeight(block, profileWeight);
         }
+    }
+
+    // For OSR, give the method entry (which will be a scratch BB)
+    // the same weight as the OSR Entry.
+    //
+    if (opts.IsOSR())
+    {
+        fgFirstBB->inheritWeight(fgOSREntryBB);
     }
 }
 
@@ -3277,11 +3324,17 @@ void Compiler::fgComputeCalledCount(weight_t returnWeight)
 
     BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
 
-    // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
+    // OSR methods can have complex entry flow, and so
+    // for OSR we ensure fgFirstBB has plausible profile data.
     //
-    while (firstILBlock->bbFlags & BBF_INTERNAL)
+    if (!opts.IsOSR())
     {
-        firstILBlock = firstILBlock->bbNext;
+        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
+        //
+        while (firstILBlock->bbFlags & BBF_INTERNAL)
+        {
+            firstILBlock = firstILBlock->bbNext;
+        }
     }
 
     // The 'firstILBlock' is now expected to have a profile-derived weight
@@ -3717,7 +3770,7 @@ bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2)
 }
 
 //------------------------------------------------------------------------
-// fgProfileWeightsConsistentEqual: check if two profile weights are within
+// fgProfileWeightsConsistent: check if two profile weights are within
 //   some small percentage of one another.
 //
 // Arguments:

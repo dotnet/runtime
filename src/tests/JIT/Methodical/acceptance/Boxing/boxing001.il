@@ -12,6 +12,7 @@
 .assembly boxing001 
 {
 }
+.assembly extern xunit.core {}
 
 .class private sequential ansi sealed beforefieldinit V extends [mscorlib] System.ValueType
 {
@@ -48,6 +49,9 @@
 
 .method public static int32 Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .locals (int32 V_0,
            object V1,

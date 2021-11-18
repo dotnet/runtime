@@ -591,9 +591,7 @@ public:
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(var_types type, ValueNum map, ValueNum index, ValueNum value);
 
-    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE  fieldHnd,
-                                var_types*            pFieldType,
-                                CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
+    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, size_t* pStructSize = nullptr);
 
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and

@@ -1419,6 +1419,8 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
+    genConsumeMultiOpOperands(node);
+
     switch (intrinsicId)
     {
         case NI_X86Base_BitScanForward:
@@ -1431,9 +1433,14 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
             var_types   targetType = node->TypeGet();
             instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
 
-            genConsumeMultiOpOperands(node);
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op1);
-            genProduceReg(node);
+            break;
+        }
+
+        case NI_X86Base_Pause:
+        {
+            assert(node->GetSimdBaseType() == TYP_UNKNOWN);
+            GetEmitter()->emitIns(INS_pause);
             break;
         }
 
@@ -1441,6 +1448,8 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
             unreached();
             break;
     }
+
+    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------
@@ -1494,7 +1503,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_SSE_StoreFence:
         {
-            assert(baseType == TYP_VOID);
+            assert(baseType == TYP_UNKNOWN);
             emit->emitIns(INS_sfence);
             break;
         }
@@ -1568,14 +1577,14 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 
         case NI_SSE2_LoadFence:
         {
-            assert(baseType == TYP_VOID);
+            assert(baseType == TYP_UNKNOWN);
             emit->emitIns(INS_lfence);
             break;
         }
 
         case NI_SSE2_MemoryFence:
         {
-            assert(baseType == TYP_VOID);
+            assert(baseType == TYP_UNKNOWN);
             emit->emitIns(INS_mfence);
             break;
         }

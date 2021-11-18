@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib{}
 .assembly base017{}
+.assembly extern xunit.core {}
 .module base017.exe
 
 
@@ -20,6 +21,9 @@
 
     .method public hidebysig static int32 Main() cil managed
     {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.locals init (valuetype base017)
 	ldloca 0

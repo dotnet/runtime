@@ -13,6 +13,7 @@
 .assembly extern mscorlib { }
 
 .assembly GitHub_5164 { }
+.assembly extern xunit.core {}
 
 .class public sequential ansi sealed beforefieldinit LargeStruct
        extends [mscorlib]System.ValueType
@@ -41,6 +42,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       48 (0x30)
     .maxstack  3

@@ -9,11 +9,11 @@
  public static void StopProfile(){}
 ```
 
-2. Initialize the profiler in the main javascript (e.g. runtime.js)
+2. Initialize the profiler in the main javascript (e.g. main.js)
 
 ```
 var Module = {
-  onRuntimeInitialized: function () {
+  onConfigLoaded: () => {
     ...
 
     if (config.enable_profiler)

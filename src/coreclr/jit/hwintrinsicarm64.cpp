@@ -308,9 +308,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        var_types             retType,
                                        unsigned              simdSize)
 {
-    HWIntrinsicCategory category     = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                 numArgs      = sig->numArgs;
-    var_types           simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    int                 numArgs  = sig->numArgs;
 
     if (!featureSIMD || !IsBaselineSimdIsaSupported())
     {
@@ -318,7 +317,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     assert(numArgs >= 0);
-    assert(varTypeIsArithmetic(simdBaseType));
+
+    var_types simdBaseType = TYP_UNKNOWN;
+
+    if (intrinsic != NI_ArmBase_Yield)
+    {
+        simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        assert(varTypeIsArithmetic(simdBaseType));
+    }
 
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
@@ -327,6 +333,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_ArmBase_Yield:
+        {
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            assert(simdSize == 0);
+
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
         case NI_Vector64_Abs:
         case NI_Vector128_Abs:
         {

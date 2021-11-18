@@ -28,4 +28,4 @@ FAIL:
 }
 }
 
-.assembly stind_ref.exe{}
+.assembly stind_ref{}

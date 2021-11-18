@@ -7,7 +7,7 @@ import {
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
     MonoType, MonoTypeNull
 } from "./types";
-import { runtimeHelpers } from "./modules";
+import { runtimeHelpers } from "./imports";
 import { conv_string } from "./strings";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";

@@ -10,6 +10,7 @@
 .assembly b15244
 {
 }
+.assembly extern xunit.core {}
 .class public auto ansi AA extends [mscorlib]System.Object
 {
 
@@ -25,6 +26,9 @@
 {
 	.method static int32 Main()
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack 4
 		.locals (int32)
