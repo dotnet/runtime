@@ -520,7 +520,7 @@ namespace System.Xml
         // for fragment of a string such as Write( string, offset, count).
         // The string fragment will be written out by copying into a small helper buffer and then
         // calling textWriter to write out the buffer.
-        private void WriteStringFragment(ReadOnlySpan<char> str, int offset, int count)
+        private void WriteStringFragment(ReadOnlySpan<char> ros, int offset, int count)
         {
             while (count > 0)
             {
@@ -531,7 +531,7 @@ namespace System.Xml
                     copyCount = ChunkSize;
                 }
 
-                _textWriter.Write(str.Slice(offset, copyCount));
+                _textWriter.Write(ros.Slice(offset, copyCount));
                 offset += copyCount;
                 count -= copyCount;
             }
