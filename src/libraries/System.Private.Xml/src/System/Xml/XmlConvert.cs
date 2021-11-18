@@ -226,7 +226,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        bufBld.Append($"{(int)name[0]:X4}");
+                        bufBld.Append($"{name[0]:X4}");
                         copyPosition = 1;
                     }
 
