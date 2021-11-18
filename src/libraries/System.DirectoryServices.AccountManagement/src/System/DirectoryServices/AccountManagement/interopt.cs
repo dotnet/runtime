@@ -501,34 +501,6 @@ namespace System.DirectoryServices.AccountManagement
         public static extern int NetApiBufferFree(
             [In] IntPtr buffer);
 
-        //
-        // SID
-        //
-
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "ConvertSidToStringSidW", CharSet = CharSet.Unicode)]
-        public static extern bool ConvertSidToStringSid(IntPtr sid, ref string stringSid);
-
-        [DllImport(Interop.Libraries.Advapi32)]
-        public static extern int GetLengthSid(IntPtr sid);
-
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true)]
-        public static extern bool IsValidSid(IntPtr sid);
-
-        [DllImport(Interop.Libraries.Advapi32)]
-        public static extern IntPtr GetSidIdentifierAuthority(IntPtr sid);
-
-        [DllImport(Interop.Libraries.Advapi32)]
-        public static extern IntPtr GetSidSubAuthority(IntPtr sid, int index);
-
-        [DllImport(Interop.Libraries.Advapi32)]
-        public static extern IntPtr GetSidSubAuthorityCount(IntPtr sid);
-
-        [DllImport(Interop.Libraries.Advapi32)]
-        public static extern bool EqualDomainSid(IntPtr pSid1, IntPtr pSid2, ref bool equal);
-
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true)]
-        public static extern bool CopySid(int destinationLength, IntPtr pSidDestination, IntPtr pSidSource);
-
         [DllImport(Interop.Libraries.Credui, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
         public static extern unsafe int CredUIParseUserName(
             string pszUserName,
@@ -657,28 +629,5 @@ namespace System.DirectoryServices.AccountManagement
             public Interop.UNICODE_INTPTR_STRING domainName;
             public IntPtr domainSid = IntPtr.Zero;
         }
-
-        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaQueryInformationPolicy", CharSet = CharSet.Unicode)]
-        public static extern uint LsaQueryInformationPolicy(
-                                        IntPtr policyHandle,
-                                        int policyInformationClass,
-                                        ref IntPtr buffer
-                                        );
-
-        //
-        // Impersonation
-        //
-
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "LogonUserW", CharSet = CharSet.Unicode)]
-        public static extern int LogonUser(
-                                    string lpszUsername,
-                                    string lpszDomain,
-                                    string lpszPassword,
-                                    int dwLogonType,
-                                    int dwLogonProvider,
-                                    ref IntPtr phToken);
-
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "ImpersonateLoggedOnUser", CharSet = CharSet.Unicode)]
-        public static extern int ImpersonateLoggedOnUser(IntPtr hToken);
     }
 }

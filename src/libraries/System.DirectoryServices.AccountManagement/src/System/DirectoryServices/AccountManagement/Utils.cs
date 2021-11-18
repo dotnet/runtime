@@ -125,7 +125,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 pSid = ConvertByteArrayToIntPtr(sid);
 
-                if (UnsafeNativeMethods.ConvertSidToStringSid(pSid, ref sddlSid))
+                if (Interop.Advapi32.ConvertSidToStringSid(pSid, ref sddlSid) != Interop.BOOL.FALSE)
                 {
                     return sddlSid;
                 }
@@ -176,7 +176,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static byte[] ConvertNativeSidToByteArray(IntPtr pSid)
         {
-            int sidLength = UnsafeNativeMethods.GetLengthSid(pSid);
+            int sidLength = Interop.Advapi32.GetLengthSid(pSid);
             byte[] sid = new byte[sidLength];
             Marshal.Copy(pSid, sid, 0, sidLength);
 
@@ -203,15 +203,15 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static SidType ClassifySID(IntPtr pSid)
         {
-            Debug.Assert(UnsafeNativeMethods.IsValidSid(pSid));
+            Debug.Assert(Interop.Advapi32.IsValidSid(pSid));
 
             // Get the issuing authority and the first RID
-            IntPtr pIdentAuth = UnsafeNativeMethods.GetSidIdentifierAuthority(pSid);
+            IntPtr pIdentAuth = Interop.Advapi32.GetSidIdentifierAuthority(pSid);
 
             UnsafeNativeMethods.SID_IDENTIFIER_AUTHORITY identAuth =
                 (UnsafeNativeMethods.SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(UnsafeNativeMethods.SID_IDENTIFIER_AUTHORITY));
 
-            IntPtr pRid = UnsafeNativeMethods.GetSidSubAuthority(pSid, 0);
+            IntPtr pRid = Interop.Advapi32.GetSidSubAuthority(pSid, 0);
             int rid = Marshal.ReadInt32(pRid);
 
             // These bit signify that the sid was issued by ADAM.  If so then it can't be a fake sid.
@@ -242,9 +242,9 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static int GetLastRidFromSid(IntPtr pSid)
         {
-            IntPtr pRidCount = UnsafeNativeMethods.GetSidSubAuthorityCount(pSid);
+            IntPtr pRidCount = Interop.Advapi32.GetSidSubAuthorityCount(pSid);
             int ridCount = Marshal.ReadByte(pRidCount);
-            IntPtr pLastRid = UnsafeNativeMethods.GetSidSubAuthority(pSid, ridCount - 1);
+            IntPtr pLastRid = Interop.Advapi32.GetSidSubAuthority(pSid, ridCount - 1);
             int lastRid = Marshal.ReadInt32(pLastRid);
 
             return lastRid;
@@ -311,7 +311,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     // Does the user SID have the same domain as the machine SID?
                     bool sameDomain = false;
-                    bool success = UnsafeNativeMethods.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
+                    bool success = Interop.Advapi32.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
 
                     // Since both pCopyOfUserSid and pMachineDomainSid should always be account SIDs
                     Debug.Assert(success == true);
@@ -430,12 +430,12 @@ namespace System.DirectoryServices.AccountManagement
                 UnsafeNativeMethods.TOKEN_USER tokenUser = (UnsafeNativeMethods.TOKEN_USER)Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.TOKEN_USER));
                 IntPtr pUserSid = tokenUser.sidAndAttributes.pSid;   // this is a reference into the NATIVE memory (into pBuffer)
 
-                Debug.Assert(UnsafeNativeMethods.IsValidSid(pUserSid));
+                Debug.Assert(Interop.Advapi32.IsValidSid(pUserSid));
 
                 // Now we make a copy of the SID to return
-                int userSidLength = UnsafeNativeMethods.GetLengthSid(pUserSid);
+                int userSidLength = Interop.Advapi32.GetLengthSid(pUserSid);
                 IntPtr pCopyOfUserSid = Marshal.AllocHGlobal(userSidLength);
-                success = UnsafeNativeMethods.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
+                success = Interop.Advapi32.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
                 if (!success)
                 {
                     int lastError = Marshal.GetLastWin32Error();
@@ -484,7 +484,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
 
                 Debug.Assert(!policyHandle.IsInvalid);
-                err = UnsafeNativeMethods.LsaQueryInformationPolicy(
+                err = Interop.Advapi32.LsaQueryInformationPolicy(
                                 policyHandle.DangerousGetHandle(),
                                 5,              // PolicyAccountDomainInformation
                                 ref pBuffer);
@@ -502,12 +502,12 @@ namespace System.DirectoryServices.AccountManagement
                 UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO info = (UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO)
                                     Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO));
 
-                Debug.Assert(UnsafeNativeMethods.IsValidSid(info.domainSid));
+                Debug.Assert(Interop.Advapi32.IsValidSid(info.domainSid));
 
                 // Now we make a copy of the SID to return
-                int sidLength = UnsafeNativeMethods.GetLengthSid(info.domainSid);
+                int sidLength = Interop.Advapi32.GetLengthSid(info.domainSid);
                 IntPtr pCopyOfSid = Marshal.AllocHGlobal(sidLength);
-                bool success = UnsafeNativeMethods.CopySid(sidLength, pCopyOfSid, info.domainSid);
+                bool success = Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.domainSid);
                 if (!success)
                 {
                     int lastError = Marshal.GetLastWin32Error();
@@ -745,7 +745,7 @@ namespace System.DirectoryServices.AccountManagement
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Utils", "BeginImpersonation: trying to impersonate " + userName);
 
-            int result = UnsafeNativeMethods.LogonUser(
+            int result = Interop.Advapi32.LogonUser(
                                             userName,
                                             domainName,
                                             password,
@@ -762,7 +762,7 @@ namespace System.DirectoryServices.AccountManagement
                     SR.Format(SR.UnableToImpersonateCredentials, lastError));
             }
 
-            result = UnsafeNativeMethods.ImpersonateLoggedOnUser(hToken);
+            result = Interop.Advapi32.ImpersonateLoggedOnUser(hToken);
             if (result == 0)
             {
                 int lastError = Marshal.GetLastWin32Error();

@@ -285,7 +285,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Is the SID from the same domain as the user?
                     bool sameDomain = false;
 
-                    bool success = UnsafeNativeMethods.EqualDomainSid(_psUserSid.DangerousGetHandle(), pSid, ref sameDomain);
+                    bool success = Interop.Advapi32.EqualDomainSid(_psUserSid.DangerousGetHandle(), pSid, ref sameDomain);
 
                     // if failed, psUserSid must not be a domain sid
                     if (!success)
@@ -332,7 +332,7 @@ namespace System.DirectoryServices.AccountManagement
                     // EqualDomainSid will return false if pSid is a BUILTIN SID, but that's okay, we treat those as domain (not local)
                     // groups for domain users.
                     bool inMachineDomain = false;
-                    if (UnsafeNativeMethods.EqualDomainSid(_psMachineSid.DangerousGetHandle(), pSid, ref inMachineDomain))
+                    if (Interop.Advapi32.EqualDomainSid(_psMachineSid.DangerousGetHandle(), pSid, ref inMachineDomain))
                         if (inMachineDomain)
                         {
                             // At this point we know that the group was issued by the local machine.  Now determine if this machine is
@@ -425,7 +425,7 @@ namespace System.DirectoryServices.AccountManagement
                     IntPtr pSid = _groupSidList[_currentGroup].pSid;
 
                     bool sameDomain = false;
-                    if (Utils.ClassifySID(pSid) == SidType.RealObject && UnsafeNativeMethods.EqualDomainSid(_psUserSid.DangerousGetHandle(), pSid, ref sameDomain))
+                    if (Utils.ClassifySID(pSid) == SidType.RealObject && Interop.Advapi32.EqualDomainSid(_psUserSid.DangerousGetHandle(), pSid, ref sameDomain))
                     {
                         if (sameDomain)
                         {
