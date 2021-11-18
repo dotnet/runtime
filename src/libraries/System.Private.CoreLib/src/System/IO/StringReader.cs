@@ -12,6 +12,7 @@ namespace System.IO
         private string? _s;
         private int _pos;
         private int _length;
+        private CachedCompletedTask<int> _lastReadTask;
 
         public StringReader(string s)
         {
@@ -235,7 +236,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            return Task.FromResult(ReadBlock(buffer, index, count));
+            return _lastReadTask.GetTask(ReadBlock(buffer, index, count));
         }
 
         public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
@@ -257,7 +258,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            return Task.FromResult(Read(buffer, index, count));
+            return _lastReadTask.GetTask(Read(buffer, index, count));
         }
 
         public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
