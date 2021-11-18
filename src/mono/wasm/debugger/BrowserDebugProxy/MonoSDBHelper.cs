@@ -2183,7 +2183,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             JArray array = new JArray();
             for (int i = 0 ; i < dimensions.TotalLength; i++)
             {
-                var var_json = await CreateJObjectForVariableValue(retDebuggerCmdReader, i.ToString(), false, -1, false, token);
+                var var_json = await CreateJObjectForVariableValue(retDebuggerCmdReader, dimensions.GetArrayIndexString(i), isOwn : false, -1, forDebuggerDisplayAttribute : false, token);
                 array.Add(var_json);
             }
             return array;
