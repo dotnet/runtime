@@ -2534,6 +2534,13 @@ struct IPmappingDsc
     bool             ipmdIsLabel;   // Can this code be a branch label?
 };
 
+struct PreciseIPMapping
+{
+    PreciseIPMapping* next;
+    emitLocation      nativeLoc;
+    DebugInfo         debugInfo;
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3666,6 +3673,7 @@ public:
 #endif
 
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
+    void placeLoopAlignInstructions();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -6871,13 +6879,13 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc*      optLoopTable; // loop descriptor table
-    unsigned char optLoopCount; // number of tracked loops
+    LoopDsc*      optLoopTable;        // loop descriptor table
+    unsigned char optLoopCount;        // number of tracked loops
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
 
 #ifdef DEBUG
-    unsigned char loopAlignCandidates; // number of loops identified for alignment
-    unsigned char loopsAligned;        // number of loops actually aligned
-#endif                                 // DEBUG
+    unsigned char loopsAligned; // number of loops actually aligned
+#endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   top,
@@ -8267,6 +8275,9 @@ public:
 
     IPmappingDsc* genIPmappingList;
     IPmappingDsc* genIPmappingLast;
+
+    PreciseIPMapping* genPreciseIPMappingsHead;
+    PreciseIPMapping* genPreciseIPMappingsTail;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points
@@ -9687,6 +9698,9 @@ public:
 
         // If set, perform adaptive loop alignment that limits number of padding based on loop size.
         bool compJitAlignLoopAdaptive;
+
+        // If set, tries to hide alignment instructions behind unconditional jumps.
+        bool compJitHideAlignBehindJmp;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

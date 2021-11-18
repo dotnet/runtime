@@ -2548,11 +2548,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
     opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
 #else
     opts.compJitAlignLoopAdaptive       = true;
     opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
     opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp      = true;
 #endif
 
 #ifdef TARGET_XARCH
@@ -5153,6 +5155,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks();
 #endif
 
+#if FEATURE_LOOP_ALIGN
+    // Place loop alignment instructions
+    DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
+#endif
+
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
@@ -5208,6 +5215,82 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // FUNC_INFO_LOGGING
 }
+
+#if FEATURE_LOOP_ALIGN
+
+//------------------------------------------------------------------------
+// placeLoopAlignInstructions: Iterate over all the blocks and determine
+//      the best position to place the 'align' instruction. Inserting 'align'
+//      instructions after an unconditional branch is preferred over inserting
+//      in the block before the loop. In case there are multiple blocks
+//      having 'jmp', the one that has lower weight is preferred.
+//      If the block having 'jmp' is hotter than the block before the loop,
+//      the align will still be placed after 'jmp' because the processor should
+//      be smart enough to not fetch extra instruction beyond jmp.
+//
+void Compiler::placeLoopAlignInstructions()
+{
+    if (loopAlignCandidates == 0)
+    {
+        return;
+    }
+
+    int loopsToProcess = loopAlignCandidates;
+
+    // Add align only if there were any loops that needed alignment
+    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
+    BasicBlock* bbHavingAlign = nullptr;
+    for (BasicBlock* const block : Blocks())
+    {
+        if ((block == fgFirstBB) && block->isLoopAlign())
+        {
+            // Adding align instruction in prolog is not supported
+            // hence skip the align block if it is the first block.
+            loopsToProcess--;
+            continue;
+        }
+
+        // If there is a unconditional jump
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
+        {
+            if (block->bbWeight < minBlockSoFar)
+            {
+                minBlockSoFar = block->bbWeight;
+                bbHavingAlign = block;
+                JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+            }
+        }
+
+        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        {
+            // If jmp was not found, then block before the loop start is where align instruction will be added.
+            if (bbHavingAlign == nullptr)
+            {
+                bbHavingAlign = block;
+                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
+                        block->bbNext->bbNum);
+            }
+            else
+            {
+                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
+                        "\n",
+                        bbHavingAlign->bbNum, block->bbNext->bbNum);
+            }
+
+            bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            minBlockSoFar = BB_MAX_WEIGHT;
+            bbHavingAlign = nullptr;
+
+            if (--loopsToProcess == 0)
+            {
+                break;
+            }
+        }
+    }
+
+    assert(loopsToProcess == 0);
+}
+#endif
 
 //------------------------------------------------------------------------
 // generatePatchpointInfo: allocate and fill in patchpoint info data,

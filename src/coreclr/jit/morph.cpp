@@ -15320,11 +15320,8 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                          * Remove the loop from the table */
 
                         optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
-#if FEATURE_LOOP_ALIGN
-                        optLoopTable[loopNum].lpTop->bbFlags &= ~BBF_LOOP_ALIGN;
-                        JITDUMP("Removing LOOP_ALIGN flag from bogus loop in " FMT_BB "\n",
-                                optLoopTable[loopNum].lpTop->bbNum);
-#endif
+
+                        optLoopTable[loopNum].lpTop->unmarkLoopAlign(this DEBUG_ARG("Bogus loop"));
 
 #ifdef DEBUG
                         if (verbose)

@@ -277,101 +277,117 @@ namespace System.IO
 
         public static void CreateDirectory(string fullPath)
         {
-            // NOTE: This logic is primarily just carried forward from Win32FileSystem.CreateDirectory.
+            // The argument is a full path, which means it is an absolute path that
+            // doesn't contain "//", "/./", and "/../".
+            Debug.Assert(fullPath.Length > 0);
+            Debug.Assert(PathInternal.IsDirectorySeparator(fullPath[0]));
 
-            int length = fullPath.Length;
-
-            // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
-            if (length >= 2 && Path.EndsInDirectorySeparator(fullPath))
+            if (fullPath.Length == 1)
             {
-                length--;
+                return; // fullPath is '/'.
             }
 
-            // For paths that are only // or ///
-            if (length == 2 && PathInternal.IsDirectorySeparator(fullPath[1]))
+            int result = Interop.Sys.MkDir(fullPath, (int)Interop.Sys.Permissions.Mask);
+            if (result == 0)
             {
-                throw new IOException(SR.Format(SR.IO_CannotCreateDirectory, fullPath));
+                return; // Created directory.
             }
 
-            // We can save a bunch of work if the directory we want to create already exists.
-            if (DirectoryExists(fullPath))
+            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+            if (errorInfo.Error == Interop.Error.EEXIST && DirectoryExists(fullPath))
             {
-                return;
+                return; // Path already exists and it's a directory.
             }
+            else if (errorInfo.Error == Interop.Error.ENOENT)
+            {
+                // Some parts of the path don't exist yet.
+                CreateParentsAndDirectory(fullPath);
+            }
+            else
+            {
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
+            }
+        }
 
-            // Attempt to figure out which directories don't exist, and only create the ones we need.
-            bool somepathexists = false;
+        public static void CreateParentsAndDirectory(string fullPath)
+        {
+            // Try create parents bottom to top and track those that could not
+            // be created due to missing parents. Then create them top to bottom.
             List<string> stackDir = new List<string>();
-            int lengthRoot = PathInternal.GetRootLength(fullPath);
-            if (length > lengthRoot)
-            {
-                int i = length - 1;
-                while (i >= lengthRoot && !somepathexists)
-                {
-                    if (!DirectoryExists(fullPath.AsSpan(0, i + 1))) // Create only the ones missing
-                    {
-                        stackDir.Add(fullPath.Substring(0, i + 1));
-                    }
-                    else
-                    {
-                        somepathexists = true;
-                    }
 
-                    while (i > lengthRoot && !PathInternal.IsDirectorySeparator(fullPath[i]))
-                    {
-                        i--;
-                    }
+            stackDir.Add(fullPath);
+
+            int i = fullPath.Length - 1;
+            // Trim trailing separator.
+            if (PathInternal.IsDirectorySeparator(fullPath[i]))
+            {
+                i--;
+            }
+            do
+            {
+                // Find the end of the parent directory.
+                Debug.Assert(!PathInternal.IsDirectorySeparator(fullPath[i]));
+                while (!PathInternal.IsDirectorySeparator(fullPath[i]))
+                {
                     i--;
                 }
-            }
 
-            int count = stackDir.Count;
-            if (count == 0 && !somepathexists)
-            {
-                ReadOnlySpan<char> root = Path.GetPathRoot(fullPath.AsSpan());
-                if (!DirectoryExists(root))
+                // Try create it.
+                string mkdirPath = fullPath.Substring(0, i);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                if (result == 0)
                 {
-                    throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
+                    // Created parent.
+                    break;
                 }
-                return;
-            }
 
-            // Create all the directories
-            int result = 0;
-            Interop.ErrorInfo firstError = default(Interop.ErrorInfo);
-            string errorString = fullPath;
-            for (int i = stackDir.Count - 1; i >= 0; i--)
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.ENOENT)
+                {
+                    // Some parts of the path don't exist yet.
+                    // We'll try to create its parent on the next iteration.
+
+                    // Track this path for later creation.
+                    stackDir.Add(mkdirPath);
+                }
+                else if (errorInfo.Error == Interop.Error.EEXIST)
+                {
+                    // Parent exists.
+                    // If it is not a directory, MkDir will fail when we create a child directory.
+                    break;
+                }
+                else
+                {
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
+                }
+                i--;
+            } while (i > 0);
+
+            // Create directories that had missing parents.
+            for (i = stackDir.Count - 1; i >= 0; i--)
             {
-                string name = stackDir[i];
-
-                // The mkdir command uses 0777 by default (it'll be AND'd with the process umask internally).
-                // We do the same.
-                result = Interop.Sys.MkDir(name, (int)Interop.Sys.Permissions.Mask);
-                if (result < 0 && firstError.Error == 0)
+                string mkdirPath = stackDir[i];
+                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                if (result < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error == Interop.Error.EEXIST)
+                    {
+                        // Path was created since we last checked.
+                        // Continue, and for the last item, which is fullPath,
+                        // verify it is actually a directory.
+                        if (i != 0)
+                        {
+                            continue;
+                        }
+                        if (DirectoryExists(mkdirPath))
+                        {
+                            return;
+                        }
+                    }
 
-                    // While we tried to avoid creating directories that don't
-                    // exist above, there are a few cases that can fail, e.g.
-                    // a race condition where another process or thread creates
-                    // the directory first, or there's a file at the location.
-                    if (errorInfo.Error != Interop.Error.EEXIST)
-                    {
-                        firstError = errorInfo;
-                    }
-                    else if (FileExists(name) || (!DirectoryExists(name, out errorInfo) && errorInfo.Error == Interop.Error.EACCES))
-                    {
-                        // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
-                        firstError = errorInfo;
-                        errorString = name;
-                    }
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
                 }
-            }
-
-            // Only throw an exception if creating the exact directory we wanted failed to work correctly.
-            if (result < 0 && firstError.Error != 0)
-            {
-                throw Interop.GetExceptionForIoErrno(firstError, errorString, isDirectory: true);
             }
         }
 
