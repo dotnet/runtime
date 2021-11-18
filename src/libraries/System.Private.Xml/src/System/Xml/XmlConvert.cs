@@ -302,16 +302,16 @@ namespace System.Xml
 
         internal static byte[] FromBinHexString(string s, bool allowOddCount)
         {
-            ArgumentNullException.ThrowIfNull(s);
-
-            return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
+            return s == null
+                ? throw new ArgumentNullException(nameof(s))
+                : BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
         }
 
         internal static string ToBinHexString(byte[] inArray)
         {
-            ArgumentNullException.ThrowIfNull(inArray);
-
-            return BinHexEncoder.Encode(inArray, 0, inArray.Length);
+            return inArray == null
+                ? throw new ArgumentNullException(nameof(inArray))
+                : BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
 
         //
@@ -322,7 +322,10 @@ namespace System.Xml
         /// </devdoc>
         public static string VerifyName(string name)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             if (name.Length == 0)
             {
@@ -385,7 +388,10 @@ namespace System.Xml
 
         internal static string VerifyNCName(string name, ExceptionType exceptionType)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             if (name.Length == 0)
             {
@@ -460,7 +466,10 @@ namespace System.Xml
 
         internal static string VerifyNMTOKEN(string name, ExceptionType exceptionType)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             if (name.Length == 0)
             {
@@ -507,7 +516,10 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyXmlChars(string content)
         {
-            ArgumentNullException.ThrowIfNull(content);
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
 
             VerifyCharData(content, ExceptionType.XmlException);
             return content;
@@ -517,7 +529,10 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyPublicId(string publicId)
         {
-            ArgumentNullException.ThrowIfNull(publicId);
+            if (publicId == null)
+            {
+                throw new ArgumentNullException(nameof(publicId));
+            }
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsPublicId(publicId);
@@ -533,7 +548,10 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyWhitespace(string content)
         {
-            ArgumentNullException.ThrowIfNull(content);
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
@@ -805,14 +823,12 @@ namespace System.Xml
 
         public static char ToChar(string s)
         {
-            ArgumentNullException.ThrowIfNull(s);
-
-            if (s.Length != 1)
+            if (s == null)
             {
-                throw new FormatException(SR.XmlConvert_NotOneCharString);
+                throw new ArgumentNullException(nameof(s));
             }
 
-            return s[0];
+            return s.Length != 1 ? throw new FormatException(SR.XmlConvert_NotOneCharString) : s[0];
         }
 
         internal static Exception? TryToChar(string s, out char result)
@@ -1264,22 +1280,27 @@ namespace System.Xml
 
         public static DateTimeOffset ToDateTimeOffset(string s)
         {
-            ArgumentNullException.ThrowIfNull(s);
+            if (s == null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+
             XsdDateTime xsdDateTime = new(s, XsdDateTimeFlags.AllXsd);
             DateTimeOffset dateTimeOffset = xsdDateTime;
+
             return dateTimeOffset;
         }
 
         public static DateTimeOffset ToDateTimeOffset(string s, string format)
         {
-            ArgumentNullException.ThrowIfNull(s);
-            return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+            return s == null ? throw new ArgumentNullException(nameof(s))
+                : DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
         public static DateTimeOffset ToDateTimeOffset(string s, string[] formats)
         {
-            ArgumentNullException.ThrowIfNull(s);
-            return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+            return s == null ? throw new ArgumentNullException(nameof(s))
+                : DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
         public static Guid ToGuid(string s)
