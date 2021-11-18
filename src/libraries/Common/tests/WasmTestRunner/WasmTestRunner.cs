@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
+using WasmTestRunner;
+using Xunit;
 
-public class SimpleWasmTestRunner : WasmApplicationEntryPoint
+public class SimpleWasmTestRunner
 {
     public static async Task<int> Main(string[] args)
     {
@@ -48,16 +50,37 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             }
         }
 
-        var runner = new SimpleWasmTestRunner()
-        {
-            TestAssembly = testAssembly,
-            ExcludedTraits = excludedTraits,
-            IncludedTraits = includedTraits,
-            IncludedNamespaces = includedNamespaces,
-            IncludedClasses = includedClasses,
-            IncludedMethods = includedMethods
-        };
 
-        return await runner.Run();
+        var filters = new XunitFilters();
+
+        foreach (var trait in excludedTraits) ParseEqualSeparatedArgument(filters.ExcludedTraits, trait);
+        foreach (var trait in includedTraits) ParseEqualSeparatedArgument(filters.IncludedTraits, trait);
+        foreach (var ns in includedNamespaces) filters.IncludedNamespaces.Add(ns);
+        foreach (var cl in includedClasses) filters.IncludedClasses.Add(cl);
+        foreach (var me in includedMethods) filters.IncludedMethods.Add(me);
+
+        var result = await XThreadlessXunitTestRunner.Run(testAssembly, printXml: true, filters);
+        return result;
+    }
+
+    private static void ParseEqualSeparatedArgument(Dictionary<string, List<string>> targetDictionary, string argument)
+    {
+        var parts = argument.Split('=');
+        if (parts.Length != 2 || string.IsNullOrEmpty(parts[0]) || string.IsNullOrEmpty(parts[1]))
+        {
+            throw new ArgumentException($"Invalid argument value '{argument}'.", nameof(argument));
+        }
+
+        var name = parts[0];
+        var value = parts[1];
+        List<string> excludedTraits;
+        if (targetDictionary.TryGetValue(name, out excludedTraits!))
+        {
+            excludedTraits.Add(value);
+        }
+        else
+        {
+            targetDictionary[name] = new List<string> { value };
+        }
     }
 }
