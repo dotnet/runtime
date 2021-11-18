@@ -21980,17 +21980,16 @@ bool GenTree::IsInvariant() const
 //
 GenTree* Compiler::gtReduceStrength(GenTree* tree)
 {
-    // ADD(_, V0) starts the pattern match
-    if (tree->OperGet() != GT_ADD || tree->gtOverflow() || optValnumCSE_phase)
+    // ADD(_, V0) starts the pattern match.
+    if (tree->OperIs(GT_ADD) || tree->gtOverflow() || optValnumCSE_phase)
     {
         return tree;
     }
 
-    genTreeOps oper = tree->OperGet();
     GenTree*   op1  = tree->AsOp()->gtOp1;
     GenTree*   op2  = tree->AsOp()->gtOp2;
 
-    if (!op2->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op2))
+    if (!op2->OperIs(GT_LCL_VAR) || !varTypeIsIntegral(op2))
     {
         return tree;
     }
@@ -21998,7 +21997,7 @@ GenTree* Compiler::gtReduceStrength(GenTree* tree)
     int          foldCount = 0;
     unsigned int lclNum    = op2->AsLclVarCommon()->GetLclNum();
 
-    // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum),
+    // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum).
     while (true)
     {
         // ADD(lclNum, lclNum), end of tree
@@ -22016,7 +22015,7 @@ GenTree* Compiler::gtReduceStrength(GenTree* tree)
             op2 = op1->AsOp()->gtOp2;
             op1 = op1->AsOp()->gtOp1;
         }
-        // Any other case is a pattern we won't attempt to fold for now
+        // Any other case is a pattern we won't attempt to fold for now.
         else
         {
             return tree;
@@ -22029,7 +22028,7 @@ GenTree* Compiler::gtReduceStrength(GenTree* tree)
     GenTree* consTree   = tree->AsOp()->gtOp1;
     consTree->BashToConst(foldCount, lclVarTree->TypeGet());
 
-    /* GT_MUL operators can later be transformed into 'GT_CALL' */
+    // GT_MUL operators can later be transformed into 'GT_CALL'.
     GenTree* morphed =
         new (this, GT_CALL) GenTreeOp(GT_MUL, tree->TypeGet(), lclVarTree, consTree DEBUGARG(/*largeNode*/ true));
     if (vnStore != nullptr)
