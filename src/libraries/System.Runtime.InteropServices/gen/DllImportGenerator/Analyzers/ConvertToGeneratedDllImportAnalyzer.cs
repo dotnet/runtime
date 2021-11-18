@@ -65,7 +65,7 @@ namespace Microsoft.Interop.Analyzers
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes, INamedTypeSymbol marshalAsAttrType)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes, INamedTypeSymbol? marshalAsAttrType)
         {
             var method = (IMethodSymbol)context.Symbol;
 
