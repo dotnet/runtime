@@ -169,16 +169,13 @@ namespace Internal.TypeSystem
 
         protected virtual ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
-            bool supportsUniversalCanon = false;
-            type.Context.InternalGetSupportsUniversalCanon(ref supportsUniversalCanon);
-
             if (type.IsExplicitLayout)
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
             // Sequential layout has to be respected for blittable types only. We use approximation and respect it for
             // all types without GC references (ie C# unmanaged types). Universal canonical instances might be blittable.
-            else if (type.IsSequentialLayout && (supportsUniversalCanon || !type.ContainsGCPointers))
+            else if (type.IsSequentialLayout && (type.Context.SupportsUniversalCanon || !type.ContainsGCPointers))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }

@@ -92,7 +92,6 @@ namespace Internal.TypeSystem
             throw new NotSupportedException();
         }
 
-        internal partial void InternalGetSupportsUniversalCanon(ref bool flag) => flag = SupportsUniversalCanon;
         public abstract bool SupportsCanon { get; }
         public abstract bool SupportsUniversalCanon { get; }
 
