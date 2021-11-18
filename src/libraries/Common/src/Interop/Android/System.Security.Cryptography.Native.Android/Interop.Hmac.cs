@@ -22,8 +22,8 @@ internal static partial class Interop
         internal static int HmacUpdate(SafeHmacCtxHandle ctx, ReadOnlySpan<byte> data, int len) =>
             HmacUpdate(ctx, ref MemoryMarshal.GetReference(data), len);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_HmacUpdate")]
-        private static partial int HmacUpdate(SafeHmacCtxHandle ctx, ref byte data, int len);
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_HmacUpdate")]
+        private static extern int HmacUpdate(SafeHmacCtxHandle ctx, ref byte data, int len);
 
         [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_HmacFinal")]
         internal static partial int HmacFinal(SafeHmacCtxHandle ctx, ref byte data, ref int len);
