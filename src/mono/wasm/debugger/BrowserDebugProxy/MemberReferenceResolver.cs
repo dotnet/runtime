@@ -82,7 +82,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             string classNameToFind = "";
             string[] parts = varName.Split(".");
             var store = await proxy.LoadStore(sessionId, token);
-            var methodInfo = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId).Method.Info;
+            var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId).Method.Info;
 
             int typeId = -1;
             for (int i = 0; i < parts.Length; i++)
@@ -114,29 +114,29 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             async Task<JObject> FindStaticMemberInType(string name, int typeId)
             {
-                var fields = await sdbHelper.GetTypeFields(sessionId, typeId, token);
+                var fields = await context.SdbAgent.GetTypeFields(typeId, token);
                 foreach (var field in fields)
                 {
                     if (field.Name != name)
                         continue;
 
-                    var isInitialized = await sdbHelper.TypeIsInitialized(sessionId, typeId, token);
+                    var isInitialized = await context.SdbAgent.TypeIsInitialized(typeId, token);
                     if (isInitialized == 0)
                     {
-                        isInitialized = await sdbHelper.TypeInitialize(sessionId, typeId, token);
+                        isInitialized = await context.SdbAgent.TypeInitialize(typeId, token);
                     }
-                    var valueRet = await sdbHelper.GetFieldValue(sessionId, typeId, field.Id, token);
+                    var valueRet = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
 
                     return await GetValueFromObject(valueRet, token);
                 }
 
-                var methodId = await sdbHelper.GetPropertyMethodIdByName(sessionId, typeId, name, token);
+                var methodId = await context.SdbAgent.GetPropertyMethodIdByName(typeId, name, token);
                 if (methodId != -1)
                 {
                     var commandParamsObj = new MemoryStream();
-                    var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                    var commandParamsObjWriter = new MonoBinaryWriter();
                     commandParamsObjWriter.Write(0); //param count
-                    var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
+                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObj.ToArray(), methodId, "methodRet", token);
                     return await GetValueFromObject(retMethod, token);
                 }
 
@@ -162,7 +162,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (type == null)
                         continue;
 
-                    int id = await sdbHelper.GetTypeIdFromToken(sessionId, asm.DebugId, type.Token, token);
+                    int id = await context.SdbAgent.GetTypeIdFromToken(asm.DebugId, type.Token, token);
                     if (id != -1)
                         return id;
                 }
