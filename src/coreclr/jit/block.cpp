@@ -1673,7 +1673,7 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
 //
 void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason))
 {
-    // Make sure we unmark just and count just once.
+    // Make sure we unmark and count just once.
     if (isLoopAlign())
     {
         compiler->loopAlignCandidates--;
