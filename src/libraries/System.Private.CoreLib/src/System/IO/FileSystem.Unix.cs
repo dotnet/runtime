@@ -305,7 +305,7 @@ namespace System.IO
                 ValueListBuilder<int> stackDir = new(stackalloc int[32]); // 32 arbitrarily chosen
                 try
                 {
-                    CreateParentsAndDirectory(fullPath, stackDir);
+                    CreateParentsAndDirectory(fullPath, ref stackDir);
                 }
                 finally
                 {
@@ -318,7 +318,7 @@ namespace System.IO
             }
         }
 
-        private static void CreateParentsAndDirectory(string fullPath, ValueListBuilder<int> stackDir)
+        private static void CreateParentsAndDirectory(string fullPath, ref ValueListBuilder<int> stackDir)
         {
             stackDir.Append(fullPath.Length);
 
