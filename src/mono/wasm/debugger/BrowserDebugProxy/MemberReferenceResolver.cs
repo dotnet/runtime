@@ -139,20 +139,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObj.ToArray(), methodId, "methodRet", token);
                     return await GetValueFromObject(retMethod, token);
                 }
-
-                var searchResult = await TryFindNameInAssembly(store.assemblies, classNameToFindWithNamespace);
-                if (searchResult == null)
-                    searchResult = await TryFindNameInAssembly(store.assemblies, classNameToFind);
-                if (searchResult != null)
-                    typeId = (int)searchResult;
-
-                async Task<int?> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
-                {
-                    var type = assembly.GetTypeByName(typeName);
-                    if (type == null)
-                        return null;
-                    return await sdbHelper.GetTypeIdFromToken(sessionId, assembly.DebugId, type.Token, token);
-                }
+                return null;
+            }
 
             async Task<int> FindStaticTypeId(string typeName)
             {
