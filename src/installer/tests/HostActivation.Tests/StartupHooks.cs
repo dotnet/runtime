@@ -131,7 +131,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void Muxer_activation_of_RuntimeConfig_And_Environment_StartupHooks_Succeeds()
+        public void Muxer_activation_of_RuntimeConfig_And_Environment_StartupHooks_SucceedsInExpectedOrder()
         {
             var fixture = sharedTestState.PortableAppFixture.Copy();
             var dotnet = fixture.BuiltDotnet;
@@ -147,16 +147,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var startupHook2Fixture = sharedTestState.StartupHookWithDependencyFixture.Copy();
             var startupHook2Dll = startupHook2Fixture.TestProject.AppDll;
 
-            // RuntimeConfig and Environment startup hook
+            // include any char to counter output from other threads such as in #57243
+            const string wildcardPattern = @"[\r\n\s.]*";
+
+            // RuntimeConfig and Environment startup hooks in expected order
             dotnet.Exec(appDll)
                 .EnvironmentVariable(startupHookVarName, startupHook2Dll)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello from startup hook!")
-                .And.HaveStdOutContaining("Hello from startup hook with dependency!")
-                .And.HaveStdOutContaining("Hello World");
+                .And.HaveStdOutMatching("Hello from startup hook with dependency!" +
+                                        wildcardPattern +
+                                        "Hello from startup hook!" +
+                                        wildcardPattern +
+                                        "Hello World");
         }
 
         // Empty startup hook variable
