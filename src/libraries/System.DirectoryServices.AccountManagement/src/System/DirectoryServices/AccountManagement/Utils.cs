@@ -561,7 +561,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                int err = UnsafeNativeMethods.DsGetDcName(computerName, domainName, IntPtr.Zero, siteName, flags, out domainControllerInfoPtr);
+                int err = Interop.Logoncli.DsGetDcName(computerName, domainName, IntPtr.Zero, siteName, flags, out domainControllerInfoPtr);
 
                 if (err != 0)
                 {
@@ -581,7 +581,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (domainControllerInfoPtr != IntPtr.Zero)
-                    UnsafeNativeMethods.NetApiBufferFree(domainControllerInfoPtr);
+                    Interop.Netutils.NetApiBufferFree(domainControllerInfoPtr);
             }
         }
 
@@ -794,10 +794,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                if (null == computerName)
-                    err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(null, UnsafeNativeMethods.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
-                else
-                    err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(computerName, UnsafeNativeMethods.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
+                err = Interop.Dsrole.DsRoleGetPrimaryDomainInformation(computerName, Interop.Dsrole.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
 
                 if (err != 0)
                 {
@@ -817,7 +814,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (dsRoleInfoPtr != IntPtr.Zero)
-                    UnsafeNativeMethods.DsRoleFreeMemory(dsRoleInfoPtr);
+                    Interop.Dsrole.DsRoleFreeMemory(dsRoleInfoPtr);
             }
         }
     }

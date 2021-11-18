@@ -63,8 +63,8 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Initializing resource manager");
 
                 // Create a resource manager
-                f = UnsafeNativeMethods.AuthzInitializeResourceManager(
-                                            UnsafeNativeMethods.AUTHZ_RM_FLAG.AUTHZ_RM_FLAG_NO_AUDIT,
+                f = Interop.Authz.AuthzInitializeResourceManager(
+                                            Interop.Authz.AUTHZ_RM_FLAG_NO_AUDIT,
                                             IntPtr.Zero,
                                             IntPtr.Zero,
                                             IntPtr.Zero,
@@ -77,7 +77,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Getting ctx from SID");
 
                     // Construct a context for the user based on the user's SID
-                    f = UnsafeNativeMethods.AuthzInitializeContextFromSid(
+                    f = Interop.Authz.AuthzInitializeContextFromSid(
                                                 0,                  // default flags
                                                 _psUserSid.DangerousGetHandle(),
                                                 pResManager,
@@ -94,7 +94,7 @@ namespace System.DirectoryServices.AccountManagement
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Getting info from ctx");
 
                         // Extract the group SIDs from the user's context.  Determine the size of the buffer we need.
-                        f = UnsafeNativeMethods.AuthzGetInformationFromContext(
+                        f = Interop.Authz.AuthzGetInformationFromContext(
                                                     pClientContext,
                                                     2,                    // AuthzContextInfoGroupsSids
                                                     0,
@@ -111,7 +111,7 @@ namespace System.DirectoryServices.AccountManagement
                             pBuffer = Marshal.AllocHGlobal(bufferSize);
 
                             // Extract the group SIDs from the user's context, into our buffer.0
-                            f = UnsafeNativeMethods.AuthzGetInformationFromContext(
+                            f = Interop.Authz.AuthzGetInformationFromContext(
                                                         pClientContext,
                                                         2,                    // AuthzContextInfoGroupsSids
                                                         bufferSize,
@@ -213,10 +213,10 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pClientContext != IntPtr.Zero)
-                    UnsafeNativeMethods.AuthzFreeContext(pClientContext);
+                    Interop.Authz.AuthzFreeContext(pClientContext);
 
                 if (pResManager != IntPtr.Zero)
-                    UnsafeNativeMethods.AuthzFreeResourceManager(pResManager);
+                    Interop.Authz.AuthzFreeResourceManager(pResManager);
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);

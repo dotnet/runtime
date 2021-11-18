@@ -21,13 +21,11 @@ namespace System.DirectoryServices.AccountManagement
 
     internal static class UnsafeNativeMethods
     {
-        [DllImport(Interop.Libraries.Activeds, ExactSpelling = true, EntryPoint = "ADsOpenObject", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-        private static extern int IntADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);
         public static int ADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject)
         {
             try
             {
-                return IntADsOpenObject(path, userName, password, flags, ref iid, out ppObject);
+                return Interop.Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out ppObject);
             }
             catch (EntryPointNotFoundException)
             {
@@ -371,24 +369,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         /*
-        typedef enum
-        {
-          DsRolePrimaryDomainInfoBasic,
-          DsRoleUpgradeStatus,
-          DsRoleOperationState,
-          DsRolePrimaryDomainInfoBasicEx
-        }DSROLE_PRIMARY_DOMAIN_INFO_LEVEL;
-        */
-
-        public enum DSROLE_PRIMARY_DOMAIN_INFO_LEVEL
-        {
-            DsRolePrimaryDomainInfoBasic = 1,
-            DsRoleUpgradeStatus = 2,
-            DsRoleOperationState = 3,
-            DsRolePrimaryDomainInfoBasicEx = 4
-        }
-
-        /*
          typedef struct _DSROLE_PRIMARY_DOMAIN_INFO_BASIC {
          DSROLE_MACHINE_ROLE MachineRole;
          ULONG Flags;
@@ -412,19 +392,6 @@ namespace System.DirectoryServices.AccountManagement
             public string DomainForestName;
             public Guid DomainGuid;
         }
-
-        /*
-        DWORD DsRoleGetPrimaryDomainInformation(
-          LPCWSTR lpServer,
-          DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
-          PBYTE* Buffer
-        ); */
-
-        [DllImport(Interop.Libraries.Dsrole, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
-        public static extern int DsRoleGetPrimaryDomainInformation(
-            [MarshalAs(UnmanagedType.LPTStr)] string lpServer,
-            [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
-            out IntPtr Buffer);
 
         /*typedef struct _DOMAIN_CONTROLLER_INFO {
             LPTSTR DomainControllerName;
@@ -451,32 +418,6 @@ namespace System.DirectoryServices.AccountManagement
             public string ClientSiteName;
         }
 
-        /*
-        void DsRoleFreeMemory(
-          PVOID Buffer
-        );
-        */
-        [DllImport(Interop.Libraries.Dsrole)]
-        public static extern int DsRoleFreeMemory(
-            [In] IntPtr buffer);
-
-        /*DWORD DsGetDcName(
-            LPCTSTR ComputerName,
-            LPCTSTR DomainName,
-            GUID* DomainGuid,
-            LPCTSTR SiteName,
-            ULONG Flags,
-            PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
-        );*/
-        [DllImport(Interop.Libraries.Logoncli, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
-        public static extern int DsGetDcName(
-            [In] string computerName,
-            [In] string domainName,
-            [In] IntPtr domainGuid,
-            [In] string siteName,
-            [In] int flags,
-            [Out] out IntPtr domainControllerInfo);
-
         /* typedef struct _WKSTA_INFO_100 {
                 DWORD wki100_platform_id;
                 LMSTR wki100_computername;
@@ -493,100 +434,6 @@ namespace System.DirectoryServices.AccountManagement
             public int wki100_ver_major;
             public int wki100_ver_minor;
         };
-
-        [DllImport(Interop.Libraries.Wkscli, CallingConvention = CallingConvention.StdCall, EntryPoint = "NetWkstaGetInfo", CharSet = CharSet.Unicode)]
-        public static extern int NetWkstaGetInfo(string server, int level, ref IntPtr buffer);
-
-        [DllImport(Interop.Libraries.Netutils)]
-        public static extern int NetApiBufferFree(
-            [In] IntPtr buffer);
-
-        [DllImport(Interop.Libraries.Credui, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
-        public static extern unsafe int CredUIParseUserName(
-            string pszUserName,
-            char* pszUser,
-            uint ulUserMaxChars,
-            char* pszDomain,
-            uint ulDomainMaxChars);
-
-        // These contants were taken from the wincred.h file
-        public const int CRED_MAX_USERNAME_LENGTH = 514;
-        public const int CRED_MAX_DOMAIN_TARGET_LENGTH = 338;
-
-        //
-        // AuthZ functions
-        //
-
-        internal sealed class AUTHZ_RM_FLAG
-        {
-            private AUTHZ_RM_FLAG() { }
-            public static int AUTHZ_RM_FLAG_NO_AUDIT = 0x1;
-            public static int AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION = 0x2;
-            public static int AUTHZ_VALID_RM_INIT_FLAGS = (AUTHZ_RM_FLAG_NO_AUDIT | AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION);
-        }
-
-        [DllImport(Interop.Libraries.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzInitializeResourceManager", CharSet = CharSet.Unicode)]
-        public static extern bool AuthzInitializeResourceManager(
-                                        int flags,
-                                        IntPtr pfnAccessCheck,
-                                        IntPtr pfnComputeDynamicGroups,
-                                        IntPtr pfnFreeDynamicGroups,
-                                        string name,
-                                        out IntPtr rm
-                                        );
-
-        /*
-        BOOL WINAPI AuthzInitializeContextFromSid(
-            DWORD Flags,
-            PSID UserSid,
-            AUTHZ_RESOURCE_MANAGER_HANDLE AuthzResourceManager,
-            PLARGE_INTEGER pExpirationTime,
-            LUID Identifier,
-            PVOID DynamicGroupArgs,
-            PAUTHZ_CLIENT_CONTEXT_HANDLE pAuthzClientContext
-        );
-        */
-        [DllImport(Interop.Libraries.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzInitializeContextFromSid", CharSet = CharSet.Unicode)]
-        public static extern bool AuthzInitializeContextFromSid(
-                                        int Flags,
-                                        IntPtr UserSid,
-                                        IntPtr AuthzResourceManager,
-                                        IntPtr pExpirationTime,
-                                        Interop.LUID Identitifier,
-                                        IntPtr DynamicGroupArgs,
-                                        out IntPtr pAuthzClientContext
-                                        );
-
-        /*
-                [DllImport(Interop.Libraries.Authz, SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]
-                static extern public bool AuthzInitializeContextFromToken(
-                                                int Flags,
-                                                IntPtr TokenHandle,
-                                                IntPtr AuthzResourceManager,
-                                                IntPtr pExpirationTime,
-                                                LUID Identitifier,
-                                                IntPtr DynamicGroupArgs,
-                                                out IntPtr pAuthzClientContext
-                                                );
-        */
-        [DllImport(Interop.Libraries.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzGetInformationFromContext", CharSet = CharSet.Unicode)]
-        public static extern bool AuthzGetInformationFromContext(
-                                        IntPtr hAuthzClientContext,
-                                        int InfoClass,
-                                        int BufferSize,
-                                        out int pSizeRequired,
-                                        IntPtr Buffer
-                                        );
-
-        [DllImport(Interop.Libraries.Authz, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzFreeContext", CharSet = CharSet.Unicode)]
-        public static extern bool AuthzFreeContext(
-                                        IntPtr AuthzClientContext
-                                        );
-
-        [DllImport(Interop.Libraries.Authz, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzFreeResourceManager", CharSet = CharSet.Unicode)]
-        public static extern bool AuthzFreeResourceManager(
-                                        IntPtr rm
-                                        );
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class POLICY_ACCOUNT_DOMAIN_INFO
