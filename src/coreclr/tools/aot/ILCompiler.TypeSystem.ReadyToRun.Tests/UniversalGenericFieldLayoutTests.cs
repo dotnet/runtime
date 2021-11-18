@@ -22,19 +22,19 @@ namespace TypeSystemTests
         public UniversalGenericFieldLayoutTests()
         {
             // Architecture specific tests may use these contexts
-            _contextX64 = new TestTypeSystemContext(TargetArchitecture.X64, supportsUniversalCanon: true);
+            _contextX64 = new TestTypeSystemContext(TargetArchitecture.X64);
             var systemModuleX64 = _contextX64.CreateModuleForSimpleName("CoreTestAssembly");
             _contextX64.SetSystemModule(systemModuleX64);
 
             _testModuleX64 = systemModuleX64;
 
-            _contextARM = new TestTypeSystemContext(TargetArchitecture.ARM, supportsUniversalCanon: true);
+            _contextARM = new TestTypeSystemContext(TargetArchitecture.ARM);
             var systemModuleARM = _contextARM.CreateModuleForSimpleName("CoreTestAssembly");
             _contextARM.SetSystemModule(systemModuleARM);
 
             _testModuleARM = systemModuleARM;
 
-            _contextX86 = new TestTypeSystemContext(TargetArchitecture.X86, supportsUniversalCanon: true);
+            _contextX86 = new TestTypeSystemContext(TargetArchitecture.X86);
             var systemModuleX86 = _contextX86.CreateModuleForSimpleName("CoreTestAssembly");
             _contextX86.SetSystemModule(systemModuleX86);
 

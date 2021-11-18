@@ -26,14 +26,12 @@ namespace TypeSystemTests
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         VirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
-        bool _supportsUniversalCanon;
         
         public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
 
-        public TestTypeSystemContext(TargetArchitecture arch, bool supportsUniversalCanon = false)
+        public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch, TargetOS.Unknown, TargetAbi.Unknown))
         {
-            _supportsUniversalCanon = supportsUniversalCanon;
         }
 
         public ModuleDesc GetModuleForSimpleName(string simpleName)
@@ -94,7 +92,6 @@ namespace TypeSystemTests
 
         protected override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
-            Debug.Assert(kind != CanonicalFormKind.Universal || _supportsUniversalCanon);
             if (CanonMode == CanonicalizationMode.Standard)
                 return StandardCanonicalizationAlgorithm.ConvertInstantiationToCanonForm(instantiation, kind, out changed);
             else
@@ -103,7 +100,6 @@ namespace TypeSystemTests
 
         protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
         {
-            Debug.Assert(kind != CanonicalFormKind.Universal || _supportsUniversalCanon);
             if (CanonMode == CanonicalizationMode.Standard)
                 return StandardCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
             else
@@ -112,7 +108,6 @@ namespace TypeSystemTests
 
         protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, ref CanonicalFormKind kind)
         {
-            Debug.Assert(kind != CanonicalFormKind.Universal || _supportsUniversalCanon);
             if (CanonMode == CanonicalizationMode.Standard)
                 return StandardCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
             else
@@ -134,7 +129,7 @@ namespace TypeSystemTests
 
         }
 
-        public override bool SupportsUniversalCanon => _supportsUniversalCanon;
+        public override bool SupportsUniversalCanon => true;
         public override bool SupportsCanon => true;
     }
 }
