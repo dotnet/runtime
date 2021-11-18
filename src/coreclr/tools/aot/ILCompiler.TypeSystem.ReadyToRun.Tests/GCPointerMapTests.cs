@@ -41,13 +41,13 @@ namespace TypeSystemTests
             {
                 var map = GCPointerMap.FromInstanceLayout(classWithStringField);
                 Assert.Equal(4, map.Size);
-                Assert.Equal("0010", map.ToString());
+                Assert.Equal("0100", map.ToString());
             }
 
             {
                 var map = GCPointerMap.FromInstanceLayout(mixedStruct);
                 Assert.Equal(5, map.Size);
-                Assert.Equal("01001", map.ToString());
+                Assert.Equal("11000", map.ToString());
             }
 
             {
@@ -60,13 +60,13 @@ namespace TypeSystemTests
             {
                 var map = GCPointerMap.FromInstanceLayout(doubleMixedStructLayout);
                 Assert.Equal(10, map.Size);
-                Assert.Equal("0100101001", map.ToString());
+                Assert.Equal("1100011000", map.ToString());
             }
 
             {
                 var map = GCPointerMap.FromInstanceLayout(explicitlyFarPointer);
                 Assert.Equal(117, map.Size);
-                Assert.Equal("100000000000000000000000000000000000000000000000000000000000000010000000000000001000000000000000000000000000000001001", map.ToString());
+                Assert.Equal("100000000000000000000000000000000000000000000000000000000000000010000000000000001000000000000000000000000000000011000", map.ToString());
             }
 
             {
