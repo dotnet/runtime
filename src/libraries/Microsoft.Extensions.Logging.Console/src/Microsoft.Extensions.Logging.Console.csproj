@@ -9,6 +9,7 @@
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
     <PackageDescription>Console logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 
@@ -40,6 +41,10 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 
   <ItemGroup>

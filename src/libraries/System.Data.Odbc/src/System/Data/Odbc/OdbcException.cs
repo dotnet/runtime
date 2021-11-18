@@ -12,7 +12,7 @@ namespace System.Data.Odbc
     {
         private readonly OdbcErrorCollection _odbcErrors = new OdbcErrorCollection();
 
-        internal static OdbcException CreateException(OdbcErrorCollection errors, ODBC32.RetCode retcode)
+        internal static OdbcException CreateException(OdbcErrorCollection errors, ODBC32.SQLRETURN retcode)
         {
             StringBuilder builder = new StringBuilder();
             foreach (OdbcError error in errors)

@@ -313,7 +313,7 @@ namespace System.Speech.Internal.Synthesis
             prodName = string.Empty;
             SafeNativeMethods.WAVEOUTCAPS caps = new();
 
-            MMSYSERR result = SafeNativeMethods.waveOutGetDevCaps((IntPtr)deviceId, ref caps, Marshal.SizeOf(caps));
+            MMSYSERR result = SafeNativeMethods.waveOutGetDevCaps((IntPtr)deviceId, ref caps, Marshal.SizeOf<SafeNativeMethods.WAVEOUTCAPS>());
             if (result != MMSYSERR.NOERROR)
             {
                 return result;

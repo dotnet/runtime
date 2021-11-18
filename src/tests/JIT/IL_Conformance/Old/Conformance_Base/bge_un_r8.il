@@ -1085,4 +1085,4 @@ FAIL:
 	ret
 
 }
-.assembly bge_un_r8.exe{}
+.assembly bge_un_r8{}

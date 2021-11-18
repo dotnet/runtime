@@ -86,7 +86,7 @@ namespace System.Speech.Internal.Synthesis
         {
             get
             {
-                return Marshal.SizeOf(_waveHdr);
+                return Marshal.SizeOf<WAVEHDR>();
             }
         }
 

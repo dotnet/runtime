@@ -5,7 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
-    <NoWarn Condition=" '$(TargetsFreeBSD)' == 'true' or '$(TargetsUnknownUnix)' == 'true' ">$(NoWarn);0649</NoWarn>
+    <NoWarn Condition=" '$(TargetsFreeBSD)' == 'true' or '$(TargetsUnknownUnix)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' ">$(NoWarn);0649</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.Process_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
@@ -309,7 +309,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs"
              Link="Common\Interop\Linux\Interop.SchedGetSetAffinity.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
@@ -345,7 +345,7 @@
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs"
              Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.UnknownUnix.cs" />

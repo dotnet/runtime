@@ -111,4 +111,4 @@ FAIL:
 	ret
 }
 }
-.assembly clt_u8.exe{}
+.assembly clt_u8{}

@@ -77,4 +77,4 @@ FAIL:
 	ret
 }
 }
-.assembly stloc_i8.exe{}
+.assembly stloc_i8{}

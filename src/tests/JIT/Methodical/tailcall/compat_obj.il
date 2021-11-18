@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly compat_obj { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class public auto ansi beforefieldinit BaseClass
@@ -56,6 +57,9 @@
     .method public hidebysig  static 
             int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       39 (0x27)
       .maxstack  1

@@ -378,6 +378,11 @@ namespace DebuggerTests
                 return str + parm;
             }
 
+            public string CallMethodWithParmString_λ(string parm)
+            {
+                return "λ_" + parm;
+            }
+
             public string CallMethodWithParmBool(bool parm)
             {
                 if (parm)
@@ -420,6 +425,23 @@ namespace DebuggerTests
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
         public static string StaticPropertyWithError => throw new Exception("not implemented");
+    }
+
+    public class EvaluateNonStaticClassWithStaticFields
+    {
+        public static int StaticField1 = 10;
+        public static string StaticProperty1 => "StaticProperty1";
+        public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        private int HelperMethod()
+        {
+            return 5;
+        }
+
+        public async void run()
+        {
+            var makeAwaitable = await Task.Run(() => HelperMethod());
+        }
     }
 
     public class EvaluateNonStaticClassWithStaticFields

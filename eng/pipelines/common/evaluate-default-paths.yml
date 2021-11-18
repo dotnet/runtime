@@ -99,6 +99,9 @@ jobs:
       - src/coreclr/vm/*
       exclude:
       - '*'
+    - subset: coreclr_jit
+      include:
+      - src/coreclr/jit/*
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}

@@ -513,6 +513,28 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void JsonSerializerOptions_Default_MatchesDefaultConstructor()
+        {
+            var options = new JsonSerializerOptions();
+            JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Default;
+            VerifyOptionsEqual(options, optionsSingleton);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Default_ReturnsSameInstance()
+        {
+            Assert.Same(JsonSerializerOptions.Default, JsonSerializerOptions.Default);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Default_IsReadOnly()
+        {
+            var optionsSingleton = JsonSerializerOptions.Default;
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.IncludeFields = true);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.Converters.Add(new JsonStringEnumConverter()));
+        }
+
+        [Fact]
         public static void DefaultSerializerOptions_General()
         {
             var options = new JsonSerializerOptions();
@@ -542,7 +564,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
 
-            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties())
+            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 Type propertyType = property.PropertyType;
 
@@ -596,7 +618,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static void VerifyOptionsEqual(JsonSerializerOptions options, JsonSerializerOptions newOptions)
         {
-            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties())
+            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 Type propertyType = property.PropertyType;
 

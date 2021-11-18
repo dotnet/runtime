@@ -308,9 +308,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        var_types             retType,
                                        unsigned              simdSize)
 {
-    HWIntrinsicCategory category     = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                 numArgs      = sig->numArgs;
-    var_types           simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    int                 numArgs  = sig->numArgs;
 
     if (!featureSIMD || !IsBaselineSimdIsaSupported())
     {
@@ -318,7 +317,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     assert(numArgs >= 0);
-    assert(varTypeIsArithmetic(simdBaseType));
+
+    var_types simdBaseType = TYP_UNKNOWN;
+
+    if (intrinsic != NI_ArmBase_Yield)
+    {
+        simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        assert(varTypeIsArithmetic(simdBaseType));
+    }
 
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
@@ -327,6 +333,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_ArmBase_Yield:
+        {
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            assert(simdSize == 0);
+
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
         case NI_Vector64_Abs:
         case NI_Vector128_Abs:
         {
@@ -821,7 +837,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Narrow:
         {
             assert(sig->numArgs == 2);
-            // TODO-ARM64-CQ: These intrinsics should be accelerated.
+
+            op2 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(retType);
+
+            retNode =
+                gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -896,6 +917,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1     = impSIMDPopStack(retType);
                 retNode = gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             }
+            break;
+        }
+
+        case NI_Vector64_WidenLower:
+        case NI_Vector128_WidenLower:
+        {
+            assert(sig->numArgs == 1);
+
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_WidenUpper:
+        case NI_Vector128_WidenUpper:
+        {
+            assert(sig->numArgs == 1);
+
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 

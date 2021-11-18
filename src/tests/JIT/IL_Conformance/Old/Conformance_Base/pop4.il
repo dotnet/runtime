@@ -45,4 +45,4 @@ FAIL:
 	ret
 }
 }
-.assembly pop4.exe{}
+.assembly pop4{}

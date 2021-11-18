@@ -17,14 +17,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # The ABI for passing parameters with 32-byte alignment has changed in GCC 4.6
   add_compile_options(-Wno-psabi)
 endif()
-if (MSVC)
-  # The MSVC require explicitly ask for AVX2 so define would be present.
-  add_compile_options(/arch:AVX2)
-else()
-  if (NOT CLR_CMAKE_TARGET_ARCH_ARM64 AND NOT CLR_CMAKE_TARGET_ARCH_ARM)
-    add_compile_options(-mavx)
-  endif()
-endif()
 set(SOURCES
   GenericsNative.IUnknown.cpp
   GenericsNative.NullableB.cpp

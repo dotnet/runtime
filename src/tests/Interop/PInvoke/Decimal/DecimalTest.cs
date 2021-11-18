@@ -10,26 +10,8 @@ public class DecimalTest
     private const int StartingIntValue = 42;
     private const int NewIntValue = 18;
 
-    public static int Main()
-    {
-        try
-        {
-            RunDecimalTests();
-            RunLPDecimalTests();
-            if (OperatingSystem.IsWindows())
-            {
-                RunCurrencyTests();
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-            return 101;
-        }
-        return 100;
-    }
-
-    private static void RunDecimalTests()
+    [Fact]
+    public static void RunDecimalTests()
     {
         Assert.Equal((decimal)StartingIntValue, DecimalTestNative.CreateDecimalFromInt(StartingIntValue));
 
@@ -56,7 +38,8 @@ public class DecimalTest
         DecimalTestNative.PassThroughDecimalToCallback((decimal)NewIntValue, d => Assert.Equal((decimal)NewIntValue, d));
     }
 
-    private static void RunLPDecimalTests()
+    [Fact]
+    public static void RunLPDecimalTests()
     {
         Assert.Equal((decimal)StartingIntValue, DecimalTestNative.CreateLPDecimalFromInt(StartingIntValue));
 
@@ -72,7 +55,9 @@ public class DecimalTest
         DecimalTestNative.PassThroughLPDecimalToCallback((decimal)NewIntValue, d => Assert.Equal((decimal)NewIntValue, d));
     }
 
-    private static void RunCurrencyTests()
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public static void RunCurrencyTests()
     {
         Assert.Throws<MarshalDirectiveException>(() => DecimalTestNative.CreateCurrencyFromInt(StartingIntValue));
 

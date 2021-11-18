@@ -911,7 +911,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 $@"var t = App.call_test_method ('{helperMethodName}', [ {helperMethodArgs} ], 'i'); " +
                 "t.finally(result => { globalThis.__test_promise_completed = true; }); " + 
                 "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " }); " + 
-                "t.catch(e => { console.log(e); globalThis.__test_promise_failed = true; }); "
+                "t.catch(e => { globalThis.__test_promise_failed = true; }); "
             );
 
             await Task.Delay(1);
