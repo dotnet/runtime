@@ -653,7 +653,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         HeaderList *currentHeaderList = m_pgoHeaders;
         if (currentHeaderList != NULL)
         {
-            if (!ComparePgoSchemaEquals(currentHeaderList->header.GetData(), currentHeaderList->header.countsOffset, pSchema, countSchemaItems))
+            if (!CheckIfPgoSchemaIsCompatibleAndSetOffsets(currentHeaderList->header.GetData(), currentHeaderList->header.countsOffset, pSchema, countSchemaItems))
             {
                 return E_NOTIMPL;
             }
@@ -683,7 +683,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         HeaderList* existingData = laPgoManagerThis->m_pgoDataLookup.Lookup(pMD);
         if (existingData != NULL)
         {
-            if (!ComparePgoSchemaEquals(existingData->header.GetData(), existingData->header.countsOffset, pSchema, countSchemaItems))
+            if (!CheckIfPgoSchemaIsCompatibleAndSetOffsets(existingData->header.GetData(), existingData->header.countsOffset, pSchema, countSchemaItems))
             {
                 return E_NOTIMPL;
             }

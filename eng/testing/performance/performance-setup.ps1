@@ -149,6 +149,7 @@ if ($AndroidMono) {
         mkdir $WorkItemDirectory
     }
     Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -161,6 +162,8 @@ if ($iOSMono) {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
     } else {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
+        Copy-Item -path "$SourceDirectory\MauiiOSDefault" $PayloadDirectory\MauiiOSDefault -Recurse
+        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault" $PayloadDirectory\MauiMacCatalystDefault -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'

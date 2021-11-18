@@ -43,7 +43,7 @@ class Conversion2<U> where U : I<string>, new()
     }
 }
 
-class Test
+class Test_ConstrainedMethods
 {
     static string Caller1<T, U>(T param) where U : I<T>, new()
     {

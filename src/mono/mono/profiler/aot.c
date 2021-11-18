@@ -82,6 +82,12 @@ prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 }
 
 static void
+prof_inline_method (MonoProfiler *prof, MonoMethod *method, MonoMethod *inlined_method)
+{
+	prof_jit_done (prof, inlined_method, NULL);
+}
+
+static void
 usage (void)
 {
 	mono_profiler_printf ("AOT profiler.");
@@ -396,6 +402,7 @@ mono_profiler_init_aot (const char *desc)
 	MonoProfilerHandle handle = mono_profiler_create (&aot_profiler);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
+	mono_profiler_set_inline_method_callback (handle, prof_inline_method);
 }
 
 static void
@@ -673,7 +680,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 		sig = mono_method_signature_checked (send_method, error);
 		mono_error_assert_ok (error);
-		if (sig->param_count != 3 || !sig->params [0]->byref || sig->params [0]->type != MONO_TYPE_U1 || sig->params [1]->type != MONO_TYPE_I4 || sig->params [2]->type != MONO_TYPE_STRING) {
+		if (sig->param_count != 3 || !m_type_is_byref (sig->params [0]) || sig->params [0]->type != MONO_TYPE_U1 || sig->params [1]->type != MONO_TYPE_I4 || sig->params [2]->type != MONO_TYPE_STRING) {
 			mono_profiler_printf_err ("Method '%s' should have signature void (byte&,int,string).", prof->send_to_str);
 			exit (1);
 		}

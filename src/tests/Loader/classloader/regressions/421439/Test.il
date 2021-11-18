@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern RefX1 {}
 .assembly extern ValX1 {}
 
-.assembly Test {}
+.assembly Test_Test {}
 
 .class public sequential ansi sealed beforefieldinit Gen<T>
        extends [mscorlib]System.ValueType
@@ -29,11 +30,14 @@
 // new Gen<ValX1<string>[][][]>(new ValX1<string>[1][][]);
 // new Gen<RefX1<RefX1<RefX1<string>>>>(new RefX1<RefX1<RefX1<string>>>());
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_Test
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     nop

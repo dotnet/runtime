@@ -491,6 +491,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     {
         case InstructionSet_Vector256:
         case InstructionSet_Vector128:
+        case InstructionSet_X86Base:
             return impBaseIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig);
@@ -548,8 +549,13 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-    assert(varTypeIsArithmetic(simdBaseType));
+    var_types simdBaseType = TYP_UNKNOWN;
+
+    if (intrinsic != NI_X86Base_Pause)
+    {
+        simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        assert(varTypeIsArithmetic(simdBaseType));
+    }
 
     switch (intrinsic)
     {
@@ -1294,7 +1300,15 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Narrow:
         {
             assert(sig->numArgs == 2);
-            // TODO-XARCH-CQ: These intrinsics should be accelerated
+
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            {
+                op2 = impSIMDPopStack(retType);
+                op1 = impSIMDPopStack(retType);
+
+                retNode =
+                    gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            }
             break;
         }
 
@@ -1416,6 +1430,36 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_WidenLower:
+        case NI_Vector256_WidenLower:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            {
+                op1 = impSIMDPopStack(retType);
+
+                retNode =
+                    gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
+        case NI_Vector128_WidenUpper:
+        case NI_Vector256_WidenUpper:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            {
+                op1 = impSIMDPopStack(retType);
+
+                retNode =
+                    gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
         case NI_Vector128_WithElement:
         case NI_Vector256_WithElement:
         {
@@ -1494,6 +1538,16 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_X86Base_Pause:
+        {
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            assert(simdSize == 0);
+
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
         default:
         {
             return nullptr;
@@ -1566,7 +1620,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
         case NI_SSE_StoreFence:
             assert(sig->numArgs == 0);
             assert(JITtype2varType(sig->retType) == TYP_VOID);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, CORINFO_TYPE_VOID, 0);
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
             break;
 
         default:
@@ -1629,7 +1683,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             assert(JITtype2varType(sig->retType) == TYP_VOID);
             assert(simdSize == 0);
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, CORINFO_TYPE_VOID, simdSize);
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
             break;
         }
 

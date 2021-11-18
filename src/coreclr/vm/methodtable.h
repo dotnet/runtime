@@ -2511,14 +2511,6 @@ public:
     // Is this value type? Returns false for System.ValueType and System.Enum.
     inline BOOL IsValueType();
 
-    // Returns "TRUE" iff "this" is a struct type such that return buffers used for returning a value
-    // of this type must be stack-allocated.  This will generally be true only if the struct
-    // contains GC pointers, and does not exceed some size limit.  Maintaining this as an invariant allows
-    // an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
-    // returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
-    // buffers do not require GC write barriers.
-    BOOL IsStructRequiringStackAllocRetBuf();
-
     // Is this enum? Returns false for System.Enum.
     inline BOOL IsEnum();
 

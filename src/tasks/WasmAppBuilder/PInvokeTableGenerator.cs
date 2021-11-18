@@ -415,7 +415,7 @@ public class PInvokeTableGenerator : Task
 
     private static bool IsBlittable (Type type)
     {
-        if (type.IsPrimitive || type.IsByRef || type.IsPointer)
+        if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
             return true;
         else
             return false;

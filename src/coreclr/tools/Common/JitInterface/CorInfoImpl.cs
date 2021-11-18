@@ -366,6 +366,24 @@ namespace Internal.JitInterface
 #endif
             }
 
+            if (codeSize < _code.Length)
+            {
+                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64)
+                {
+                    // For xarch/arm32, the generated code is sometimes smaller than the memory allocated.
+                    // In that case, trim the codeBlock to the actual value.
+                    //
+                    // For arm64, the allocation request of `hotCodeSize` also includes the roData size
+                    // while the `codeSize` returned just contains the size of the native code. As such,
+                    // there is guarantee that for armarch, (codeSize == _code.Length) is always true.
+                    //
+                    // Currently, hot/cold splitting is not done and hence `codeSize` just includes the size of
+                    // hotCode. Once hot/cold splitting is done, need to trim respective `_code` or `_coldCode`
+                    // accordingly.
+                    Debug.Assert(codeSize != 0);
+                    Array.Resize(ref _code, (int)codeSize);
+                }
+            }
             PublishCode();
             PublishROData();
         }
@@ -445,7 +463,7 @@ namespace Internal.JitInterface
                 _methodCodeNode.Fixups.Add(node);
             }
 #else
-            MethodIL methodIL = HandleToObject(_methodScope);
+            var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
             _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
@@ -1654,7 +1672,7 @@ namespace Internal.JitInterface
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, method);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
             }
             else
@@ -1682,7 +1700,7 @@ namespace Internal.JitInterface
                     _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, field);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #endif
             }
             else
@@ -2676,9 +2694,13 @@ namespace Internal.JitInterface
 
         private uint getArrayRank(CORINFO_CLASS_STRUCT_* cls)
         {
+            uint rank = 0;
             var td = HandleToObject(cls) as ArrayType;
-            Debug.Assert(td != null);
-            return (uint)td.Rank;
+            if (td != null)
+            {
+                rank = (uint)td.Rank;
+            }
+            return rank;
         }
 
         private void* getArrayInitializationData(CORINFO_FIELD_STRUCT_* field, uint size)

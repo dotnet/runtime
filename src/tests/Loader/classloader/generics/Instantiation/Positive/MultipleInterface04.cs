@@ -37,7 +37,7 @@ struct GenString : IGenX<string[]>, IGenY<string>
   	}
 }
 
-public class Test
+public class Test_MultipleInterface04
 {
 	public static int counter = 0;
 	public static bool result = true;

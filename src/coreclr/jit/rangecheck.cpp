@@ -204,11 +204,11 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     GenTree*          comma   = treeParent->OperIs(GT_COMMA) ? treeParent : nullptr;
     GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
     m_pCurBndsChk             = bndsChk;
-    GenTree* treeIndex        = bndsChk->gtIndex;
+    GenTree* treeIndex        = bndsChk->GetIndex();
 
     // Take care of constant index first, like a[2], for example.
     ValueNum idxVn    = m_pCompiler->vnStore->VNConservativeNormalValue(treeIndex->gtVNPair);
-    ValueNum arrLenVn = m_pCompiler->vnStore->VNConservativeNormalValue(bndsChk->gtArrLen->gtVNPair);
+    ValueNum arrLenVn = m_pCompiler->vnStore->VNConservativeNormalValue(bndsChk->GetArrayLength()->gtVNPair);
     int      arrSize  = 0;
 
     if (m_pCompiler->vnStore->IsVNConstant(arrLenVn))
@@ -216,7 +216,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         ssize_t      constVal  = -1;
         GenTreeFlags iconFlags = GTF_EMPTY;
 
-        if (m_pCompiler->optIsTreeKnownIntValue(true, bndsChk->gtArrLen, &constVal, &iconFlags))
+        if (m_pCompiler->optIsTreeKnownIntValue(true, bndsChk->GetArrayLength(), &constVal, &iconFlags))
         {
             arrSize = (int)constVal;
         }
@@ -299,7 +299,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     // Is the range between the lower and upper bound values.
-    if (BetweenBounds(range, bndsChk->gtArrLen, arrSize))
+    if (BetweenBounds(range, bndsChk->GetArrayLength(), arrSize))
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
         m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
@@ -734,7 +734,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             }
         }
 
-        ValueNum arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->gtArrLen->gtVNPair);
+        ValueNum arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->GetArrayLength()->gtVNPair);
 
         if (m_pCompiler->vnStore->IsVNConstant(arrLenVN))
         {

@@ -259,8 +259,7 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct WINHTTP_CURRENT_USER_IE_PROXY_CONFIG
         {
-            [MarshalAs(UnmanagedType.Bool)]
-            public bool AutoDetect;
+            public int AutoDetect;
             public IntPtr AutoConfigUrl;
             public IntPtr Proxy;
             public IntPtr ProxyBypass;

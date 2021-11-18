@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDomainName", SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDomainName")]
         private static extern unsafe int GetDomainName(byte* name, int len);
 
         internal static unsafe string GetDomainName()

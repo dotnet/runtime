@@ -34,7 +34,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetTcpGlobalStatistics")]
-        public static extern int GetTcpGlobalStatistics(out TcpGlobalStatistics statistics);
+        public static unsafe extern int GetTcpGlobalStatistics(TcpGlobalStatistics* statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
         public readonly struct IPv4GlobalStatistics
@@ -56,7 +56,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv4GlobalStatistics")]
-        public static extern int GetIPv4GlobalStatistics(out IPv4GlobalStatistics statistics);
+        public static unsafe extern int GetIPv4GlobalStatistics(IPv4GlobalStatistics* statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
         public readonly struct UdpGlobalStatistics
@@ -69,7 +69,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUdpGlobalStatistics")]
-        public static extern int GetUdpGlobalStatistics(out UdpGlobalStatistics statistics);
+        public static unsafe extern int GetUdpGlobalStatistics(UdpGlobalStatistics* statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
         public readonly struct Icmpv4GlobalStatistics
@@ -99,7 +99,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIcmpv4GlobalStatistics")]
-        public static extern int GetIcmpv4GlobalStatistics(out Icmpv4GlobalStatistics statistics);
+        public static unsafe extern int GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
         public readonly struct Icmpv6GlobalStatistics
@@ -135,7 +135,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIcmpv6GlobalStatistics")]
-        public static extern int GetIcmpv6GlobalStatistics(out Icmpv6GlobalStatistics statistics);
+        public static unsafe extern int GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* statistics);
 
         public readonly struct NativeIPInterfaceStatistics
         {
@@ -155,8 +155,8 @@ internal static partial class Interop
             public readonly ulong Flags;
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNativeIPInterfaceStatistics")]
-        public static extern int GetNativeIPInterfaceStatistics(string name, out NativeIPInterfaceStatistics stats);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNativeIPInterfaceStatistics", CharSet = CharSet.Ansi)]
+        public static partial int GetNativeIPInterfaceStatistics(string name, out NativeIPInterfaceStatistics stats);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNumRoutes")]
         public static extern int GetNumRoutes();

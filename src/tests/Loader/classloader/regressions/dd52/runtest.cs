@@ -3,7 +3,7 @@
 
 using System;
 
-public class Test
+public class Test_runtest
 
 {
    public static int Main()

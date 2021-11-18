@@ -119,16 +119,16 @@ namespace Internal.NativeCrypto
 
     internal static partial class Cng
     {
-        internal static class Interop
+        internal static partial class Interop
         {
-            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, int dwFlags);
+            [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+            public static partial NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, int dwFlags);
 
-            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
+            [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+            public static partial NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
 
-            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode, EntryPoint = "BCryptSetProperty")]
-            private static extern NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
+            [GeneratedDllImport(Libraries.BCrypt, EntryPoint = "BCryptSetProperty", CharSet = CharSet.Unicode)]
+            private static partial NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
 
             public static unsafe NTSTATUS BCryptSetIntProperty(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int dwFlags)
             {
@@ -137,7 +137,7 @@ namespace Internal.NativeCrypto
         }
     }
 
-    internal sealed class SafeAlgorithmHandle : SafeBCryptHandle
+    internal sealed partial class SafeAlgorithmHandle : SafeBCryptHandle
     {
         protected sealed override bool ReleaseHandle()
         {
@@ -145,11 +145,11 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [DllImport(Libraries.BCrypt)]
-        private static extern uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
+        [GeneratedDllImport(Libraries.BCrypt)]
+        private static partial uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
     }
 
-    internal sealed class SafeKeyHandle : SafeBCryptHandle
+    internal sealed partial class SafeKeyHandle : SafeBCryptHandle
     {
         private SafeAlgorithmHandle? _parentHandle;
 
@@ -177,7 +177,7 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [DllImport(Libraries.BCrypt)]
-        private static extern uint BCryptDestroyKey(IntPtr hKey);
+        [GeneratedDllImport(Libraries.BCrypt)]
+        private static partial uint BCryptDestroyKey(IntPtr hKey);
     }
 }

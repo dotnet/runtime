@@ -12,7 +12,7 @@ namespace System
     /// <summary>Defines a mechanism for getting the multiplicative identity of a given type.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TResult">The type that contains the multiplicative identify of <typeparamref name="TSelf" />.</typeparam>
-    [RequiresPreviewFeatures]
+    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IMultiplicativeIdentity<TSelf, TResult>
         where TSelf : IMultiplicativeIdentity<TSelf, TResult>
     {

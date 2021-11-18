@@ -243,7 +243,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         continue;
 
                     var currentInfo = new ModuleDescInfo(managedModule.ModuleID, assemblyToFullyQualifiedAssemblyName[managedModule.AssemblyID]);
-                    _modules.Add(managedModule.ModuleID, currentInfo);
+                    if (!_modules.ContainsKey(managedModule.ModuleID))
+                        _modules.Add(managedModule.ModuleID, currentInfo);
                 }
             }
         }

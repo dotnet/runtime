@@ -712,6 +712,20 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //
 void LinearScan::addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
 {
+    if (refType == RefTypeKill)
+    {
+        // The mask identifies a set of registers that will be used during
+        // codegen. Mark these as modified here, so when we do final frame
+        // layout, we'll know about all these registers. This is especially
+        // important if mask contains callee-saved registers, which affect the
+        // frame size since we need to save/restore them. In the case where we
+        // have a copyBlk with GC pointers, can need to call the
+        // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and
+        // RDI, if LSRA doesn't assign RSI/RDI, they wouldn't get marked as
+        // modified until codegen, which is too late.
+        compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
+    }
+
     for (regNumber reg = REG_FIRST; mask; reg = REG_NEXT(reg), mask >>= 1)
     {
         if (mask & 1)
@@ -1137,16 +1151,6 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 
     if (killMask != RBM_NONE)
     {
-        // The killMask identifies a set of registers that will be used during codegen.
-        // Mark these as modified here, so when we do final frame layout, we'll know about
-        // all these registers. This is especially important if killMask contains
-        // callee-saved registers, which affect the frame size since we need to save/restore them.
-        // In the case where we have a copyBlk with GC pointers, can need to call the
-        // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and RDI, if
-        // LSRA doesn't assign RSI/RDI, they wouldn't get marked as modified until codegen,
-        // which is too late.
-        compiler->codeGen->regSet.rsSetRegsModified(killMask DEBUGARG(true));
-
         addRefsForPhysRegMask(killMask, currentLoc, RefTypeKill, true);
 
         // TODO-CQ: It appears to be valuable for both fp and int registers to avoid killing the callee
@@ -2356,7 +2360,15 @@ void LinearScan::buildIntervals()
         // into the scratch register, so it will be killed here.
         if (compiler->compShouldPoisonFrame() && compiler->fgFirstBBisScratch() && block == compiler->fgFirstBB)
         {
-            addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);
+            regMaskTP killed;
+#if defined(TARGET_XARCH)
+            // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
+            killed = RBM_EDI | RBM_ECX | RBM_EAX;
+#else
+            // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
+            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
+#endif
+            addRefsForPhysRegMask(killed, currentLoc + 1, RefTypeKill, true);
             currentLoc += 2;
         }
 
@@ -3021,10 +3033,22 @@ int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
         BuildUse(addrMode->Base(), candidates);
         srcCount++;
     }
-    if ((addrMode->Index() != nullptr) && !addrMode->Index()->isContained())
+    if (addrMode->Index() != nullptr)
     {
-        BuildUse(addrMode->Index(), candidates);
-        srcCount++;
+        if (!addrMode->Index()->isContained())
+        {
+            BuildUse(addrMode->Index(), candidates);
+            srcCount++;
+        }
+#ifdef TARGET_ARM64
+        else if (addrMode->Index()->OperIs(GT_BFIZ))
+        {
+            GenTreeCast* cast = addrMode->Index()->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+            BuildUse(cast->CastOp(), candidates);
+            srcCount++;
+        }
+#endif
     }
     return srcCount;
 }
@@ -3071,6 +3095,18 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return 1;
     }
 #endif // FEATURE_HW_INTRINSICS
+#ifdef TARGET_ARM64
+    if (node->OperIs(GT_MUL))
+    {
+        // Can be contained for MultiplyAdd on arm64
+        return BuildBinaryUses(node->AsOp(), candidates);
+    }
+    if (node->OperIs(GT_NEG))
+    {
+        // Can be contained for MultiplyAdd on arm64
+        return BuildOperandUses(node->gtGetOp1(), candidates);
+    }
+#endif
 
     return 0;
 }
@@ -3267,7 +3303,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         defCandidates = allRegs(type);
     }
 #else
-    defCandidates = allRegs(type);
+    defCandidates  = allRegs(type);
 #endif // TARGET_X86
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
