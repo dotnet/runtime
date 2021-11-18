@@ -318,16 +318,16 @@ namespace System.IO
             }
         }
 
-        public static void CreateParentsAndDirectory(string fullPath, ValueListBuilder<int> stackDir)
+        private static void CreateParentsAndDirectory(string fullPath, ValueListBuilder<int> stackDir)
         {
             stackDir.Append(fullPath.Length);
 
             int i = fullPath.Length - 1;
-            // Trim trailing separator.
             if (PathInternal.IsDirectorySeparator(fullPath[i]))
             {
-                i--;
+                i--; // Trim trailing separator.
             }
+
             do
             {
                 // Find the end of the parent directory.
@@ -337,13 +337,11 @@ namespace System.IO
                     i--;
                 }
 
-                // Try create it.
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, i);
                 int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
                 if (result == 0)
                 {
-                    // Created parent.
-                    break;
+                    break; // Created parent.
                 }
 
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
