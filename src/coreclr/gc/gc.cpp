@@ -23501,7 +23501,7 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 {
                     dprintf (3,("mark stack overflow for object %Ix ", (size_t)oo));
 #ifdef USE_REGIONS
-                    heap_segment* overflow_region = region_of (oo);
+                    heap_segment* overflow_region = get_region_info_for_address (oo);
                     overflow_region->flags |= heap_segment_flags_overflow;
                     gc_heap* overflow_heap = heap_of (oo);
                     overflow_heap->background_overflow_p = TRUE;
@@ -23626,7 +23626,7 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 {
                     dprintf (3,("mark stack overflow for object %Ix ", (size_t)oo));
 #ifdef USE_REGIONS
-                    heap_segment* overflow_region = region_of (oo);
+                    heap_segment* overflow_region = get_region_info_for_address (oo);
                     overflow_region->flags |= heap_segment_flags_overflow;
                     gc_heap* overflow_heap = heap_of (oo);
                     overflow_heap->background_overflow_p = TRUE;
