@@ -12,8 +12,8 @@ internal static partial class Interop
         internal const int AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION = 0x2;
         internal const int AUTHZ_VALID_RM_INIT_FLAGS = (AUTHZ_RM_FLAG_NO_AUDIT | AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION);
 
-        [DllImport(Interop.Libraries.Authz, SetLastError = true)]
-        internal static extern bool AuthzInitializeContextFromSid(
+        [GeneratedDllImport(Interop.Libraries.Authz, SetLastError = true)]
+        internal static partial bool AuthzInitializeContextFromSid(
             int Flags,
             IntPtr UserSid,
             IntPtr AuthzResourceManager,
@@ -22,7 +22,7 @@ internal static partial class Interop
             IntPtr DynamicGroupArgs,
             out IntPtr pAuthzClientContext);
 
-        [DllImport(Interop.Libraries.Authz)]
-        internal static extern bool AuthzFreeContext(IntPtr AuthzClientContext);
+        [GeneratedDllImport(Interop.Libraries.Authz)]
+        internal static partial bool AuthzFreeContext(IntPtr AuthzClientContext);
     }
 }

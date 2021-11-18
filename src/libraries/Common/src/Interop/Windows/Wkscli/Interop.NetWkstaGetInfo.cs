@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Wkscli
     {
-        [DllImport(Libraries.Wkscli, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern int NetWkstaGetInfo(string server, int level, ref IntPtr buffer);
+        [GeneratedDllImport(Libraries.Wkscli, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int NetWkstaGetInfo(string server, int level, ref IntPtr buffer);
     }
 }

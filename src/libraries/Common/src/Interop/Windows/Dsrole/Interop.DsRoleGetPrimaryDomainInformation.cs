@@ -16,10 +16,10 @@ internal static partial class Interop
             DsRolePrimaryDomainInfoBasicEx = 4
         }
 
-        [DllImport(Libraries.Dsrole, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern int DsRoleGetPrimaryDomainInformation(
+        [GeneratedDllImport(Libraries.Dsrole, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int DsRoleGetPrimaryDomainInformation(
             [MarshalAs(UnmanagedType.LPTStr)] string lpServer,
-            [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
+            DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
             out IntPtr Buffer);
     }
 }

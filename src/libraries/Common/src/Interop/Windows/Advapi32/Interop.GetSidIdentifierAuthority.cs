@@ -19,13 +19,13 @@ internal static partial class Interop
             public byte b6;
         }
 
-        [DllImport(Libraries.Advapi32)]
-        internal static extern IntPtr GetSidIdentifierAuthority(IntPtr sid);
+        [GeneratedDllImport(Libraries.Advapi32)]
+        internal static partial IntPtr GetSidIdentifierAuthority(IntPtr sid);
 
-        [DllImport(Interop.Libraries.Advapi32)]
-        internal static extern IntPtr GetSidSubAuthority(IntPtr sid, int index);
+        [GeneratedDllImport(Interop.Libraries.Advapi32)]
+        internal static partial IntPtr GetSidSubAuthority(IntPtr sid, int index);
 
-        [DllImport(Interop.Libraries.Advapi32)]
-        internal static extern IntPtr GetSidSubAuthorityCount(IntPtr sid);
+        [GeneratedDllImport(Interop.Libraries.Advapi32)]
+        internal static partial IntPtr GetSidSubAuthorityCount(IntPtr sid);
     }
 }

@@ -12,8 +12,8 @@ internal static partial class Interop
         internal const int CRED_MAX_USERNAME_LENGTH = 514;
         internal const int CRED_MAX_DOMAIN_TARGET_LENGTH = 338;
 
-        [DllImport(Libraries.Credui, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-        internal static extern unsafe int CredUIParseUserName(
+        [GeneratedDllImport(Libraries.Credui, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static unsafe partial int CredUIParseUserName(
             string pszUserName,
             char* pszUser,
             uint ulUserMaxChars,

@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netutils
     {
-        [DllImport(Libraries.Netutils)]
-        internal static extern int NetApiBufferFree(IntPtr buffer);
+        [GeneratedDllImport(Libraries.Netutils)]
+        internal static partial int NetApiBufferFree(IntPtr buffer);
     }
 }

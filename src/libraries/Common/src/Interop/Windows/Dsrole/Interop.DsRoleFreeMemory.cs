@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Dsrole
     {
-        [DllImport(Libraries.Dsrole)]
-        public static extern int DsRoleFreeMemory(IntPtr buffer);
+        [GeneratedDllImport(Libraries.Dsrole)]
+        public static partial int DsRoleFreeMemory(IntPtr buffer);
     }
 }

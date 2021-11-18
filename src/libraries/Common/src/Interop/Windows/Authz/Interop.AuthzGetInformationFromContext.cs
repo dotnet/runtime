@@ -8,8 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Authz
     {
-        [DllImport(Libraries.Authz, SetLastError = true)]
-        internal static extern bool AuthzGetInformationFromContext(
+        [GeneratedDllImport(Libraries.Authz, SetLastError = true)]
+        internal static partial bool AuthzGetInformationFromContext(
             IntPtr hAuthzClientContext,
             int InfoClass,
             int BufferSize,

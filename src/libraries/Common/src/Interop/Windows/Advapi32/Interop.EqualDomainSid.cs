@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32)]
-        public static extern bool EqualDomainSid(IntPtr pSid1, IntPtr pSid2, ref bool equal);
+        [GeneratedDllImport(Interop.Libraries.Advapi32)]
+        public static partial bool EqualDomainSid(IntPtr pSid1, IntPtr pSid2, ref bool equal);
     }
 }
