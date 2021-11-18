@@ -176,3 +176,11 @@ export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
     heapBytes.set(bytes);
     return memoryOffset;
 }
+
+export function mono_wasm_flush_console(): void {
+    for (const stream of Module.FS.streams) {
+        if (stream && stream.stream_ops && stream.stream_ops.flush) {
+            stream.stream_ops.flush(stream);
+        }
+    }
+}

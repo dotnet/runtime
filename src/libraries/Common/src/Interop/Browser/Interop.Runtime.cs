@@ -13,6 +13,10 @@ internal static partial class Interop
     internal static partial class Runtime
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern string FlushConsole();
+
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string InvokeJS(string str, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object CompileFunction(string str, out int exceptionalResult);

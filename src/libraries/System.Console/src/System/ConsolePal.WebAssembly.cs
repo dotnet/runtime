@@ -68,7 +68,9 @@ namespace System
             {
                 throw Error.GetFileNotOpen();
             }
+
             base.Flush();
+            Interop.Runtime.FlushConsole();
         }
     }
 

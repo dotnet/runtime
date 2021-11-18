@@ -52,6 +52,7 @@ const linked_functions = [
     "mono_wasm_web_socket_close",
     "mono_wasm_web_socket_abort",
     "mono_wasm_compile_function",
+    "mono_wasm_flush_console",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",

@@ -31,6 +31,7 @@ extern MonoObject* mono_wasm_web_socket_receive (int webSocket_js_handle, void* 
 extern MonoObject* mono_wasm_web_socket_close (int webSocket_js_handle, int code, MonoString * reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception);
 extern MonoString* mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception);
 extern MonoObject* mono_wasm_compile_function (MonoString *str, int *is_exception);
+extern void mono_wasm_flush_console ();
 
 void core_initialize_internals ()
 {
@@ -55,6 +56,7 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::WebSocketClose", mono_wasm_web_socket_close);
 	mono_add_internal_call ("Interop/Runtime::WebSocketAbort", mono_wasm_web_socket_abort);
 	mono_add_internal_call ("Interop/Runtime::CancelPromise", mono_wasm_cancel_promise);
+	mono_add_internal_call ("Interop/Runtime::FlushConsole", mono_wasm_flush_console);
 }
 
 // Int8Array 		| int8_t	| byte or SByte (signed byte)

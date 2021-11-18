@@ -250,12 +250,12 @@ function set_exit_code(exit_code, reason) {
         document.body.appendChild(tests_done_elem);
 
         // need to flush streams (stdout/stderr)
-        for (const stream of Module.FS.streams) {
-            if (stream && stream.stream_ops && stream.stream_ops.flush) {
-                stream.stream_ops.flush(stream);
-            }
-        }
-        console.log("Flushed stdout!");
+        // for (const stream of Module.FS.streams) {
+        //     if (stream && stream.stream_ops && stream.stream_ops.flush) {
+        //         stream.stream_ops.flush(stream);
+        //     }
+        // }
+        // console.log("Flushed stdout!");
 
         console.log('1 ' + messsage);
         setTimeout(() => {

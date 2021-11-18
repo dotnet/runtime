@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -71,44 +72,64 @@ namespace WasmTestRunner
                 if (printXml)
                 {
                     Console.WriteLine("Before testResults.xml");
-                    Console.WriteLine($"STARTRESULTXML");
                     var resultsXml = new XElement("assemblies");
                     resultsXml.Add(resultsXmlAssembly);
 
-                    int chunks = 0;
                     using (var ms = new System.IO.MemoryStream())
                     {
                         resultsXml.Save(ms);
 
                         ms.Position = 0;
 
+                        XElement recontructed = XElement.Load(ms);
+                        var chars = Encoding.UTF8.GetChars(ms.GetBuffer());
+
+                        ms.Position = 0;
+
+                        Console.WriteLine($"Buffer length {ms.Length}, char length {chars.Length}, Type of out {Console.Out.GetType().AssemblyQualifiedName}");
+
                         // Console.WriteLine("Before copy to output");
                         // Console.Out.Flush();
 
-                        using (var output = Console.OpenStandardOutput())
-                        {
-                            byte[] buffer = new byte[1024];
-                            int read;
-                            while ((read = ms.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                // Console.WriteLine($"Read {read}");
-                                output.Write(buffer, 0, read);
-                                // Console.WriteLine($"Written {read}");
-                                chunks++;
-                            }
 
-                            output.Flush();
-                        }
+                        Console.WriteLine($"STARTRESULTXML");
+
+                        //using (var output = Console.OpenStandardOutput())
+                        //    ms.CopyTo(output);
+
+                        Console.Out.WriteLine(chars);
+
+                        //using (var output = Console.OpenStandardOutput())
+                        //{
+                        //    byte[] buffer = new byte[1024];
+                        //    int read;
+                        //    while ((read = ms.Read(buffer, 0, buffer.Length)) > 0)
+                        //    {
+                        //        // Console.WriteLine($"Read {read}");
+                        //        output.Write(buffer, 0, read);
+                        //        // Console.WriteLine($"Written {read}");
+                        //        chunks++;
+                        //    }
+
+                        //    // output.Flush();
+                        //}
+                        Console.WriteLine($"ENDRESULTXML");
 
                         // Console.WriteLine($"After copy to output (in {chunks} chunks)");
-                        // Console.Out.Flush();
+                        Console.Out.Flush();
                     }
 
                     // resultsXml.Save(Console.Out);
-                    Console.WriteLine();
-                    Console.WriteLine($"ENDRESULTXML");
-                    Console.WriteLine($"After testResults.xml (in {chunks} chunks)");
+                    Console.Write($"After testResults.xml");
                     Console.Out.Flush();
+
+                    var field = Console.Out.GetType().GetField("_out", BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (field != null)
+                    {
+                        var streamWriter = (StreamWriter?)field.GetValue(Console.Out);
+                        Console.WriteLine($"StreamWriter stream type {streamWriter!.BaseStream.GetType().AssemblyQualifiedName}");
+                        streamWriter!.Flush();
+                    }
                 }
 
                 var failed = resultsSink.ExecutionSummary.Failed > 0 || resultsSink.ExecutionSummary.Errors > 0;

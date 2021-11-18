@@ -49,7 +49,7 @@ import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
 } from "./method-calls";
-import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
+import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap, mono_wasm_flush_console } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from "./event-listener";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
@@ -241,6 +241,8 @@ export const __linker_exports: any = {
     mono_wasm_web_socket_close,
     mono_wasm_web_socket_abort,
     mono_wasm_compile_function,
+
+    mono_wasm_flush_console,
 
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,

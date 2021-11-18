@@ -31,6 +31,7 @@ declare interface EmscriptenModule {
     HEAPU32: Uint32Array;
     HEAPF32: Float32Array;
     HEAPF64: Float64Array;
+    FS: any;
 
     // this should match emcc -s EXPORTED_FUNCTIONS
     _malloc(size: number): VoidPtr;
