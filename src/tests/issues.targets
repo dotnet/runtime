@@ -843,7 +843,10 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
-        <ExcludeList Include = "$(XUnitTestBinBase/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
+        <ExcludeList Include = "$(XUnitTestBinBase/JIT/HardwareIntrinsics/X86/X86Base/Pause_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/61693</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase/JIT/HardwareIntrinsics/X86/X86Base/Pause_ro/**">
             <Issue>https://github.com/dotnet/runtime/issues/61693</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/reflection/GenericAttribute/**">
