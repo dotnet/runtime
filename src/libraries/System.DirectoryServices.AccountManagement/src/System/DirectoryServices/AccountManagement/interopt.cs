@@ -658,50 +658,11 @@ namespace System.DirectoryServices.AccountManagement
             public IntPtr domainSid = IntPtr.Zero;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class LSA_UNICODE_STRING_Managed
-        {
-            public ushort length;
-            public ushort maximumLength;
-            public string buffer;
-        }
-
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenThreadToken", CharSet = CharSet.Unicode)]
-        public static extern bool OpenThreadToken(
-                                        IntPtr threadHandle,
-                                        int desiredAccess,
-                                        bool openAsSelf,
-                                        ref IntPtr tokenHandle
-                                        );
-
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenProcessToken", CharSet = CharSet.Unicode)]
-        public static extern bool OpenProcessToken(
-                                        IntPtr processHandle,
-                                        int desiredAccess,
-                                        ref IntPtr tokenHandle
-                                        );
-
-        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode)]
-        public static extern uint LsaOpenPolicy(
-                                        IntPtr lsaUnicodeString,
-                                        IntPtr lsaObjectAttributes,
-                                        int desiredAccess,
-                                        ref IntPtr policyHandle);
-
         [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaQueryInformationPolicy", CharSet = CharSet.Unicode)]
         public static extern uint LsaQueryInformationPolicy(
                                         IntPtr policyHandle,
                                         int policyInformationClass,
                                         ref IntPtr buffer
-                                        );
-
-        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaLookupSids", CharSet = CharSet.Unicode)]
-        public static extern uint LsaLookupSids(
-                                        IntPtr policyHandle,
-                                        int count,
-                                        IntPtr[] sids,
-                                        out IntPtr referencedDomains,
-                                        out IntPtr names
                                         );
 
         //

@@ -1,15 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Collections.Generic;
-using System.Net;
 using System.Security.Principal;
-using System.Security;
+
+using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -340,7 +338,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static IntPtr GetCurrentUserSid()
         {
-            IntPtr pTokenHandle = IntPtr.Zero;
+            SafeTokenHandle tokenHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
 
             try
@@ -351,22 +349,22 @@ namespace System.DirectoryServices.AccountManagement
                 int error = 0;
 
                 // Get the current thread's token
-                if (!UnsafeNativeMethods.OpenThreadToken(
+                if (!Interop.Advapi32.OpenThreadToken(
                                 Interop.Kernel32.GetCurrentThread(),
-                                0x8, // TOKEN_QUERY
+                                TokenAccessLevels.Query,
                                 true,
-                                ref pTokenHandle
+                                out tokenHandle
                                 ))
                 {
                     if ((error = Marshal.GetLastWin32Error()) == 1008) // ERROR_NO_TOKEN
                     {
-                        Debug.Assert(pTokenHandle == IntPtr.Zero);
+                        Debug.Assert(tokenHandle.IsInvalid);
 
                         // Current thread doesn't have a token, try the process
-                        if (!UnsafeNativeMethods.OpenProcessToken(
+                        if (!Interop.Advapi32.OpenProcessToken(
                                         Interop.Kernel32.GetCurrentProcess(),
-                                        0x8, // TOKEN_QUERY
-                                        ref pTokenHandle
+                                        (int)TokenAccessLevels.Query,
+                                        out tokenHandle
                                         ))
                         {
                             int lastError = Marshal.GetLastWin32Error();
@@ -383,15 +381,15 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                Debug.Assert(pTokenHandle != IntPtr.Zero);
+                Debug.Assert(!tokenHandle.IsInvalid);
 
                 uint neededBufferSize = 0;
 
                 // Retrieve the user info from the current thread's token
                 // First, determine how big a buffer we need.
                 bool success = Interop.Advapi32.GetTokenInformation(
-                                        pTokenHandle,
-                                        1,   // TokenUser
+                                        tokenHandle.DangerousGetHandle(),
+                                        (uint)Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenUser,
                                         IntPtr.Zero,
                                         0,
                                         out neededBufferSize);
@@ -411,8 +409,8 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Load the user info into the buffer
                 success = Interop.Advapi32.GetTokenInformation(
-                                        pTokenHandle,
-                                        1,   // TokenUser
+                                        tokenHandle.DangerousGetHandle(),
+                                        (uint)Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenUser,
                                         pBuffer,
                                         neededBufferSize,
                                         out neededBufferSize);
@@ -453,8 +451,8 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (pTokenHandle != IntPtr.Zero)
-                    Interop.Kernel32.CloseHandle(pTokenHandle);
+                if (tokenHandle != null)
+                    tokenHandle.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -464,22 +462,18 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static IntPtr GetMachineDomainSid()
         {
-            IntPtr pPolicyHandle = IntPtr.Zero;
+            SafeLsaPolicyHandle policyHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
-            IntPtr pOA = IntPtr.Zero;
 
             try
             {
                 Interop.OBJECT_ATTRIBUTES oa = default;
 
-                pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Interop.OBJECT_ATTRIBUTES)));
-                Marshal.StructureToPtr(oa, pOA, false);
-                uint err = UnsafeNativeMethods.LsaOpenPolicy(
-                                IntPtr.Zero,
-                                pOA,
-                                1,          // POLICY_VIEW_LOCAL_INFORMATION
-                                ref pPolicyHandle);
-
+                uint err = Interop.Advapi32.LsaOpenPolicy(
+                                SystemName: null,
+                                ref oa,
+                                (int)Interop.Advapi32.PolicyRights.POLICY_VIEW_LOCAL_INFORMATION,
+                                out policyHandle);
                 if (err != 0)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaOpenPolicy failed, gle=" + Interop.Advapi32.LsaNtStatusToWinError(err));
@@ -489,9 +483,9 @@ namespace System.DirectoryServices.AccountManagement
                                                                Interop.Advapi32.LsaNtStatusToWinError(err)));
                 }
 
-                Debug.Assert(pPolicyHandle != IntPtr.Zero);
+                Debug.Assert(!policyHandle.IsInvalid);
                 err = UnsafeNativeMethods.LsaQueryInformationPolicy(
-                                pPolicyHandle,
+                                policyHandle.DangerousGetHandle(),
                                 5,              // PolicyAccountDomainInformation
                                 ref pBuffer);
 
@@ -529,14 +523,11 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (pPolicyHandle != IntPtr.Zero)
-                    Interop.Advapi32.LsaClose(pPolicyHandle);
+                if (policyHandle != null)
+                    policyHandle.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Interop.Advapi32.LsaFreeMemory(pBuffer);
-
-                if (pOA != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pOA);
             }
         }
 
