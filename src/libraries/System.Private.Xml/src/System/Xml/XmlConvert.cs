@@ -1373,22 +1373,24 @@ namespace System.Xml
                 }
 
                 char ch = data[i];
-                if (XmlCharType.IsHighSurrogate(ch))
-                {
-                    if (i + 1 == len)
-                    {
-                        throw CreateException(SR.Xml_InvalidSurrogateMissingLowChar, invSurrogateExceptionType, 0, i + 1);
-                    }
-                    ch = data[i + 1];
-                    if (XmlCharType.IsLowSurrogate(ch))
-                    {
-                        i += 2;
-                        continue;
-                    }
 
+                if (!XmlCharType.IsHighSurrogate(ch))
+                {
+                    throw CreateInvalidCharException(data, i, invCharExceptionType);
+                }
+
+                if (i + 1 == len)
+                {
+                    throw CreateException(SR.Xml_InvalidSurrogateMissingLowChar, invSurrogateExceptionType, 0, i + 1);
+                }
+                ch = data[i + 1];
+
+                if (!XmlCharType.IsLowSurrogate(ch))
+                {
                     throw CreateInvalidSurrogatePairException(data[i + 1], data[i], invSurrogateExceptionType, 0, i + 1);
                 }
-                throw CreateInvalidCharException(data, i, invCharExceptionType);
+
+                i += 2;
             }
         }
 
@@ -1413,25 +1415,25 @@ namespace System.Xml
                 }
 
                 char ch = data[i];
-                if (XmlCharType.IsHighSurrogate(ch))
+
+                if (!XmlCharType.IsHighSurrogate(ch))
                 {
-                    if (i + 1 == endPos)
-                    {
-                        throw CreateException(SR.Xml_InvalidSurrogateMissingLowChar, exceptionType, 0, offset - i + 1);
-                    }
+                    throw CreateInvalidCharException(data, len, i, exceptionType);
+                }
 
-                    ch = data[i + 1];
+                if (i + 1 == endPos)
+                {
+                    throw CreateException(SR.Xml_InvalidSurrogateMissingLowChar, exceptionType, 0, offset - i + 1);
+                }
 
-                    if (XmlCharType.IsLowSurrogate(ch))
-                    {
-                        i += 2;
+                ch = data[i + 1];
 
-                        continue;
-                    }
-
+                if (!XmlCharType.IsLowSurrogate(ch))
+                {
                     throw CreateInvalidSurrogatePairException(data[i + 1], data[i], exceptionType, 0, offset - i + 1);
                 }
-                throw CreateInvalidCharException(data, len, i, exceptionType);
+
+                i += 2;
             }
         }
 
