@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -16,51 +17,146 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	internal class TestChecker
+	internal class TestChecker : CSharpSyntaxWalker
 	{
-		private readonly CompilationWithAnalyzers Compilation;
+		private readonly CSharpSyntaxTree _tree;
+		private readonly SemanticModel _semanticModel;
+		private readonly IReadOnlyList<Diagnostic> _diagnostics;
+		private readonly List<Diagnostic> _unmatched;
+		private readonly List<(AttributeSyntax Attribute, string Message)> _missing;
 
-		private readonly SemanticModel SemanticModel;
-
-		private readonly List<Diagnostic> DiagnosticMessages;
-
-		private readonly SyntaxNode MemberSyntax;
-
-		public TestChecker (MemberDeclarationSyntax memberSyntax, (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel) compilationResult)
+		public TestChecker (
+			CSharpSyntaxTree tree,
+			SemanticModel semanticModel,
+			ImmutableArray<Diagnostic> diagnostics)
 		{
-			Compilation = compilationResult.Compilation;
-			SemanticModel = compilationResult.SemanticModel;
-			DiagnosticMessages = Compilation.GetAnalyzerDiagnosticsAsync ().Result
-				.Where (d => {
-					// Filter down to diagnostics which originate from this member.
+			_tree = tree;
+			_semanticModel = semanticModel;
+			_diagnostics = diagnostics
+				// Filter down to diagnostics which originate from this tree
+				.Where (d => d.Location.SourceTree == tree).ToList ();
 
-					// Test data may include diagnostics originating from a testcase or testcase dependencies.
-					if (memberSyntax.SyntaxTree != d.Location.SourceTree)
-						return false;
+			// Filled in later
+			_unmatched = new List<Diagnostic> ();
+			_missing = new List<(AttributeSyntax Attribute, string Message)> ();
+		}
 
-					// Filter down to diagnostics which originate from this member
-					if (memberSyntax is ClassDeclarationSyntax classSyntax) {
-						if (SemanticModel.GetDeclaredSymbol (classSyntax) is not ITypeSymbol typeSymbol)
-							throw new NotImplementedException ("Unable to get type symbol for class declaration syntax.");
+		public void Check ()
+		{
+			_unmatched.Clear ();
+			_unmatched.AddRange (_diagnostics);
+			_missing.Clear ();
 
-						if (typeSymbol.Locations.Length != 1)
-							throw new NotImplementedException ("Type defined in multiple source locations.");
+			Visit (_tree.GetRoot ());
 
-						// For classes, only consider diagnostics which originate from the type (not its members).
-						// Approximate this by getting the location from the start of the type's syntax (which includes
-						// attributes declared on the type) to the opening brace.
-						var classSpan = TextSpan.FromBounds (
-							classSyntax.GetLocation ().SourceSpan.Start,
-							classSyntax.OpenBraceToken.GetLocation ().SourceSpan.Start
-						);
+			string message = "";
+			if (_missing.Any ()) {
+				var missingLines = string.Join (
+					Environment.NewLine,
+					_missing.Select (md => $"({md.Attribute.GetLocation ().GetLineSpan ()}) {md.Message}"));
+				message += $@"Expected warnings were not generated:{Environment.NewLine}{missingLines}{Environment.NewLine}";
+			}
+			if (_unmatched.Any ()) {
 
-						return d.Location.SourceSpan.IntersectsWith (classSpan);
+				message += $"Unexpected warnings were generated:{Environment.NewLine}{string.Join (Environment.NewLine, _unmatched)}";
+			}
+
+			if (message.Length > 0) {
+				Assert.True (false, message);
+			}
+		}
+
+		public override void VisitClassDeclaration (ClassDeclarationSyntax node)
+		{
+			base.VisitClassDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitInterfaceDeclaration (InterfaceDeclarationSyntax node)
+		{
+			base.VisitInterfaceDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitMethodDeclaration (MethodDeclarationSyntax node)
+		{
+			base.VisitMethodDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitPropertyDeclaration (PropertyDeclarationSyntax node)
+		{
+			base.VisitPropertyDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitFieldDeclaration (FieldDeclarationSyntax node)
+		{
+			base.VisitFieldDeclaration (node);
+			CheckMember (node);
+		}
+
+		private void CheckMember (MemberDeclarationSyntax node)
+		{
+			ValidateDiagnostics (node, node.AttributeLists);
+		}
+
+		public override void VisitLocalFunctionStatement (LocalFunctionStatementSyntax node)
+		{
+			base.VisitLocalFunctionStatement (node);
+			ValidateDiagnostics (node, node.AttributeLists);
+		}
+
+		public override void VisitAccessorDeclaration (AccessorDeclarationSyntax node)
+		{
+			base.VisitAccessorDeclaration (node);
+			ValidateDiagnostics (node, node.AttributeLists);
+		}
+
+		private void ValidateDiagnostics (CSharpSyntaxNode memberSyntax, SyntaxList<AttributeListSyntax> attrLists)
+		{
+			var memberDiagnostics = _unmatched.Where (d => {
+				// Filter down to diagnostics which originate from this member
+				if (memberSyntax is ClassDeclarationSyntax classSyntax) {
+					if (_semanticModel.GetDeclaredSymbol (classSyntax) is not ITypeSymbol typeSymbol)
+						throw new NotImplementedException ("Unable to get type symbol for class declaration syntax.");
+
+					if (typeSymbol.Locations.Length != 1)
+						throw new NotImplementedException ("Type defined in multiple source locations.");
+
+					// For classes, only consider diagnostics which originate from the type (not its members).
+					// Approximate this by getting the location from the start of the type's syntax (which includes
+					// attributes declared on the type) to the opening brace.
+					var classSpan = TextSpan.FromBounds (
+						classSyntax.GetLocation ().SourceSpan.Start,
+						classSyntax.OpenBraceToken.GetLocation ().SourceSpan.Start
+					);
+
+					return d.Location.SourceSpan.IntersectsWith (classSpan);
+				}
+
+				return d.Location.SourceSpan.IntersectsWith (memberSyntax.Span);
+			}).ToList ();
+
+			foreach (var attrList in attrLists) {
+				foreach (var attribute in attrList.Attributes) {
+					if (attribute.Name.ToString () == "LogDoesNotContain")
+						ValidateLogDoesNotContainAttribute (attribute, memberDiagnostics);
+
+					if (!IsExpectedDiagnostic (attribute))
+						continue;
+
+					if (!TryValidateExpectedDiagnostic (attribute, memberDiagnostics, out int? matchIndexResult, out string? missingDiagnosticMessage)) {
+						_missing.Add ((attribute, missingDiagnosticMessage));
+						continue;
 					}
 
-					return d.Location.SourceSpan.IntersectsWith (memberSyntax.Span);
-				})
-				.ToList ();
-			MemberSyntax = memberSyntax;
+					int matchIndex = matchIndexResult.GetValueOrDefault ();
+					var diagnostic = memberDiagnostics[matchIndex];
+					memberDiagnostics.RemoveAt (matchIndex);
+					Assert.True (_unmatched.Remove (diagnostic));
+				}
+			}
 		}
 
 		bool IsExpectedDiagnostic (AttributeSyntax attribute)
@@ -118,38 +214,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 		}
 
-		public void ValidateAttributes (IEnumerable<AttributeSyntax> attributes)
-		{
-			var unmatchedDiagnostics = DiagnosticMessages.ToList ();
-
-			var missingDiagnostics = new List<(AttributeSyntax Attribute, string Message)> ();
-			foreach (var attribute in attributes) {
-				if (attribute.Name.ToString () == "LogDoesNotContain")
-					ValidateLogDoesNotContainAttribute (attribute, DiagnosticMessages);
-
-				if (!IsExpectedDiagnostic (attribute))
-					continue;
-
-				if (!TryValidateExpectedDiagnostic (attribute, unmatchedDiagnostics, out int? matchIndex, out string? missingDiagnosticMessage)) {
-					missingDiagnostics.Add ((attribute, missingDiagnosticMessage));
-					continue;
-				}
-
-				unmatchedDiagnostics.RemoveAt (matchIndex.Value);
-			}
-
-			var missingDiagnosticsMessage = missingDiagnostics.Any ()
-				? $"Missing diagnostics:{Environment.NewLine}{string.Join (Environment.NewLine, missingDiagnostics.Select (md => md.Message))}"
-				: String.Empty;
-
-			var unmatchedDiagnosticsMessage = unmatchedDiagnostics.Any ()
-				? $"Found unmatched diagnostics:{Environment.NewLine}{string.Join (Environment.NewLine, unmatchedDiagnostics)}"
-				: String.Empty;
-
-			Assert.True (!missingDiagnostics.Any (), $"{missingDiagnosticsMessage}{Environment.NewLine}{unmatchedDiagnosticsMessage}");
-			Assert.True (!unmatchedDiagnostics.Any (), unmatchedDiagnosticsMessage);
-		}
-
 		private bool TryValidateExpectedWarningAttribute (AttributeSyntax attribute, List<Diagnostic> diagnostics, out int? matchIndex, out string? missingDiagnosticMessage)
 		{
 			missingDiagnosticMessage = null;
@@ -162,7 +226,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			List<string> expectedMessages = args
 				.Where (arg => arg.Key.StartsWith ("#") && arg.Key != "#0")
-				.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, SemanticModel))
+				.Select (arg => LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel))
 				.ToList ();
 
 			for (int i = 0; i < diagnostics.Count; i++) {
@@ -218,15 +282,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 
-			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{(string.Join (Environment.NewLine, DiagnosticMessages))}";
+			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{(string.Join (Environment.NewLine, _diagnostics))}";
 			return false;
 		}
 
-		private void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, List<Diagnostic> diagnosticMessages)
+		private void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
 		{
 			var arg = Assert.Single (LinkerTestBase.GetAttributeArguments (attribute));
 			var text = LinkerTestBase.GetStringFromExpression (arg.Value);
-			foreach (var diagnostic in DiagnosticMessages)
+			foreach (var diagnostic in _diagnostics)
 				Assert.DoesNotContain (text, diagnostic.GetMessage ());
 		}
 
@@ -237,18 +301,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var args = LinkerTestBase.GetAttributeArguments (attribute);
 
 			MemberDeclarationSyntax sourceMember = attribute.Ancestors ().OfType<MemberDeclarationSyntax> ().First ();
-			if (SemanticModel.GetDeclaredSymbol (sourceMember) is not ISymbol memberSymbol)
+			if (_semanticModel.GetDeclaredSymbol (sourceMember) is not ISymbol memberSymbol)
 				return false;
 
 			string sourceMemberName = memberSymbol!.GetDisplayName ();
-			string expectedReflectionMemberMethodType = LinkerTestBase.GetStringFromExpression (args["#0"], SemanticModel);
-			string expectedReflectionMemberMethodName = LinkerTestBase.GetStringFromExpression (args["#1"], SemanticModel);
+			string expectedReflectionMemberMethodType = LinkerTestBase.GetStringFromExpression (args["#0"], _semanticModel);
+			string expectedReflectionMemberMethodName = LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel);
 
 			var reflectionMethodParameters = new List<string> ();
 			if (args.TryGetValue ("#2", out var reflectionMethodParametersExpr) || args.TryGetValue ("reflectionMethodParameters", out reflectionMethodParametersExpr)) {
 				if (reflectionMethodParametersExpr is ArrayCreationExpressionSyntax arrayReflectionMethodParametersExpr) {
 					foreach (var rmp in arrayReflectionMethodParametersExpr.Initializer!.Expressions)
-						reflectionMethodParameters.Add (LinkerTestBase.GetStringFromExpression (rmp, SemanticModel));
+						reflectionMethodParameters.Add (LinkerTestBase.GetStringFromExpression (rmp, _semanticModel));
 				}
 			}
 
@@ -256,7 +320,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			if (args.TryGetValue ("#3", out var messageExpr) || args.TryGetValue ("message", out messageExpr)) {
 				if (messageExpr is ArrayCreationExpressionSyntax arrayMessageExpr) {
 					foreach (var m in arrayMessageExpr.Initializer!.Expressions)
-						expectedStringsInMessage.Add (LinkerTestBase.GetStringFromExpression (m, SemanticModel));
+						expectedStringsInMessage.Add (LinkerTestBase.GetStringFromExpression (m, _semanticModel));
 				}
 			}
 
