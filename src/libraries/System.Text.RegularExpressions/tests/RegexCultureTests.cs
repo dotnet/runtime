@@ -216,6 +216,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
         [MemberData(nameof(TurkishCulture_MatchesWordChar_MemberData))]
         public async Task TurkishCulture_MatchesWordChar(RegexEngine engine, string input, RegexOptions options, string expectedResult)
         {
