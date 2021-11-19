@@ -6794,7 +6794,6 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     {
         LowerStoreIndir(ind);
 
-        // Moved from lowerxarch.cpp. Issue: #61620
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
         {
             // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
