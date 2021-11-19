@@ -96,6 +96,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         public void ProcessPath_MatchesExpectedValue()
         {
             string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
