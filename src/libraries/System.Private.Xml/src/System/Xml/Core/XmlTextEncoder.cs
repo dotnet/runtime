@@ -487,7 +487,7 @@ namespace System.Xml
             }
 
             Span<char> span = stackalloc char[12];
-            int charsWritten = CharWriteToSpan(span, ch);
+            int charsWritten = WriteCharToSpan(span, ch);
             ReadOnlySpan<char> ros = span[..charsWritten];
 
             if (_cacheAttrValue)
@@ -540,11 +540,11 @@ namespace System.Xml
         private void WriteCharEntityImpl(char ch)
         {
             Span<char> span = stackalloc char[12];
-            int charsWritten = CharWriteToSpan(span, ch);
+            int charsWritten = WriteCharToSpan(span, ch);
             _textWriter.Write(span[..charsWritten]);
         }
 
-        private static int CharWriteToSpan(Span<char> destination, char ch)
+        private static int WriteCharToSpan(Span<char> destination, char ch)
         {
             Debug.Assert(destination.Length >= 12);
             destination[0] = '&';
