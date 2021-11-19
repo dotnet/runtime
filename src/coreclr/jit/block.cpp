@@ -774,7 +774,7 @@ bool BasicBlock::CloneBlockState(
 
     for (Statement* const fromStmt : from->Statements())
     {
-        auto newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
+        GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
         if (!newExpr)
         {
             // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.
@@ -782,7 +782,7 @@ bool BasicBlock::CloneBlockState(
             // return `false` to the caller to indicate that cloning was unsuccessful.
             return false;
         }
-        compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr));
+        compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }
     return true;
 }
