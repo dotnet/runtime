@@ -58,4 +58,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldc_r8.exe{}
+.assembly ldc_r8{}

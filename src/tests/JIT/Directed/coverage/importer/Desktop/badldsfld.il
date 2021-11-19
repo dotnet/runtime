@@ -2,21 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .assembly badldslfd { }
-.class Test extends [mscorlib]System.Object
+.class Test_badldsfld extends [mscorlib]System.Object
 {
 .field int32 i
 .method static int32 f()
 {
-ldsfld int32 Test::i
+ldsfld int32 Test_badldsfld::i
 ret
 }
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .try
 {
-call int32 Test::f()
+call int32 Test_badldsfld::f()
 leave.s FAIL
 }
 catch [mscorlib]System.InvalidProgramException

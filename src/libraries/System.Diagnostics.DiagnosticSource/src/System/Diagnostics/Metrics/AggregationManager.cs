@@ -302,7 +302,8 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return (!CheckTimeSeriesAllowed() || !CheckHistogramAllowed()) ?
+                        // checking currentHistograms first because avoiding unexpected increment of TimeSeries count.
+                        return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ?
                             null :
                             new ExponentialHistogramAggregator(s_defaultHistogramConfig);
                     }

@@ -174,7 +174,7 @@ namespace System.Xml.Serialization
 
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                 {
-                    string nameSpecified = mapping.Name + "Specified";
+                    string nameSpecified = $"{mapping.Name}Specified";
                     for (int j = 0; j < mappings.Length; j++)
                     {
                         if (mappings[j].Name == nameSpecified)
@@ -379,7 +379,7 @@ namespace System.Xml.Serialization
                 members[index] = member;
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                 {
-                    string nameSpecified = mapping.Name + "Specified";
+                    string nameSpecified = $"{mapping.Name}Specified";
                     for (int j = 0; j < mappings.Length; j++)
                     {
                         if (mappings[j].Name == nameSpecified)
@@ -627,40 +627,48 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static readonly ConcurrentDictionary<(Type, string), ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate> s_setMemberValueDelegateCache = new ConcurrentDictionary<(Type, string), ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>();
+        private static readonly ContextAwareTables<Hashtable> s_setMemberValueDelegateCache = new ContextAwareTables<Hashtable>();
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private static ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate GetSetMemberValueDelegate(object o, string memberName)
         {
             Debug.Assert(o != null, "Object o should not be null");
             Debug.Assert(!string.IsNullOrEmpty(memberName), "memberName must have a value");
-            (Type, string) typeMemberNameTuple = (o.GetType(), memberName);
-            if (!s_setMemberValueDelegateCache.TryGetValue(typeMemberNameTuple, out ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate? result))
+            Type type = o.GetType();
+            var delegateCacheForType = s_setMemberValueDelegateCache.GetOrCreateValue(type, () => new Hashtable());
+            var result = delegateCacheForType[memberName];
+            if (result == null)
             {
-                MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
-                Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
-                Type memberType;
-                if (memberInfo is PropertyInfo propInfo)
+                lock (delegateCacheForType)
                 {
-                    memberType = propInfo.PropertyType;
-                }
-                else if (memberInfo is FieldInfo fieldInfo)
-                {
-                    memberType = fieldInfo.FieldType;
-                }
-                else
-                {
-                    throw new InvalidOperationException(SR.XmlInternalError);
-                }
+                    if ((result = delegateCacheForType[memberName]) == null)
+                    {
+                        MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
+                        Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
+                        Type memberType;
+                        if (memberInfo is PropertyInfo propInfo)
+                        {
+                            memberType = propInfo.PropertyType;
+                        }
+                        else if (memberInfo is FieldInfo fieldInfo)
+                        {
+                            memberType = fieldInfo.FieldType;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(SR.XmlInternalError);
+                        }
 
-                MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
-                MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
-                var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
-                result = getSetMemberValueDelegateWithType(memberInfo);
-                s_setMemberValueDelegateCache.TryAdd(typeMemberNameTuple, result);
+                        MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
+                        MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
+                        var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
+                        result = getSetMemberValueDelegateWithType(memberInfo);
+                        delegateCacheForType[memberName] = result;
+                    }
+                }
             }
 
-            return result;
+            return (ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate)result;
         }
 
         private object? GetMemberValue(object o, MemberInfo memberInfo)
@@ -1231,7 +1239,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    string methodName = "To" + mapping.TypeDesc.FormatterName;
+                    string methodName = $"To{mapping.TypeDesc.FormatterName}";
                     MethodInfo? method = typeof(XmlSerializationReader).GetMethod(methodName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, new Type[] { typeof(string) });
                     if (method == null)
                     {
@@ -1733,8 +1741,8 @@ namespace System.Xml.Serialization
                         [RequiresUnreferencedCode("calls GetType on object")]
                         void Wrapper(object? _)
                         {
-                            string specifiedMemberName = member.Mapping.Name + "Specified";
-                            MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod("set_" + specifiedMemberName);
+                            string specifiedMemberName = $"{member.Mapping.Name}Specified";
+                            MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod($"set_{specifiedMemberName}");
                             if (specifiedMethodInfo != null)
                             {
                                 specifiedMethodInfo.Invoke(o, new object[] { true });

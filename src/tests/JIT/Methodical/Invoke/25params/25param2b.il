@@ -8,6 +8,7 @@
 }
 .assembly extern mscorlib {}
 .assembly '20param2b'{}
+.assembly extern xunit.core {}
 .class private sequential ansi sealed beforefieldinit VT
        extends [mscorlib]System.ValueType
 {
@@ -273,6 +274,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  25
     .locals init ([0] valuetype VT vt,

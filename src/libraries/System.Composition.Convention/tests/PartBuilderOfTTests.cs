@@ -468,7 +468,7 @@ namespace System.Composition.Convention.Tests
             return reply;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfied_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -484,7 +484,8 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(1, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedAttributeAlreadyApplied_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -500,7 +501,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(1, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedAttributeAppliedToBaseClass_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -516,7 +517,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(1, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedAttributeAppliedToDerivedClassExportBase_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -533,7 +534,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(0, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedTwice_ShouldSucceed()
         {
             var builder = new ConventionBuilder();

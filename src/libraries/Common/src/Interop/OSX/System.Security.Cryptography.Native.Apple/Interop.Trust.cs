@@ -11,23 +11,23 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_StoreEnumerateUserRoot(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_StoreEnumerateUserRoot(
             out SafeCFArrayHandle pCertsOut,
             out int pOSStatusOut);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_StoreEnumerateMachineRoot(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_StoreEnumerateMachineRoot(
             out SafeCFArrayHandle pCertsOut,
             out int pOSStatusOut);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_StoreEnumerateUserDisallowed(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_StoreEnumerateUserDisallowed(
             out SafeCFArrayHandle pCertsOut,
             out int pOSStatusOut);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_StoreEnumerateMachineDisallowed(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_StoreEnumerateMachineDisallowed(
             out SafeCFArrayHandle pCertsOut,
             out int pOSStatusOut);
 

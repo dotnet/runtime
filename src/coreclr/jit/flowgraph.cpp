@@ -278,7 +278,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             if (nextStmt != nullptr)
             {
                 // Is it possible for gtNextStmt to be NULL?
-                newStmt->SetILOffsetX(nextStmt->GetILOffsetX());
+                newStmt->SetDebugInfo(nextStmt->GetDebugInfo());
             }
         }
 
@@ -1362,7 +1362,7 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
  *  execute a call or not.
  */
 
-inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
+void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 {
     /* Bail if this is not a backward edge */
 
@@ -1436,7 +1436,7 @@ void Compiler::fgLoopCallMark()
  *  Note the fact that the given block is a loop header.
  */
 
-inline void Compiler::fgMarkLoopHead(BasicBlock* block)
+void Compiler::fgMarkLoopHead(BasicBlock* block)
 {
 #ifdef DEBUG
     if (verbose)
@@ -1683,12 +1683,9 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     // Create a block for the start of the try region, where the monitor enter call
     // will go.
-
-    assert(fgFirstBB->bbFallsThrough());
-
-    BasicBlock* tryBegBB  = fgNewBBafter(BBJ_NONE, fgFirstBB, false);
-    BasicBlock* tryNextBB = tryBegBB->bbNext;
-    BasicBlock* tryLastBB = fgLastBB;
+    BasicBlock* const tryBegBB  = fgSplitBlockAtEnd(fgFirstBB);
+    BasicBlock* const tryNextBB = tryBegBB->bbNext;
+    BasicBlock* const tryLastBB = fgLastBB;
 
     // If we have profile data the new block will inherit the next block's weight
     if (tryNextBB->hasProfileWeight())
@@ -1799,10 +1796,10 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
 
-    { // Scope the variables of the variable initialization
-
-        // Initialize the 'acquired' boolean.
-
+    // Create IR to initialize the 'acquired' boolean.
+    //
+    if (!opts.IsOSR())
+    {
         GenTree* zero     = gtNewZeroConNode(genActualType(typeMonAcquired));
         GenTree* varNode  = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
         GenTree* initNode = gtNewAssignNode(varNode, zero);
@@ -1825,7 +1822,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     unsigned lvaCopyThis = 0;
     if (!info.compIsStatic)
     {
-        lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+        lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
 
         GenTree* thisNode = gtNewLclvNode(info.compThisArg, TYP_REF);
@@ -1835,7 +1832,12 @@ void Compiler::fgAddSyncMethodEnterExit()
         fgNewStmtAtEnd(tryBegBB, initNode);
     }
 
-    fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, tryBegBB, true /*enter*/);
+    // For OSR, we do not need the enter tree as the monitor is acquired by the original method.
+    //
+    if (!opts.IsOSR())
+    {
+        fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, tryBegBB, true /*enter*/);
+    }
 
     // exceptional case
     fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
@@ -3061,16 +3063,17 @@ void Compiler::fgSimpleLowering()
     //    if there are any calls to PInvoke methods, there should be a call that we processed
     //    above. However, we still generate calls to PInvoke prolog helpers even if we have dead code
     //    eliminated all the calls.
+    // 4. We will be generating a stack cookie check. In this case we can call a helper to fail fast.
     //
     // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for
     // the outgoing arg space if the method makes any calls.
     if (outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
         if (compUsesThrowHelper || compIsProfilerHookNeeded() ||
-            (compMethodRequiresPInvokeFrame() && !opts.ShouldUsePInvokeHelpers()))
+            (compMethodRequiresPInvokeFrame() && !opts.ShouldUsePInvokeHelpers()) || getNeedsGSSecurityCookie())
         {
             outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
-            JITDUMP("Bumping outgoingArgSpaceSize to %u for throw helper or profile hook or PInvoke helper",
+            JITDUMP("Bumping outgoingArgSpaceSize to %u for possible helper or profile hook call",
                     outgoingArgSpaceSize);
         }
     }
@@ -4131,18 +4134,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpLocation, isLIR);
             fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpValue, isLIR);
             fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpComparand, isLIR);
-            break;
-
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            // Evaluate the trees left to right
-            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtIndex, isLIR);
-            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtArrLen, isLIR);
             break;
 
         case GT_STORE_DYN_BLK:

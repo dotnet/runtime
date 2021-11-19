@@ -3,34 +3,38 @@
 
 .assembly extern mscorlib { auto }
 .assembly GitHub_16041 { }
+.assembly extern xunit.core {}
 
 // The test originally hit a problem with "Extra flags on tree" on amd64,
 // because "fgMorphBlockOperand" did not set flags when morphing comma for addr exposed lcl_Var.
 // "StructY" is struct with exposed addr, it needs to be larger than 8 bytes for amd64.
 
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_GitHub_16041
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       10 (0xa)
     .maxstack  8
     .locals init (valuetype StructX V_0)
     IL_0000:  ldloc      V_0
-    IL_0004:  call       void Test::Test(valuetype StructX)
+    IL_0004:  call       void Test_GitHub_16041::Test_GitHub_16041(valuetype StructX)
     IL_0009:  ldc.i4 100
     IL_000a:  ret
   } // end of method Test::Main
 
-  .method private hidebysig static void  Test(valuetype StructX StructX) cil managed noinlining
+  .method private hidebysig static void  Test_GitHub_16041(valuetype StructX StructX) cil managed noinlining
   {
     // Code size       10 (0xa)
     .maxstack  8
     .locals (valuetype StructY V_0)
     IL_0000:  ldarga.s   StructX
-    IL_0002:  call       valuetype StructY Test::Convert(valuetype StructX*)
+    IL_0002:  call       valuetype StructY Test_GitHub_16041::Convert(valuetype StructX*)
     IL_0007:  stloc.s    V_0
     IL_0009:  ret
   } // end of method Test::Test

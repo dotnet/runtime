@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
         }
 
         [Theory]
-        [InlineData(128)]
+        [InlineData(0x800)]
         public async Task Diagnostic_InvalidRegexOptions(int options)
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@$"

@@ -9,6 +9,14 @@ namespace System.Drawing
     public sealed partial class Graphics
     {
         public System.Numerics.Matrix3x2 TransformElements { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.ObsoleteAttribute("Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.", DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        public object GetContextInfo() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void GetContextInfo(out PointF offset) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void GetContextInfo(out PointF offset, out Region? clip) { throw null; }
     }
 }
 namespace System.Drawing.Drawing2D

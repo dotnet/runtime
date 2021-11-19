@@ -23,7 +23,7 @@ public class C : I<String>
 
 
 
-public class Test
+public class Test_testExplicitOverride
 {
 	public static int Main()
 	{

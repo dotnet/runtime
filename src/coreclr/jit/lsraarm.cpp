@@ -368,6 +368,7 @@ int LinearScan::BuildNode(GenTree* tree)
             FALLTHROUGH;
 
         case GT_AND:
+        case GT_AND_NOT:
         case GT_OR:
         case GT_XOR:
         case GT_LSH:
@@ -517,8 +518,8 @@ int LinearScan::BuildNode(GenTree* tree)
             // Consumes arrLen & index - has no result
             srcCount = 2;
             assert(dstCount == 0);
-            BuildUse(tree->AsBoundsChk()->gtIndex);
-            BuildUse(tree->AsBoundsChk()->gtArrLen);
+            BuildUse(tree->AsBoundsChk()->GetIndex());
+            BuildUse(tree->AsBoundsChk()->GetArrayLength());
         }
         break;
 

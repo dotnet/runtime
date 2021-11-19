@@ -562,7 +562,7 @@ namespace System
                 if (!Interop.Kernel32.GetConsoleCursorInfo(OutputHandle, out cci))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
-                return cci.bVisible;
+                return cci.bVisible != Interop.BOOL.FALSE;
             }
             set
             {
@@ -570,7 +570,7 @@ namespace System
                 if (!Interop.Kernel32.GetConsoleCursorInfo(OutputHandle, out cci))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
-                cci.bVisible = value;
+                cci.bVisible = value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
                 if (!Interop.Kernel32.SetConsoleCursorInfo(OutputHandle, ref cci))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }

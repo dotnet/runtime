@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class Test
+public class Test_FastTailCallInlining
 {
    public static int Main()
    {

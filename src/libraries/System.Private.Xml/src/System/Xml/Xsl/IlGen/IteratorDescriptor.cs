@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.IlGen
         {
             Debug.Assert(loc.LocalType == itemStorageType ||
                          typeof(IList<>).MakeGenericType(itemStorageType).IsAssignableFrom(loc.LocalType),
-                         "Type " + itemStorageType + " does not match the local variable's type");
+                $"Type {itemStorageType} does not match the local variable's type");
 
             StorageDescriptor storage = default;
             storage._location = ItemLocation.Local;
@@ -125,7 +125,7 @@ namespace System.Xml.Xsl.IlGen
         {
             Debug.Assert(methGlobal.ReturnType == itemStorageType ||
                          typeof(IList<>).MakeGenericType(itemStorageType).IsAssignableFrom(methGlobal.ReturnType),
-                         "Type " + itemStorageType + " does not match the global method's return type");
+                $"Type {itemStorageType} does not match the global method's return type");
 
             StorageDescriptor storage = default;
             storage._location = ItemLocation.Global;

@@ -761,6 +761,8 @@ PEImage::PEImage():
     m_pLayoutLock=new SimpleRWLock(PREEMPTIVE,LOCK_TYPE_DEFAULT);
 }
 
+// Misnomer under the DAC, but has a lot of callers. The DAC can't create layouts, so in that
+// case this is a get.
 PTR_PEImageLayout PEImage::GetOrCreateLayout(DWORD imageLayoutMask)
 {
     WRAPPER_NO_CONTRACT;
@@ -771,19 +773,19 @@ PTR_PEImageLayout PEImage::GetOrCreateLayout(DWORD imageLayoutMask)
     // Note: we use reader-writer lock, but only writes are synchronized.
     PTR_PEImageLayout pRetVal = GetExistingLayoutInternal(imageLayoutMask);
 
-#ifndef DACCESS_COMPILE
     if (pRetVal == NULL)
     {
+#ifndef DACCESS_COMPILE
         GCX_PREEMP();
         SimpleWriteLockHolder lock(m_pLayoutLock);
         pRetVal = GetOrCreateLayoutInternal(imageLayoutMask);
-    }
 #else
-    // In DAC builds, we can't create any layouts - we must require that they already exist.
-    // We also don't take any AddRefs or locks in DAC builds - it's inspection-only.
-    _ASSERTE_MSG(false, "DACization error - caller expects PEImage layout to exist and it doesn't");
-    DacError(E_UNEXPECTED);
+        // In DAC builds, we can't create any layouts - we must require that they already exist.
+        // We also don't take any AddRefs or locks in DAC builds - it's inspection-only.
+        _ASSERTE_MSG(false, "DACization error - caller expects PEImage layout to exist and it doesn't");
+        DacError(E_UNEXPECTED);
 #endif
+    }
 
     return pRetVal;
 }

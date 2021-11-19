@@ -167,7 +167,7 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
 
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
             Interop.NetSecurityNative.Status minorStatus;
             Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.DeleteSecContext(out minorStatus, ref handle);

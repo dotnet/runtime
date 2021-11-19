@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
 
         public static bool s_ranConstructor = false;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineDefaultConstructor_GenericParentCreated_Works()
         {
             ModuleBuilder module = Helpers.DynamicModule();

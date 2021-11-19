@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly cgt.exe{}
+.assembly 'cgt'{}
 
 .class public _cgt {
 

@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkDir", SetLastError = true)]
-        internal static extern int MkDir(string path, int mode);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkDir", CharSet = CharSet.Ansi, SetLastError = true)]
+        internal static partial int MkDir(string path, int mode);
     }
 }

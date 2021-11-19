@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "../../AnyOS/entrypoints.h"
+#include <common/entrypoints.h>
 
 // Include System.Security.Cryptography.Native headers
 #include "openssl.h"
@@ -336,5 +336,5 @@ EXTERN_C const void* CryptoResolveDllImport(const char* name);
 
 EXTERN_C const void* CryptoResolveDllImport(const char* name)
 {
-    return ResolveDllImport(s_cryptoNative, lengthof(s_cryptoNative), name);
+    return minipal_resolve_dllimport(s_cryptoNative, lengthof(s_cryptoNative), name);
 }

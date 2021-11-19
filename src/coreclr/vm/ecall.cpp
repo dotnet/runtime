@@ -452,11 +452,6 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         "Read comment above this assert in vm/ecall.cpp\n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
-    CONSISTENCY_CHECK_MSGF(!ret->IsQCall(),
-        ("%s::%s is not registered using FCFuncElement macro in ecall.cpp",
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-
     PCODE pImplementation = (PCODE)ret->m_pImplementation;
 
     int iDynamicID = ret->DynamicID();
@@ -607,60 +602,6 @@ void ECall::Init()
     // we depend on in FC_INNER_RETURN macros and other places
     FC_NO_TAILCALL++;
 }
-
-LPVOID ECall::GetQCallImpl(MethodDesc * pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pMD->IsNDirect());
-    }
-    CONTRACTL_END;
-
-    DWORD id = ((NDirectMethodDesc *)pMD)->GetECallID();
-    if (id == 0)
-    {
-        id = ECall::GetIDForMethod(pMD);
-
-#ifdef _DEBUG
-        CONSISTENCY_CHECK_MSGF(id != 0,
-            ("%s::%s is not registered in ecall.cpp",
-            pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-#endif
-
-        _ASSERTE(id != 0);
-
-        // Cache the id
-        ((NDirectMethodDesc *)pMD)->SetECallID(id);
-    }
-
-    ECFunc * cur = FindECFuncForID(id);
-
-#ifdef _DEBUG
-    CONSISTENCY_CHECK_MSGF(cur != NULL,
-        ("%s::%s is not registered in ecall.cpp",
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-    CONSISTENCY_CHECK_MSGF(cur->IsQCall(),
-        ("%s::%s is not registered using QCFuncElement macro in ecall.cpp",
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-    DWORD dwAttrs = pMD->GetAttrs();
-    BOOL fPublicOrProtected = IsMdPublic(dwAttrs) || IsMdFamily(dwAttrs) || IsMdFamORAssem(dwAttrs);
-
-    // SuppressUnmanagedCodeSecurityAttribute on QCalls suppresses a full demand, but there's still a link demand
-    // for unmanaged code permission. All QCalls should be private or internal and wrapped in a managed method
-    // to suppress this link demand.
-    CONSISTENCY_CHECK_MSGF(!fPublicOrProtected,
-        ("%s::%s has to be private or internal.",
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-#endif
-
-    return cur->m_pImplementation;
-}
-
 #endif // !DACCESS_COMPILE
 
 MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoint /*=NULL*/)

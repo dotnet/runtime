@@ -11,6 +11,8 @@ using System.Security;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 
 namespace System.Xml.Serialization
 {
@@ -149,79 +151,82 @@ namespace System.Xml.Serialization
             contract = null;
             string? serializerName = null;
 
-            // check to see if we loading explicit pre-generated assembly
-            object[] attrs = type.GetCustomAttributes(typeof(System.Xml.Serialization.XmlSerializerAssemblyAttribute), false);
-            if (attrs.Length == 0)
+            using (AssemblyLoadContext.EnterContextualReflection(type.Assembly))
             {
-                // Guess serializer name: if parent assembly signed use strong name
-                AssemblyName name = type.Assembly.GetName();
-                serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
-                // use strong name
-                name.Name = serializerName;
-                name.CodeBase = null;
-                name.CultureInfo = CultureInfo.InvariantCulture;
+                // check to see if we loading explicit pre-generated assembly
+                object[] attrs = type.GetCustomAttributes(typeof(System.Xml.Serialization.XmlSerializerAssemblyAttribute), false);
+                if (attrs.Length == 0)
+                {
+                    // Guess serializer name: if parent assembly signed use strong name
+                    AssemblyName name = type.Assembly.GetName();
+                    serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
+                    // use strong name
+                    name.Name = serializerName;
+                    name.CodeBase = null;
+                    name.CultureInfo = CultureInfo.InvariantCulture;
 
-                try
-                {
-                    serializer = Assembly.Load(name);
-                }
-                catch (Exception e)
-                {
-                    if (e is OutOfMemoryException)
+                    try
                     {
-                        throw;
+                        serializer = Assembly.Load(name);
                     }
-                }
-
-                serializer ??= LoadAssemblyByPath(type, serializerName);
-
-                if (serializer == null)
-                {
-                    if (XmlSerializer.Mode == SerializationMode.PreGenOnly)
+                    catch (Exception e)
                     {
-                        throw new Exception(SR.Format(SR.FailLoadAssemblyUnderPregenMode, serializerName));
+                        if (e is OutOfMemoryException)
+                        {
+                            throw;
+                        }
                     }
 
-                    return null;
-                }
+                    serializer ??= LoadAssemblyByPath(type, serializerName);
 
-                if (!IsSerializerVersionMatch(serializer, type, defaultNamespace))
-                {
-                    XmlSerializationEventSource.Log.XmlSerializerExpired(serializerName, type.FullName!);
-                    return null;
-                }
-            }
-            else
-            {
-                System.Xml.Serialization.XmlSerializerAssemblyAttribute assemblyAttribute = (System.Xml.Serialization.XmlSerializerAssemblyAttribute)attrs[0];
-                if (assemblyAttribute.AssemblyName != null && assemblyAttribute.CodeBase != null)
-                    throw new InvalidOperationException(SR.Format(SR.XmlPregenInvalidXmlSerializerAssemblyAttribute, "AssemblyName", "CodeBase"));
+                    if (serializer == null)
+                    {
+                        if (XmlSerializer.Mode == SerializationMode.PreGenOnly)
+                        {
+                            throw new Exception(SR.Format(SR.FailLoadAssemblyUnderPregenMode, serializerName));
+                        }
 
-                // found XmlSerializerAssemblyAttribute attribute, it should have all needed information to load the pre-generated serializer
-                if (assemblyAttribute.AssemblyName != null)
-                {
-                    serializerName = assemblyAttribute.AssemblyName;
-                    serializer = Assembly.Load(serializerName); // LoadWithPartialName just does this in .Net Core; changing the obsolete call.
-                }
-                else if (assemblyAttribute.CodeBase != null && assemblyAttribute.CodeBase.Length > 0)
-                {
-                    serializerName = assemblyAttribute.CodeBase;
-                    serializer = Assembly.LoadFrom(serializerName);
+                        return null;
+                    }
+
+                    if (!IsSerializerVersionMatch(serializer, type, defaultNamespace))
+                    {
+                        XmlSerializationEventSource.Log.XmlSerializerExpired(serializerName, type.FullName!);
+                        return null;
+                    }
                 }
                 else
                 {
-                    serializerName = type.Assembly.FullName;
-                    serializer = type.Assembly;
+                    System.Xml.Serialization.XmlSerializerAssemblyAttribute assemblyAttribute = (System.Xml.Serialization.XmlSerializerAssemblyAttribute)attrs[0];
+                    if (assemblyAttribute.AssemblyName != null && assemblyAttribute.CodeBase != null)
+                        throw new InvalidOperationException(SR.Format(SR.XmlPregenInvalidXmlSerializerAssemblyAttribute, "AssemblyName", "CodeBase"));
+
+                    // found XmlSerializerAssemblyAttribute attribute, it should have all needed information to load the pre-generated serializer
+                    if (assemblyAttribute.AssemblyName != null)
+                    {
+                        serializerName = assemblyAttribute.AssemblyName;
+                        serializer = Assembly.Load(serializerName); // LoadWithPartialName just does this in .Net Core; changing the obsolete call.
+                    }
+                    else if (assemblyAttribute.CodeBase != null && assemblyAttribute.CodeBase.Length > 0)
+                    {
+                        serializerName = assemblyAttribute.CodeBase;
+                        serializer = Assembly.LoadFrom(serializerName);
+                    }
+                    else
+                    {
+                        serializerName = type.Assembly.FullName;
+                        serializer = type.Assembly;
+                    }
+                    if (serializer == null)
+                    {
+                        throw new FileNotFoundException(null, serializerName);
+                    }
                 }
-                if (serializer == null)
-                {
-                    throw new FileNotFoundException(null, serializerName);
-                }
+                Type contractType = GetTypeFromAssembly(serializer, "XmlSerializerContract");
+                contract = (XmlSerializerImplementation)Activator.CreateInstance(contractType)!;
+                if (contract.CanSerialize(type))
+                    return serializer;
             }
-            Type contractType = GetTypeFromAssembly(serializer, "XmlSerializerContract");
-            contract = (XmlSerializerImplementation)Activator.CreateInstance(contractType)!;
-            if (contract.CanSerialize(type))
-                return serializer;
 
             return null;
         }
@@ -239,17 +244,17 @@ namespace System.Xml.Serialization
             {
                 if (!string.IsNullOrEmpty(type.Assembly.Location))
                 {
-                    path = Path.Combine(Path.GetDirectoryName(type.Assembly.Location)!, assemblyName + ".dll");
+                    path = Path.Combine(Path.GetDirectoryName(type.Assembly.Location)!, $"{assemblyName}.dll");
                 }
 
                 if ((string.IsNullOrEmpty(path) || !File.Exists(path)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly()?.Location))
                 {
-                    path = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, assemblyName + ".dll");
+                    path = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, $"{assemblyName}.dll");
                 }
 
                 if ((string.IsNullOrEmpty(path) || !File.Exists(path)) && !string.IsNullOrEmpty(AppContext.BaseDirectory))
                 {
-                    path = Path.Combine(Path.GetDirectoryName(AppContext.BaseDirectory)!, assemblyName + ".dll");
+                    path = Path.Combine(Path.GetDirectoryName(AppContext.BaseDirectory)!, $"{assemblyName}.dll");
                 }
 
                 if (!string.IsNullOrEmpty(path))
@@ -392,11 +397,11 @@ namespace System.Xml.Serialization
                     }
                 }
 
-                writer.WriteLine("namespace " + GeneratedAssemblyNamespace + " {");
+                writer.WriteLine($"namespace {GeneratedAssemblyNamespace} {{");
                 writer.Indent++;
                 writer.WriteLine();
 
-                string writerClass = "XmlSerializationWriter" + suffix;
+                string writerClass = $"XmlSerializationWriter{suffix}";
                 writerClass = classes.AddUnique(writerClass, writerClass);
                 var writerCodeGen = new XmlSerializationWriterCodeGen(writer, scopes, "public", writerClass);
                 writerCodeGen.GenerateBegin();
@@ -410,7 +415,7 @@ namespace System.Xml.Serialization
                 writerCodeGen.GenerateEnd();
                 writer.WriteLine();
 
-                string readerClass = "XmlSerializationReader" + suffix;
+                string readerClass = $"XmlSerializationReader{suffix}";
                 readerClass = classes.AddUnique(readerClass, readerClass);
                 var readerCodeGen = new XmlSerializationReaderCodeGen(writer, scopes, "public", readerClass);
                 readerCodeGen.GenerateBegin();
@@ -449,81 +454,93 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateElement")]
-        internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[]? types, string? defaultNamespace)
+        internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[] types, string? defaultNamespace)
         {
+            var mainType = (types.Length > 0) ? types[0] : null;
+            Assembly? mainAssembly = mainType?.Assembly;
             var scopeTable = new Dictionary<TypeScope, XmlMapping>();
             foreach (XmlMapping mapping in xmlMappings)
                 scopeTable[mapping.Scope!] = mapping;
             TypeScope[] scopes = new TypeScope[scopeTable.Keys.Count];
             scopeTable.Keys.CopyTo(scopes, 0);
 
-            string assemblyName = "Microsoft.GeneratedCode";
-            AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
-            // Add AssemblyVersion attribute to match parent assembly version
-            if (types != null && types.Length > 0 && types[0] != null)
+            using (AssemblyLoadContext.EnterContextualReflection(mainAssembly))
             {
-                ConstructorInfo AssemblyVersionAttribute_ctor = typeof(AssemblyVersionAttribute).GetConstructor(
-                    new Type[] { typeof(string) }
-                    )!;
-                string assemblyVersion = types[0]!.Assembly.GetName().Version!.ToString();
-                assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(AssemblyVersionAttribute_ctor, new object[] { assemblyVersion }));
-            }
-            CodeIdentifiers classes = new CodeIdentifiers();
-            classes.AddUnique("XmlSerializationWriter", "XmlSerializationWriter");
-            classes.AddUnique("XmlSerializationReader", "XmlSerializationReader");
-            string? suffix = null;
-            if (types != null && types.Length == 1 && types[0] != null)
-            {
-                suffix = CodeIdentifier.MakeValid(types[0]!.Name);
-                if (types[0]!.IsArray)
+                // Before generating any IL, check each mapping and supported type to make sure
+                // they are compatible with the current ALC
+                for (int i = 0; i < types.Length; i++)
+                    VerifyLoadContext(types[i], mainAssembly);
+                foreach (var mapping in xmlMappings)
+                    VerifyLoadContext(mapping.Accessor.Mapping?.TypeDesc?.Type, mainAssembly);
+
+                string assemblyName = "Microsoft.GeneratedCode";
+                AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
+                // Add AssemblyVersion attribute to match parent assembly version
+                if (mainType != null)
                 {
-                    suffix += "Array";
+                    ConstructorInfo AssemblyVersionAttribute_ctor = typeof(AssemblyVersionAttribute).GetConstructor(
+                        new Type[] { typeof(string) }
+                        )!;
+                    string assemblyVersion = mainType.Assembly.GetName().Version!.ToString();
+                    assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(AssemblyVersionAttribute_ctor, new object[] { assemblyVersion }));
                 }
-            }
+                CodeIdentifiers classes = new CodeIdentifiers();
+                classes.AddUnique("XmlSerializationWriter", "XmlSerializationWriter");
+                classes.AddUnique("XmlSerializationReader", "XmlSerializationReader");
+                string? suffix = null;
+                if (mainType != null)
+                {
+                    suffix = CodeIdentifier.MakeValid(mainType.Name);
+                    if (mainType.IsArray)
+                    {
+                        suffix += "Array";
+                    }
+                }
 
-            ModuleBuilder moduleBuilder = CodeGenerator.CreateModuleBuilder(assemblyBuilder, assemblyName);
+                ModuleBuilder moduleBuilder = CodeGenerator.CreateModuleBuilder(assemblyBuilder, assemblyName);
 
-            string writerClass = "XmlSerializationWriter" + suffix;
+            string writerClass = $"XmlSerializationWriter{suffix}";
             writerClass = classes.AddUnique(writerClass, writerClass);
             XmlSerializationWriterILGen writerCodeGen = new XmlSerializationWriterILGen(scopes, "public", writerClass);
             writerCodeGen.ModuleBuilder = moduleBuilder;
 
-            writerCodeGen.GenerateBegin();
-            string[] writeMethodNames = new string[xmlMappings.Length];
+                writerCodeGen.GenerateBegin();
+                string[] writeMethodNames = new string[xmlMappings.Length];
 
-            for (int i = 0; i < xmlMappings.Length; i++)
-            {
-                writeMethodNames[i] = writerCodeGen.GenerateElement(xmlMappings[i])!;
-            }
-            Type writerType = writerCodeGen.GenerateEnd();
+                for (int i = 0; i < xmlMappings.Length; i++)
+                {
+                    writeMethodNames[i] = writerCodeGen.GenerateElement(xmlMappings[i])!;
+                }
+                Type writerType = writerCodeGen.GenerateEnd();
 
-            string readerClass = "XmlSerializationReader" + suffix;
+            string readerClass = $"XmlSerializationReader{suffix}";
             readerClass = classes.AddUnique(readerClass, readerClass);
             XmlSerializationReaderILGen readerCodeGen = new XmlSerializationReaderILGen(scopes, "public", readerClass);
 
-            readerCodeGen.ModuleBuilder = moduleBuilder;
-            readerCodeGen.CreatedTypes.Add(writerType.Name, writerType);
+                readerCodeGen.ModuleBuilder = moduleBuilder;
+                readerCodeGen.CreatedTypes.Add(writerType.Name, writerType);
 
-            readerCodeGen.GenerateBegin();
-            string[] readMethodNames = new string[xmlMappings.Length];
-            for (int i = 0; i < xmlMappings.Length; i++)
-            {
-                readMethodNames[i] = readerCodeGen.GenerateElement(xmlMappings[i])!;
-            }
-            readerCodeGen.GenerateEnd(readMethodNames, xmlMappings, types!);
-
-            string baseSerializer = readerCodeGen.GenerateBaseSerializer("XmlSerializer1", readerClass, writerClass, classes);
-            var serializers = new Dictionary<string, string>();
-            for (int i = 0; i < xmlMappings.Length; i++)
-            {
-                if (!serializers.ContainsKey(xmlMappings[i].Key!))
+                readerCodeGen.GenerateBegin();
+                string[] readMethodNames = new string[xmlMappings.Length];
+                for (int i = 0; i < xmlMappings.Length; i++)
                 {
-                    serializers[xmlMappings[i].Key!] = readerCodeGen.GenerateTypedSerializer(readMethodNames[i], writeMethodNames[i], xmlMappings[i], classes, baseSerializer, readerClass, writerClass);
+                    readMethodNames[i] = readerCodeGen.GenerateElement(xmlMappings[i])!;
                 }
-            }
-            readerCodeGen.GenerateSerializerContract("XmlSerializerContract", xmlMappings, types!, readerClass, readMethodNames, writerClass, writeMethodNames, serializers);
+                readerCodeGen.GenerateEnd(readMethodNames, xmlMappings, types!);
 
-            return writerType.Assembly;
+                string baseSerializer = readerCodeGen.GenerateBaseSerializer("XmlSerializer1", readerClass, writerClass, classes);
+                var serializers = new Dictionary<string, string>();
+                for (int i = 0; i < xmlMappings.Length; i++)
+                {
+                    if (!serializers.ContainsKey(xmlMappings[i].Key!))
+                    {
+                        serializers[xmlMappings[i].Key!] = readerCodeGen.GenerateTypedSerializer(readMethodNames[i], writeMethodNames[i], xmlMappings[i], classes, baseSerializer, readerClass, writerClass);
+                    }
+                }
+                readerCodeGen.GenerateSerializerContract("XmlSerializerContract", xmlMappings, types!, readerClass, readMethodNames, writerClass, writeMethodNames, serializers);
+
+                return writerType.Assembly;
+            }
         }
 
         private static MethodInfo GetMethodFromType(
@@ -534,14 +551,14 @@ namespace System.Xml.Serialization
                 return method;
 
             // Not support pregen.  Workaround SecurityCritical required for assembly.CodeBase api.
-            MissingMethodException missingMethod = new MissingMethodException(type.FullName + "::" + methodName);
+            MissingMethodException missingMethod = new MissingMethodException($"{type.FullName}::{methodName}");
             throw missingMethod;
         }
 
         [RequiresUnreferencedCode("calls GetType")]
         internal static Type GetTypeFromAssembly(Assembly assembly, string typeName)
         {
-            typeName = GeneratedAssemblyNamespace + "." + typeName;
+            typeName = $"{GeneratedAssemblyNamespace}.{typeName}";
             Type? type = assembly.GetType(typeName);
             if (type == null)
                 throw new InvalidOperationException(SR.Format(SR.XmlMissingType, typeName, assembly.FullName));
@@ -586,6 +603,23 @@ namespace System.Xml.Serialization
                 }
             }
             return encodingStyle;
+        }
+
+        internal static void VerifyLoadContext(Type? t, Assembly? assembly)
+        {
+            // The quick case, t is null or in the same assembly
+            if (t == null || assembly == null || t.Assembly == assembly)
+                return;
+
+            // No worries if the type is not collectible
+            var typeALC = AssemblyLoadContext.GetLoadContext(t.Assembly);
+            if (typeALC == null || !typeALC.IsCollectible)
+                return;
+
+            // Collectible types should be in the same collectible context
+            var baseALC = AssemblyLoadContext.GetLoadContext(assembly) ?? AssemblyLoadContext.CurrentContextualReflectionContext;
+            if (typeALC != baseALC)
+                throw new InvalidOperationException(SR.Format(SR.XmlTypeInBadLoadContext, t.FullName));
         }
 
         [RequiresUnreferencedCode("calls Contract")]
@@ -666,9 +700,9 @@ namespace System.Xml.Serialization
     internal sealed class TempAssemblyCacheKey
     {
         private readonly string? _ns;
-        private readonly object _type;
+        private readonly Type _type;
 
-        internal TempAssemblyCacheKey(string? ns, object type)
+        internal TempAssemblyCacheKey(string? ns, Type type)
         {
             _type = type;
             _ns = ns;
@@ -690,29 +724,52 @@ namespace System.Xml.Serialization
 
     internal sealed class TempAssemblyCache
     {
-        private Dictionary<TempAssemblyCacheKey, TempAssembly> _cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
+        private Dictionary<TempAssemblyCacheKey, TempAssembly> _fastCache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
+        private ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
 
-        internal TempAssembly? this[string? ns, object o]
+        internal TempAssembly? this[string? ns, Type t]
         {
             get
             {
                 TempAssembly? tempAssembly;
-                _cache.TryGetValue(new TempAssemblyCacheKey(ns, o), out tempAssembly);
+                TempAssemblyCacheKey key = new TempAssemblyCacheKey(ns, t);
+
+                if (_fastCache.TryGetValue(key, out tempAssembly))
+                    return tempAssembly;
+
+                if (_collectibleCaches.TryGetValue(t.Assembly, out var cCache))
+                    cCache.TryGetValue(key, out tempAssembly);
+
                 return tempAssembly;
             }
         }
 
-        internal void Add(string? ns, object o, TempAssembly assembly)
+        internal void Add(string? ns, Type t, TempAssembly assembly)
         {
-            TempAssemblyCacheKey key = new TempAssemblyCacheKey(ns, o);
             lock (this)
             {
-                TempAssembly? tempAssembly;
-                if (_cache.TryGetValue(key, out tempAssembly) && tempAssembly == assembly)
+                TempAssembly? tempAssembly = this[ns, t];
+                if (tempAssembly == assembly)
                     return;
-                Dictionary<TempAssemblyCacheKey, TempAssembly> _copy = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_cache); // clone
-                _copy[key] = assembly;
-                _cache = _copy;
+
+                AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
+                TempAssemblyCacheKey key = new TempAssemblyCacheKey(ns, t);
+                Dictionary<TempAssemblyCacheKey, TempAssembly>? cache;
+
+                if (alc != null && alc.IsCollectible)
+                {
+                    cache = _collectibleCaches.TryGetValue(t.Assembly, out var c)   // Clone or create
+                        ? new Dictionary<TempAssemblyCacheKey, TempAssembly>(c)
+                        : new Dictionary<TempAssemblyCacheKey, TempAssembly>();
+                    cache[key] = assembly;
+                    _collectibleCaches.AddOrUpdate(t.Assembly, cache);
+                }
+                else
+                {
+                    cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_fastCache); // Clone
+                    cache[key] = assembly;
+                    _fastCache = cache;
+                }
             }
         }
     }

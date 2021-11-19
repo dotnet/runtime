@@ -56,4 +56,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldloc_r8.exe{}
+.assembly ldloc_r8{}

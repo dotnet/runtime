@@ -2,6 +2,24 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.get_SignaturePadding</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.set_SignaturePadding(System.Security.Cryptography.RSASignaturePadding)</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType,System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.RSA,System.Security.Cryptography.RSASignaturePadding)</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.get_PrivateKey</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
     <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>

@@ -23,6 +23,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Depend
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.DependencyInjection", "..\Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj", "{788150B7-B822-4466-A1DC-C875449DE449}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj", "{77AA759E-5BF0-4C86-91EB-2A33263553EC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj", "{A5BA71C3-A03C-43F7-B48E-96C301E87691}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{C4F75024-EA9D-46C5-B2D9-CAE8FC5EFF38}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{E7035B72-0180-437E-A696-1F0CD8921279}"
@@ -113,6 +117,14 @@ Global
 		{788150B7-B822-4466-A1DC-C875449DE449}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{788150B7-B822-4466-A1DC-C875449DE449}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{788150B7-B822-4466-A1DC-C875449DE449}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77AA759E-5BF0-4C86-91EB-2A33263553EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77AA759E-5BF0-4C86-91EB-2A33263553EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77AA759E-5BF0-4C86-91EB-2A33263553EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77AA759E-5BF0-4C86-91EB-2A33263553EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5BA71C3-A03C-43F7-B48E-96C301E87691}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5BA71C3-A03C-43F7-B48E-96C301E87691}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5BA71C3-A03C-43F7-B48E-96C301E87691}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5BA71C3-A03C-43F7-B48E-96C301E87691}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C4F75024-EA9D-46C5-B2D9-CAE8FC5EFF38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C4F75024-EA9D-46C5-B2D9-CAE8FC5EFF38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4F75024-EA9D-46C5-B2D9-CAE8FC5EFF38}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -202,6 +214,8 @@ Global
 		{71755B81-EF5C-4C36-A278-60D69ECCC158} = {ED0ADAC4-705C-421A-A8D2-69CFFFCF734B}
 		{36176FF1-8C33-494D-A496-1D7E0DCFCD86} = {ED0ADAC4-705C-421A-A8D2-69CFFFCF734B}
 		{788150B7-B822-4466-A1DC-C875449DE449} = {ED0ADAC4-705C-421A-A8D2-69CFFFCF734B}
+		{77AA759E-5BF0-4C86-91EB-2A33263553EC} = {ED0ADAC4-705C-421A-A8D2-69CFFFCF734B}
+		{A5BA71C3-A03C-43F7-B48E-96C301E87691} = {ED0ADAC4-705C-421A-A8D2-69CFFFCF734B}
 		{E7035B72-0180-437E-A696-1F0CD8921279} = {ED0ADAC4-705C-421A-A8D2-69CFFFCF734B}
 		{B3829B05-AA4A-4A0D-B076-D0C3031C9D33} = {ED0ADAC4-705C-421A-A8D2-69CFFFCF734B}
 		{BBCC241D-0980-4735-8187-229D37ADC0E5} = {ED0ADAC4-705C-421A-A8D2-69CFFFCF734B}
