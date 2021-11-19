@@ -82,7 +82,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             string classNameToFind = "";
             string[] parts = varName.Split(".");
             var store = await proxy.LoadStore(sessionId, token);
-            var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId).Method.Info;
+            var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
             int typeId = -1;
             for (int i = 0; i < parts.Length; i++)
