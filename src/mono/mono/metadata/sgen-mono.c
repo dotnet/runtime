@@ -2224,7 +2224,7 @@ mono_gc_skip_thread_changing (gboolean skip)
 		 * object but fail to update the reference in the handle.
 		 */
 		HandleStack *stack = mono_thread_info_current ()->client_info.info.handle_stack;
-		g_assert (stack == NULL || mono_handle_stack_is_empty (stack));
+		//g_assert (stack == NULL || mono_handle_stack_is_empty (stack));
 	}
 }
 

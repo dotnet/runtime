@@ -703,7 +703,8 @@ mono_gc_finalize_notify (void)
 		return;
 
 #ifdef HOST_WASM
-	mono_threads_schedule_background_job (mono_runtime_do_background_work);
+	printf("Ignoring GC background job\n");
+	//mono_threads_schedule_background_job (mono_runtime_do_background_work);
 #else
 	mono_coop_sem_post (&finalizer_sem);
 #endif

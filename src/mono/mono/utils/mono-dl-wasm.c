@@ -12,7 +12,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
-#include <dlfcn.h>
+//#include <dlfcn.h>
 
 const char *
 mono_dl_get_so_prefix (void)
@@ -56,6 +56,7 @@ mono_dl_convert_flags (int mono_flags, int native_flags)
 	int lflags = native_flags;
 
 	// Specifying both will default to LOCAL
+	/*
 	if (mono_flags & MONO_DL_GLOBAL && !(mono_flags & MONO_DL_LOCAL))
 		lflags |= RTLD_GLOBAL;
 	else
@@ -65,6 +66,7 @@ mono_dl_convert_flags (int mono_flags, int native_flags)
 		lflags |= RTLD_LAZY;
 	else
 		lflags |= RTLD_NOW;
+		*/
 
 	return lflags;
 }

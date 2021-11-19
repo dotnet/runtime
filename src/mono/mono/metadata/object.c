@@ -3931,7 +3931,8 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	MonoMethodSignature *sig;
 
 	g_assert (method != NULL);
-
+	
+	printf("Before mono_thread_set_main\n");
 	mono_thread_set_main (mono_thread_current ());
 
 	main_args = g_new0 (char*, argc);

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) && 0
 
 #include "config.h"
 

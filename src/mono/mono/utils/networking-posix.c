@@ -174,6 +174,15 @@ fetch_protocol (const char *proto_name, int *cache, int *proto, int default_val)
 	return *proto;
 }
 
+#else
+
+static int
+fetch_protocol (const char *proto_name, int *cache, int *proto, int default_val)
+{
+	g_assert(0);
+	return 0;
+}
+
 #endif
 
 int

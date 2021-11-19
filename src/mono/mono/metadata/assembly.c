@@ -1740,6 +1740,7 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 MonoImage *
 mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
 {
+	printf("Looking for assembly in bundle: %s\n", filename);
 	/*
 	 * we do a very simple search for bundled assemblies: it's not a general
 	 * purpose assembly loading mechanism.

@@ -14,7 +14,7 @@
 #include <unistd.h>
 #endif
 
-#if defined(_POSIX_VERSION) 
+#if defined(_POSIX_VERSION) && !defined(HOST_WASM)
 
 #include <stdlib.h>
 #include <stdio.h>

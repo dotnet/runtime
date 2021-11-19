@@ -99,6 +99,8 @@ g_file_test (const gchar *filename, GFileTest test)
 	return FALSE;
 }
 
+char *mktemp (char *);
+
 gchar *
 g_mkdtemp (char *temp)
 {
