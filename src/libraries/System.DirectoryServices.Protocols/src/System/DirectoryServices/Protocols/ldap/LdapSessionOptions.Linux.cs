@@ -10,6 +10,7 @@ namespace System.DirectoryServices.Protocols
         private static void PALCertFreeCRLContext(IntPtr certPtr) { /* No op */ }
 
         private bool _secureSocketLayer;
+
         public bool SecureSocketLayer
         {
             get
