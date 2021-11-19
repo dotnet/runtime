@@ -14,7 +14,8 @@
   >
 
     <ItemGroup>
-      <ReferencePath Include="$(RepoRoot)\artifacts\bin\$(RuntimeFlavor)\$(TargetOS).$(TargetArchitecture).$(Configuration)\IL\System.Private.CoreLib.dll"/>
+      <ReferencePath Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(MonoArtifactsPath)\IL\System.Private.CoreLib.dll"/>
+      <ReferencePath Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(CoreCLRArtifactsPath)\IL\System.Private.CoreLib.dll"/>
     </ItemGroup>
   </Target>
 
