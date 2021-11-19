@@ -130,37 +130,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
             return;
         }
     }
-    else if (node->Data()->IsCnsFltOrDbl())
-    {
-        // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
-        GenTree*  data   = node->Data();
-        double    dblCns = data->AsDblCon()->gtDconVal;
-        ssize_t   intCns = 0;
-        var_types type   = TYP_UNKNOWN;
-
-        if (node->TypeIs(TYP_FLOAT))
-        {
-            float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
-            intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
-            type         = TYP_INT;
-        }
-#ifdef TARGET_AMD64
-        else
-        {
-            assert(node->TypeIs(TYP_DOUBLE));
-            intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
-            type   = TYP_LONG;
-        }
-#endif
-
-        if (type != TYP_UNKNOWN)
-        {
-            data->SetContained();
-            data->BashToConst(intCns, type);
-            node->ChangeType(type);
-        }
-    }
-
+    
     // Optimization: do not unnecessarily zero-extend the result of setcc.
     if (varTypeIsByte(node) && (node->Data()->OperIsCompare() || node->Data()->OperIs(GT_SETCC)))
     {
