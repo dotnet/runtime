@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
 
-            // Add calls provider.Load().
+            // builder.Add(source) calls provider.Load().
             var loadTask = Task.Run(() => builder.Add(source));
 
             await provider.LoadStartedTask;

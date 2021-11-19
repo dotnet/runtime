@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Configuration
         /// Gets the immediate descendant configuration sub-sections.
         /// </summary>
         /// <returns>The configuration sub-sections.</returns>
-        public IEnumerable<IConfigurationSection> GetChildren() => _root.GetChildrenImplementation(Path);
+        public IEnumerable<IConfigurationSection> GetChildren() => _root.GetChildrenImplementation(providersCopy: null, Path);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.

@@ -21,8 +21,9 @@ namespace Microsoft.Extensions.Configuration
         private readonly ConfigurationSources _sources;
         private readonly ConfigurationBuilderProperties _properties;
 
+        // _providerManager provides copy-on-write references. It waits until all readers unreference before disposing any providers.
+        private readonly ProviderManager _providerManager = new();
         private readonly List<IDisposable> _changeTokenRegistrations = new();
-        private List<IConfigurationProvider> _providers = new();
         private ConfigurationReloadToken _changeToken = new();
 
         /// <summary>
@@ -40,26 +41,42 @@ namespace Microsoft.Extensions.Configuration
         /// <inheritdoc/>
         public string? this[string key]
         {
-            get => ConfigurationRoot.GetConfiguration(_providers, key);
-            set => ConfigurationRoot.SetConfiguration(_providers, key, value);
+            get
+            {
+                using var refCounter = _providerManager.GetReference();
+                return ConfigurationRoot.GetConfiguration(refCounter.Providers, key);
+            }
+            set
+            {
+                using var refCounter = _providerManager.GetReference();
+                ConfigurationRoot.SetConfiguration(refCounter.Providers, key, value);
+            }
         }
 
         /// <inheritdoc/>
         public IConfigurationSection GetSection(string key) => new ConfigurationSection(this, key);
 
         /// <inheritdoc/>
-        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
+        public IEnumerable<IConfigurationSection> GetChildren()
+        {
+            using var refCounter = _providerManager.GetReference();
+            return this.GetChildrenImplementation(refCounter.Providers, path: null);
+        }
 
         IDictionary<string, object> IConfigurationBuilder.Properties => _properties;
 
         IList<IConfigurationSource> IConfigurationBuilder.Sources => _sources;
 
-        IEnumerable<IConfigurationProvider> IConfigurationRoot.Providers => _providers;
+        // We cannot track the duration of the reference to the providers if this property is used.
+        // If a configuration source is removed after this is accessed but before it's completely enumerated,
+        // this may allow access to a disposed provider.
+        IEnumerable<IConfigurationProvider> IConfigurationRoot.Providers => _providerManager.Providers;
 
         /// <inheritdoc/>
         public void Dispose()
         {
-            DisposeRegistrationsAndProviders();
+            DisposeRegistrations();
+            _providerManager.Dispose();
         }
 
         IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source)
@@ -74,9 +91,12 @@ namespace Microsoft.Extensions.Configuration
 
         void IConfigurationRoot.Reload()
         {
-            foreach (var provider in _providers)
+            using (var refCounter = _providerManager.GetReference())
             {
-                provider.Load();
+                foreach (var provider in refCounter.Providers)
+                {
+                    provider.Load();
+                }
             }
 
             RaiseChanged();
@@ -93,20 +113,17 @@ namespace Microsoft.Extensions.Configuration
         {
             var provider = source.Build(this);
 
-            var newProvidersList = new List<IConfigurationProvider>(_providers);
-            newProvidersList.Add(provider);
-
             provider.Load();
             _changeTokenRegistrations.Add(ChangeToken.OnChange(() => provider.GetReloadToken(), () => RaiseChanged()));
 
-            _providers = newProvidersList;
+            _providerManager.AddProvider(provider);
             RaiseChanged();
         }
 
         // Something other than Add was called on IConfigurationBuilder.Sources or IConfigurationBuilder.Properties has changed.
         private void ReloadSources()
         {
-            DisposeRegistrationsAndProviders();
+            DisposeRegistrations();
 
             _changeTokenRegistrations.Clear();
 
@@ -123,22 +140,16 @@ namespace Microsoft.Extensions.Configuration
                 _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
             }
 
-            _providers = newProvidersList;
+            _providerManager.ReplaceProviders(newProvidersList);
             RaiseChanged();
         }
 
-        private void DisposeRegistrationsAndProviders()
+        private void DisposeRegistrations()
         {
             // dispose change token registrations
             foreach (var registration in _changeTokenRegistrations)
             {
                 registration.Dispose();
-            }
-
-            // dispose providers
-            foreach (var provider in _providers)
-            {
-                (provider as IDisposable)?.Dispose();
             }
         }
 
@@ -220,6 +231,77 @@ namespace Microsoft.Extensions.Configuration
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
+            }
+        }
+
+        private class ProviderManager : IDisposable
+        {
+            private readonly object _replaceProvidersLock = new object();
+            private RefCountedProviders _refCountedProviders = new(new List<IConfigurationProvider>());
+
+            public IEnumerable<IConfigurationProvider> Providers => _refCountedProviders.Providers;
+
+            public RefCountedProviders GetReference()
+            {
+                // Lock to ensure oldRefCountedProviders.Dispose() in ReplaceProviders() doesn't decrement ref count to zero
+                // before calling _refCountedProviders.AddRef().
+                lock (_replaceProvidersLock)
+                {
+                    _refCountedProviders.AddRef();
+                    return _refCountedProviders;
+                }
+            }
+
+            // Providers should never be concurrently modified. Reading during modification is allowed.
+            public void ReplaceProviders(List<IConfigurationProvider> providers)
+            {
+                RefCountedProviders oldRefCountedProviders = _refCountedProviders;
+
+                lock (_replaceProvidersLock)
+                {
+                    _refCountedProviders = new RefCountedProviders(providers);
+                }
+
+                oldRefCountedProviders.Dispose();
+            }
+
+            public void AddProvider(IConfigurationProvider provider)
+            {
+                // Maintain existing references, but replace list with copy containing new item.
+                _refCountedProviders.Providers = new List<IConfigurationProvider>(_refCountedProviders.Providers)
+                {
+                    provider
+                };
+            }
+
+            public void Dispose() => _refCountedProviders.Dispose();
+        }
+
+        private class RefCountedProviders : IDisposable
+        {
+            private long _refCount = 1;
+
+            public RefCountedProviders(List<IConfigurationProvider> providers)
+            {
+                Providers = providers;
+            }
+
+            public List<IConfigurationProvider> Providers { get; set; }
+
+            public void AddRef()
+            {
+                Interlocked.Increment(ref _refCount);
+            }
+
+            public void Dispose()
+            {
+                if (Interlocked.Decrement(ref _refCount) == 0)
+                {
+                    foreach (var provider in Providers)
+                    {
+                        (provider as IDisposable)?.Dispose();
+                    }
+                }
             }
         }
 
