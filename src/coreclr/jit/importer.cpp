@@ -529,7 +529,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
 
 //------------------------------------------------------------------------
 // impAppendStmt: Append the given statement to the current block's tree list.
-//  
+//
 //
 // Arguments:
 //    stmt                   - The statement to add.
@@ -628,7 +628,8 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
     // offsets here instead of debug info, since we do not set the "is call"
     // bit in impCurStmtDI.
 
-    if (checkConsumedDebugInfo && (impLastStmt->GetDebugInfo().GetLocation().GetOffset() == impCurStmtDI.GetLocation().GetOffset()))
+    if (checkConsumedDebugInfo &&
+        (impLastStmt->GetDebugInfo().GetLocation().GetOffset() == impCurStmtDI.GetLocation().GetOffset()))
     {
         impCurStmtOffsSet(BAD_IL_OFFSET);
     }
@@ -719,7 +720,7 @@ inline void Compiler::impInsertStmtBefore(Statement* stmt, Statement* stmtBefore
 
 //------------------------------------------------------------------------
 // impAppendTree: Append the given expression tree to the current block's tree list.
-//  
+//
 //
 // Arguments:
 //    tree                   - The tree that will be the root of the newly created statement.

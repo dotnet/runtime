@@ -10645,17 +10645,16 @@ void CodeGen::genIPmappingGen()
         }
 
         // If these are literally the same mappings, then remove one.
-        if ((it->ipmdKind == prev->ipmdKind) && ((it->ipmdKind != IPmappingDscKind::Normal) || (it->ipmdLoc.GetOffset() == prev->ipmdLoc.GetOffset())))
+        if ((it->ipmdKind == prev->ipmdKind) &&
+            ((it->ipmdKind != IPmappingDscKind::Normal) || (it->ipmdLoc.GetOffset() == prev->ipmdLoc.GetOffset())))
         {
             // If these are normal mappings at the same offset then combine
             // location flags.
             if (it->ipmdKind == IPmappingDscKind::Normal)
             {
                 prev->ipmdLoc =
-                    ILLocation(
-                        prev->ipmdLoc.GetOffset(),
-                        prev->ipmdLoc.IsStackEmpty() | it->ipmdLoc.IsStackEmpty(),
-                        prev->ipmdLoc.IsCall() | it->ipmdLoc.IsCall());
+                    ILLocation(prev->ipmdLoc.GetOffset(), prev->ipmdLoc.IsStackEmpty() | it->ipmdLoc.IsStackEmpty(),
+                               prev->ipmdLoc.IsCall() | it->ipmdLoc.IsCall());
             }
 
             it = compiler->genIPmappings.erase(it);
