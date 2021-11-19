@@ -21967,4 +21967,3 @@ bool GenTree::IsInvariant() const
     GenTree* lclVarTree = nullptr;
     return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree);
 }
-

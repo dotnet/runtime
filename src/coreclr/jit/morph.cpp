@@ -18053,8 +18053,8 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
     }
 #endif
 
-    GenTree*   op1  = tree->AsOp()->gtOp1;
-    GenTree*   op2  = tree->AsOp()->gtOp2;
+    GenTree* op1 = tree->AsOp()->gtOp1;
+    GenTree* op2 = tree->AsOp()->gtOp2;
 
     if (!op2->OperIs(GT_LCL_VAR) || !varTypeIsIntegral(op2))
     {
