@@ -72,7 +72,7 @@ public static class Tests
         }
     }
 
-    private static byte[] bigArr => new byte[2147483591];
+    private static byte[] bigArr => new byte[268435460]; 
 
     // RangeCheck analysis should detect that the multiplcation
     // overflows and keep all range checks for bigArr. bigArr
@@ -82,9 +82,9 @@ public static class Tests
     // incorrectly.
     public static void MulOverflow()
     {
-        for (int i = 0; i < 14; i++)
+        for (int i = 0; i < 39768215; i++)
         {
-            bigArr[i*2147483591] = 17;
+            bigArr[i*402653184] = 17;
         }
     }
 
