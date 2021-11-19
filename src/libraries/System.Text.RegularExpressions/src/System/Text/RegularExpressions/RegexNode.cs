@@ -407,14 +407,6 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            // Optimization: Unnecessary root atomic.
-            // If the root node under the implicit Capture is an Atomic, the Atomic is useless as there's nothing
-            // to backtrack into it, so we can remove it.
-            while (rootNode.Child(0).Type == Atomic)
-            {
-                rootNode.ReplaceChild(0, rootNode.Child(0).Child(0));
-            }
-
             // Done optimizing.  Return the final tree.
 #if DEBUG
             rootNode.ValidateFinalTreeInvariants();
@@ -2250,42 +2242,30 @@ namespace System.Text.RegularExpressions
                     case Setlazy:
                         Debug.Assert(Next == null || Next.Type != Atomic, "Loop should have been transformed into an atomic type.");
                         supported = M == N || AncestorsAllowBacktracking(Next);
-                        static bool AncestorsAllowBacktracking(RegexNode? node)
-                        {
-                            while (node is not null)
-                            {
-                                switch (node.Type)
-                                {
-                                    case Concatenate:
-                                    case Capture:
-                                    case Atomic:
-                                        node = node.Next;
-                                        break;
-
-                                    default:
-                                        return false;
-                                }
-                            }
-
-                            return true;
-                        }
                         break;
 
-                    // {Lazy}Loop repeaters are the same, except their child also needs to be supported.
+                    // Loop repeaters are the same, except their child also needs to be supported.
                     // We also support such loops being atomic.
                     case Loop:
-                    case Lazyloop:
                         supported =
                             (M == N || (Next != null && Next.Type == Atomic)) &&
                             Child(0).SupportsSimplifiedCodeGenerationImplementation();
                         break;
 
-                    // We can handle atomic as long as we can handle making its child atomic, or
-                    // its child doesn't have that concept.
-                    case Atomic:
+                    // Similarly, as long as the wrapped node supports simplified code gen,
+                    // Lazy is supported if it's a repeater or atomic, but also if it's in
+                    // a place where backtracking is allowed (e.g. it's top-level).
+                    case Lazyloop:
+                        supported =
+                            (M == N || (Next != null && Next.Type == Atomic) || AncestorsAllowBacktracking(Next)) &&
+                            Child(0).SupportsSimplifiedCodeGenerationImplementation();
+                        break;
+
+                    // We can handle atomic as long as its child is supported.
                     // Lookahead assertions also only require that the child node be supported.
                     // The RightToLeft check earlier is important to differentiate lookbehind,
                     // which is not supported.
+                    case Atomic:
                     case Require:
                     case Prevent:
                         supported = Child(0).SupportsSimplifiedCodeGenerationImplementation();
@@ -2370,6 +2350,26 @@ namespace System.Text.RegularExpressions
             }
 #endif
             return supported;
+
+            static bool AncestorsAllowBacktracking(RegexNode? node)
+            {
+                while (node is not null)
+                {
+                    switch (node.Type)
+                    {
+                        case Concatenate:
+                        case Capture:
+                        case Atomic:
+                            node = node.Next;
+                            break;
+
+                        default:
+                            return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         /// <summary>Gets whether the node is a Set/Setloop/Setloopatomic/Setlazy node.</summary>
