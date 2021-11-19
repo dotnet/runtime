@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// The name of the file or directory, not including any path.
         /// </summary>
-        string Name { get; }
+        string? Name { get; }
 
         /// <summary>
         /// When the file was last modified
