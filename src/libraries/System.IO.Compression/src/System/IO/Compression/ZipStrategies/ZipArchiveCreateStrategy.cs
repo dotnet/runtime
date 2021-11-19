@@ -6,7 +6,7 @@ using System.Text;
 
 namespace System.IO.Compression
 {
-    internal class ZipArchiveCreateStrategy : ZipArchiveStrategy
+    internal sealed class ZipArchiveCreateStrategy : ZipArchiveStrategy
     {
         public override ZipArchiveMode Mode => ZipArchiveMode.Create;
         public override BinaryReader? ArchiveReader { get; }
