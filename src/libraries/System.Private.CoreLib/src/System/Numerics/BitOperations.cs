@@ -769,11 +769,9 @@ namespace System.Numerics
 
 
             // Software fallback
+            ReadOnlySpan<ushort> span = MemoryMarshal.CreateReadOnlySpan(ref data, 1);
 
-            Span<byte> bytes = stackalloc byte[sizeof(ushort)];
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(bytes), data);
-
-            foreach (byte b in bytes)
+            foreach (byte b in MemoryMarshal.AsBytes(span))
             {
                 int tableIndex = (int)((crc ^ b) & 0xFF);
                 crc = s_crcTable[tableIndex] ^ (crc >> 8);
@@ -808,11 +806,9 @@ namespace System.Numerics
 
 
             // Software fallback
+            ReadOnlySpan<uint> span = MemoryMarshal.CreateReadOnlySpan(ref data, 1);
 
-            Span<byte> bytes = stackalloc byte[sizeof(uint)];
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(bytes), data);
-
-            foreach (byte b in bytes)
+            foreach (byte b in MemoryMarshal.AsBytes(span))
             {
                 int tableIndex = (int)((crc ^ b) & 0xFF);
                 crc = s_crcTable[tableIndex] ^ (crc >> 8);
@@ -848,11 +844,9 @@ namespace System.Numerics
             }
 
             // Software fallback
+            ReadOnlySpan<ulong> span = MemoryMarshal.CreateReadOnlySpan(ref data, 1);
 
-            Span<byte> bytes = stackalloc byte[sizeof(ulong)];
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(bytes), data);
-
-            foreach (byte b in bytes)
+            foreach (byte b in MemoryMarshal.AsBytes(span))
             {
                 int tableIndex = (int)((crc ^ b) & 0xFF);
                 crc = s_crcTable[tableIndex] ^ (crc >> 8);
