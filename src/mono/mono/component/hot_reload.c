@@ -169,6 +169,7 @@ typedef struct _delta_row_count {
 /* Additional informaiton for MonoImages representing deltas */
 struct _DeltaInfo {
 	uint32_t generation; /* global update ID that added this delta image */
+	MonoImage *delta_image; /* DeltaInfo doesn't own the image, the base MonoImage owns the reference */
 
 	/* Maps MethodDef token indices to a pointer into the RVA of the delta IL */
 	GHashTable *method_table_update;
@@ -190,10 +191,10 @@ struct _DeltaInfo {
 
 /* Additional informaiton for baseline MonoImages */
 typedef struct _BaselineInfo {
-	/* List of MonoImages of deltas.  Parent image owns 1 refcount ref of the delta image */
-	GList *delta_image;
-	/* Tail of delta_image for fast appends */
-	GList *delta_image_last;
+	/* List of DeltaInfos of deltas*/
+	GList *delta_info;
+	/* Tail of delta_info for fast appends */
+	GList *delta_info_last;
 
 	/* Maps MethodDef token indices to a boolean flag that there's an update for the method */
 	GHashTable *method_table_update;
@@ -282,7 +283,7 @@ hot_reload_no_inline (MonoMethod *caller, MonoMethod *callee)
  * this for deltas.
  */
 static GHashTable *table_to_image;
-/* Maps each delta MonoImage to its DeltaInfo */
+/* Maps each delta MonoImage to its DeltaInfo. Doesn't own the DeltaInfo or the images */
 static GHashTable *delta_image_to_info;
 /* Maps each baseline MonoImage to its BaselineInfo */
 static GHashTable *baseline_image_to_info;
@@ -388,6 +389,7 @@ delta_info_lookup (MonoImage *delta_image)
 	DeltaInfo *result;
 	table_to_image_lock ();
 	result = delta_info_lookup_locked (delta_image);
+	g_assert (!result || result->delta_image == delta_image);
 	table_to_image_unlock ();
 	return result;
 }
@@ -415,12 +417,6 @@ hot_reload_cleanup_on_close (MonoImage *image)
 	table_to_image_lock ();
 	/* remove all keys (delta images) that map to the given image (base image) */
 	g_hash_table_foreach_remove (table_to_image, remove_base_image, (gpointer)image);
-	/* remove delta image info */
-	DeltaInfo *delta_info = delta_info_lookup_locked (image);
-	if (delta_info) {
-		g_hash_table_remove (delta_image_to_info, image);
-		delta_info_destroy (delta_info);
-	}
 	table_to_image_unlock ();
 }
 
@@ -430,11 +426,16 @@ hot_reload_close_except_pools_all (MonoImage *base_image)
 	BaselineInfo *info = baseline_info_lookup (base_image);
 	if (!info)
 		return;
-	for (GList *ptr = info->delta_image; ptr; ptr = ptr->next) {
-		MonoImage *image = (MonoImage *)ptr->data;
+	for (GList *ptr = info->delta_info; ptr; ptr = ptr->next) {
+		DeltaInfo *info = (DeltaInfo *)ptr->data;
+		MonoImage *image = info->delta_image;
 		if (image) {
+			table_to_image_lock ();
+			g_hash_table_remove (delta_image_to_info, image);
+			table_to_image_unlock ();
+			/* if for some reason the image has other references, break the link to this delta_info that is going away */
 			if (!mono_image_close_except_pools (image))
-			    ptr->data = NULL;
+			    info->delta_image = NULL;
 		}
 	}
 }
@@ -445,12 +446,18 @@ hot_reload_close_all (MonoImage *base_image)
 	BaselineInfo *info = baseline_info_lookup (base_image);
 	if (!info)
 		return;
-	for (GList *ptr = info->delta_image; ptr; ptr = ptr->next) {
-		MonoImage *image = (MonoImage *)ptr->data;
-		if (image)
+	for (GList *ptr = info->delta_info; ptr; ptr = ptr->next) {
+		DeltaInfo *info = (DeltaInfo *)ptr->data;
+		if (!info)
+			continue;
+		MonoImage *image = info->delta_image;
+		if (image) {
 			mono_image_close_finish (image);
+		}
+		delta_info_destroy (info);
+		ptr->data = NULL;
 	}
-	g_list_free (info->delta_image);
+	g_list_free (info->delta_info);
 	baseline_info_remove (base_image);
 	baseline_info_destroy (info);
 }
@@ -507,9 +514,6 @@ image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpo
 
 static DeltaInfo*
 image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, DeltaInfo *delta_info);
-
-static int
-metadata_update_local_generation (MonoImage *base, BaselineInfo *base_info, MonoImage *delta);
 
 static void
 add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address);
@@ -720,20 +724,20 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 DeltaInfo *
 image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, DeltaInfo *delta_info)
 {
-	if (!base_info->delta_image) {
-		base_info->delta_image = base_info->delta_image_last = g_list_alloc ();
-		base_info->delta_image->data = (gpointer)delta;
+	if (!base_info->delta_info) {
+		base_info->delta_info = base_info->delta_info_last = g_list_alloc ();
+		base_info->delta_info->data = (gpointer)delta_info;
 		mono_memory_write_barrier ();
 		/* Have to set this here so that passes over the metadata in the updater thread start using the slow path */
 		base->has_updates = TRUE;
 		return NULL;
 	}
-	DeltaInfo *prev_last_delta = delta_info_lookup(((MonoImage*)base_info->delta_image_last->data));
+	DeltaInfo *prev_last_delta = (DeltaInfo*)base_info->delta_info_last->data;
 	g_assert (prev_last_delta->generation < delta_info->generation);
 	/* g_list_append returns the given list, not the newly appended */
-	GList *l = g_list_append (base_info->delta_image_last, delta);
+	GList *l = g_list_append (base_info->delta_info_last, delta_info);
 	g_assert (l != NULL && l->next != NULL && l->next->next == NULL);
-	base_info->delta_image_last = l->next;
+	base_info->delta_info_last = l->next;
 
 	mono_memory_write_barrier ();
 	/* Have to set this here so that passes over the metadata in the updater thread start using the slow path */
@@ -876,15 +880,15 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 static gboolean
 effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, const MonoTableInfo **t, int idx)
 {
-	GList *ptr =info->delta_image_last;
+	GList *ptr =info->delta_info_last;
 	uint32_t exposed_gen = hot_reload_get_thread_generation ();
 	MonoImage *dmeta = NULL;
 	DeltaInfo *delta_info = NULL;
 
 	/* walk backward from the latest image until we find one that matches the current thread's exposed generation */
 	do {
-		dmeta = (MonoImage*)ptr->data;
-		delta_info = delta_info_lookup (dmeta);
+		delta_info = (DeltaInfo*)ptr->data;
+		dmeta = delta_info->delta_image;
 		if (delta_info->generation <= exposed_gen)
 			break;
 		ptr = ptr->prev;
@@ -1011,6 +1015,7 @@ delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, MonoPPDBFile *pp
 
 	delta_info->generation = generation;
 	delta_info->ppdb_file = ppdb_file;
+	delta_info->delta_image = image_dmeta;
 
 	table_to_image_lock ();
 	g_hash_table_insert (delta_image_to_info, image_dmeta, delta_info);
@@ -1036,19 +1041,15 @@ delta_info_compute_table_records (MonoImage *image_dmeta, MonoImage *image_base,
 	int table, prev_table = -1, idx;
 
 	/*** Compute logical table sizes ***/
-	if (base_info->delta_image == base_info->delta_image_last) {
+	if (base_info->delta_info == base_info->delta_info_last) {
 		/* this is the first update. */
 		for (int i = 0; i < MONO_TABLE_NUM; ++i) {
 			delta_info->count[i].prev_gen_rows = table_info_get_rows (&image_base->tables[i]);
 		}
 	} else {
-		/* Current image_dmeta is image_base->delta_image_last->data,
-		 * find its predecessor
-		 */
-		MonoImage *prev_delta = NULL;
-		g_assert (base_info->delta_image_last->prev != NULL);
-		prev_delta = (MonoImage*)base_info->delta_image_last->prev->data;
-		DeltaInfo *prev_gen_info = delta_info_lookup (prev_delta);
+		g_assert (delta_info == (DeltaInfo*)base_info->delta_info_last->data);
+		g_assert (base_info->delta_info_last->prev != NULL);
+		DeltaInfo *prev_gen_info = (DeltaInfo*)base_info->delta_info_last->prev->data;
 		for (int i = 0; i < MONO_TABLE_NUM; ++i) {
 			delta_info->count[i].prev_gen_rows = prev_gen_info->count[i].prev_gen_rows + prev_gen_info->count[i].inserted_rows;
 		}
@@ -1601,8 +1602,8 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			/* FIXME: use DeltaInfo:prev_gen_rows instead of looping */
 			/* TODO: do we know that there will never be modified rows in ASSEMBLYREF? */
 			int old_rows = table_info_get_rows (&image_base->tables [MONO_TABLE_ASSEMBLYREF]);
-			for (GList *l = base_info->delta_image; l; l = l->next) {
-				MonoImage *delta_child = l->data;
+			for (GList *l = base_info->delta_info; l; l = l->next) {
+				MonoImage *delta_child = ((DeltaInfo*)l->data)->delta_image;
 				old_rows += table_info_get_rows (&delta_child->tables [MONO_TABLE_ASSEMBLYREF]);
 			}
 			int new_rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_ASSEMBLYREF]);
@@ -1857,35 +1858,6 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta for base=%s (generation %d) applied", basename, generation);
 }
 
-/*
- * Returns how many times the base image was updated upto and including the given delta.
- */
-static int
-metadata_update_local_generation (MonoImage *base, BaselineInfo *base_info, MonoImage *delta)
-{
-	if (delta == base)
-		return 0;
-	int index = g_list_index (base_info->delta_image, delta);
-	g_assert (index != -1);
-	return 1 + index;
-}
-
-/*
- * Returns how many times the given base image has been updated so far.
- *
- * NOTE: doesn't look at update_published or update_alloc_frontier, and therefore only usable by the
- * update originator.
- */
-static int
-metadata_update_count_updates (MonoImage *base)
-{
-	BaselineInfo *base_info = baseline_info_lookup (base);
-	if (!base_info || !base_info->delta_image_last)
-		return 0;
-	else
-		return metadata_update_local_generation (base, base_info, (MonoImage*)base_info->delta_image_last->data);
-}
-
 static gpointer
 get_method_update_rva (MonoImage *image_base, BaselineInfo *base_info, uint32_t idx, gboolean is_pdb)
 {
@@ -1895,9 +1867,8 @@ get_method_update_rva (MonoImage *image_base, BaselineInfo *base_info, uint32_t 
 	
 	/* Go through all the updates that the current thread can see and see
 	 * if they updated the method.	Keep the latest visible update */
-	for (GList *ptr = base_info->delta_image; ptr != NULL; ptr = ptr->next) {
-		MonoImage *image_delta = (MonoImage*) ptr->data;
-		DeltaInfo *delta_info = delta_info_lookup (image_delta);
+	for (GList *ptr = base_info->delta_info; ptr != NULL; ptr = ptr->next) {
+		DeltaInfo *delta_info = (DeltaInfo*)ptr->data;
 		g_assert (delta_info);
 		if (delta_info->generation > cur)
 			break;
@@ -1967,7 +1938,7 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 	BaselineInfo *base_info = baseline_info_lookup (base_image);
 	g_assert (base_info);
 
-	GList *list = base_info->delta_image;
+	GList *list = base_info->delta_info;
 	MonoImage *dmeta;
 	MonoTableInfo *table;
 	/* result row, 0-based */
@@ -1977,9 +1948,9 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 	do {
 		if (!list)
 			return TRUE;
-		dmeta = list->data;
-		DeltaInfo *delta_info = delta_info_lookup (dmeta);
+		DeltaInfo *delta_info = (DeltaInfo*)list->data;
 		g_assert (delta_info);
+		dmeta = delta_info->delta_image;
 		if (delta_info->generation > exposed_gen)
 			return TRUE;
 		list = list->next;
@@ -2000,7 +1971,7 @@ hot_reload_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_
 	g_assert (orig_index >= heap->size);
 	BaselineInfo *base_info = baseline_info_lookup (base_image);
 	g_assert (base_info);
-	g_assert (base_info->delta_image);
+	g_assert (base_info->delta_info);
 
 	*image_out = base_image;
 	*index_out = orig_index;
@@ -2009,13 +1980,15 @@ hot_reload_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_
 
 	uint32_t current_gen = hot_reload_get_thread_generation ();
 	GList *cur;
-	for (cur = base_info->delta_image; cur; cur = cur->next) {
-		MonoImage *delta_image = (MonoImage*)cur->data;
+	for (cur = base_info->delta_info; cur; cur = cur->next) {
+		DeltaInfo *delta_info = (DeltaInfo*)cur->data;
+		g_assert (delta_info);
+		MonoImage *delta_image = delta_info->delta_image;
+		g_assert (delta_image);
 		heap = get_heap (delta_image);
 
 		*image_out = delta_image;
 
-		DeltaInfo *delta_info = delta_info_lookup (delta_image);
 		if (delta_info->generation > current_gen)
 			return FALSE;
 
@@ -2053,9 +2026,9 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 
 	int rows = table_info_get_rows (&base->tables [table_index]);
 	GList *cur;
-	for (cur = base_info->delta_image; cur; cur = cur->next) {
-		MonoImage *delta_image = (MonoImage*)cur->data;
-		DeltaInfo *delta_info = delta_info_lookup (delta_image);
+	for (cur = base_info->delta_info; cur; cur = cur->next) {
+		DeltaInfo *delta_info = (DeltaInfo*)cur->data;
+		g_assert (delta_info);
 		if (delta_info->generation > current_gen)
 			break;
 		rows = delta_info->count [table_index].prev_gen_rows + delta_info->count [table_index].inserted_rows;
