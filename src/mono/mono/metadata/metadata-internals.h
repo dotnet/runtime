@@ -806,9 +806,6 @@ mono_image_effective_table (const MonoTableInfo **t, int idx)
 	}
 }
 
-int
-mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
-
 enum MonoEnCDeltaOrigin {
         MONO_ENC_DELTA_API = 0,
         MONO_ENC_DELTA_DBG = 1,

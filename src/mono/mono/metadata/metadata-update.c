@@ -66,12 +66,6 @@ mono_image_effective_table_slow (const MonoTableInfo **t, int idx)
 	mono_component_hot_reload ()->effective_table_slow (t, idx);
 }
 
-int
-mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
-{
-	return mono_component_hot_reload ()->relative_delta_index (image_dmeta, token);
-}
-
 void
 mono_image_load_enc_delta (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error)
 {

@@ -109,7 +109,6 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_thread_generation,
 	&hot_reload_cleanup_on_close,
 	&hot_reload_effective_table_slow,
-	&hot_reload_relative_delta_index,
 	&hot_reload_apply_changes,
 	&hot_reload_close_except_pools_all,
 	&hot_reload_close_all,

@@ -41,9 +41,6 @@ hot_reload_stub_cleanup_on_close (MonoImage *image);
 static void
 hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx);
 
-static int
-hot_reload_stub_relative_delta_index (MonoImage *image_dmeta, int token);
-
 static void
 hot_reload_stub_close_except_pools_all (MonoImage *base_image);
 
@@ -83,7 +80,6 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_thread_generation,
 	&hot_reload_stub_cleanup_on_close,
 	&hot_reload_stub_effective_table_slow,
-	&hot_reload_stub_relative_delta_index,
 	&hot_reload_stub_apply_changes,
 	&hot_reload_stub_close_except_pools_all,
 	&hot_reload_stub_close_all,
@@ -148,12 +144,6 @@ hot_reload_stub_cleanup_on_close (MonoImage *image)
 
 void
 hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx)
-{
-	g_assert_not_reached ();
-}
-
-static int
-hot_reload_stub_relative_delta_index (MonoImage *image_dmeta, int token)
 {
 	g_assert_not_reached ();
 }
