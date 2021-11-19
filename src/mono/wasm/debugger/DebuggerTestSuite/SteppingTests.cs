@@ -963,7 +963,7 @@ namespace DebuggerTests
             var step_into = await SendCommandAndCheck(null, $"Debugger.stepInto", null, -1, -1, null);
 
             Assert.Equal(
-                step_into["callFrames"][0]["location"]["lineNumber"].Value<int>(), 
+                step_into["callFrames"][0]["location"]["lineNumber"].Value<int>() + 1, 
                 pause_location.Value["locations"][0]["lineNumber"].Value<int>()
                 );
             
