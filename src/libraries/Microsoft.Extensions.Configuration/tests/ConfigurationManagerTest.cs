@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.Memory;
@@ -175,30 +174,17 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task ProvidersCanBlockLoadWhileWaitingOnAConcurrentRead()
+        public async Task ProviderCanBlockLoadWaitingOnConcurrentRead()
         {
-            // Lose xUnit's MaxConcurrencySyncContext
-            //await LoseExecutionContextAwaitable.Instance;
-
             using var mre = new ManualResetEventSlim(false);
-            var provider = new BlockLoadOnMREProvider(mre, timeout: TimeSpan.FromSeconds(5));
+            var provider = new BlockLoadOnMREProvider(mre, timeout: TimeSpan.FromSeconds(30));
             var source = new TestConfigurationSource(provider);
 
             var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
 
-            // The first load when the source is added is ignored by the provider.
-            builder.Add(source);
-
-            var loadTask = Task.Run(() =>
-            {
-                ((IConfigurationRoot)config).Reload();
-
-                //foreach (var provider in ((IConfigurationRoot)config).Providers)
-                //{
-                //    provider.Load();
-                //}
-            });
+            // Add calls provider.Load().
+            var loadTask = Task.Run(() => builder.Add(source));
 
             await provider.LoadStartedTask;
 
@@ -1177,8 +1163,6 @@ namespace Microsoft.Extensions.Configuration.Test
             private readonly TaskCompletionSource<object> _loadStartedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             private readonly TimeSpan _timeout;
 
-            private int _loadCount;
-
             public BlockLoadOnMREProvider(ManualResetEventSlim mre, TimeSpan timeout)
             {
                 _mre = mre;
@@ -1189,33 +1173,8 @@ namespace Microsoft.Extensions.Configuration.Test
 
             public override void Load()
             {
-                _loadCount++;
-
-                Assert.True(_loadCount <= 2, "BlockLoadOnMREProvider.Load() was called more than twice.");
-
-                // Ignore first load when the source was added so we can set the test up.
-                if (_loadCount == 2)
-                {
-                    _loadStartedTcs.SetResult(null);
-                    Assert.True(_mre.Wait(_timeout), "BlockLoadOnMREProvider.Load() timed out.");
-                }
-            }
-        }
-
-        private class LoseExecutionContextAwaitable : INotifyCompletion
-        {
-            public static readonly LoseExecutionContextAwaitable Instance = new();
-
-            public LoseExecutionContextAwaitable GetAwaiter() => this;
-            public bool IsCompleted => false;
-
-            public void GetResult()
-            {
-            }
-
-            public void OnCompleted(Action continuation)
-            {
-                ThreadPool.UnsafeQueueUserWorkItem(state => ((Action)state!)(), continuation);
+                _loadStartedTcs.SetResult(null);
+                Assert.True(_mre.Wait(_timeout), "BlockLoadOnMREProvider.Load() timed out.");
             }
         }
 
