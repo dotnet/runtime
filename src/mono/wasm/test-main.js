@@ -66,7 +66,7 @@ function proxyJson(func) {
         console[m] = proxyMethod(`console.${m}`, func, true);
 }
 
-if (is_browser) {
+if (false) {
     const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
     let consoleWebSocket = new WebSocket(consoleUrl);
