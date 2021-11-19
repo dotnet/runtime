@@ -1583,14 +1583,7 @@ public:
                                    DebuggerILToNativeMap **end);
     NativeOffset MapILOffsetToNative(ILOffset ilOffset);
 
-    // MapSpecialToNative maps a CordDebugMappingResult to a native
-    //      offset so that we can get the address of the prolog & epilog. which
-    //      determines which epilog or prolog, if there's more than one.
-    SIZE_T MapSpecialToNative(CorDebugMappingResult mapping,
-                              SIZE_T which,
-                              BOOL *pfAccurate);
 #if defined(FEATURE_EH_FUNCLETS)
-    void   MapSpecialToNative(int funcletIndex, DWORD* pPrologEndOffset, DWORD* pEpilogStartOffset);
     SIZE_T MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcletIndexFrom, EHRangeTree* pEHRT, BOOL* pExact);
 #endif // FEATURE_EH_FUNCLETS
 

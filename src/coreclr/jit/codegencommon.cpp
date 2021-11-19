@@ -10644,49 +10644,25 @@ void CodeGen::genIPmappingGen()
             continue;
         }
 
-        // Both have mappings.
-        // If previous is the prolog, keep both if this one is at IL offset 0.
-        // (TODO: Why? Debugger has no problem breaking on the prolog mapping
-        // it seems.)
-        if ((prev->ipmdKind == IPmappingDscKind::Prolog) && (it->ipmdKind == IPmappingDscKind::Normal) &&
-            (it->ipmdLoc.GetOffset() == 0))
+        // If these are literally the same mappings, then remove one.
+        if ((it->ipmdKind == prev->ipmdKind) && ((it->ipmdKind != IPmappingDscKind::Normal) || (it->ipmdLoc.GetOffset() == prev->ipmdLoc.GetOffset())))
         {
-            ++it;
-            continue;
-        }
+            // If these are normal mappings at the same offset then combine
+            // location flags.
+            if (it->ipmdKind == IPmappingDscKind::Normal)
+            {
+                prev->ipmdLoc =
+                    ILLocation(
+                        prev->ipmdLoc.GetOffset(),
+                        prev->ipmdLoc.IsStackEmpty() | it->ipmdLoc.IsStackEmpty(),
+                        prev->ipmdLoc.IsCall() | it->ipmdLoc.IsCall());
+            }
 
-        // For the special case of an IL instruction with no body followed by
-        // the epilog (say ret void immediately preceding the method end), we
-        // leave both entries in, so that we'll stop at the (empty) ret
-        // statement if the user tries to put a breakpoint there, and then have
-        // the option of seeing the epilog or not based on SetUnmappedStopMask
-        // for the stepper.
-        if (it->ipmdKind == IPmappingDscKind::Epilog)
-        {
-            ++it;
-            continue;
-        }
-
-        // For managed return values we store all calls. Keep both in this case
-        // too.
-        if (((prev->ipmdKind == IPmappingDscKind::Normal) && (prev->ipmdLoc.IsCall())) ||
-            ((it->ipmdKind == IPmappingDscKind::Normal) && (it->ipmdLoc.IsCall())))
-        {
-            ++it;
-            continue;
-        }
-
-        // Otherwise report the higher offset unless the previous mapping is a
-        // label.
-        if (prev->ipmdIsLabel)
-        {
             it = compiler->genIPmappings.erase(it);
+            continue;
         }
-        else
-        {
-            compiler->genIPmappings.erase(prev);
-            ++it;
-        }
+
+        ++it;
     }
 
     // Tell them how many mapping records we've got
