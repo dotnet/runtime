@@ -3381,6 +3381,15 @@ const size_t hexEncodingSize = 11;
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
+// emitDispInsIndent: Print indentation corresponding to an instruction's
+// indentation.
+//
+void emitter::emitDispInsIndent()
+{
+    size_t indent = emitComp->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
+    printf("%.*s", indent, "                             ");
+}
+//------------------------------------------------------------------------
 // emitDispGCDeltaTitle: Print an appropriately indented title for a GC info delta
 //
 // Arguments:
@@ -3388,8 +3397,8 @@ const size_t hexEncodingSize = 11;
 //
 void emitter::emitDispGCDeltaTitle(const char* title)
 {
-    size_t indent = emitComp->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
-    printf("%.*s; %s", indent, "                             ", title);
+    emitDispInsIndent();
+    printf("; %s", title);
 }
 
 //------------------------------------------------------------------------
@@ -6233,7 +6242,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
 #ifdef DEBUG
-    *instrCount = 0;
+    *instrCount                   = 0;
+    PreciseIPMapping* nextMapping = emitComp->genPreciseIPMappingsHead;
 #endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
@@ -6402,6 +6412,33 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
             size_t     curInstrAddr = (size_t)cp;
             instrDesc* curInstrDesc = id;
+
+            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0))
+            {
+                UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
+                while (nextMapping != nullptr)
+                {
+                    UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
+
+                    if (mappingOffs > curCodeOffs)
+                    {
+                        // Still haven't reached instruction that next mapping belongs to.
+                        break;
+                    }
+
+                    // We reached the mapping or went past it.
+                    if (mappingOffs == curCodeOffs)
+                    {
+                        emitDispInsIndent();
+                        printf("; ");
+                        nextMapping->debugInfo.Dump(true);
+                        printf("\n");
+                    }
+
+                    nextMapping = nextMapping->next;
+                }
+            }
+
 #endif
 
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);

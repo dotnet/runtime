@@ -424,6 +424,9 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
+
+        bool addPreciseMappings =
+            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
 
         DebugInfo currentDI;
@@ -443,7 +446,7 @@ void CodeGen::genCodeForBBlist()
                 }
 
 #ifdef DEBUG
-                if ((JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) && ilOffset->gtStmtDI.IsValid())
+                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
                 {
                     genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
                 }
