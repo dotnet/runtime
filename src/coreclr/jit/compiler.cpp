@@ -6446,7 +6446,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         //
         const char* reason = nullptr;
 
-        if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) == 0)
+        if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
         {
             if (compHasBackwardJump)
             {
