@@ -546,7 +546,7 @@ namespace System.Xml
 
         private static int CharWriteToSpan(Span<char> destination, char ch)
         {
-            Debug.Assert(destination.Length == 12);
+            Debug.Assert(destination.Length >= 12);
             destination[0] = '&';
             destination[1] = '#';
             destination[2] = 'x';
