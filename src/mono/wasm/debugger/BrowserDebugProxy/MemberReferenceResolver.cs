@@ -136,10 +136,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var methodId = await context.SdbAgent.GetPropertyMethodIdByName(typeId, name, token);
                 if (methodId != -1)
                 {
-                    var commandParamsObj = new MemoryStream();
                     var commandParamsObjWriter = new MonoBinaryWriter();
                     commandParamsObjWriter.Write(0); //param count
-                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObj.ToArray(), methodId, "methodRet", token);
+                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                     return await GetValueFromObject(retMethod, token);
                 }
                 return null;
