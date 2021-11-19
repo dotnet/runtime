@@ -479,8 +479,6 @@ namespace System.Xml
             _textWriter.Write(array, offset, count);
         }
 
-
-
         internal void WriteCharEntity(char ch)
         {
             if (XmlCharType.IsSurrogate(ch))
@@ -500,7 +498,6 @@ namespace System.Xml
 
             _textWriter.Write(ros);
         }
-
 
         internal void WriteEntityRef(string name)
         {
