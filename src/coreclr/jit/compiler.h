@@ -3548,9 +3548,6 @@ public:
     GenTree* gtFoldTypeCompare(GenTree* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
 
-    // Reduce successive add operations to a single multiply, i + i + i + i => i * 4
-    GenTree* gtReduceStrength(GenTree* tree);
-
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
     {
@@ -6419,6 +6416,9 @@ private:
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
+
+    // Reduce successive add operations to a single multiply, i + i + i + i => i * 4
+    GenTree* fgMorphReduceAddOps(GenTree* tree);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
