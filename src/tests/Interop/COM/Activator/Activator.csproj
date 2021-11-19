@@ -19,7 +19,7 @@
     <ProjectReference Include="Servers\AssemblyContracts.csproj" />
   </ItemGroup>
   <!-- Set up an isolated directory for the server assemblies -->
-  <Target Name="SetUpIslatedDirectory" AfterTargets="CopyFilesToOutputDirectory">
+  <Target Name="SetUpIsolatedDirectory" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <ServerAssemblyDest>$(OutDir)/Servers</ServerAssemblyDest>
     </PropertyGroup>
