@@ -367,6 +367,7 @@ namespace System.IO
             char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
             buffer.CopyTo(new Span<char>(array));
             WriteLine(array, 0, buffer.Length);
+            ArrayPool<char>.Shared.Return(array);
         }
 
         // Writes the text representation of a boolean followed by a line
