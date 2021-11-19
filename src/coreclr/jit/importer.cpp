@@ -11598,22 +11598,31 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         //
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            assert(compCanHavePatchpoints());
-
-            // We don't inline at Tier0, if we do, we may need rethink our approach.
-            // Could probably support inlines that don't introduce flow.
-            assert(!compIsForInlining());
-
-            // Is the start of this block a suitable patchpoint?
+            // OSR is not yet supported for methods with explicit tail calls.
             //
-            if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
+            // But we also may not switch methods to be optimized as we should be
+            // able to avoid getting trapped in Tier0 code by normal call counting.
+            // So instead, just suppress adding patchpoints.
+            //
+            if (!compTailPrefixSeen)
             {
-                // We should have noted this earlier and bailed out of OSR.
-                //
-                assert(!block->hasHndIndex());
+                assert(compCanHavePatchpoints());
 
-                block->bbFlags |= BBF_PATCHPOINT;
-                setMethodHasPatchpoint();
+                // We don't inline at Tier0, if we do, we may need rethink our approach.
+                // Could probably support inlines that don't introduce flow.
+                assert(!compIsForInlining());
+
+                // Is the start of this block a suitable patchpoint?
+                //
+                if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
+                {
+                    // We should have noted this earlier and bailed out of OSR.
+                    //
+                    assert(!block->hasHndIndex());
+
+                    block->bbFlags |= BBF_PATCHPOINT;
+                    setMethodHasPatchpoint();
+                }
             }
         }
     }
@@ -11638,7 +11647,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // Todo: stress mode...
     //
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
-        compCanHavePatchpoints())
+        compCanHavePatchpoints() && !compTailPrefixSeen)
     {
         // Is this block a good place for partial compilation?
         //

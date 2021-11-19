@@ -6437,8 +6437,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         //
         assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
 
+        // Normal tiering should bail us out of Tier0 tail call induced loops.
+        // So keep these methods in Tier0 if we're gathering PGO data.
+        // If we're not gathering PGO, then switch these to optimized to
+        // minimize the number of tail call helper stubs we might need.
+        // Reconsider this if/when we're able to share those stubs.
+        //
         // Honor the config setting that tells the jit to
-        // always optimize methods with loops or explicit tail calls.
+        // always optimize methods with loops.
         //
         // If that's not set, and OSR is enabled, the jit may still
         // decide to optimize, if there's something in the method that
@@ -6446,15 +6452,15 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         //
         const char* reason = nullptr;
 
-        if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
+        if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+        {
+            reason = "tail.call and not BBINSTR";
+        }
+        else if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
         {
             if (compHasBackwardJump)
             {
                 reason = "loop";
-            }
-            else if (compTailPrefixSeen)
-            {
-                reason = "tail.call";
             }
         }
         else if (JitConfig.TC_OnStackReplacement() > 0)
