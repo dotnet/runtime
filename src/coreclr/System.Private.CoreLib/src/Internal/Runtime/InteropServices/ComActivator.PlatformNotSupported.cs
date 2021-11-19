@@ -14,7 +14,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
-        public static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
+        private static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
-        public static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
+        private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
@@ -32,15 +32,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
-        public static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
-            => throw new PlatformNotSupportedException();
-
-        // Exists here to allow tests to build on any platform.
-        public static object GetClassFactoryForType(ComActivationContext cxt)
-            => throw new PlatformNotSupportedException();
-
-        // Exists here to allow tests to build on any platform.
-        public static void ClassRegistrationScenarioForType(ComActivationContext cxt, bool register)
+        private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
     }
 }
