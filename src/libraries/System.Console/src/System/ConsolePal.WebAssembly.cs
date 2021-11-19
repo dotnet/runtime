@@ -70,7 +70,6 @@ namespace System
             }
 
             base.Flush();
-            Interop.Runtime.FlushConsole();
         }
     }
 
