@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="ComActivationContextShim.cs" />
+    <Compile Include="ComActivationContext.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NETServer\NETServer.csproj" />

@@ -25,7 +25,7 @@ namespace Internal.Runtime.InteropServices
     //
 
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct ComActivationContext
+    internal partial struct ComActivationContext
     {
         public Guid ClassId;
         public Guid InterfaceId;
@@ -35,11 +35,10 @@ namespace Internal.Runtime.InteropServices
     }
 
     [ComImport]
-    [TypeIdentifier]
     [ComVisible(false)]
     [Guid("00000001-0000-0000-C000-000000000046")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IClassFactory
+    internal interface IClassFactory
     {
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         void CreateInstance(

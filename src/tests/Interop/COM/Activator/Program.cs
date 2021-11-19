@@ -12,7 +12,6 @@ using Xunit;
 namespace Internal.Runtime.InteropServices
 {
     [ComImport]
-    [TypeIdentifier]
     [ComVisible(false)]
     [Guid("00000001-0000-0000-C000-000000000046")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -27,20 +26,38 @@ namespace Internal.Runtime.InteropServices
     }
 }
 
+sealed class ClassFactoryWrapper : IDisposable
+{
+    private static readonly MethodInfo IClassFactory_Create = typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.IClassFactory").GetMethod("CreateInstance");
+    private readonly object _obj;
+
+    public ClassFactoryWrapper(object obj)
+    {
+        _obj = obj;
+    }
+
+    public void CreateInstance(
+            object pUnkOuter,
+            ref Guid riid,
+            out IntPtr ppvObject)
+    {
+        object[] args = new object[] { pUnkOuter, riid, ppvObject };
+        Marshal.ThrowExceptionForHR(IClassFactory_Create.Invoke(_obj, BindingFlags.DoNotWrapExceptions, binder: null, args, culture: null));
+        riid = args[1];
+        ppvObject = args[2];
+    }
+}
+
 namespace Activator
 {
     class Program
     {
-        private static MethodInfo GetClassFactoryForTypeMethod = typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("GetClassFactoryForType");
-        private static MethodInfo ClassRegistrationScenarioForTypeMethod = typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("ClassRegistrationScenarioForType");
+        private static delegate*<ComActivationContext, object> GetClassFactoryForTypeMethod = (delegate*<ComActivationContext, object>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("GetClassFactoryForType").MethodHandle.GetFunctionPointer();
+        private static delegate*<ComActivationContext, bool, void> ClassRegistrationScenarioForType = (delegate*<ComActivationContext, bool, void>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("ClassRegistrationScenarioForType").MethodHandle.GetFunctionPointer();
 
-        private static object GetClassFactoryForType(ComActivationContextShim context)
+        private static ClassFactoryWrapper GetClassFactoryForType(ComActivationContext context)
         {
-            return GetClassFactoryForTypeMethod.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, new[] { context.UnderlyingContext }, culture: null);
-        }
-        private static object ClassRegistrationScenarioForType(ComActivationContextShim context, bool register)
-        {
-            return ClassRegistrationScenarioForTypeMethod.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, new[] { context.UnderlyingContext, (object)register }, culture: null);
+            return new ClassFactoryWrapper(GetClassFactoryForTypeMethod(context));
         }
 
         static void InvalidInterfaceRequest()
@@ -51,7 +68,7 @@ namespace Activator
                 () =>
                 {
                     var notIClassFactory = new Guid("ED53F949-63E4-43B5-A13D-5655478AADD5");
-                    var cxt = new ComActivationContextShim()
+                    var cxt = new ComActivationContext()
                     {
                         InterfaceId = notIClassFactory
                     };
@@ -65,7 +82,7 @@ namespace Activator
 
             Action action = () =>
                 {
-                    var cxt = new ComActivationContextShim()
+                    var cxt = new ComActivationContext()
                     {
                         InterfaceId = typeof(IClassFactory).GUID,
                         AssemblyPath = "foo.dll"
@@ -90,7 +107,7 @@ namespace Activator
             Action action = () =>
                 {
                     var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
-                    var cxt = new ComActivationContextShim()
+                    var cxt = new ComActivationContext()
                     {
                         ClassId = CLSID_NotRegistered,
                         InterfaceId = typeof(IClassFactory).GUID,
@@ -134,7 +151,7 @@ namespace Activator
                 string.Empty,
                 string.Empty))
             {
-                var cxt = new ComActivationContextShim()
+                var cxt = new ComActivationContext()
                 {
                     ClassId = CLSID_NotUsed,
                     InterfaceId = typeof(IClassFactory).GUID,
@@ -150,7 +167,7 @@ namespace Activator
                     return;
                 }
 
-                var factory = (IClassFactory)GetClassFactoryForType(cxt);
+                var factory = GetClassFactoryForType(cxt);
 
                 IntPtr svrRaw;
                 factory.CreateInstance(null, ref iid, out svrRaw);
@@ -165,7 +182,7 @@ namespace Activator
                 string.Empty,
                 string.Empty))
             {
-                var cxt = new ComActivationContextShim()
+                var cxt = new ComActivationContext()
                 {
                     ClassId = CLSID_NotUsed,
                     InterfaceId = typeof(IClassFactory).GUID,
@@ -174,7 +191,7 @@ namespace Activator
                     TypeName = "ClassFromB"
                 };
 
-                var factory = (IClassFactory)GetClassFactoryForType(cxt);
+                var factory = GetClassFactoryForType(cxt);
 
                 IntPtr svrRaw;
                 factory.CreateInstance(null, ref iid, out svrRaw);
@@ -218,7 +235,7 @@ namespace Activator
                 {
                     Console.WriteLine($"Validating {typeName}...");
 
-                    var cxt = new ComActivationContextShim()
+                    var cxt = new ComActivationContext()
                     {
                         ClassId = CLSID_NotUsed,
                         InterfaceId = typeof(IClassFactory).GUID,
@@ -227,7 +244,7 @@ namespace Activator
                         TypeName = typeName
                     };
 
-                    var factory = (IClassFactory)GetClassFactoryForType(cxt);
+                    var factory = GetClassFactoryForType(cxt);
 
                     IntPtr svrRaw;
                     factory.CreateInstance(null, ref iid, out svrRaw);
@@ -257,7 +274,7 @@ namespace Activator
                 {
                     Console.WriteLine($"Validating {typename}...");
 
-                    var cxt = new ComActivationContextShim()
+                    var cxt = new ComActivationContext()
                     {
                         ClassId = CLSID_NotUsed,
                         InterfaceId = typeof(IClassFactory).GUID,
@@ -266,7 +283,7 @@ namespace Activator
                         TypeName = typename
                     };
 
-                    var factory = (IClassFactory)GetClassFactoryForType(cxt);
+                    var factory = GetClassFactoryForType(cxt);
 
                     IntPtr svrRaw;
                     factory.CreateInstance(null, ref iid, out svrRaw);
