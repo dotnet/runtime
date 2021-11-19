@@ -63,7 +63,7 @@ for (let m of methods) {
 
 function proxyJson(func) {
     for (let m of ["log", ...methods])
-        console[m] = proxyMethod(`console.${m}`, func, true);
+        console[m] = proxyMethod(`console.${m}`, func, false);
 }
 
 if (is_browser) {
