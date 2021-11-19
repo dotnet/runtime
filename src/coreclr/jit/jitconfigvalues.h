@@ -233,6 +233,7 @@ CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block
                                                            // bbNum and bbID
 
 CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
+CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
 
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
