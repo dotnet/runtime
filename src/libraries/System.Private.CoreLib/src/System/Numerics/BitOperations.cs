@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -769,13 +770,16 @@ namespace System.Numerics
 
 
             // Software fallback
-            ReadOnlySpan<ushort> span = MemoryMarshal.CreateReadOnlySpan(ref data, 1);
-
-            foreach (byte b in MemoryMarshal.AsBytes(span))
+            if (!BitConverter.IsLittleEndian)
             {
-                int tableIndex = (int)((crc ^ b) & 0xFF);
-                crc = s_crcTable[tableIndex] ^ (crc >> 8);
+                data = BinaryPrimitives.ReverseEndianness(data);
             }
+
+            ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+            data >>= 8;
+            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
 
             return crc;
         }
@@ -806,15 +810,14 @@ namespace System.Numerics
 
 
             // Software fallback
-            ReadOnlySpan<uint> span = MemoryMarshal.CreateReadOnlySpan(ref data, 1);
-
-            foreach (byte b in MemoryMarshal.AsBytes(span))
+            if (!BitConverter.IsLittleEndian)
             {
-                int tableIndex = (int)((crc ^ b) & 0xFF);
-                crc = s_crcTable[tableIndex] ^ (crc >> 8);
+                data = BinaryPrimitives.ReverseEndianness(data);
             }
 
-            return crc;
+            ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+            return Crc32CImpl(ref lut, crc, data);
         }
 
         /// <summary>
@@ -844,13 +847,30 @@ namespace System.Numerics
             }
 
             // Software fallback
-            ReadOnlySpan<ulong> span = MemoryMarshal.CreateReadOnlySpan(ref data, 1);
-
-            foreach (byte b in MemoryMarshal.AsBytes(span))
+            if (!BitConverter.IsLittleEndian)
             {
-                int tableIndex = (int)((crc ^ b) & 0xFF);
-                crc = s_crcTable[tableIndex] ^ (crc >> 8);
+                data = BinaryPrimitives.ReverseEndianness(data);
             }
+
+            ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+            crc = Crc32CImpl(ref lut, crc, (uint)data);
+            data >>= 32;
+            crc = Crc32CImpl(ref lut, crc, (uint)data);
+
+            return crc;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint Crc32CImpl(ref uint lut, uint crc, uint data)
+        {
+            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+            data >>= 8;
+            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+            data >>= 8;
+            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+            data >>= 8;
+            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
 
             return crc;
         }
