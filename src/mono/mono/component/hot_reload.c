@@ -63,11 +63,7 @@ static void
 hot_reload_apply_changes (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
 
 static int
-hot_reload_relative_delta_index (MonoImage *image_dmeta, int token);
-
-static int
-hot_reload_relative_delta_index_full (MonoImage *image_dmeta, DeltaInfo *delta_info, int token);
-
+hot_reload_relative_delta_index (MonoImage *image_dmeta, DeltaInfo *delta_info, int token);
 
 static void
 hot_reload_close_except_pools_all (MonoImage *base_image);
@@ -943,26 +939,7 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int idx)
  * relative index faster.
  */
 int
-hot_reload_relative_delta_index (MonoImage *image_dmeta, int token)
-{
-	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
-	int index = mono_metadata_token_index (token);
-
-	/* this helper expects and returns as "index origin = 1" */
-	g_assert (index > 0);
-
-	if (!table_info_get_rows (encmap) || !image_dmeta->minimal_delta)
-		return mono_metadata_token_index (token);
-
-	DeltaInfo *delta_info = delta_info_lookup (image_dmeta);
-	g_assert (delta_info);
-
-	return hot_reload_relative_delta_index_full (image_dmeta, delta_info, token);
-}
-
-
-int
-hot_reload_relative_delta_index_full (MonoImage *image_dmeta, DeltaInfo *delta_info, int token)
+hot_reload_relative_delta_index (MonoImage *image_dmeta, DeltaInfo *delta_info, int token)
 {
 	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
 
@@ -1158,7 +1135,7 @@ delta_info_mutate_row (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo 
 
 	gboolean modified = token_index <= cur_delta->count [token_table].prev_gen_rows;
 
-	int delta_index = hot_reload_relative_delta_index_full (image_dmeta, cur_delta, log_token);
+	int delta_index = hot_reload_relative_delta_index (image_dmeta, cur_delta, log_token);
 
 	/* The complication here is that we want the mutant table to look like the table in
 	 * image_base with respect to column widths, but the delta tables are generally coming in
@@ -1245,7 +1222,7 @@ prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, 
  * function will fail and the metadata update should be aborted. This should
  * run before anything in the metadata world is updated. */
 static gboolean
-apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
+apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_info_get_rows (table_enclog);
@@ -1332,7 +1309,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 				/* new rows are fine, as long as they point at existing methods */
 				guint32 sema_cols [MONO_METHOD_SEMA_SIZE];
-				int mapped_token = hot_reload_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
+				int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
 				g_assert (mapped_token != -1);
 				mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_METHODSEMANTICS], mapped_token - 1, sema_cols, MONO_METHOD_SEMA_SIZE);
 
@@ -1367,7 +1344,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 				/* modifying existing rows is ok, as long as the parent and ctor are the same */
 				guint32 ca_upd_cols [MONO_CUSTOM_ATTR_SIZE];
 				guint32 ca_base_cols [MONO_CUSTOM_ATTR_SIZE];
-				int mapped_token = hot_reload_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
+				int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
 				g_assert (mapped_token != -1);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update.  mapped index = 0x%08x\n", i, log_token, mapped_token);
 
@@ -1402,7 +1379,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 				/* We only allow modifications where the parameter name doesn't change. */
 				uint32_t base_param [MONO_PARAM_SIZE];
 				uint32_t upd_param [MONO_PARAM_SIZE];
-				int mapped_token = hot_reload_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
+				int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
 				g_assert (mapped_token != -1);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x PARAM update.  mapped index = 0x%08x\n", i, log_token, mapped_token);
 
@@ -1676,7 +1653,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			
 				delta_info->method_ppdb_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-			int mapped_token = hot_reload_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
+			int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
 			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token - 1, MONO_METHOD_RVA);
 			if (rva < dil_length) {
 				char *il_address = ((char *) dil_data) + rva;
@@ -1851,7 +1828,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Populated mutated tables for delta image %p", image_dmeta);
 
 
-	if (!apply_enclog_pass1 (image_base, image_dmeta, dil_bytes, dil_length, error)) {
+	if (!apply_enclog_pass1 (image_base, image_dmeta, delta_info, dil_bytes, dil_length, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on sanity-checking delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		hot_reload_update_cancel (generation);
 		return;
