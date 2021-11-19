@@ -488,17 +488,19 @@ namespace System.Xml
                 throw new ArgumentException(SR.Xml_InvalidSurrogateMissingLowChar);
             }
 
-            string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
+            Span<char> span = stackalloc char[12];
+            int charsWritten = CharWriteToSpan(span, ch);
+            ReadOnlySpan<char> ros = span[..charsWritten];
+
             if (_cacheAttrValue)
             {
                 Debug.Assert(_attrValue != null);
-                _attrValue.Append("&#x");
-                _attrValue.Append(strVal);
-                _attrValue.Append(';');
+                _attrValue.Append(ros);
             }
 
-            WriteCharEntityImpl(strVal);
+            _textWriter.Write(ros);
         }
+
 
         internal void WriteEntityRef(string name)
         {
@@ -540,17 +542,21 @@ namespace System.Xml
 
         private void WriteCharEntityImpl(char ch)
         {
-            Span<char> span = stackalloc char[8];
-            bool result = ((int)ch).TryFormat(span, out int charsWritten, "X", NumberFormatInfo.InvariantInfo);
-            Debug.Assert(result);
-            WriteCharEntityImpl(span[..charsWritten]);
+            Span<char> span = stackalloc char[12];
+            int charsWritten = CharWriteToSpan(span, ch);
+            _textWriter.Write(span[..charsWritten]);
         }
 
-        private void WriteCharEntityImpl(ReadOnlySpan<char> ros)
+        private static int CharWriteToSpan(Span<char> destination, char ch)
         {
-            _textWriter.Write("&#x");
-            _textWriter.Write(ros);
-            _textWriter.Write(';');
+            Debug.Assert(destination.Length == 12);
+            destination[0] = '&';
+            destination[1] = '#';
+            destination[2] = 'x';
+            bool result = ((int)ch).TryFormat(destination[3..], out int charsWritten, "X", NumberFormatInfo.InvariantInfo);
+            Debug.Assert(result);
+            destination[charsWritten + 3] = ';';
+            return charsWritten + 4;
         }
 
         private void WriteEntityRefImpl(string name)
