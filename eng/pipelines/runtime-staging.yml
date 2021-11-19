@@ -463,7 +463,7 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: Browser_wasm_Windows
+      nameSuffix: Windows_wasm
       buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows
       timeoutInMinutes: 180
       condition: >-
