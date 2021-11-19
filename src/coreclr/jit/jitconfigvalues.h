@@ -513,8 +513,12 @@ CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRang
 CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
 #endif // DEBUG
 
-// Enable insertion of patchpoints into Tier0 methods with loops.
+// Enable insertion of patchpoints into Tier0 methods, switching to optimzied where needed.
+#if defined(TARGET_AMD64)
+CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 1)
+#else
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
+#endif // defined(TARGET_AMD64)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
