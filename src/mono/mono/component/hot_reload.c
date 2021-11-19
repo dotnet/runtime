@@ -28,7 +28,7 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#define ALLOW_METHOD_ADD
+#undef ALLOW_METHOD_ADD
 
 typedef struct _DeltaInfo DeltaInfo;
 
@@ -1546,7 +1546,9 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 
 
 	MonoClass *add_method_klass = NULL;
+#ifdef ALLOW_METHOD_ADD
 	uint32_t add_param_method_index = 0;
+#endif
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
