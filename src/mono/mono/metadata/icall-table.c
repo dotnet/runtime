@@ -324,6 +324,8 @@ void
 mono_icall_table_init (void)
 {
 	int i = 0;
+	int pos = 0;
+	printf ("-------- mono_icall_table_init --------\n");
 
 	/* check that tables are sorted: disable in release */
 	if (TRUE) {
@@ -340,12 +342,13 @@ mono_icall_table_init (void)
 			prev_class = icall_type_name_get (i);
 			desc = &icall_type_descs [i];
 			num_icalls = icall_desc_num_icalls (desc);
-			/*g_print ("class %s has %d icalls starting at %d\n", prev_class, num_icalls, desc->first_icall);*/
+			g_print ("class %s has %d icalls starting at %d\n", prev_class, num_icalls, desc->first_icall);
 			for (j = 0; j < num_icalls; ++j) {
 				const char *methodn = icall_name_get (desc->first_icall + j);
 				if (prev_method && strcmp (prev_method, methodn) >= 0)
 					g_print ("method %s should come before method %s\n", methodn, prev_method);
 				prev_method = methodn;
+				g_print ("  - [%i] %s\n", pos++, methodn);
 			}
 		}
 	}

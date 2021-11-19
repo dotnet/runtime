@@ -256,7 +256,7 @@ typedef void (*ICallMethod) (InterpFrame *frame);
 
 static MonoNativeTlsKey thread_context_id;
 
-#define DEBUG_INTERP 1
+#define DEBUG_INTERP 0
 #define COUNT_OPS 0
 
 #if DEBUG_INTERP
@@ -2199,6 +2199,7 @@ interp_entry (InterpEntryData *data)
 static void
 do_icall (MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
+	//printf ("In do_icall for op=%i, ptr=%i\n", op, ptr);
 	if (save_last_error)
 		mono_marshal_clear_last_error ();
 

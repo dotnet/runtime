@@ -6960,6 +6960,7 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 	}
 
 exit:
+	//printf ("icall lookup for %s found result %i\n", mname, res);
 	if (locked)
 		mono_icall_unlock ();
 	g_free (classname);
