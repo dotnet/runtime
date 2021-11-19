@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.Configuration
         public Microsoft.Extensions.FileProviders.IFileProvider? FileProvider { get { throw null; } set { } }
         public System.Action<Microsoft.Extensions.Configuration.FileLoadExceptionContext>? OnLoadException { get { throw null; } set { } }
         public bool Optional { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
         public string? Path { get { throw null; } set { } }
         public int ReloadDelay { get { throw null; } set { } }
         public bool ReloadOnChange { get { throw null; } set { } }

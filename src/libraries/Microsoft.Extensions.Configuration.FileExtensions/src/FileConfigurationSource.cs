@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Microsoft.Extensions.FileProviders;
 
@@ -20,6 +21,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// The path to the file.
         /// </summary>
+        [DisallowNull]
         public string? Path { get; set; }
 
         /// <summary>
