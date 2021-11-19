@@ -4736,6 +4736,14 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     {
         whyNot = "localloc";
     }
+    else if (compHasBackwardJumpInHandler)
+    {
+        whyNot = "loop in handler";
+    }
+    else if (compTailPrefixSeen)
+    {
+        whyNot = "tail.call";
+    }
     else if (opts.IsReversePInvoke())
     {
         whyNot = "reverse pinvoke";

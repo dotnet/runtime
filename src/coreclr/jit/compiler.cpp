@@ -1873,6 +1873,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compJmpOpUsed         = false;
     compLongUsed          = false;
     compTailCallUsed      = false;
+    compTailPrefixSeen    = false;
     compLocallocSeen      = false;
     compLocallocUsed      = false;
     compLocallocOptimized = false;
@@ -6272,7 +6273,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     info.compTotalColdCodeSize = 0;
     info.compClassProbeCount   = 0;
 
-    compHasBackwardJump = false;
+    compHasBackwardJump          = false;
+    compHasBackwardJumpInHandler = false;
 
 #ifdef DEBUG
     compCurBB = nullptr;
@@ -6426,10 +6428,45 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         goto _Next;
     }
 
-    if (compHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToOptimized())
+    // We may decide to optimize this method,
+    // to avoid spending a long time stuck in Tier0 code.
+    //
+    if (fgCanSwitchToOptimized())
     {
-        // Method likely has a loop, switch to the OptimizedTier to avoid spending too much time running slower code
-        fgSwitchToOptimized();
+        // We only expect to be able to do this at Tier0.
+        //
+        assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
+
+        // Honor the config setting that tells the jit to
+        // always optimize methods with loops or explicit tail calls.
+        //
+        // If that's not set, and OSR is enabled, the jit may still
+        // decide to optimize, if there's something in the method that
+        // OSR currently cannot handle.
+        //
+        const char* reason = nullptr;
+
+        if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) == 0)
+        {
+            if (compHasBackwardJump)
+            {
+                reason = "loop";
+            }
+            else if (compTailPrefixSeen)
+            {
+                reason = "tail.call";
+            }
+        }
+        else if (JitConfig.TC_OnStackReplacement() > 0)
+        {
+            const bool patchpointsOK = compCanHavePatchpoints(&reason);
+            assert(patchpointsOK || (reason != nullptr));
+        }
+
+        if (reason != nullptr)
+        {
+            fgSwitchToOptimized(reason);
+        }
     }
 
     compSetOptimizationLevel();

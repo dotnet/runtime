@@ -11591,24 +11591,27 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
     // Are there any places in the method where we might add a patchpoint?
+    //
     if (compHasBackwardJump)
     {
-        // Are patchpoints enabled and supported?
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0) &&
-            compCanHavePatchpoints())
+        // Is OSR enabled?
+        //
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
         {
+            assert(compCanHavePatchpoints());
+
             // We don't inline at Tier0, if we do, we may need rethink our approach.
             // Could probably support inlines that don't introduce flow.
             assert(!compIsForInlining());
 
             // Is the start of this block a suitable patchpoint?
-            // Current strategy is blocks that are stack-empty and backwards branch targets and not in a handler
             //
-            // Todo (perhaps): bail out of OSR and jit this method with optimization.
-            //
-            if (!block->hasHndIndex() && ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) &&
-                (verCurrentState.esStackDepth == 0))
+            if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
             {
+                // We should have noted this earlier and bailed out of OSR.
+                //
+                assert(!block->hasHndIndex());
+
                 block->bbFlags |= BBF_PATCHPOINT;
                 setMethodHasPatchpoint();
             }
@@ -11629,6 +11632,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // In general we might want track all the IL stack empty points so we can
     // propagate rareness back through flow and place the partial compilation patchpoints "earlier"
     // so there are fewer overall.
+    //
+    // Note unlike OSR, it's ok to forgo these.
     //
     // Todo: stress mode...
     //
