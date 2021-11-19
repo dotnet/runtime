@@ -2527,7 +2527,6 @@ enum class IPmappingDscKind
 
 struct IPmappingDsc
 {
-    IPmappingDsc*    ipmdNext;      // next line# record
     emitLocation     ipmdNativeLoc; // the emitter location of the native code corresponding to the IL offset
     IPmappingDscKind ipmdKind;      // The kind of mapping
     ILLocation       ipmdLoc;       // The location for normal mappings
@@ -2536,9 +2535,8 @@ struct IPmappingDsc
 
 struct PreciseIPMapping
 {
-    PreciseIPMapping* next;
-    emitLocation      nativeLoc;
-    DebugInfo         debugInfo;
+    emitLocation nativeLoc;
+    DebugInfo    debugInfo;
 };
 
 /*
@@ -8273,11 +8271,11 @@ public:
 
     // Record the instr offset mapping to the generated code
 
-    IPmappingDsc* genIPmappingList;
-    IPmappingDsc* genIPmappingLast;
+    jitstd::list<IPmappingDsc> genIPmappings;
 
-    PreciseIPMapping* genPreciseIPMappingsHead;
-    PreciseIPMapping* genPreciseIPMappingsTail;
+#ifdef DEBUG
+    jitstd::list<PreciseIPMapping> genPreciseIPmappings;
+#endif
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points

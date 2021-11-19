@@ -6242,8 +6242,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
 #ifdef DEBUG
-    *instrCount                   = 0;
-    PreciseIPMapping* nextMapping = emitComp->genPreciseIPMappingsHead;
+    *instrCount                                          = 0;
+    jitstd::list<PreciseIPMapping>::iterator nextMapping = emitComp->genPreciseIPmappings.begin();
 #endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
@@ -6416,7 +6416,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0))
             {
                 UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
-                while (nextMapping != nullptr)
+                while (nextMapping != emitComp->genPreciseIPmappings.end())
                 {
                     UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
 
@@ -6435,7 +6435,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                         printf("\n");
                     }
 
-                    nextMapping = nextMapping->next;
+                    ++nextMapping;
                 }
             }
 

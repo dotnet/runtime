@@ -1847,6 +1847,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         impSpillCliquePredMembers = JitExpandArray<BYTE>(getAllocator());
         impSpillCliqueSuccMembers = JitExpandArray<BYTE>(getAllocator());
 
+        new (&genIPmappings, jitstd::placement_t()) jitstd::list<IPmappingDsc>(getAllocator(CMK_DebugInfo));
+#ifdef DEBUG
+        new (&genPreciseIPmappings, jitstd::placement_t()) jitstd::list<PreciseIPMapping>(getAllocator(CMK_DebugInfo));
+#endif
+
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();
 
         //
