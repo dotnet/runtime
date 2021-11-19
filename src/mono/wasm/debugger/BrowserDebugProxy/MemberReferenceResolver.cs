@@ -104,9 +104,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return (memberObject, remaining);
                 }
 
-                if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
+                if (!string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace))
                 {
-                    typeId = await FindStaticTypeId(methodInfo.TypeInfo.Namespace + "." + classNameToFind);
+                    typeId = await FindStaticTypeId(methodInfo?.TypeInfo?.Namespace + "." + classNameToFind);
                     if (typeId != -1)
                         continue;
                 }
