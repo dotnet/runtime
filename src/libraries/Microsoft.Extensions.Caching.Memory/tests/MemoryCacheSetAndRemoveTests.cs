@@ -387,7 +387,7 @@ namespace Microsoft.Extensions.Caching.Memory
             var obj = new object();
             string[] keys = new string[] { "key1", "key2", "key3", "key4" };
 
-            foreach (var key in keys)
+            foreach (string key in keys)
             {
                 var result = cache.Set(key, obj);
                 Assert.Same(obj, result);
@@ -397,7 +397,7 @@ namespace Microsoft.Extensions.Caching.Memory
             cache.Clear();
 
             Assert.Equal(0, cache.Count);
-            foreach (var key in keys)
+            foreach (string key in keys)
             {
                 Assert.Null(cache.Get(key));
             }

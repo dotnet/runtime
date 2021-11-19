@@ -507,7 +507,7 @@ namespace Microsoft.Extensions.Caching.Memory
             static void Throw() => throw new ArgumentNullException(nameof(key));
         }
 
-        private class CoherentState
+        private sealed class CoherentState
         {
             internal ConcurrentDictionary<object, CacheEntry> _entries = new ConcurrentDictionary<object, CacheEntry>();
             internal long _cacheSize;
