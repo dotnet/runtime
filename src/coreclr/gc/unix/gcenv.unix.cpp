@@ -781,8 +781,13 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     if (st != 0)
 #endif
     {
+#if HAVE_POSIX_MADVISE
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
         st = posix_madvise(address, size, MADV_DONTNEED);
+#else
+        // If we don't have posix_madvise, report failure
+        st = EINVAL;
+#endif
     }
 
     return (st == 0);

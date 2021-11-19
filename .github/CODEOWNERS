@@ -4,13 +4,14 @@
 /src/libraries/Common/src/Interop/                                  @dotnet/platform-deps-team
 /src/libraries/Common/src/System/Net/Http/aspnetcore/               @dotnet/http
 /src/libraries/Common/tests/Tests/System/Net/aspnetcore/            @dotnet/http
-/src/libraries/System.Text.Json/                                    @steveharter @layomia @eiriktsarpalis
 
 # CoreCLR Code Owners
 
 /src/coreclr/inc/corinfo.h @dotnet/jit-contrib
 /src/coreclr/inc/corjit.h @dotnet/jit-contrib
 /src/coreclr/jit/ @dotnet/jit-contrib
+/src/coreclr/tools/Common @dotnet/crossgen-contrib @MichalStrehovsky
+/src/coreclr/tools/aot @dotnet/crossgen-contrib
 
 # Mono Code Owners
 
@@ -53,3 +54,8 @@
 /src/mono/mono/utils/mono-threads* @lambdageek @vargaz
 
 /src/mono/dlls @thaystg @lambdageek
+
+# Obsoletions / Custom Diagnostics
+
+/docs/project/list-of-diagnostics.md                @jeffhandley
+/src/libraries/Common/src/System/Obsoletions.cs     @jeffhandley

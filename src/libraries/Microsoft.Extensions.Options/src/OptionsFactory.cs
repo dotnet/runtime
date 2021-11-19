@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Options
                 post.PostConfigure(name, options);
             }
 
-            if (_validations != null)
+            if (_validations.Length > 0)
             {
                 var failures = new List<string>();
                 foreach (IValidateOptions<TOptions> validate in _validations)

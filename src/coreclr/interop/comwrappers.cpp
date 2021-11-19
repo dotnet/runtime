@@ -791,17 +791,6 @@ void NativeObjectWrapperContext::Destroy(_In_ NativeObjectWrapperContext* wrappe
 {
     _ASSERTE(wrapper != nullptr);
 
-    // Check if the tracker object manager should be informed prior to being destroyed.
-    IReferenceTracker* trackerMaybe = wrapper->GetReferenceTracker();
-    if (trackerMaybe != nullptr)
-    {
-        // We only call this during a GC so ignore the failure as
-        // there is no way we can handle it at this point.
-        HRESULT hr = TrackerObjectManager::BeforeWrapperDestroyed(trackerMaybe);
-        _ASSERTE(SUCCEEDED(hr));
-        (void)hr;
-    }
-
     // Manually trigger the destructor since placement
     // new was used to allocate the object.
     wrapper->~NativeObjectWrapperContext();

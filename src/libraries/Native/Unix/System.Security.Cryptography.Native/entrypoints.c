@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "../../AnyOS/entrypoints.h"
+#include <common/entrypoints.h>
 
 // Include System.Security.Cryptography.Native headers
 #include "openssl.h"
@@ -287,16 +287,16 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslRenegotiate)
     DllImportEntry(CryptoNative_IsSslRenegotiatePending)
     DllImportEntry(CryptoNative_IsSslStateOK)
+    DllImportEntry(CryptoNative_SslCtxAddExtraChainCert)
+    DllImportEntry(CryptoNative_SslCtxSetCiphers)
+    DllImportEntry(CryptoNative_SslCtxSetEncryptionPolicy)
     DllImportEntry(CryptoNative_SetCiphers)
-    DllImportEntry(CryptoNative_SetEncryptionPolicy)
-    DllImportEntry(CryptoNative_SetProtocolOptions)
-    DllImportEntry(CryptoNative_SslAddExtraChainCert)
     DllImportEntry(CryptoNative_SslCreate)
     DllImportEntry(CryptoNative_SslCtxCheckPrivateKey)
     DllImportEntry(CryptoNative_SslCtxCreate)
     DllImportEntry(CryptoNative_SslCtxDestroy)
-    DllImportEntry(CryptoNative_SslCtxSetAlpnProtos)
     DllImportEntry(CryptoNative_SslCtxSetAlpnSelectCb)
+    DllImportEntry(CryptoNative_SslCtxSetProtocolOptions)
     DllImportEntry(CryptoNative_SslCtxSetQuietShutdown)
     DllImportEntry(CryptoNative_SslCtxSetVerify)
     DllImportEntry(CryptoNative_SslCtxUseCertificate)
@@ -305,6 +305,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslDoHandshake)
     DllImportEntry(CryptoNative_SslGetClientCAList)
     DllImportEntry(CryptoNative_SslGetCurrentCipherId)
+    DllImportEntry(CryptoNative_SslGetData)
     DllImportEntry(CryptoNative_SslGetError)
     DllImportEntry(CryptoNative_SslGetFinished)
     DllImportEntry(CryptoNative_SslGetPeerCertChain)
@@ -314,10 +315,13 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslRead)
     DllImportEntry(CryptoNative_SslSessionReused)
     DllImportEntry(CryptoNative_SslSetAcceptState)
+    DllImportEntry(CryptoNative_SslSetAlpnProtos)
     DllImportEntry(CryptoNative_SslSetBio)
     DllImportEntry(CryptoNative_SslSetConnectState)
+    DllImportEntry(CryptoNative_SslSetData)
     DllImportEntry(CryptoNative_SslSetQuietShutdown)
     DllImportEntry(CryptoNative_SslSetTlsExtHostName)
+    DllImportEntry(CryptoNative_SslSetVerifyPeer)
     DllImportEntry(CryptoNative_SslShutdown)
     DllImportEntry(CryptoNative_SslV2_3Method)
     DllImportEntry(CryptoNative_SslWrite)
@@ -332,5 +336,5 @@ EXTERN_C const void* CryptoResolveDllImport(const char* name);
 
 EXTERN_C const void* CryptoResolveDllImport(const char* name)
 {
-    return ResolveDllImport(s_cryptoNative, lengthof(s_cryptoNative), name);
+    return minipal_resolve_dllimport(s_cryptoNative, lengthof(s_cryptoNative), name);
 }

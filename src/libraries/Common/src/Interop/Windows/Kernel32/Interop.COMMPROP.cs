@@ -33,7 +33,7 @@ internal static partial class Interop
             public int dwCurrentRxQueue;
             public int dwProvSpec1;
             public int dwProvSpec2;
-            public char wcProvChar;
+            public ushort /*char*/ wcProvChar;
         }
 
     }

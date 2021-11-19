@@ -34,6 +34,7 @@ function print_usage {
     echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --printLastResultsOnly           : Print the results of the last run'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
+    echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -96,6 +97,7 @@ ilasmroundtrip=
 printLastResultsOnly=
 runSequential=0
 runincontext=0
+tieringtest=0
 
 for i in "$@"
 do
@@ -192,6 +194,9 @@ do
         --runincontext)
             runincontext=1
             ;;
+        --tieringtest)
+            tieringtest=1
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -283,6 +288,11 @@ fi
 if [[ ! "$runincontext" -eq 0 ]]; then
     echo "Running in an unloadable AssemblyLoadContext"
     runtestPyArguments+=("--run_in_context")
+fi
+
+if [[ ! "$tieringtest" -eq 0 ]]; then
+    echo "Running to encourage tier1 rejitting"
+   runtestPyArguments+=("--tieringtest")
 fi
 
 # Default to python3 if it is installed

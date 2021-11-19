@@ -4,7 +4,6 @@
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include=".\helperdll.csproj" />

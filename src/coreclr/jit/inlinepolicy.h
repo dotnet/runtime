@@ -185,7 +185,7 @@ protected:
 class ExtendedDefaultPolicy : public DefaultPolicy
 {
 public:
-    ExtendedDefaultPolicy::ExtendedDefaultPolicy(Compiler* compiler, bool isPrejitRoot)
+    ExtendedDefaultPolicy(Compiler* compiler, bool isPrejitRoot)
         : DefaultPolicy(compiler, isPrejitRoot)
         , m_ProfileFrequency(0.0)
         , m_BinaryExprWithCns(0)
@@ -516,7 +516,7 @@ public:
         m_InlineContext = context;
     }
 
-    void NoteOffset(IL_OFFSETX offset) override
+    void NoteOffset(IL_OFFSET offset) override
     {
         m_Offset = offset;
     }
@@ -542,7 +542,7 @@ private:
     static FILE*         s_ReplayFile;
     static CritSecObject s_XmlReaderLock;
     InlineContext*       m_InlineContext;
-    IL_OFFSETX           m_Offset;
+    IL_OFFSET            m_Offset;
     bool                 m_WasForceInline;
 };
 

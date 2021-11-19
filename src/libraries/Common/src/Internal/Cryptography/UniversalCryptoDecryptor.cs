@@ -35,7 +35,7 @@ namespace Internal.Cryptography
             // zeros at the end of a block are part of the plaintext or the padding.
             //
             int decryptedBytes = 0;
-            if (DepaddingRequired)
+            if (SymmetricPadding.DepaddingRequired(PaddingMode))
             {
                 // If we have data saved from a previous call, decrypt that into the output first
                 if (_heldoverCipher != null)
@@ -112,7 +112,7 @@ namespace Internal.Cryptography
 
                     if (decryptedBytes.Length > 0)
                     {
-                        unpaddedLength = GetPaddingLength(decryptedBytes);
+                        unpaddedLength = SymmetricPadding.GetPaddingLength(decryptedBytes, PaddingMode, InputBlockSize);
                         decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
                     }
                 }
@@ -131,7 +131,7 @@ namespace Internal.Cryptography
 
         protected override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (DepaddingRequired)
+            if (SymmetricPadding.DepaddingRequired(PaddingMode))
             {
                 byte[] rented = CryptoPool.Rent(inputCount + InputBlockSize);
                 int written = 0;
@@ -151,11 +151,7 @@ namespace Internal.Cryptography
             }
             else
             {
-#if NET5_0_OR_GREATER
                 byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
-#else
-                byte[] buffer = new byte[inputCount];
-#endif
                 int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
                 Debug.Assert(written == buffer.Length);
                 return buffer;
@@ -190,7 +186,7 @@ namespace Internal.Cryptography
             // until it's been decrypted. We don't want to decrypt in to a user-supplied buffer and then throw
             // a padding exception after we've already filled the user buffer with plaintext. We should only
             // release the plaintext to the caller once we know the padding is valid.
-            if (!DepaddingRequired)
+            if (!SymmetricPadding.DepaddingRequired(PaddingMode))
             {
                 if (output.Length >= input.Length)
                 {
@@ -213,7 +209,9 @@ namespace Internal.Cryptography
                 {
                     int transformWritten = BasicSymmetricCipher.TransformFinal(input, buffer);
                     decryptedBuffer = buffer.Slice(0, transformWritten);
-                    int unpaddedLength = GetPaddingLength(decryptedBuffer); // validates padding
+
+                    // validates padding
+                    int unpaddedLength = SymmetricPadding.GetPaddingLength(decryptedBuffer, PaddingMode, InputBlockSize);
 
                     if (unpaddedLength > output.Length)
                     {
@@ -240,100 +238,6 @@ namespace Internal.Cryptography
                 Array.Clear(_heldoverCipher);
                 _heldoverCipher = null;
             }
-        }
-
-        private bool DepaddingRequired
-        {
-            get
-            {
-                // Some padding modes encode sufficient information to allow for automatic depadding to happen.
-                switch (PaddingMode)
-                {
-                    case PaddingMode.PKCS7:
-                    case PaddingMode.ANSIX923:
-                    case PaddingMode.ISO10126:
-                        return true;
-                    case PaddingMode.Zeros:
-                    case PaddingMode.None:
-                        return false;
-                    default:
-                        Debug.Fail($"Unknown padding mode {PaddingMode}.");
-                        throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
-                }
-            }
-        }
-
-        /// <summary>
-        ///     Gets the length of the padding applied to the block, and validates
-        ///     the padding, if possible.
-        /// </summary>
-        private int GetPaddingLength(ReadOnlySpan<byte> block)
-        {
-            int padBytes = 0;
-
-            // See PadBlock for a description of the padding modes.
-            switch (PaddingMode)
-            {
-                case PaddingMode.ANSIX923:
-                    padBytes = block[^1];
-
-                    // Verify the amount of padding is reasonable
-                    if (padBytes <= 0 || padBytes > InputBlockSize)
-                    {
-                        throw new CryptographicException(SR.Cryptography_InvalidPadding);
-                    }
-
-                    // Verify that all the padding bytes are 0s
-                    for (int i = block.Length - padBytes; i < block.Length - 1; i++)
-                    {
-                        if (block[i] != 0)
-                        {
-                            throw new CryptographicException(SR.Cryptography_InvalidPadding);
-                        }
-                    }
-
-                    break;
-
-                case PaddingMode.ISO10126:
-                    padBytes = block[^1];
-
-                    // Verify the amount of padding is reasonable
-                    if (padBytes <= 0 || padBytes > InputBlockSize)
-                    {
-                        throw new CryptographicException(SR.Cryptography_InvalidPadding);
-                    }
-
-                    // Since the padding consists of random bytes, we cannot verify the actual pad bytes themselves
-                    break;
-
-                case PaddingMode.PKCS7:
-                    padBytes = block[^1];
-
-                    // Verify the amount of padding is reasonable
-                    if (padBytes <= 0 || padBytes > InputBlockSize)
-                        throw new CryptographicException(SR.Cryptography_InvalidPadding);
-
-                    // Verify all the padding bytes match the amount of padding
-                    for (int i = block.Length - padBytes; i < block.Length - 1; i++)
-                    {
-                        if (block[i] != padBytes)
-                            throw new CryptographicException(SR.Cryptography_InvalidPadding);
-                    }
-
-                    break;
-
-                // We cannot remove Zeros padding because we don't know if the zeros at the end of the block
-                // belong to the padding or the plaintext itself.
-                case PaddingMode.Zeros:
-                case PaddingMode.None:
-                    padBytes = 0;
-                    break;
-
-                default:
-                    throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
-            }
-
-            return block.Length - padBytes;
         }
 
         //

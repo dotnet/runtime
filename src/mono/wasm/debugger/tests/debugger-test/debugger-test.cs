@@ -725,5 +725,107 @@ public class Foo
         Console.WriteLine($"time for await");
         return true;
     }
+
 }
 
+public class MainPage
+{
+    public MainPage()
+    {
+    }
+
+    int count = 0;
+    private int someValue;
+
+    public int SomeValue
+    {
+        get
+        {
+            return someValue;
+        }
+        set
+        {
+            someValue = value;
+            count++;
+
+            if (count == 10)
+            {
+                var view = 150;
+
+                if (view != 50)
+                {
+
+                }
+                System.Diagnostics.Debugger.Break();
+            }
+
+            SomeValue = count;
+        }
+    }
+
+    public static void CallSetValue()
+    {
+        var mainPage = new MainPage();
+        mainPage.SomeValue = 10;
+    }
+}
+
+public class LoopClass
+{
+    public static void LoopToBreak()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            Console.WriteLine($"should pause only on i == 3");
+        }
+        Console.WriteLine("breakpoint to check");
+    }
+}
+
+public class SteppingInto
+{
+    static int currentCount = 0;
+    static MyIncrementer incrementer = new MyIncrementer();
+    public static void MethodToStep()
+    {
+        currentCount = incrementer.Increment(currentCount);
+    }
+}
+
+public class MyIncrementer
+{
+    private Func<DateTime> todayFunc = () => DateTime.Now;
+
+    public int Increment(int count)
+    {
+        var today = todayFunc();
+        if (today.DayOfWeek == DayOfWeek.Sunday)
+        {
+            return count + 2;
+        }
+
+        return count + 1;
+    }
+}
+
+public class DebuggerAttribute
+{
+    static int currentCount = 0;
+
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethod()
+    {
+        currentCount++;
+    }
+
+    public static void VisibleMethod()
+    {
+        currentCount++;
+    }
+
+    public static void Run()
+    {
+        HiddenMethod();
+        VisibleMethod();
+    }
+}

@@ -24,6 +24,7 @@
     <Compile Include="System\UncNameHelper.cs" />
     <Compile Include="System\Uri.cs" />
     <Compile Include="System\UriBuilder.cs" />
+    <Compile Include="System\UriCreationOptions.cs" />
     <Compile Include="System\UriEnumTypes.cs" />
     <Compile Include="System\UriExt.cs" />
     <Compile Include="System\UriFormatException.cs" />

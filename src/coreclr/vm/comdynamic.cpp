@@ -13,8 +13,6 @@
 #include "commodule.h"
 #include "reflectclasswriter.h"
 #include "corerror.h"
-#include "iceefilegen.h"
-#include "ceefilegenwriter.h"
 #include "typekey.h"
 
 
@@ -39,7 +37,7 @@ struct ExceptionInstance {
 // Defining a type into metadata of this dynamic module
 //
 //*************************************************************
-INT32 QCALLTYPE COMDynamicWrite::DefineGenericParam(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineGenericParam(QCall::ModuleHandle pModule,
                                                     LPCWSTR wszFullName,
                                                     INT32 tkParent,
                                                     INT32 attributes,
@@ -63,12 +61,32 @@ INT32 QCALLTYPE COMDynamicWrite::DefineGenericParam(QCall::ModuleHandle pModule,
     return (INT32)classE;
 }
 
-INT32 QCALLTYPE COMDynamicWrite::DefineType(QCall::ModuleHandle pModule,
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineType(QCall::ModuleHandle pModule,
                                             LPCWSTR wszFullName,
                                             INT32 tkParent,
                                             INT32 attributes,
                                             INT32 tkEnclosingType,
                                             INT32 * pInterfaceTokens)
+{
+    QCALL_CONTRACT;
+
+    int classE = mdTokenNil;
+
+    BEGIN_QCALL;
+
+    classE = COMDynamicWrite::DefineType(pModule, wszFullName, tkParent, attributes, tkEnclosingType, pInterfaceTokens);
+
+    END_QCALL;
+
+    return (INT32)classE;
+}
+
+INT32 COMDynamicWrite::DefineType(Module* pModule,
+                                  LPCWSTR wszFullName,
+                                  INT32 tkParent,
+                                  INT32 attributes,
+                                  INT32 tkEnclosingType,
+                                  INT32 * pInterfaceTokens)
 {
     QCALL_CONTRACT;
 
@@ -123,7 +141,7 @@ INT32 QCALLTYPE COMDynamicWrite::DefineType(QCall::ModuleHandle pModule,
 }
 
 // This function will reset the parent class in metadata
-void QCALLTYPE COMDynamicWrite::SetParentType(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkParent)
+extern "C" void QCALLTYPE TypeBuilder_SetParentType(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkParent)
 {
     QCALL_CONTRACT;
 
@@ -138,7 +156,7 @@ void QCALLTYPE COMDynamicWrite::SetParentType(QCall::ModuleHandle pModule, INT32
 }
 
 // This function will add another interface impl
-void QCALLTYPE COMDynamicWrite::AddInterfaceImpl(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkInterface)
+extern "C" void QCALLTYPE TypeBuilder_AddInterfaceImpl(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkInterface)
 {
     QCALL_CONTRACT;
 
@@ -153,7 +171,7 @@ void QCALLTYPE COMDynamicWrite::AddInterfaceImpl(QCall::ModuleHandle pModule, IN
 }
 
 // This function will create a method within the class
-INT32 QCALLTYPE COMDynamicWrite::DefineMethodSpec(QCall::ModuleHandle pModule, INT32 tkParent, LPCBYTE pSignature, INT32 sigLength)
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethodSpec(QCall::ModuleHandle pModule, INT32 tkParent, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;
 
@@ -175,7 +193,7 @@ INT32 QCALLTYPE COMDynamicWrite::DefineMethodSpec(QCall::ModuleHandle pModule, I
     return (INT32) memberE;
 }
 
-INT32 QCALLTYPE COMDynamicWrite::DefineMethod(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attributes)
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethod(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attributes)
 {
     QCALL_CONTRACT;
 
@@ -207,7 +225,7 @@ INT32 QCALLTYPE COMDynamicWrite::DefineMethod(QCall::ModuleHandle pModule, INT32
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-mdFieldDef QCALLTYPE COMDynamicWrite::DefineField(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attr)
+extern "C" mdFieldDef QCALLTYPE TypeBuilder_DefineField(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attr)
 {
     QCALL_CONTRACT;
 
@@ -281,7 +299,7 @@ UINT32 ExceptionHandlingSize(unsigned uNumExceptions, COR_ILMETHOD_SECT_EH_CLAUS
 
 
 // SetMethodIL -- This function will create a method within the class
-void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
+extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
                                             INT32 tk,
                                             BOOL fIsInitLocal,
                                             LPCBYTE pBody,
@@ -455,13 +473,20 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
     END_QCALL;
 }
 
-void QCALLTYPE COMDynamicWrite::TermCreateClass(QCall::ModuleHandle pModule, INT32 tk, QCall::ObjectHandleOnStack retType)
+extern "C" void QCALLTYPE TypeBuilder_TermCreateClass(QCall::ModuleHandle pModule, INT32 tk, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
 
-    TypeHandle typeHnd;
-
     BEGIN_QCALL;
+
+    COMDynamicWrite::TermCreateClass(pModule, tk, retType);
+
+    END_QCALL;
+}
+
+void COMDynamicWrite::TermCreateClass(Module* pModule, INT32 tk, QCall::ObjectHandleOnStack retType)
+{
+    TypeHandle typeHnd;
 
     _ASSERTE(pModule->GetReflectionModule()->GetClassWriter());
 
@@ -482,10 +507,6 @@ void QCALLTYPE COMDynamicWrite::TermCreateClass(QCall::ModuleHandle pModule, INT
         GCX_COOP();
         retType.Set(typeHnd.GetManagedClassObject());
     }
-
-    END_QCALL;
-
-    return;
 }
 
 /*============================SetPInvokeData============================
@@ -494,7 +515,7 @@ void QCALLTYPE COMDynamicWrite::TermCreateClass(QCall::ModuleHandle pModule, INT
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-void QCALLTYPE COMDynamicWrite::SetPInvokeData(QCall::ModuleHandle pModule, LPCWSTR wszDllName, LPCWSTR wszFunctionName, INT32 token, INT32 linkFlags)
+extern "C" void QCALLTYPE TypeBuilder_SetPInvokeData(QCall::ModuleHandle pModule, LPCWSTR wszDllName, LPCWSTR wszFunctionName, INT32 token, INT32 linkFlags)
 {
     QCALL_CONTRACT;
 
@@ -523,7 +544,7 @@ void QCALLTYPE COMDynamicWrite::SetPInvokeData(QCall::ModuleHandle pModule, LPCW
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-INT32 QCALLTYPE COMDynamicWrite::DefineProperty(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, LPCBYTE pSignature, INT32 sigLength)
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineProperty(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;
 
@@ -560,7 +581,7 @@ INT32 QCALLTYPE COMDynamicWrite::DefineProperty(QCall::ModuleHandle pModule, INT
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-INT32 QCALLTYPE COMDynamicWrite::DefineEvent(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, INT32 tkEventType)
+extern "C" INT32 QCALLTYPE TypeBuilder_DefineEvent(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, INT32 tkEventType)
 {
     QCALL_CONTRACT;
 
@@ -590,7 +611,7 @@ INT32 QCALLTYPE COMDynamicWrite::DefineEvent(QCall::ModuleHandle pModule, INT32 
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-void QCALLTYPE COMDynamicWrite::DefineMethodSemantics(QCall::ModuleHandle pModule, INT32 tkAssociation, INT32 attr, INT32 tkMethod)
+extern "C" void QCALLTYPE TypeBuilder_DefineMethodSemantics(QCall::ModuleHandle pModule, INT32 tkAssociation, INT32 attr, INT32 tkMethod)
 {
     QCALL_CONTRACT;
 
@@ -611,7 +632,7 @@ void QCALLTYPE COMDynamicWrite::DefineMethodSemantics(QCall::ModuleHandle pModul
 /*============================SetMethodImpl============================
 ** To set a Method's Implementation flags
 ==============================================================================*/
-void QCALLTYPE COMDynamicWrite::SetMethodImpl(QCall::ModuleHandle pModule, INT32 tkMethod, INT32 attr)
+extern "C" void QCALLTYPE TypeBuilder_SetMethodImpl(QCall::ModuleHandle pModule, INT32 tkMethod, INT32 attr)
 {
     QCALL_CONTRACT;
 
@@ -631,7 +652,7 @@ void QCALLTYPE COMDynamicWrite::SetMethodImpl(QCall::ModuleHandle pModule, INT32
 /*============================DefineMethodImpl============================
 ** Define a MethodImpl record
 ==============================================================================*/
-void QCALLTYPE COMDynamicWrite::DefineMethodImpl(QCall::ModuleHandle pModule, UINT32 tkType, UINT32 tkBody, UINT32 tkDecl)
+extern "C" void QCALLTYPE TypeBuilder_DefineMethodImpl(QCall::ModuleHandle pModule, UINT32 tkType, UINT32 tkBody, UINT32 tkDecl)
 {
     QCALL_CONTRACT;
 
@@ -655,7 +676,7 @@ void QCALLTYPE COMDynamicWrite::DefineMethodImpl(QCall::ModuleHandle pModule, UI
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-INT32 QCALLTYPE COMDynamicWrite::GetTokenFromSig(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength)
+extern "C" INT32 QCALLTYPE TypeBuilder_GetTokenFromSig(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;
 
@@ -685,7 +706,7 @@ INT32 QCALLTYPE COMDynamicWrite::GetTokenFromSig(QCall::ModuleHandle pModule, LP
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-INT32 QCALLTYPE COMDynamicWrite::SetParamInfo(QCall::ModuleHandle pModule, UINT32 tkMethod, UINT32 iSequence, UINT32 iAttributes, LPCWSTR wszParamName)
+extern "C" INT32 QCALLTYPE TypeBuilder_SetParamInfo(QCall::ModuleHandle pModule, UINT32 tkMethod, UINT32 iSequence, UINT32 iAttributes, LPCWSTR wszParamName)
 {
     QCALL_CONTRACT;
 
@@ -719,7 +740,7 @@ INT32 QCALLTYPE COMDynamicWrite::SetParamInfo(QCall::ModuleHandle pModule, UINT3
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UINT32 tk, DWORD valueCorType, LPVOID pValue)
+extern "C" void QCALLTYPE TypeBuilder_SetConstantValue(QCall::ModuleHandle pModule, UINT32 tk, DWORD valueCorType, LPVOID pValue)
 {
     QCALL_CONTRACT;
 
@@ -775,7 +796,7 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-void QCALLTYPE COMDynamicWrite::SetFieldLayoutOffset(QCall::ModuleHandle pModule, INT32 tkField, INT32 iOffset)
+extern "C" void QCALLTYPE TypeBuilder_SetFieldLayoutOffset(QCall::ModuleHandle pModule, INT32 tkField, INT32 iOffset)
 {
     QCALL_CONTRACT;
 
@@ -799,7 +820,7 @@ void QCALLTYPE COMDynamicWrite::SetFieldLayoutOffset(QCall::ModuleHandle pModule
 **Arguments:
 **Exceptions:
 ==============================================================================*/
-void QCALLTYPE COMDynamicWrite::SetClassLayout(QCall::ModuleHandle pModule, INT32 tk, INT32 iPackSize, UINT32 iTotalSize)
+extern "C" void QCALLTYPE TypeBuilder_SetClassLayout(QCall::ModuleHandle pModule, INT32 tk, INT32 iPackSize, UINT32 iTotalSize)
 {
     QCALL_CONTRACT;
 
@@ -896,7 +917,7 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
     }
 }
 
-void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob)
+extern "C" void QCALLTYPE TypeBuilder_DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob)
 {
     QCALL_CONTRACT;
 

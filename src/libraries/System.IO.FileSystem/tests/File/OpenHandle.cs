@@ -7,28 +7,24 @@ using Xunit;
 namespace System.IO.Tests
 {
     // to avoid a lot of code duplication, we reuse FileStream tests
-    public class File_OpenHandle : FileStream_ctor_options_as
+    public class File_OpenHandle : FileStream_ctor_options
     {
         protected override string GetExpectedParamName(string paramName) => paramName;
 
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
             FileAccess access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite;
-            return new FileStream(File.OpenHandle(path, mode, access, preallocationSize: PreallocationSize), access);
+            return new FileStream(File.OpenHandle(path, mode, access), access);
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
-            => new FileStream(File.OpenHandle(path, mode, access, preallocationSize: PreallocationSize), access);
+            => new FileStream(File.OpenHandle(path, mode, access), access);
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new FileStream(File.OpenHandle(path, mode, access, share, options, PreallocationSize), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+            => new FileStream(File.OpenHandle(path, mode, access, share, options), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
 
-        [Fact]
-        public override void NegativePreallocationSizeThrows()
-        {
-            ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
-                () => File.OpenHandle("validPath", FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize: -1));
-        }
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+            => new FileStream(File.OpenHandle(path, mode, access, share, options, preallocationSize), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53432")]
         [Theory, MemberData(nameof(StreamSpecifiers))]

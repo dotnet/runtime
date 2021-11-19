@@ -1,21 +1,21 @@
-<Project Sdk="Microsoft.NET.SDK">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
-    <PackageId>$(MSBuildProjectName)</PackageId>
-    <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
-
     <IsSourceProject>false</IsSourceProject>
-    <IsPackable>true</IsPackable>
-    <!-- TODO: Enable after AvoidRestoreCycleOnSelfReference hack is removed. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <NoWarn>$(NoWarn);NU5128</NoWarn> <!-- No Dependencies-->
     <PackageDescription>Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.</PackageDescription>
+    <NoWarn>$(NoWarn);NU5128</NoWarn> <!-- No Dependencies-->
+    <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
+    <!-- TODO: Remove with AvoidRestoreCycleOnSelfReference hack. -->
+    <PackageValidationBaselineName>$(MSBuildProjectName)</PackageValidationBaselineName>
     <BeforePack>GenerateRuntimeJson;UpdateRuntimeJson;$(BeforePack)</BeforePack>
     
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' == 'core'">$(NetCoreAppToolCurrent)</_generateRuntimeGraphTargetFramework>
@@ -25,7 +25,7 @@
     <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="BuildTask.Desktop.cs" />
     <Compile Include="AssemblyResolver.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
@@ -48,9 +48,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
   
   <Import Project="runtimeGroups.props" />

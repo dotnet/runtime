@@ -1556,6 +1556,12 @@ bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bo
     return supported;
 }
 
+void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+{
+    jitInstance->mc->cr->AddCall("updateEntryPointForTailCall");
+    jitInstance->mc->repUpdateEntryPointForTailCall(entryPoint);
+}
+
 // Stuff directly on ICorJitInfo
 
 // Returns extended flags for a particular compilation instance.
@@ -1572,6 +1578,13 @@ uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
         jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
     }
     return ret;
+}
+
+bool MyICJI::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("doesFieldBelongToClass");
+    bool result = jitInstance->mc->repDoesFieldBelongToClass(fldHnd, cls);
+    return result;
 }
 
 // Runs the given function with the given parameter under an error trap

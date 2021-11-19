@@ -18,6 +18,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap.h>
 #include <mono/utils/mono-memory-model.h>
@@ -953,7 +954,7 @@ mono_arch_is_soft_float (void)
 static gboolean
 is_regsize_var (MonoType *t)
 {
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return TRUE;
 	t = mini_get_underlying_type (t);
 	switch (t->type) {
@@ -1238,7 +1239,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 			prev_ftype = ftype;
 			nfields += nested_nfields;
 		} else {
-			if (!(!ftype->byref && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
+			if (!(!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
 				return FALSE;
 			if (prev_ftype && prev_ftype->type != ftype->type)
 				return FALSE;
@@ -1411,7 +1412,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
 		}
 		DEBUG(g_print("param %d: ", i));
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
                         DEBUG(g_print("byref\n"));
 			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
@@ -2462,7 +2463,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		switch (ainfo->storage) {
 		case RegTypeGeneral:
 		case RegTypeIRegPair:
-			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
+			if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->sreg1 = MONO_LVREG_LS (in->dreg);
@@ -2474,7 +2475,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				ins->sreg1 = MONO_LVREG_MS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + 1, FALSE);
-			} else if (!t->byref && ((t->type == MONO_TYPE_R8) || (t->type == MONO_TYPE_R4))) {
+			} else if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_R8) || (t->type == MONO_TYPE_R4))) {
 				if (ainfo->size == 4) {
 					if (IS_SOFT_FLOAT) {
 						/* mono_emit_call_args () have already done the r8->r4 conversion */
@@ -2546,9 +2547,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			MONO_ADD_INS (cfg->cbb, ins);
 			break;
 		case RegTypeBase:
-			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
+			if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, ARMREG_SP, ainfo->offset, in->dreg);
-			} else if (!t->byref && ((t->type == MONO_TYPE_R4) || (t->type == MONO_TYPE_R8))) {
+			} else if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_R4) || (t->type == MONO_TYPE_R8))) {
 				if (t->type == MONO_TYPE_R8) {
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, ARMREG_SP, ainfo->offset, in->dreg);
 				} else {
@@ -2562,14 +2563,14 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 			break;
 		case RegTypeBaseGen:
-			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
+			if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, ainfo->offset, (G_BYTE_ORDER == G_BIG_ENDIAN) ? MONO_LVREG_LS (in->dreg) : MONO_LVREG_MS (in->dreg));
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->sreg1 = G_BYTE_ORDER == G_BIG_ENDIAN ? MONO_LVREG_MS (in->dreg) : MONO_LVREG_LS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ARMREG_R3, FALSE);
-			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
+			} else if (!m_type_is_byref (t) && (t->type == MONO_TYPE_R8)) {
 				int creg;
 
 				/* This should work for soft-float as well */
@@ -2759,7 +2760,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
 			MonoInst *ins;
 
@@ -2872,7 +2873,7 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			continue;
 
 		t = mini_get_underlying_type (t);
@@ -2986,7 +2987,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			g_assert_not_reached ();
 		}
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			p->regs [slot] = (host_mgreg_t)(gsize)*arg;
 			continue;
 		}
@@ -3466,7 +3467,7 @@ loop_start:
 				ins->inst_c0 = 0;
 				break;
 			}
-			imm8 = mono_is_power_of_two (ins->inst_imm);
+			imm8 = (ins->inst_imm > 0) ? mono_is_power_of_two (ins->inst_imm) : -1;
 			if (imm8 > 0) {
 				ins->opcode = OP_SHL_IMM;
 				ins->inst_imm = imm8;

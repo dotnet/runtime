@@ -12,10 +12,13 @@
 // Insert patchpoint checks into Tier0 methods, based on locations identified
 // during importation (see impImportBlockCode).
 //
-// Policy decisions implemented here:
+// There are now two diffrent types of patchpoints:
+//   * loop based: enable OSR transitions in loops
+//   * partial compilation: allows partial compilation of original method
 //
+// Loop patchpoint policy decisions implemented here:
 //   * One counter per stack frame, regardless of the number of patchpoints.
-//   * Shared counter value initialized to zero in prolog.
+//   * Shared counter value initialized to a constant in the prolog.
 //   * Patchpoint trees fully expanded into jit IR. Deferring expansion could
 //       lead to more compact code and lessen size overhead for Tier0.
 //
@@ -23,7 +26,6 @@
 //
 //   * no patchpoints in handler regions
 //   * no patchpoints for localloc methods
-//   * no patchpoints for synchronized methods (workaround)
 //
 class PatchpointTransformer
 {
@@ -54,24 +56,36 @@ public:
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
+                // We can't OSR from funclets.
+                //
+                assert(!block->hasHndIndex());
+
                 // Clear the patchpoint flag.
                 //
                 block->bbFlags &= ~BBF_PATCHPOINT;
 
-                // If block is in a handler region, don't insert a patchpoint.
-                // We can't OSR from funclets.
-                //
-                // TODO: check this earlier, somehow, and fall back to fully
-                // optimizing the method (ala QJFL=0).
-                if (compiler->ehGetBlockHndDsc(block) != nullptr)
-                {
-                    JITDUMP("Patchpoint: skipping patchpoint for " FMT_BB " as it is in a handler\n", block->bbNum);
-                    continue;
-                }
-
-                JITDUMP("Patchpoint: instrumenting " FMT_BB "\n", block->bbNum);
-                assert(block != compiler->fgFirstBB);
+                JITDUMP("Patchpoint: regular patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformBlock(block);
+                count++;
+            }
+            else if (block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT)
+            {
+                // We can't OSR from funclets.
+                // Also, we don't import the IL for these blocks.
+                //
+                assert(!block->hasHndIndex());
+
+                // If we're instrumenting, we should not have decided to
+                // put class probes here, as that is driven by looking at IL.
+                //
+                assert((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0);
+
+                // Clear the partial comp flag.
+                //
+                block->bbFlags &= ~BBF_PARTIAL_COMPILATION_PATCHPOINT;
+
+                JITDUMP("Patchpoint: partial compilation patchpoint in " FMT_BB "\n", block->bbNum);
+                TransformPartialCompilation(block);
                 count++;
             }
         }
@@ -189,6 +203,49 @@ private:
 
         compiler->fgNewStmtNearEnd(block, ppCounterAsg);
     }
+
+    //------------------------------------------------------------------------
+    // TransformPartialCompilation: delete all the statements in the block and insert
+    //     a call to the partial compilation patchpoint helper
+    //
+    //  S0; S1; S2; ... SN;
+    //
+    //  ==>
+    //
+    //  ~~{ S0; ... SN; }~~ (deleted)
+    //  call JIT_PARTIAL_COMPILATION_PATCHPOINT(ilOffset)
+    //
+    // Note S0 -- SN are not forever lost -- they will appear in the OSR version
+    // of the method created when the patchpoint is hit. Also note the patchpoint
+    // helper call will not return control to this method.
+    //
+    void TransformPartialCompilation(BasicBlock* block)
+    {
+        // Capture the IL offset
+        IL_OFFSET ilOffset = block->bbCodeOffs;
+        assert(ilOffset != BAD_IL_OFFSET);
+
+        // Remove all statements from the block.
+        for (Statement* stmt : block->Statements())
+        {
+            compiler->fgRemoveStmt(block, stmt);
+        }
+
+        // Update flow
+        block->bbJumpKind = BBJ_THROW;
+        block->bbJumpDest = nullptr;
+
+        // Add helper call
+        //
+        // call PartialCompilationPatchpointHelper(ilOffset)
+        //
+        GenTree*          ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTreeCall::Use* helperArgs   = compiler->gtNewCallArgs(ilOffsetNode);
+        GenTreeCall*      helperCall =
+            compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, helperArgs);
+
+        compiler->fgNewStmtAtEnd(block, helperCall);
+    }
 };
 
 //------------------------------------------------------------------------
@@ -204,7 +261,7 @@ private:
 //
 PhaseStatus Compiler::fgTransformPatchpoints()
 {
-    if (!doesMethodHavePatchpoints())
+    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
     {
         JITDUMP("\n -- no patchpoints to transform\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -213,34 +270,8 @@ PhaseStatus Compiler::fgTransformPatchpoints()
     // We should only be adding patchpoints at Tier0, so should not be in an inlinee
     assert(!compIsForInlining());
 
-    // We currently can't do OSR in methods with localloc.
-    // Such methods don't have a fixed relationship between frame and stack pointers.
-    //
-    // This is true whether or not the localloc was executed in the original method.
-    //
-    // TODO: handle this case, or else check this earlier and fall back to fully
-    // optimizing the method (ala QJFL=0).
-    if (compLocallocUsed)
-    {
-        JITDUMP("\n -- unable to handle methods with localloc\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    // We currently can't do OSR in synchronized methods. We need to alter
-    // the logic in fgAddSyncMethodEnterExit for OSR to not try and obtain the
-    // monitor (since the original method will have done so) and set the monitor
-    // obtained flag to true (or reuse the original method slot value).
-    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
-    {
-        JITDUMP("\n -- unable to handle synchronized methods\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    if (opts.IsReversePInvoke())
-    {
-        JITDUMP(" -- unable to handle Reverse P/Invoke\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
+    // We should be allowed to have patchpoints in this method.
+    assert(compCanHavePatchpoints());
 
     PatchpointTransformer ppTransformer(this);
     int                   count = ppTransformer.Run();

@@ -32,21 +32,21 @@ public struct Gen<T>
 			{
 				throw new GenException<T>();
 			}
-			Test.Eval(!throwException);
+			Test_try_catch_struct02.Eval(!throwException);
 		}
 		catch(GenException<T>)
 		{
-			Test.Eval(throwException);
+			Test_try_catch_struct02.Eval(throwException);
 		}
 		catch
 		{
 			Console.WriteLine("Caught Wrong Exception");
-			Test.Eval(false);
+			Test_try_catch_struct02.Eval(false);
 		}
 	}
 }
 
-public class Test
+public class Test_try_catch_struct02
 {
 	public static int counter = 0;
 	public static bool result = true;

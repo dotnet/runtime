@@ -793,8 +793,15 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
 	if (G_LIKELY (*idx < table_info_get_rows (*t) && !any_modified))
 		return;
 
+	/* FIXME: when adding methods this won't work anymore.  We will need to update the delta
+	 * images' suppressed columns (see the Note in pass2 about
+	 * CMiniMdRW::m_SuppressedDeltaColumns) with the baseline values. */
+	/* The only column from the updates that matters the RVA, which is looked up elsewhere. */
+	if (tbl_index == MONO_TABLE_METHOD)
+		return;
+
 	GList *list = info->delta_image;
-	MonoImage *dmeta;
+	MonoImage *dmeta = NULL;
 	int ridx;
 	MonoTableInfo *table;
 	int g = 0;
@@ -1271,6 +1278,29 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_info_get_rows (table_enclog);
+
+	/* NOTE: Suppressed colums
+	 *
+	 * Certain column values in some tables in the deltas are not meant to be applied over the
+	 * previous generation. See CMiniMdRW::m_SuppressedDeltaColumns in CoreCLR.  For example the
+	 * MONO_METHOD_PARAMLIST column in MONO_TABLE_METHOD is always 0 in an update - for modified
+	 * rows the previous value must be carried over. For added rows, it is supposed to be
+	 * initialized to the end of the param table and updated with the "Param create" func code
+	 * in subsequent EnCLog records.
+	 *
+	 * For mono's immutable model (where we don't change the baseline image data), we will need
+	 * to mutate the delta image tables to incorporate the suppressed column values from the
+	 * previous generation.
+	 *
+	 * For Baseline capabilities, the only suppressed column is MONO_METHOD_PARAMLIST - which we
+	 * can ignore because we don't do anything with param updates and the only column we care
+	 * about is MONO_METHOD_RVA which gets special case treatment with set_update_method().
+	 *
+	 * But when we implement additional capabilities (for example UpdateParameters), we will
+	 * need to start mutating the delta image tables to pick up the suppressed column values.
+	 * Fortunately whether we get the delta from the debugger or from the runtime API, we always
+	 * have it in writable memory (and not mmap-ed pages), so we can rewrite the table values.
+	 */
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {

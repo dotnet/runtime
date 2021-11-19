@@ -461,7 +461,7 @@ FCIMPL4(Object*, StubHelpers::InterfaceMarshaler__ConvertToManaged, IUnknown **p
 }
 FCIMPLEND
 
-void QCALLTYPE StubHelpers::InterfaceMarshaler__ClearNative(IUnknown * pUnk)
+extern "C" void QCALLTYPE InterfaceMarshaler__ClearNative(IUnknown * pUnk)
 {
     QCALL_CONTRACT;
 
@@ -494,34 +494,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
     ::SetLastError(0);
 }
 FCIMPLEND
-
-NOINLINE static void InitDeclaringTypeHelper(MethodTable *pMT)
-{
-    FC_INNER_PROLOG(StubHelpers::InitDeclaringType);
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-    pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-// Triggers cctor of pNMD's declarer, similar to code:JIT_InitClass.
-#include <optsmallperfcritical.h>
-FCIMPL1(void, StubHelpers::InitDeclaringType, NDirectMethodDesc* pNMD)
-{
-    FCALL_CONTRACT;
-
-    MethodTable *pMT = pNMD->GetMethodTable();
-    _ASSERTE(!pMT->IsClassPreInited());
-
-    if (pMT->GetDomainLocalModule()->IsClassInitialized(pMT))
-        return;
-
-    FC_INNER_RETURN_VOID(InitDeclaringTypeHelper(pMT));
-}
-FCIMPLEND
-#include <optdefault.h>
 
 FCIMPL1(void*, StubHelpers::GetNDirectTarget, NDirectMethodDesc* pNMD)
 {

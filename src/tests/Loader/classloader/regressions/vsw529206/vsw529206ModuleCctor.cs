@@ -9,7 +9,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Test
+class Test_vsw529206ModuleCctor
 {
 	public static bool pass;
     	

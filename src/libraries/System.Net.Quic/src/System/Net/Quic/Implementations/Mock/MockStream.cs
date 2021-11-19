@@ -164,6 +164,7 @@ namespace System.Net.Quic.Implementations.Mock
             if (endStream)
             {
                 streamBuffer.EndWrite();
+                WritesCompletedTcs.TrySetResult();
             }
         }
 
@@ -206,10 +207,12 @@ namespace System.Net.Quic.Implementations.Mock
             if (_isInitiator)
             {
                 _streamState._outboundWriteErrorCode = errorCode;
+                _streamState._inboundWritesCompletedTcs.TrySetException(new QuicStreamAbortedException(errorCode));
             }
             else
             {
                 _streamState._inboundWriteErrorCode = errorCode;
+                _streamState._outboundWritesCompletedTcs.TrySetException(new QuicOperationAbortedException());
             }
 
             ReadStreamBuffer?.AbortRead();
@@ -220,10 +223,12 @@ namespace System.Net.Quic.Implementations.Mock
             if (_isInitiator)
             {
                 _streamState._outboundReadErrorCode = errorCode;
+                _streamState._outboundWritesCompletedTcs.TrySetException(new QuicStreamAbortedException(errorCode));
             }
             else
             {
                 _streamState._inboundReadErrorCode = errorCode;
+                _streamState._inboundWritesCompletedTcs.TrySetException(new QuicOperationAbortedException());
             }
 
             WriteStreamBuffer?.EndWrite();
@@ -251,6 +256,8 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 _connection.LocalStreamLimit!.Bidirectional.Decrement();
             }
+
+            WritesCompletedTcs.TrySetResult();
         }
 
         private void CheckDisposed()
@@ -283,6 +290,17 @@ namespace System.Net.Quic.Implementations.Mock
             return default;
         }
 
+        internal override ValueTask WaitForWriteCompletionAsync(CancellationToken cancellationToken = default)
+        {
+            CheckDisposed();
+
+            return new ValueTask(WritesCompletedTcs.Task);
+        }
+
+        private TaskCompletionSource WritesCompletedTcs => _isInitiator
+            ? _streamState._outboundWritesCompletedTcs
+            : _streamState._inboundWritesCompletedTcs;
+
         internal sealed class StreamState
         {
             public readonly long _streamId;
@@ -292,6 +310,8 @@ namespace System.Net.Quic.Implementations.Mock
             public long _inboundReadErrorCode;
             public long _outboundWriteErrorCode;
             public long _inboundWriteErrorCode;
+            public TaskCompletionSource _outboundWritesCompletedTcs;
+            public TaskCompletionSource _inboundWritesCompletedTcs;
 
             private const int InitialBufferSize =
 #if DEBUG
@@ -310,6 +330,8 @@ namespace System.Net.Quic.Implementations.Mock
                 _streamId = streamId;
                 _outboundStreamBuffer = new StreamBuffer(initialBufferSize: InitialBufferSize, maxBufferSize: MaxBufferSize);
                 _inboundStreamBuffer = (bidirectional ? new StreamBuffer() : null);
+                _outboundWritesCompletedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                _inboundWritesCompletedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
     }

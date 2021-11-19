@@ -255,30 +255,20 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
     // GetMVID can throw exception
     EX_TRY
     {
-        PEFile * pFile = pModule->GetFile();
+        PEAssembly * pAsm = pModule->GetPEAssembly();
 
-        if (pFile != NULL)
+        if (pAsm != NULL)
         {
-            PEAssembly * pAsm = pFile->GetAssembly();
+            // CorAssemblyFlags, only 16-bit used
+            versionFlags = pAsm->GetFlags();
 
-            if (pAsm != NULL)
-            {
-                // CorAssemblyFlags, only 16-bit used
-                versionFlags = pAsm->GetFlags();
+            _ASSERTE((versionFlags & 0x80000000) == 0);
 
-                _ASSERTE((versionFlags & 0x80000000) == 0);
+            pAsm->GetVersion(&major, &minor, &build, &revision);
 
-                if (pFile->HasNativeImage())
-                {
-                    hasNativeImage = 1;
-                }
+            pAsm->GetMVID(&mvid);
 
-                pAsm->GetVersion(& major, & minor, & build, & revision);
-
-                pAsm->GetMVID(& mvid);
-
-                hr = S_OK;
-            }
+            hr = S_OK;
         }
 
         // If the load context is LOADFROM, store it in the flags.
@@ -1036,7 +1026,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         }
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(
-            m_pBinderContext,
+            m_pBinder,
             nSession));
 
         if (player == NULL)
@@ -1164,7 +1154,7 @@ void MulticoreJitManager::SetProfileRoot(const WCHAR * pProfilePath)
 
 // API Function: StartProfile
 // Threading: protected by m_playerLock
-void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBinderContext, const WCHAR * pProfile, int suffix)
+void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBinder, const WCHAR * pProfile, int suffix)
 {
     CONTRACTL
     {
@@ -1206,7 +1196,7 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
 
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
-            pBinderContext,
+            pBinder,
             gatherProfile);
 
         if (pRecorder != NULL)
@@ -1559,9 +1549,9 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //
 // Arguments:
 //    wszProfile  - profile name
-//    ptrNativeAssemblyLoadContext - the binding context
+//    ptrNativeAssemblyBinder - the binding context
 //
-void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyLoadContext)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
 {
     QCALL_CONTRACT;
 
@@ -1569,18 +1559,18 @@ void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfil
 
     AppDomain * pDomain = GetAppDomain();
 
-    ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder *>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder *>(ptrNativeAssemblyBinder);
 
     pDomain->GetMulticoreJitManager().StartProfile(
         pDomain,
-        pBinderContext,
+        pBinder,
         wszProfile);
 
     END_QCALL;
 }
 
 
-void QCALLTYPE MultiCoreJITNative::InternalSetProfileRoot(__in_z LPCWSTR wszProfilePath)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(__in_z LPCWSTR wszProfilePath)
 {
     QCALL_CONTRACT;
 

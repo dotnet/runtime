@@ -31,11 +31,6 @@ namespace System.Text.Json.Serialization
         public bool IgnoreReadOnlyProperties { get; set; }
 
         /// <summary>
-        /// Specifies whether to ignore custom converters provided at run time.
-        /// </summary>
-        public bool IgnoreRuntimeCustomConverters { get; set; }
-
-        /// <summary>
         /// Specifies whether to include fields for serialization and deserialization.
         /// </summary>
         public bool IncludeFields { get; set; }

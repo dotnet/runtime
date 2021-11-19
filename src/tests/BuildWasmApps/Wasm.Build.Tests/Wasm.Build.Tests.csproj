@@ -5,9 +5,7 @@
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
     <IsTestProject>true</IsTestProject>
     <BundleXunitRunner>true</BundleXunitRunner>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <TestFramework>xunit</TestFramework>
-    <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
@@ -18,7 +16,7 @@
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
 
     <!-- don't run any wasm build steps -->
-    <WasmBuildAppAfterThisTarget />
+    <IsWasmProject>false</IsWasmProject>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -29,7 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(RepoRoot)\src\mono\wasm\runtime-test.js" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(RepoRoot)\src\mono\wasm\test-main.js" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

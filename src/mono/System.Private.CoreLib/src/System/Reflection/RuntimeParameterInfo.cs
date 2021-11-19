@@ -181,14 +181,20 @@ namespace System.Reflection
         override
         object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, inherit);
+            // It is documented that the inherit flag is ignored.
+            // Attribute.GetCustomAttributes is to be used to search
+            // inheritance chain.
+            return CustomAttribute.GetCustomAttributes(this, false);
         }
 
         public
         override
         object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+            // It is documented that the inherit flag is ignored.
+            // Attribute.GetCustomAttributes is to be used to search
+            // inheritance chain.
+            return CustomAttribute.GetCustomAttributes(this, attributeType, false);
         }
 
         internal static object? GetDefaultValueImpl(ParameterInfo pinfo)

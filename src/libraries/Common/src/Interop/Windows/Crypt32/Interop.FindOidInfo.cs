@@ -124,7 +124,7 @@ internal static partial class Interop
                    group == OidGroup.KeyDerivationFunction;
         }
 
-        [DllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode)]
-        private static extern IntPtr CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, IntPtr pvKey, OidGroup group);
+        [GeneratedDllImport(Interop.Libraries.Crypt32)]
+        private static partial IntPtr CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, IntPtr pvKey, OidGroup group);
     }
 }

@@ -53,7 +53,7 @@ namespace System.Collections
         // Fills a Stack with the contents of a particular collection.  The items are
         // pushed onto the stack in the same order they are read by the enumerator.
         //
-        public Stack(ICollection col) : this((col == null ? 32 : col.Count))
+        public Stack(ICollection col) : this(col == null ? 32 : col.Count)
         {
             if (col == null)
                 throw new ArgumentNullException(nameof(col));

@@ -312,7 +312,7 @@ leave:
 
 static
 MonoAssembly *
-mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *executing_assembly, MonoAssemblyContextKind asmctx, MonoError *error)
+mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *executing_assembly, gboolean no_invoke_search_hook, MonoError *error)
 {
 	MonoAssembly *ass = NULL;
 	HANDLE_FUNCTION_ENTER ();
@@ -332,7 +332,8 @@ mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAs
 
 	MonoImageOpenStatus status;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, asmctx, alc);
+	mono_assembly_request_prepare_open (&req, alc);
+	req.request.no_invoke_search_hook = no_invoke_search_hook;
 	req.requesting_assembly = executing_assembly;
 	ass = mono_assembly_request_open (filename, &req, &status);
 	if (!ass) {
@@ -355,7 +356,7 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFile (gpointer a
 
 	MonoAssembly *executing_assembly;
 	executing_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
-	MonoAssembly *ass = mono_alc_load_file (alc, fname, executing_assembly, mono_alc_is_default (alc) ? MONO_ASMCTX_LOADFROM : MONO_ASMCTX_INDIVIDUAL, error);
+	MonoAssembly *ass = mono_alc_load_file (alc, fname, executing_assembly, !mono_alc_is_default (alc), error);
 	goto_if_nok (error, leave);
 
 	result = mono_assembly_get_object_handle (ass, error);
@@ -380,7 +381,8 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 		mono_debug_open_image_from_memory (image, raw_symbol_data, raw_symbol_len);
 
 	MonoAssemblyLoadRequest req;
-	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_INDIVIDUAL, alc);
+	mono_assembly_request_prepare_load (&req, alc);
+	req.no_invoke_search_hook = TRUE;
 	ass = mono_assembly_request_load_from (image, "", &req, &status);
 
 	if (!ass) {

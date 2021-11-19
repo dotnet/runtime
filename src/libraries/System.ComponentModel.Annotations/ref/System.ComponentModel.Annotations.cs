@@ -6,15 +6,12 @@
 
 namespace System.ComponentModel.DataAnnotations
 {
-    // TODO-NULLABLE: Enable after System.ComponentModel.TypeDescriptionProvider is annotated
-#nullable disable
     public partial class AssociatedMetadataTypeTypeDescriptionProvider : System.ComponentModel.TypeDescriptionProvider
     {
         public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type) { }
         public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type associatedMetadataType) { }
-        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType, object instance) { throw null; }
+        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType, object? instance) { throw null; }
     }
-#nullable enable
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
     [System.ObsoleteAttribute("AssociationAttribute has been deprecated and is not supported.")]
     public sealed partial class AssociationAttribute : System.Attribute

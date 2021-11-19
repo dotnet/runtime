@@ -235,7 +235,11 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
                     {
-                        HttpResponseMessage resp = await getResponse;
+                        // This 'using' shouldn't be necessary in general. However, HTTP3 does not remove the request stream from the
+                        // active stream table until the user disposes the response (or it gets finalized).
+                        // This means the connection will fail to shut down promptly.
+                        // See https://github.com/dotnet/runtime/issues/58072
+                        using HttpResponseMessage resp = await getResponse;
                         Stream respStream = await resp.Content.ReadAsStreamAsync(TestAsync);
                         Task readTask = readOrCopyToAsync ?
                             respStream.ReadAsync(new byte[1], 0, 1, cts.Token) :

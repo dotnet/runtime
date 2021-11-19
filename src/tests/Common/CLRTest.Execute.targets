@@ -23,7 +23,16 @@ This file contains the logic for providing Execution Script generation.
       <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsProjectToRun)' == '' ">false</_CLRTestNeedsProjectToRun>
   </PropertyGroup>
 
-  <PropertyGroup> 
+  <!--
+    When using a custom test entry-point other than corerun, the entry point is likely not going to be a managed app.
+    So, we automatically disable test runs that assume corerun is the entry native executable.
+  -->
+  <PropertyGroup Condition="'$(CLRTestIsHosted)' != 'true'">
+    <UnloadabilityIncompatible Condition="'$(UnloadabilityIncompatible)' == ''">true</UnloadabilityIncompatible>
+    <TieringTestIncompatible Condition="'$(TieringTestIncompatible)' == ''">true</TieringTestIncompatible>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <!-- TODO:1 Get the right guidance for overriding the default -->
     <CLRTestExitCode Condition=" '$(CLRTestExitCode)' == '' ">100</CLRTestExitCode>
   </PropertyGroup>
@@ -33,13 +42,13 @@ This file contains the logic for providing Execution Script generation.
       <HasParam>false</HasParam>
     </CLRTestExecutionScriptArgument>
   </ItemDefinitionGroup>
-    
+
     <!--
   *******************************************************************************************
   TARGET: GenerateExecutionScript
-  
+
   TODO: get rid of this!
-  
+
   The PreCheckin system depends directly on this target (boo).  This makes sure the script ends up in the right place.
   -->
   <Target Name="GenerateExecutionScript"
@@ -48,15 +57,15 @@ This file contains the logic for providing Execution Script generation.
   <!--
   *******************************************************************************************
   TARGET: GenerateExecutionScriptsInternal
-  
+
   For tests that "run" we will generate an execution script that wraps any arguments or other
   goo.  This allows generated .lst files to be very simple and reusable to invoke any "stage"
   of test execution.
-  
+
   Notice this is hooked up to run after targets that generate the stores that are marked with GenerateScripts metadata.
   Note also that this means it will run after the first of such targets.
   -->
-  
+
   <ItemGroup>
     <ExecutionScriptKind Include="Batch" Condition="'$(TestWrapperTargetsWindows)' == 'true'" />
     <ExecutionScriptKind Include="Bash"  Condition="'$(TestWrapperTargetsWindows)' != 'true'" />
@@ -66,15 +75,15 @@ This file contains the logic for providing Execution Script generation.
     <BashScriptSnippetGen></BashScriptSnippetGen>
     <BatchScriptSnippetGen></BatchScriptSnippetGen>
   </PropertyGroup>
- 
+
   <Import Project="CLRTest.Jit.targets" />
   <Import Project="CLRTest.CrossGen.targets" />
   <Import Project="CLRTest.GC.targets" />
   <Import Project="CLRTest.Execute.*.targets" />
   <Import Project="CLRTest.MockHosting.targets" Condition="'$(RequiresMockHostPolicy)' == 'true'" />
-  
+
   <Target Name="GenerateExecutionScriptsInternal"
     Condition="$(_CLRTestNeedsToRun) or $(_CLRTestBuildsExecutable)"
     DependsOnTargets="Generate@(ExecutionScriptKind, 'ExecutionScript;Generate')ExecutionScript;" />
-  
+
 </Project>

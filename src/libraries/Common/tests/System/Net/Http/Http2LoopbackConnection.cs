@@ -558,7 +558,10 @@ namespace System.Net.Test.Common
             do
             {
                 frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
-                if (frame == null && expectEndOfStream)
+
+                // Check if it was a zero-byte read or we got a RST_STREAM with the CANCEL code.
+                if (expectEndOfStream
+                    && (frame == null || (frame.Type == FrameType.RstStream && ((RstStreamFrame)frame).ErrorCode == 0x8)))
                 {
                     break;
                 }
@@ -973,6 +976,8 @@ namespace System.Net.Test.Common
             } while (frame.Type != FrameType.RstStream);
 
             Assert.Equal(streamId, frame.StreamId);
+            RstStreamFrame rstStreamFrame = Assert.IsType<RstStreamFrame>(frame);
+            Assert.Equal((int)ProtocolErrors.CANCEL, rstStreamFrame.ErrorCode);
         }
     }
 }

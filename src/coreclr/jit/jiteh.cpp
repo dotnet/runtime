@@ -1405,7 +1405,12 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     if (compHndBBtabCount == 0)
     {
         // No more entries remaining.
-        compHndBBtab = nullptr;
+        //
+        // We used to null out compHndBBtab here, but with OSR + Synch method
+        // we may remove all the initial EH entries if not reachable in the
+        // OSR portion, then need to add one for the synchronous exit.
+        //
+        // So now we just leave it be.
     }
     else
     {
@@ -4410,7 +4415,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // DEBUG
 
             // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
-            assert(block->bbRefs > 0);
+            noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
 
             HBtab->ebdHndBeg = bPrev;
@@ -4459,7 +4464,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // DEBUG
 
             // The first block of a filter has an artificial extra refcount. Transfer that to the new block.
-            assert(block->bbRefs > 0);
+            noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
 
             HBtab->ebdFilter = bPrev;

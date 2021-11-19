@@ -283,14 +283,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
 
 ///
-/// IBC
-///
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ConvertIbcData, W("ConvertIbcData"), 1, "Converts between v1 and v2 IBC data")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DisableIBC, W("DisableIBC"), 0, "Disables the use of IBC data")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseIBCFile, W("UseIBCFile"), 0, "")
-
-
-///
 /// JIT
 ///
 CONFIG_DWORD_INFO(INTERNAL_JitBreakEmit, W("JitBreakEmit"), (DWORD)-1, "")
@@ -302,6 +294,7 @@ CONFIG_DWORD_INFO(INTERNAL_JitDebuggable, W("JitDebuggable"), 0, "")
 #endif
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitEnableNoWayAssert, W("JitEnableNoWayAssert"), INTERNAL_JitEnableNoWayAssert_Default, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 0, "Forces EBP frames")
+CONFIG_DWORD_INFO(INTERNAL_JitThrowOnAssertionFailure, W("JitThrowOnAssertionFailure"), 0, "Throw managed exception on assertion failures during JIT instead of crashing the process")
 CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for jit")
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_JitHelperLogging, W("JitHelperLogging"), 0, "")
@@ -467,29 +460,6 @@ CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidList,        W("NgenBind_ZapForbid
 CONFIG_DWORD_INFO(INTERNAL_SymDiffDump, W("SymDiffDump"), 0, "Used to create the map file while binding the assembly. Used by SemanticDiffer")
 
 ///
-/// NGEN
-///
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_NGenFramed, W("NGenFramed"), (DWORD)-1, "Same as JitFramed, but for ngen")
-CONFIG_DWORD_INFO(INTERNAL_NGenOnlyOneMethod, W("NGenOnlyOneMethod"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_NgenOrder, W("NgenOrder"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_partialNGenStress, W("partialNGenStress"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_ZapDoNothing, W("ZapDoNothing"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_NgenForceFailureMask, W("NgenForceFailureMask"), (DWORD)-1, "Bitmask used to control which locations will check and raise the failure (defaults to bits: -1)")
-CONFIG_DWORD_INFO(INTERNAL_NgenForceFailureCount, W("NgenForceFailureCount"), 0, "If set to >0 and we have IBC data we will force a failure after we reference an IBC data item <value> times")
-CONFIG_DWORD_INFO(INTERNAL_NgenForceFailureKind, W("NgenForceFailureKind"), 1, "If set to 1, We will throw a TypeLoad exception; If set to 2, We will cause an A/V")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_NGenEnableCreatePdb, W("NGenEnableCreatePdb"), 0, "If set to >0 ngen.exe displays help on, recognizes createpdb in the command line")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenSimulateDiskFull, W("NGenSimulateDiskFull"), 0, "If set to 1, ngen will throw a Disk full exception in ZapWriter.cpp:Save()")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_PartialNGen, W("PartialNGen"), (DWORD)-1, "Generate partial NGen images")
-
-CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run.")
-
-RETAIL_CONFIG_STRING_INFO(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images")
-
-#ifdef CROSSGEN_COMPILE
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, W("CrossGenAssumeInputSigned"), 1, "CrossGen should assume that its input assemblies will be signed before deployment")
-#endif
-
-///
 /// Profiling API / ETW
 ///
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_COR_ENABLE_PROFILING, W("COR_ENABLE_PROFILING"), 0, "Flag to indicate whether profiling should be enabled for the currently running process.", CLRConfig::LookupOptions::DontPrependPrefix)
@@ -505,9 +475,11 @@ RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_64, W("CORECLR_PROFI
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM32, W("CORECLR_PROFILER_PATH_ARM32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM32 process", CLRConfig::LookupOptions::DontPrependPrefix)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM64, W("CORECLR_PROFILER_PATH_ARM64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM64 process", CLRConfig::LookupOptions::DontPrependPrefix)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS, W("CORECLR_ENABLE_NOTIFICATION_PROFILERS"), 0, "Set to 0 to disable loading notification profilers.", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64, W("CORECLR_NOTIFICATION_PROFILERS_64"), "A semi-colon separated list of notification profilers to load in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32, W("CORECLR_NOTIFICATION_PROFILERS_32"), "A semi-colon separated list of notification profilers to load in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, W("CORECLR_NOTIFICATION_PROFILERS"), "A semi-colon separated list of notification profilers to load in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, W("CORECLR_NOTIFICATION_PROFILERS"), "A semi-colon separated list of notification profilers to load into currently running process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32, W("CORECLR_NOTIFICATION_PROFILERS_32"), "A semi-colon separated list of notification profilers to load into currently running 32 process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64, W("CORECLR_NOTIFICATION_PROFILERS_64"), "A semi-colon separated list of notification profilers to load into currently running 64 process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM32, W("CORECLR_NOTIFICATION_PROFILERS_ARM32"), "A semi-colon separated list of notification profilers to load into currently running ARM32 process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, W("CORECLR_NOTIFICATION_PROFILERS_ARM64"), "A semi-colon separated list of notification profilers to load into currently running ARM64 process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_ProfAPI_ProfilerCompatibilitySetting, W("ProfAPI_ProfilerCompatibilitySetting"), "Specifies the profiler loading policy (the default is not to load a V2 profiler in V4)", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ProfAPI_DetachMinSleepMs, W("ProfAPI_DetachMinSleepMs"), 0, "The minimum time, in milliseconds, the CLR will wait before checking whether a profiler that is in the process of detaching is ready to be unloaded.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ProfAPI_DetachMaxSleepMs, W("ProfAPI_DetachMaxSleepMs"), 0, "The maximum time, in milliseconds, the CLR will wait before checking whether a profiler that is in the process of detaching is ready to be unloaded.")
@@ -636,9 +608,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 ///
 /// Entry point slot backpatch
 ///
-#ifndef CROSSGEN_COMPILE
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_BackpatchEntryPointSlots, W("BackpatchEntryPointSlots"), 1, "Indicates whether to enable entry point slot backpatching, for instance to avoid making virtual calls through a precode and instead to patch virtual slots for a method when its entry point changes.")
-#endif
 
 ///
 /// TypeLoader
@@ -677,13 +647,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableDumpOnSigTerm, W("EnableDumpOnSigTerm"),
 RETAIL_CONFIG_STRING_INFO(INTERNAL_ZapBBInstr, W("ZapBBInstr"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapBBInstrDir, W("ZapBBInstrDir"), "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ZapDisable, W("ZapDisable"), 0, "")
-CONFIG_STRING_INFO(INTERNAL_ZapExclude, W("ZapExclude"), "")
-CONFIG_STRING_INFO(INTERNAL_ZapOnly, W("ZapOnly"), "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ZapRequire, W("ZapRequire"), 0, "")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireExcludeList, W("ZapRequireExcludeList"), "")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireList, W("ZapRequireList"), "")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapSet, W("ZapSet"), "")
 
+RETAIL_CONFIG_STRING_INFO(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 1, "Enable/disable use of ReadyToRun native code") // On by default for CoreCLR
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunExcludeList, W("ReadyToRunExcludeList"), "List of assemblies that cannot use Ready to Run images")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunLogFile, W("ReadyToRunLogFile"), "Name of file to log success/failure of using Ready to Run images")
@@ -715,15 +680,22 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"),
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"), 0, "Enable/disable capturing processor numbers in EventPipe event headers")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputStreaming"), 0, "Enable/disable streaming for trace file set in COMPlus_EventPipeOutputPath.  Non-zero values enable streaming.")
 
-// 
+#ifdef FEATURE_AUTO_TRACE
+RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_AutoTrace_N_Tracers, W("AutoTrace_N_Tracers"), 0, "", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+RETAIL_CONFIG_STRING_INFO(INTERNAL_AutoTrace_Command, W("AutoTrace_Command"), "")
+#endif // FEATURE_AUTO_TRACE
+
+//
 // Generational Aware Analysis
-// 
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "The generation to trigger generational aware analysis")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "The number of bytes to trigger generational aware analysis")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisIndex, W("GCGenAnalysisIndex"), 0, "The gc index to trigger generational aware analysis")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_GCGenAnalysisCmd, W("GCGenAnalysisCmd"), "An optional filter to match with the command line used to spawn the process")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisTrace, W("GCGenAnalysisTrace"), 1, "Enable/Disable capturing a trace")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisDump, W("GCGenAnalysisDump"), 0, "Enable/Disable capturing a dump")
+//
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "The generation to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "The number of bytes to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisTimeUSec, W("GCGenAnalysisTimeUSec"), 0, "The number of microseconds to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisTimeMSec, W("GCGenAnalysisTimeMSec"), 0, "The number of milliseconds to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisIndex, W("GCGenAnalysisIndex"), 0, "The gc index to trigger generational aware analysis")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCGenAnalysisCmd, W("GCGenAnalysisCmd"), "An optional filter to match with the command line used to spawn the process")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisTrace, W("GCGenAnalysisTrace"), 1, "Enable/Disable capturing a trace")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisDump, W("GCGenAnalysisDump"), 0, "Enable/Disable capturing a dump")
 
 //
 // Diagnostics Ports

@@ -232,14 +232,9 @@ check_symbol_exists(
     HAVE_POSIX_ADVISE)
 
 check_symbol_exists(
-    posix_fallocate
+    fallocate
     fcntl.h
-    HAVE_POSIX_FALLOCATE)
-
-check_symbol_exists(
-    posix_fallocate64
-    fcntl.h
-    HAVE_POSIX_FALLOCATE64)
+    HAVE_FALLOCATE)
 
 check_symbol_exists(
     preadv
@@ -688,6 +683,11 @@ check_symbol_exists(
     sys/stat.h
     HAVE_UTIMENSAT)
 
+check_symbol_exists(
+    lutimes
+    sys/time.h
+    HAVE_LUTIMES)
+
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 
@@ -879,7 +879,15 @@ check_symbol_exists(
 
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
-    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
+    set(HAVE_IOS_NET_IFMEDIA_H 1)
+    set(HAVE_IOS_NETINET_TCPFSM_H 1)
+    set(HAVE_IOS_NETINET_IP_VAR_H 1)
+    set(HAVE_IOS_NETINET_ICMP_VAR_H 1)
+    set(HAVE_IOS_NETINET_UDP_VAR_H 1)
+    set(CMAKE_EXTRA_INCLUDE_FILES 
+        sys/types.h 
+        "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h"
+    )
 else()
     set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h net/if.h net/route.h)
 endif()
@@ -982,7 +990,7 @@ set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
 if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
-    set (CMAKE_REQUIRED_LIBRARIES "-linotify -L/usr/local/lib")
+    set (CMAKE_REQUIRED_LIBRARIES "-linotify -L${CROSS_ROOTFS}/usr/local/lib")
 endif()
 
 check_symbol_exists(

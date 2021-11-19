@@ -191,7 +191,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
 #undef ASSIGN_REG
 #undef ASSIGN_FP_REG
 }
-#else
+#else // UNWIND_CONTEXT_IS_UCONTEXT_T
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
 #if (defined(HOST_UNIX) && defined(HOST_ARM)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM))
@@ -216,6 +216,10 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     unwContext->regs[13] = winContext->Sp;
     unwContext->regs[14] = winContext->Lr;
     unwContext->regs[15] = winContext->Pc;
+    for (int i = 0; i < 16; i++)
+    {
+        unwContext->fpregs[i] = winContext->D[i];
+    }
 #elif defined(HOST_ARM64) && !defined(TARGET_OSX)
     unwContext->uc_mcontext.pc       = winContext->Pc;
     unwContext->uc_mcontext.sp       = winContext->Sp;
@@ -302,7 +306,7 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_fpreg(cursor, UNW_AARCH64_V31, *(unw_fpreg_t *)&winContext->V[31].Low);
 #endif
 }
-#endif
+#endif // UNWIND_CONTEXT_IS_UCONTEXT_T
 
 void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 {
@@ -334,6 +338,14 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_ARM_R9, (unw_word_t *) &winContext->R9);
     unw_get_reg(cursor, UNW_ARM_R10, (unw_word_t *) &winContext->R10);
     unw_get_reg(cursor, UNW_ARM_R11, (unw_word_t *) &winContext->R11);
+    unw_get_fpreg(cursor, UNW_ARM_D8, (unw_fpreg_t *)&winContext->D[8]);
+    unw_get_fpreg(cursor, UNW_ARM_D9, (unw_fpreg_t *)&winContext->D[9]);
+    unw_get_fpreg(cursor, UNW_ARM_D10, (unw_fpreg_t *)&winContext->D[10]);
+    unw_get_fpreg(cursor, UNW_ARM_D11, (unw_fpreg_t *)&winContext->D[11]);
+    unw_get_fpreg(cursor, UNW_ARM_D12, (unw_fpreg_t *)&winContext->D[12]);
+    unw_get_fpreg(cursor, UNW_ARM_D13, (unw_fpreg_t *)&winContext->D[13]);
+    unw_get_fpreg(cursor, UNW_ARM_D14, (unw_fpreg_t *)&winContext->D[14]);
+    unw_get_fpreg(cursor, UNW_ARM_D15, (unw_fpreg_t *)&winContext->D[15]);
 #elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
@@ -438,6 +450,14 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_ARM_R9, &contextPointers->R9);
     GetContextPointer(cursor, unwContext, UNW_ARM_R10, &contextPointers->R10);
     GetContextPointer(cursor, unwContext, UNW_ARM_R11, &contextPointers->R11);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D8, (SIZE_T **)&contextPointers->D8);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D9, (SIZE_T **)&contextPointers->D9);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D10, (SIZE_T **)&contextPointers->D10);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D11, (SIZE_T **)&contextPointers->D11);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D12, (SIZE_T **)&contextPointers->D12);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D13, (SIZE_T **)&contextPointers->D13);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D14, (SIZE_T **)&contextPointers->D14);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D15, (SIZE_T **)&contextPointers->D15);
 #elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X19, &contextPointers->X19);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X20, &contextPointers->X20);

@@ -10,9 +10,12 @@ CONFIG?=Release
 
 WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
 
-all: build
+all: publish
 
 build:
+	EMSDK_PATH=$(realpath $(TOP)/src/mono/wasm/emsdk) $(DOTNET) build $(DOTNET_Q_ARGS) $(WASM_DEFAULT_BUILD_ARGS) $(MSBUILD_ARGS) $(PROJECT_NAME)
+
+publish:
 	EMSDK_PATH=$(realpath $(TOP)/src/mono/wasm/emsdk) $(DOTNET) publish $(DOTNET_Q_ARGS) $(WASM_DEFAULT_BUILD_ARGS) $(MSBUILD_ARGS) $(PROJECT_NAME)
 
 clean:
@@ -23,8 +26,8 @@ run-browser:
 		echo "The tool dotnet-serve could not be found. Install with: $(DOTNET) tool install --global dotnet-serve"; \
 		exit 1; \
 	else  \
-		$(DOTNET) serve -d:bin/$(CONFIG)/AppBundle -p:8000; \
+		$(DOTNET) serve -d:bin/$(CONFIG)/AppBundle -o -p:8000; \
 	fi
 
 run-console:
-	cd bin/$(CONFIG)/AppBundle && ~/.jsvu/v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run Wasm.Console.Sample.dll
+	cd bin/$(CONFIG)/AppBundle && ~/.jsvu/v8 --stack-trace-limit=1000 --single-threaded --expose_wasm main.js -- $(DOTNET_MONO_LOG_LEVEL) --run $(CONSOLE_DLL) $(ARGS)

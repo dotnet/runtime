@@ -645,6 +645,9 @@ namespace System.Text.Json
                 case DataType.Guid:
                     message = SR.FormatGuid;
                     break;
+                case DataType.Version:
+                    message = SR.FormatVersion;
+                    break;
                 default:
                     Debug.Fail($"The DateType enum value: {dateType} is not part of the switch. Add the appropriate case and exception message.");
                     break;
@@ -729,5 +732,6 @@ namespace System.Text.Json
         TimeSpan,
         Base64String,
         Guid,
+        Version,
     }
 }

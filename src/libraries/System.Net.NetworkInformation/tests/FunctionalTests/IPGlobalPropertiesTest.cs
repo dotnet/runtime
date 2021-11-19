@@ -26,7 +26,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IPGlobalProperties_AccessAllMethods_NoErrors()
         {
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
@@ -36,7 +35,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotNull(gp.GetActiveUdpListeners());
 
             Assert.NotNull(gp.GetIPv4GlobalStatistics());
-            if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsFreeBSD())
+            if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsFreeBSD())
             {
                 // OSX and FreeBSD do not provide IPv6  stats.
                 Assert.NotNull(gp.GetIPv6GlobalStatistics());
@@ -52,7 +51,6 @@ namespace System.Net.NetworkInformation.Tests
 
         [Theory]
         [MemberData(nameof(Loopbacks))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -78,7 +76,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         [MemberData(nameof(Loopbacks))]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
         {

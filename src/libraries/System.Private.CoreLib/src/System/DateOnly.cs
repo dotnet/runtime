@@ -13,11 +13,11 @@ namespace System
     /// </summary>
     public readonly struct DateOnly : IComparable, IComparable<DateOnly>, IEquatable<DateOnly>, ISpanFormattable
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IComparisonOperators<DateOnly, DateOnly>,
           IMinMaxValue<DateOnly>,
           ISpanParseable<DateOnly>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         private readonly int _dayNumber;
@@ -28,7 +28,7 @@ namespace System
         // Maps to December 31 year 9999. The value calculated from "new DateTime(9999, 12, 31).Ticks / TimeSpan.TicksPerDay"
         private const int MaxDayNumber = 3_652_058;
 
-        private static int DayNumberFromDateTime(DateTime dt) => (int)(dt.Ticks / TimeSpan.TicksPerDay);
+        private static int DayNumberFromDateTime(DateTime dt) => (int)((ulong)dt.Ticks / TimeSpan.TicksPerDay);
 
         private DateTime GetEquivalentDateTime() => DateTime.UnsafeCreate(_dayNumber * TimeSpan.TicksPerDay);
 
@@ -97,7 +97,7 @@ namespace System
         /// <summary>
         /// Gets the day of the week represented by this instance.
         /// </summary>
-        public DayOfWeek DayOfWeek => GetEquivalentDateTime().DayOfWeek;
+        public DayOfWeek DayOfWeek => (DayOfWeek)(((uint)_dayNumber + 1) % 7);
 
         /// <summary>
         /// Gets the day of the year represented by this instance.
@@ -836,19 +836,19 @@ namespace System
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<DateOnly, DateOnly>.operator <(DateOnly left, DateOnly right)
             => left < right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<DateOnly, DateOnly>.operator <=(DateOnly left, DateOnly right)
             => left <= right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<DateOnly, DateOnly>.operator >(DateOnly left, DateOnly right)
             => left > right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<DateOnly, DateOnly>.operator >=(DateOnly left, DateOnly right)
             => left >= right;
 
@@ -856,11 +856,11 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<DateOnly, DateOnly>.operator ==(DateOnly left, DateOnly right)
             => left == right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<DateOnly, DateOnly>.operator !=(DateOnly left, DateOnly right)
             => left != right;
 
@@ -868,21 +868,21 @@ namespace System
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static DateOnly IMinMaxValue<DateOnly>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static DateOnly IMinMaxValue<DateOnly>.MaxValue => MaxValue;
 
         //
         // IParseable
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static DateOnly IParseable<DateOnly>.Parse(string s, IFormatProvider? provider)
             => Parse(s, provider, DateTimeStyles.None);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<DateOnly>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateOnly result)
             => TryParse(s, provider, DateTimeStyles.None, out result);
 
@@ -890,11 +890,11 @@ namespace System
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static DateOnly ISpanParseable<DateOnly>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
             => Parse(s, provider, DateTimeStyles.None);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<DateOnly>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateOnly result)
             => TryParse(s, provider, DateTimeStyles.None, out result);
 #endif // FEATURE_GENERIC_MATH

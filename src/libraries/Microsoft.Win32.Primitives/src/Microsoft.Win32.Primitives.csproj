@@ -1,28 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\ComponentModel\Win32Exception.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
-    <Compile Include="System\ComponentModel\Win32Exception.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
-    <Compile Include="System\ComponentModel\Win32Exception.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
-             Link="Common\Interop\Unix\Interop.Errors.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
+    <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

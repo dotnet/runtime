@@ -12,48 +12,28 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-#if MS_IO_REDIST
-using System;
-using System.IO;
-
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    public static partial class File
+    public static class File
     {
-        // Don't use Array.MaxLength. MS.IO.Redist targets .NET Framework.
-        private const int MaxByteArrayLength = 0x7FFFFFC7;
+        private const int ChunkSize = 8192;
         private static Encoding? s_UTF8NoBOM;
+
+        // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.
+        private static Encoding UTF8NoBOM => s_UTF8NoBOM ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         internal const int DefaultBufferSize = 4096;
 
         public static StreamReader OpenText(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            return new StreamReader(path);
-        }
+            => new StreamReader(path ?? throw new ArgumentNullException(nameof(path)));
 
         public static StreamWriter CreateText(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            return new StreamWriter(path, append: false);
-        }
+            => new StreamWriter(path ?? throw new ArgumentNullException(nameof(path)), append: false);
 
         public static StreamWriter AppendText(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            return new StreamWriter(path, append: true);
-        }
+            => new StreamWriter(path ?? throw new ArgumentNullException(nameof(path)), append: true);
 
         /// <summary>
         /// Copies an existing file to a new file.
@@ -86,9 +66,7 @@ namespace System.IO
         // application until it has been closed.  An IOException is thrown if the
         // directory specified doesn't exist.
         public static FileStream Create(string path)
-        {
-            return Create(path, DefaultBufferSize);
-        }
+            => Create(path, DefaultBufferSize);
 
         // Creates a file in a particular path.  If the file exists, it is replaced.
         // The file is opened with ReadWrite access and cannot be opened by another
@@ -107,12 +85,7 @@ namespace System.IO
         // On Windows, Delete will fail for a file that is open for normal I/O
         // or a file that is memory mapped.
         public static void Delete(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            FileSystem.DeleteFile(Path.GetFullPath(path));
-        }
+            => FileSystem.DeleteFile(Path.GetFullPath(path ?? throw new ArgumentNullException(nameof(path))));
 
         // Tests whether a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
@@ -147,204 +120,156 @@ namespace System.IO
             return false;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
+        /// </summary>
+        /// <remarks><see cref="FileStream(string,System.IO.FileStreamOptions)"/> for information about exceptions.</remarks>
+        public static FileStream Open(string path, FileStreamOptions options) => new FileStream(path, options);
+
         public static FileStream Open(string path, FileMode mode)
-        {
-            return Open(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None);
-        }
+            => Open(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None);
 
         public static FileStream Open(string path, FileMode mode, FileAccess access)
-        {
-            return Open(path, mode, access, FileShare.None);
-        }
+            => Open(path, mode, access, FileShare.None);
 
         public static FileStream Open(string path, FileMode mode, FileAccess access, FileShare share)
+            => new FileStream(path, mode, access, share);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> class with the specified path, creation mode, read/write and sharing permission, the access other SafeFileHandles can have to the same file, additional file options and the allocation size.
+        /// </summary>
+        /// <param name="path">A relative or absolute path for the file that the current <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> instance will encapsulate.</param>
+        /// <param name="mode">One of the enumeration values that determines how to open or create the file. The default value is <see cref="FileMode.Open" /></param>
+        /// <param name="access">A bitwise combination of the enumeration values that determines how the file can be accessed. The default value is <see cref="FileAccess.Read" /></param>
+        /// <param name="share">A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="FileShare.Read" />.</param>
+        /// <param name="preallocationSize">The initial allocation size in bytes for the file. A positive value is effective only when a regular file is being created, overwritten, or replaced.
+        /// Negative values are not allowed. In other cases (including the default 0 value), it's ignored.</param>
+        /// <param name="options">An object that describes optional <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> parameters to use.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is an empty string (""), contains only white space, or contains one or more invalid characters.
+        /// -or-
+        /// <paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in an NTFS environment.</exception>
+        /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in a non-NTFS environment.</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="preallocationSize" /> is negative.
+        /// -or-
+        /// <paramref name="mode" />, <paramref name="access" />, or <paramref name="share" /> contain an invalid value.</exception>
+        /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found, such as when <paramref name="mode" /> is <see cref="FileMode.Truncate" /> or <see cref="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
+        /// <exception cref="T:System.IO.IOException">An I/O error, such as specifying <see cref="FileMode.CreateNew" /> when the file specified by <paramref name="path" /> already exists, occurred.
+        ///  -or-
+        ///  The disk was full (when <paramref name="preallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).
+        ///  -or-
+        ///  The file was too large (when <paramref name="preallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).</exception>
+        /// <exception cref="T:System.Security.SecurityException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid, such as being on an unmapped drive.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The <paramref name="access" /> requested is not permitted by the operating system for the specified <paramref name="path" />, such as when <paramref name="access" />  is <see cref="FileAccess.Write" /> or <see cref="FileAccess.ReadWrite" /> and the file or directory is set for read-only access.
+        ///  -or-
+        /// <see cref="F:System.IO.FileOptions.Encrypted" /> is specified for <paramref name="options" />, but file encryption is not supported on the current platform.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
+        public static SafeFileHandle OpenHandle(string path, FileMode mode = FileMode.Open, FileAccess access = FileAccess.Read,
+            FileShare share = FileShare.Read, FileOptions options = FileOptions.None, long preallocationSize = 0)
         {
-            return new FileStream(path, mode, access, share);
+            Strategies.FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize: 0, options, preallocationSize);
+
+            return SafeFileHandle.Open(Path.GetFullPath(path), mode, access, share, options, preallocationSize);
         }
 
+        // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
+        // ToUniversalTime treats this as local.
         internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)
-        {
-            // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
-            // ToUniversalTime treats this as local.
-            if (dateTime.Kind == DateTimeKind.Unspecified)
-            {
-                return DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
-            }
-
-            return dateTime.ToUniversalTime();
-        }
+            => dateTime.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
+                : dateTime.ToUniversalTime();
 
         public static void SetCreationTime(string path, DateTime creationTime)
-        {
-            string fullPath = Path.GetFullPath(path);
-            FileSystem.SetCreationTime(fullPath, creationTime, asDirectory: false);
-        }
+            => FileSystem.SetCreationTime(Path.GetFullPath(path), creationTime, asDirectory: false);
 
         public static void SetCreationTimeUtc(string path, DateTime creationTimeUtc)
-        {
-            string fullPath = Path.GetFullPath(path);
-            FileSystem.SetCreationTime(fullPath, GetUtcDateTimeOffset(creationTimeUtc), asDirectory: false);
-        }
+            => FileSystem.SetCreationTime(Path.GetFullPath(path), GetUtcDateTimeOffset(creationTimeUtc), asDirectory: false);
 
         public static DateTime GetCreationTime(string path)
-        {
-            string fullPath = Path.GetFullPath(path);
-            return FileSystem.GetCreationTime(fullPath).LocalDateTime;
-        }
+            => FileSystem.GetCreationTime(Path.GetFullPath(path)).LocalDateTime;
 
         public static DateTime GetCreationTimeUtc(string path)
-        {
-            string fullPath = Path.GetFullPath(path);
-            return FileSystem.GetCreationTime(fullPath).UtcDateTime;
-        }
+            => FileSystem.GetCreationTime(Path.GetFullPath(path)).UtcDateTime;
 
         public static void SetLastAccessTime(string path, DateTime lastAccessTime)
-        {
-            string fullPath = Path.GetFullPath(path);
-            FileSystem.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: false);
-        }
+            => FileSystem.SetLastAccessTime(Path.GetFullPath(path), lastAccessTime, asDirectory: false);
 
         public static void SetLastAccessTimeUtc(string path, DateTime lastAccessTimeUtc)
-        {
-            string fullPath = Path.GetFullPath(path);
-            FileSystem.SetLastAccessTime(fullPath, GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: false);
-        }
+            => FileSystem.SetLastAccessTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: false);
 
         public static DateTime GetLastAccessTime(string path)
-        {
-            string fullPath = Path.GetFullPath(path);
-            return FileSystem.GetLastAccessTime(fullPath).LocalDateTime;
-        }
+            => FileSystem.GetLastAccessTime(Path.GetFullPath(path)).LocalDateTime;
 
         public static DateTime GetLastAccessTimeUtc(string path)
-        {
-            string fullPath = Path.GetFullPath(path);
-            return FileSystem.GetLastAccessTime(fullPath).UtcDateTime;
-        }
+            => FileSystem.GetLastAccessTime(Path.GetFullPath(path)).UtcDateTime;
 
         public static void SetLastWriteTime(string path, DateTime lastWriteTime)
-        {
-            string fullPath = Path.GetFullPath(path);
-            FileSystem.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: false);
-        }
+            => FileSystem.SetLastWriteTime(Path.GetFullPath(path), lastWriteTime, asDirectory: false);
 
         public static void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc)
-        {
-            string fullPath = Path.GetFullPath(path);
-            FileSystem.SetLastWriteTime(fullPath, GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: false);
-        }
+            => FileSystem.SetLastWriteTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: false);
 
         public static DateTime GetLastWriteTime(string path)
-        {
-            string fullPath = Path.GetFullPath(path);
-            return FileSystem.GetLastWriteTime(fullPath).LocalDateTime;
-        }
+            => FileSystem.GetLastWriteTime(Path.GetFullPath(path)).LocalDateTime;
 
         public static DateTime GetLastWriteTimeUtc(string path)
-        {
-            string fullPath = Path.GetFullPath(path);
-            return FileSystem.GetLastWriteTime(fullPath).UtcDateTime;
-        }
+            => FileSystem.GetLastWriteTime(Path.GetFullPath(path)).UtcDateTime;
 
         public static FileAttributes GetAttributes(string path)
-        {
-            string fullPath = Path.GetFullPath(path);
-            return FileSystem.GetAttributes(fullPath);
-        }
+            => FileSystem.GetAttributes(Path.GetFullPath(path));
 
         public static void SetAttributes(string path, FileAttributes fileAttributes)
-        {
-            string fullPath = Path.GetFullPath(path);
-            FileSystem.SetAttributes(fullPath, fileAttributes);
-        }
+            => FileSystem.SetAttributes(Path.GetFullPath(path), fileAttributes);
 
         public static FileStream OpenRead(string path)
-        {
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        }
+            => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         public static FileStream OpenWrite(string path)
-        {
-            return new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
-        }
+            => new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
 
         public static string ReadAllText(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            return InternalReadAllText(path, Encoding.UTF8);
-        }
+            => ReadAllText(path, Encoding.UTF8);
 
         public static string ReadAllText(string path, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            Validate(path, encoding);
 
-            return InternalReadAllText(path, encoding);
-        }
-
-        private static string InternalReadAllText(string path, Encoding encoding)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
-            Debug.Assert(path.Length > 0);
-
-            using (StreamReader sr = new StreamReader(path, encoding, detectEncodingFromByteOrderMarks: true))
-                return sr.ReadToEnd();
+            using StreamReader sr = new StreamReader(path, encoding, detectEncodingFromByteOrderMarks: true);
+            return sr.ReadToEnd();
         }
 
         public static void WriteAllText(string path, string? contents)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            using (StreamWriter sw = new StreamWriter(path))
-            {
-                sw.Write(contents);
-            }
-        }
+            => WriteAllText(path, contents, UTF8NoBOM);
 
         public static void WriteAllText(string path, string? contents, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            Validate(path, encoding);
 
-            using (StreamWriter sw = new StreamWriter(path, false, encoding))
-            {
-                sw.Write(contents);
-            }
+            WriteToFile(path, FileMode.Create, contents, encoding);
         }
 
         public static byte[] ReadAllBytes(string path)
         {
-            // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
+            // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
+            FileOptions options = OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None;
+            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options))
             {
-                long fileLength = fs.Length;
-                if (fileLength > int.MaxValue)
+                long fileLength = 0;
+                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
-                else if (fileLength == 0)
-                {
-#if !MS_IO_REDIST
-                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content.
-                    // Thus we need to assume 0 doesn't mean empty.
-                    return ReadAllBytesUnknownLength(fs);
+
+#if DEBUG
+                fileLength = 0; // improve the test coverage for ReadAllBytesUnknownLength
 #endif
+
+                if (fileLength == 0)
+                {
+                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content; also there are non-seekable files.
+                    // Thus we need to assume 0 doesn't mean empty.
+                    return ReadAllBytesUnknownLength(sfh);
                 }
 
                 int index = 0;
@@ -352,7 +277,7 @@ namespace System.IO
                 byte[] bytes = new byte[count];
                 while (count > 0)
                 {
-                    int n = fs.Read(bytes, index, count);
+                    int n = RandomAccess.ReadAtOffset(sfh, bytes.AsSpan(index, count), index);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();
@@ -374,106 +299,54 @@ namespace System.IO
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
 
-#if MS_IO_REDIST
-            using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-            fs.Write(bytes, 0, bytes.Length);
-#else
             using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
-#endif
         }
-        public static string[] ReadAllLines(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
-            return InternalReadAllLines(path, Encoding.UTF8);
-        }
+        public static string[] ReadAllLines(string path)
+            => ReadAllLines(path, Encoding.UTF8);
 
         public static string[] ReadAllLines(string path, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            return InternalReadAllLines(path, encoding);
-        }
-
-        private static string[] InternalReadAllLines(string path, Encoding encoding)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
-            Debug.Assert(path.Length != 0);
+            Validate(path, encoding);
 
             string? line;
             List<string> lines = new List<string>();
 
-            using (StreamReader sr = new StreamReader(path, encoding))
-                while ((line = sr.ReadLine()) != null)
-                    lines.Add(line);
+            using StreamReader sr = new StreamReader(path, encoding);
+            while ((line = sr.ReadLine()) != null)
+            {
+                lines.Add(line);
+            }
 
             return lines.ToArray();
         }
 
         public static IEnumerable<string> ReadLines(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            return ReadLinesIterator.CreateIterator(path, Encoding.UTF8);
-        }
+            => ReadLines(path, Encoding.UTF8);
 
         public static IEnumerable<string> ReadLines(string path, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            Validate(path, encoding);
 
             return ReadLinesIterator.CreateIterator(path, encoding);
         }
 
         public static void WriteAllLines(string path, string[] contents)
-        {
-            WriteAllLines(path, (IEnumerable<string>)contents);
-        }
+            => WriteAllLines(path, (IEnumerable<string>)contents);
 
         public static void WriteAllLines(string path, IEnumerable<string> contents)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            InternalWriteAllLines(new StreamWriter(path), contents);
-        }
+            => WriteAllLines(path, contents, UTF8NoBOM);
 
         public static void WriteAllLines(string path, string[] contents, Encoding encoding)
-        {
-            WriteAllLines(path, (IEnumerable<string>)contents, encoding);
-        }
+            => WriteAllLines(path, (IEnumerable<string>)contents, encoding);
 
         public static void WriteAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            Validate(path, encoding);
+
             if (contents == null)
                 throw new ArgumentNullException(nameof(contents));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
             InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
@@ -493,63 +366,30 @@ namespace System.IO
         }
 
         public static void AppendAllText(string path, string? contents)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            using (StreamWriter sw = new StreamWriter(path, append: true))
-            {
-                sw.Write(contents);
-            }
-        }
+            => AppendAllText(path, contents, UTF8NoBOM);
 
         public static void AppendAllText(string path, string? contents, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            Validate(path, encoding);
 
-            using (StreamWriter sw = new StreamWriter(path, true, encoding))
-            {
-                sw.Write(contents);
-            }
+            WriteToFile(path, FileMode.Append, contents, encoding);
         }
 
         public static void AppendAllLines(string path, IEnumerable<string> contents)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            InternalWriteAllLines(new StreamWriter(path, append: true), contents);
-        }
+            => AppendAllLines(path, contents, UTF8NoBOM);
 
         public static void AppendAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            Validate(path, encoding);
+
             if (contents == null)
                 throw new ArgumentNullException(nameof(contents));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
             InternalWriteAllLines(new StreamWriter(path, true, encoding), contents);
         }
 
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName)
-        {
-            Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
-        }
+            => Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
@@ -574,9 +414,7 @@ namespace System.IO
         // permissions to destFileName.
         //
         public static void Move(string sourceFileName, string destFileName)
-        {
-            Move(sourceFileName, destFileName, false);
-        }
+            => Move(sourceFileName, destFileName, false);
 
         public static void Move(string sourceFileName, string destFileName, bool overwrite)
         {
@@ -602,50 +440,30 @@ namespace System.IO
 
         [SupportedOSPlatform("windows")]
         public static void Encrypt(string path)
-        {
-            FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
-        }
+            => FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
 
         [SupportedOSPlatform("windows")]
         public static void Decrypt(string path)
-        {
-            FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));
-        }
-
-        // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.
-        private static Encoding UTF8NoBOM => s_UTF8NoBOM ?? (s_UTF8NoBOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true));
+            => FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));
 
         // If we use the path-taking constructors we will not have FileOptions.Asynchronous set and
         // we will have asynchronous file access faked by the thread pool. We want the real thing.
         private static StreamReader AsyncStreamReader(string path, Encoding encoding)
-        {
-            FileStream stream = new FileStream(
-                path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize,
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
-
-            return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true);
-        }
+            => new StreamReader(
+                new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan),
+                encoding, detectEncodingFromByteOrderMarks: true);
 
         private static StreamWriter AsyncStreamWriter(string path, Encoding encoding, bool append)
-        {
-            FileStream stream = new FileStream(
-                path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize,
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
-
-            return new StreamWriter(stream, encoding);
-        }
+            => new StreamWriter(
+                new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous),
+                encoding);
 
         public static Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
             => ReadAllTextAsync(path, Encoding.UTF8, cancellationToken);
 
         public static Task<string> ReadAllTextAsync(string path, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            Validate(path, encoding);
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled<string>(cancellationToken)
@@ -666,11 +484,7 @@ namespace System.IO
                 StringBuilder sb = new StringBuilder();
                 while (true)
                 {
-#if MS_IO_REDIST
-                    int read = await sr.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-#else
                     int read = await sr.ReadAsync(new Memory<char>(buffer), cancellationToken).ConfigureAwait(false);
-#endif
                     if (read == 0)
                     {
                         return sb.ToString();
@@ -694,25 +508,14 @@ namespace System.IO
 
         public static Task WriteAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            Validate(path, encoding);
 
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (string.IsNullOrEmpty(contents))
-            {
-                new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read).Dispose();
-                return Task.CompletedTask;
-            }
-
-            return InternalWriteAllTextAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
+            return WriteToFileAsync(path, FileMode.Create, contents, encoding, cancellationToken);
         }
 
         public static Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
@@ -722,50 +525,35 @@ namespace System.IO
                 return Task.FromCanceled<byte[]>(cancellationToken);
             }
 
-            var fs = new FileStream(
-                path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
+            // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
+            FileOptions options = FileOptions.Asynchronous | (OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None);
+            SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options);
 
-            bool returningInternalTask = false;
-            try
+            long fileLength = 0L;
+            if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
             {
-                long fileLength = fs.Length;
-                if (fileLength > int.MaxValue)
-                {
-                    var e = new IOException(SR.IO_FileTooLong2GB);
-#if !MS_IO_REDIST
-                    ExceptionDispatchInfo.SetCurrentStackTrace(e);
+                sfh.Dispose();
+                return Task.FromException<byte[]>(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.IO_FileTooLong2GB)));
+            }
+
+#if DEBUG
+            fileLength = 0; // improve the test coverage for InternalReadAllBytesUnknownLengthAsync
 #endif
-                    return Task.FromException<byte[]>(e);
-                }
 
-                returningInternalTask = true;
-                return fileLength > 0 ?
-                    InternalReadAllBytesAsync(fs, (int)fileLength, cancellationToken) :
-                    InternalReadAllBytesUnknownLengthAsync(fs, cancellationToken);
-            }
-            finally
-            {
-                if (!returningInternalTask)
-                {
-                    fs.Dispose();
-                }
-            }
+            return fileLength > 0 ?
+                InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken) :
+                InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken);
         }
 
-        private static async Task<byte[]> InternalReadAllBytesAsync(FileStream fs, int count, CancellationToken cancellationToken)
+        private static async Task<byte[]> InternalReadAllBytesAsync(SafeFileHandle sfh, int count, CancellationToken cancellationToken)
         {
-            using (fs)
+            using (sfh)
             {
                 int index = 0;
                 byte[] bytes = new byte[count];
                 do
                 {
-#if MS_IO_REDIST
-                    int n = await fs.ReadAsync(bytes, index, count - index, cancellationToken).ConfigureAwait(false);
-#else
-                    int n = await fs.ReadAsync(new Memory<byte>(bytes, index, count - index), cancellationToken).ConfigureAwait(false);
-#endif
+                    int n = await RandomAccess.ReadAtOffsetAsync(sfh, bytes.AsMemory(index), index, cancellationToken).ConfigureAwait(false);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();
@@ -778,7 +566,7 @@ namespace System.IO
             }
         }
 
-        private static async Task<byte[]> InternalReadAllBytesUnknownLengthAsync(FileStream fs, CancellationToken cancellationToken)
+        private static async Task<byte[]> InternalReadAllBytesUnknownLengthAsync(SafeFileHandle sfh, CancellationToken cancellationToken)
         {
             byte[] rentedArray = ArrayPool<byte>.Shared.Rent(512);
             try
@@ -789,9 +577,9 @@ namespace System.IO
                     if (bytesRead == rentedArray.Length)
                     {
                         uint newLength = (uint)rentedArray.Length * 2;
-                        if (newLength > MaxByteArrayLength)
+                        if (newLength > Array.MaxLength)
                         {
-                            newLength = (uint)Math.Max(MaxByteArrayLength, rentedArray.Length + 1);
+                            newLength = (uint)Math.Max(Array.MaxLength, rentedArray.Length + 1);
                         }
 
                         byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
@@ -804,11 +592,7 @@ namespace System.IO
                     }
 
                     Debug.Assert(bytesRead < rentedArray.Length);
-#if MS_IO_REDIST
-                    int n = await fs.ReadAsync(rentedArray, bytesRead, rentedArray.Length - bytesRead, cancellationToken).ConfigureAwait(false);
-#else
-                    int n = await fs.ReadAsync(rentedArray.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false);
-#endif
+                    int n = await RandomAccess.ReadAtOffsetAsync(sfh, rentedArray.AsMemory(bytesRead), bytesRead, cancellationToken).ConfigureAwait(false);
                     if (n == 0)
                     {
                         return rentedArray.AsSpan(0, bytesRead).ToArray();
@@ -818,7 +602,7 @@ namespace System.IO
             }
             finally
             {
-                fs.Dispose();
+                sfh.Dispose();
                 ArrayPool<byte>.Shared.Return(rentedArray);
             }
         }
@@ -838,13 +622,8 @@ namespace System.IO
 
             static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
             {
-#if MS_IO_REDIST
-                using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 1, FileOptions.Asynchronous | FileOptions.SequentialScan);
-                await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
-#else
-                using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
                 await RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
-#endif
             }
         }
 
@@ -853,12 +632,7 @@ namespace System.IO
 
         public static Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            Validate(path, encoding);
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled<string[]>(cancellationToken)
@@ -890,14 +664,10 @@ namespace System.IO
 
         public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            Validate(path, encoding);
+
             if (contents == null)
                 throw new ArgumentNullException(nameof(contents));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
@@ -922,68 +692,19 @@ namespace System.IO
             }
         }
 
-        private static async Task InternalWriteAllTextAsync(StreamWriter sw, string contents, CancellationToken cancellationToken)
-        {
-#if MS_IO_REDIST
-            char[]? buffer = null;
-            try
-            {
-                buffer = ArrayPool<char>.Shared.Rent(DefaultBufferSize);
-                int count = contents.Length;
-                int index = 0;
-                while (index < count)
-                {
-                    int batchSize = Math.Min(DefaultBufferSize, count - index);
-                    contents.CopyTo(index, buffer, 0, batchSize);
-                    await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
-                    index += batchSize;
-                }
-
-                cancellationToken.ThrowIfCancellationRequested();
-                await sw.FlushAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                sw.Dispose();
-                if (buffer != null)
-                {
-                    ArrayPool<char>.Shared.Return(buffer);
-                }
-            }
-#else
-            using (sw)
-            {
-                await sw.WriteAsync(contents.AsMemory(), cancellationToken).ConfigureAwait(false);
-                await sw.FlushAsync().ConfigureAwait(false);
-            }
-#endif
-        }
-
         public static Task AppendAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
             => AppendAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
 
         public static Task AppendAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            Validate(path, encoding);
 
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (string.IsNullOrEmpty(contents))
-            {
-                // Just to throw exception if there is a problem opening the file.
-                new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read).Dispose();
-                return Task.CompletedTask;
-            }
-
-            return InternalWriteAllTextAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
+            return WriteToFileAsync(path, FileMode.Append, contents, encoding, cancellationToken);
         }
 
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
@@ -991,14 +712,10 @@ namespace System.IO
 
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            Validate(path, encoding);
+
             if (contents == null)
                 throw new ArgumentNullException(nameof(contents));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
@@ -1043,6 +760,187 @@ namespace System.IO
         {
             FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
             return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: false);
+        }
+
+        private static void Validate(string path, Encoding encoding)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+        }
+
+        private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
+        {
+            byte[]? rentedArray = null;
+            Span<byte> buffer = stackalloc byte[512];
+            try
+            {
+                int bytesRead = 0;
+                while (true)
+                {
+                    if (bytesRead == buffer.Length)
+                    {
+                        uint newLength = (uint)buffer.Length * 2;
+                        if (newLength > Array.MaxLength)
+                        {
+                            newLength = (uint)Math.Max(Array.MaxLength, buffer.Length + 1);
+                        }
+
+                        byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
+                        buffer.CopyTo(tmp);
+                        byte[]? oldRentedArray = rentedArray;
+                        buffer = rentedArray = tmp;
+                        if (oldRentedArray != null)
+                        {
+                            ArrayPool<byte>.Shared.Return(oldRentedArray);
+                        }
+                    }
+
+                    Debug.Assert(bytesRead < buffer.Length);
+                    int n = RandomAccess.ReadAtOffset(sfh, buffer.Slice(bytesRead), bytesRead);
+                    if (n == 0)
+                    {
+                        return buffer.Slice(0, bytesRead).ToArray();
+                    }
+                    bytesRead += n;
+                }
+            }
+            finally
+            {
+                if (rentedArray != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedArray);
+                }
+            }
+        }
+
+        private static void WriteToFile(string path, FileMode mode, string? contents, Encoding encoding)
+        {
+            ReadOnlySpan<byte> preamble = encoding.GetPreamble();
+            int preambleSize = preamble.Length;
+
+            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.None, GetPreallocationSize(mode, contents, encoding, preambleSize));
+            long fileOffset = mode == FileMode.Append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
+
+            if (string.IsNullOrEmpty(contents))
+            {
+                if (preambleSize > 0 // even if the content is empty, we want to store the preamble
+                    && fileOffset == 0) // if we're appending to a file that already has data, don't write the preamble.
+                {
+                    RandomAccess.WriteAtOffset(fileHandle, preamble, fileOffset);
+                }
+                return;
+            }
+
+            int bytesNeeded = preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize));
+            byte[]? rentedBytes = null;
+            Span<byte> bytes = bytesNeeded <= 1024 ? stackalloc byte[1024] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
+
+            try
+            {
+                if (fileOffset == 0)
+                {
+                    preamble.CopyTo(bytes);
+                }
+                else
+                {
+                    preambleSize = 0; // don't append preamble to a non-empty file
+                }
+
+                Encoder encoder = encoding.GetEncoder();
+                ReadOnlySpan<char> remaining = contents;
+                while (!remaining.IsEmpty)
+                {
+                    ReadOnlySpan<char> toEncode = remaining.Slice(0, Math.Min(remaining.Length, ChunkSize));
+                    remaining = remaining.Slice(toEncode.Length);
+                    int encoded = encoder.GetBytes(toEncode, bytes.Slice(preambleSize), flush: remaining.IsEmpty);
+                    Span<byte> toStore = bytes.Slice(0, preambleSize + encoded);
+
+                    RandomAccess.WriteAtOffset(fileHandle, toStore, fileOffset);
+
+                    fileOffset += toStore.Length;
+                    preambleSize = 0;
+                }
+            }
+            finally
+            {
+                if (rentedBytes is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBytes);
+                }
+            }
+        }
+
+        private static async Task WriteToFileAsync(string path, FileMode mode, string? contents, Encoding encoding, CancellationToken cancellationToken)
+        {
+            ReadOnlyMemory<byte> preamble = encoding.GetPreamble();
+            int preambleSize = preamble.Length;
+
+            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, GetPreallocationSize(mode, contents, encoding, preambleSize));
+            long fileOffset = mode == FileMode.Append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
+
+            if (string.IsNullOrEmpty(contents))
+            {
+                if (preambleSize > 0 // even if the content is empty, we want to store the preamble
+                    && fileOffset == 0) // if we're appending to a file that already has data, don't write the preamble.
+                {
+                    await RandomAccess.WriteAtOffsetAsync(fileHandle, preamble, fileOffset, cancellationToken).ConfigureAwait(false);
+                }
+                return;
+            }
+
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize)));
+
+            try
+            {
+                if (fileOffset == 0)
+                {
+                    preamble.CopyTo(bytes);
+                }
+                else
+                {
+                    preambleSize = 0; // don't append preamble to a non-empty file
+                }
+
+                Encoder encoder = encoding.GetEncoder();
+                ReadOnlyMemory<char> remaining = contents.AsMemory();
+                while (!remaining.IsEmpty)
+                {
+                    ReadOnlyMemory<char> toEncode = remaining.Slice(0, Math.Min(remaining.Length, ChunkSize));
+                    remaining = remaining.Slice(toEncode.Length);
+                    int encoded = encoder.GetBytes(toEncode.Span, bytes.AsSpan(preambleSize), flush: remaining.IsEmpty);
+                    ReadOnlyMemory<byte> toStore = new ReadOnlyMemory<byte>(bytes, 0, preambleSize + encoded);
+
+                    await RandomAccess.WriteAtOffsetAsync(fileHandle, toStore, fileOffset, cancellationToken).ConfigureAwait(false);
+
+                    fileOffset += toStore.Length;
+                    preambleSize = 0;
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
+            }
+        }
+
+        private static long GetPreallocationSize(FileMode mode, string? contents, Encoding encoding, int preambleSize)
+        {
+            // for a single write operation, setting preallocationSize has no perf benefit, as it requires an additional sys-call
+            if (contents is null || contents.Length < ChunkSize)
+            {
+                return 0;
+            }
+
+            // preallocationSize is ignored for Append mode, there is no need to spend cycles on GetByteCount
+            if (mode == FileMode.Append)
+            {
+                return 0;
+            }
+
+            return preambleSize + encoding.GetByteCount(contents);
         }
     }
 }

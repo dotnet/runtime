@@ -5,11 +5,11 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 
-public class Test
+public class Test_Github_21011
 {
     public static int Main()
     {
-        Test test = new Test();
+        Test_Github_21011 test = new Test_Github_21011();
         test.GetPair();
         return 100;
     }

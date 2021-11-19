@@ -101,9 +101,7 @@ public:
     DWORD         OSR_HighId() const { LIMITED_METHOD_CONTRACT; return dwOSR_HighId; }
 #endif
 
-#ifndef CROSSGEN_COMPILE
     bool          BackpatchEntryPointSlots() const { LIMITED_METHOD_CONTRACT; return backpatchEntryPointSlots; }
-#endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     inline bool ShouldDumpElfOnMethod(LPCUTF8 methodName) const
@@ -418,23 +416,7 @@ public:
 #endif
 
     // Loader
-
-    enum RequireZapsType
-    {
-        REQUIRE_ZAPS_NONE,      // Dont care if native image is used or not
-        REQUIRE_ZAPS_ALL,       // All assemblies must have native images
-        REQUIRE_ZAPS_ALL_JIT_OK,// All assemblies must have native images, but its OK if the JIT-compiler also gets used (if some function was not ngenned)
-
-        REQUIRE_ZAPS_COUNT
-    };
-    RequireZapsType RequireZaps()           const {LIMITED_METHOD_CONTRACT;  return iRequireZaps; }
-    bool    RequireZap(LPCUTF8 assemblyName) const;
-#ifdef _DEBUG
-    bool    ForbidZap(LPCUTF8 assemblyName) const;
-#endif
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
-
-    LPCWSTR ZapSet()                        const { LIMITED_METHOD_CONTRACT; return pZapSet; }
 
     bool    NgenBindOptimizeNonGac()        const { LIMITED_METHOD_CONTRACT; return fNgenBindOptimizeNonGac; }
 
@@ -615,27 +597,8 @@ private: //----------------------------------------------------------------
     AssemblyNamesList *pSkipGCCoverageList;
 #endif
 
-    RequireZapsType iRequireZaps;
-    // Assemblies which need to have native images.
-    // This is only used if iRequireZaps!=REQUIRE_ZAPS_NONE
-    // This can be used to enforce that ngen images are used only selectively for some assemblies
-    AssemblyNamesList * pRequireZapsList;
-    // assemblies which need NOT have native images.
-    // This is only used if iRequireZaps!=REQUIRE_ZAPS_NONE
-    // This overrides pRequireZapsList.
-    AssemblyNamesList * pRequireZapsExcludeList;
-
     // Assemblies which cannot use Ready to Run images.
     AssemblyNamesList * pReadyToRunExcludeList;
-
-#ifdef _DEBUG
-    // Exact opposite of require zaps
-    BOOL iForbidZaps;
-    AssemblyNamesList * pForbidZapsList;
-    AssemblyNamesList * pForbidZapsExcludeList;
-#endif
-
-    LPCWSTR pZapSet;
 
     bool fNgenBindOptimizeNonGac;
 
@@ -654,9 +617,6 @@ private: //----------------------------------------------------------------
     // interop logging
     int       m_TraceWrapper;
 #endif
-
-    // Flag to keep track of memory
-    int     m_fFreepZapSet;
 
 #ifdef _DEBUG
     // GC Alloc perf flags
@@ -699,9 +659,7 @@ private: //----------------------------------------------------------------
     DWORD dwOSR_HighId;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     bool backpatchEntryPointSlots;
-#endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     LPCUTF8 pszGDBJitElfDump;
@@ -806,18 +764,6 @@ public:
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)
 #define FILE_FORMAT_CHECK(_condition)
 
-#endif
-
-// NGENImagesAllowed is the safe way to determine if NGEN Images are allowed to be loaded. (Defined as
-// a macro instead of an inlined function to avoid compilation errors due to dependent
-// definitions not being available to this header.)
-#ifdef PROFILING_SUPPORTED
-#define NGENImagesAllowed()                                                                                     \
-    (g_fAllowNativeImages &&                /* No one disabled use of native images */                          \
-    !(CORProfilerDisableAllNGenImages()))   /* Profiler didn't explicitly refuse NGEN images */
-#else
-#define NGENImagesAllowed()                                                                                     \
-    (g_fAllowNativeImages)
 #endif
 
 #endif // EECONFIG_H

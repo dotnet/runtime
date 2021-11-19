@@ -21,7 +21,7 @@ namespace System.Data.Odbc
             _handleType = handleType;
 
             bool mustRelease = false;
-            ODBC32.RetCode retcode = ODBC32.RetCode.SUCCESS;
+            ODBC32.SQLRETURN retcode = ODBC32.SQLRETURN.SUCCESS;
 
             try
             {
@@ -70,7 +70,7 @@ namespace System.Data.Odbc
                 }
             }
 
-            if ((ADP.PtrZero == base.handle) || (ODBC32.RetCode.SUCCESS != retcode))
+            if ((ADP.PtrZero == base.handle) || (ODBC32.SQLRETURN.SUCCESS != retcode))
             {
                 //
                 throw ODBC.CantAllocateEnvironmentHandle(retcode);
@@ -83,7 +83,7 @@ namespace System.Data.Odbc
             _handleType = ODBC32.SQL_HANDLE.DESC;
 
             int cbActual;
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             bool mustRelease = false;
 
             try
@@ -176,12 +176,12 @@ namespace System.Data.Odbc
             return true;
         }
 
-        internal ODBC32.RetCode GetDiagnosticField(out string sqlState)
+        internal ODBC32.SQLRETURN GetDiagnosticField(out string sqlState)
         {
             short cbActual;
             // ODBC (MSDN) documents it expects a buffer large enough to hold 5(+L'\0') unicode characters
             StringBuilder sb = new StringBuilder(6);
-            ODBC32.RetCode retcode = Interop.Odbc.SQLGetDiagFieldW(
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagFieldW(
                 HandleType,
                 this,
                 (short)1,
@@ -190,7 +190,7 @@ namespace System.Data.Odbc
                 checked((short)(2 * sb.Capacity)), // expects number of bytes, see \\kbinternal\kb\articles\294\1\69.HTM
                 out cbActual);
             ODBC.TraceODBC(3, "SQLGetDiagFieldW", retcode);
-            if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+            if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
                 sqlState = sb.ToString();
             }
@@ -201,14 +201,14 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode GetDiagnosticRecord(short record, out string sqlState, StringBuilder message, out int nativeError, out short cchActual)
+        internal ODBC32.SQLRETURN GetDiagnosticRecord(short record, out string sqlState, StringBuilder message, out int nativeError, out short cchActual)
         {
             // ODBC (MSDN) documents it expects a buffer large enough to hold 4(+L'\0') unicode characters
             StringBuilder sb = new StringBuilder(5);
-            ODBC32.RetCode retcode = Interop.Odbc.SQLGetDiagRecW(HandleType, this, record, sb, out nativeError, message, checked((short)message.Capacity), out cchActual);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagRecW(HandleType, this, record, sb, out nativeError, message, checked((short)message.Capacity), out cchActual);
             ODBC.TraceODBC(3, "SQLGetDiagRecW", retcode);
 
-            if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+            if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
                 sqlState = sb.ToString();
             }
@@ -226,23 +226,23 @@ namespace System.Data.Odbc
         {
         }
 
-        internal ODBC32.RetCode GetDescriptionField(int i, ODBC32.SQL_DESC attribute, CNativeBuffer buffer, out int numericAttribute)
+        internal ODBC32.SQLRETURN GetDescriptionField(int i, ODBC32.SQL_DESC attribute, CNativeBuffer buffer, out int numericAttribute)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLGetDescFieldW(this, checked((short)i), attribute, buffer, buffer.ShortLength, out numericAttribute);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDescFieldW(this, checked((short)i), attribute, buffer, buffer.ShortLength, out numericAttribute);
             ODBC.TraceODBC(3, "SQLGetDescFieldW", retcode);
             return retcode;
         }
 
-        internal ODBC32.RetCode SetDescriptionField1(short ordinal, ODBC32.SQL_DESC type, IntPtr value)
+        internal ODBC32.SQLRETURN SetDescriptionField1(short ordinal, ODBC32.SQL_DESC type, IntPtr value)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLSetDescFieldW(this, ordinal, type, value, 0);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLSetDescFieldW(this, ordinal, type, value, 0);
             ODBC.TraceODBC(3, "SQLSetDescFieldW", retcode);
             return retcode;
         }
 
-        internal ODBC32.RetCode SetDescriptionField2(short ordinal, ODBC32.SQL_DESC type, HandleRef value)
+        internal ODBC32.SQLRETURN SetDescriptionField2(short ordinal, ODBC32.SQL_DESC type, HandleRef value)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLSetDescFieldW(this, ordinal, type, value, 0);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLSetDescFieldW(this, ordinal, type, value, 0);
             ODBC.TraceODBC(3, "SQLSetDescFieldW", retcode);
             return retcode;
         }

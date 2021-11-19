@@ -18,8 +18,12 @@
                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                             $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NetCoreAppCurrentVersion)'))">
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
+    <!-- Tests don't yet use a live build of the apphost: https://github.com/dotnet/runtime/issues/58109. -->
+    <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">false</UseLocalAppHostPack>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
+    <!-- Hardcode the apphost version until the SDK understands the net7.0 tfm. -->
+    <_AppHostBaselinePackVersion Condition="'$(UseLocalAppHostPack)' != 'true'">6.0.0-rc.1.21411.2</_AppHostBaselinePackVersion>
   </PropertyGroup>
 
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->
@@ -44,7 +48,7 @@
                       Condition="'@(KnownRuntimePack)' == '' or !@(KnownRuntimePack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"/>
     <KnownAppHostPack Include="$(LocalFrameworkOverrideName)" 
                       AppHostPackNamePattern="$(LocalFrameworkOverrideName).Host.**RID**"
-                      AppHostPackVersion="$(ProductVersion)"
+                      AppHostPackVersion="$([MSBuild]::ValueOrDefault('$(_AppHostBaselinePackVersion)', '$(ProductVersion)'))"
                       AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64"
                       TargetFramework="$(NetCoreAppCurrent)"
                       Condition="'@(KnownAppHostPack)' == '' or !@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
@@ -71,9 +75,7 @@
                      '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Point MicrosoftNetCoreAppRefPackRefDir to the acquired targeting pack to use it later for AssemblySearchPaths resolution. -->
     <PropertyGroup Condition="'$(UseLocalTargetingRuntimePack)' != 'true'">
-      <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0'))">netcoreapp</_NetCoreAppTargetFrameworkIdentifier>
-      <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '5.0'))">net</_NetCoreAppTargetFrameworkIdentifier>
-      <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\$(_NetCoreAppTargetFrameworkIdentifier)$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
+      <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\net$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
     </PropertyGroup>
     <ItemGroup>
       <Reference Remove="@(Reference)"

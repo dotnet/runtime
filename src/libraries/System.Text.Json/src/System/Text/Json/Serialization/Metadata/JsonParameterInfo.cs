@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -17,8 +16,6 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonConverter ConverterBase { get; private set; } = null!;
 
         private protected bool MatchingPropertyCanBeNull { get; private set; }
-
-        internal abstract object? ClrDefaultValue { get; }
 
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
         public object? DefaultValue { get; private protected set; }
@@ -75,18 +72,49 @@ namespace System.Text.Json.Serialization.Metadata
             MatchingPropertyCanBeNull = matchingProperty.PropertyTypeCanBeNull;
         }
 
-        // Create a parameter that is ignored at run time. It uses the same type (typeof(sbyte)) to help
-        // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        public static JsonParameterInfo CreateIgnoredParameterPlaceholder(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty)
+        /// <summary>
+        /// Create a parameter that is ignored at run time. It uses the same type (typeof(sbyte)) to help
+        /// prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
+        /// </summary>
+        public static JsonParameterInfo CreateIgnoredParameterPlaceholder(
+            JsonParameterInfoValues parameterInfo,
+            JsonPropertyInfo matchingProperty,
+            bool sourceGenMode)
         {
-            JsonParameterInfo jsonParameterInfo = matchingProperty.ConverterBase.CreateJsonParameterInfo();
+            JsonParameterInfo jsonParameterInfo = new JsonParameterInfo<sbyte>();
             jsonParameterInfo.ClrInfo = parameterInfo;
             jsonParameterInfo.RuntimePropertyType = matchingProperty.RuntimePropertyType!;
             jsonParameterInfo.NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
-            jsonParameterInfo.InitializeDefaultValue(matchingProperty);
+
+            // TODO: https://github.com/dotnet/runtime/issues/60082.
+            // Default value initialization for params mapping to ignored properties doesn't
+            // account for the default value of optional parameters. This should be fixed.
+
+            if (sourceGenMode)
+            {
+                // The <T> value in the matching JsonPropertyInfo<T> instance matches the parameter type.
+                jsonParameterInfo.DefaultValue = matchingProperty.DefaultValue;
+            }
+            else
+            {
+                // The <T> value in the created JsonPropertyInfo<T> instance (sbyte)
+                // doesn't match the parameter type, use reflection to get the default value.
+                Type parameterType = parameterInfo.ParameterType;
+
+                GenericMethodHolder holder;
+                if (matchingProperty.Options.TryGetClass(parameterType, out JsonTypeInfo? typeInfo))
+                {
+                    holder = typeInfo.GenericMethods;
+                }
+                else
+                {
+                    holder = GenericMethodHolder.CreateHolder(parameterInfo.ParameterType);
+                }
+
+                jsonParameterInfo.DefaultValue = holder.DefaultValue;
+            }
+
             return jsonParameterInfo;
         }
-
-        protected abstract void InitializeDefaultValue(JsonPropertyInfo matchingProperty);
     }
 }

@@ -619,10 +619,6 @@ typedef struct _DacGlobals
 
     ULONG fn__ThePreStubPatchLabel;
     ULONG fn__PrecodeFixupThunk;
-#ifdef FEATURE_PREJIT
-    ULONG fn__StubDispatchFixupStub;
-    ULONG fn__StubDispatchFixupPatchLabel;
-#endif
 #ifdef FEATURE_COMINTEROP
     ULONG fn__Unknown_AddRef;
     ULONG fn__Unknown_AddRefSpecial;
@@ -773,7 +769,7 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer);
 #ifdef __cplusplus
 }
 class ReflectionModule;
-interface IMDInternalImport* DacGetMDImport(const class PEFile* peFile,
+interface IMDInternalImport* DacGetMDImport(const class PEAssembly* pPEAssembly,
                                             bool throwEx);
 interface IMDInternalImport* DacGetMDImport(const ReflectionModule* reflectionModule,
                                             bool throwEx);

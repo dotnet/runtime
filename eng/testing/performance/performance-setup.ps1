@@ -97,7 +97,12 @@ if ($iOSMono) {
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
-$CommonSetupArguments="--channel main --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
+$CleanedBranchName = "main"
+if($Branch.Contains("refs/heads/release"))
+{
+    $CleanedBranchName = $Branch.replace('refs/heads/', '')
+}
+$CommonSetupArguments="--channel $CleanedBranchName --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
 
 if($NoPGO)
@@ -144,6 +149,7 @@ if ($AndroidMono) {
         mkdir $WorkItemDirectory
     }
     Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -156,6 +162,8 @@ if ($iOSMono) {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
     } else {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
+        Copy-Item -path "$SourceDirectory\MauiiOSDefault" $PayloadDirectory\MauiiOSDefault -Recurse
+        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault" $PayloadDirectory\MauiMacCatalystDefault -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'

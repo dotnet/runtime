@@ -17,6 +17,8 @@ namespace System.IO.Tests
             return new FileInfo(path);
         }
 
+        protected override FileInfo CreateSymlink(string path, string pathToTarget) => (FileInfo)File.CreateSymbolicLink(path, pathToTarget);
+
         private static bool HasNonZeroNanoseconds(DateTime dt) => dt.Ticks % 10 != 0;
 
         public FileInfo GetNonZeroMilliseconds()

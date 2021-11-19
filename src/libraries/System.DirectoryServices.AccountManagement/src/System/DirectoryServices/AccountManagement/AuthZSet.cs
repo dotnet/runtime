@@ -358,27 +358,10 @@ namespace System.DirectoryServices.AccountManagement
                     // or (2) it's a domain user that's a member of a group on the local machine.  Pass the default machine context options
                     // If we initially targetted AD then those options will not be valid for the machine store.
 
-#if USE_CTX_CACHE
                     PrincipalContext ctx = SDSCache.LocalMachine.GetContext(
                                                                     sidIssuerName,
                                                                     _credentials,
                                                                     DefaultContextOptions.MachineDefaultContextOption);
-#else
-                    PrincipalContext ctx = (PrincipalContext) this.contexts[sidIssuerName];
-                    if (ctx == null)
-                    {
-                        // Build a PrincipalContext for the machine
-                        ctx = new PrincipalContext(
-                                        ContextType.Machine,
-                                        sidIssuerName,
-                                        null,
-                                        (this.credentials != null ? credentials.UserName : null),
-                                        (this.credentials != null ? credentials.Password : null),
-                                        DefaultContextOptions.MachineDefaultContextOption);
-
-                        this.contexts[sidIssuerName] = ctx;
-                    }
-#endif
                     SecurityIdentifier sidObj = new SecurityIdentifier(sid, 0);
                     group = GroupPrincipal.FindByIdentity(ctx, IdentityType.Sid, sidObj.ToString());
                 }
@@ -389,33 +372,11 @@ namespace System.DirectoryServices.AccountManagement
 
                     // It's a domain group, because it's a domain user and the SID issuer isn't the local machine
 
-#if USE_CTX_CACHE
                     PrincipalContext ctx = SDSCache.Domain.GetContext(
                                                                 sidIssuerName,
                                                                 _credentials,
                                                                 _contextOptions);
-#else
-                    PrincipalContext ctx = (PrincipalContext) this.contexts[sidIssuerName];
-                    if (ctx == null)
-                    {
-                        // Determine the domain DNS name
 
-                        // DS_RETURN_DNS_NAME | DS_DIRECTORY_SERVICE_REQUIRED | DS_BACKGROUND_ONLY
-                        int flags = unchecked((int) (0x40000000 | 0x00000010 | 0x00000100));
-                        UnsafeNativeMethods.DomainControllerInfo info = Utils.GetDcName(null, sidIssuerName, null, flags);
-
-                        // Build a PrincipalContext for the domain
-                        ctx = new PrincipalContext(
-                                        ContextType.Domain,
-                                        info.DomainName,
-                                        null,
-                                        (this.credentials != null ? credentials.UserName : null),
-                                        (this.credentials != null ? credentials.Password : null),
-                                        this.contextOptions);
-
-                        this.contexts[sidIssuerName] = ctx;
-                    }
-#endif
                     // Retrieve the group.  We'd normally just do a Group.FindByIdentity here, but
                     // because the AZMan API can return "old" SIDs, we also need to check the SID
                     // history.  So we'll use the special FindPrincipalBySID method that the ADStoreCtx

@@ -4,7 +4,7 @@
 //
 #include "comcallablewrapper.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 inline BOOL ComInterfaceSlotIs(IUnknown* pUnk, int slot, LPVOID pvFunction)
 {
     CONTRACTL

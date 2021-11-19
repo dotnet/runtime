@@ -11,7 +11,8 @@
 .assembly extern System.Numerics.Extensions {}
 .assembly extern System.Runtime.CompilerServices.Unsafe {}
 
-.assembly Runtime_39424.exe {}
+.assembly Runtime_39424 {}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit Runtime_39424
        extends [System.Runtime]System.Object
@@ -164,6 +165,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       18 (0x12)
     .maxstack  8

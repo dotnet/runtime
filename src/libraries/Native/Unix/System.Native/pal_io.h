@@ -620,11 +620,11 @@ PALEXPORT int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, 
 PALEXPORT int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice);
 
 /**
- * Ensures that disk space is allocated.
+ * Preallocates disk space.
  *
- * Returns -1 on ENOSPC, -2 on EFBIG. On success or ignorable error, 0 is returned.
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-PALEXPORT int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length);
+PALEXPORT int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length);
 
 /**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
@@ -675,7 +675,7 @@ PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bu
  *
  * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd);
+PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength);
 
 /**
 * Initializes a new inotify instance and returns a file

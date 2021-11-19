@@ -11,8 +11,8 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
-        [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        internal static unsafe extern NTSTATUS BCryptKeyDerivation(
+        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe partial NTSTATUS BCryptKeyDerivation(
             SafeBCryptKeyHandle hKey,
             BCryptBufferDesc* pParameterList,
             byte* pbDerivedKey,

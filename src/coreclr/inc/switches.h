@@ -5,9 +5,7 @@
 //
 
 
-#ifndef CROSSGEN_COMPILE
 #define STRESS_HEAP
-#endif
 
 
 #define VERIFY_HEAP
@@ -21,7 +19,7 @@
 #define STRESS_LOG
 #endif
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define USE_CHECKED_OBJECTREFS
 #endif
 
@@ -51,19 +49,19 @@
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-    #define USE_UPPER_ADDRESS       0
+    #define USE_LAZY_PREFERRED_RANGE       0
 
 #elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
-    #define UPPER_ADDRESS_MAPPING_FACTOR 2
-    #define CLR_UPPER_ADDRESS_MIN   0x64400000000
-    #define CODEHEAP_START_ADDRESS  0x64480000000
-    #define CLR_UPPER_ADDRESS_MAX   0x644FC000000
 
-#if !defined(HOST_UNIX)
-    #define USE_UPPER_ADDRESS       1
+#if defined(HOST_UNIX)
+    // In PAL we have a smechanism that reserves memory on start up that is
+    // close to libcoreclr and intercepts calls to VirtualAlloc to serve back
+    // from this area.
+    #define USE_LAZY_PREFERRED_RANGE       0
 #else
-    #define USE_UPPER_ADDRESS       0
-#endif // !HOST_UNIX
+    // On Windows we lazily try to reserve memory close to coreclr.dll.
+    #define USE_LAZY_PREFERRED_RANGE       1
+#endif
 
 #else
     #error Please add a new #elif clause and define all portability macros for the new platform
@@ -172,14 +170,7 @@
 #endif // defined(FEATURE_CORESYSTEM)
 
 // If defined, support interpretation.
-#if !defined(CROSSGEN_COMPILE)
 
 #if !defined(TARGET_UNIX)
 #define FEATURE_STACK_SAMPLING
 #endif // defined (ALLOW_SXS_JIT)
-
-#endif // !defined(CROSSGEN_COMPILE)
-
-#if defined(FEATURE_INTERPRETER) && defined(CROSSGEN_COMPILE)
-#undef FEATURE_INTERPRETER
-#endif

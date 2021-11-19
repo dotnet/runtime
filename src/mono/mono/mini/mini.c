@@ -440,7 +440,7 @@ guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
 	type = mini_get_underlying_type (type);
-	if (cfg->gshared && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+	if (cfg->gshared && !m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		g_assert (mini_type_var_is_vt (type));
 		return CEE_STOBJ;
 	}
@@ -625,8 +625,8 @@ set_vreg_to_inst (MonoCompile *cfg, int vreg, MonoInst *inst)
 	cfg->vreg_to_inst [vreg] = inst;
 }
 
-#define mono_type_is_long(type) (!(type)->byref && ((mono_type_get_underlying_type (type)->type == MONO_TYPE_I8) || (mono_type_get_underlying_type (type)->type == MONO_TYPE_U8)))
-#define mono_type_is_float(type) (!(type)->byref && (((type)->type == MONO_TYPE_R8) || ((type)->type == MONO_TYPE_R4)))
+#define mono_type_is_long(type) (!m_type_is_byref (type) && ((mono_type_get_underlying_type (type)->type == MONO_TYPE_I8) || (mono_type_get_underlying_type (type)->type == MONO_TYPE_U8)))
+#define mono_type_is_float(type) (!m_type_is_byref (type) && (((type)->type == MONO_TYPE_R8) || ((type)->type == MONO_TYPE_R4)))
 
 MonoInst*
 mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, int vreg)
@@ -660,7 +660,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
 	if (cfg->compute_gc_maps) {
-		if (type->byref) {
+		if (m_type_is_byref (type)) {
 			mono_mark_vreg_as_mp (cfg, vreg);
 		} else {
 			if ((MONO_TYPE_ISSTRUCT (type) && m_class_has_references (inst->klass)) || mini_type_is_reference (type)) {
@@ -669,6 +669,11 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			}
 		}
 	}
+
+#ifdef TARGET_WASM
+	if (mini_type_is_reference (type))
+		mono_mark_vreg_as_ref (cfg, vreg);
+#endif
 	
 	cfg->varinfo [num] = inst;
 
@@ -748,7 +753,7 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
 
-	if (type->type == MONO_TYPE_VALUETYPE && !type->byref) {
+	if (type->type == MONO_TYPE_VALUETYPE && !m_type_is_byref (type)) {
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		if (m_class_is_enumtype (klass) && m_class_get_image (klass) == mono_get_corlib () && !strcmp (m_class_get_name (klass), "StackCrawlMark")) {
 			if (!(cfg->method->flags & METHOD_ATTRIBUTE_REQSECOBJ))
@@ -831,7 +836,7 @@ type_from_stack_type (MonoInst *ins)
 		if (ins->klass)
 			return m_class_get_this_arg (ins->klass);
 		else
-			return m_class_get_this_arg (mono_defaults.object_class);
+			return mono_class_get_byref_type (mono_defaults.object_class);
 	case STACK_OBJ:
 		/* ins->klass may not be set for ldnull.
 		 * Also, if we have a boxed valuetype, we want an object lass,
@@ -2795,6 +2800,12 @@ insert_safepoints (MonoCompile *cfg)
 		}
 	}
 
+	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+		return;
+	}
+
 	if (cfg->verbose_level > 1)
 		printf ("INSERTING SAFEPOINTS\n");
 	if (cfg->verbose_level > 2)
@@ -3392,7 +3403,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		for (i = 0; verbose_method_names [i] != NULL; i++){
 			const char *name = verbose_method_names [i];
 
-			if ((strchr (name, '.') > name) || strchr (name, ':')) {
+			if ((strchr (name, '.') > name) || strchr (name, ':') || strchr (name, '*')) {
 				MonoMethodDesc *desc;
 				
 				desc = mono_method_desc_new (name, TRUE);

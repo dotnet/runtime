@@ -64,9 +64,9 @@ namespace ILCompiler.DependencyAnalysis
         /// to return 0. The name was chosen to make this convenient. If an object node implements this interface,
         /// it will pretty much always want to either implement both as returning 0, or *one of them* to return
         /// a non-zero value.
-        /// Some examples: an EEType node defines the symbol of the EEType in the middle of the object node,
-        /// since EETypes are prefixed by a GCDesc structure (that is not considered the beginning of the EEType).
-        /// This means that <see cref="Offset"/> will return a non-zero value. When referencing the EEType by its
+        /// Some examples: an MethodTable node defines the symbol of the MethodTable in the middle of the object node,
+        /// since EETypes are prefixed by a GCDesc structure (that is not considered the beginning of the MethodTable).
+        /// This means that <see cref="Offset"/> will return a non-zero value. When referencing the MethodTable by its
         /// symbol, the GCDesc was already accounted for when the symbol was defined, so we want the
         /// <see cref="ISymbolNode.Offset"/> to be zero.
         /// </remarks>

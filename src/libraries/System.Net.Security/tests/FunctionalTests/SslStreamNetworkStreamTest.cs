@@ -413,6 +413,12 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
         {
+            if (PlatformDetection.IsWindows10Version22000OrGreater)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
+                throw new SkipTestException("Unstable on Windows 11");
+            }
+
             bool negotiateClientCertificateCalled = false;
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
@@ -636,9 +642,10 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
             int count = 0;
@@ -665,14 +672,21 @@ namespace System.Net.Security.Tests
                     };
 
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ServerCertificateSelectionCallback =
-                    (sender, name) =>
-                    {
-                        SslStream stream = (SslStream)sender;
-                        Assert.Equal(targetName, stream.TargetHostName);
+                if (useCallback)
+                {
+                    serverOptions.ServerCertificateSelectionCallback =
+                        (sender, name) =>
+                        {
+                            SslStream stream = (SslStream)sender;
+                            Assert.Equal(targetName, stream.TargetHostName);
 
-                        return certificate;
-                    };
+                            return certificate;
+                        };
+                }
+                else
+                {
+                    serverOptions.ServerCertificate = certificate;
+                }
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions),

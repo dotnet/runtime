@@ -47,7 +47,7 @@ public struct GenOuter
 	}
 }
 
-public class Test
+public class Test_NestedClass03
 {
 	public static int counter = 0;
 	public static bool result = true;

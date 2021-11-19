@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net6.0-Linux-Release-x64', used to name output directory.")
+usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net7.0-Linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
@@ -34,11 +34,9 @@ __Compiler=clang
 __CompilerMajorVersion=
 __CompilerMinorVersion=
 __CrossBuild=0
-__IsMSBuildOnNETCoreSupported=0
 __PortableBuild=1
 __RootBinDir="$__RepoRootDir/artifacts"
 __SkipConfigure=0
-__SkipGenerateVersion=0
 __StaticLibLink=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
@@ -83,30 +81,8 @@ if [[ "$__TargetOS" == OSX ]]; then
         __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     fi
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
-    if [[ -z "$ANDROID_NDK_ROOT" ]]; then
-        echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
-        exit 1
-    fi
-
-    # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_STL=none -DANDROID_NATIVE_API_LEVEL=21 $__CMakeArgs"
-
-    # workaround init-compiler.sh trying to detect clang, it's handled in android.toolchain.cmake already
-    export CLR_CC=$(which false)
-    export CLR_CXX=$(which false)
-
-    if [[ "$__BuildArch" == x64 ]]; then
-        __CMakeArgs="-DANDROID_ABI=x86_64 $__CMakeArgs"
-    elif [[ "$__BuildArch" == x86 ]]; then
-        __CMakeArgs="-DANDROID_ABI=x86 $__CMakeArgs"
-    elif [[ "$__BuildArch" == arm64 ]]; then
-        __CMakeArgs="-DANDROID_ABI=arm64-v8a $__CMakeArgs"
-    elif [[ "$__BuildArch" == arm ]]; then
-        __CMakeArgs="-DANDROID_ABI=armeabi-v7a $__CMakeArgs"
-    else
-        echo "Error: Unknown Android architecture $__BuildArch."
-        exit 1
-    fi
+    # Android SDK defaults to c++_static; we only need C support
+    __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == iOSSimulator ]]; then
     # set default iOS simulator deployment target
     # keep in sync with src/mono/Directory.Build.props

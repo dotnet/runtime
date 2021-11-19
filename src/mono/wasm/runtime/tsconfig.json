@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "sourceMap": false,
+    "target": "ES2018",
+    "moduleResolution": "Node",
+    "lib": [
+      "esnext",
+      "dom"
+    ],
+    "strict": true,
+    "outDir": "bin",
+  },
+  "exclude": [
+    "bin"
+  ]
+}

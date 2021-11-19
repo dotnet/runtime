@@ -48,10 +48,10 @@ namespace SourceGenerators.Tests
             }
 
             return new AdhocWorkspace()
-                        .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
-                        .AddProject("Test", "test.dll", "C#")
-                            .WithMetadataReferences(refs)
-                            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
+                .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
+                .AddProject("Test", "test.dll", "C#")
+                .WithMetadataReferences(refs)
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
         }
 
         public static Task CommitChanges(this Project proj, params string[] ignorables)
@@ -141,23 +141,44 @@ namespace SourceGenerators.Tests
         /// Runs a Roslyn generator over a set of source files.
         /// </summary>
         public static async Task<(ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGenerator(
+#if ROSLYN4_0_OR_GREATER
+            IIncrementalGenerator generator,
+#else
             ISourceGenerator generator,
+#endif
             IEnumerable<Assembly>? references,
             IEnumerable<string> sources,
-            AnalyzerConfigOptionsProvider? optionsProvider = null,
             bool includeBaseReferences = true,
             CancellationToken cancellationToken = default)
         {
             Project proj = CreateTestProject(references, includeBaseReferences);
-
             proj = proj.WithDocuments(sources);
-
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
-
             Compilation? comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
+            return RunGenerator(comp!, generator, cancellationToken);
+        }
 
-            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator }, optionsProvider: optionsProvider);
-            GeneratorDriver gd = cgd.RunGenerators(comp!, cancellationToken);
+        /// <summary>
+        /// Runs a Roslyn generator given a Compilation.
+        /// </summary>
+        public static (ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>) RunGenerator(
+            Compilation compilation,
+#if ROSLYN4_0_OR_GREATER
+            IIncrementalGenerator generator,
+#else
+            ISourceGenerator generator,
+#endif
+            CancellationToken cancellationToken = default)
+        {
+#if ROSLYN4_0_OR_GREATER
+            // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
+            CSharpParseOptions options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
+            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator.AsSourceGenerator() }, parseOptions: options);
+#else
+            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator });
+#endif
+
+            GeneratorDriver gd = cgd.RunGenerators(compilation, cancellationToken);
 
             GeneratorDriverRunResult r = gd.GetRunResult();
             return (r.Results[0].Diagnostics, r.Results[0].GeneratedSources);

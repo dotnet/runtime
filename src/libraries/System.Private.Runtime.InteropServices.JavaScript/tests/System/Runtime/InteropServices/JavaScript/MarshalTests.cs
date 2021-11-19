@@ -3,6 +3,8 @@
 
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -283,7 +285,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             Runtime.InvokeJS(@$"
-                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (200);
             ");
 
@@ -295,7 +297,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intPtrValue = IntPtr.Zero;
             Runtime.InvokeJS(@$"
-                var invoke_int_ptr = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeIntPtr"");
+                var invoke_int_ptr = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeIntPtr"");
                 invoke_int_ptr (42);
             ");
             Assert.Equal(42, (int)HelperMarshal._intPtrValue);
@@ -306,7 +308,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._marshaledIntPtrValue = IntPtr.Zero;
             Runtime.InvokeJS(@$"
-                var invokeMarshalIntPtr = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeMarshalIntPtr"");
+                var invokeMarshalIntPtr = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeMarshalIntPtr"");
                 var r = invokeMarshalIntPtr ();
 
                 if (r != 42) throw `Invalid int_ptr value`;
@@ -319,7 +321,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             Runtime.InvokeJS(@$"
-                Module.mono_call_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"", [ 300 ]);
+                INTERNAL.call_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"", [ 300 ]);
             ");
 
             Assert.Equal(300, HelperMarshal._intValue);
@@ -330,7 +332,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             Runtime.InvokeJS(@$"
-                var invoke_int = Module.mono_method_resolve (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = INTERNAL.mono_method_resolve (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 App.call_test_method (""InvokeInt"", [ invoke_int ]);
             ");
 
@@ -629,7 +631,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             HelperMarshal._intValue = 1;
             Runtime.InvokeJS(@$"
-                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int ();
             ");
             Assert.Equal(0, HelperMarshal._intValue);
@@ -640,7 +642,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             Runtime.InvokeJS(@$"
-                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (200, 400);
             ");
             Assert.Equal(200, HelperMarshal._intValue);
@@ -654,13 +656,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             HelperMarshal._intValue = 0;
             Runtime.InvokeJS(@$"
-                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (""200"");
             ");
             Assert.Equal(200, HelperMarshal._intValue);
 
             Runtime.InvokeJS(@$"
-                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (400.5);
             ");
             Assert.Equal(400, HelperMarshal._intValue);
@@ -671,14 +673,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 100;
             Runtime.InvokeJS(@$"
-                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (""hello"");
             ");
             Assert.Equal(0, HelperMarshal._intValue);
 
             // In this case at the very least, the leading "7" is not turned into the number 7
             Runtime.InvokeJS(@$"
-                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (""7apples"");
             ");
             Assert.Equal(0, HelperMarshal._intValue);
@@ -689,7 +691,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._uintValue = 0;
             Runtime.InvokeJS(@$"
-                var invoke_uint = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
+                var invoke_uint = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
                 invoke_uint (0xFFFFFFFE);
             ");
 
@@ -702,9 +704,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._uintValue = 0;
             HelperMarshal._enumValue = TestEnum.BigValue;
             Runtime.InvokeJS(@$"
-                var get_value = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetEnumValue"");
+                var get_value = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetEnumValue"");
                 var e = get_value ();
-                var invoke_uint = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
+                var invoke_uint = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
                 invoke_uint (e);
             ");
             Assert.Equal((uint)TestEnum.BigValue, HelperMarshal._uintValue);
@@ -715,7 +717,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._enumValue = TestEnum.Zero;
             Runtime.InvokeJS(@$"
-                var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
+                var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
                 set_enum (0xFFFFFFFE);
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
@@ -728,7 +730,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // HACK: We're explicitly telling the bindings layer to pass an int here, not an enum
             // Because we know the enum is : uint, this is compatible, so it works.
             Runtime.InvokeJS(@$"
-                var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""i"");
+                var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""i"");
                 set_enum (0xFFFFFFFE);
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
@@ -740,7 +742,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._enumValue = TestEnum.Zero;
             var exc = Assert.Throws<JSException>( () => 
                 Runtime.InvokeJS(@$"
-                    var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
+                    var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
                     set_enum (""BigValue"");
                 ")
             );
@@ -752,7 +754,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var exc = Assert.Throws<JSException>( () => 
                 Runtime.InvokeJS(@$"
-                    var get_u64 = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetUInt64"", """");
+                    var get_u64 = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetUInt64"", """");
                     var u64 = get_u64();
                 ")
             );
@@ -806,7 +808,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
             Runtime.InvokeJS(@"
-                var sym = BINDING.mono_intern_string(""interned string 3"");
+                var sym = INTERNAL.mono_intern_string(""interned string 3"");
                 App.call_test_method (""InvokeString"", [ sym ], ""s"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""s"");
             ");
@@ -823,7 +825,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var s = ""long interned string"";
                 for (var i = 0; i < 1024; i++)
                     s += String(i % 10);
-                var sym = BINDING.mono_intern_string(s);
+                var sym = INTERNAL.mono_intern_string(s);
                 App.call_test_method (""InvokeString"", [ sym ], ""S"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""s"");
             ");
@@ -837,7 +839,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._stringResource = null;
             Runtime.InvokeJS(@"
                 for (var i = 0; i < 10240; i++)
-                    BINDING.mono_intern_string('s' + i);
+                    INTERNAL.mono_intern_string('s' + i);
                 App.call_test_method (""InvokeString"", [ 's5000' ], ""S"");
             ");
             Assert.Equal("s5000", HelperMarshal._stringResource);
@@ -864,12 +866,157 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
             var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
             Runtime.InvokeJS(
-                $"var a = BINDING.bind_static_method('{fqn}')('test');\r\n" +
-                $"var b = BINDING.bind_static_method('{fqn}')(a);\r\n" +
+                $"var a = INTERNAL.mono_bind_static_method('{fqn}')('test');\r\n" +
+                $"var b = INTERNAL.mono_bind_static_method('{fqn}')(a);\r\n" +
                 "App.call_test_method ('InvokeString2', [ b ]);"
             );
             Assert.Equal("s: 1 length: 1", HelperMarshal._stringResource);
             Assert.Equal("1", HelperMarshal._stringResource2);
+        }
+
+        [Fact]
+        public static void InvokeJSExpression()
+        {
+            var result = Runtime.InvokeJS(@"1 + 2");
+            Assert.Equal("3", result);
+        }
+
+        [Fact]
+        public static void InvokeJSNullExpression()
+        {
+            var result = Runtime.InvokeJS(@"null");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public static void InvokeJSUndefinedExpression()
+        {
+            var result = Runtime.InvokeJS(@"undefined");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public static void InvokeJSNotInGlobalScope()
+        {
+            var result = Runtime.InvokeJS(@"var test_local_variable_name = 5; globalThis.test_local_variable_name");
+            Assert.Null(result);
+        }
+
+        private static async Task<bool> MarshalTask(string helperMethodName, string helperMethodArgs = "", string resolvedBody = "") 
+        {
+            Runtime.InvokeJS(
+                @"globalThis.__test_promise_completed = false; " +
+                @"globalThis.__test_promise_resolved = false; " +
+                @"globalThis.__test_promise_failed = false; " +
+                $@"var t = App.call_test_method ('{helperMethodName}', [ {helperMethodArgs} ], 'i'); " +
+                "t.finally(result => { globalThis.__test_promise_completed = true; }); " + 
+                "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " }); " + 
+                "t.catch(e => { globalThis.__test_promise_failed = true; }); "
+            );
+
+            await Task.Delay(1);
+
+            var completed = bool.Parse(Runtime.InvokeJS(@"globalThis.__test_promise_completed"));
+            Assert.True(completed, "JavasScript promise did not completed.");
+
+            var resolved = bool.Parse(Runtime.InvokeJS(@"globalThis.__test_promise_resolved"));
+            return resolved;
+        }
+
+        private static async Task MarshalTaskReturningInt(string helperMethodName)
+        {
+            HelperMarshal._intValue = 0;
+
+            bool success = await MarshalTask(helperMethodName, "7", "App.call_test_method ('InvokeInt', [ result ], 'i');");
+
+            Assert.True(success, $"{helperMethodName} didn't succeeded.");
+            Assert.Equal(7, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static async Task MarshalSynchronousTask()
+        {
+            bool success = await MarshalTask("SynchronousTask");
+            Assert.True(success, "SynchronousTask didn't succeeded.");
+        }
+
+        [Fact]
+        public static async Task MarshalAsynchronousTask()
+        {
+            bool success = await MarshalTask("AsynchronousTask");
+            Assert.True(success, "AsynchronousTask didn't succeeded.");
+        }
+
+        [Fact]
+        public static Task MarshalSynchronousTaskInt()
+        {
+            return MarshalTaskReturningInt("SynchronousTaskInt");
+        }
+
+        [Fact]
+        public static Task MarshalAsynchronousTaskInt()
+        {
+            return MarshalTaskReturningInt("AsynchronousTaskInt");
+        }
+
+        [Fact]
+        public static async Task MarshalFailedSynchronousTask()
+        {
+            bool success = await MarshalTask("FailedSynchronousTask");
+            Assert.False(success, "FailedSynchronousTask didn't failed.");
+        }
+
+        [Fact]
+        public static async Task MarshalFailedAsynchronousTask()
+        {
+            bool success = await MarshalTask("FailedAsynchronousTask");
+            Assert.False(success, "FailedAsynchronousTask didn't failed.");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static async Task MarshalSynchronousValueTaskDoesNotWorkYet()
+        {
+            bool success = await MarshalTask("SynchronousValueTask");
+            Assert.True(success, "SynchronousValueTask didn't succeeded.");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static async Task MarshalAsynchronousValueTaskDoesNotWorkYet()
+        {
+            bool success = await MarshalTask("AsynchronousValueTask");
+            Assert.True(success, "AsynchronousValueTask didn't succeeded.");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static Task MarshalSynchronousValueTaskIntDoesNotWorkYet()
+        {
+            return MarshalTaskReturningInt("SynchronousValueTaskInt");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static Task MarshalAsynchronousValueTaskIntDoesNotWorkYet()
+        {
+            return MarshalTaskReturningInt("AsynchronousValueTaskInt");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static async Task MarshalFailedSynchronousValueTaskDoesNotWorkYet()
+        {
+            bool success = await MarshalTask("FailedSynchronousValueTask");
+            Assert.False(success, "FailedSynchronousValueTask didn't failed.");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
+        public static async Task MarshalFailedAsynchronousValueTaskDoesNotWorkYet()
+        {
+            bool success = await MarshalTask("FailedAsynchronousValueTask");
+            Assert.False(success, "FailedAsynchronousValueTask didn't failed.");
         }
     }
 }

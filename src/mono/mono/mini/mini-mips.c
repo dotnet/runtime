@@ -1680,7 +1680,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		in = call->args [i];
 		if (ainfo->storage == ArgInIReg) {
 #if SIZEOF_REGISTER == 4
-			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
+			if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->sreg1 = MONO_LVREG_LS (in->dreg);
@@ -1694,7 +1694,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + ms_word_idx, FALSE);
 			} else
 #endif
-			if (!t->byref && (t->type == MONO_TYPE_R4)) {
+			if (!m_type_is_byref (t) && (t->type == MONO_TYPE_R4)) {
 				int freg;
 
 #if PROMOTE_R4_TO_R8
@@ -1713,7 +1713,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				ins->sreg1 = freg;
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, FALSE);
-			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
+			} else if (!m_type_is_byref (t) && (t->type == MONO_TYPE_R8)) {
 				/* trying to load float value into int registers */
 				MONO_INST_NEW (cfg, ins, OP_MIPS_MFC1D);
 				ins->dreg = mono_alloc_ireg (cfg);
@@ -1747,9 +1747,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			memcpy (ins->inst_p1, ainfo, sizeof (ArgInfo));
 			MONO_ADD_INS (cfg->cbb, ins);
 		} else if (ainfo->storage == ArgOnStack) {
-			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
+			if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, mips_sp, ainfo->offset, in->dreg);
-			} else if (!t->byref && ((t->type == MONO_TYPE_R4) || (t->type == MONO_TYPE_R8))) {
+			} else if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_R4) || (t->type == MONO_TYPE_R8))) {
 				if (t->type == MONO_TYPE_R8)
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, mips_sp, ainfo->offset, in->dreg);
 				else
@@ -1902,7 +1902,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 #if (SIZEOF_REGISTER == 4)
 		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
 			MonoInst *ins;
@@ -1987,7 +1987,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_DELETE_INS (bb, ins);
 					continue;
 				}
-			} else {
+			} else if (ins->inst_imm > 0) {
 				int power2 = mono_is_power_of_two (ins->inst_imm);
 				if (power2 > 0) {
 					ins->opcode = OP_SHL_IMM;
@@ -2666,7 +2666,7 @@ loop_start:
 				ins->inst_c0 = 0;
 				break;
 			}
-			imm = mono_is_power_of_two (ins->inst_imm);
+			imm = (ins->inst_imm > 0) ? mono_is_power_of_two (ins->inst_imm) : -1;
 			if (imm > 0) {
 				ins->opcode = OP_SHL_IMM;
 				ins->inst_imm = imm;

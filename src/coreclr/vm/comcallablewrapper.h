@@ -1360,7 +1360,7 @@ public:
         return !!(READ_REF(m_llRefCount) & CLEANUP_SENTINEL);
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     // CCW refcount logging consists of two steps. BuildRefCountLogMessage is an instance method which
     // must be called at a point where the CCW is guaranteed to be alive. LogRefCount is static because
     // we generally don't know the new refcount (the one we want to log) until the CCW is at risk of
@@ -1495,7 +1495,7 @@ public:
         return GET_EXT_COM_REF(newRefCount);
     }
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
     MethodTable* GetMethodTable()
     {
@@ -1652,7 +1652,7 @@ inline ULONG ComCallWrapper::GetRefCount()
     return m_pSimpleWrapper->GetRefCount();
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 inline ULONG ComCallWrapper::AddRef()
 {
     CONTRACTL
@@ -1728,7 +1728,7 @@ inline void ComCallWrapper::ClearSimpleWrapper(ComCallWrapper* pWrap)
         pWrap = GetNext(pWrap);
     }
 }
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
 {

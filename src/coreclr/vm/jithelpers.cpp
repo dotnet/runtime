@@ -44,10 +44,6 @@
 #include "safemath.h"
 #include "threadstatics.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
@@ -2445,25 +2441,6 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-
-
-    // If our module is ngenned and we're calling this API, it means that we're not going through
-    // the fixup mechanism for strings. This can happen 2 ways:
-    //
-    //      a) Lazy string object construction: This happens when JIT decides that initizalizing a
-    //         string via fixup on method entry is very expensive. This is normally done for strings
-    //         that appear in rarely executed blocks, such as throw blocks.
-    //
-    //      b) The ngen image isn't complete (it's missing classes), therefore we're jitting methods.
-    //
-    //  If we went ahead and called ResolveStringRef directly, we would be breaking the per module
-    //  interning we're guaranteeing, so we will have to detect the case and handle it appropriately.
-#ifdef FEATURE_PREJIT
-    if (module->HasNativeImage() && module->IsNoStringInterning())
-    {
-        return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent(), true);
-    }
-#endif
     return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent(), false);
 }
 
@@ -3135,10 +3112,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
         {
             const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
             BaseDomain* pKeyDomain = key->GetDomain();
-            if (pKeyDomain == pDomain || pKeyDomain == NULL
-                // We compute fake domain for types during NGen (see code:ClassLoader::ComputeLoaderModule).
-                // To avoid stale handles, we need to clear the cache unconditionally during NGen.
-                || IsCompilationProcess())
+            if (pKeyDomain == pDomain || pKeyDomain == NULL)
             {
                 // Advance the iterator before we delete!!  See notes in EEHash.h
                 keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
@@ -3245,11 +3219,11 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         // If the dictionary on the base type got expanded, update the current type's base type dictionary
         // pointer to use the new one on the base type.
 
-        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex].GetValue();
-        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex];
+        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex];
         if (pMTDictionary != pDeclaringMTDictionary)
         {
-            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo();
             FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
@@ -3300,7 +3274,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethod, CORINFO_METHOD_HANDLE  
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3320,7 +3293,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINF
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3342,7 +3314,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -5225,9 +5196,181 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     ClrRestoreNonvolatileContext(&frameContext);
 }
 
+// Jit helper invoked at a partial compilation patchpoint.
+//
+// Similar to Jit_Patchpoint, but invoked when execution
+// reaches a point in a method where the continuation
+// was never jitted (eg an exceptional path).
+//
+// Unlike regular patchpoints, partial compilation patchpoints
+// must always transitio.
+//
+void JIT_PartialCompilationPatchpoint(int ilOffset)
+{
+    // This method will not return normally
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    // Patchpoint identity is the helper return address
+    PCODE ip = (PCODE)_ReturnAddress();
+
+    // Fetch or setup patchpoint info for this patchpoint.
+    EECodeInfo codeInfo(ip);
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
+    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
+    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
+
+#if _DEBUG
+    const int ppId = ppInfo->m_patchpointId;
+#endif
+
+    // See if we have an OSR method for this patchpoint.
+    bool isNewMethod = false;
+    DWORD backoffs = 0;
+    while (ppInfo->m_osrMethodCode == NULL)
+    {
+        // Invalid patchpoints are fatal, for partial compilation patchpoints
+        //
+        if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_PartialCompilationPatchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+
+        // Make sure no other thread is trying to create the OSR method.
+        //
+        LONG oldFlags = ppInfo->m_flags;
+        if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            __SwitchToThread(0, backoffs++);
+            continue;
+        }
+
+        // Make sure we win the race to create the OSR method
+        //
+        LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+        BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
+
+        if (!triggerTransition)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            __SwitchToThread(0, backoffs++);
+            continue;
+        }
+
+        // Invoke the helper to build the OSR method
+        //
+        // TODO: may not want to optimize this part of the method, if it's truly partial compilation
+        // and can't possibly rejoin into the main flow.
+        //
+        // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
+        //
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
+        PCODE newMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
+
+        // If that failed, mark the patchpoint as invalid.
+        // This is fatal, for partial compilation patchpoints
+        //
+        if (newMethodCode == NULL)
+        {
+            STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) OSR method creation failed,"
+                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+            InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+            break;
+        }
+
+        // We've successfully created the osr method; make it available.
+        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        ppInfo->m_osrMethodCode = newMethodCode;
+        isNewMethod = true;
+    }
+
+    // If we get here, we have code to transition to...
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    _ASSERTE(osrMethodCode != NULL);
+
+    Thread *pThread = GetThread();
+
+#ifdef FEATURE_HIJACK
+    // We can't crawl the stack of a thread that currently has a hijack pending
+    // (since the hijack routine won't be recognized by any code manager). So we
+    // Undo any hijack, the EE will re-attempt it later.
+    pThread->UnhijackThread();
+#endif
+
+    // Find context for the original method
+    CONTEXT frameContext;
+    frameContext.ContextFlags = CONTEXT_FULL;
+    RtlCaptureContext(&frameContext);
+
+    // Walk back to the original method frame
+    pThread->VirtualUnwindToFirstManagedCallFrame(&frameContext);
+
+    // Remember original method FP and SP because new method will inherit them.
+    UINT_PTR currentSP = GetSP(&frameContext);
+    UINT_PTR currentFP = GetFP(&frameContext);
+
+    // We expect to be back at the right IP
+    if ((UINT_PTR)ip != GetIP(&frameContext))
+    {
+        // Should be fatal
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) TRANSITION"
+            " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+
+    // Now unwind back to the original method caller frame.
+    EECodeInfo callerCodeInfo(GetIP(&frameContext));
+    frameContext.ContextFlags = CONTEXT_FULL;
+    ULONG_PTR establisherFrame = 0;
+    PVOID handlerData = NULL;
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(&frameContext), callerCodeInfo.GetFunctionEntry(),
+        &frameContext, &handlerData, &establisherFrame, NULL);
+
+    // Now, set FP and SP back to the values they had just before this helper was called,
+    // since the new method must have access to the original method frame.
+    //
+    // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
+    // use that to adjust the stack, likely saving some stack space.
+
+#if defined(TARGET_AMD64)
+    // If calls push the return address, we need to simulate that here, so the OSR
+    // method sees the "expected" SP misalgnment on entry.
+    _ASSERTE(currentSP % 16 == 0);
+    currentSP -= 8;
+#endif
+
+    SetSP(&frameContext, currentSP);
+    frameContext.Rbp = currentFP;
+
+    // Note we can get here w/o triggering, if there is an existing OSR method and
+    // we hit the patchpoint.
+    const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
+    LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
+
+    // Install new entry point as IP
+    SetIP(&frameContext, osrMethodCode);
+
+    // Transition!
+    RtlRestoreContext(&frameContext, NULL);
+}
+
 #else
 
 void JIT_Patchpoint(int* counter, int ilOffset)
+{
+    // Stub version if OSR feature is disabled
+    //
+    // Should not be called.
+
+    UNREACHABLE();
+}
+
+void JIT_PartialCompilationPatchpoint(int* counter, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -5572,7 +5715,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackTransitions())
     {
-        ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
+        ProfilerManagedToUnmanagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
     }
 #endif
 }

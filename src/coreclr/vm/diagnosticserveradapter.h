@@ -4,9 +4,9 @@
 #ifndef __DIAGNOSTIC_SERVER_ADAPTER_H__
 #define __DIAGNOSTIC_SERVER_ADAPTER_H__
 
-#if defined(FEATURE_PERFTRACING) && !(CROSSGEN_COMPILE)
+#if defined(FEATURE_PERFTRACING)
 
-#include "ds-server.h"
+#include <eventpipe/ds-server.h>
 
 class DiagnosticServerAdapter final
 {
@@ -37,6 +37,6 @@ public:
 	}
 };
 
-#endif // FEATURE_PERFTRACING && !CROSSGEN_COMPILE
+#endif // FEATURE_PERFTRACING
 
 #endif // __DIAGNOSTIC_SERVER_ADAPTER_H__

@@ -54,9 +54,6 @@ stub_debugger_single_step_from_context (MonoContext *ctx);
 static void
 stub_debugger_breakpoint_from_context (MonoContext *ctx);
 
-static void
-stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause);
-
 static gboolean 
 stub_debugger_transport_handshake (void);
 
@@ -85,7 +82,6 @@ static MonoComponentDebugger fn_table = {
 	&stub_debugger_end_exception_filter,
 	&stub_debugger_debug_log,
 	&stub_debugger_debug_log_is_enabled,
-	&stub_debugger_send_crash,
 	&stub_debugger_transport_handshake,
 
 	//wasm
@@ -187,11 +183,6 @@ stub_debugger_breakpoint_from_context (MonoContext *ctx)
 	g_assert_not_reached ();
 }
 
-static void
-stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause)
-{
-}
-
 static gboolean 
 stub_debugger_transport_handshake (void)
 {
@@ -213,7 +204,7 @@ stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_
 {
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 #include <emscripten.h>
 
@@ -238,6 +229,4 @@ mono_wasm_send_dbg_command (int id, int command_set, int command, guint8* data, 
 	return false;
 }
 
-#endif // HOST_WASM
-
-
+#endif // HOST_BROWSER

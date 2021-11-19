@@ -122,6 +122,10 @@
         <RelativeBlobPath>$(InstallersRelativePath)workloads/$(SdkBandVersion)/%(Filename)%(Extension)</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
+
+      <!-- Source build intermediated packages will be pushed and signed by the sourcebuild leg. -->
+      <ItemsToPush Remove="@(ItemsToPush)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
+      <ItemsToSignPostBuild Remove="@(ItemsToSignPostBuild)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->

@@ -11,11 +11,11 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project:  'internal' # 'internal' or 'public'
-      pipeline: 'superpmi-replay'
+      project:  'public' # 'internal' or 'public'
+      pipeline: 'Antigen'
       buildVersionToDownload: specific
-      branchName: 'your/branch/having/artifacts'
-      buildId: '1274841'
+      branchName: 'refs/pull/59376/head'
+      buildId: '1387378'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'

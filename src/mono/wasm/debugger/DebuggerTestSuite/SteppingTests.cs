@@ -354,7 +354,7 @@ namespace DebuggerTests
                     CheckObject(locals, "this", "Math.NestedInMath");
                     //FIXME: check fields
                     CheckValueType(locals, "ss", "Math.SimpleStruct");
-                    CheckArray(locals, "ss_arr", "Math.SimpleStruct[]", 0);
+                    CheckArray(locals, "ss_arr", "Math.SimpleStruct[]", "Math.SimpleStruct[0]");
                     // TODO: struct fields
                 }
             );
@@ -584,7 +584,7 @@ namespace DebuggerTests
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(locals, new
                 {
-                    ssta = TArray("DebuggerTests.StructForToStringTests[]", 1)
+                    ssta = TArray("DebuggerTests.StructForToStringTests[]", "DebuggerTests.StructForToStringTests[1]")
                 }, "locals");
 
                 var ssta = await GetObjectOnLocals(locals, "ssta");
@@ -927,6 +927,26 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 718, 8, "MoveNext");
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 719, 8, "MoveNext");
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 720, 4, "MoveNext");
+        }
+
+        [Fact]
+        public async Task CheckResetFrameNumberForEachStep()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "SteppingInto", "MethodToStep", 1);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] SteppingInto:MethodToStep'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "MethodToStep"
+            );
+            var pause_location = await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 799, 4, "Increment");
+            pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 800, 8, "Increment");
+            Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
+            pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 801, 8, "Increment");
+            Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
+            pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 806, 8, "Increment");
+            Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
         }
     }
 }

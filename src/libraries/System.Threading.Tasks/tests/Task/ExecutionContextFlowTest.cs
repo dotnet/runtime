@@ -29,6 +29,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57331")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static async Task TaskDropsExecutionContextUponCompletion()
         {

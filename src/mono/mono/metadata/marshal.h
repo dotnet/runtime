@@ -428,6 +428,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del);
 MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method);
 
+WrapperSubtype
+mono_marshal_get_delegate_invoke_subtype (MonoMethod *method, MonoDelegate *del);
+
 MonoMethod *
 mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gboolean need_direct_wrapper);
 
@@ -623,14 +626,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 er
 ICALL_EXPORT
 mono_bstr
 ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2 *ptr, int len);
-
-ICALL_EXPORT
-void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr);
-
-ICALL_EXPORT
-void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr);
 
 ICALL_EXPORT
 void

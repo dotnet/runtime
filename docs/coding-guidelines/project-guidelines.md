@@ -52,7 +52,7 @@ Pure netstandard configuration:
 All supported targets with unique windows/unix build for netcoreapp:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;net461-windows</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)</TargetFrameworks>
 <PropertyGroup>
 ```
 
@@ -73,7 +73,7 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 
 ## Supported full build settings
 - .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
-- .NET Framework latest -> `net48-windows`
+- .NET Framework latest -> `net48`
 
 # Library project guidelines
 
@@ -108,7 +108,7 @@ Example:
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>netstandard2.0;net461;net472;net5.0</TargetFrameworks>
+  <TargetFrameworks>netstandard2.0;net462;net472;net5.0</TargetFrameworks>
 </PropertyGroup>
 <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))>...</ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">...</ItemGroup>
@@ -141,7 +141,7 @@ In the src directory for a library there should be only **one** `.csproj` file t
 
 All libraries should use `<Reference Include="..." />` for all their references to libraries that compose the shared framework of the current .NETCoreApp. That will cause them to be resolved against the locally built targeting pack which is located at `artifacts\bin\microsoft.netcore.app.ref`. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
 
-Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net461`, `netcoreapp3.0`) should use ProjectReference items to reference dependencies.
+Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net462`, `net6.0`) should use ProjectReference items to reference dependencies.
 
 ### src\ILLink
 Contains the files used to direct the trimming tool. See [ILLink files](../workflow/trimming/ILLink-files.md).
@@ -149,7 +149,7 @@ Contains the files used to direct the trimming tool. See [ILLink files](../workf
 ### src output
 All src outputs are under
 
-`bin\$(MSBuildProjectName)\$(TargetFramework)`
+`artifacts\bin\$(MSBuildProjectName)\$(TargetFramework)`
 
 ## tests
 Similar to the src projects tests projects will define a `TargetFrameworks` property so they can list out the set of target frameworks they support.

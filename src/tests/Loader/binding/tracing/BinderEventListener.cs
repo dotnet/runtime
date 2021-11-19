@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Reflection;
 
-using TestLibrary;
+using Xunit;
 
 namespace BinderTracingTests
 {
@@ -140,7 +140,7 @@ namespace BinderTracingTests
         public enum PathSource : ushort
         {
             ApplicationAssemblies,
-            AppNativeImagePaths,
+            Unused,
             AppPaths,
             PlatformResourceRoots,
             SatelliteSubdirectory
@@ -171,7 +171,7 @@ namespace BinderTracingTests
 
         public BindOperation[] WaitAndGetEventsForAssembly(AssemblyName assemblyName)
         {
-            Assert.IsTrue(IsLoadToTrack(assemblyName.Name), $"Waiting for load for untracked name: {assemblyName.Name}. Tracking loads for: {string.Join(", ", loadsToTrack)}");
+            Assert.True(IsLoadToTrack(assemblyName.Name), $"Waiting for load for untracked name: {assemblyName.Name}. Tracking loads for: {string.Join(", ", loadsToTrack)}");
 
             const int waitIntervalInMs = 50;
             int waitTimeoutInMs = Environment.GetEnvironmentVariable("COMPlus_GCStress") == null
@@ -232,7 +232,7 @@ namespace BinderTracingTests
 
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(!bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStart should not exist for same activity ID ");
+                        Assert.True(!bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStart should not exist for same activity ID ");
                         bindOperation.Nested = bindOperations.ContainsKey(data.RelatedActivityId);
                         bindOperations.Add(data.ActivityId, bindOperation);
                         if (bindOperation.Nested)
@@ -253,7 +253,7 @@ namespace BinderTracingTests
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
-                            Assert.Fail(GetMissingAssemblyBindStartMessage(data, $"Success={success}, Name={resultName}"));
+                            Assert.True(false, GetMissingAssemblyBindStartMessage(data, $"Success={success}, Name={resultName}"));
 
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.Success = success;
@@ -276,7 +276,7 @@ namespace BinderTracingTests
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
-                            Assert.Fail(GetMissingAssemblyBindStartMessage(data, attempt.ToString()));
+                            Assert.True(false, GetMissingAssemblyBindStartMessage(data, attempt.ToString()));
 
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.ResolutionAttempts.Add(attempt);
@@ -292,7 +292,7 @@ namespace BinderTracingTests
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
-                            Assert.Fail(GetMissingAssemblyBindStartMessage(data, handlerInvocation.ToString()));
+                            Assert.True(false, GetMissingAssemblyBindStartMessage(data, handlerInvocation.ToString()));
 
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AssemblyLoadContextResolvingHandlers.Add(handlerInvocation);
@@ -308,7 +308,7 @@ namespace BinderTracingTests
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
-                            Assert.Fail(GetMissingAssemblyBindStartMessage(data, handlerInvocation.ToString()));
+                            Assert.True(false, GetMissingAssemblyBindStartMessage(data, handlerInvocation.ToString()));
 
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AppDomainAssemblyResolveHandlers.Add(handlerInvocation);
@@ -324,7 +324,7 @@ namespace BinderTracingTests
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
-                            Assert.Fail(GetMissingAssemblyBindStartMessage(data, loadFrom.ToString()));
+                            Assert.True(false, GetMissingAssemblyBindStartMessage(data, loadFrom.ToString()));
 
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AssemblyLoadFromHandler = loadFrom;
@@ -341,7 +341,7 @@ namespace BinderTracingTests
                     lock (eventsLock)
                     {
                         if (!bindOperations.ContainsKey(data.ActivityId))
-                            Assert.Fail(GetMissingAssemblyBindStartMessage(data, probedPath.ToString()));
+                            Assert.True(false, GetMissingAssemblyBindStartMessage(data, probedPath.ToString()));
 
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.ProbedPaths.Add(probedPath);

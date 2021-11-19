@@ -1776,6 +1776,14 @@ bool interceptor_ICJI::getTailCallHelpers(
     return result;
 }
 
+void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+{
+    mc->cr->AddCall("updateEntryPointForTailCall");
+    CORINFO_CONST_LOOKUP origEntryPoint = *entryPoint;
+    original_ICorJitInfo->updateEntryPointForTailCall(entryPoint);
+    mc->recUpdateEntryPointForTailCall(origEntryPoint, *entryPoint);
+}
+
 // Stuff directly on ICorJitInfo
 
 // Returns extended flags for a particular compilation instance.
@@ -2009,4 +2017,14 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
 bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
+}
+
+bool interceptor_ICJI::doesFieldBelongToClass(
+    CORINFO_FIELD_HANDLE fldHnd,
+    CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("doesFieldBelongToClass");
+    bool result = original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
+    mc->recDoesFieldBelongToClass(fldHnd, cls, result);
+    return result;
 }

@@ -96,6 +96,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Throws PNSE")]
         public void ProcessPath_MatchesExpectedValue()
         {
             string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
@@ -331,6 +332,13 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]
+        public void GetFolderPath_Unix_PersonalExists()
+        {
+            Assert.True(Directory.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Personal)));
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
@@ -339,6 +347,7 @@ namespace System.Tests
                 Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
                 Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
             }
+
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         }
 

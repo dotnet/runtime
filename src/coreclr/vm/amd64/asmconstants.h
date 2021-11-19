@@ -109,20 +109,15 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ComPlusCallInfo__m_pILStub
 #endif // FEATURE_COMINTEROP
 
 #define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x0C
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_fPreemptiveGCDisabled
                     == offsetof(Thread, m_fPreemptiveGCDisabled));
-#endif
 #define Thread_m_fPreemptiveGCDisabled OFFSETOF__Thread__m_fPreemptiveGCDisabled
 
 #define               OFFSETOF__Thread__m_pFrame                    0x10
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
                     == offsetof(Thread, m_pFrame));
-#endif
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
-#ifndef CROSSGEN_COMPILE
 
 #define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
@@ -140,7 +135,6 @@ ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_limit);
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
                     == offsetof(ThreadExceptionState, m_pCurrentTracker));
 
-#endif // CROSSGEN_COMPILE
 
 
 

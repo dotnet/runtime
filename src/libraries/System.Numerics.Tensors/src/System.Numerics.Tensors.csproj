@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <!-- TODO: Reenable when this package shipped with NET6. -->
@@ -32,7 +32,7 @@ System.Numerics.Tensors.SparseTensor&lt;T&gt;</PackageDescription>
     <Reference Include="System.Runtime" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />

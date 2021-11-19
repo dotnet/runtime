@@ -63,9 +63,8 @@ namespace Internal.IL.Stubs
 
             callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(rawTargetMethod));
 
-            // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.
-            // SaveLastWin32Error so that last error can be used later by calling 
-            // PInvokeMarshal.GetLastWin32Error
+            // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.SaveLastError
+            // so that last error can be used later by calling Marshal.GetLastPInvokeError
             if (_importMetadata.Flags.SetLastError)
             {
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(

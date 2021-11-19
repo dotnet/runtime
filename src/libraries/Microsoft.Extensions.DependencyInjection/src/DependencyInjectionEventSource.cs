@@ -79,9 +79,9 @@ namespace Microsoft.Extensions.DependencyInjection
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Parameters to this method are primitive and are trimmer safe.")]
         [Event(7, Level = EventLevel.Informational, Keywords = Keywords.ServiceProviderInitialized)]
-        private void ServiceProviderBuilt(int serviceProviderHashCode, int singletonServices, int scopedServices, int transientServices)
+        private void ServiceProviderBuilt(int serviceProviderHashCode, int singletonServices, int scopedServices, int transientServices, int closedGenericsServices, int openGenericsServices)
         {
-            WriteEvent(7, serviceProviderHashCode, singletonServices, scopedServices, transientServices);
+            WriteEvent(7, serviceProviderHashCode, singletonServices, scopedServices, transientServices, closedGenericsServices, openGenericsServices);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -174,6 +174,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 int singletonServices = 0;
                 int scopedServices = 0;
                 int transientServices = 0;
+                int closedGenericsServices = 0;
+                int openGenericsServices = 0;
 
                 StringBuilder descriptorBuilder = new StringBuilder("{ \"descriptors\":[ ");
                 bool firstDescriptor = true;
@@ -202,11 +204,23 @@ namespace Microsoft.Extensions.DependencyInjection
                             transientServices++;
                             break;
                     }
+
+                    if (descriptor.ServiceType.IsGenericType)
+                    {
+                        if (descriptor.ServiceType.IsConstructedGenericType)
+                        {
+                            closedGenericsServices++;
+                        }
+                        else
+                        {
+                            openGenericsServices++;
+                        }
+                    }
                 }
                 descriptorBuilder.Append(" ] }");
 
                 int providerHashCode = provider.GetHashCode();
-                ServiceProviderBuilt(providerHashCode, singletonServices, scopedServices, transientServices);
+                ServiceProviderBuilt(providerHashCode, singletonServices, scopedServices, transientServices, closedGenericsServices, openGenericsServices);
 
                 string descriptorString = descriptorBuilder.ToString();
                 int chunkCount = descriptorString.Length / MaxChunkSize + (descriptorString.Length % MaxChunkSize > 0 ? 1 : 0);

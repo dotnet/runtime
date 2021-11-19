@@ -24,13 +24,13 @@ namespace System.Data.OleDb
         internal DBPropSet(int propertysetCount) : this()
         {
             this.propertySetCount = propertysetCount;
-            IntPtr countOfBytes = (IntPtr)(propertysetCount * ODB.SizeOf_tagDBPROPSET);
+            nuint countOfBytes = (nuint)(propertysetCount * ODB.SizeOf_tagDBPROPSET);
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
             {
-                base.handle = SafeNativeMethods.CoTaskMemAlloc(countOfBytes);
+                base.handle = Interop.Ole32.CoTaskMemAlloc(countOfBytes);
                 if (ADP.PtrZero != base.handle)
                 {
                     SafeNativeMethods.ZeroMemory(base.handle, (int)countOfBytes);
@@ -105,9 +105,17 @@ namespace System.Data.OleDb
             OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo != null))
             {
-                ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
-                // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message
+                try
+                {
+                    ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
+                    // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message
+                }
+                finally
+                {
+                    UnsafeNativeMethods.ReleaseErrorInfoObject(errorInfo);
+                }
             }
+
             lastErrorFromProvider = new COMException(message, (int)lastErrorHr);
         }
 
@@ -137,12 +145,12 @@ namespace System.Data.OleDb
                         IntPtr vptr = ADP.IntPtrOffset(rgProperties, ODB.OffsetOf_tagDBPROP_Value);
                         for (int k = 0; k < cProperties; ++k, vptr = ADP.IntPtrOffset(vptr, ODB.SizeOf_tagDBPROP))
                         {
-                            SafeNativeMethods.VariantClear(vptr);
+                            Interop.OleAut32.VariantClear(vptr);
                         }
-                        SafeNativeMethods.CoTaskMemFree(rgProperties);
+                        Interop.Ole32.CoTaskMemFree(rgProperties);
                     }
                 }
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
             return true;
         }
@@ -219,7 +227,7 @@ namespace System.Data.OleDb
             Debug.Assert(Guid.Empty != propertySet, "invalid propertySet");
             Debug.Assert((null != properties) && (0 < properties.Length), "invalid properties");
 
-            IntPtr countOfBytes = (IntPtr)(properties.Length * ODB.SizeOf_tagDBPROP);
+            nuint countOfBytes = (nuint)(properties.Length * ODB.SizeOf_tagDBPROP);
             tagDBPROPSET propset = new tagDBPROPSET(properties.Length, propertySet);
 
             bool mustRelease = false;
@@ -236,7 +244,7 @@ namespace System.Data.OleDb
                 finally
                 {
                     // must allocate and clear the memory without interruption
-                    propset.rgProperties = SafeNativeMethods.CoTaskMemAlloc(countOfBytes);
+                    propset.rgProperties = Interop.Ole32.CoTaskMemAlloc(countOfBytes);
                     if (ADP.PtrZero != propset.rgProperties)
                     {
                         // clearing is important so that we don't treat existing

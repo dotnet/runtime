@@ -19,13 +19,13 @@ namespace System.Net.WebSockets.Client.Tests
         {
             using (var cws = new ClientWebSocket())
             {
-                var cts = new CancellationTokenSource(500);
+                var cts = new CancellationTokenSource(100);
 
                 var ub = new UriBuilder(server);
-                ub.Query = "delay10sec";
+                ub.Query = PlatformDetection.IsBrowser ? "delay20sec" : "delay10sec";
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cws.ConnectAsync(ub.Uri, cts.Token));
-                Assert.Equal(WebSocketState.Closed, cws.State);
+                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cws.ConnectAsync(ub.Uri, cts.Token));
+                Assert.True(WebSocketState.Closed == cws.State, $"Actual {cws.State} when {ex}");
             }
         }
 

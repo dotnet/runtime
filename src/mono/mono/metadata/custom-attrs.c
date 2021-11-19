@@ -397,7 +397,11 @@ MONO_RESTORE_WARNING
 		//  to decode some attributes in assemblies that Windows .NET Framework
 		//  and CoreCLR both manage to decode.
 		// See https://simonsapin.github.io/wtf-8/ for a description of wtf-8.
-		*out_obj = (MonoObject*)mono_string_new_wtf8_len_checked (p, slen, error);
+		// Always use string.Empty for empty strings
+		if (slen == 0)
+			*out_obj = (MonoObject*)mono_string_empty_internal (mono_domain_get ());
+		else
+			*out_obj = (MonoObject*)mono_string_new_wtf8_len_checked (p, slen, error);
 		return NULL;
 	}
 	case MONO_TYPE_CLASS: {
@@ -1362,7 +1366,7 @@ ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal 
 	MonoReflectionMethod *ref_method = MONO_HANDLE_RAW (ref_method_h);
 	MonoReflectionAssembly *assembly = MONO_HANDLE_RAW (assembly_h);
 	MonoMethodSignature *sig;
-	MonoObjectHandle obj_h, namedarg_h, typedarg_h, minfo_h;
+	MonoObjectHandle obj_h, namedarg_h, minfo_h;
 	int i;
 
 	if (len == 0)
@@ -1370,7 +1374,6 @@ ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal 
 
 	obj_h = MONO_HANDLE_NEW (MonoObject, NULL);
 	namedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
-	typedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
 	minfo_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	image = assembly->assembly->image;

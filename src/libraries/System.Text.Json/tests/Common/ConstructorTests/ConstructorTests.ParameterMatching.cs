@@ -291,9 +291,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task OtherPropertiesAreSet()
         {
             var personClass = await JsonSerializerWrapperForString.DeserializeWrapper<Person_Class>(Person_Class.s_json);
@@ -312,9 +309,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task ExtraProperties_GoInExtensionData_IfPresent()
         {
             Point_2D_With_ExtData point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D_With_ExtData>(@"{""X"":1,""y"":2,""b"":3}");
@@ -368,7 +362,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task NumerousSimpleAndComplexParameters()
         {
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_json);
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_json);
             obj.Verify();
         }
 
@@ -565,7 +559,7 @@ namespace System.Text.Json.Serialization.Tests
 #endif
         public async Task TupleDeserializationWorks_ClassWithParameterizedCtor()
         {
-            string classJson = ClassWithConstructor_SimpleAndComplexParameters.s_json;
+            string classJson = ObjWCtorMixedParams.s_json;
 
             StringBuilder sb = new StringBuilder();
             sb.Append("{");
@@ -579,13 +573,13 @@ namespace System.Text.Json.Serialization.Tests
             string complexTupleJson = sb.ToString();
 
             var complexTuple = await JsonSerializerWrapperForString.DeserializeWrapper<Tuple<
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters>>(complexTupleJson);
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams>>(complexTupleJson);
 
             complexTuple.Item1.Verify();
             complexTuple.Item2.Verify();
@@ -793,9 +787,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task LastParameterWins_DoesNotGoToExtensionData()
         {
             string json = @"{
@@ -823,9 +814,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task HonorExtensionDataGeneric()
         {
             var obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithParameterizedCtor_GenericDictionary_JsonElementExt>(@"{""key"": ""value""}");
@@ -1227,6 +1215,112 @@ namespace System.Text.Json.Serialization.Tests
             public Uri MyUri { get; }
 
             public TypeWithUri(Uri myUri = default) => MyUri = myUri;
+        }
+
+        [Fact]
+        public async Task SmallObject_ClrDefaultParamValueUsed_WhenMatchingPropIgnored()
+        {
+            string json = @"{""Prop"":20}";
+            var obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<SmallType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
+            Assert.Equal(0, obj1.Prop);
+
+            var obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<SmallType_IgnoredProp_Bind_Param>(json);
+            Assert.Equal(0, obj2.Prop);
+        }
+
+        public class SmallType_IgnoredProp_Bind_ParamWithDefaultValue
+        {
+            [JsonIgnore]
+            public int Prop { get; set; }
+
+            public SmallType_IgnoredProp_Bind_ParamWithDefaultValue(int prop = 5)
+                => Prop = prop;
+        }
+
+        public class SmallType_IgnoredProp_Bind_Param
+        {
+            [JsonIgnore]
+            public int Prop { get; set; }
+
+            public SmallType_IgnoredProp_Bind_Param(int prop)
+                => Prop = prop;
+        }
+
+        [Fact]
+        public async Task LargeObject_ClrDefaultParamValueUsed_WhenMatchingPropIgnored()
+        {
+            string json = @"{""Prop"":20}";
+            var obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<LargeType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
+            Assert.Equal(0, obj1.Prop);
+
+            var obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<LargeType_IgnoredProp_Bind_Param>(json);
+            Assert.Equal(0, obj2.Prop);
+        }
+
+        public class LargeType_IgnoredProp_Bind_ParamWithDefaultValue
+        {
+            public int W { get; set; }
+
+            public int X { get; set; }
+
+            public int Y { get; set; }
+
+            public int Z { get; set; }
+
+            [JsonIgnore]
+            public int Prop { get; set; }
+
+            public LargeType_IgnoredProp_Bind_ParamWithDefaultValue(int w, int x, int y, int z, int prop = 5)
+                => Prop = prop;
+        }
+
+        public class LargeType_IgnoredProp_Bind_Param
+        {
+            public int W { get; set; }
+
+            public int X { get; set; }
+
+            public int Y { get; set; }
+
+            public int Z { get; set; }
+
+            [JsonIgnore]
+            public int Prop { get; set; }
+
+            public LargeType_IgnoredProp_Bind_Param(int w, int x, int y, int z, int prop)
+                => Prop = prop;
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34779")]
+        public async Task BindingBetweenRefProps()
+        {
+            string json = @"{""NameRef"":""John""}";
+            await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_RefStringProp_ParamCtor>(json);
+        }
+
+        public class TypeWith_RefStringProp_ParamCtor
+        {
+            private string _name;
+
+            public ref string NameRef => ref _name;
+
+            public TypeWith_RefStringProp_ParamCtor(ref string nameRef) => _name = nameRef;
+        }
+
+        [Fact]
+        public async Task BindToIgnoredPropOfSameType()
+        {
+            string json = @"{""Prop"":{}}";
+            Assert.NotNull(await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIgnoredSameType>(json));
+        }
+
+        public class ClassWithIgnoredSameType
+        {
+            [JsonIgnore]
+            public ClassWithIgnoredSameType Prop { get; }
+
+            public ClassWithIgnoredSameType(ClassWithIgnoredSameType prop) { }
         }
     }
 }

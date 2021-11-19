@@ -83,9 +83,6 @@ ADVANCE_MODULE:
     if  (!m_moduleIterator.Next())
         goto ADVANCE_ASSEMBLY;
 
-    if (GetCurrentModule()->IsResource())
-        goto ADVANCE_MODULE;
-
     if (m_mainMD->HasClassInstantiation())
     {
         m_typeIterator.Reset();
@@ -155,8 +152,6 @@ ADVANCE_METHOD:
         if (!GetCurrentModule()->GetInstMethodHashTable()->FindNext(&m_methodIterator, &m_methodIteratorEntry))
             goto ADVANCE_TYPE;
         if (CORCOMPILE_IS_POINTER_TAGGED(dac_cast<TADDR>(m_methodIteratorEntry->GetMethod())))
-            goto ADVANCE_METHOD;
-        if (!m_methodIteratorEntry->GetMethod()->IsRestored())
             goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetModule() != m_module)
             goto ADVANCE_METHOD;

@@ -743,7 +743,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(padding != null);
                 signature = null;
 
-                if (padding == RSASignaturePadding.Pkcs1 && padding == RSASignaturePadding.Pss)
+                if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
                 {
                     throw PaddingModeNotSupported();
                 }
@@ -825,7 +825,7 @@ namespace System.Security.Cryptography
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
-                if (padding == RSASignaturePadding.Pkcs1 && padding == RSASignaturePadding.Pss)
+                if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
                 {
                     throw PaddingModeNotSupported();
                 }

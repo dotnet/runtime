@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -350,6 +351,26 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+#if ROSLYN4_0_OR_GREATER
+        [Fact]
+        public async Task FileScopedNamespaceOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using Microsoft.Extensions.Logging;
+
+                namespace MyLibrary;
+
+                internal partial class Logger
+                {
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = ""Hello {Name}!"")]
+                    public static partial void Greeting(ILogger logger, string name);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+#endif
+
         [Theory]
         [InlineData("false")]
         [InlineData("true")]
@@ -380,6 +401,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     public class Void {}
                     public class String {}
                     public struct DateTime {}
+                    public abstract class Attribute {}
                 }
                 namespace System.Collections
                 {
@@ -392,10 +414,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 namespace Microsoft.Extensions.Logging
                 {
-                    public class LoggerMessageAttribute {}
+                    public class LoggerMessageAttribute : System.Attribute {}
                 }
                 partial class C
                 {
+                    [Microsoft.Extensions.Logging.LoggerMessage]
+                    public static partial void Log(ILogger logger);
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
@@ -654,6 +678,55 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Empty(diagnostics);    // should fail quietly on broken code
+        }
+
+        [Fact]
+        internal void MultipleTypeDefinitions()
+        {
+            // Adding a dependency to an assembly that has internal definitions of public types
+            // should not result in a collision and break generation.
+            // Verify usage of the extension GetBestTypeByMetadataName(this Compilation) instead of Compilation.GetTypeByMetadataName().
+            var referencedSource = @"
+                namespace Microsoft.Extensions.Logging
+                {
+                    internal class LoggerMessageAttribute { }
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    internal interface ILogger { }
+                    internal enum LogLevel { }
+                }";
+
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateCompilation(referencedSource);
+
+            // Obtain the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            // Generate the code
+            string source = @"
+                namespace Test
+                {
+                    using Microsoft.Extensions.Logging;
+
+                    partial class C
+                    {
+                        [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""M1"")]
+                        static partial void M1(ILogger logger);
+                    }
+                }";
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+            LoggerMessageGenerator generator = new LoggerMessageGenerator();
+
+            (ImmutableArray<Diagnostic> diagnostics, ImmutableArray<GeneratedSourceResult> generatedSources) =
+                RoslynTestUtils.RunGenerator(compilation, generator);
+
+            // Make sure compilation was successful.
+            Assert.Empty(diagnostics);
+            Assert.Equal(1, generatedSources.Length);
+            Assert.Equal(21, generatedSources[0].SourceText.Lines.Count);
         }
 
         private static async Task<IReadOnlyList<Diagnostic>> RunGenerator(

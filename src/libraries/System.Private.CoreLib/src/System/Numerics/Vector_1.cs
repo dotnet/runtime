@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 
 using Internal.Runtime.CompilerServices;
@@ -30,12 +31,117 @@ namespace System.Numerics
     /// large algorithms. This type is immutable, individual elements cannot be modified.
     /// </summary>
     [Intrinsic]
-    public struct Vector<T> : IEquatable<Vector<T>>, IFormattable
+    [DebuggerDisplay("{DisplayString,nq}")]
+    [DebuggerTypeProxy(typeof(VectorDebugView<>))]
+    public readonly struct Vector<T> : IEquatable<Vector<T>>, IFormattable
         where T : struct
     {
-        private Register register;
+        // These fields exist to ensure the alignment is 8, rather than 1.
+        internal readonly ulong _00;
+        internal readonly ulong _01;
 
-        /// <summary>Returns the number of elements stored in the vector. This value is hardware dependent.</summary>
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        public unsafe Vector(T value)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            Unsafe.SkipInit(out this);
+
+            for (int index = 0; index < Count; index++)
+            {
+                this.SetElementUnsafe(index, value);
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> from a given array.</summary>
+        /// <param name="values">The array from which the vector is created.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
+        [Intrinsic]
+        public unsafe Vector(T[] values) : this(values, 0)
+        {
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> from a given array.</summary>
+        /// <param name="values">The array from which the vector is created.</param>
+        /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
+        [Intrinsic]
+        public unsafe Vector(T[] values, int index)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
+            if (values is null)
+            {
+                ThrowHelper.ThrowNullReferenceException();
+            }
+
+            if ((index < 0) || ((values.Length - index) < Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+            }
+
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
+        /// <param name="values">The readonly span from which the vector is created.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector(ReadOnlySpan<T> values)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
+            if (values.Length < Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
+            }
+
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
+        /// <param name="values">The readonly span from which the vector is created.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <c>sizeof(<see cref="Vector{T}" />)</c> elements from <paramref name="values" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector(ReadOnlySpan<byte> values)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
+            if (values.Length < Vector<byte>.Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
+            }
+
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(values));
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> from a given span.</summary>
+        /// <param name="values">The span from which the vector is created.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector(Span<T> values) : this((ReadOnlySpan<T>)values)
+        {
+        }
+
+        /// <summary>Gets a new <see cref="Vector{T}" /> with all bits set to 1.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        internal static Vector<T> AllBitsSet
+        {
+            [Intrinsic]
+            get => new Vector<T>(Scalar<T>.AllBitsSet);
+        }
+
+        /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector{T}" />.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
         {
             [Intrinsic]
@@ -46,7 +152,33 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Returns a vector containing all zeroes.</summary>
+        internal static bool IsTypeSupported
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte)) ||
+                   (typeof(T) == typeof(double)) ||
+                   (typeof(T) == typeof(short)) ||
+                   (typeof(T) == typeof(int)) ||
+                   (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(nint)) ||
+                   (typeof(T) == typeof(nuint)) ||
+                   (typeof(T) == typeof(sbyte)) ||
+                   (typeof(T) == typeof(float)) ||
+                   (typeof(T) == typeof(ushort)) ||
+                   (typeof(T) == typeof(uint)) ||
+                   (typeof(T) == typeof(ulong));
+        }
+
+        /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to one.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector<T> One
+        {
+            [Intrinsic]
+            get => new Vector<T>(Scalar<T>.One);
+        }
+
+        /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to zero.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static Vector<T> Zero
         {
             [Intrinsic]
@@ -57,191 +189,30 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Returns a vector containing all ones.</summary>
-        public static Vector<T> One
+        internal unsafe string DisplayString
         {
-            [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-                return new Vector<T>(GetOneValue());
+                if (IsTypeSupported)
+                {
+                    return ToString();
+                }
+                else
+                {
+                    return SR.NotSupported_Type;
+                }
             }
         }
 
-        internal static Vector<T> AllBitsSet
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        public unsafe T this[int index]
         {
             [Intrinsic]
-            get
-            {
-                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-                return new Vector<T>(GetAllBitsSetValue());
-            }
-        }
-
-        /// <summary>Constructs a vector whose components are all <paramref name="value" />.</summary>
-        [Intrinsic]
-        public unsafe Vector(T value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Unsafe.SkipInit(out this);
-
-            for (nint index = 0; index < Count; index++)
-            {
-                SetElement(index, value);
-            }
-        }
-
-        /// <summary>Constructs a vector from the given array. The size of the given array must be at least <see cref="Count" />.</summary>
-        [Intrinsic]
-        public unsafe Vector(T[] values) : this(values, 0) { }
-
-        /// <summary>
-        /// Constructs a vector from the given array, starting from the given index.
-        /// The array must contain at least <see cref="Count" /> from the given index.
-        /// </summary>
-        [Intrinsic]
-        public unsafe Vector(T[] values, int index)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if (values is null)
-            {
-                // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
-                throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
-            }
-
-            if (index < 0 || (values.Length - index) < Count)
-            {
-                Vector.ThrowInsufficientNumberOfElementsException(Count);
-            }
-
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
-        }
-
-        /// <summary>
-        /// Constructs a vector from the given <see cref="ReadOnlySpan{Byte}" />.
-        /// The span must contain at least <see cref="Vector{Byte}.Count" /> elements.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector(ReadOnlySpan<byte> values)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if (values.Length < Vector<byte>.Count)
-            {
-                Vector.ThrowInsufficientNumberOfElementsException(Vector<byte>.Count);
-            }
-
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(values));
-        }
-
-        /// <summary>
-        /// Constructs a vector from the given <see cref="ReadOnlySpan{T}" />.
-        /// The span must contain at least <see cref="Count" /> elements.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector(ReadOnlySpan<T> values)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if (values.Length < Count)
-            {
-                Vector.ThrowInsufficientNumberOfElementsException(Count);
-            }
-
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
-        }
-
-        /// <summary>
-        /// Constructs a vector from the given <see cref="Span{T}" />.
-        /// The span must contain at least <see cref="Count" /> elements.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector(Span<T> values) : this((ReadOnlySpan<T>)values) { }
-
-        /// <summary>
-        /// Copies the vector to the given <see cref="Span{Byte}" />.
-        /// The destination span must be at least size <see cref="Vector{Byte}.Count" />.
-        /// </summary>
-        /// <param name="destination">The destination span which the values are copied into</param>
-        /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
-        public readonly void CopyTo(Span<byte> destination)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if ((uint)destination.Length < (uint)Vector<byte>.Count)
-            {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-            }
-
-            Unsafe.WriteUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(destination), this);
-        }
-
-        /// <summary>
-        /// Copies the vector to the given <see cref="Span{T}" />.
-        /// The destination span must be at least size <see cref="Count" />.
-        /// </summary>
-        /// <param name="destination">The destination span which the values are copied into</param>
-        /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
-        public readonly void CopyTo(Span<T> destination)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if ((uint)destination.Length < (uint)Count)
-            {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-            }
-
-            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
-        }
-
-        /// <summary>
-        /// Copies the vector to the given destination array.
-        /// The destination array must be at least size <see cref="Count" />.
-        /// </summary>
-        /// <param name="destination">The destination array which the values are copied into</param>
-        /// <exception cref="ArgumentNullException">If the destination array is null</exception>
-        /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
-        [Intrinsic]
-        public readonly void CopyTo(T[] destination) => CopyTo(destination, 0);
-
-        /// <summary>
-        /// Copies the vector to the given destination array.
-        /// The destination array must be at least size <see cref="Count" />.
-        /// </summary>
-        /// <param name="destination">The destination array which the values are copied into</param>
-        /// <param name="startIndex">The index to start copying to</param>
-        /// <exception cref="ArgumentNullException">If the destination array is null</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If index is greater than end of the array or index is less than zero</exception>
-        /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
-        [Intrinsic]
-        public readonly unsafe void CopyTo(T[] destination, int startIndex)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if (destination is null)
-            {
-                // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
-                throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
-            }
-
-            if ((uint)startIndex >= (uint)destination.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Format(SR.Arg_ArgumentOutOfRangeException, startIndex));
-            }
-
-            if ((destination.Length - startIndex) < Count)
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_ElementsInSourceIsGreaterThanDestination, startIndex));
-            }
-
-            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref destination[startIndex]), this);
-        }
-
-        /// <summary>Returns the element at the given index.</summary>
-        public readonly unsafe T this[int index]
-        {
-            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -251,32 +222,387 @@ namespace System.Numerics
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
-                return GetElement(index);
+                return this.GetElementUnsafe(index);
             }
+        }
+
+        /// <summary>Adds two vectors to compute their sum.</summary>
+        /// <param name="left">The vector to add with <paramref name="right" />.</param>
+        /// <param name="right">The vector to add with <paramref name="left" />.</param>
+        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector<T> operator +(Vector<T> left, Vector<T> right)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Count; index++)
+            {
+                var value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the bitwise-and of two vectors.</summary>
+        /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
+        /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        [Intrinsic]
+        public static unsafe Vector<T> operator &(Vector<T> left, Vector<T> right)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            Unsafe.SkipInit(out Vector<T> result);
+
+            Unsafe.AsRef(in result._00) = left._00 & right._00;
+            Unsafe.AsRef(in result._01) = left._01 & right._01;
+
+            return result;
+        }
+
+        /// <summary>Computes the bitwise-or of two vectors.</summary>
+        /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
+        /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        [Intrinsic]
+        public static unsafe Vector<T> operator |(Vector<T> left, Vector<T> right)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            Unsafe.SkipInit(out Vector<T> result);
+
+            Unsafe.AsRef(in result._00) = left._00 | right._00;
+            Unsafe.AsRef(in result._01) = left._01 | right._01;
+
+            return result;
+        }
+
+        /// <summary>Divides two vectors to compute their quotient.</summary>
+        /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
+        /// <param name="right">The vector that will divide <paramref name="left" />.</param>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector<T> operator /(Vector<T> left, Vector<T> right)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Count; index++)
+            {
+                var value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Compares two vectors to determine if all elements are equal.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if all elements in <paramref name="left" /> were equal to the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(Vector<T> left, Vector<T> right)
+        {
+            for (int index = 0; index < Count; index++)
+            {
+                if (!Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>Computes the exclusive-or of two vectors.</summary>
+        /// <param name="left">The vector to exclusive-or with <paramref name="right" />.</param>
+        /// <param name="right">The vector to exclusive-or with <paramref name="left" />.</param>
+        /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector<T> operator ^(Vector<T> left, Vector<T> right)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            Unsafe.SkipInit(out Vector<T> result);
+
+            Unsafe.AsRef(in result._00) = left._00 ^ right._00;
+            Unsafe.AsRef(in result._01) = left._01 ^ right._01;
+
+            return result;
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Byte}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Byte}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static explicit operator Vector<byte>(Vector<T> value)
+            => value.As<T, byte>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Double}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Double}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static explicit operator Vector<double>(Vector<T> value)
+            => value.As<T, double>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int16}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int16}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static explicit operator Vector<short>(Vector<T> value)
+            => value.As<T, short>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int32}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int32}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static explicit operator Vector<int>(Vector<T> value)
+            => value.As<T, int>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int64}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int64}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static explicit operator Vector<long>(Vector<T> value)
+            => value.As<T, long>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static explicit operator Vector<nint>(Vector<T> value)
+            => value.As<T, nint>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UIntPtr}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UIntPtr}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<nuint>(Vector<T> value)
+            => value.As<T, nuint>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{SByte}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{SByte}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<sbyte>(Vector<T> value)
+            => value.As<T, sbyte>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Single}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Single}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static explicit operator Vector<float>(Vector<T> value)
+            => value.As<T, float>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt16}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt16}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<ushort>(Vector<T> value)
+            => value.As<T, ushort>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt32}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt32}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<uint>(Vector<T> value)
+            => value.As<T, uint>();
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt64}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt64}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<ulong>(Vector<T> value)
+            => value.As<T, ulong>();
+
+        /// <summary>Compares two vectors to determine if any elements are not equal.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if any elements in <paramref name="left" /> was not equal to the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(Vector<T> left, Vector<T> right)
+            => !(left == right);
+
+        /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
+        /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
+        /// <returns>The element-wise product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector<T> operator *(Vector<T> left, Vector<T> right)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Count; index++)
+            {
+                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
+        /// <param name="value">The vector to multiply with <paramref name="factor" />.</param>
+        /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>
+        /// <returns>The product of <paramref name="value" /> and <paramref name="factor" />.</returns>
+        [Intrinsic]
+        public static Vector<T> operator *(Vector<T> value, T factor)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Count; index++)
+            {
+                var element = Scalar<T>.Multiply(value.GetElementUnsafe(index), factor);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
+        /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>
+        /// <param name="value">The vector to multiply with <paramref name="factor" />.</param>
+        /// <returns>The product of <paramref name="factor" /> and <paramref name="value" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> operator *(T factor, Vector<T> value)
+            => value * factor;
+
+        /// <summary>Computes the ones-complement of a vector.</summary>
+        /// <param name="value">The vector whose ones-complement is to be computed.</param>
+        /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="value" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> operator ~(Vector<T> value) => AllBitsSet ^ value;
+
+        /// <summary>Subtracts two vectors to compute their difference.</summary>
+        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
+        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
+        /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector<T> operator -(Vector<T> left, Vector<T> right)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Count; index++)
+            {
+                var value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the unary negation of a vector.</summary>
+        /// <param name="value">The vector to negate.</param>
+        /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="value" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> operator -(Vector<T> value) => Zero - value;
+
+        /// <summary>Copies a <see cref="Vector{T}" /> to a given array.</summary>
+        /// <param name="destination">The array to which the current instance is copied.</param>
+        /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</exception>
+        [Intrinsic]
+        public void CopyTo(T[] destination) => CopyTo(destination, 0);
+
+        /// <summary>Copies a <see cref="Vector{T}" /> to a given array starting at the specified index.</summary>
+        /// <param name="destination">The array to which the current instance is copied.</param>
+        /// <param name="startIndex">The starting index of <paramref name="destination" /> which current instance will be copied to.</param>
+        /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex" /> is negative or greater than the length of <paramref name="destination" />.</exception>
+        [Intrinsic]
+        public unsafe void CopyTo(T[] destination, int startIndex)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
+            if (destination is null)
+            {
+                ThrowHelper.ThrowNullReferenceException();
+            }
+
+            if ((uint)startIndex >= (uint)destination.Length)
+            {
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+            }
+
+            if ((destination.Length - startIndex) < Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref destination[startIndex]), this);
+        }
+
+        /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
+        /// <param name="destination">The span to which the current instance is copied.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</exception>
+        public void CopyTo(Span<byte> destination)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
+            if ((uint)destination.Length < (uint)Vector<byte>.Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(destination), this);
+        }
+
+        /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
+        /// <param name="destination">The span to which the current instance is copied.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</exception>
+        public void CopyTo(Span<T> destination)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
+            if ((uint)destination.Length < (uint)Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
         }
 
         /// <summary>Returns a boolean indicating whether the given Object is equal to this vector instance.</summary>
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this vector; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override readonly bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector<T> other) && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj)
+            => (obj is Vector<T> other) && Equals(other);
 
         /// <summary>Returns a boolean indicating whether the given vector is equal to this vector instance.</summary>
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
         [Intrinsic]
-        public readonly bool Equals(Vector<T> other) => this == other;
+        public bool Equals(Vector<T> other)
+            => this == other;
 
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>
-        public override readonly int GetHashCode()
+        public override int GetHashCode()
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             HashCode hashCode = default;
 
-            for (nint index = 0; index < Count; index++)
+            for (int index = 0; index < Count; index++)
             {
-                hashCode.Add(GetElement(index));
+                var value = this.GetElementUnsafe(index);
+                hashCode.Add(value);
             }
 
             return hashCode.ToHashCode();
@@ -284,44 +610,44 @@ namespace System.Numerics
 
         /// <summary>Returns a String representing this vector.</summary>
         /// <returns>The string representation.</returns>
-        public override readonly string ToString() => ToString("G", CultureInfo.CurrentCulture);
+        public override string ToString()
+            => ToString("G", CultureInfo.CurrentCulture);
 
         /// <summary>Returns a String representing this vector, using the specified format string to format individual elements.</summary>
         /// <param name="format">The format of individual elements.</param>
         /// <returns>The string representation.</returns>
-        public readonly string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
+        public string ToString(string? format)
+            => ToString(format, CultureInfo.CurrentCulture);
 
         /// <summary>Returns a String representing this vector, using the specified format string to format individual elements and the given IFormatProvider.</summary>
         /// <param name="format">The format of individual elements.</param>
         /// <param name="formatProvider">The format provider to use when formatting elements.</param>
         /// <returns>The string representation.</returns>
-        public readonly string ToString(string? format, IFormatProvider? formatProvider)
+        public string ToString(string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new ValueStringBuilder(stackalloc char[64]);
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
+
             sb.Append('<');
-            for (int index = 0; index < Count - 1; index++)
+            sb.Append(((IFormattable)this.GetElementUnsafe(0)).ToString(format, formatProvider));
+
+            for (int i = 1; i < Count; i++)
             {
-                sb.Append(((IFormattable)GetElement(index)).ToString(format, formatProvider));
                 sb.Append(separator);
                 sb.Append(' ');
+                sb.Append(((IFormattable)this.GetElementUnsafe(i)).ToString(format, formatProvider));
             }
-            // Append last element w/out separator
-            sb.Append(((IFormattable)GetElement(Count - 1)).ToString(format, formatProvider));
             sb.Append('>');
+
             return sb.ToString();
         }
 
-        /// <summary>
-        /// Attempts to copy the vector to the given <see cref="Span{Byte}" />.
-        /// The destination span must be at least size <see cref="Vector{Byte}.Count" />.
-        /// </summary>
-        /// <param name="destination">The destination span which the values are copied into</param>
-        /// <returns>True if the source vector was successfully copied to <paramref name="destination" />. False if
-        /// <paramref name="destination" /> is not large enough to hold the source vector.</returns>
-        public readonly bool TryCopyTo(Span<byte> destination)
+        /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
+        /// <param name="destination">The span to which the current instance is copied.</param>
+        /// <returns><c>true</c> if the current instance was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</returns>
+        public bool TryCopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
@@ -334,14 +660,10 @@ namespace System.Numerics
             return true;
         }
 
-        /// <summary>
-        /// Attempts to copy the vector to the given <see cref="Span{T}" />.
-        /// The destination span must be at least size <see cref="Count" />.
-        /// </summary>
-        /// <param name="destination">The destination span which the values are copied into</param>
-        /// <returns>True if the source vector was successfully copied to <paramref name="destination" />. False if
-        /// <paramref name="destination" /> is not large enough to hold the source vector.</returns>
-        public readonly bool TryCopyTo(Span<T> destination)
+        /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
+        /// <param name="destination">The span to which the current instance is copied.</param>
+        /// <returns><c>true</c> if the current instance was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</returns>
+        public bool TryCopyTo(Span<T> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
@@ -352,1297 +674,6 @@ namespace System.Numerics
 
             Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
             return true;
-        }
-
-        /// <summary>Adds two vectors together.</summary>
-        /// <param name="left">The first source vector.</param>
-        /// <param name="right">The second source vector.</param>
-        /// <returns>The summed vector.</returns>
-        [Intrinsic]
-        public static unsafe Vector<T> operator +(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                result.SetElement(index, ScalarAdd(left.GetElement(index), right.GetElement(index)));
-            }
-
-            return result;
-        }
-
-        /// <summary>Subtracts the second vector from the first.</summary>
-        /// <param name="left">The first source vector.</param>
-        /// <param name="right">The second source vector.</param>
-        /// <returns>The difference vector.</returns>
-        [Intrinsic]
-        public static unsafe Vector<T> operator -(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                result.SetElement(index, ScalarSubtract(left.GetElement(index), right.GetElement(index)));
-            }
-
-            return result;
-        }
-
-        /// <summary>Multiplies two vectors together.</summary>
-        /// <param name="left">The first source vector.</param>
-        /// <param name="right">The second source vector.</param>
-        /// <returns>The product vector.</returns>
-        [Intrinsic]
-        public static unsafe Vector<T> operator *(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                result.SetElement(index, ScalarMultiply(left.GetElement(index), right.GetElement(index)));
-            }
-
-            return result;
-        }
-
-        /// <summary>Multiplies a vector by the given scalar.</summary>
-        /// <param name="value">The source vector.</param>
-        /// <param name="factor">The scalar value.</param>
-        /// <returns>The scaled vector.</returns>
-        [Intrinsic]
-        public static Vector<T> operator *(Vector<T> value, T factor)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                result.SetElement(index, ScalarMultiply(value.GetElement(index), factor));
-            }
-
-            return result;
-        }
-
-        /// <summary>Multiplies a vector by the given scalar.</summary>
-        /// <param name="factor">The scalar value.</param>
-        /// <param name="value">The source vector.</param>
-        /// <returns>The scaled vector.</returns>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(T factor, Vector<T> value) => value * factor;
-
-        /// <summary>Divides the first vector by the second.</summary>
-        /// <param name="left">The first source vector.</param>
-        /// <param name="right">The second source vector.</param>
-        /// <returns>The vector resulting from the division.</returns>
-        [Intrinsic]
-        public static unsafe Vector<T> operator /(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                result.SetElement(index, ScalarDivide(left.GetElement(index), right.GetElement(index)));
-            }
-
-            return result;
-        }
-
-        /// <summary>Negates a given vector.</summary>
-        /// <param name="value">The source vector.</param>
-        /// <returns>The negated vector.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator -(Vector<T> value) => Zero - value;
-
-        /// <summary>Returns a new vector by performing a bitwise-and operation on each of the elements in the given vectors.</summary>
-        /// <param name="left">The first source vector.</param>
-        /// <param name="right">The second source vector.</param>
-        /// <returns>The resultant vector.</returns>
-        [Intrinsic]
-        public static unsafe Vector<T> operator &(Vector<T> left, Vector<T> right)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Vector<T> result = default;
-
-            result.register.uint64_0 = left.register.uint64_0 & right.register.uint64_0;
-            result.register.uint64_1 = left.register.uint64_1 & right.register.uint64_1;
-
-            return result;
-        }
-
-        /// <summary>Returns a new vector by performing a bitwise-or operation on each of the elements in the given vectors.</summary>
-        /// <param name="left">The first source vector.</param>
-        /// <param name="right">The second source vector.</param>
-        /// <returns>The resultant vector.</returns>
-        [Intrinsic]
-        public static unsafe Vector<T> operator |(Vector<T> left, Vector<T> right)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Vector<T> result = default;
-
-            result.register.uint64_0 = left.register.uint64_0 | right.register.uint64_0;
-            result.register.uint64_1 = left.register.uint64_1 | right.register.uint64_1;
-
-            return result;
-        }
-
-        /// <summary>Returns a new vector by performing a bitwise-exclusive-or operation on each of the elements in the given vectors.</summary>
-        /// <param name="left">The first source vector.</param>
-        /// <param name="right">The second source vector.</param>
-        /// <returns>The resultant vector.</returns>
-        [Intrinsic]
-        public static unsafe Vector<T> operator ^(Vector<T> left, Vector<T> right)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Vector<T> result = default;
-
-            result.register.uint64_0 = left.register.uint64_0 ^ right.register.uint64_0;
-            result.register.uint64_1 = left.register.uint64_1 ^ right.register.uint64_1;
-
-            return result;
-        }
-
-        /// <summary>Returns a new vector whose elements are obtained by taking the one's complement of the given vector's elements.</summary>
-        /// <param name="value">The source vector.</param>
-        /// <returns>The one's complement vector.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator ~(Vector<T> value) => AllBitsSet ^ value;
-
-        /// <summary>Returns a boolean indicating whether each pair of elements in the given vectors are equal.</summary>
-        /// <param name="left">The first vector to compare.</param>
-        /// <param name="right">The first vector to compare.</param>
-        /// <returns>True if all elements are equal; False otherwise.</returns>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Vector<T> left, Vector<T> right)
-        {
-            for (nint index = 0; index < Count; index++)
-            {
-                if (!ScalarEquals(left.GetElement(index), right.GetElement(index)))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>Returns a boolean indicating whether any single pair of elements in the given vectors are not equal.</summary>
-        /// <param name="left">The first vector to compare.</param>
-        /// <param name="right">The second vector to compare.</param>
-        /// <returns>True if left and right are not equal; False otherwise.</returns>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Vector<T> left, Vector<T> right) => !(left == right);
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<byte>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<byte>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<sbyte>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<sbyte>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<ushort>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<ushort>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<short>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<short>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<uint>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<uint>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<int>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<int>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<ulong>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<ulong>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<long>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<long>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<float>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<float>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<double>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<double>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<nuint>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<nuint>>(ref value);
-        }
-
-        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<nint>(Vector<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return Unsafe.As<Vector<T>, Vector<nint>>(ref value);
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector<T> Equals(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                T value = ScalarEquals(left.GetElement(index), right.GetElement(index)) ? GetAllBitsSetValue() : default;
-                result.SetElement(index, value);
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector<T> LessThan(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                T value = ScalarLessThan(left.GetElement(index), right.GetElement(index)) ? GetAllBitsSetValue() : default;
-                result.SetElement(index, value);
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector<T> GreaterThan(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                T value = ScalarGreaterThan(left.GetElement(index), right.GetElement(index)) ? GetAllBitsSetValue() : default;
-                result.SetElement(index, value);
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        internal static Vector<T> GreaterThanOrEqual(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                T value = ScalarGreaterThanOrEqual(left.GetElement(index), right.GetElement(index)) ? GetAllBitsSetValue() : default;
-                result.SetElement(index, value);
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        internal static Vector<T> LessThanOrEqual(Vector<T> left, Vector<T> right)
-        {
-
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                T value = ScalarLessThanOrEqual(left.GetElement(index), right.GetElement(index)) ? GetAllBitsSetValue() : default;
-                result.SetElement(index, value);
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        internal static Vector<T> ConditionalSelect(Vector<T> condition, Vector<T> left, Vector<T> right)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Vector<T> result = default;
-
-            result.register.uint64_0 = (left.register.uint64_0 & condition.register.uint64_0) | (right.register.uint64_0 & ~condition.register.uint64_0);
-            result.register.uint64_1 = (left.register.uint64_1 & condition.register.uint64_1) | (right.register.uint64_1 & ~condition.register.uint64_1);
-
-            return result;
-        }
-
-        [Intrinsic]
-        internal static unsafe Vector<T> Abs(Vector<T> value)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return value;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return value;
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return value;
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return value;
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return value;
-            }
-            else
-            {
-                Vector<T> result = default;
-
-                for (nint index = 0; index < Count; index++)
-                {
-                    result.SetElement(index, ScalarAbs(value.GetElement(index)));
-                }
-
-                return result;
-            }
-        }
-
-        [Intrinsic]
-        internal static unsafe Vector<T> Min(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                T value = ScalarLessThan(left.GetElement(index), right.GetElement(index)) ? left.GetElement(index) : right.GetElement(index);
-                result.SetElement(index, value);
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        internal static unsafe Vector<T> Max(Vector<T> left, Vector<T> right)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                T value = ScalarGreaterThan(left.GetElement(index), right.GetElement(index)) ? left.GetElement(index) : right.GetElement(index);
-                result.SetElement(index, value);
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        internal static T Dot(Vector<T> left, Vector<T> right)
-        {
-            T product = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                product = ScalarAdd(product, ScalarMultiply(left.GetElement(index), right.GetElement(index)));
-            }
-
-            return product;
-        }
-
-        [Intrinsic]
-        internal static T Sum(Vector<T> value)
-        {
-            T sum = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                sum = ScalarAdd(sum, value.GetElement(index));
-            }
-
-            return sum;
-        }
-
-        [Intrinsic]
-        internal static unsafe Vector<T> SquareRoot(Vector<T> value)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                result.SetElement(index, ScalarSqrt(value.GetElement(index)));
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        internal static unsafe Vector<T> Ceiling(Vector<T> value)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                result.SetElement(index, ScalarCeiling(value.GetElement(index)));
-            }
-
-            return result;
-        }
-
-        [Intrinsic]
-        internal static unsafe Vector<T> Floor(Vector<T> value)
-        {
-            Vector<T> result = default;
-
-            for (nint index = 0; index < Count; index++)
-            {
-                result.SetElement(index, ScalarFloor(value.GetElement(index)));
-            }
-
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ScalarEquals(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (byte)(object)left == (byte)(object)right;
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (sbyte)(object)left == (sbyte)(object)right;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (ushort)(object)left == (ushort)(object)right;
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (short)(object)left == (short)(object)right;
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (uint)(object)left == (uint)(object)right;
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (int)(object)left == (int)(object)right;
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (ulong)(object)left == (ulong)(object)right;
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (long)(object)left == (long)(object)right;
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (float)(object)left == (float)(object)right;
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (double)(object)left == (double)(object)right;
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (nuint)(object)left == (nuint)(object)right;
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (nint)(object)left == (nint)(object)right;
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ScalarLessThan(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (byte)(object)left < (byte)(object)right;
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (sbyte)(object)left < (sbyte)(object)right;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (ushort)(object)left < (ushort)(object)right;
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (short)(object)left < (short)(object)right;
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (uint)(object)left < (uint)(object)right;
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (int)(object)left < (int)(object)right;
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (ulong)(object)left < (ulong)(object)right;
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (long)(object)left < (long)(object)right;
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (float)(object)left < (float)(object)right;
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (double)(object)left < (double)(object)right;
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (nuint)(object)left < (nuint)(object)right;
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (nint)(object)left < (nint)(object)right;
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ScalarLessThanOrEqual(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (byte)(object)left <= (byte)(object)right;
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (sbyte)(object)left <= (sbyte)(object)right;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (ushort)(object)left <= (ushort)(object)right;
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (short)(object)left <= (short)(object)right;
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (uint)(object)left <= (uint)(object)right;
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (int)(object)left <= (int)(object)right;
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (ulong)(object)left <= (ulong)(object)right;
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (long)(object)left <= (long)(object)right;
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (float)(object)left <= (float)(object)right;
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (double)(object)left <= (double)(object)right;
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (nuint)(object)left <= (nuint)(object)right;
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (nint)(object)left <= (nint)(object)right;
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ScalarGreaterThan(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (byte)(object)left > (byte)(object)right;
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (sbyte)(object)left > (sbyte)(object)right;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (ushort)(object)left > (ushort)(object)right;
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (short)(object)left > (short)(object)right;
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (uint)(object)left > (uint)(object)right;
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (int)(object)left > (int)(object)right;
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (ulong)(object)left > (ulong)(object)right;
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (long)(object)left > (long)(object)right;
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (float)(object)left > (float)(object)right;
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (double)(object)left > (double)(object)right;
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (nuint)(object)left > (nuint)(object)right;
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (nint)(object)left > (nint)(object)right;
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ScalarGreaterThanOrEqual(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (byte)(object)left >= (byte)(object)right;
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (sbyte)(object)left >= (sbyte)(object)right;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (ushort)(object)left >= (ushort)(object)right;
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (short)(object)left >= (short)(object)right;
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (uint)(object)left >= (uint)(object)right;
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (int)(object)left >= (int)(object)right;
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (ulong)(object)left >= (ulong)(object)right;
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (long)(object)left >= (long)(object)right;
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (float)(object)left >= (float)(object)right;
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (double)(object)left >= (double)(object)right;
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (nuint)(object)left >= (nuint)(object)right;
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (nint)(object)left >= (nint)(object)right;
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T ScalarAdd(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)((byte)(object)left + (byte)(object)right);
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)((sbyte)(object)left + (sbyte)(object)right);
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)(ushort)((ushort)(object)left + (ushort)(object)right);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)((short)(object)left + (short)(object)right);
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)(uint)((uint)(object)left + (uint)(object)right);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)((int)(object)left + (int)(object)right);
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)(ulong)((ulong)(object)left + (ulong)(object)right);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)((long)(object)left + (long)(object)right);
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)(float)((float)(object)left + (float)(object)right);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)(double)((double)(object)left + (double)(object)right);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)(nuint)((nuint)(object)left + (nuint)(object)right);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)((nint)(object)left + (nint)(object)right);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T ScalarSubtract(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)((byte)(object)left - (byte)(object)right);
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)((sbyte)(object)left - (sbyte)(object)right);
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)(ushort)((ushort)(object)left - (ushort)(object)right);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)((short)(object)left - (short)(object)right);
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)(uint)((uint)(object)left - (uint)(object)right);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)((int)(object)left - (int)(object)right);
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)(ulong)((ulong)(object)left - (ulong)(object)right);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)((long)(object)left - (long)(object)right);
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)(float)((float)(object)left - (float)(object)right);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)(double)((double)(object)left - (double)(object)right);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)(nuint)((nuint)(object)left - (nuint)(object)right);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)((nint)(object)left - (nint)(object)right);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T ScalarMultiply(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)((byte)(object)left * (byte)(object)right);
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)((sbyte)(object)left * (sbyte)(object)right);
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)(ushort)((ushort)(object)left * (ushort)(object)right);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)((short)(object)left * (short)(object)right);
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)(uint)((uint)(object)left * (uint)(object)right);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)((int)(object)left * (int)(object)right);
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)(ulong)((ulong)(object)left * (ulong)(object)right);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)((long)(object)left * (long)(object)right);
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)(float)((float)(object)left * (float)(object)right);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)(double)((double)(object)left * (double)(object)right);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)(nuint)((nuint)(object)left * (nuint)(object)right);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)((nint)(object)left * (nint)(object)right);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T ScalarDivide(T left, T right)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)((byte)(object)left / (byte)(object)right);
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)((sbyte)(object)left / (sbyte)(object)right);
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)(ushort)((ushort)(object)left / (ushort)(object)right);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)((short)(object)left / (short)(object)right);
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)(uint)((uint)(object)left / (uint)(object)right);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)((int)(object)left / (int)(object)right);
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)(ulong)((ulong)(object)left / (ulong)(object)right);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)((long)(object)left / (long)(object)right);
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)(float)((float)(object)left / (float)(object)right);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)(double)((double)(object)left / (double)(object)right);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)(nuint)((nuint)(object)left / (nuint)(object)right);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)((nint)(object)left / (nint)(object)right);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T GetOneValue()
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)1;
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)1;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)(ushort)1;
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)1;
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)(uint)1;
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)1;
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)(ulong)1;
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)1;
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)(float)1;
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)(double)1;
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)(nuint)1;
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)1;
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T GetAllBitsSetValue()
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)byte.MaxValue;
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)-1;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)ushort.MaxValue;
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)-1;
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)uint.MaxValue;
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)-1;
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)ulong.MaxValue;
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)-1;
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)BitConverter.Int32BitsToSingle(-1);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)BitConverter.Int64BitsToDouble(-1);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)nuint.MaxValue;
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)(-1);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T ScalarAbs(T value)
-        {
-            // byte, ushort, uint, and ulong should have already been handled
-
-            if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)Math.Abs((sbyte)(object)value);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)Math.Abs((short)(object)value);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)Math.Abs((int)(object)value);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)Math.Abs((long)(object)value);
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)Math.Abs((float)(object)value);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)Math.Abs((double)(object)value);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)Math.Abs((nint)(object)value);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T ScalarSqrt(T value)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)Math.Sqrt((byte)(object)value);
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)Math.Sqrt((sbyte)(object)value);
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)(ushort)Math.Sqrt((ushort)(object)value);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)Math.Sqrt((short)(object)value);
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)(uint)Math.Sqrt((uint)(object)value);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)Math.Sqrt((int)(object)value);
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)(ulong)Math.Sqrt((ulong)(object)value);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)Math.Sqrt((long)(object)value);
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)(float)Math.Sqrt((float)(object)value);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)(double)Math.Sqrt((double)(object)value);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)(nuint)Math.Sqrt((nuint)(object)value);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)Math.Sqrt((nint)(object)value);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T ScalarCeiling(T value)
-        {
-            if (typeof(T) == typeof(float))
-            {
-                return (T)(object)MathF.Ceiling((float)(object)value);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)Math.Ceiling((double)(object)value);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T ScalarFloor(T value)
-        {
-            if (typeof(T) == typeof(float))
-            {
-                return (T)(object)MathF.Floor((float)(object)value);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)Math.Floor((double)(object)value);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private readonly T GetElement(nint index)
-        {
-            Debug.Assert((index >= 0) && (index < Count));
-            return Unsafe.Add(ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef<Vector<T>>(in this)), index);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SetElement(nint index, T value)
-        {
-            Debug.Assert((index >= 0) && (index < Count));
-            Unsafe.Add(ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef<Vector<T>>(in this)), index) = value;
         }
     }
 }

@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Test 
+class Test_constructor 
 {
     static string s;
 
@@ -14,7 +14,7 @@ class Test
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public Test() 
+    public Test_constructor() 
     {
         s = ToString();   // cannot be devirtualized
     }
@@ -26,7 +26,7 @@ class Test
     }
 }
 
-class Child : Test 
+class Child : Test_constructor 
 {
 
     [MethodImpl(MethodImplOptions.NoInlining)]

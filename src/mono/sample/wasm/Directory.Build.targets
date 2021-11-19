@@ -1,10 +1,5 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
-    </ItemGroup>
-  </Target>
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
 
   <Target Name="BuildSampleInTree"
@@ -19,12 +14,12 @@
     <Exec Command="$(_Dotnet) publish /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject)" />
   </Target>
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree">
-    <Exec Command="cd bin/$(Configuration)/AppBundle &amp;&amp; v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run Wasm.Console.Sample.dll" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm main.js -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="CheckServe">
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
-    <Exec Command="$(_Dotnet) serve -o -d:bin/Release/AppBundle -p:8000" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
 </Project>

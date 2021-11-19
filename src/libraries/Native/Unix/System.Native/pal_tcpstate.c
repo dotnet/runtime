@@ -7,6 +7,8 @@
 
 #if HAVE_TCP_FSM_H
 #include <netinet/tcp_fsm.h>
+#elif HAVE_IOS_NETINET_TCPFSM_H
+#include "ios/netinet/tcp_fsm.h"
 #elif HAVE_TCP_H_TCPSTATE_ENUM
 #include <netinet/tcp.h>
 #endif
@@ -15,7 +17,7 @@ int32_t SystemNative_MapTcpState(int32_t tcpState)
 {
     switch (tcpState)
     {
-#if HAVE_TCP_FSM_H
+#if HAVE_TCP_FSM_H || HAVE_IOS_NETINET_TCPFSM_H
         case TCPS_CLOSED:
             return TcpState_Closed;
         case TCPS_LISTEN:

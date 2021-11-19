@@ -39,11 +39,11 @@ namespace System.Runtime.Serialization
                 if (_serializationSurrogateProvider == null)
                     return base.InternalDeserialize(xmlReader, declaredTypeID, declaredTypeHandle, name, ns);
                 else
-                    return InternalDeserializeWithSurrogate(xmlReader, Type.GetTypeFromHandle(declaredTypeHandle), null /*surrogateDataContract*/, name, ns);
+                    return InternalDeserializeWithSurrogate(xmlReader, Type.GetTypeFromHandle(declaredTypeHandle)!, null /*surrogateDataContract*/, name, ns);
             }
             else
             {
-                return InternalDeserializeInSharedTypeMode(xmlReader, declaredTypeID, Type.GetTypeFromHandle(declaredTypeHandle), name, ns);
+                return InternalDeserializeInSharedTypeMode(xmlReader, declaredTypeID, Type.GetTypeFromHandle(declaredTypeHandle)!, name, ns);
             }
         }
 

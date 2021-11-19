@@ -51,19 +51,16 @@ void CodeGen::genInitializeRegisterState()
             continue;
         }
 
-        // Is this a floating-point argument?
-        if (varDsc->IsFloatRegType())
+        if (varDsc->IsAddressExposed())
         {
             continue;
         }
 
-        noway_assert(!varTypeUsesFloatReg(varDsc->TypeGet()));
-
         // Mark the register as holding the variable
-        assert(varDsc->GetRegNum() != REG_STK);
-        if (!varDsc->lvAddrExposed)
+        regNumber reg = varDsc->GetRegNum();
+        if (genIsValidIntReg(reg))
         {
-            regSet.verifyRegUsed(varDsc->GetRegNum());
+            regSet.verifyRegUsed(reg);
         }
     }
 }
@@ -177,6 +174,7 @@ void CodeGen::genCodeForBBlist()
 
     for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
+
 #ifdef DEBUG
         if (compiler->verbose)
         {
@@ -379,7 +377,7 @@ void CodeGen::genCodeForBBlist()
             !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
                                              // emit a NO_MAPPING entry, immediately after the prolog.
         {
-            genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::NO_MAPPING, true);
+            genIPmappingAdd(IPmappingDscKind::NoMapping, DebugInfo(), true);
         }
 
         bool firstMapping = true;
@@ -426,20 +424,33 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
+
+        bool addPreciseMappings =
+            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
 
-        IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
+        DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))
         {
             // Do we have a new IL offset?
             if (node->OperGet() == GT_IL_OFFSET)
             {
                 GenTreeILOffset* ilOffset = node->AsILOffset();
-                genEnsureCodeEmitted(currentILOffset);
-                currentILOffset = ilOffset->gtStmtILoffsx;
-                genIPmappingAdd(currentILOffset, firstMapping);
-                firstMapping = false;
+                DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
+                if (rootDI.IsValid())
+                {
+                    genEnsureCodeEmitted(currentDI);
+                    currentDI = rootDI;
+                    genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
+                    firstMapping = false;
+                }
+
 #ifdef DEBUG
+                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
+                {
+                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                }
+
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
@@ -532,7 +543,7 @@ void CodeGen::genCodeForBBlist()
         //
         // This can lead to problems when debugging the generated code. To prevent these issues, make sure
         // we've generated code for the last IL offset we saw in the block.
-        genEnsureCodeEmitted(currentILOffset);
+        genEnsureCodeEmitted(currentDI);
 
         /* Is this the last block, and are there any open scopes left ? */
 
@@ -781,21 +792,29 @@ void CodeGen::genCodeForBBlist()
         }
 
 #if FEATURE_LOOP_ALIGN
+        if (block->hasAlign())
+        {
+            // If this block has 'align' instruction in the end (identified by BBF_HAS_ALIGN),
+            // then need to add align instruction in the current "block".
+            //
+            // For non-adaptive alignment, add alignment instruction of size depending on the
+            // compJitAlignLoopBoundary.
+            // For adaptive alignment, alignment instruction will always be of 15 bytes for xarch
+            // and 16 bytes for arm64.
+            assert(ShouldAlignLoops());
 
-        // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
-        // then need to add align instruction in current "block". Also mark the
-        // corresponding IG with IGF_LOOP_ALIGN to know that there will be align
-        // instructions at the end of that IG.
-        //
-        // For non-adaptive alignment, add alignment instruction of size depending on the
-        // compJitAlignLoopBoundary.
-        // For adaptive alignment, alignment instruction will always be of 15 bytes.
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->bbJumpKind == BBJ_ALWAYS));
+        }
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
-            assert(ShouldAlignLoops());
-
-            GetEmitter()->emitLoopAlignment();
+            if (compiler->opts.compJitHideAlignBehindJmp)
+            {
+                // The current IG is the one that is just before the IG having loop start.
+                // Establish a connection of recent align instruction emitted to the loop
+                // it actually is aligning using 'idaLoopHeadPredIG'.
+                GetEmitter()->emitConnectAlignInstrWithCurIG();
+            }
         }
 #endif
 
@@ -1577,6 +1596,15 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree);
         }
+#ifdef TARGET_ARM64
+        else if (tree->OperIs(GT_BFIZ))
+        {
+            // Can be contained as part of LEA on ARM64
+            GenTreeCast* cast = tree->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+            genConsumeAddress(cast->CastOp());
+        }
+#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -1611,9 +1639,14 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG))
         {
-            genConsumeReg(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp1());
+        }
+        else if (tree->OperIs(GT_MUL))
+        {
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
         }
         else
         {
@@ -1853,16 +1886,16 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
 // argument area.
 
-#if defined(FEATURE_SIMD) && defined(OSX_ARM64_ABI)
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
         // storing of TYP_SIMD12 (i.e. Vector3) argument.
-        if (type == TYP_SIMD12)
+        if (compMacOsArm64Abi() && (type == TYP_SIMD12))
         {
             // Need an additional integer register to extract upper 4 bytes from data.
             regNumber tmpReg = nextArgNode->GetSingleTempReg();
             GetEmitter()->emitStoreSIMD12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
         }
         else
-#endif // FEATURE_SIMD && OSX_ARM64_ABI
+#endif // FEATURE_SIMD
         {
             emitAttr attr = emitTypeSize(type);
             GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
@@ -1901,7 +1934,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         if (!blkNode->OperIs(GT_STORE_DYN_BLK))
         {
             assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            genSetRegToIcon(sizeReg, blockSize);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, sizeReg, blockSize);
         }
         else
         {
@@ -2139,6 +2172,7 @@ void CodeGen::genProduceReg(GenTree* tree)
 #if FEATURE_ARG_SPLIT
             else if (tree->OperIsPutArgSplit())
             {
+                assert(compFeatureArgSplit());
                 GenTreePutArgSplit* argSplit = tree->AsPutArgSplit();
                 unsigned            regCount = argSplit->gtNumRegs;
 
@@ -2154,7 +2188,7 @@ void CodeGen::genProduceReg(GenTree* tree)
                 }
             }
 #ifdef TARGET_ARM
-            else if (tree->OperIsMultiRegOp())
+            else if (compFeatureArgSplit() && tree->OperIsMultiRegOp())
             {
                 GenTreeMultiRegOp* multiReg = tree->AsMultiRegOp();
                 unsigned           regCount = multiReg->GetRegCount();
@@ -2299,13 +2333,18 @@ void CodeGen::genEmitCall(int                   callType,
                           X86_ARG(int argSize),
                           emitAttr              retSize
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          IL_OFFSETX            ilOffset,
+                          const DebugInfo& di,
                           regNumber             base,
                           bool                  isJump)
 {
 #if !defined(TARGET_X86)
     int argSize = 0;
 #endif // !defined(TARGET_X86)
+
+    // This should have been put in volatile registers to ensure it does not
+    // get overridden by epilog sequence during tailcall.
+    noway_assert(!isJump || (base == REG_NA) || ((RBM_INT_CALLEE_TRASH & genRegMask(base)) != 0));
+
     GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
                                INDEBUG_LDISASM_COMMA(sigInfo)
@@ -2316,7 +2355,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               ilOffset, base, REG_NA, 0, 0, isJump);
+                               di, base, REG_NA, 0, 0, isJump);
 }
 // clang-format on
 
@@ -2325,19 +2364,27 @@ void CodeGen::genEmitCall(int                   callType,
 //     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
 //
 // clang-format off
-void CodeGen::genEmitCall(int                   callType,
-                          CORINFO_METHOD_HANDLE methHnd,
-                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                          GenTreeIndir*         indir
-                          X86_ARG(int argSize),
-                          emitAttr              retSize
-                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          IL_OFFSETX            ilOffset)
+void CodeGen::genEmitCallIndir(int                   callType,
+                               CORINFO_METHOD_HANDLE methHnd,
+                               INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                               GenTreeIndir*         indir
+                               X86_ARG(int argSize),
+                               emitAttr              retSize
+                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               const DebugInfo&      di,
+                               bool                  isJump)
 {
 #if !defined(TARGET_X86)
     int argSize = 0;
 #endif // !defined(TARGET_X86)
-    genConsumeAddress(indir->Addr());
+
+    regNumber iReg = (indir->Base()  != nullptr) ? indir->Base()->GetRegNum() : REG_NA;
+    regNumber xReg = (indir->Index() != nullptr) ? indir->Index()->GetRegNum() : REG_NA;
+
+    // These should have been put in volatile registers to ensure they do not
+    // get overridden by epilog sequence during tailcall.
+    noway_assert(!isJump || (iReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(iReg)) != 0));
+    noway_assert(!isJump || (xReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(xReg)) != 0));
 
     GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
@@ -2349,11 +2396,12 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               ilOffset,
-                               (indir->Base()  != nullptr) ? indir->Base()->GetRegNum()  : REG_NA,
-                               (indir->Index() != nullptr) ? indir->Index()->GetRegNum() : REG_NA,
+                               di,
+                               iReg,
+                               xReg,
                                indir->Scale(),
-                               indir->Offset());
+                               indir->Offset(),
+                               isJump);
 }
 // clang-format on
 
@@ -2601,6 +2649,16 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 
         condition = GenCondition(GenCondition::P);
     }
+
+    if (relop->MarkedForSignJumpOpt())
+    {
+        // If relop was previously marked for a signed jump check optimization because of SF flag
+        // reuse, replace jge/jl with jns/js.
+
+        assert(relop->OperGet() == GT_LT || relop->OperGet() == GT_GE);
+        condition = (relop->OperGet() == GT_LT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
+    }
+
 #endif
 
     inst_JCC(condition, compiler->compCurBB->bbJumpDest);

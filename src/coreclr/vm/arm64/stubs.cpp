@@ -274,7 +274,6 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
         pRD->volatileCurrContextPointers.X[i] = NULL;
 }
 
-#ifndef CROSSGEN_COMPILE
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
@@ -543,7 +542,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
-#endif // CROSSGEN_COMPILE
 
 TADDR FixupPrecode::GetMethodDesc()
 {
@@ -583,23 +581,6 @@ void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator
     m_pMethodDesc = (TADDR)pMD;
 }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void StubPrecode::Fixup(DataImage *image)
-{
-    WRAPPER_NO_CONTRACT;
-
-    image->FixupFieldToNode(this, offsetof(StubPrecode, m_pTarget),
-                            image->GetHelperThunk(CORINFO_HELP_EE_PRESTUB),
-                            0,
-                            IMAGE_REL_BASED_PTR);
-
-    image->FixupField(this, offsetof(StubPrecode, m_pMethodDesc),
-                      (void*)GetMethodDesc(),
-                      0,
-                      IMAGE_REL_BASED_PTR);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
 void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
@@ -615,23 +596,6 @@ void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pM
     m_pTarget = GetEEFuncEntryPoint(NDirectImportThunk);
     m_pMethodDesc = (TADDR)pMD;
 }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void NDirectImportPrecode::Fixup(DataImage *image)
-{
-    WRAPPER_NO_CONTRACT;
-
-    image->FixupField(this, offsetof(NDirectImportPrecode, m_pMethodDesc),
-                      (void*)GetMethodDesc(),
-                      0,
-                      IMAGE_REL_BASED_PTR);
-
-    image->FixupFieldToNode(this, offsetof(NDirectImportPrecode, m_pTarget),
-                            image->GetHelperThunk(CORINFO_HELP_EE_PINVOKE_FIXUP),
-                            0,
-                            IMAGE_REL_BASED_PTR);
-}
-#endif
 
 void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
@@ -666,51 +630,6 @@ void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocat
     }
 }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-// Partial initialization. Used to save regrouped chunks.
-void FixupPrecode::InitForSave(int iPrecodeChunkIndex)
-{
-    STANDARD_VM_CONTRACT;
-
-    InitCommon();
-
-    _ASSERTE(FitsInU1(iPrecodeChunkIndex));
-    m_PrecodeChunkIndex = static_cast<BYTE>(iPrecodeChunkIndex);
-    // The rest is initialized in code:FixupPrecode::Fixup
-}
-
-void FixupPrecode::Fixup(DataImage *image, MethodDesc * pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Note that GetMethodDesc() does not return the correct value because of
-    // regrouping of MethodDescs into hot and cold blocks. That's why the caller
-    // has to supply the actual MethodDesc
-
-    SSIZE_T mdChunkOffset;
-    ZapNode * pMDChunkNode = image->GetNodeForStructure(pMD, &mdChunkOffset);
-    ZapNode * pHelperThunk = image->GetHelperThunk(CORINFO_HELP_EE_PRECODE_FIXUP);
-
-    image->FixupFieldToNode(this, offsetof(FixupPrecode, m_pTarget), pHelperThunk);
-
-    // Set the actual chunk index
-    FixupPrecode * pNewPrecode = (FixupPrecode *)image->GetImagePointer(this);
-
-    size_t mdOffset = mdChunkOffset - sizeof(MethodDescChunk);
-    size_t chunkIndex = mdOffset / MethodDesc::ALIGNMENT;
-    _ASSERTE(FitsInU1(chunkIndex));
-    pNewPrecode->m_MethodDescChunkIndex = (BYTE)chunkIndex;
-
-    // Fixup the base of MethodDescChunk
-    if (m_PrecodeChunkIndex == 0)
-    {
-        image->FixupFieldToNode(this, (BYTE *)GetBase() - (BYTE *)this,
-            pMDChunkNode, sizeof(MethodDescChunk));
-    }
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
-
 void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
@@ -733,7 +652,6 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     m_pMethodDesc = (TADDR)pMD;
 }
 
-#ifndef CROSSGEN_COMPILE
 BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     PTR_DWORD pInstr = dac_cast<PTR_DWORD>(PCODEToPINSTR(pCode));
@@ -772,7 +690,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
@@ -808,7 +725,6 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->Lr  = (PDWORD64)&pCalleeSaved->x30;
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
@@ -834,7 +750,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 
-#endif
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
@@ -1058,7 +973,7 @@ void JIT_TailCall()
     _ASSERTE(!"ARM64:NYI");
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
@@ -1108,7 +1023,7 @@ void InitJITHelpers1()
 
 #else
 void UpdateWriteBarrierState(bool) {}
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {
@@ -1134,7 +1049,7 @@ void RedirectForThreadAbort()
     throw "NYI";
 }
 
-#if !defined(DACCESS_COMPILE) && !defined (CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1199,7 +1114,7 @@ AdjustContextForVirtualStub(
 
     return TRUE;
 }
-#endif // !(DACCESS_COMPILE && CROSSGEN_COMPILE)
+#endif // !DACCESS_COMPILE
 
 UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 {
@@ -1274,7 +1189,6 @@ void FlushWriteBarrierInstructionCache()
     // this wouldn't be called in arm64, just to comply with gchelpers.h
 }
 
-#ifndef CROSSGEN_COMPILE
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
@@ -1300,7 +1214,6 @@ int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#endif // CROSSGEN_COMPILE
 
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
@@ -1846,7 +1759,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_READYTORUN
 
@@ -2146,8 +2058,6 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
-
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -2330,6 +2240,5 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 }
 #endif // FEATURE_READYTORUN
 
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE

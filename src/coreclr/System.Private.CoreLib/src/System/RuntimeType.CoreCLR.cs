@@ -980,7 +980,7 @@ namespace System
                             #endregion
 
                             RuntimeFieldInfo runtimeFieldInfo =
-                            new MdFieldInfo(tkField, fieldAttributes, declaringType.GetTypeHandleInternal(), m_runtimeTypeCache, bindingFlags);
+                            new MdFieldInfo(tkField, fieldAttributes, declaringType.TypeHandle, m_runtimeTypeCache, bindingFlags);
 
                             list.Add(runtimeFieldInfo);
                         }
@@ -1304,12 +1304,6 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            if (!ModuleHandle.ContainsPropertyMatchingHash(declaringModuleHandle, tkProperty, filter.GetHashToMatch()))
-                            {
-                                Debug.Assert(!filter.Match(declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty)));
-                                continue;
-                            }
-
                             MdUtf8String name = declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty);
 
                             if (!filter.Match(name))
@@ -1973,7 +1967,7 @@ namespace System
                 RuntimeType? declaringType = (RuntimeType?)genericMethodDefinition.DeclaringType;
                 if (declaringType != null)
                 {
-                    typeContext = declaringType.GetTypeHandleInternal().GetInstantiationInternal();
+                    typeContext = declaringType.TypeHandle.GetInstantiationInternal();
                 }
             }
 
@@ -1982,8 +1976,8 @@ namespace System
                 Type genericArgument = genericArguments[i];
                 Type genericParameter = genericParameters[i];
 
-                if (!RuntimeTypeHandle.SatisfiesConstraints(genericParameter.GetTypeHandleInternal().GetTypeChecked(),
-                    typeContext, methodContext, genericArgument.GetTypeHandleInternal().GetTypeChecked()))
+                if (!RuntimeTypeHandle.SatisfiesConstraints(genericParameter.TypeHandle.GetTypeChecked(),
+                    typeContext, methodContext, genericArgument.TypeHandle.GetTypeChecked()))
                 {
                     throw new ArgumentException(
                         SR.Format(SR.Argument_GenConstraintViolation, i.ToString(), genericArgument, definition, genericParameter), e);
@@ -2685,9 +2679,9 @@ namespace System
             if (ifaceRtType == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
 
-            RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.GetTypeHandleInternal();
+            RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.TypeHandle;
 
-            GetTypeHandleInternal().VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
+            TypeHandle.VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
             Debug.Assert(ifaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
             Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
 
@@ -2714,7 +2708,7 @@ namespace System
                 im.InterfaceMethods[i] = (MethodInfo)ifaceMethodBase;
 
                 // If the impl is null, then virtual stub dispatch is active.
-                RuntimeMethodHandleInternal classRtMethodHandle = GetTypeHandleInternal().GetInterfaceMethodImplementation(ifaceRtTypeHandle, ifaceRtMethodHandle);
+                RuntimeMethodHandleInternal classRtMethodHandle = TypeHandle.GetInterfaceMethodImplementation(ifaceRtTypeHandle, ifaceRtMethodHandle);
 
                 if (classRtMethodHandle.IsNullHandle())
                     continue;
@@ -3350,12 +3344,12 @@ namespace System
         #region Generics
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
-            return GetRootElementType().GetTypeHandleInternal().GetInstantiationInternal();
+            return GetRootElementType().TypeHandle.GetInstantiationInternal();
         }
 
         public override Type[] GetGenericArguments()
         {
-            Type[] types = GetRootElementType().GetTypeHandleInternal().GetInstantiationPublic();
+            Type[] types = GetRootElementType().TypeHandle.GetInstantiationPublic();
             return types ?? Type.EmptyTypes;
         }
 
@@ -3446,7 +3440,7 @@ namespace System
         }
 
         public override bool ContainsGenericParameters =>
-            GetRootElementType().GetTypeHandleInternal().ContainsGenericVariables();
+            GetRootElementType().TypeHandle.ContainsGenericVariables();
 
         public override Type[] GetGenericParameterConstraints()
         {
@@ -3538,7 +3532,7 @@ namespace System
                 RuntimeType valueType;
                 Pointer? pointer = value as Pointer;
                 if (pointer != null)
-                    valueType = (RuntimeType)pointer.GetPointerType();
+                    valueType = pointer.GetPointerType();
                 else
                     valueType = (RuntimeType)value.GetType();
 
@@ -3579,7 +3573,7 @@ namespace System
                     RuntimeType valueType;
                     Pointer? pointer = value as Pointer;
                     if (pointer != null)
-                        valueType = (RuntimeType)pointer.GetPointerType();
+                        valueType = pointer.GetPointerType();
                     else
                         valueType = (RuntimeType)value.GetType();
 
@@ -4009,10 +4003,10 @@ namespace System
     #region Library
     internal readonly unsafe struct MdUtf8String
     {
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
         private static extern bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
         private static extern uint HashCaseInsensitive(void* sz, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.

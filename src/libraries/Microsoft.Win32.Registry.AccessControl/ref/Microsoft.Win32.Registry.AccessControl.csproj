@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -11,6 +11,12 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Reference Include="Microsoft.Win32.Registry" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Security.AccessControl" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

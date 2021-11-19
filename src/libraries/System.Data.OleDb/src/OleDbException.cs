@@ -70,13 +70,8 @@ namespace System.Data.OleDb
             string? message = null;
             string? source = null;
             OleDbHResult hr = 0;
-
-            if (null != errorInfo)
-            {
-                hr = errorInfo.GetDescription(out message);
-
-                hr = errorInfo.GetSource(out source);
-            }
+            hr = errorInfo.GetDescription(out message);
+            hr = errorInfo.GetSource(out source);
 
             int count = errors.Count;
             if (0 < errors.Count)

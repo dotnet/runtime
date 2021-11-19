@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   runtimeVariant: ''
-  framework: net6.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
+  framework: net7.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
   liveLibrariesBuildConfig: ''
   variables: {}
   runtimeType: 'coreclr'
@@ -62,8 +62,10 @@ jobs:
       - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
     - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
       - ${{ 'build_Android_arm64_release_AndroidMono' }}
+      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
     - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
       - ${{ 'build_iOS_arm64_release_iOSMono' }}
+      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
@@ -133,7 +135,7 @@ jobs:
           artifactName: BrowserWasm
           displayName: BrowserWasm
 
-      - script: "mkdir $(librariesDownloadDir)/bin/wasm;unzip -o $(librariesDownloadDir)/BrowserWasm/artifacts/packages/Release/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm.6.0.0-ci.nupkg data/* runtimes/* -d $(librariesDownloadDir)/bin/wasm;cp src/mono/wasm/runtime-test.js $(librariesDownloadDir)/bin/wasm/runtime-test.js;find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \\;"
+      - script: "mkdir $(librariesDownloadDir)/bin/wasm;unzip -o $(librariesDownloadDir)/BrowserWasm/artifacts/packages/Release/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm.7.0.0-ci.nupkg data/* runtimes/* -d $(librariesDownloadDir)/bin/wasm;cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/test-main.js;find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \\;"
         displayName: "Create wasm directory (Linux)"
 
     # Download mono AOT
@@ -148,7 +150,7 @@ jobs:
       - script: "mkdir -p $(librariesDownloadDir)/bin/aot/sgen;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/obj/mono/Linux.${{ parameters.archType }}.Release/mono/* $(librariesDownloadDir)/bin/aot/sgen;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
         displayName: "Create aot directory (Linux)"
 
-    # Download AndroidMono
+    # Download AndroidMono and MauiAndroid
     - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -157,8 +159,16 @@ jobs:
           artifactFileName: 'AndroidMonoarm64.tar.gz'
           artifactName: 'AndroidMonoarm64'
           displayName: 'Mono Android runtime'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiAndroidApp.tar.gz'
+          artifactName: 'MauiAndroidApp'
+          displayName: 'Maui Android App'
+      
     
-    # Download iOSMono tests
+    # Download iOSMono tests and MauiiOS/MacCatalyst
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -174,6 +184,20 @@ jobs:
           artifactFileName: 'iOSSampleAppLLVM.tar.gz'
           artifactName: 'iOSSampleAppLLVM'
           displayName: 'iOS Sample App LLVM'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiiOSDefault.tar.gz'
+          artifactName: 'MauiiOSDefault'
+          displayName: 'Maui iOS App'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiMacCatalystDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiMacCatalystDefault.tar.gz'
+          artifactName: 'MauiMacCatalystDefault'
+          displayName: 'Maui MacCatalyst App'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
@@ -181,10 +205,10 @@ jobs:
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
 
     # Copy the runtime directory into the testhost folder to include OOBs.
-    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\6.0.0 /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\6.0.0\\corerun.exe"
+    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\7.0.0 /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\7.0.0\\corerun.exe"
       displayName: "Create mono dotnet (Windows)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono')))
 
-    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/6.0.0 -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/6.0.0/corerun"
+    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/7.0.0 -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/7.0.0/corerun"
       displayName: "Create mono dotnet (Linux)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono')))

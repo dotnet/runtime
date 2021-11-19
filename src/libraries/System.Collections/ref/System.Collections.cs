@@ -606,10 +606,13 @@ namespace System.Collections.Generic
         public bool ContainsKey(TKey key) { throw null; }
         public bool ContainsValue(TValue value) { throw null; }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() { throw null; }
+        public TKey GetKeyAtIndex(int index) { throw null; }
+        public TValue GetValueAtIndex(int index) { throw null; }
         public int IndexOfKey(TKey key) { throw null; }
         public int IndexOfValue(TValue value) { throw null; }
         public bool Remove(TKey key) { throw null; }
         public void RemoveAt(int index) { }
+        public void SetValueAtIndex(int index, TValue value) { }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }

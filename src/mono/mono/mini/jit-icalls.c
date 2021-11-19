@@ -25,6 +25,7 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-math.h>
 #include "mono/utils/mono-tls-inline.h"
@@ -1395,7 +1396,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
  * the arguments to the method in the format used by mono_runtime_invoke_checked ().
  */
 MonoObject*
-mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args)
+mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args)
 {
 	ERROR_DECL (error);
 	MonoObject *o;
@@ -1423,8 +1424,15 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 
 	if (!m)
 		return NULL;
-	if (args && deref_arg) {
-		new_args [0] = *(gpointer*)args [0];
+	if (deref_args) {
+		/* Have to deref gsharedvt ref arguments since the runtime invoke expects it */
+		MonoMethodSignature *fsig = mono_method_signature_internal (m);
+		g_assert (fsig->param_count < 16);
+		memcpy (new_args, args, fsig->param_count * sizeof (gpointer));
+		for (int i = 0; i < fsig->param_count; ++i) {
+			if (deref_args [i])
+				new_args [i] = *(gpointer*)new_args [i];
+		}
 		args = new_args;
 	}
 	if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {

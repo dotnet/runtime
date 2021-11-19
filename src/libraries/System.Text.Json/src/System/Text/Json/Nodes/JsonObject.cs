@@ -96,7 +96,7 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                options ??= JsonSerializerOptions.s_defaultOptions;
+                options ??= JsonSerializerOptions.Default;
 
                 writer.WriteStartObject();
 
@@ -164,7 +164,7 @@ namespace System.Text.Json.Nodes
         }
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
-        private class DebugView
+        private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             private JsonObject _node;

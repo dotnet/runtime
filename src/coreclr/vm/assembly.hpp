@@ -79,18 +79,18 @@ class Assembly
     friend class ClrDataAccess;
 
 public:
-    Assembly(BaseDomain *pDomain, PEAssembly *pFile, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
+    Assembly(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
     void Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
 
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
 
-    static Assembly *Create(BaseDomain *pDomain, PEAssembly *pFile, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    static Assembly *Create(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pManifestFile->IsSystem(); }
 
-    static Assembly *CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args);
+    static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args);
 
     MethodDesc *GetEntryPoint();
 
@@ -227,8 +227,6 @@ public:
     PTR_BaseDomain GetDomain();
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
-    BOOL GetModuleZapFile(LPCWSTR name, SString &path);
-
 #ifdef LOGGING
     LPCWSTR GetDebugName()
     {
@@ -301,7 +299,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return m_pManifestFile->GetPersistentMDImport();
+        return m_pManifestFile->GetMDImport();
     }
 
     HRESULT GetCustomAttribute(mdToken parentToken,
@@ -313,14 +311,6 @@ public:
         SUPPORTS_DAC;
         return GetManifestModule()->GetCustomAttribute(parentToken, attribute, ppData, pcbData);
     }
-
-#ifndef DACCESS_COMPILE
-    IMetaDataAssemblyImport* GetManifestAssemblyImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_pManifestFile->GetAssemblyImporter();
-    }
-#endif // DACCESS_COMPILE
 
     mdAssembly GetManifestToken()
     {
@@ -404,9 +394,6 @@ public:
 
     Assembly();
     ~Assembly();
-#ifdef  FEATURE_PREJIT
-    void DeleteNativeCodeRanges();
-#endif
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
                      PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
@@ -437,10 +424,10 @@ public:
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#ifdef FEATURE_READYTORUN
     BOOL IsInstrumented();
     BOOL IsInstrumentedHelper();
-#endif // FEATURE_PREJIT
+#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_COMINTEROP
     static ITypeLib * const InvalidTypeLib;
@@ -592,14 +579,14 @@ private:
 
     BOOL                  m_fTerminated;
 
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#ifdef FEATURE_READYTORUN
     enum IsInstrumentedStatus {
         IS_INSTRUMENTED_UNSET = 0,
         IS_INSTRUMENTED_FALSE = 1,
         IS_INSTRUMENTED_TRUE = 2,
     };
     IsInstrumentedStatus    m_isInstrumentedStatus;
-#endif // FEATURE_PREJIT
+#endif // FEATURE_READYTORUN
 
 };
 

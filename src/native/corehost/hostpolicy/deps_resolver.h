@@ -254,7 +254,8 @@ private:
     pal::string_t m_app_dir;
 
     void add_tpa_asset(
-        const deps_resolved_asset_t& asset,
+        const deps_asset_t& asset,
+        const pal::string_t& resolved_path,
         name_to_resolved_asset_map_t* items);
 
     // Mode in which the host is being run. This can dictate how dependencies should be discovered.

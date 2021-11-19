@@ -149,6 +149,8 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        internal bool IsHRSwappedRetVal => Index == 0 && !Return;
+
         public bool In;
         public bool Out;
         public bool Return;
@@ -512,7 +514,7 @@ namespace Internal.TypeSystem.Interop
 
         public virtual void LoadReturnValue(ILCodeStream codeStream)
         {
-            Debug.Assert(Return);
+            Debug.Assert(Return || IsHRSwappedRetVal);
 
             switch (MarshalDirection)
             {
@@ -642,7 +644,11 @@ namespace Internal.TypeSystem.Interop
         protected void PropagateFromByRefArg(ILCodeStream stream, Home home)
         {
             stream.EmitLdArg(Index - 1);
-            stream.EmitLdInd(ManagedType);
+            switch (MarshalDirection)
+            {
+                case MarshalDirection.Forward: stream.EmitLdInd(ManagedType); break;
+                case MarshalDirection.Reverse: stream.EmitLdInd(NativeType); break;
+            }
             home.StoreValue(stream);
         }
 
@@ -653,9 +659,20 @@ namespace Internal.TypeSystem.Interop
         /// </summary>
         protected void PropagateToByRefArg(ILCodeStream stream, Home home)
         {
+            // If by-ref arg has index == 0 then that argument is used for HR swapping and we just return that value.
+            if (IsHRSwappedRetVal)
+            {
+                // Returning result would be handled by LoadReturnValue
+                return;
+            }
+
             stream.EmitLdArg(Index - 1);
             home.LoadValue(stream);
-            stream.EmitStInd(ManagedType);
+            switch (MarshalDirection)
+            {
+                case MarshalDirection.Forward: stream.EmitStInd(ManagedType); break;
+                case MarshalDirection.Reverse: stream.EmitStInd(NativeType); break;
+            }
         }
 
         protected virtual void EmitMarshalArgumentManagedToNative()
@@ -903,6 +920,12 @@ namespace Internal.TypeSystem.Interop
     {
         protected override void EmitMarshalArgumentManagedToNative()
         {
+            if (IsHRSwappedRetVal)
+            {
+                base.EmitMarshalArgumentManagedToNative();
+                return;
+            }
+
             if (IsNativeByRef && MarshalDirection == MarshalDirection.Forward)
             {
                 ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
@@ -1826,11 +1849,15 @@ namespace Internal.TypeSystem.Interop
         private void AllocSafeHandle(ILCodeStream codeStream)
         {
             var ctor = ManagedType.GetParameterlessConstructor();
-            if (ctor == null || ((MetadataType)ManagedType).IsAbstract)
+            if (ctor == null)
             {
                 ThrowHelper.ThrowMissingMethodException(ManagedType, ".ctor",
                     new MethodSignature(MethodSignatureFlags.None, genericParameterCount: 0,
                     ManagedType.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes));
+            }
+            if (((MetadataType)ManagedType).IsAbstract)
+            {
+                ThrowHelper.ThrowMarshalDirectiveException();
             }
 
             codeStream.Emit(ILOpcode.newobj, _ilCodeStreams.Emitter.NewToken(ctor));
@@ -1934,9 +1961,17 @@ namespace Internal.TypeSystem.Interop
                         new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
                             new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr) }))));
 
-                cleanupCodeStream.EmitLdArg(Index - 1);
-                cleanupCodeStream.EmitLdLoc(vSafeHandle);
-                cleanupCodeStream.EmitStInd(ManagedType);
+                if (IsHRSwappedRetVal)
+                {
+                    cleanupCodeStream.EmitLdLoc(vSafeHandle);
+                    StoreManagedValue(cleanupCodeStream);
+                }
+                else
+                {
+                    cleanupCodeStream.EmitLdArg(Index - 1);
+                    cleanupCodeStream.EmitLdLoc(vSafeHandle);
+                    cleanupCodeStream.EmitStInd(ManagedType);
+                }
 
                 cleanupCodeStream.EmitLabel(lSkipPropagation);
             }

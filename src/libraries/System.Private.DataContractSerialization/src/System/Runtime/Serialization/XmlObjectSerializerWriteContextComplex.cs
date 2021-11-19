@@ -221,8 +221,8 @@ namespace System.Runtime.Serialization
             RuntimeTypeHandle objTypeHandle = isDeclaredType ? declaredTypeHandle : obj.GetType().TypeHandle;
             object oldObj = obj;
             int objOldId = 0;
-            Type objType = Type.GetTypeFromHandle(objTypeHandle);
-            Type declaredType = GetSurrogatedType(Type.GetTypeFromHandle(declaredTypeHandle));
+            Type objType = Type.GetTypeFromHandle(objTypeHandle)!;
+            Type declaredType = GetSurrogatedType(Type.GetTypeFromHandle(declaredTypeHandle)!);
 
             declaredTypeHandle = declaredType.TypeHandle;
 

@@ -137,21 +137,10 @@ public:
     ULONG32 m_cbSegNext;
 };
 
-class Target_HotHeap : public TargetObject
-{
-public:
-    Target_HotHeap();
-    virtual HRESULT ReadFrom(DataTargetReader & reader);
-
-    CORDB_ADDRESS m_pHotHeapHeader;
-};
-
 class Target_StgPoolReadOnly : public Target_StgPoolSeg
 {
 public:
     virtual HRESULT ReadFrom(DataTargetReader & reader);
-
-    Target_HotHeap m_HotHeap;
 };
 
 class Target_StgPool : public Target_StgPoolReadOnly
@@ -272,7 +261,6 @@ public:
     CORDB_ADDRESS m_pMemberRefHash;
     CORDB_ADDRESS m_pMemberDefHash;
     CORDB_ADDRESS m_pLookUpHashs[TBL_COUNT];
-    Target_MapSHash m_StringPoolOffsetHash;
     CORDB_ADDRESS m_pNamedItemHash;
     ULONG32 m_maxRid;
     ULONG32 m_limRid;

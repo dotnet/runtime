@@ -21,6 +21,7 @@ parameters:
   compositeBuildMode: false
   helixProjectArguments: ''
   runInUnloadableContext: ''
+  tieringTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
   runtimeFlavorDisplayName: 'CoreCLR'
@@ -49,6 +50,7 @@ steps:
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+      _TieringTest: ${{ parameters.runInUnloadableContext }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}

@@ -69,20 +69,20 @@ namespace System.Net.WebSockets.Client.Tests
                     await action(cws);
                     // Operation finished before CTS expired.
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException exception)
                 {
                     // Expected exception
-                    Assert.Equal(WebSocketState.Aborted, cws.State);
+                    Assert.True(WebSocketState.Aborted == cws.State, $"Actual {cws.State} when {exception}");
                 }
-                catch (ObjectDisposedException)
+                catch (ObjectDisposedException exception)
                 {
                     // Expected exception
-                    Assert.Equal(WebSocketState.Aborted, cws.State);
+                    Assert.True(WebSocketState.Aborted == cws.State, $"Actual {cws.State} when {exception}");
                 }
                 catch (WebSocketException exception)
                 {
-                    Assert.Equal(WebSocketError.InvalidState, exception.WebSocketErrorCode);
-                    Assert.Equal(WebSocketState.Aborted, cws.State);
+                    Assert.True(WebSocketError.InvalidState == exception.WebSocketErrorCode, $"Actual WebSocketErrorCode {exception.WebSocketErrorCode} when {exception}");
+                    Assert.True(WebSocketState.Aborted == cws.State, $"Actual {cws.State} when {exception}");
                 }
             }
         }

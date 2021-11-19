@@ -13,9 +13,9 @@
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'Browser'">
-    <!-- Microsoft.CodeAnalysis.* assemblies missing in the virtual file system for Browser and the bundle for the mobile platforms -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Tests.csproj" />
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
+    <!-- Exceeds VM resources in CI on compilation: https://github.com/dotnet/runtime/issues/61339 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->
@@ -25,9 +25,38 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
+    <!-- DllImportGenerator runtime tests depend on DNNE, which does not support mobile platforms. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'arm'">
+    <!-- DllImportGenerator runtime tests depend on DNNE, which does not support Windows ARM32 as we don't officially support it. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetArchitecture)' == 'arm'">
+    <!-- Issue: https://github.com/dotnet/runtime/issues/60705 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'FreeBSD'">
+    <!-- DllImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for FreeBSD. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'linux' and '$(TargetArchitecture)' == 's390x'">
+    <!-- DllImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for s390x. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
+    <!-- DllImportGenerator unit tests fail since NuGet 5.6.0 signature verification does not work on big-endian systems (needs >= 5.11.0). -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'Windows' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisabledMonoTestsOnWindows)' != 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/53281 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">
@@ -53,9 +82,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread\tests\System.Threading.Thread.Tests.csproj" />
 
     <!-- Actual test failures -->
-    <!-- https://github.com/dotnet/runtime/issues/37088 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
-
     <!-- https://github.com/dotnet/runtime/issues/50871 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
 
@@ -120,6 +146,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XPath/XPathDocument/System.Xml.XPath.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/ExtendedFunctionalTests/System.Private.Uri.ExtendedFunctional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates\tests\System.Security.Cryptography.X509Certificates.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
@@ -139,77 +166,90 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'iOS' and '$(RunDisablediOSTests)' != 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
+    
+    <!-- Ref.Emit in XSLCompiledTransform -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
+    
+    <!-- Functional tests on devices have problems with return codes from mlaunch -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'iOSSimulator' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisablediOSTests)' != 'true'">
+    <!-- Functional tests on arm64 simulator have problems with return codes from mlaunch -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Simulator\**\*.Test.csproj" />
+  </ItemGroup>
+
+  <!-- Excluding all tests for devices until building on helix works properly -->
+  <ItemGroup Condition="'$(TargetOS)' == 'tvOS' and '$(RunDisablediOSTests)' != 'true'">
+    <!-- Ref.Emit in XSLCompiledTransform -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Emit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.ILGeneration/tests/System.Reflection.Emit.ILGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight/tests/System.Reflection.Emit.Lightweight.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
+
+    <!-- Has deps that JIT, need re-done in order to pass -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/UnitTests/Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
+
+    <!-- 
+        Test suites hang and time out.
+        https://github.com/dotnet/runtime/issues/60713 
+    -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation/tests/FunctionalTests/System.Net.NetworkInformation.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection/tests/System.Reflection.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels/tests/System.Threading.Channels.Tests.csproj" />
+    
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
+
+    <!-- Functional tests on devices have problems with return codes from mlaunch -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />
+  </ItemGroup>
+
+  <!-- Excluding all tests for aot catalyst until building on helix works properly -->
+  <ItemGroup Condition="('$(TargetOS)' == 'MacCatalyst' and '$(BuildTestsOnHelix)' == 'true') and '$(RunDisablediOSTests)' != 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
+    
+    <!-- No functional tests until helix stabilizes -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlFormatWriterGeneratorAOT/iOS.Simulator.XmlFormatWriterGeneratorAot.Test.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">
     <!-- PNSE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51414 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
 
-    <!-- Failures -->
-    <!-- https://github.com/dotnet/runtime/issues/51335 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
-
-    <!-- Crashes or hangs, did not produce testResults.xml -->
-    <!-- https://github.com/dotnet/runtime/issues/52120 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
-
-    <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Http/tests/Microsoft.Extensions.Http.Tests/Microsoft.Extensions.Http.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging/tests/Common/Microsoft.Extensions.Logging.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression/tests/System.IO.Compression.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.Brotli.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem/tests/System.IO.FileSystem.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Packaging/tests/System.IO.Packaging.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/UnitTests/System.Private.Uri.Unit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlResolver/System.Xml.XmlResolver.Tests/System.Xml.XmlResolver.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Csp/tests/System.Security.Cryptography.Csp.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow/tests/System.Threading.Tasks.Dataflow.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks/tests/System.Threading.Tasks.Tests.csproj" />
-
-    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/50589 -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\AOT\tvOS.Simulator.Aot.Test.csproj" />
-
-    <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.Brotli.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile/tests/System.IO.Compression.ZipFile.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(RunDisablediOSTests)' != 'true'">
-    <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
-
-    <!-- Crash https://github.com/dotnet/runtime/issues/56085 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Tests.csproj" />
-
-    <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\Interpreter\iOS.Simulator.Interpreter.Test.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\InvariantCultureOnlyMode\iOS.Simulator.InvariantCultureOnlyMode.Test.csproj" />
-
-    <!-- No current support for AOT+LLVM on catalyst, so skip functional test -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT-LLVM\**\*.Test.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisablediOSTests)' != 'true'">
-    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher/tests/System.IO.FileSystem.Watcher.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client/tests/System.Net.WebSockets.Client.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'x64' and '$(RunDisablediOSTests)' != 'true'">
     <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions/tests/System.Linq.Expressions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel/tests/System.Linq.Parallel.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/PInvoke/iOS.Simulator.PInvoke.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/tvOS/Simulator/AOT/tvOS.Simulator.Aot.Test.csproj" />
+    <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
+
+    <!-- Crash https://github.com/dotnet/runtime/issues/56085 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.SourceGeneration.Tests/System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.SourceGeneration.Tests/System.Text.Json.SourceGeneration.Roslyn4.0.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/51335 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
+  
+    <!-- DllImportGenerator tests try to hit fetch nugets on the fly - doens't work -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
@@ -230,13 +270,24 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Primitives\tests\System.Security.Cryptography.Primitives.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates\tests\System.Security.Cryptography.X509Certificates.Tests.csproj" />
+
+    <!-- This OuterLoop test requires browser UI, but the Helix agents are headless -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\wasm\System.Net.WebSockets.Client.Wasm.Tests.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/issues/58226 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
+  <!-- Aggressive Trimming related failures -->
+  <ItemGroup Condition="('$(TargetOS)' != 'Browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true')">
+    <!-- Issue: https://github.com/dotnet/runtime/issues/59926 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\System.Runtime.Serialization.Xml.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' != 'Browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true') or ('$(TargetOS)' == 'iOS' and '$(BuildTestsOnHelix)' == 'true')">
     <!-- Issue: https://github.com/dotnet/runtime/issues/50724 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition\tests\System.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime\tests\System.Dynamic.Runtime.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives\tests\FunctionalTests\System.Net.Primitives.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />
@@ -244,12 +295,6 @@
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51708 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
-
-    <!-- MarkTypeForDynamicallyAccessedMembers stack overflow https://github.com/mono/linker/issues/1881 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />
-
-    <!-- IL2103 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows' and '$(RunDisabledWasmTestsOnWindows)' != 'true'">
@@ -278,6 +323,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetArchitecture)' == 's390x' and '$(RunDisableds390xTests)' != 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TestSingleFile)' == 'true'">
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
@@ -285,7 +334,11 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'" />
@@ -306,22 +359,45 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'  or '$(TargetOS)' == 'MacCatalyst')">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" />
-
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'iOS'">
+    <!-- Only System.Runtime tests on iOS for now -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')">
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\**\*.Test.csproj"
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'iOSSimulator'">
+    <!-- https://github.com/dotnet/runtime/issues/57666 -->
+    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
+                      BuildInParallel="false" /> -->
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Android'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvOS'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Device\**\*.Test.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'MacCatalyst'">
+    <!-- https://github.com/dotnet/runtime/issues/57666 -->
+    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
+                      BuildInParallel="false" /> -->
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvOSSimulator'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\**\*.Test.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'Android'">
     <ProjectReference Include="$(MonoProjectRoot)sample\Android\AndroidSampleApp.csproj"
                       BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\**\*.Test.csproj"
@@ -330,7 +406,7 @@
   </ItemGroup>
 
   <!-- Don't build samples, and functional tests on EAT, AOT, and WBT lanes -->
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(TestWasmBuildTests)' != 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(TestWasmBuildTests)' != 'true'">
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="true" />
@@ -344,6 +420,85 @@
           DependsOnTargets="GenerateCoverageReport"
           Condition="'$(TestAssemblies)' == 'true' and
                      '$(Coverage)' == 'true'" />
+
+  <!-- Build Apple app bundles using AppBundleRoot -->
+  <UsingTask Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'"
+             TaskName="XcodeCreateProject"
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+
+  <UsingTask Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'"
+             TaskName="XcodeBuildApp"
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+
+  <Target Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'"
+          Name="BuildAppleAppBundles"
+          AfterTargets="Build">
+
+    <PropertyGroup>
+      <!-- TODO: Unify this with TestArchiveTestsRoot in src/libraries/Directory.Build.props somehow,
+                 we can't use IsFunctionalTest==true here because it is only set in the context of the .csproj -->
+      <TestArchiveNormalTestsRoot>$(TestArchiveRoot)tests/</TestArchiveNormalTestsRoot>
+      <TestArchiveFunctionalTestsRoot>$(TestArchiveRoot)runonly/</TestArchiveFunctionalTestsRoot>
+
+      <TestArchiveNormalTestsDir>$(TestArchiveNormalTestsRoot)$(OSPlatformConfig)/</TestArchiveNormalTestsDir>
+      <TestArchiveFunctionalTestsDir>$(TestArchiveFunctionalTestsRoot)$(OSPlatformConfig)/</TestArchiveFunctionalTestsDir>
+
+      <NormalTestsAppBundleRoot>$(AppBundleRoot)/tests/</NormalTestsAppBundleRoot>
+      <FunctionalTestsAppBundleRoot>$(AppBundleRoot)/runonly/</FunctionalTestsAppBundleRoot>
+
+      <NormalTestsAllAppBundlesRoot>$(AppBundleRoot)/tests.all/</NormalTestsAllAppBundlesRoot>
+      <FunctionalTestsAllAppBundlesRoot>$(AppBundleRoot)/runonly.all/</FunctionalTestsAllAppBundlesRoot>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <NormalTestAppBundles Include="$(NormalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
+      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.16)" />
+      <NormalTestCMakeEntries Include="project(NormalTestAppBundles)" />
+      <NormalTestCMakeEntries Include="add_subdirectory(%(NormalTestAppBundles.RootDir)%(NormalTestAppBundles.Directory) %(NormalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
+
+      <FunctionalTestAppBundles Include="$(FunctionalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
+      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.16)" />
+      <FunctionalTestCMakeEntries Include="project(FunctionalTestAppBundles)" />
+      <FunctionalTestCMakeEntries Include="add_subdirectory(%(FunctionalTestAppBundles.RootDir)%(FunctionalTestAppBundles.Directory) %(FunctionalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(NormalTestsAllAppBundlesRoot)CMakeLists.txt" Lines="@(NormalTestCMakeEntries)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(FunctionalTestsAllAppBundlesRoot)CMakeLists.txt" Lines="@(FunctionalTestCMakeEntries)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <XcodeCreateProject
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="NormalTestAppBundles"
+        CMakeListsDirectory="$(NormalTestsAllAppBundlesRoot)"
+        Condition="'@(NormalTestAppBundles)' != ''" />
+
+    <XcodeCreateProject
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="FunctionalTestAppBundles"
+        CMakeListsDirectory="$(FunctionalTestsAllAppBundlesRoot)"
+        Condition="'@(FunctionalTestAppBundles)' != ''" />
+
+    <MakeDir Directories="$(TestArchiveNormalTestsDir)" />
+    <MakeDir Directories="$(TestArchiveFunctionalTestsDir)" />
+
+    <ItemGroup>
+      <!-- xcodeproj are directories, not files -->
+      <XcodeProjects Condition="'@(NormalTestAppBundles)' != ''" Include="$([System.IO.Directory]::GetDirectories('$(NormalTestsAllAppBundlesRoot)NormalTestAppBundles/%(NormalTestAppBundles.RecursiveDir)', '*.xcodeproj'))" DestinationFolder="$(TestArchiveNormalTestsDir)" />
+      <XcodeProjects Condition="'@(FunctionalTestAppBundles)' != ''" Include="$([System.IO.Directory]::GetDirectories('$(FunctionalTestsAllAppBundlesRoot)FunctionalTestAppBundles/%(FunctionalTestAppBundles.RecursiveDir)', '*.xcodeproj'))" DestinationFolder="$(TestArchiveFunctionalTestsDir)" />
+    </ItemGroup>
+
+    <XcodeBuildApp
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        XcodeProjectPath="%(XcodeProjects.Identity)"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        Optimized="True"
+        DestinationFolder="%(XcodeProjects.DestinationFolder)" />
+
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true'"
+               Directories="$(AppBundleRoot)" />
+  </Target>
 
   <!-- Restoring all trimming test projects upfront in one single call to RestoreTrimmingProjects
   so as to avoid possible race conditions that could happen if we restore each individually. -->

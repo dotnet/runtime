@@ -372,7 +372,7 @@ namespace System.Text.Json
                     else if (currentByte == 'u')
                     {
                         // The source is known to be valid JSON, and hence if we see a \u, it is guaranteed to have 4 hex digits following it
-                        // Otherwise, the Utf8JsonReader would have alreayd thrown an exception.
+                        // Otherwise, the Utf8JsonReader would have already thrown an exception.
                         Debug.Assert(source.Length >= idx + 5);
 
                         bool result = Utf8Parser.TryParse(source.Slice(idx + 1, 4), out int scalar, out int bytesConsumed, 'x');
@@ -399,7 +399,7 @@ namespace System.Text.Json
                             }
 
                             // The source is known to be valid JSON, and hence if we see a \u, it is guaranteed to have 4 hex digits following it
-                            // Otherwise, the Utf8JsonReader would have alreayd thrown an exception.
+                            // Otherwise, the Utf8JsonReader would have already thrown an exception.
                             result = Utf8Parser.TryParse(source.Slice(idx, 4), out int lowSurrogate, out bytesConsumed, 'x');
                             Debug.Assert(result);
                             Debug.Assert(bytesConsumed == 4);

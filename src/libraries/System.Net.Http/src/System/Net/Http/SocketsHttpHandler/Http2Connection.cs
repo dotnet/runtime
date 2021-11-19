@@ -915,6 +915,8 @@ namespace System.Net.Http
             ReadOnlySpan<byte> pingContent = _incomingBuffer.ActiveSpan.Slice(0, FrameHeader.PingLength);
             long pingContentLong = BinaryPrimitives.ReadInt64BigEndian(pingContent);
 
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received PING frame, content:{pingContentLong} ack: {frameHeader.AckFlag}");
+
             if (frameHeader.AckFlag)
             {
                 ProcessPingAck(pingContentLong);
@@ -1898,7 +1900,7 @@ namespace System.Net.Http
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(async);
-            if (NetEventSource.Log.IsEnabled()) Trace($"{request}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
             try
             {

@@ -198,6 +198,24 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
+        async Task<JToken> GetObjectWithCFO(string objectId, JObject fn_args = null)
+        {
+            var fn_decl = "function () { return this; }";
+            var cfo_args = JObject.FromObject(new
+            {
+                functionDeclaration = fn_decl,
+                objectId = objectId
+            });
+
+            if (fn_args != null)
+                cfo_args["arguments"] = fn_args;
+
+            // callFunctionOn
+            var result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+
+            return await GetProperties(result.Value["result"]["objectId"]?.Value<string>(), fn_args);
+        }
+
         async Task TestSimpleArrayLocals(int line, int col, string entry_method_name, string method_name, string etype_name,
             string local_var_name_prefix, object[] array, object[] array_elem_props,
             bool test_prev_frame = false, int frame_idx = 0, bool use_cfo = false)
@@ -215,8 +233,8 @@ namespace DebuggerTests
 
             var locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
             Assert.Equal(4, locals.Count());
-            CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]", array?.Length ?? 0);
-            CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]", 0);
+            CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]", $"{etype_name}[{array?.Length ?? 0}]");
+            CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]", $"{etype_name}[0]");
             CheckObject(locals, $"{local_var_name_prefix}_arr_null", $"{etype_name}[]", is_null: true);
             CheckBool(locals, "call_other", test_prev_frame);
 
@@ -264,24 +282,6 @@ namespace DebuggerTests
 
             var props = await GetObjectOnFrame(pause_location["callFrames"][frame_idx], $"{local_var_name_prefix}_arr_empty");
             await CheckProps(props, new object[0], "${local_var_name_prefix}_arr_empty");
-
-            async Task<JToken> GetObjectWithCFO(string objectId, JObject fn_args = null)
-            {
-                var fn_decl = "function () { return this; }";
-                var cfo_args = JObject.FromObject(new
-                {
-                    functionDeclaration = fn_decl,
-                    objectId = objectId
-                });
-
-                if (fn_args != null)
-                    cfo_args["arguments"] = fn_args;
-
-                // callFunctionOn
-                var result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
-
-                return await GetProperties(result.Value["result"]["objectId"]?.Value<string>(), fn_args);
-            }
         }
 
         [Theory]
@@ -313,10 +313,10 @@ namespace DebuggerTests
             await CheckProps(c_props, new
             {
                 id = TString("c#id"),
-                ClassArrayProperty = TArray("DebuggerTests.SimpleClass[]", 3),
-                ClassArrayField = TArray("DebuggerTests.SimpleClass[]", 3),
-                PointsProperty = TArray("DebuggerTests.Point[]", 2),
-                PointsField = TArray("DebuggerTests.Point[]", 2)
+                ClassArrayProperty = TArray("DebuggerTests.SimpleClass[]", "DebuggerTests.SimpleClass[3]"),
+                ClassArrayField = TArray("DebuggerTests.SimpleClass[]", "DebuggerTests.SimpleClass[3]"),
+                PointsProperty = TArray("DebuggerTests.Point[]", "DebuggerTests.Point[2]"),
+                PointsField = TArray("DebuggerTests.Point[]", "DebuggerTests.Point[2]")
             },
                 "c"
             );
@@ -382,8 +382,8 @@ namespace DebuggerTests
             await CheckProps(frame_locals, new
             {
                 call_other = TBool(false),
-                gvclass_arr = TArray("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[]", 2),
-                gvclass_arr_empty = TArray("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[]"),
+                gvclass_arr = TArray("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[]", "DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[2]"),
+                gvclass_arr_empty = TArray("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[]", "DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[0]"),
                 gvclass_arr_null = TObject("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[]", is_null: true),
                 gvclass = TValueType("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>"),
                 // BUG: this shouldn't be null!
@@ -448,7 +448,7 @@ namespace DebuggerTests
             {
                 t1 = TObject("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>"),
                 @this = TObject("DebuggerTests.ArrayTestsClass"),
-                point_arr = TArray("DebuggerTests.Point[]", 2),
+                point_arr = TArray("DebuggerTests.Point[]", "DebuggerTests.Point[2]"),
                 point = TValueType("DebuggerTests.Point")
             }, "InspectValueTypeArrayLocalsInstanceAsync#locals");
 
@@ -574,7 +574,7 @@ namespace DebuggerTests
 
                // Trying to access object as an array
                if (!DotnetObjectId.TryParse(c_obj_id, out var id) || id.Scheme != "object")
-                   Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in library_mono.js?");
+                   Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in library-dotnet.js?");
 
                if (!int.TryParse(id.Value, out var idNum))
                    Assert.True(false, "Expected a numeric value part of the object id: {c_obj_id}");
@@ -642,6 +642,59 @@ namespace DebuggerTests
                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
                }
            });
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task InspectPrimitiveTypeMultiArrayLocals(bool use_cfo)
+        {
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
+            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+                $"'[debugger-test] DebuggerTests.MultiDimensionalArray:run'" +
+                "); }, 1);";
+
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 343, 12, "run");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(3, locals.Count());
+            var int_arr_1 = !use_cfo ?
+                            await GetProperties(locals[0]["value"]["objectId"].Value<string>()) : 
+                            await GetObjectWithCFO((locals[0]["value"]["objectId"].Value<string>()));
+
+            CheckNumber(int_arr_1, "0", 0);
+            CheckNumber(int_arr_1, "1", 1);
+            var int_arr_2 = !use_cfo ?
+                await GetProperties(locals[1]["value"]["objectId"].Value<string>()) : 
+                await GetObjectWithCFO((locals[1]["value"]["objectId"].Value<string>()));
+            CheckNumber(int_arr_2, "0, 0", 0);
+            CheckNumber(int_arr_2, "0, 1", 1);
+            CheckNumber(int_arr_2, "0, 2", 2);
+            CheckNumber(int_arr_2, "1, 0", 10);
+            CheckNumber(int_arr_2, "1, 1", 11);
+            CheckNumber(int_arr_2, "1, 2", 12);
+
+            var int_arr_3 = !use_cfo ?
+                await GetProperties(locals[2]["value"]["objectId"].Value<string>()) : 
+                await GetObjectWithCFO((locals[2]["value"]["objectId"].Value<string>()));
+            CheckNumber(int_arr_3, "0, 0, 0", 0);
+            CheckNumber(int_arr_3, "0, 0, 1", 1);
+            CheckNumber(int_arr_3, "0, 0, 2", 2);
+            CheckNumber(int_arr_3, "0, 1, 0", 10);
+            CheckNumber(int_arr_3, "0, 1, 1", 11);
+            CheckNumber(int_arr_3, "0, 1, 2", 12);
+            CheckNumber(int_arr_3, "0, 2, 0", 20);
+            CheckNumber(int_arr_3, "0, 2, 1", 21);
+            CheckNumber(int_arr_3, "0, 2, 2", 22);
+            CheckNumber(int_arr_3, "1, 0, 0", 100);
+            CheckNumber(int_arr_3, "1, 0, 1", 101);
+            CheckNumber(int_arr_3, "1, 0, 2", 102);
+            CheckNumber(int_arr_3, "1, 1, 0", 110);
+            CheckNumber(int_arr_3, "1, 1, 1", 111);
+            CheckNumber(int_arr_3, "1, 1, 2", 112);
+            CheckNumber(int_arr_3, "1, 2, 0", 120);
+            CheckNumber(int_arr_3, "1, 2, 1", 121);
+            CheckNumber(int_arr_3, "1, 2, 2", 122);
+        }
     }
 }

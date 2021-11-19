@@ -320,22 +320,26 @@ namespace System.Diagnostics
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value) => _stringBuilderHandler.AppendFormatted(value);
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, string? format) => _stringBuilderHandler.AppendFormatted(value, format);
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, int alignment) => _stringBuilderHandler.AppendFormatted(value, alignment);
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, int alignment, string? format) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
 
             /// <summary>Writes the specified character span to the handler.</summary>
@@ -411,22 +415,26 @@ namespace System.Diagnostics
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value) => _stringBuilderHandler.AppendFormatted(value);
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, string? format) => _stringBuilderHandler.AppendFormatted(value, format);
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, int alignment) => _stringBuilderHandler.AppendFormatted(value, alignment);
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, int alignment, string? format) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
 
             /// <summary>Writes the specified character span to the handler.</summary>

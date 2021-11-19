@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -144,9 +145,6 @@ namespace System.Text.Json.Serialization
         /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-#if NET6_0_OR_GREATER
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             if (ConverterStrategy == ConverterStrategy.Value)
@@ -320,9 +318,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         private static bool IsNull(T value) => value is null;
 
-#if NET6_0_OR_GREATER
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
         internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
@@ -504,7 +499,10 @@ namespace System.Text.Json.Serialization
                 return TryWrite(writer, value, options, ref state);
             }
 
-            if (this is not JsonDictionaryConverter<T> dictionaryConverter)
+            JsonDictionaryConverter<T>? dictionaryConverter = this as JsonDictionaryConverter<T>
+                ?? (this as JsonMetadataServicesConverter<T>)?.Converter as JsonDictionaryConverter<T>;
+
+            if (dictionaryConverter == null)
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.

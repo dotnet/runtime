@@ -7,7 +7,7 @@
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />
+    <Compile Include="System\Threading\StackHelper.cs" />
     <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Capture.cs" />
     <Compile Include="System\Text\RegularExpressions\CaptureCollection.cs" />
@@ -18,15 +18,17 @@
     <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Debug.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexAssemblyCompiler.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexBoyerMoore.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexFindOptimizations.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexGeneratorAttribute.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexInterpreter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexNode.cs" />
@@ -41,16 +43,56 @@
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
     <Compile Include="System\Text\RegularExpressions\ThrowHelper.cs" />
-    <!-- Files that enable compiled feature -->
+    <!-- RegexOptions.Compiled -->
     <Compile Include="System\Text\RegularExpressions\CompiledRegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\CompiledRegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompiler.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexLWCGCompiler.cs" />
+    <!-- RegexOptions.NonBacktracking -->
+    <Compile Include="System\Text\RegularExpressions\Symbolic\BooleanClassifier.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\CharKind.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\MintermClassifier.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\RegexNodeToSymbolicConverter.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicMatch.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicNFA.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexBuilder.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexNode.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexKind.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexInfo.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexRunnerFactory.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexSampler.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexSet.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegex.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegexKind.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\BDD.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\BDDAlgebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\BDDRangeConverter.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\BV.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\BV64Algebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\BVAlgebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\CharSetSolver.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\IBooleanAlgebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\ICharAlgebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Algebras\MintermGenerator.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Dgml\DgmlWriter.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Dgml\IAutomaton.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Dgml\Move.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Dgml\RegexAutomaton.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\GeneratorHelper.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\IgnoreCaseRelation.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\IgnoreCaseRelationGenerator.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\IgnoreCaseTransformer.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryRanges.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryRangesGenerator.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryTheory.cs" />
     <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
+    <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
@@ -58,11 +100,15 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
-    <!-- References required for compiled feature -->
+    <!-- References required for RegexOptions.Compiled -->
     <Reference Include="System.Reflection.Emit" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
+
+    <!-- Adding the source generator as an analyzer reference -->
+    <AnalyzerReference Include="..\gen\System.Text.RegularExpressions.Generator.csproj" />
   </ItemGroup>
 </Project>

@@ -437,7 +437,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitDebugTrashReg(X86Reg reg);
 #endif
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
         virtual VOID EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel);
         virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
@@ -684,13 +684,6 @@ struct FixupPrecode {
 
         return *dac_cast<PTR_BYTE>(addr) == X86_INSTR_JMP_REL32;
     }
-
-#ifdef FEATURE_PREJIT
-    // Partial initialization. Used to save regrouped chunks.
-    void InitForSave(int iPrecodeChunkIndex);
-
-    void Fixup(DataImage *image, MethodDesc * pMD);
-#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

@@ -119,7 +119,7 @@ namespace Internal.IL.Stubs
                         .MakeInstantiatedType(nullableType);
                 }
             }
-            else if (flavor == "EqualityComparer" && type.IsEnum)
+            else if (type.IsEnum)
             {
                 // Enums have a specialized comparer that avoids boxing
                 return context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")

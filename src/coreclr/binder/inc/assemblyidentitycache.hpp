@@ -16,7 +16,6 @@
 
 #include "bindertypes.hpp"
 #include "assemblyidentity.hpp"
-#include "utils.hpp"
 #include "sstring.h"
 #include "shash.h"
 

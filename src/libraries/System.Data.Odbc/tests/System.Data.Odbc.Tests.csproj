@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TargetsWindows</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true' or $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);TargetsWindows</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DependencyCheckTest.cs" />
@@ -31,15 +34,15 @@
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs"
              Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="ConnectionStrings.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <Compile Include="ConnectionStrings.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="..\src\System.Data.Odbc.csproj" />
   </ItemGroup>
 </Project>

@@ -46,5 +46,11 @@
     <UnofficialBuildRID Include="tizen.5.0.0-armel">
       <Platform>armel</Platform>
     </UnofficialBuildRID>
+    <UnofficialBuildRID Include="linux-s390x">
+      <Platform>s390x</Platform>
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="linux-musl-s390x">
+      <Platform>s390x</Platform>
+    </UnofficialBuildRID>
   </ItemGroup>
 </Project>

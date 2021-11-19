@@ -27,8 +27,6 @@
 
 #include "holder.h"
 
-#include "clrprivbinding.h"
-
 #ifdef FEATURE_COMINTEROP
 #include "activation.h" // WinRT activation.
 #endif

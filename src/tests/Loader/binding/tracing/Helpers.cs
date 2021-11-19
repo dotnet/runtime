@@ -9,7 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
-using TestLibrary;
+using Xunit;
 
 namespace BinderTracingTests
 {
@@ -18,14 +18,14 @@ namespace BinderTracingTests
         public static void ValidateBindOperation(BindOperation expected, BindOperation actual)
         {
             ValidateAssemblyName(expected.AssemblyName, actual.AssemblyName, nameof(BindOperation.AssemblyName));
-            Assert.AreEqual(expected.AssemblyPath ?? string.Empty, actual.AssemblyPath, $"Unexpected value for {nameof(BindOperation.AssemblyPath)} on event");
-            Assert.AreEqual(expected.AssemblyLoadContext, actual.AssemblyLoadContext, $"Unexpected value for {nameof(BindOperation.AssemblyLoadContext)} on event");
-            Assert.AreEqual(expected.RequestingAssemblyLoadContext ?? string.Empty, actual.RequestingAssemblyLoadContext, $"Unexpected value for {nameof(BindOperation.RequestingAssemblyLoadContext)} on event");
+            Assert.Equal(expected.AssemblyPath ?? string.Empty, actual.AssemblyPath);
+            Assert.Equal(expected.AssemblyLoadContext, actual.AssemblyLoadContext);
+            Assert.Equal(expected.RequestingAssemblyLoadContext ?? string.Empty, actual.RequestingAssemblyLoadContext);
             ValidateAssemblyName(expected.RequestingAssembly, actual.RequestingAssembly, nameof(BindOperation.RequestingAssembly));
 
-            Assert.AreEqual(expected.Success, actual.Success, $"Unexpected value for {nameof(BindOperation.Success)} on event");
-            Assert.AreEqual(expected.ResultAssemblyPath ?? string.Empty, actual.ResultAssemblyPath, $"Unexpected value for {nameof(BindOperation.ResultAssemblyPath)} on event");
-            Assert.AreEqual(expected.Cached, actual.Cached, $"Unexpected value for {nameof(BindOperation.Cached)} on event");
+            Assert.Equal(expected.Success, actual.Success);
+            Assert.Equal(expected.ResultAssemblyPath ?? string.Empty, actual.ResultAssemblyPath);
+            Assert.Equal(expected.Cached, actual.Cached);
             ValidateAssemblyName(expected.ResultAssemblyName, actual.ResultAssemblyName, nameof(BindOperation.ResultAssemblyName));
 
             ValidateResolutionAttempts(expected.ResolutionAttempts, actual.ResolutionAttempts);
@@ -75,8 +75,6 @@ namespace BinderTracingTests
             string extension = isExe ? "exe" : "dll";
             switch (pathSource)
             {
-                case ProbedPath.PathSource.AppNativeImagePaths:
-                    return Path.Combine(baseDirectory, $"{assemblyName}.ni.{extension}");
                 case ProbedPath.PathSource.AppPaths:
                 case ProbedPath.PathSource.SatelliteSubdirectory:
                     return Path.Combine(baseDirectory, $"{assemblyName}.{extension}");
@@ -103,14 +101,13 @@ namespace BinderTracingTests
 
         private static void ValidateAssemblyName(AssemblyName expected, AssemblyName actual, string propertyName)
         {
-            Assert.IsTrue(AssemblyNamesMatch(expected, actual), $"Unexpected value for {propertyName} on event - expected: {expected}, actual: {actual}");
+            Assert.True(AssemblyNamesMatch(expected, actual), $"Unexpected value for {propertyName} on event - expected: {expected}, actual: {actual}");
         }
 
         private static void ValidateResolutionAttempts(List<ResolutionAttempt> expected, List<ResolutionAttempt> actual)
         {
             if (expected.Count > 0)
-                Assert.AreEqual(expected.Count, actual.Count,
-                    $"Unexpected resolution attempt count. Actual events:{Environment.NewLine}{string.Join(Environment.NewLine, actual.Select(a => a.ToString()))}");
+                Assert.Equal(expected.Count, actual.Count);
 
             for (var i = 0; i < expected.Count; i++)
             {
@@ -119,18 +116,18 @@ namespace BinderTracingTests
 
                 string expectedActualMessage = $"{Environment.NewLine}Expected resolution attempt:{Environment.NewLine}{e.ToString()}{Environment.NewLine}Actual resolution attempt:{Environment.NewLine}{a.ToString()}";
                 ValidateAssemblyName(e.AssemblyName, a.AssemblyName, nameof(ResolutionAttempt.AssemblyName));
-                Assert.AreEqual(e.Stage, a.Stage, $"Unexpected value for {nameof(ResolutionAttempt.Stage)} {expectedActualMessage}");
-                Assert.AreEqual(e.AssemblyLoadContext, a.AssemblyLoadContext, $"Unexpected value for {nameof(ResolutionAttempt.AssemblyLoadContext)} {expectedActualMessage}");
-                Assert.AreEqual(e.Result, a.Result, $"Unexpected value for {nameof(ResolutionAttempt.Result)} {expectedActualMessage}");
+                Assert.Equal(e.Stage, a.Stage);
+                Assert.Equal(e.AssemblyLoadContext, a.AssemblyLoadContext);
+                Assert.Equal(e.Result, a.Result);
                 ValidateAssemblyName(e.ResultAssemblyName, a.ResultAssemblyName, nameof(ResolutionAttempt.ResultAssemblyName));
-                Assert.AreEqual(e.ResultAssemblyPath ?? string.Empty, a.ResultAssemblyPath, $"Unexpected value for {nameof(ResolutionAttempt.ResultAssemblyPath)} {expectedActualMessage}");
-                Assert.AreEqual(e.ErrorMessage ?? string.Empty, a.ErrorMessage, $"Unexpected value for {nameof(ResolutionAttempt.ErrorMessage)} {expectedActualMessage}");
+                Assert.Equal(e.ResultAssemblyPath ?? string.Empty, a.ResultAssemblyPath);
+                Assert.Equal(e.ErrorMessage ?? string.Empty, a.ErrorMessage);
             }
         }
 
         private static void ValidateHandlerInvocations(List<HandlerInvocation> expected, List<HandlerInvocation> actual, string eventName)
         {
-            Assert.AreEqual(expected.Count, actual.Count, $"Unexpected handler invocation count for {eventName}");
+            Assert.Equal(expected.Count, actual.Count);
 
             foreach (var match in expected)
             {
@@ -140,7 +137,7 @@ namespace BinderTracingTests
                         && h.AssemblyLoadContext == match.AssemblyLoadContext
                         && AssemblyNamesMatch(h.ResultAssemblyName, match.ResultAssemblyName)
                         && (h.ResultAssemblyPath == match.ResultAssemblyPath || h.ResultAssemblyPath == "NULL" && match.ResultAssemblyPath == null);
-                Assert.IsTrue(actual.Exists(pred), $"Handler invocation not found: {match.ToString()}");
+                Assert.True(actual.Exists(pred), $"Handler invocation not found: {match.ToString()}");
             }
         }
 
@@ -148,22 +145,22 @@ namespace BinderTracingTests
         {
             if (expected == null || actual == null)
             {
-                Assert.IsNull(expected);
-                Assert.IsNull(actual);
+                Assert.Null(expected);
+                Assert.Null(actual);
                 return;
             }
 
             ValidateAssemblyName(expected.AssemblyName, actual.AssemblyName, nameof(LoadFromHandlerInvocation.AssemblyName));
-            Assert.AreEqual(expected.IsTrackedLoad, actual.IsTrackedLoad, $"Unexpected value for {nameof(LoadFromHandlerInvocation.IsTrackedLoad)} on event");
-            Assert.AreEqual(expected.RequestingAssemblyPath, actual.RequestingAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.RequestingAssemblyPath)} on event");
+            Assert.Equal(expected.IsTrackedLoad, actual.IsTrackedLoad);
+            Assert.Equal(expected.RequestingAssemblyPath, actual.RequestingAssemblyPath);
 
             if (expected.ComputedRequestedAssemblyPath == null)
             {
-                Assert.AreEqual("NULL", actual.ComputedRequestedAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.ComputedRequestedAssemblyPath)} on event");
+                Assert.Equal("NULL", actual.ComputedRequestedAssemblyPath);
             }
             else
             {
-                Assert.AreEqual(expected.ComputedRequestedAssemblyPath, actual.ComputedRequestedAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.ComputedRequestedAssemblyPath)} on event");
+                Assert.Equal(expected.ComputedRequestedAssemblyPath, actual.ComputedRequestedAssemblyPath);
             }
         }
 
@@ -174,7 +171,7 @@ namespace BinderTracingTests
                 Predicate<ProbedPath> pred = p => p.FilePath == match.FilePath
                     && p.Source == match.Source
                     && p.Result == match.Result;
-                Assert.IsTrue(actual.Exists(pred), $"Probed path not found: {match.ToString()}");
+                Assert.True(actual.Exists(pred), $"Probed path not found: {match.ToString()}");
             }
         }
 
@@ -184,7 +181,7 @@ namespace BinderTracingTests
             {
                 ValidateBindOperation(bind1, bind2);
             }
-            catch (AssertTestException e)
+            catch (Xunit.Sdk.XunitException e)
             {
                 return false;
             }
@@ -197,7 +194,7 @@ namespace BinderTracingTests
             foreach (var match in expected)
             {
                 Predicate<BindOperation> pred = b => BindOperationsMatch(match, b);
-                Assert.IsTrue(actual.Exists(pred), $"Nested bind operation not found: {match.ToString()}");
+                Assert.True(actual.Exists(pred), $"Nested bind operation not found: {match.ToString()}");
             }
         }
     }

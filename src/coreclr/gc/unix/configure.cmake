@@ -18,8 +18,13 @@ check_cxx_source_compiles("
     }
     " HAVE_PTHREAD_THREADID_NP)
 
+if(HAVE_PTHREAD_NP_H)
+  set(PTHREAD_NP_H_INCLUDE "#include <pthread_np.h>")
+endif()
+
 check_cxx_source_compiles("
     #include <pthread.h>
+    ${PTHREAD_NP_H_INCLUDE}
     #include <stdint.h>
 
     int main()
@@ -69,22 +74,28 @@ check_cxx_source_runs("
     }
     " HAVE_SCHED_GETCPU)
 
-check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
-
 check_symbol_exists(
     clock_gettime_nsec_np
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
+check_symbol_exists(
+    posix_madvise
+    sys/mman.h
+    HAVE_POSIX_MADVISE)
+
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
 check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
+check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
 
 if (HAVE_LIBPTHREAD)
   set(PTHREAD_LIBRARY pthread)
 elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
+
+check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_library_exists(${PTHREAD_LIBRARY} pthread_setaffinity_np "" HAVE_PTHREAD_SETAFFINITY_NP)
 

@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EncoderFallbackBufferHelper.cs" />
     <Compile Include="EncodingCodePages.cs" />
-    <Compile Include="EncodingCodePages.netcoreapp.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="EncodingCodePages.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Text.Encoding.CodePages.csproj" />
   </ItemGroup>
 </Project>

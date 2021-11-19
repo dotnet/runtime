@@ -219,7 +219,7 @@ namespace ILCompiler
             EcmaModule singleModule = _compilationGroup.IsCompositeBuildMode ? null : inputModules.First();
             CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(singleModule);
             // TODO: proper support for multiple input files
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile);
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile, _generatePdbFile, _generatePerfMapFile);
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files

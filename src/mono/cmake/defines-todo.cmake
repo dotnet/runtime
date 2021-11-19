@@ -4,7 +4,6 @@
 
 #option (MAJOR_IN_MKDEV "Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.")
 #option (MAJOR_IN_SYSMACROS "Define to 1 if `major', `minor', and `makedev' are declared in <sysmacros.h>.")
-#option (STRERROR_R_CHAR_P "Define to 1 if strerror_r returns char *.")
 #option (HAVE_LIBICONV "Define to 1 if you have the `iconv' library (-liconv).")
 #option (ANDROID_UNIFIED_HEADERS "Whether Android NDK unified headers are used")
 #option (MONO_DL_NEED_USCORE "Does dlsym require leading underscore.")
@@ -91,9 +90,7 @@
 #option (ENABLE_CHECKED_BUILD_METADATA "Enable metadata checked build")
 #option (ENABLE_CHECKED_BUILD_THREAD "Enable thread checked build")
 #option (ENABLE_CHECKED_BUILD_PRIVATE_TYPES "Enable private types checked build")
-#option (ENABLE_CHECKED_BUILD_CRASH_REPORTING "Enable private types checked build")
 #option (HAVE_BTLS "BoringTls is supported")
 #option (ENABLE_JIT_DUMP "Enable jit dump support on Linux")
-#option (DISABLE_CRASH_REPORTING)
 #option (ENABLE_CXX)
 #option (STATIC_ICU)

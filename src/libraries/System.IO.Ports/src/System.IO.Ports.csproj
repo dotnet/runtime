@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netstandard2.0-windows;netstandard2.0-Unix;netstandard2.0;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-Unix;$(NetCoreAppMinimum);netstandard2.0-windows;netstandard2.0-Unix;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes for controlling serial ports.
 
@@ -90,6 +90,8 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs"
              Link="Common\Interop\Windows\Interop.FileTypes.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" 
+             Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="Common\System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"
@@ -136,15 +138,17 @@ System.IO.Ports.SerialPort</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="Microsoft.Win32.Registry" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Reference Include="Microsoft.Win32.Registry" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
+    <Reference Include="System.Collections.Concurrent" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Sockets" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
+    <Reference Include="System.Net.Sockets" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" Condition="'$(TargetsUnix)' == 'true'" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />

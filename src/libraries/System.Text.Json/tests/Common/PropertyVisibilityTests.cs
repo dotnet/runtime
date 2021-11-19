@@ -242,6 +242,24 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task Ignore_VerifyNoReferenceToGetterAndSetter()
+        {
+            // Serialize
+            var obj = new ClassWithObsoleteAndIgnoredProperty();
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialize
+            json = @"{""MyString_Obsolete"":""NewValue""}";
+            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithObsoleteAndIgnoredProperty>(json);
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            Assert.Equal("DefaultValue", obj.MyString_Obsolete);
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        [Fact]
         public async Task Ignore_PublicProperty_ConflictWithPrivateDueAttributes()
         {
             // Serialize
@@ -780,6 +798,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonIgnore]
             public string MyString { get; set; } = "DefaultValue";
+        }
+
+        public class ClassWithObsoleteAndIgnoredProperty
+        {
+            [Obsolete("Src gen should not generate reference to getter or setter")]
+            [JsonIgnore]
+            public string MyString_Obsolete { get; set; } = "DefaultValue";
         }
 
         public class ClassWithIgnoredPublicPropertyAndNewSlotPrivate : ClassWithIgnoredPublicProperty
@@ -2627,6 +2652,170 @@ namespace System.Text.Json.Serialization.Tests
             obj = new MyClassWithValueTypeInterfaceProperty { MyProp = new MyClassWithValueTypeInterfaceProperty.MyStruct() };
             json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Equal("{\"MyProp\":{}}", json);
+        }
+
+        public class ConcreteDerivedClass : AbstractBaseClass
+        {
+            // Ignored including on base class:
+            [JsonIgnore] public override int Abstract_Ignored_Property { get; set; }
+            [JsonIgnore] public override int Virtual_Ignored_Property { get; set; }
+
+            // Ignored but not specified on base class:
+            [JsonIgnore] public override int Abstract_IgnoredOnConcrete_Property { get; set; }
+            [JsonIgnore] public override int Virtual_IgnoredOnConcrete_Property { get; set; }
+
+            // Ignored specified on base class:
+            [JsonPropertyOrder(1)] public override int Abstract_IgnoredOnBase_Property { get; set; }
+            [JsonPropertyOrder(2)] public override int Virtual_IgnoredOnBase_Property { get; set; }
+
+            // Standard overrides (not ignored):
+            [JsonPropertyOrder(3)] public override int Abstract_Property { get; set; }
+            [JsonPropertyOrder(4)] public override int Virtual_Property { get; set; }
+        }
+
+        public abstract class AbstractBaseClass
+        {
+            [JsonIgnore] public abstract int Abstract_Ignored_Property { get; set; }
+            [JsonIgnore] public virtual int Virtual_Ignored_Property { get; set; }
+
+            public abstract int Abstract_IgnoredOnConcrete_Property { get; set; }
+            public virtual int Virtual_IgnoredOnConcrete_Property { get; set; }
+
+            [JsonIgnore] public abstract int Abstract_IgnoredOnBase_Property { get; set; }
+            [JsonIgnore] public virtual int Virtual_IgnoredOnBase_Property { get; set; }
+
+            public abstract int Abstract_Property { get; set; }
+            public virtual int Virtual_Property { get; set; }
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_Polymorphic()
+        {
+            ConcreteDerivedClass obj = new()
+            {
+                Abstract_Ignored_Property = -1,
+                Virtual_Ignored_Property = -1,
+                Abstract_IgnoredOnConcrete_Property = -1,
+                Virtual_IgnoredOnConcrete_Property = -1,
+                Abstract_IgnoredOnBase_Property = 1,
+                Virtual_IgnoredOnBase_Property = 2,
+                Abstract_Property = 3,
+                Virtual_Property = 4,
+            };
+
+            // Verify properties work as expected.
+            Assert.Equal(-1, obj.Abstract_Ignored_Property);
+            Assert.Equal(-1, obj.Virtual_Ignored_Property);
+            Assert.Equal(-1, obj.Abstract_IgnoredOnConcrete_Property);
+            Assert.Equal(-1, obj.Virtual_IgnoredOnConcrete_Property);
+            Assert.Equal(1, obj.Abstract_IgnoredOnBase_Property);
+            Assert.Equal(2, obj.Virtual_IgnoredOnBase_Property);
+            Assert.Equal(3, obj.Abstract_Property);
+            Assert.Equal(4, obj.Virtual_Property);
+
+            const string ExpectedJson = "{" +
+                "\"Abstract_IgnoredOnBase_Property\":1," +
+                "\"Virtual_IgnoredOnBase_Property\":2," +
+                "\"Abstract_Property\":3," +
+                "\"Virtual_Property\":4}";
+
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            Assert.Equal(ExpectedJson, json);
+
+            const string Json = "{" +
+                "\"Abstract_Ignored_Property\":-1," +
+                "\"Virtual_Ignored_Property\":-1," +
+                "\"Abstract_IgnoredOnConcrete_Property\":-1," +
+                "\"Virtual_IgnoredOnConcrete_Property\":-1," +
+                "\"Abstract_IgnoredOnBase_Property\":1," +
+                "\"Virtual_IgnoredOnBase_Property\":2," +
+                "\"Abstract_Property\":3," +
+                "\"Virtual_Property\":4}";
+
+            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ConcreteDerivedClass>(Json);
+            Assert.Equal(0, obj.Abstract_Ignored_Property);
+            Assert.Equal(0, obj.Virtual_Ignored_Property);
+            Assert.Equal(0, obj.Abstract_IgnoredOnConcrete_Property);
+            Assert.Equal(0, obj.Virtual_IgnoredOnConcrete_Property);
+            Assert.Equal(1, obj.Abstract_IgnoredOnBase_Property);
+            Assert.Equal(2, obj.Virtual_IgnoredOnBase_Property);
+            Assert.Equal(3, obj.Abstract_Property);
+            Assert.Equal(4, obj.Virtual_Property);
+        }
+
+        [Fact]
+        public async Task SerializationMetadataNotComputedWhenMemberIgnored()
+        {
+            string janePayload = @"{""Name"":""Jane Doe""}";
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+            // Without [JsonIgnore], serializer throws exceptions due to runtime-reflection-based property metadata inspection.
+            await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_RefStringProp()));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_RefStringProp>("{}"));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_PropWith_BadConverter()));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_PropWith_BadConverter>("{}"));
+#else
+            // Ref returns supported in source-gen mode
+            string expected = @"{""NameRef"":""John Doe"",""Name"":""John Doe""}";
+            JsonTestHelper.AssertJsonEqual(expected, await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_RefStringProp()));
+
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_RefStringProp>(janePayload);
+            Assert.Equal("Jane Doe", obj.Name);
+            Assert.Equal("Jane Doe", obj.NameRef);
+
+            var obj2 = new TypeWith_PropWith_BadConverter();
+            obj2.Property = "Hello";
+
+            // Invalid converter specified, fallback to built-in converter. This should be corrected.
+            // https://github.com/dotnet/runtime/issues/60020.
+
+            Assert.Equal(@"{""Property"":""Hello""}", await JsonSerializerWrapperForString.SerializeWrapper(obj2));
+
+            obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_PropWith_BadConverter>(@"{""Property"":""World""}");
+            Assert.Equal("World", obj2.Property);
+#endif
+
+            // With [JsonIgnore], serializer skips property metadata inspection
+            Assert.Equal(@"{""Name"":""John Doe""}", await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_IgnoredRefStringProp()));
+            Assert.Equal("Jane Doe", (await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_IgnoredRefStringProp>(janePayload)).Name);
+
+            Assert.Equal("{}", await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_IgnoredPropWith_BadConverter()));
+            Assert.Null((await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_IgnoredPropWith_BadConverter>("{}")).Property);
+        }
+
+        internal class TypeWith_RefStringProp
+        {
+            public ref string NameRef => ref Name;
+
+            [JsonInclude] // This is a field.
+            public string Name = "John Doe";
+        }
+
+        internal class TypeWith_IgnoredRefStringProp
+        {
+            [JsonIgnore]
+            public ref string NameRef => ref Name;
+
+            [JsonInclude] // This is a field.
+            public string Name = "John Doe";
+        }
+
+        public class TypeWith_PropWith_BadConverter
+        {
+            [JsonConverter(typeof(BadConverter))]
+            public string? Property { get; set; }
+        }
+
+        public class TypeWith_IgnoredPropWith_BadConverter
+        {
+            [JsonIgnore]
+            [JsonConverter(typeof(BadConverter))]
+            public string? Property { get; set; }
+        }
+
+        public class BadConverter
+        {
         }
     }
 }

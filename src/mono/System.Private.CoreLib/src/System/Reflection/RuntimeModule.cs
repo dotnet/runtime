@@ -312,7 +312,7 @@ namespace System.Reflection
             if (handle == IntPtr.Zero)
                 throw resolve_token_exception(module, metadataToken, error, "Type");
             else
-                return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle));
+                return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle))!;
         }
 
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]

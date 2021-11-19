@@ -695,11 +695,13 @@ namespace System.Net.Security
                 _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
             }
 
+            Debug.Assert(_sslAuthenticationOptions.CertificateContext != null);
             //
             // Note selectedCert is a safe ref possibly cloned from the user passed Cert object
             //
             byte[] guessedThumbPrint = selectedCert.GetCertHash();
-            SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
+            bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
+            SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy, sendTrustedList);
 
             if (cachedCredentialHandle != null)
             {
@@ -763,6 +765,7 @@ namespace System.Net.Security
             byte[]? result = Array.Empty<byte>();
             SecurityStatusPal status = default;
             bool cachedCreds = false;
+            bool sendTrustList = false;
             byte[]? thumbPrint = null;
 
             //
@@ -779,6 +782,11 @@ namespace System.Net.Security
                         cachedCreds = _sslAuthenticationOptions.IsServer
                                         ? AcquireServerCredentials(ref thumbPrint)
                                         : AcquireClientCredentials(ref thumbPrint);
+
+                        if (cachedCreds && _sslAuthenticationOptions.IsServer)
+                        {
+                            sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
+                        }
                     }
 
                     if (_sslAuthenticationOptions.IsServer)
@@ -820,7 +828,7 @@ namespace System.Net.Security
                     //
                     if (!cachedCreds && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
                     {
-                        SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
+                        SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy, sendTrustList);
                     }
                 }
             }
@@ -937,7 +945,7 @@ namespace System.Net.Security
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, out remoteCertificateStore);
 
                 if (_remoteCertificate != null && certificate != null &&
-                    certificate.RawData.AsSpan().SequenceEqual(_remoteCertificate.RawData))
+                    certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
                     // This is renegotiation or TLS 1.3 and the certificate did not change.
                     // There is no reason to process callback again as we already established trust.

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Xunit;
 
@@ -232,6 +231,12 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(1, count);
             Assert.Equal(2, provider.RegistrationCalls);
             Assert.Equal(2, provider.DisposeCalls);
+        }
+
+        [Fact]
+        public void NullTokenDisposeShouldNotThrow()
+        {
+            ChangeToken.OnChange(() => null, () => Assert.True(false)).Dispose();
         }
 
         public class TrackableChangeTokenProvider

@@ -17,6 +17,7 @@
 .assembly lcs// as "lcs"
 {
 }
+.assembly extern xunit.core {}
 .module lcs.exe
 .namespace JitTest
 {
@@ -588,6 +589,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  5
       .locals (string[] V_0,

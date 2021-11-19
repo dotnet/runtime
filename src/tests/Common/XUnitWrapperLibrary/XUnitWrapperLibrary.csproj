@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateRunScript>false</GenerateRunScript>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

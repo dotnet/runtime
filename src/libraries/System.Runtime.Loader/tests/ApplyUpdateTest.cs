@@ -94,6 +94,26 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        void FirstCallAfterUpdate()
+        {
+            /* Tests that updating a method that has not been called before works correctly and that
+             * the JIT/interpreter doesn't have to rely on cached baseline data. */
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.FirstCallAfterUpdate).Assembly;
+
+                var o = new ApplyUpdate.Test.FirstCallAfterUpdate ();
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                string r = o.Method1("NEW");
+
+                Assert.Equal("NEWEST STRING", r);
+            });
+        }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]

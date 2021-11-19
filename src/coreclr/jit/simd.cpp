@@ -107,6 +107,34 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
 #endif
 }
 
+//------------------------------------------------------------------------
+// Get, and allocate if necessary, the SIMD temp used for various operations.
+// The temp is allocated as the maximum sized type of all operations required.
+//
+// Arguments:
+//    simdType - Required SIMD type
+//
+// Returns:
+//    The temp number
+//
+unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
+{
+    if (lvaSIMDInitTempVarNum == BAD_VAR_NUM)
+    {
+        JITDUMP("Allocating SIMDInitTempVar as %s\n", varTypeName(simdType));
+        lvaSIMDInitTempVarNum                  = lvaGrabTempWithImplicitUse(false DEBUGARG("SIMDInitTempVar"));
+        lvaTable[lvaSIMDInitTempVarNum].lvType = simdType;
+    }
+    else if (genTypeSize(lvaTable[lvaSIMDInitTempVarNum].lvType) < genTypeSize(simdType))
+    {
+        // We want the largest required type size for the temp.
+        JITDUMP("Increasing SIMDInitTempVar type size from %s to %s\n",
+                varTypeName(lvaTable[lvaSIMDInitTempVarNum].lvType), varTypeName(simdType));
+        lvaTable[lvaSIMDInitTempVarNum].lvType = simdType;
+    }
+    return lvaSIMDInitTempVarNum;
+}
+
 //----------------------------------------------------------------------------------
 // Return the base type and size of SIMD vector type given its type handle.
 //
@@ -1176,9 +1204,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt32:
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicNarrow:
-        case SIMDIntrinsicWidenHi:
-        case SIMDIntrinsicWidenLo:
             return true;
 
         default:
@@ -1527,8 +1552,8 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
     assert(op1->OperGet() == GT_FIELD);
     assert(op2->OperGet() == GT_FIELD);
 
-    GenTree* op1ObjRef = op1->AsField()->gtFldObj;
-    GenTree* op2ObjRef = op2->AsField()->gtFldObj;
+    GenTree* op1ObjRef = op1->AsField()->GetFldObj();
+    GenTree* op2ObjRef = op2->AsField()->GetFldObj();
     while (op1ObjRef != nullptr && op2ObjRef != nullptr)
     {
 
@@ -1550,8 +1575,8 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
         else if (op1ObjRef->OperGet() == GT_FIELD && op2ObjRef->OperGet() == GT_FIELD &&
                  op1ObjRef->AsField()->gtFldHnd == op2ObjRef->AsField()->gtFldHnd)
         {
-            op1ObjRef = op1ObjRef->AsField()->gtFldObj;
-            op2ObjRef = op2ObjRef->AsField()->gtFldObj;
+            op1ObjRef = op1ObjRef->AsField()->GetFldObj();
+            op2ObjRef = op2ObjRef->AsField()->GetFldObj();
             continue;
         }
         else
@@ -1712,7 +1737,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
 
     if (tree->OperGet() == GT_FIELD)
     {
-        GenTree* objRef = tree->AsField()->gtFldObj;
+        GenTree* objRef = tree->AsField()->GetFldObj();
         if (objRef != nullptr && objRef->gtOper == GT_ADDR)
         {
             GenTree* obj = objRef->AsOp()->gtOp1;
@@ -1734,7 +1759,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
             }
         }
 
-        byrefNode = gtCloneExpr(tree->AsField()->gtFldObj);
+        byrefNode = gtCloneExpr(tree->AsField()->GetFldObj());
         assert(byrefNode != nullptr);
         offset = tree->AsField()->gtFldOffset;
     }
@@ -1757,7 +1782,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         checkIndexExpr               = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, indexVal + arrayElementsCount - 1);
         GenTreeArrLen*    arrLen     = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
         GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
-            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, SCK_RNGCHK_FAIL);
+            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
 
         offset += OFFSETOF__CORINFO_Array__data;
         byrefNode = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
@@ -1826,7 +1851,7 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 
                     if (curDst->OperGet() == GT_FIELD)
                     {
-                        GenTree* objRef = curDst->AsField()->gtFldObj;
+                        GenTree* objRef = curDst->AsField()->GetFldObj();
                         if (objRef != nullptr && objRef->gtOper == GT_ADDR)
                         {
                             GenTree* obj = objRef->AsOp()->gtOp1;
@@ -2109,8 +2134,8 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             // 1. If we have an index, we must do a check on that first.
             //    We can't combine it with the index + vectorLength check because
             //    a. It might be negative, and b. It may need to raise a different exception
-            //    (captured as SCK_ARG_RNG_EXCPN for CopyTo and SCK_RNGCHK_FAIL for Init).
-            // 2. We need to generate a check (SCK_ARG_EXCPN for CopyTo and SCK_RNGCHK_FAIL for Init)
+            //    (captured as SCK_ARG_RNG_EXCPN for CopyTo and Init).
+            // 2. We need to generate a check (SCK_ARG_EXCPN for CopyTo and Init)
             //    for the last array element we will access.
             //    We'll either check against (vectorLength - 1) or (index + vectorLength - 1).
 
@@ -2151,16 +2176,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             if (op3 != nullptr)
             {
-                SpecialCodeKind op3CheckKind;
-                if (simdIntrinsicID == SIMDIntrinsicInitArrayX)
-                {
-                    op3CheckKind = SCK_RNGCHK_FAIL;
-                }
-                else
-                {
-                    assert(simdIntrinsicID == SIMDIntrinsicCopyToArrayX);
-                    op3CheckKind = SCK_ARG_RNG_EXCPN;
-                }
                 // We need to use the original expression on this, which is the first check.
                 GenTree* arrayRefForArgRngChk = arrayRefForArgChk;
                 // Then we clone the clone we just made for the next check.
@@ -2180,7 +2195,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 GenTreeArrLen* arrLen =
                     gtNewArrLen(TYP_INT, arrayRefForArgRngChk, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
                 argRngChk = new (this, GT_ARR_BOUNDS_CHECK)
-                    GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, op3CheckKind);
+                    GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, SCK_ARG_RNG_EXCPN);
                 // Now, clone op3 to create another node for the argChk
                 GenTree* index2 = gtCloneExpr(op3);
                 assert(index != nullptr);
@@ -2192,7 +2207,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             SpecialCodeKind op2CheckKind;
             if (simdIntrinsicID == SIMDIntrinsicInitArray || simdIntrinsicID == SIMDIntrinsicInitArrayX)
             {
-                op2CheckKind = SCK_RNGCHK_FAIL;
+                op2CheckKind = SCK_ARG_RNG_EXCPN;
             }
             else
             {
@@ -2338,50 +2353,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             JITDUMP("SIMD Conversion to Int64 is not supported on this platform\n");
             return nullptr;
 #endif
-        }
-        break;
-
-        case SIMDIntrinsicNarrow:
-        {
-            assert(!instMethod);
-            op2 = impSIMDPopStack(simdType);
-            op1 = impSIMDPopStack(simdType);
-            // op1 and op2 are two input Vector<T>.
-            simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, simdBaseJitType, size);
-            retVal   = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicWiden:
-        {
-            GenTree* dstAddrHi = impSIMDPopStack(TYP_BYREF);
-            GenTree* dstAddrLo = impSIMDPopStack(TYP_BYREF);
-            op1                = impSIMDPopStack(simdType);
-            // op1 must have a valid class handle; the following method will assert it.
-            CORINFO_CLASS_HANDLE op1Handle = gtGetStructHandle(op1);
-            GenTree*             dupOp1    = fgInsertCommaFormTemp(&op1, op1Handle);
-
-            // Widen the lower half and assign it to dstAddrLo.
-            simdTree = gtNewSIMDNode(simdType, op1, nullptr, SIMDIntrinsicWidenLo, simdBaseJitType, size);
-            // TODO-1stClassStructs: With the introduction of ClassLayout it would be preferrable to use
-            // GT_OBJ instead of GT_BLK nodes to avoid losing information about the actual vector type.
-            GenTree* loDest = new (this, GT_BLK)
-                GenTreeBlk(GT_BLK, simdType, dstAddrLo, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
-            GenTree* loAsg = gtNewBlkOpNode(loDest, simdTree,
-                                            false, // not volatile
-                                            true); // copyBlock
-            loAsg->gtFlags |= ((simdTree->gtFlags | dstAddrLo->gtFlags) & GTF_ALL_EFFECT);
-
-            // Widen the upper half and assign it to dstAddrHi.
-            simdTree        = gtNewSIMDNode(simdType, dupOp1, nullptr, SIMDIntrinsicWidenHi, simdBaseJitType, size);
-            GenTree* hiDest = new (this, GT_BLK)
-                GenTreeBlk(GT_BLK, simdType, dstAddrHi, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
-            GenTree* hiAsg = gtNewBlkOpNode(hiDest, simdTree,
-                                            false, // not volatile
-                                            true); // copyBlock
-            hiAsg->gtFlags |= ((simdTree->gtFlags | dstAddrHi->gtFlags) & GTF_ALL_EFFECT);
-
-            retVal = gtNewOperNode(GT_COMMA, simdType, loAsg, hiAsg);
         }
         break;
 

@@ -127,7 +127,6 @@ set(COREDAC_LIBRARIES
     ${END_WHOLE_ARCHIVE}
     dbgutil
     mdcompiler_dac
-    mdhotdata_dac
     mdruntime_dac
     mdruntimerw_dac
     utilcode_dac
@@ -204,9 +203,8 @@ if(CLR_CMAKE_HOST_WIN32)
     if (LONG_NAME_TARGET_ARCH STREQUAL x64)
         set(LONG_NAME_TARGET_ARCH "amd64")
     endif()
-    set(NATIVE_VERSION_HEADER_FILE "${CLR_DIR}/../../artifacts/obj/coreclr/_version.h")
-    message ("Read file version from native version header at '${NATIVE_VERSION_HEADER_FILE}'.")
-    file(READ "${NATIVE_VERSION_HEADER_FILE}" NATIVE_VERSION_HEADER)
+    message ("Read file version from native version header at '${VERSION_HEADER_PATH}'.")
+    file(READ "${VERSION_HEADER_PATH}" NATIVE_VERSION_HEADER)
     string(REGEX MATCH "#define VER_FILEVERSION[ \t]+[0-9]+(,[0-9]+)+" FILE_VERSION_LINE "${NATIVE_VERSION_HEADER}")
     string(REGEX MATCHALL "[0-9]+" FILE_VERSION_COMPONENTS "${FILE_VERSION_LINE}")
     list(JOIN FILE_VERSION_COMPONENTS "." FILE_VERSION)

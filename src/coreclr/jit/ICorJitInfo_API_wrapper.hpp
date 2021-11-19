@@ -1527,6 +1527,14 @@ bool WrapICorJitInfo::notifyInstructionSetUsage(
     return temp;
 }
 
+void WrapICorJitInfo::updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint)
+{
+    API_ENTER(updateEntryPointForTailCall);
+    wrapHnd->updateEntryPointForTailCall(entryPoint);
+    API_LEAVE(updateEntryPointForTailCall);
+}
+
 void WrapICorJitInfo::allocMem(
           AllocMemArgs* pArgs)
 {
@@ -1687,6 +1695,16 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
+    return temp;
+}
+
+bool WrapICorJitInfo::doesFieldBelongToClass(
+          CORINFO_FIELD_HANDLE fldHnd,
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(doesFieldBelongToClass);
+    bool temp = wrapHnd->doesFieldBelongToClass(fldHnd, cls);
+    API_LEAVE(doesFieldBelongToClass);
     return temp;
 }
 

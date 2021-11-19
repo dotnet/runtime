@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <SetIsTrimmable>false</SetIsTrimmable>
     <IsPackable>true</IsPackable>
@@ -201,7 +201,7 @@ System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices</Packa
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs"
              Link="Common\System\Composition\Diagnostics\TraceWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
-             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))" />
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="Microsoft.Win32.Primitives" />

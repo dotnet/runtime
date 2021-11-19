@@ -118,7 +118,7 @@ namespace BINDER_SPACE
         return RuntimeFileNotFound(hr);
     }
 
-    HRESULT GetNextPath(SString& paths, SString::Iterator& startPos, SString& outPath)
+    HRESULT GetNextPath(const SString& paths, SString::CIterator& startPos, SString& outPath)
     {
         HRESULT hr = S_OK;
 
@@ -140,8 +140,8 @@ namespace BINDER_SPACE
             wrappedWithQuotes = true;
         }
 
-        SString::Iterator iEnd = startPos;      // Where current path ends
-        SString::Iterator iNext;                // Where next path starts
+        SString::CIterator iEnd = startPos;      // Where current path ends
+        SString::CIterator iNext;                // Where next path starts
         if (wrappedWithQuotes)
         {
             if (paths.Find(iEnd, W('\"')))
@@ -186,7 +186,7 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT GetNextTPAPath(SString& paths, SString::Iterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage)
+    HRESULT GetNextTPAPath(const SString& paths, SString::CIterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage)
     {
         HRESULT hr = S_OK;
         isNativeImage = false;
@@ -198,16 +198,14 @@ namespace BINDER_SPACE
             return S_FALSE;
         }
 
-#ifndef CROSSGEN_COMPILE
         if (Path::IsRelative(outPath))
         {
             GO_WITH_HRESULT(E_INVALIDARG);
         }
-#endif
 
         {
             // Find the beginning of the simple name
-            SString::Iterator iSimpleNameStart = outPath.End();
+            SString::CIterator iSimpleNameStart = outPath.End();
 
             if (!outPath.FindBack(iSimpleNameStart, DIRECTORY_SEPARATOR_CHAR_W))
             {
@@ -224,11 +222,10 @@ namespace BINDER_SPACE
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
 
-            // GCC complains if we create SStrings inline as part of a function call
-            SString sNiDll(W(".ni.dll"));
-            SString sNiExe(W(".ni.exe"));
-            SString sDll(W(".dll"));
-            SString sExe(W(".exe"));
+            const SString sNiDll(SString::Literal, W(".ni.dll"));
+            const SString sNiExe(SString::Literal, W(".ni.exe"));
+            const SString sDll(SString::Literal, W(".dll"));
+            const SString sExe(SString::Literal, W(".exe"));
 
             if (!dllOnly && (outPath.EndsWithCaseInsensitive(sNiDll) ||
                 outPath.EndsWithCaseInsensitive(sNiExe)))

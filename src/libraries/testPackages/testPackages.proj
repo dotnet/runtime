@@ -67,6 +67,10 @@
          the repository retargets NetCoreAppCurrent to the next major version. -->
     <ItemGroup>
       <SupportedTestFramework Include="$(NetCoreAppCurrent)" />
+      <!-- TODO: Remove after the PackageTesting package in Arcade is updated. -->
+      <SupportedTestFramework Remove="netcoreapp3.1" />
+      <SupportedTestFramework Remove="net5.0" />
+      <SupportedTestFramework Remove="net461" />
     </ItemGroup>
 
     <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)"

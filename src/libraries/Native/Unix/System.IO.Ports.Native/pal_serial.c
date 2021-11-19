@@ -13,11 +13,6 @@
 #include <sys/socket.h>
 #include <pal_networking_common.h>
 
-// ENODATA is not defined in FreeBSD 10.3 but is defined in 11.0
-#if defined(__FreeBSD__) & !defined(ENODATA)
-#define ENODATA ENOATTR
-#endif
-
 /* Open device file in non-blocking mode and without controlling terminal */
 intptr_t SystemIoPortsNative_SerialPortOpen(const char * name)
 {

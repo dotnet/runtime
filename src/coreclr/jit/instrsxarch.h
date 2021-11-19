@@ -640,11 +640,11 @@ INST2(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,     
 INST2(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,                                              Writes_OF                                                                      | Writes_CF
                                                                                                                                                                                                         | Reads_CF      )
 INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              Undefined_OF                                                                   | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      ) 
+                                                                                                                                                                                                        | Reads_CF      )
 INST2(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF
                                                                                                                                                                                                         | Reads_CF      )
 INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              Writes_OF                                                                      | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )   
+                                                                                                                                                                                                        | Reads_CF      )
 INST2(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,                                              Undefined_OF                                                                   | Writes_CF
                                                                                                                                                                                                         | Reads_CF      )
 INST2(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
@@ -683,14 +683,15 @@ INST1(stosq,            "stosq",            IUM_RD, 0x00AB48,                   
 
 INST1(int3,             "int3",             IUM_RD, 0x0000CC,                                                            INS_FLAGS_None )
 INST1(nop,              "nop",              IUM_RD, 0x000090,                                                            INS_FLAGS_None )
+INST1(pause,            "pause",            IUM_RD, 0x0090F3,                                                            INS_FLAGS_None )
 INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None )
 INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None )
-
 
 INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
 INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_None )
 
-INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_None)
+INST1(cwde,             "cwde",             IUM_RD, 0x000098,                                                            INS_FLAGS_None )
+INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_None )
 INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
 INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
@@ -729,14 +730,11 @@ INST1(setge,            "setge",            IUM_WR, 0x0F009D,                   
 INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
 INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
 
-#ifdef TARGET_AMD64
-// A jump with rex prefix. This is used for register indirect
-// tail calls.
-INST1(rex_jmp,          "rex.jmp",          IUM_RD, 0x0020FE,                                                            INS_FLAGS_None)
-#endif
-
-INST1(i_jmp,            "jmp",              IUM_RD, 0x0020FE,                                                            INS_FLAGS_None )
-
+// Indirect jump used for tailcalls. We differentiate between func-internal
+// indirect jump (e.g. used for switch) and tailcall indirect jumps because the
+// x64 unwinder might require the latter to be rex.w prefixed.
+INST1(tail_i_jmp,       "tail.jmp",         IUM_RD, 0x0020FF,                                                            INS_FLAGS_None )
+INST1(i_jmp,            "jmp",              IUM_RD, 0x0020FF,                                                            INS_FLAGS_None )
 INST0(jmp,              "jmp",              IUM_RD, 0x0000EB,                                                            INS_FLAGS_None )
 INST0(jo,               "jo",               IUM_RD, 0x000070,                                                            Reads_OF )
 INST0(jno,              "jno",              IUM_RD, 0x000071,                                                            Reads_OF )

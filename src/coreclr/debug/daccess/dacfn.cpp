@@ -12,9 +12,6 @@
 #include "stdafx.h"
 
 #include <encee.h>
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif // FEATURE_PREJIT
 #include <virtualcallstub.h>
 #include "peimagelayout.inl"
 
@@ -1307,7 +1304,7 @@ DacSetMethodDescEnumerated(LPCVOID pMD)
 
 // This gets called from DAC-ized code in the VM.
 IMDInternalImport*
-DacGetMDImport(const PEFile* peFile, bool throwEx)
+DacGetMDImport(const PEAssembly* pPEAssembly, bool throwEx)
 {
     if (!g_dacImpl)
     {
@@ -1315,7 +1312,7 @@ DacGetMDImport(const PEFile* peFile, bool throwEx)
         UNREACHABLE();
     }
 
-    return g_dacImpl->GetMDImport(peFile, throwEx);
+    return g_dacImpl->GetMDImport(pPEAssembly, throwEx);
 }
 
 IMDInternalImport*

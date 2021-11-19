@@ -104,7 +104,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
+        public override string Location => string.Empty;
 
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
@@ -268,7 +268,7 @@ namespace System.Reflection.Emit
                                                  assemblyAttributes);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
         private static extern void CreateDynamicAssembly(ObjectHandleOnStack name,
                                                          StackCrawlMarkHandle stackMark,
                                                          int access,

@@ -72,7 +72,7 @@
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35</Versions>
+      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35;36</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -156,13 +156,13 @@
     <RuntimeGroup Include="osx">
       <Parent>unix</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>10.10;10.11;10.12;10.13;10.14;10.15;10.16;11.0</Versions>
+      <Versions>10.10;10.11;10.12;10.13;10.14;10.15;10.16;11.0;12</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
       <Architectures>x64</Architectures>
-      <Versions>11;12;13</Versions>
+      <Versions>12;13</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="solaris">
@@ -216,6 +216,14 @@
       <Versions>9</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="rocky">
+      <Parent>rhel</Parent>
+      <Architectures>x64;arm64</Architectures>
+      <Versions>8;9</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="sles">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
@@ -225,7 +233,7 @@
     <RuntimeGroup Include="tizen">
       <Parent>linux</Parent>
       <Architectures>x86;armel;arm64</Architectures>
-      <Versions>4.0.0;5.0.0;5.5.0;6.0.0</Versions>
+      <Versions>4.0.0;5.0.0;5.5.0;6.0.0;6.5.0</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ubuntu">

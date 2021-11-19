@@ -10,6 +10,7 @@
 .assembly thisnull
 {
 }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit App
@@ -63,6 +64,9 @@
     .method private hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       95 (0x5f)
       .maxstack  2

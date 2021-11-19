@@ -12,6 +12,18 @@
   <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGET_MOBILE</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_ANDROID</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsiOS)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_IOS</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_MACCATALYST</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsTVOS)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_TVOS</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
@@ -23,6 +35,7 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <ILLinkSubstitutionsXmls Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
                              Include="$(ILLinkDirectory)ILLink.Substitutions.mobile.xml" />
+    <ILLinkSuppressionsXmls Condition="'$(TargetsMobile)' == 'true'" Include="$(ILLinkDirectory)ILLink.Suppressions.Mobile.LibraryBuild.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
@@ -41,10 +54,8 @@
     <Compile Include="System\Net\Http\HttpClient.cs" />
     <Compile Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
              Include="System\Net\Http\HttpClientHandler.AnyMobile.cs" />
-    <Compile Condition="'$(TargetsiOS)' == 'true'" Include="System\Net\Http\HttpClientHandler.iOS.cs" />
-    <Compile Condition="'$(TargetsMacCatalyst)' == 'true'" Include="System\Net\Http\HttpClientHandler.MacCatalyst.cs" />
-    <Compile Condition="'$(TargetsTVOS)' == 'true'" Include="System\Net\Http\HttpClientHandler.tvOS.cs" />
-    <Compile Condition="'$(TargetsAndroid)' == 'true'" Include="System\Net\Http\HttpClientHandler.Android.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
+             Include="System\Net\Http\HttpClientHandler.AnyMobile.InvokeNativeHandler.cs" />
     <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsTVOS)' != 'true'"
              Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
@@ -586,6 +597,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs"
@@ -653,12 +666,13 @@
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" Condition="'$(TargetsWindows)' == 'true'" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Threading" />
@@ -670,7 +684,7 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />

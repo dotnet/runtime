@@ -686,7 +686,7 @@ namespace System.Linq
         /// <param name="source">An <see cref="IEnumerable{T}"/> whose elements to chunk.</param>
         /// <param name="size">Maximum size of each chunk.</param>
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>
-        /// <returns>An <see cref="IEnumerable{T}"/> that contains the elements the input sequence split into chunks of size <paramref name="size"/>.</returns>
+        /// <returns>An <see cref="IQueryable{T}"/> that contains the elements the input sequence split into chunks of size <paramref name="size"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is below 1.</exception>
         /// <remarks>
@@ -823,7 +823,7 @@ namespace System.Linq
         /// <param name="source1">An <see cref="IQueryable{T}" /> whose distinct elements form the first set for the union.</param>
         /// <param name="source2">An <see cref="IEnumerable{T}" /> whose distinct elements form the second set for the union.</param>
         /// <param name="keySelector">A function to extract the key for each element.</param>
-        /// <returns>An <see cref="IEnumerable{T}" /> that contains the elements from both input sequences, excluding duplicates.</returns>
+        /// <returns>An <see cref="IQueryable{T}" /> that contains the elements from both input sequences, excluding duplicates.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source1" /> or <paramref name="source2" /> is <see langword="null" />.</exception>
         [DynamicDependency("UnionBy`2", typeof(Enumerable))]
         public static IQueryable<TSource> UnionBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, Expression<Func<TSource, TKey>> keySelector)
@@ -849,7 +849,7 @@ namespace System.Linq
         /// <param name="source2">An <see cref="IEnumerable{T}" /> whose distinct elements form the second set for the union.</param>
         /// <param name="keySelector">A function to extract the key for each element.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}" /> to compare values.</param>
-        /// <returns>An <see cref="IEnumerable{T}" /> that contains the elements from both input sequences, excluding duplicates.</returns>
+        /// <returns>An <see cref="IQueryable{T}" /> that contains the elements from both input sequences, excluding duplicates.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source1" /> or <paramref name="source2" /> is <see langword="null" />.</exception>
         [DynamicDependency("UnionBy`2", typeof(Enumerable))]
         public static IQueryable<TSource> UnionBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer)
@@ -991,6 +991,15 @@ namespace System.Linq
                     ));
         }
 
+        /// <summary>
+        /// Produces the set difference of two sequences according to a specified key selector function.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of the input sequence.</typeparam>
+        /// <typeparam name="TKey">The type of key to identify elements by.</typeparam>
+        /// <param name="source1">An <see cref="IQueryable{TSource}" /> whose keys that are not also in <paramref name="source2"/> will be returned.</param>
+        /// <param name="source2">An <see cref="IEnumerable{TKey}" /> whose keys that also occur in the first sequence will cause those elements to be removed from the returned sequence.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <returns>A <see cref="IQueryable{TSource}" /> that contains the set difference of the elements of two sequences.</returns>
         [DynamicDependency("ExceptBy`2", typeof(Enumerable))]
         public static IQueryable<TSource> ExceptBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TKey> source2, Expression<Func<TSource, TKey>> keySelector)
         {
@@ -1010,6 +1019,16 @@ namespace System.Linq
                     ));
         }
 
+        /// <summary>
+        /// Produces the set difference of two sequences according to a specified key selector function.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of the input sequence.</typeparam>
+        /// <typeparam name="TKey">The type of key to identify elements by.</typeparam>
+        /// <param name="source1">An <see cref="IQueryable{TSource}" /> whose keys that are not also in <paramref name="source2"/> will be returned.</param>
+        /// <param name="source2">An <see cref="IEnumerable{TKey}" /> whose keys that also occur in the first sequence will cause those elements to be removed from the returned sequence.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{TKey}" /> to compare keys.</param>
+        /// <returns>A <see cref="IQueryable{TSource}" /> that contains the set difference of the elements of two sequences.</returns>
         [DynamicDependency("ExceptBy`2", typeof(Enumerable))]
         public static IQueryable<TSource> ExceptBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TKey> source2, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer)
         {

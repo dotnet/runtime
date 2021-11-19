@@ -15,6 +15,8 @@ namespace System.IO.Tests
     {
         #region Utilities
 
+        protected virtual bool IsAppend { get; }
+
         protected virtual Task WriteAsync(string path, string[] content) =>
             File.WriteAllLinesAsync(path, content);
 
@@ -64,15 +66,29 @@ namespace System.IO.Tests
             Assert.Equal(lines, await ReadAsync(path));
         }
 
-        [Fact]
-        public virtual async Task OverwriteAsync()
+
+        [Theory]
+        [InlineData(200, 100)]
+        [InlineData(50_000, 40_000)] // tests a different code path than the line above
+        public async Task AppendOrOverwrite(int linesSizeLength, int overwriteLinesLength)
         {
             string path = GetTestFilePath();
-            string[] lines = { new string('c', 200) };
-            string[] overwriteLines = { new string('b', 100) };
+            string[] lines = new string[] { new string('c', linesSizeLength) };
+            string[] overwriteLines = new string[] { new string('b', overwriteLinesLength) };
+
             await WriteAsync(path, lines);
             await WriteAsync(path, overwriteLines);
-            Assert.Equal(overwriteLines, await ReadAsync(path));
+
+            if (IsAppend)
+            {
+                Assert.Equal(new string[] { lines[0], overwriteLines[0] }, await ReadAsync(path));
+            }
+            else
+            {
+                Assert.DoesNotContain("Append", GetType().Name); // ensure that all "Append" types override this property
+
+                Assert.Equal(overwriteLines, await ReadAsync(path));
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]

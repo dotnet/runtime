@@ -259,7 +259,7 @@ class StubLinker
         // helper will preserve ALL registers.
         VOID EmitUnwindInfoCheck();
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 protected:
 
         // Injects a call to the given label.

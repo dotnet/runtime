@@ -367,7 +367,7 @@
     <Compile Include="System\Net\Security\Pal.Managed\SafeFreeSslCredentials.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Android.cs" />
-    <Compile Include="System\Net\Security\SslStreamCertificateContext.Linux.cs" />
+    <Compile Include="System\Net\Security\SslStreamCertificateContext.Android.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Android.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Android.cs" />
@@ -422,9 +422,10 @@
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />
@@ -433,6 +434,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
 </Project>

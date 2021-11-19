@@ -28,14 +28,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a type in this module with the specified name.
-        /// If notFoundBehavior == NotFoundBehavior.ReturnResolutionFailure
-        /// then ModuleDesc.GetTypeResolutionFailure will be set to the failure, and the function will return null
+        /// Gets a type in this module or null.
         /// </summary>
-        public abstract MetadataType GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
+        public MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
+        {
+            return (MetadataType)GetType(nameSpace, name, throwIfNotFound ? NotFoundBehavior.Throw : NotFoundBehavior.ReturnNull);
+        }
 
-        [ThreadStatic]
-        public static ResolutionFailure GetTypeResolutionFailure;
+        /// <summary>
+        /// Gets a type in this module with the specified name, a resolution failure object, or null.
+        /// </summary>
+        public abstract object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior);
 
         /// <summary>
         /// Gets the global &lt;Module&gt; type.

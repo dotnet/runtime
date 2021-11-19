@@ -101,7 +101,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsNet5CompatFileStreamDisabled))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(FileShare.None, FileOptions.Asynchronous)] // FileShare.None: exclusive access
         [InlineData(FileShare.ReadWrite, FileOptions.Asynchronous)] // FileShare.ReadWrite: others can write to the file, the length can't be cached
         [InlineData(FileShare.None, FileOptions.None)]

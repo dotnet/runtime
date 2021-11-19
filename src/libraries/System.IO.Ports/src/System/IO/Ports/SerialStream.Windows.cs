@@ -564,7 +564,13 @@ namespace System.IO.Ports
             }
 
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
-                !uint.TryParse(portName.Substring(3), out uint portNumber))
+                !uint.TryParse(
+#if NETCOREAPP
+                    portName.AsSpan(3),
+#else
+                    portName.Substring(3),
+#endif
+                    out uint portNumber))
             {
                 throw new ArgumentException(SR.Format(SR.Arg_InvalidSerialPort, portName), nameof(portName));
             }

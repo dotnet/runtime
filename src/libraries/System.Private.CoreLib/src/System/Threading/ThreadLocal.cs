@@ -468,32 +468,6 @@ namespace System.Threading
             return valueList;
         }
 
-        internal IEnumerable<T> ValuesAsEnumerable
-        {
-            get
-            {
-                if (!_trackAllValues)
-                {
-                    throw new InvalidOperationException(SR.ThreadLocal_ValuesNotAvailable);
-                }
-
-                LinkedSlot? linkedSlot = _linkedSlot;
-                int id = ~_idComplement;
-                if (id == -1 || linkedSlot == null)
-                {
-                    throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
-                }
-
-                // Walk over the linked list of slots and gather the values associated with this ThreadLocal instance.
-                for (linkedSlot = linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
-                {
-                    // We can safely read linkedSlot.Value. Even if this ThreadLocal has been disposed in the meantime, the LinkedSlot
-                    // objects will never be assigned to another ThreadLocal instance.
-                    yield return linkedSlot._value!;
-                }
-            }
-        }
-
         /// <summary>Gets the number of threads that have data in this instance.</summary>
         private int ValuesCountForDebugDisplay
         {
@@ -678,38 +652,45 @@ namespace System.Threading
             // Keep track of the count of non-TrackAllValues ids in use. A count of 0 leads to more efficient thread cleanup
             private volatile int _idsThatDoNotTrackAllValues;
 
-            private const byte IdFree = 0;
-            private const byte TrackAllValuesAllocated = 1;
-            private const byte DoNotTrackAllValuesAllocated = 2;
+            // Stores IDs that are used, and if each ID tracksAllValues or not.
+            private readonly Dictionary<int, bool> _usedIdToTracksAllValuesMap = new Dictionary<int, bool>();
 
-            // Stores whether each ID is free or not, and if it tracksAllValues or not. Additionally, the object is also used as a lock for the IdManager.
-            private readonly List<byte> _ids = new List<byte>();
+            // Stores IDs that were previously used and are now free to reuse. Additionally, the object is also used as a lock
+            // for the IdManager.
+            private readonly List<int> _freeIds = new List<int>();
 
             internal int GetId(bool trackAllValues)
             {
-                lock (_ids)
+                lock (_freeIds)
                 {
-                    int availableId = _nextIdToTry;
-                    while (availableId < _ids.Count)
+                    int availableId;
+                    int freeIdCount = _freeIds.Count;
+                    if (freeIdCount > 0)
                     {
-                        if (_ids[availableId] == IdFree) { break; }
-                        availableId++;
-                    }
-
-                    byte allocatedFlag = trackAllValues ? TrackAllValuesAllocated : DoNotTrackAllValuesAllocated;
-                    if (availableId == _ids.Count)
-                    {
-                        _ids.Add(allocatedFlag);
+                        availableId = _freeIds[freeIdCount - 1];
                     }
                     else
                     {
-                        _ids[availableId] = allocatedFlag;
+                        availableId = _nextIdToTry;
+                    }
+
+                    // Ensure that all of the IDs that will be used can be freed without throwing due to OOM when disposing or
+                    // finalizing
+                    _freeIds.EnsureCapacity(_usedIdToTracksAllValuesMap.Count + 1);
+
+                    _usedIdToTracksAllValuesMap.Add(availableId, trackAllValues);
+
+                    if (freeIdCount > 0)
+                    {
+                        _freeIds.RemoveAt(freeIdCount - 1);
+                    }
+                    else
+                    {
+                        _nextIdToTry = availableId + 1;
                     }
 
                     if (!trackAllValues)
                         _idsThatDoNotTrackAllValues++;
-
-                    _nextIdToTry = availableId + 1;
 
                     return availableId;
                 }
@@ -718,9 +699,9 @@ namespace System.Threading
             // Identify if an allocated id tracks all values or not
             internal bool IdTracksAllValues(int id)
             {
-                lock (_ids)
+                lock (_freeIds)
                 {
-                    return _ids[id] == TrackAllValuesAllocated;
+                    return _usedIdToTracksAllValuesMap.TryGetValue(id, out bool tracksAllValues) && tracksAllValues;
                 }
             }
 
@@ -729,13 +710,13 @@ namespace System.Threading
             // Return an ID to the pool
             internal void ReturnId(int id, bool idTracksAllValues)
             {
-                lock (_ids)
+                lock (_freeIds)
                 {
                     if (!idTracksAllValues)
                         _idsThatDoNotTrackAllValues--;
 
-                    _ids[id] = IdFree;
-                    if (id < _nextIdToTry) _nextIdToTry = id;
+                    _usedIdToTracksAllValuesMap.Remove(id);
+                    _freeIds.Add(id); // does not throw because the capacity is ensured in GetId()
                 }
             }
         }

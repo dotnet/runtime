@@ -10,7 +10,7 @@ Imports System.Diagnostics.CodeAnalysis
 Namespace Microsoft.VisualBasic.CompilerServices
 
     <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
-    Friend Class VB6BinaryFile
+    Friend NotInheritable Class VB6BinaryFile
 
         '============================================================================
         ' Declarations

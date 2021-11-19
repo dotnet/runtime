@@ -205,7 +205,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
             retval = FALSE;
         }
 
-        if (retval && pMD->HasTemporaryEntryPoint())
+        if (retval)
         {
             MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
 
@@ -433,22 +433,10 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
             EEJitManager *eeJitManager = PTR_EEJitManager(PTR_HOST_TO_TADDR(managerPtr));
             currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pCodeHeap);
         }
-#ifdef FEATURE_PREJIT
-        if (count >= 2)
-        {
-            NativeImageJitManager * managerPtr = ExecutionManager::GetNativeImageJitManager();
-            DacpJitManagerInfo *currentPtr = &managers[1];
-            currentPtr->managerAddr = HOST_CDADDR(managerPtr);
-            currentPtr->codeType = managerPtr->GetCodeType();
-        }
-#endif
     }
     else if (pNeeded)
     {
         *pNeeded = 1;
-#ifdef FEATURE_PREJIT
-        (*pNeeded)++;
-#endif
     }
 
     SOSDacLeave();
@@ -930,7 +918,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
             methodDescData->bHasNativeCode = FALSE;
             methodDescData->NativeCodeAddr = (CLRDATA_ADDRESS)-1;
         }
-        methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ? TO_CDADDR(pMD->GetAddrOfNativeCodeSlot()) : NULL;
+        methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ? TO_CDADDR(dac_cast<TADDR>(pMD->GetAddrOfNativeCodeSlot())) : NULL;
         methodDescData->MDToken = pMD->GetMemberDef();
         methodDescData->MethodDescPtr = methodDesc;
         methodDescData->MethodTablePtr = HOST_CDADDR(pMD->GetMethodTable());
@@ -1518,8 +1506,8 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out
     {
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
-        PEFile *pPEFile = mt->GetModule()->GetFile();
-        if (pPEFile->GetNativeImage() == NULL && pPEFile->GetILimage() == NULL)
+        PEAssembly *pPEAssembly = mt->GetModule()->GetPEAssembly();
+        if (pPEAssembly->GetPEImage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -1657,19 +1645,14 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
     ModuleData->Address = addr;
-    ModuleData->File = HOST_CDADDR(pModule->GetFile());
+    ModuleData->PEAssembly = HOST_CDADDR(pModule->GetPEAssembly());
     COUNT_T metadataSize = 0;
-    if (pModule->GetFile()->HasNativeImage())
+    if (!pModule->GetPEAssembly()->IsDynamic())
     {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)PTR_TO_TADDR(pModule->GetFile()->GetLoadedNative()->GetBase());
-    }
-    else
-    if (!pModule->GetFile()->IsDynamic())
-    {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetFile()->GetIJWBase();
+        ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetPEAssembly()->GetIJWBase();
     }
 
-    ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetFile()->GetLoadedMetadata(&metadataSize));
+    ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
     ModuleData->metadataSize = (SIZE_T) metadataSize;
 
     ModuleData->bIsReflection = pModule->IsReflection();
@@ -1787,8 +1770,8 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_
     {
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
-        PEFile *pPEFile = pMT->GetModule()->GetFile();
-        if (pPEFile->GetNativeImage() == NULL && pPEFile->GetILimage() == NULL)
+        PEAssembly *pPEAssembly = pMT->GetModule()->GetPEAssembly();
+        if (pPEAssembly->GetPEImage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -2070,19 +2053,18 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, __out_z _
         return E_INVALIDARG;
 
     SOSDacEnter();
-    PEFile* pPEFile = PTR_PEFile(TO_TADDR(addr));
+    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
 
     // Turn from bytes to wide characters
-    if (!pPEFile->GetPath().IsEmpty())
+    if (!pPEAssembly->GetPath().IsEmpty())
     {
-        if (!pPEFile->GetPath().DacGetUnicode(count, fileName, pNeeded))
+        if (!pPEAssembly->GetPath().DacGetUnicode(count, fileName, pNeeded))
             hr = E_FAIL;
     }
-    else if (!pPEFile->IsDynamic())
+    else if (!pPEAssembly->IsDynamic())
     {
-        PEAssembly *pAssembly = pPEFile->GetAssembly();
         StackSString displayName;
-        pAssembly->GetDisplayName(displayName, 0);
+        pPEAssembly->GetDisplayName(displayName, 0);
 
         if (displayName.IsEmpty())
         {
@@ -2129,13 +2111,11 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base)
 
     SOSDacEnter();
 
-    PEFile* pPEFile = PTR_PEFile(TO_TADDR(addr));
+    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
 
     // More fields later?
-    if (pPEFile->HasNativeImage())
-        *base = TO_CDADDR(PTR_TO_TADDR(pPEFile->GetLoadedNative()->GetBase()));
-    else if (!pPEFile->IsDynamic())
-        *base = TO_CDADDR(pPEFile->GetIJWBase());
+    if (!pPEAssembly->IsDynamic())
+        *base = TO_CDADDR(pPEAssembly->GetIJWBase());
     else
         *base = NULL;
 
@@ -3780,24 +3760,24 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
     Dereference(g_gcDacGlobals->finalize_queue).EnumMem();
 
     // Enumerate the entire generation table, which has variable size
-    size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
-    DacEnumMemoryRegion(dac_cast<TADDR>(g_gcDacGlobals->generation_table), gen_table_size);
+    EnumGenerationTable(dac_cast<TADDR>(g_gcDacGlobals->generation_table));
 
     if (g_gcDacGlobals->generation_table.IsValid())
     {
-            // enumerating the generations from max (which is normally gen2) to max+1 gives you
-            // the segment list for all the normal segements plus the large heap segment (max+1)
-            // this is the convention in the GC so it is repeated here
-            for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
+        ULONG first = IsRegionGCEnabled() ? 0 : (*g_gcDacGlobals->max_gen);
+        // enumerating the first to max + 2 gives you
+        // the segment list for all the normal segments plus the pinned heap segment (max + 2)
+        // this is the convention in the GC so it is repeated here
+        for (ULONG i = first; i <= *g_gcDacGlobals->max_gen + 2; i++)
+        {
+            dac_generation gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+            __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
+            while (seg)
             {
-                dac_generation gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-                __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
-                while (seg)
-                {
-                    DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
-                    seg = seg->next;
-                }
+                DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
+                seg = seg->next;
             }
+        }
     }
 }
 
@@ -3842,11 +3822,11 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
         if (oThrowable != NULL)
         {
             // Does the throwable have buckets?
-            if (((EXCEPTIONREF)oThrowable)->AreWatsonBucketsPresent())
+            U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
+            if (refWatsonBucketArray != NULL)
             {
                 // Get the watson buckets from the throwable for non-preallocated
                 // exceptions
-                U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
                 pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
             }
             else
@@ -4176,12 +4156,18 @@ TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
     return managedObjectWrapperPtr;
 }
 
-HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+HRESULT ClrDataAccess::DACTryGetComWrappersHandleFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTHANDLE* objHandle)
 {
-    if (ccwPtr == 0 || objRef == NULL)
-        return E_INVALIDARG;
+    HRESULT hr = E_FAIL;
+    TADDR ccw, managedObjectWrapperPtr;
+    ULONG32 bytesRead = 0;
+    OBJECTHANDLE handle;
 
-    SOSDacEnter();
+    if (ccwPtr == 0 || objHandle == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto ErrExit;
+    }
 
     if (!DACIsComWrappersCCW(ccwPtr))
     {
@@ -4189,18 +4175,16 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    TADDR ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
+    ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
 
     // Return ManagedObjectWrapper as an OBJECTHANDLE. (The OBJECTHANDLE is guaranteed to live at offset 0).
-    TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccwPtr);
+    managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccwPtr);
     if (managedObjectWrapperPtr == NULL)
     {
         hr = E_FAIL;
         goto ErrExit;
     }
 
-    ULONG32 bytesRead = 0;
-    OBJECTHANDLE handle;
     IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtr, (PBYTE)&handle, sizeof(OBJECTHANDLE), &bytesRead));
     if (bytesRead != sizeof(OBJECTHANDLE))
     {
@@ -4208,9 +4192,31 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    *objRef = ObjectFromHandle(handle);
+    *objHandle = handle;
 
-    SOSDacLeave();
+    return S_OK;
+
+ErrExit: return hr;
+}
+
+HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+{
+    HRESULT hr = E_FAIL;
+
+    if (ccwPtr == 0 || objRef == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto ErrExit;
+    }
+
+    OBJECTHANDLE handle;
+    if (DACTryGetComWrappersHandleFromCCW(ccwPtr, &handle) != S_OK)
+    {
+        hr = E_FAIL;
+        goto ErrExit;
+    }
+
+    *objRef = ObjectFromHandle(handle);
 
     return S_OK;
 
@@ -4787,10 +4793,10 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
     PTR_MethodTable pMT = PTR_MethodTable(CLRDATA_ADDRESS_TO_TADDR(methodTable));
     PTR_Module pModule = pMT->GetModule();
 
-    PTR_PEFile pPEFile = pModule->GetFile();
-    PTR_AssemblyLoadContext pAssemblyLoadContext = pPEFile->GetAssemblyLoadContext();
+    PTR_PEAssembly pPEAssembly = pModule->GetPEAssembly();
+    PTR_AssemblyBinder pBinder = pPEAssembly->GetAssemblyBinder();
 
-    INT_PTR managedAssemblyLoadContextHandle = pAssemblyLoadContext->GetManagedAssemblyLoadContext();
+    INT_PTR managedAssemblyLoadContextHandle = pBinder->GetManagedAssemblyLoadContext();
 
     TADDR managedAssemblyLoadContextAddr = 0;
     if (managedAssemblyLoadContextHandle != 0)

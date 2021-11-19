@@ -56,17 +56,6 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
 
 Package content can be defined using any of the publicly defined Pack inputs: https://docs.microsoft.com/en-us/nuget/reference/msbuild-targets
 
-### TargetFrameworks
-
-By default all TargetFrameworks listed in your project will be included in the package. You may exclude specific TargetFrameworks by setting `ExcludeFromPackage` on that framework.
-```xml
-  <PropertyGroup>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net5.0'">true</ExcludeFromPackage>
-  </PropertyGroup>
-```
-
-When excluding TargetFrameworks from a package special care should be taken to ensure that the builds included are equivalent to those excluded. Avoid ifdef'ing the implementation only in an excluded TargetFramework. Doing so will result in testing something different than what we ship, or shipping a nuget package that degrades the shared framework.
-
 ### Build props / targets and other content
 
 Build props and targets may be needed in NuGet packages. To define these, author a build folder in your src project and place the necessary props/targets in this subfolder. You can then add items to include these in the package by defining `Content` items and setting `PackagePath` as follows:
@@ -96,3 +85,6 @@ In the analyzer project make sure to do the following. Ensure it only targets `n
     <AnalyzerLanguage>cs</AnalyzerLanguage> 
   </PropertyGroup>
 ```
+
+### .NETFramework RID specific assets
+When targeting .NETFramework, RID specific assets are automatically added to the package if the project contains other compatible RID specific assets, mainly `netstandard2.0-windows`.

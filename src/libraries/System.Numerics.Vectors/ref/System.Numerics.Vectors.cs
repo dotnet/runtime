@@ -16,6 +16,7 @@ namespace System.Numerics
         public float M32;
         public Matrix3x2(float m11, float m12, float m21, float m22, float m31, float m32) { throw null; }
         public static System.Numerics.Matrix3x2 Identity { get { throw null; } }
+        public float this[int row, int column] { get { throw null; } set { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
         public System.Numerics.Vector2 Translation { readonly get { throw null; } set { } }
         public static System.Numerics.Matrix3x2 Add(System.Numerics.Matrix3x2 value1, System.Numerics.Matrix3x2 value2) { throw null; }
@@ -71,6 +72,7 @@ namespace System.Numerics
         public Matrix4x4(System.Numerics.Matrix3x2 value) { throw null; }
         public Matrix4x4(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44) { throw null; }
         public static System.Numerics.Matrix4x4 Identity { get { throw null; } }
+        public float this[int row, int column] { get { throw null; } set { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
         public System.Numerics.Vector3 Translation { readonly get { throw null; } set { } }
         public static System.Numerics.Matrix4x4 Add(System.Numerics.Matrix4x4 value1, System.Numerics.Matrix4x4 value2) { throw null; }
@@ -153,7 +155,9 @@ namespace System.Numerics
         public float Z;
         public Quaternion(System.Numerics.Vector3 vectorPart, float scalarPart) { throw null; }
         public Quaternion(float x, float y, float z, float w) { throw null; }
+        public static System.Numerics.Quaternion Zero { get { throw null; } }
         public static System.Numerics.Quaternion Identity { get { throw null; } }
+        public float this[int index] { get { throw null; } set { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
         public static System.Numerics.Quaternion Add(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static System.Numerics.Quaternion Concatenate(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
@@ -312,6 +316,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 One { get { throw null; } }
         public static System.Numerics.Vector2 UnitX { get { throw null; } }
         public static System.Numerics.Vector2 UnitY { get { throw null; } }
+        public float this[int index] { get { throw null; } set { throw null; } }
         public static System.Numerics.Vector2 Zero { get { throw null; } }
         public static System.Numerics.Vector2 Abs(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Add(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -373,6 +378,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 UnitX { get { throw null; } }
         public static System.Numerics.Vector3 UnitY { get { throw null; } }
         public static System.Numerics.Vector3 UnitZ { get { throw null; } }
+        public float this[int index] { get { throw null; } set { throw null; } }
         public static System.Numerics.Vector3 Zero { get { throw null; } }
         public static System.Numerics.Vector3 Abs(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Add(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
@@ -436,6 +442,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 UnitX { get { throw null; } }
         public static System.Numerics.Vector4 UnitY { get { throw null; } }
         public static System.Numerics.Vector4 UnitZ { get { throw null; } }
+        public float this[int index] { get { throw null; } set { throw null; } }
         public static System.Numerics.Vector4 Zero { get { throw null; } }
         public static System.Numerics.Vector4 Abs(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Add(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
@@ -484,9 +491,9 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector4 vector, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector4 value, System.Numerics.Quaternion rotation) { throw null; }
     }
-    public partial struct Vector<T> : System.IEquatable<System.Numerics.Vector<T>>, System.IFormattable where T : struct
+    public readonly partial struct Vector<T> : System.IEquatable<System.Numerics.Vector<T>>, System.IFormattable where T : struct
     {
-        private int _dummyPrimitive;
+        private readonly int _dummyPrimitive;
         public Vector(System.ReadOnlySpan<byte> values) { throw null; }
         public Vector(System.ReadOnlySpan<T> values) { throw null; }
         public Vector(System.Span<T> values) { throw null; }
@@ -494,16 +501,16 @@ namespace System.Numerics
         public Vector(T[] values) { throw null; }
         public Vector(T[] values, int index) { throw null; }
         public static int Count { get { throw null; } }
-        public readonly T this[int index] { get { throw null; } }
+        public T this[int index] { get { throw null; } }
         public static System.Numerics.Vector<T> One { get { throw null; } }
         public static System.Numerics.Vector<T> Zero { get { throw null; } }
-        public readonly void CopyTo(System.Span<byte> destination) { }
-        public readonly void CopyTo(System.Span<T> destination) { }
-        public readonly void CopyTo(T[] destination) { }
-        public readonly void CopyTo(T[] destination, int startIndex) { }
-        public readonly bool Equals(System.Numerics.Vector<T> other) { throw null; }
-        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public override readonly int GetHashCode() { throw null; }
+        public void CopyTo(System.Span<byte> destination) { }
+        public void CopyTo(System.Span<T> destination) { }
+        public void CopyTo(T[] destination) { }
+        public void CopyTo(T[] destination, int startIndex) { }
+        public bool Equals(System.Numerics.Vector<T> other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
         public static System.Numerics.Vector<T> operator +(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator &(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator |(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -534,10 +541,10 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> operator ~(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<T> operator -(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator -(System.Numerics.Vector<T> value) { throw null; }
-        public override readonly string ToString() { throw null; }
-        public readonly string ToString(string? format) { throw null; }
-        public readonly string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
-        public readonly bool TryCopyTo(System.Span<byte> destination) { throw null; }
-        public readonly bool TryCopyTo(System.Span<T> destination) { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public bool TryCopyTo(System.Span<byte> destination) { throw null; }
+        public bool TryCopyTo(System.Span<T> destination) { throw null; }
     }
 }

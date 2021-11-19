@@ -16,6 +16,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -96,35 +97,25 @@ namespace System.Text.RegularExpressions
         public readonly RegexTree Tree;                                                 // the optimized parse tree
         public readonly int[] Codes;                                                    // the code
         public readonly string[] Strings;                                               // the string/set table
-        public readonly int[]?[] StringsAsciiLookup;                                    // the ASCII lookup table optimization for the sets in Strings
+        public readonly uint[]?[] StringsAsciiLookup;                                   // the ASCII lookup table optimization for the sets in Strings
         public readonly int TrackCount;                                                 // how many instructions use backtracking
         public readonly Hashtable? Caps;                                                // mapping of user group numbers -> impl group slots
         public readonly int CapSize;                                                    // number of impl group slots
-        public readonly (string CharClass, bool CaseInsensitive)[]? LeadingCharClasses; // the set of candidate first characters, if available.  Each entry corresponds to the next char in the input.
-        public int[]? LeadingCharClassAsciiLookup;                                      // the ASCII lookup table optimization for LeadingCharClasses[0], if it exists; only used by the interpreter
-        public readonly RegexBoyerMoore? BoyerMoorePrefix;                              // the fixed prefix string as a Boyer-Moore machine, if available
-        public readonly int LeadingAnchor;                                              // the leading anchor, if one exists (RegexPrefixAnalyzer.Bol, etc)
         public readonly bool RightToLeft;                                               // true if right to left
+        public readonly RegexFindOptimizations FindOptimizations;
 
-        public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
-                         Hashtable? caps, int capsize,
-                         RegexBoyerMoore? boyerMoorePrefix,
-                         (string CharClass, bool CaseInsensitive)[]? leadingCharClasses,
-                         int leadingAnchor, bool rightToLeft)
+        public RegexCode(RegexTree tree, CultureInfo culture, int[] codes, string[] strings, int trackcount,
+                         Hashtable? caps, int capsize)
         {
-            Debug.Assert(boyerMoorePrefix is null || leadingCharClasses is null);
-
             Tree = tree;
             Codes = codes;
             Strings = strings;
-            StringsAsciiLookup = new int[strings.Length][];
+            StringsAsciiLookup = new uint[strings.Length][];
             TrackCount = trackcount;
             Caps = caps;
             CapSize = capsize;
-            BoyerMoorePrefix = boyerMoorePrefix;
-            LeadingCharClasses = leadingCharClasses;
-            LeadingAnchor = leadingAnchor;
-            RightToLeft = rightToLeft;
+            RightToLeft = (tree.Options & RegexOptions.RightToLeft) != 0;
+            FindOptimizations = new RegexFindOptimizations(tree, culture);
         }
 
         public static bool OpcodeBacktracks(int Op)
@@ -223,8 +214,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-#if DEBUG
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         private static string OperatorDescription(int Opcode)
         {
             string codeStr = (Opcode & Mask) switch
@@ -286,16 +276,18 @@ namespace System.Text.RegularExpressions
                 ((Opcode & Back2) != 0 ? "-Back2" : "");
         }
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        public string OpcodeDescription(int offset)
+        [ExcludeFromCodeCoverage]
+        internal string OpcodeDescription(int offset) => OpcodeDescription(offset, Codes, Strings);
+
+        [ExcludeFromCodeCoverage]
+        internal static string OpcodeDescription(int offset, int[] codes, string[] strings)
         {
             var sb = new StringBuilder();
-            int opcode = Codes[offset];
+            int opcode = codes[offset];
 
             sb.Append($"{offset:D6} ");
             sb.Append(OpcodeBacktracks(opcode & Mask) ? '*' : ' ');
             sb.Append(OperatorDescription(opcode));
-            sb.Append(Indent());
 
             opcode &= Mask;
 
@@ -311,7 +303,7 @@ namespace System.Text.RegularExpressions
                 case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
-                    sb.Append('\'').Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append('\'');
+                    sb.Append(Indent()).Append('\'').Append(RegexCharClass.CharDescription((char)codes[offset + 1])).Append('\'');
                     break;
 
                 case Set:
@@ -319,33 +311,29 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    sb.Append(RegexCharClass.SetDescription(Strings[Codes[offset + 1]]));
+                    sb.Append(Indent()).Append(RegexCharClass.SetDescription(strings[codes[offset + 1]]));
                     break;
 
                 case Multi:
-                    sb.Append('"').Append(Strings[Codes[offset + 1]]).Append('"');
+                    sb.Append(Indent()).Append('"').Append(strings[codes[offset + 1]]).Append('"');
                     break;
 
                 case Ref:
                 case Testref:
-                    sb.Append("index = ");
-                    sb.Append(Codes[offset + 1]);
+                    sb.Append(Indent()).Append("index = ").Append(codes[offset + 1]);
                     break;
 
                 case Capturemark:
-                    sb.Append("index = ");
-                    sb.Append(Codes[offset + 1]);
-                    if (Codes[offset + 2] != -1)
+                    sb.Append(Indent()).Append("index = ").Append(codes[offset + 1]);
+                    if (codes[offset + 2] != -1)
                     {
-                        sb.Append(", unindex = ");
-                        sb.Append(Codes[offset + 2]);
+                        sb.Append(", unindex = ").Append(codes[offset + 2]);
                     }
                     break;
 
                 case Nullcount:
                 case Setcount:
-                    sb.Append("value = ");
-                    sb.Append(Codes[offset + 1]);
+                    sb.Append(Indent()).Append("value = ").Append(codes[offset + 1]);
                     break;
 
                 case Goto:
@@ -354,8 +342,7 @@ namespace System.Text.RegularExpressions
                 case Lazybranchmark:
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append("addr = ");
-                    sb.Append(Codes[offset + 1]);
+                    sb.Append(Indent()).Append("addr = ").Append(codes[offset + 1]);
                     break;
             }
 
@@ -374,19 +361,27 @@ namespace System.Text.RegularExpressions
                 case Setloopatomic:
                 case Setlazy:
                     sb.Append(", rep = ");
-                    if (Codes[offset + 2] == int.MaxValue)
+                    if (codes[offset + 2] == int.MaxValue)
+                    {
                         sb.Append("inf");
+                    }
                     else
-                        sb.Append(Codes[offset + 2]);
+                    {
+                        sb.Append(codes[offset + 2]);
+                    }
                     break;
 
                 case Branchcount:
                 case Lazybranchcount:
                     sb.Append(", limit = ");
-                    if (Codes[offset + 2] == int.MaxValue)
+                    if (codes[offset + 2] == int.MaxValue)
+                    {
                         sb.Append("inf");
+                    }
                     else
-                        sb.Append(Codes[offset + 2]);
+                    {
+                        sb.Append(codes[offset + 2]);
+                    }
                     break;
             }
 
@@ -395,35 +390,18 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+#if DEBUG
+        [ExcludeFromCodeCoverage]
         public void Dump() => Debug.WriteLine(ToString());
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         public override string ToString()
         {
             var sb = new StringBuilder();
 
             sb.AppendLine($"Direction:  {(RightToLeft ? "right-to-left" : "left-to-right")}");
-            sb.AppendLine($"Anchor:     {RegexPrefixAnalyzer.AnchorDescription(LeadingAnchor)}");
+            sb.AppendLine($"Anchor:     {RegexPrefixAnalyzer.AnchorDescription(FindOptimizations.LeadingAnchor)}");
             sb.AppendLine();
-
-            if (BoyerMoorePrefix != null)
-            {
-                sb.AppendLine("Boyer-Moore:");
-                sb.AppendLine(BoyerMoorePrefix.Dump("    "));
-                sb.AppendLine();
-            }
-
-            if (LeadingCharClasses != null)
-            {
-                sb.AppendLine("First Chars:");
-                for (int i = 0; i < LeadingCharClasses.Length; i++)
-                {
-                    sb.AppendLine($"{i}: {RegexCharClass.SetDescription(LeadingCharClasses[i].CharClass)}");
-                }
-                sb.AppendLine();
-            }
-
             for (int i = 0; i < Codes.Length; i += OpcodeSize(Codes[i]))
             {
                 sb.AppendLine(OpcodeDescription(i));

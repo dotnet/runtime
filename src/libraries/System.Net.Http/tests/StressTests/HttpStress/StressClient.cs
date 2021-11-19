@@ -106,6 +106,7 @@ namespace HttpStress
             }
             _stopwatch.Stop();
             _cts.Dispose();
+            _eventListener?.Dispose();
         }
 
         public void PrintFinalReport()
@@ -125,7 +126,6 @@ namespace HttpStress
         public void Dispose()
         {
             Stop();
-            _eventListener?.Dispose();
         }
 
         private async Task InitializeClient()
@@ -208,11 +208,6 @@ namespace HttpStress
                     catch (OperationCanceledException) when (requestContext.IsCancellationRequested || _cts.IsCancellationRequested)
                     {
                         _aggregator.RecordCancellation(opIndex, stopwatch.Elapsed);
-                    }
-                    catch (Exception e) when (e.Message == "IGNORE")
-                    {
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/55261")]
-                        // See ClientOperations.ValidateStatusCode
                     }
                     catch (Exception e)
                     {

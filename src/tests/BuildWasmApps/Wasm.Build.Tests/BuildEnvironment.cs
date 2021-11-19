@@ -135,5 +135,8 @@ namespace Wasm.Build.Tests
 
         protected static string s_directoryBuildPropsForLocal = File.ReadAllText(Path.Combine(TestDataPath, "Local.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForLocal = File.ReadAllText(Path.Combine(TestDataPath, "Local.Directory.Build.targets"));
+
+        protected static string s_directoryBuildPropsForBlazorLocal = File.ReadAllText(Path.Combine(TestDataPath, "Blazor.Local.Directory.Build.props"));
+        protected static string s_directoryBuildTargetsForBlazorLocal = File.ReadAllText(Path.Combine(TestDataPath, "Blazor.Local.Directory.Build.targets"));
     }
 }

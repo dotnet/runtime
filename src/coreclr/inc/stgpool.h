@@ -27,7 +27,7 @@
 #include "ex.h"
 #include "sarray.h"
 #include "memoryrange.h"
-#include "../md/hotdata/hotheap.h"
+#include "../md/datablob.h"
 
 //*****************************************************************************
 // NOTE:
@@ -335,22 +335,6 @@ public:
         UINT32              nOffset,    // Offset of blob in pool.
         MetaData::DataBlob *pData);
 
-#ifdef FEATURE_PREJIT
-    // Initialize hot data structures.
-    // Method can be called multiple time, e.g. to disable usage of hot data structures in certain scenarios
-    // (see code:CMiniMd::DisableHotDataUsage).
-    void InitHotData(MetaData::HotHeap hotHeap)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-        m_HotHeap = hotHeap;
-#else
-        _ASSERTE(!"InitHotData(): Not supposed to exist in RoMetaData.dll");
-#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
-    }
-#endif //FEATURE_PREJIT
-
 protected:
 
 //*****************************************************************************
@@ -377,21 +361,6 @@ protected:
             return CLDB_E_INDEX_NOTFOUND;
         }
 
-#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-#ifdef FEATURE_PREJIT
-        // try hot data first
-        if (!m_HotHeap.IsEmpty())
-        {
-            HRESULT hr = m_HotHeap.GetData(nOffset, pData);
-            if ((hr == S_OK) || FAILED(hr))
-            {
-                return hr;
-            }
-            _ASSERTE(hr == S_FALSE);
-        }
-#endif //FEATURE_PREJIT
-#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
-
 
         pData->Init(m_pSegData + nOffset, m_cbSegSize - nOffset);
 
@@ -410,13 +379,6 @@ protected:
         WRAPPER_NO_CONTRACT;
         return GetDataReadOnly(nOffset, pData);
     } // StgPoolReadOnly::GetData
-
-private:
-#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-    // hot pool data
-    MetaData::HotHeap m_HotHeap;
-#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
-
 };  // class StgPoolReadOnly
 
 //

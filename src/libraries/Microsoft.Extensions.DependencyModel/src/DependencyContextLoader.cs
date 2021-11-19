@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyModel
     {
         private const string DepsJsonExtension = ".deps.json";
 
-        private readonly string _entryPointDepsLocation;
+        private readonly string? _entryPointDepsLocation;
         private readonly IEnumerable<string> _nonEntryPointDepsPaths;
         private readonly IFileSystem _fileSystem;
         private readonly Func<IDependencyContextReader> _jsonReaderFactory;
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
         internal DependencyContextLoader(
-            string entryPointDepsLocation,
+            string? entryPointDepsLocation,
             IEnumerable<string> nonEntryPointDepsPaths,
             IFileSystem fileSystem,
             Func<IDependencyContextReader> jsonReaderFactory)
@@ -39,27 +39,27 @@ namespace Microsoft.Extensions.DependencyModel
             _jsonReaderFactory = jsonReaderFactory;
         }
 
-        public static DependencyContextLoader Default { get; } = new DependencyContextLoader();
+        public static DependencyContextLoader Default { get; } = new();
 
         private static bool IsEntryAssembly(Assembly assembly)
         {
             return assembly.Equals(Assembly.GetEntryAssembly());
         }
 
-        private static Stream GetResourceStream(Assembly assembly, string name)
+        private static Stream? GetResourceStream(Assembly assembly, string name)
         {
             return assembly.GetManifestResourceStream(name);
         }
 
         [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
-        public DependencyContext Load(Assembly assembly)
+        public DependencyContext? Load(Assembly assembly)
         {
             if (assembly == null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
 
-            DependencyContext context = null;
+            DependencyContext? context = null;
             using (IDependencyContextReader reader = _jsonReaderFactory())
             {
                 if (IsEntryAssembly(assembly))
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.DependencyModel
                 {
                     foreach (string extraPath in _nonEntryPointDepsPaths)
                     {
-                        DependencyContext extraContext = LoadContext(reader, extraPath);
+                        DependencyContext? extraContext = LoadContext(reader, extraPath);
                         if (extraContext != null)
                         {
                             context = context.Merge(extraContext);
@@ -87,12 +87,12 @@ namespace Microsoft.Extensions.DependencyModel
             return context;
         }
 
-        private DependencyContext LoadEntryAssemblyContext(IDependencyContextReader reader)
+        private DependencyContext? LoadEntryAssemblyContext(IDependencyContextReader reader)
         {
             return LoadContext(reader, _entryPointDepsLocation);
         }
 
-        private DependencyContext LoadContext(IDependencyContextReader reader, string location)
+        private DependencyContext? LoadContext(IDependencyContextReader reader, string? location)
         {
             if (!string.IsNullOrEmpty(location))
             {
@@ -106,9 +106,9 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
         [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
-        private DependencyContext LoadAssemblyContext(Assembly assembly, IDependencyContextReader reader)
+        private DependencyContext? LoadAssemblyContext(Assembly assembly, IDependencyContextReader reader)
         {
-            using (Stream stream = GetResourceStream(assembly, assembly.GetName().Name + DepsJsonExtension))
+            using (Stream? stream = GetResourceStream(assembly, assembly.GetName().Name + DepsJsonExtension))
             {
                 if (stream != null)
                 {
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
 
-            string depsJsonFile = GetDepsJsonPath(assembly);
+            string? depsJsonFile = GetDepsJsonPath(assembly);
             if (!string.IsNullOrEmpty(depsJsonFile))
             {
                 using (Stream stream = _fileSystem.File.OpenRead(depsJsonFile))
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
         [RequiresAssemblyFiles("The use of DependencyContextLoader is not supported when publishing as single-file")]
-        private string GetDepsJsonPath(Assembly assembly)
+        private string? GetDepsJsonPath(Assembly assembly)
         {
             // Assemblies loaded in memory (e.g. single file) return empty string from Location.
             // In these cases, don't try probing next to the assembly.
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 // in some cases (like .NET Framework shadow copy) the Assembly Location
                 // and CodeBase will be different, so also try the CodeBase
-                string assemblyCodeBase = GetNormalizedCodeBasePath(assembly);
+                string? assemblyCodeBase = GetNormalizedCodeBasePath(assembly);
                 if (!string.IsNullOrEmpty(assemblyCodeBase) &&
                     assemblyLocation != assemblyCodeBase)
                 {
@@ -160,9 +160,12 @@ namespace Microsoft.Extensions.DependencyModel
                 null;
         }
 
-        private static string GetNormalizedCodeBasePath(Assembly assembly)
+        [RequiresAssemblyFiles]
+        private static string? GetNormalizedCodeBasePath(Assembly assembly)
         {
-            if (Uri.TryCreate(assembly.CodeBase, UriKind.Absolute, out Uri codeBase)
+#pragma warning disable SYSLIB0012 // CodeBase is obsolete
+            if (Uri.TryCreate(assembly.CodeBase, UriKind.Absolute, out Uri? codeBase)
+#pragma warning restore SYSLIB0012 // CodeBase is obsolete
                 && codeBase.IsFile)
             {
                 return codeBase.LocalPath;

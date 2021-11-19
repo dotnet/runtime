@@ -8,23 +8,11 @@
     <TrimMode>link</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <PlatformManifestFile />
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
     <!-- Suppress analyzer and linker warnings as these are tests -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <!-- Can be removed when SDK update picks up https://github.com/dotnet/sdk/pull/18655. -->
-    <NoWarn>$(NoWarn);IL2111</NoWarn>
   </PropertyGroup>
-
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.NETCore.App" />
-    <FrameworkReference Update="Microsoft.NETCore.App"
-                        RuntimePackLabels="Mono"
-                        Condition="'$(UseMonoRuntime)' == 'true'" />
-  </ItemGroup>
 </Project>

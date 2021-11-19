@@ -20,9 +20,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <BuildTestProjects Include="$(BuildTestProject.Split(';'))" />
-      <BuildTestDirs Include="$(BuildTestDir.Split(';'))" />
-      <BuildTestTrees Include="$(BuildTestTree.Split(';'))" />
+      <BuildTestProjects Include="$(__BuildTestProject.Split(';'))" />
+      <BuildTestDirs Include="$(__BuildTestDir.Split(';'))" />
+      <BuildTestTrees Include="$(__BuildTestTree.Split(';'))" />
     </ItemGroup>
 
     <ItemGroup Condition="'@(BuildTestProjects)' != ''">
@@ -69,8 +69,6 @@
       </_GroupStartsWith>
     </ItemGroup>
 
-    <Error Condition=" '$(CLRTestPriorityToBuild)' == '0' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 3) " Text="__TestGroupToBuild property must be between 1 and 3 for Pri0." />
-
     <ItemGroup Condition=" '$(CLRTestPriorityToBuild)' == '1' ">
       <!-- See above for explanation.
       <_GroupStartsWith Include="">
@@ -114,9 +112,7 @@
       </_GroupStartsWith>
     </ItemGroup>
 
-    <Error Condition=" '$(CLRTestPriorityToBuild)' == '1' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 10)" Text="__TestGroupToBuild property must be between 1 and 10 for Pri1." />
-
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(__TestGroupToBuild)' != ''">
       <!-- This computes lower inclusive and upper exclusive boundaries for Group number $(__TestGroupToBuild). -->
       <_GroupStartsWith>@(_GroupStartsWith->WithMetadataValue("GroupNumber", $(__TestGroupToBuild)))</_GroupStartsWith>
       <_GroupEndsWithExcl>@(_GroupStartsWith->WithMetadataValue("GroupNumber", $([MSBuild]::Add($(__TestGroupToBuild), 1))))</_GroupEndsWithExcl>

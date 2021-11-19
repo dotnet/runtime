@@ -54,13 +54,11 @@ public:
 
     static FCDECL4(IUnknown*,       InterfaceMarshaler__ConvertToNative, Object* pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags);
     static FCDECL4(Object*,         InterfaceMarshaler__ConvertToManaged, IUnknown **ppUnk, MethodTable *pItfMT, MethodTable *pClsMT, DWORD dwFlags);
-    static void QCALLTYPE           InterfaceMarshaler__ClearNative(IUnknown * pUnk);
     static FCDECL1(Object *,        InterfaceMarshaler__ConvertToManagedWithoutUnboxing, IUnknown *pNative);
 #endif // FEATURE_COMINTEROP
 
     static FCDECL0(void,            SetLastError            );
     static FCDECL0(void,            ClearLastError          );
-    static FCDECL1(void,            InitDeclaringType,      NDirectMethodDesc* pMND);
     static FCDECL1(void*,           GetNDirectTarget,       NDirectMethodDesc* pNMD);
     static FCDECL2(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg);
 
@@ -107,5 +105,9 @@ public:
 
     static FCDECL0(void*,           NextCallReturnAddress);
 };
+
+#ifdef FEATURE_COMINTEROP
+extern "C" void QCALLTYPE InterfaceMarshaler__ClearNative(IUnknown * pUnk);
+#endif
 
 #endif  // __STUBHELPERS_h__

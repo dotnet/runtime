@@ -29,11 +29,12 @@
 unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 {
     BYTE*          candidateCode = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
-    InlineContext* inlineContext = inlineInfo->iciStmt->GetInlineContext();
+    InlineContext* inlineContext = inlineInfo->inlineCandidateInfo->inlinersContext;
     InlineResult*  inlineResult  = inlineInfo->inlineResult;
 
     // There should be a context for all candidates.
     assert(inlineContext != nullptr);
+
     int depth = 0;
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
@@ -101,17 +102,6 @@ PhaseStatus Compiler::fgInline()
 
     noway_assert(fgFirstBB != nullptr);
 
-    // Set the root inline context on all statements
-    InlineContext* rootContext = m_inlineStrategy->GetRootContext();
-
-    for (BasicBlock* const block : Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            stmt->SetInlineContext(rootContext);
-        }
-    }
-
     BasicBlock* block       = fgFirstBB;
     bool        madeChanges = false;
 
@@ -123,7 +113,7 @@ PhaseStatus Compiler::fgInline()
         for (Statement* const stmt : block->Statements())
         {
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
             // candidate stage. So scan the tree looking for those early failures.
@@ -185,7 +175,7 @@ PhaseStatus Compiler::fgInline()
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
             fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, fgLateDevirtualization,
-                       (void*)this);
+                       (void*)&madeChanges);
 
             // See if stmt is of the form GT_COMMA(call, nop)
             // If yes, we can get rid of GT_COMMA.
@@ -226,7 +216,7 @@ PhaseStatus Compiler::fgInline()
     {
         JITDUMP("**************** Inline Tree");
         printf("\n");
-        m_inlineStrategy->Dump(verbose);
+        m_inlineStrategy->Dump(verbose || JitConfig.JitPrintInlinedMethodsVerbose());
     }
 
 #endif // DEBUG
@@ -234,7 +224,7 @@ PhaseStatus Compiler::fgInline()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
 // fgFindNonInlineCandidate: tree walk helper to ensure that a tree node
@@ -283,7 +273,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
         return;
     }
 
-    InlineResult      inlineResult(this, call, nullptr, "fgNotInlineCandidate");
+    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate");
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
     // Try and recover the reason left behind when the jit decided
@@ -301,8 +291,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 
     if (call->gtCallType == CT_USER_FUNC)
     {
-        // Create InlineContext for the failure
-        m_inlineStrategy->NewFailure(stmt, &inlineResult);
+        m_inlineStrategy->NewContext(call->gtInlineContext, stmt, call)->SetFailed(&inlineResult);
     }
 }
 
@@ -497,8 +486,9 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         return WALK_SKIP_SUBTREES;
     }
 
-    Compiler*            comp      = data->compiler;
-    CORINFO_CLASS_HANDLE retClsHnd = NO_CLASS_HANDLE;
+    bool*                madeChanges = static_cast<bool*>(data->pCallbackData);
+    Compiler*            comp        = data->compiler;
+    CORINFO_CLASS_HANDLE retClsHnd   = NO_CLASS_HANDLE;
 
     while (tree->OperGet() == GT_RET_EXPR)
     {
@@ -560,6 +550,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         }
 
         tree->ReplaceWith(inlineCandidate, comp);
+        *madeChanges = true;
         comp->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
 
 #ifdef DEBUG
@@ -610,6 +601,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                     // Just assign the inlinee to a variable to keep it simple.
                     tree->ReplaceWith(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
                 }
+                *madeChanges = true;
             }
             break;
 
@@ -689,9 +681,10 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 
 Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkData* data)
 {
-    GenTree*  tree   = *pTree;
-    GenTree*  parent = data->parent;
-    Compiler* comp   = data->compiler;
+    GenTree*  tree        = *pTree;
+    GenTree*  parent      = data->parent;
+    Compiler* comp        = data->compiler;
+    bool*     madeChanges = static_cast<bool*>(data->pCallbackData);
 
     // In some (rare) cases the parent node of tree will be smashed to a NOP during
     // the preorder by fgAttachStructToInlineeArg.
@@ -731,6 +724,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
             comp->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
                                       explicitTailCall);
+            *madeChanges = true;
         }
     }
     else if (tree->OperGet() == GT_ASG)
@@ -754,6 +748,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
                 if (newClass != NO_CLASS_HANDLE)
                 {
                     comp->lvaUpdateClass(lclNum, newClass, isExact);
+                    *madeChanges = true;
                 }
             }
         }
@@ -770,6 +765,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             JITDUMP("... removing self-assignment\n");
             DISPTREE(tree);
             tree->gtBashToNOP();
+            *madeChanges = true;
         }
     }
     else if (tree->OperGet() == GT_JTRUE)
@@ -789,20 +785,18 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             comp->gtUpdateNodeSideEffects(tree);
             assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
             tree->gtBashToNOP();
+            *madeChanges = true;
 
-            BasicBlock* bTaken    = nullptr;
             BasicBlock* bNotTaken = nullptr;
 
             if (condTree->AsIntCon()->gtIconVal != 0)
             {
                 block->bbJumpKind = BBJ_ALWAYS;
-                bTaken            = block->bbJumpDest;
                 bNotTaken         = block->bbNext;
             }
             else
             {
                 block->bbJumpKind = BBJ_NONE;
-                bTaken            = block->bbNext;
                 bNotTaken         = block->bbJumpDest;
             }
 
@@ -821,14 +815,14 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     {
         const var_types retType    = tree->TypeGet();
         GenTree*        foldedTree = comp->gtFoldExpr(tree);
-        const var_types newType    = foldedTree->TypeGet();
 
         GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, foldedTree, retType);
         if (putArgType != nullptr)
         {
             foldedTree = putArgType;
         }
-        *pTree = foldedTree;
+        *pTree       = foldedTree;
+        *madeChanges = true;
     }
 
     return WALK_CONTINUE;
@@ -858,7 +852,7 @@ Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, f
 
 #endif // DEBUG
 
-void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineResult)
+void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineResult, InlineContext** createdContext)
 {
     noway_assert(call->gtOper == GT_CALL);
     noway_assert((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0);
@@ -940,6 +934,14 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 {
                     pParam->inlineInfo->InlineRoot = pParam->pThis->impInlineInfo->InlineRoot;
                 }
+
+                // The inline context is part of debug info and must be created
+                // before we start creating statements; we lazily create it as
+                // late as possible, which is here.
+                pParam->inlineInfo->inlineContext =
+                    pParam->inlineInfo->InlineRoot->m_inlineStrategy
+                        ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext,
+                                     pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
                 pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
                 pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
 
@@ -955,7 +957,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
 
@@ -1005,6 +1006,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
             inlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
         }
     }
+
+    *createdContext = inlineInfo.inlineContext;
 
     if (inlineResult->IsFailure())
     {
@@ -1112,16 +1115,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
 #endif // DEBUG
 
-    // Create a new inline context and mark the inlined statements with it
-    InlineContext* calleeContext = m_inlineStrategy->NewSuccess(pInlineInfo);
-
-    for (BasicBlock* const block : InlineeCompiler->Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            stmt->SetInlineContext(calleeContext);
-        }
-    }
+    // Mark success.
+    pInlineInfo->inlineContext->SetSucceeded(pInlineInfo);
 
     // Prepend statements
     Statement* stmtAfter = fgInlinePrependStatements(pInlineInfo);
@@ -1276,9 +1271,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         block->copyEHRegion(iciBlock);
         block->bbFlags |= iciBlock->bbFlags & BBF_BACKWARD_JUMP;
 
-        if (iciStmt->GetILOffsetX() != BAD_IL_OFFSET)
+        DebugInfo di = iciStmt->GetDebugInfo().GetRoot();
+        if (di.IsValid())
         {
-            block->bbCodeOffs    = jitGetILoffs(iciStmt->GetILOffsetX());
+            block->bbCodeOffs    = di.GetLocation().GetOffset();
             block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
         }
         else
@@ -1399,8 +1395,11 @@ _Done:
     if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
     {
         setNeedsGSSecurityCookie();
-        const unsigned dummy   = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
-        lvaTable[dummy].lvType = TYP_INT;
+        const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+        LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
+        gsCookieDummy->lvType        = TYP_INT;
+        gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
+        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
     }
 
     // If there is non-NULL return, replace the GT_CALL with its return value expression,
@@ -1461,13 +1460,13 @@ _Done:
 
 Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 {
-    BasicBlock*  block        = inlineInfo->iciBlock;
-    Statement*   callStmt     = inlineInfo->iciStmt;
-    IL_OFFSETX   callILOffset = callStmt->GetILOffsetX();
-    Statement*   postStmt     = callStmt->GetNextStmt();
-    Statement*   afterStmt    = callStmt; // afterStmt is the place where the new statements should be inserted after.
-    Statement*   newStmt      = nullptr;
-    GenTreeCall* call         = inlineInfo->iciCall->AsCall();
+    BasicBlock*      block     = inlineInfo->iciBlock;
+    Statement*       callStmt  = inlineInfo->iciStmt;
+    const DebugInfo& callDI    = callStmt->GetDebugInfo();
+    Statement*       postStmt  = callStmt->GetNextStmt();
+    Statement*       afterStmt = callStmt; // afterStmt is the place where the new statements should be inserted after.
+    Statement*       newStmt   = nullptr;
+    GenTreeCall*     call      = inlineInfo->iciCall->AsCall();
 
     noway_assert(call->gtOper == GT_CALL);
 
@@ -1581,8 +1580,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // argTmpNum here since in-linee compiler instance
                     // would have iterated over these and marked them
                     // accordingly.
-                    impAssignTempGen(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt, callILOffset,
-                                     block);
+                    impAssignTempGen(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt, callDI, block);
 
                     // We used to refine the temp type here based on
                     // the actual arg, but we now do this up front, when
@@ -1631,7 +1629,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         // Don't put GT_OBJ node under a GT_COMMA.
                         // Codegen can't deal with it.
                         // Just hang the address here in case there are side-effect.
-                        newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callILOffset);
+                        newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
                     }
                     else
                     {
@@ -1707,7 +1705,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         // just append the arg node as an unused value.
                         if (newStmt == nullptr)
                         {
-                            newStmt = gtNewStmt(gtUnusedValNode(argNode), callILOffset);
+                            newStmt = gtNewStmt(gtUnusedValNode(argNode), callDI);
                         }
 
                         fgInsertStmtAfter(block, afterStmt, newStmt);
@@ -1743,7 +1741,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHnd);
 
         tree    = fgGetSharedCCtor(exactClass);
-        newStmt = gtNewStmt(tree, callILOffset);
+        newStmt = gtNewStmt(tree, callDI);
         fgInsertStmtAfter(block, afterStmt, newStmt);
         afterStmt = newStmt;
     }
@@ -1751,7 +1749,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // Insert the nullcheck statement now.
     if (nullcheck)
     {
-        newStmt = gtNewStmt(nullcheck, callILOffset);
+        newStmt = gtNewStmt(nullcheck, callDI);
         fgInsertStmtAfter(block, afterStmt, newStmt);
         afterStmt = newStmt;
     }
@@ -1804,7 +1802,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // Unsafe value cls check is not needed here since in-linee compiler instance would have
                     // iterated over locals and marked accordingly.
                     impAssignTempGen(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), NO_CLASS_HANDLE,
-                                     (unsigned)CHECK_SPILL_NONE, &afterStmt, callILOffset, block);
+                                     (unsigned)CHECK_SPILL_NONE, &afterStmt, callDI, block);
                 }
                 else
                 {
@@ -1813,7 +1811,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                                           false,                         // isVolatile
                                           false);                        // not copyBlock
 
-                    newStmt = gtNewStmt(tree, callILOffset);
+                    newStmt = gtNewStmt(tree, callDI);
                     fgInsertStmtAfter(block, afterStmt, newStmt);
                     afterStmt = newStmt;
                 }
@@ -1826,15 +1824,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 #endif // DEBUG
             }
         }
-    }
-
-    // Update any newly added statements with the appropriate context.
-    InlineContext* context = callStmt->GetInlineContext();
-    assert(context != nullptr);
-    for (Statement* addedStmt = callStmt->GetNextStmt(); addedStmt != postStmt; addedStmt = addedStmt->GetNextStmt())
-    {
-        assert(addedStmt->GetInlineContext() == nullptr);
-        addedStmt->SetInlineContext(context);
     }
 
     return afterStmt;
@@ -1873,7 +1862,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
     JITDUMP("fgInlineAppendStatements: nulling out gc ref inlinee locals.\n");
 
     Statement*           callStmt          = inlineInfo->iciStmt;
-    IL_OFFSETX           callILOffset      = callStmt->GetILOffsetX();
+    const DebugInfo&     callDI            = callStmt->GetDebugInfo();
     CORINFO_METHOD_INFO* InlineeMethodInfo = InlineeCompiler->info.compMethodInfo;
     const unsigned       lclCnt            = InlineeMethodInfo->locals.numArgs;
     InlLclVarInfo*       lclVarInfo        = inlineInfo->lclVarInfo;
@@ -1922,7 +1911,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
 
         // Assign null to the local.
         GenTree*   nullExpr = gtNewTempAssign(tmpNum, gtNewZeroConNode(lclTyp));
-        Statement* nullStmt = gtNewStmt(nullExpr, callILOffset);
+        Statement* nullStmt = gtNewStmt(nullExpr, callDI);
 
         if (stmtAfter == nullptr)
         {

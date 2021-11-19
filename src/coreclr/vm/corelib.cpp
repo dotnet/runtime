@@ -6,20 +6,9 @@
 //
 // This file defines tables for references between VM and corelib.
 //
-// When compiling crossgen, this file is compiled with the FEATURE_XXX define settings matching the target.
-// It allows us to strip features (e.g. refection only load) from crossgen without stripping them from the target.
-//
-
-#ifdef CROSSGEN_CORELIB
-// Use minimal set of headers for crossgen
-#include "windows.h"
-#include "corinfo.h"
-#else
 #include "common.h"
 #include "ecall.h"
-#endif // CROSSGEN_CORELIB
 
-#ifndef CROSSGEN_COMPILE
 //
 // Headers for all ECall entrypoints
 //
@@ -89,99 +78,6 @@
 #endif //FEATURE_PERFTRACING
 
 #include "tailcallhelp.h"
-
-#endif // CROSSGEN_CORELIB
-
-
-#ifdef CROSSGEN_CORELIB
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Duplicate definitions of constants and datastructures required to define the tables
-//
-
-#define NumItems(s) (sizeof(s) / sizeof(s[0]))
-
-#define GetEEFuncEntryPoint(pfn) 0x1001
-
-enum {
-    FCFuncFlag_EndOfArray   = 0x01,
-    FCFuncFlag_HasSignature = 0x02,
-    FCFuncFlag_Unreferenced = 0x04, // Suppress unused fcall check
-    FCFuncFlag_QCall        = 0x08, // QCall - CoreLib to VM transition implemented as PInvoke
-};
-
-struct ECClass
-{
-    LPCSTR      m_szClassName;
-    LPCSTR      m_szNameSpace;
-    const LPVOID *  m_pECFunc;
-};
-
-struct HardCodedMetaSig
-{
-    const BYTE* m_pMetaSig; // metasig prefixed with INT8 length:
-                            // length > 0 - resolved, lenght < 0 - has unresolved type references
-};
-
-enum BinderClassID
-{
-#define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv)   CLASS__ ## e,
-#include "cortypeinfo.h"
-#undef TYPEINFO
-
-#define DEFINE_CLASS(i,n,s)         CLASS__ ## i,
-#include "corelib.h"
-
-    CLASS__CORELIB_COUNT,
-
-    CLASS__VOID     = CLASS__ELEMENT_TYPE_VOID,
-    CLASS__BOOLEAN  = CLASS__ELEMENT_TYPE_BOOLEAN,
-    CLASS__CHAR     = CLASS__ELEMENT_TYPE_CHAR,
-    CLASS__BYTE     = CLASS__ELEMENT_TYPE_U1,
-    CLASS__SBYTE    = CLASS__ELEMENT_TYPE_I1,
-    CLASS__INT16    = CLASS__ELEMENT_TYPE_I2,
-    CLASS__UINT16   = CLASS__ELEMENT_TYPE_U2,
-    CLASS__INT32    = CLASS__ELEMENT_TYPE_I4,
-    CLASS__UINT32   = CLASS__ELEMENT_TYPE_U4,
-    CLASS__INT64    = CLASS__ELEMENT_TYPE_I8,
-    CLASS__UINT64   = CLASS__ELEMENT_TYPE_U8,
-    CLASS__SINGLE   = CLASS__ELEMENT_TYPE_R4,
-    CLASS__DOUBLE   = CLASS__ELEMENT_TYPE_R8,
-    CLASS__STRING   = CLASS__ELEMENT_TYPE_STRING,
-    CLASS__TYPED_REFERENCE = CLASS__ELEMENT_TYPE_TYPEDBYREF,
-    CLASS__INTPTR   = CLASS__ELEMENT_TYPE_I,
-    CLASS__UINTPTR  = CLASS__ELEMENT_TYPE_U,
-    CLASS__OBJECT   = CLASS__ELEMENT_TYPE_OBJECT
-};
-
-struct CoreLibClassDescription
-{
-    LPCSTR  nameSpace;
-    LPCSTR  name;
-};
-
-struct CoreLibMethodDescription
-{
-    BinderClassID classID;
-    LPCSTR  name;
-    const HardCodedMetaSig * sig;
-};
-
-struct CoreLibFieldDescription
-{
-    BinderClassID classID;
-    LPCSTR  name;
-};
-
-#endif // CROSSGEN_CORELIB
-
-
-#ifdef CROSSGEN_CORELIB
-// When compiling crossgen this namespace creates the second version of the tables than matches the target
-namespace CrossGenCoreLib {
-#endif
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -374,25 +270,10 @@ const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions
 //
 
 // When compiling crossgen, we only need the target version of the ecall tables
-#if !defined(CROSSGEN_COMPILE) || defined(CROSSGEN_CORELIB)
-
-#ifdef CROSSGEN_COMPILE
-
-#define QCFuncElement(name,impl) \
-    FCFuncFlag_QCall + FCFuncFlags(CORINFO_INTRINSIC_Illegal, ECall::InvalidDynamicFCallId), NULL, (LPVOID)name,
-
-#define FCFuncFlags(intrinsicID, dynamicID) \
-    (BYTE*)( (((BYTE)intrinsicID) << 16) )
-
-#else
-
-#define QCFuncElement(name,impl) \
-    FCFuncFlag_QCall + FCFuncFlags(CORINFO_INTRINSIC_Illegal, ECall::InvalidDynamicFCallId), (LPVOID)(impl), (LPVOID)name,
 
 #define FCFuncFlags(intrinsicID, dynamicID) \
     (BYTE*)( (((BYTE)intrinsicID) << 16) + (((BYTE)dynamicID) << 24) )
 
-#endif
 
 #define FCFuncElement(name, impl) FCFuncFlags(CORINFO_INTRINSIC_Illegal, ECall::InvalidDynamicFCallId), \
     (LPVOID)GetEEFuncEntryPoint(impl), (LPVOID)name,
@@ -431,10 +312,3 @@ const ECClass c_rgECClasses[] =
 };  // c_rgECClasses[]
 
 const int c_nECClasses = NumItems(c_rgECClasses);
-
-#endif // !CROSSGEN_COMPILE && CROSSGEN_CORELIB
-
-
-#ifdef CROSSGEN_CORELIB
-}; // namespace CrossGenCoreLib
-#endif

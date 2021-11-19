@@ -85,7 +85,8 @@ namespace System
                                             timeZone._standardDisplayName,
                                             timeZone._daylightDisplayName,
                                             timeZone._adjustmentRules,
-                                            disableDaylightSavingTime: false);
+                                            disableDaylightSavingTime: false,
+                                            timeZone.HasIanaId);
 
                         _localTimeZone = timeZone;
                     }
@@ -1954,7 +1955,7 @@ namespace System
                 else
                 {
                     value = new TimeZoneInfo(match!._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
-                                          match._daylightDisplayName, match._adjustmentRules, disableDaylightSavingTime: false);
+                                          match._daylightDisplayName, match._adjustmentRules, disableDaylightSavingTime: false, match.HasIanaId);
                 }
             }
             else

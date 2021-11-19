@@ -115,6 +115,7 @@ int EC_POINT_set_affine_coordinates_GF2m(
 #undef HAVE_OPENSSL_SET_CIPHERSUITES
 #define HAVE_OPENSSL_SET_CIPHERSUITES 1
 int SSL_CTX_set_ciphersuites(SSL_CTX *ctx, const char *str);
+int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
@@ -127,7 +128,6 @@ const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #include "osslcompat_30.h"
 #include "osslcompat_111.h"
 #endif
-
 
 #if !HAVE_OPENSSL_ALPN
 #undef HAVE_OPENSSL_ALPN
@@ -159,6 +159,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
 // that needs to be added.
 
 #define FOR_ALL_OPENSSL_FUNCTIONS \
+    REQUIRED_FUNCTION(a2d_ASN1_OBJECT) \
     REQUIRED_FUNCTION(ASN1_BIT_STRING_free) \
     REQUIRED_FUNCTION(ASN1_d2i_bio) \
     REQUIRED_FUNCTION(ASN1_i2d_bio) \
@@ -302,6 +303,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_reset) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_key_length) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_padding) \
+    RENAMED_FUNCTION(EVP_CIPHER_get_nid, EVP_CIPHER_nid) \
     REQUIRED_FUNCTION(EVP_CipherFinal_ex) \
     REQUIRED_FUNCTION(EVP_CipherInit_ex) \
     REQUIRED_FUNCTION(EVP_CipherUpdate) \
@@ -458,6 +460,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LIGHTUP_FUNCTION(SSL_CIPHER_get_name) \
     LIGHTUP_FUNCTION(SSL_CIPHER_get_version) \
     REQUIRED_FUNCTION(SSL_ctrl) \
+    REQUIRED_FUNCTION(SSL_set_alpn_protos) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
     FALLBACK_FUNCTION(SSL_CTX_config) \
@@ -482,6 +485,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_get_client_CA_list) \
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
+    REQUIRED_FUNCTION(SSL_get_ex_data) \
     REQUIRED_FUNCTION(SSL_get_finished) \
     REQUIRED_FUNCTION(SSL_get_peer_cert_chain) \
     REQUIRED_FUNCTION(SSL_get_peer_finished) \
@@ -499,7 +503,10 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
+    REQUIRED_FUNCTION(SSL_set_cipher_list) \
+    LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
+    REQUIRED_FUNCTION(SSL_set_ex_data) \
     FALLBACK_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
@@ -607,6 +614,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 // Redefine all calls to OpenSSL functions as calls through pointers that are set
 // to the functions from the libssl.so selected by the shim.
+#define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr
 #define ASN1_BIT_STRING_free ASN1_BIT_STRING_free_ptr
 #define ASN1_GENERALIZEDTIME_free ASN1_GENERALIZEDTIME_free_ptr
 #define ASN1_d2i_bio ASN1_d2i_bio_ptr
@@ -750,6 +758,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CIPHER_CTX_reset EVP_CIPHER_CTX_reset_ptr
 #define EVP_CIPHER_CTX_set_key_length EVP_CIPHER_CTX_set_key_length_ptr
 #define EVP_CIPHER_CTX_set_padding EVP_CIPHER_CTX_set_padding_ptr
+#define EVP_CIPHER_get_nid EVP_CIPHER_get_nid_ptr
 #define EVP_CipherFinal_ex EVP_CipherFinal_ex_ptr
 #define EVP_CipherInit_ex EVP_CipherInit_ex_ptr
 #define EVP_CipherUpdate EVP_CipherUpdate_ptr
@@ -908,6 +917,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CIPHER_get_name SSL_CIPHER_get_name_ptr
 #define SSL_CIPHER_get_version SSL_CIPHER_get_version_ptr
 #define SSL_ctrl SSL_ctrl_ptr
+#define SSL_set_alpn_protos SSL_set_alpn_protos_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
 #define SSL_CTX_config SSL_CTX_config_ptr
@@ -931,6 +941,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_get_client_CA_list SSL_get_client_CA_list_ptr
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
+#define SSL_get_ex_data SSL_get_ex_data_ptr
 #define SSL_get_finished SSL_get_finished_ptr
 #define SSL_get_peer_cert_chain SSL_get_peer_cert_chain_ptr
 #define SSL_get_peer_finished SSL_get_peer_finished_ptr
@@ -951,7 +962,10 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
+#define SSL_set_cipher_list SSL_set_cipher_list_ptr
+#define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
+#define SSL_set_ex_data SSL_set_ex_data_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
@@ -1108,6 +1122,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_get_base_id EVP_PKEY_base_id
 #define EVP_PKEY_get_size EVP_PKEY_size
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
+#define EVP_CIPHER_get_nid EVP_CIPHER_nid
 
 #endif
 

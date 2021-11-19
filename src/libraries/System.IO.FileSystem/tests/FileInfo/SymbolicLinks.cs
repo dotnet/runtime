@@ -41,6 +41,24 @@ namespace System.IO.Tests
         public void ResolveLinkTarget_Throws_NotExists() =>
             ResolveLinkTarget_Throws_NotExists_Internal<FileNotFoundException>();
 
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UnsupportedLink_ReturnsNull()
+        {
+            string unsupportedLinkPath = GetAppExecLinkPath();
+            if (unsupportedLinkPath is null)
+            {
+                return;
+            }
+
+            var info = new FileInfo(unsupportedLinkPath);
+
+            Assert.Null(info.LinkTarget);
+            Assert.Null(info.ResolveLinkTarget(false));
+            Assert.Null(info.ResolveLinkTarget(true));
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CreateSymbolicLink_PathToTarget_RelativeToLinkPath()
         {

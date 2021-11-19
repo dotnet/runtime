@@ -120,9 +120,6 @@ struct CoreLibFieldDescription
 class CoreLibBinder
 {
   public:
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     //
     // Note that the frequently called methods are intentionally static to reduce code bloat.
@@ -236,16 +233,6 @@ class CoreLibBinder
     // These are called by initialization code:
     //
     static void AttachModule(Module *pModule);
-
-#ifdef FEATURE_PREJIT
-    //
-    // Store the binding arrays to a prejit image
-    // so we don't have to do name lookup at runtime
-    //
-    void BindAll();
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif
 
 #ifdef _DEBUG
     void Check();

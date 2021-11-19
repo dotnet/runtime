@@ -24,7 +24,7 @@ steps:
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
       displayName: Build HelloAndroid sample app
   - ${{ if eq(parameters.osGroup, 'iOS') }}:
-    - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False
+    - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -47,7 +47,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=True
+    - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS

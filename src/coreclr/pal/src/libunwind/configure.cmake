@@ -17,8 +17,7 @@ if(CLR_CMAKE_HOST_WIN32)
     endif (NOT HAVE_STDALIGN_H)
 
     # MSVC compiler is currently missing C11 stdatomic.h header
-    # Fake it until support is added
-    check_include_files(stdatomic.h HAVE_STDATOMIC_H)
+    check_c_source_compiles("#include <stdatomic.h> void main() { _Atomic int a; }" HAVE_STDATOMIC_H)
     if (NOT HAVE_STDATOMIC_H)
         configure_file(include/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h COPYONLY)
     endif (NOT HAVE_STDATOMIC_H)

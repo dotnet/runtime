@@ -281,6 +281,11 @@ namespace System.Text.Json.Reflection
             return _elementType;
         }
 
+        public override Type MakeArrayType()
+        {
+            return _metadataLoadContext.Compilation.CreateArrayTypeSymbol(_typeSymbol).AsType(_metadataLoadContext);
+        }
+
         public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
         {
             throw new NotImplementedException();
@@ -311,7 +316,9 @@ namespace System.Text.Json.Reflection
                         // we want a static field and this is not static
                         (BindingFlags.Static & bindingAttr) != 0 && !fieldSymbol.IsStatic ||
                         // we want an instance field and this is static or a constant
-                        (BindingFlags.Instance & bindingAttr) != 0 && (fieldSymbol.IsStatic || fieldSymbol.IsConst))
+                        (BindingFlags.Instance & bindingAttr) != 0 && (fieldSymbol.IsStatic || fieldSymbol.IsConst) ||
+                        // symbol represents an explicitly named tuple element
+                        fieldSymbol.IsExplicitlyNamedTupleElement)
                     {
                         continue;
                     }
@@ -593,5 +600,7 @@ namespace System.Text.Json.Reflection
             }
             return base.Equals(o);
         }
+
+        public Location? Location => _typeSymbol.Locations.Length > 0 ? _typeSymbol.Locations[0] : null;
     }
 }

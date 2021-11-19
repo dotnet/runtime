@@ -46,10 +46,8 @@
              Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs"
              Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
-             Link="Common\System\IO\PathInternal.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\IO\DriveInfo.UnixOrBrowser.cs" />
     <Compile Include="System\IO\DriveInfo.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -60,8 +58,6 @@
              Link="Common\Interop\Unix\Interop.UnixFileSystemTypes.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
-             Link="Common\System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs"
@@ -69,7 +65,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
              Link="Common\Interop\Unix\Interop.MountPoints.FormatInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' And ($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))) ">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.UnixOrBrowser.cs" />
     <Compile Include="System\IO\DriveInfo.Browser.cs" />
   </ItemGroup>
@@ -77,6 +73,7 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>

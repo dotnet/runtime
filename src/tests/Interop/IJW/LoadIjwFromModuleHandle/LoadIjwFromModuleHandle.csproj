@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Internal.Runtime.InteropServices is CoreCLR-only -->
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>

@@ -5,6 +5,7 @@
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\wasm_build\</TestRootDir>
 
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <RunAOTCompilationAfterBuild>true</RunAOTCompilationAfterBuild>
     <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
     <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
     <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
@@ -28,7 +29,7 @@
     <PropertyGroup>
       <WasmAppDir>$(TestRootDir)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName>$(OriginalPublishDir)WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath>$(OriginalPublishDir)runtime-test.js</WasmMainJSPath>
+      <WasmMainJSPath>$(OriginalPublishDir)test-main.js</WasmMainJSPath>
       <WasmGenerateRunV8Script Condition="'$(WasmGenerateRunV8Script)' == ''">true</WasmGenerateRunV8Script>
     </PropertyGroup>
 

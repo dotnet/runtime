@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
@@ -6,6 +6,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>$(NoWarn);SYSLIB0026;SYSLIB0027;SYSLIB0028</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
   <PropertyGroup>
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
@@ -13,6 +14,7 @@
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
@@ -57,6 +59,8 @@
     <Compile Include="CertificateCreation\DSAX509SignatureGenerator.cs" />
     <Compile Include="CertificateCreation\EccTestData.cs" />
     <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\PemEnumerator.cs"
+             Link="Common\Internal\Cryptography\PemEnumerator.cs" />
     <Compile Include="CertificateCreation\PrivateKeyAssociationTests.cs" />
     <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />

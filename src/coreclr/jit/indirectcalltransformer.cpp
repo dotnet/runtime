@@ -12,7 +12,7 @@
 //
 // A fat function pointer is a pointer with the second least significant bit
 // (aka FAT_POINTER_MASK) set. If the bit is set, the pointer (after clearing the bit)
-// actually points to a tuple <method pointer, instantiation argument pointer> where
+// actually points to a tuple <method pointer, instantiation argument> where
 // instantiationArgument is a hidden first argument required by method pointer.
 //
 // Fat pointers are used in CoreRT as a replacement for instantiating stubs,
@@ -364,7 +364,7 @@ private:
             GenTree*   zero            = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
             GenTree*   fatPointerCmp   = compiler->gtNewOperNode(GT_NE, TYP_INT, fatPointerAnd, zero);
             GenTree*   jmpTree         = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
-            Statement* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX());
+            Statement* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
         }
 
@@ -410,17 +410,15 @@ private:
         // GetHiddenArgument: load hidden argument.
         //
         // Arguments:
-        //    fixedFptrAddress - pointer to the tuple <methodPointer, instantiationArgumentPointer>
+        //    fixedFptrAddress - pointer to the tuple <methodPointer, instantiationArgument>
         //
         // Return Value:
         //    generic context hidden argument.
         GenTree* GetHiddenArgument(GenTree* fixedFptrAddress)
         {
             GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
-            GenTree* wordSize = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
-            GenTree* hiddenArgumentPtrPtr =
-                compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
-            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_IND, pointerType, hiddenArgumentPtrPtr);
+            GenTree* wordSize          = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
+            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
             return compiler->gtNewOperNode(GT_IND, fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
         }
 
@@ -597,7 +595,7 @@ private:
                 const unsigned thisTempNum = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt this temp"));
                 // lvaSetClass(thisTempNum, ...);
                 GenTree*   asgTree = compiler->gtNewTempAssign(thisTempNum, thisTree);
-                Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetILOffsetX());
+                Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
                 compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
 
                 thisTree = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
@@ -626,7 +624,7 @@ private:
             //
             GenTree*   methodTableCompare = compiler->gtNewOperNode(GT_NE, TYP_INT, targetMethodTable, methodTable);
             GenTree*   jmpTree            = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, methodTableCompare);
-            Statement* jmpStmt            = compiler->fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX());
+            Statement* jmpStmt            = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
         }
 
@@ -783,14 +781,14 @@ private:
                 }
                 else
                 {
-                    compiler->fgNewStmtAtEnd(thenBlock, call);
+                    compiler->fgNewStmtAtEnd(thenBlock, call, stmt->GetDebugInfo());
                 }
             }
             else
             {
                 // Add the call.
                 //
-                compiler->fgNewStmtAtEnd(thenBlock, call);
+                compiler->fgNewStmtAtEnd(thenBlock, call, stmt->GetDebugInfo());
 
                 // Re-establish this call as an inline candidate.
                 //
@@ -833,7 +831,7 @@ private:
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
             GenTreeCall* call    = origCall;
-            Statement*   newStmt = compiler->gtNewStmt(call);
+            Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
 
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
             call->SetIsGuarded();
@@ -1172,13 +1170,13 @@ private:
 
             assert(sizeCheck->OperIs(GT_LE));
             GenTree*   sizeJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
-            Statement* sizeJmpStmt = compiler->fgNewStmtFromTree(sizeJmpTree, stmt->GetILOffsetX());
+            Statement* sizeJmpStmt = compiler->fgNewStmtFromTree(sizeJmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, sizeJmpStmt);
 
             checkBlock2 = CreateAndInsertBasicBlock(BBJ_COND, checkBlock);
             assert(nullCheck->OperIs(GT_EQ));
             GenTree*   nullJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, nullCheck);
-            Statement* nullJmpStmt = compiler->fgNewStmtFromTree(nullJmpTree, stmt->GetILOffsetX());
+            Statement* nullJmpStmt = compiler->fgNewStmtFromTree(nullJmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock2, nullJmpStmt);
         }
 
@@ -1197,7 +1195,7 @@ private:
             origCall->gtCallArgs = argsIter.GetUse();
 
             GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, resultHandle);
-            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetILOffsetX());
+            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(thenBlock, asgStmt);
         }
 
@@ -1208,7 +1206,7 @@ private:
         {
             elseBlock          = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, origCall);
-            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetILOffsetX());
+            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(elseBlock, asgStmt);
         }
 

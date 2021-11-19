@@ -2414,12 +2414,12 @@ ClrDataModule::GetFileName(
     {
         COUNT_T _nameLen;
 
-        // Try to get the file name through GetPath.
-        // If the returned name is empty, then try to get the guessed module file name.
-        // The guessed file name is propogated from metadata's module name.
+        // Try to get the assembly name through GetPath.
+        // If the returned name is empty, then try to get the guessed module assembly name.
+        // The guessed assembly name is propogated from metadata's module name.
         //
-        if ((m_module->GetFile()->GetPath().DacGetUnicode(bufLen, name, &_nameLen) && name[0])||
-            (m_module->GetFile()->GetModuleFileNameHint().DacGetUnicode(bufLen, name, &_nameLen) && name[0]))
+        if ((m_module->GetPEAssembly()->GetPath().DacGetUnicode(bufLen, name, &_nameLen) && name[0])||
+            (m_module->GetPEAssembly()->GetModuleFileNameHint().DacGetUnicode(bufLen, name, &_nameLen) && name[0]))
         {
             if (nameLen)
             {
@@ -2455,19 +2455,11 @@ ClrDataModule::GetVersionId(
 
     EX_TRY
     {
-        if (!m_module->GetFile()->HasMetadata())
+        GUID mdVid;
+        status = m_module->GetMDImport()->GetScopeProps(NULL, &mdVid);
+        if (SUCCEEDED(status))
         {
-            status = E_NOINTERFACE;
-        }
-        else
-        {
-            GUID mdVid;
-
-            status = m_module->GetMDImport()->GetScopeProps(NULL, &mdVid);
-            if (SUCCEEDED(status))
-            {
-                *vid = mdVid;
-            }
+            *vid = mdVid;
         }
     }
     EX_CATCH
@@ -2499,10 +2491,7 @@ ClrDataModule::GetFlags(
         {
             (*flags) |= CLRDATA_MODULE_IS_DYNAMIC;
         }
-        if (m_module->IsIStream())
-        {
-            (*flags) |= CLRDATA_MODULE_IS_MEMORY_STREAM;
-        }
+
         PTR_Assembly pAssembly = m_module->GetAssembly();
         PTR_BaseDomain pBaseDomain = pAssembly->GetDomain();
         if (pBaseDomain->IsAppDomain())
@@ -2568,8 +2557,8 @@ ClrDataModule::StartEnumExtents(
     {
         if (!m_setExtents)
         {
-            PEFile* file = m_module->GetFile();
-            if (!file)
+            PEAssembly* assembly = m_module->GetPEAssembly();
+            if (!assembly)
             {
                 *handle = 0;
                 status = E_INVALIDARG;
@@ -2578,18 +2567,11 @@ ClrDataModule::StartEnumExtents(
 
             CLRDATA_MODULE_EXTENT* extent = m_extents;
 
-            if (file->GetLoadedImageContents() != NULL)
+            if (assembly->GetLoadedImageContents() != NULL)
             {
                 extent->base =
-                    TO_CDADDR( PTR_TO_TADDR(file->GetLoadedImageContents(&extent->length)) );
+                    TO_CDADDR( PTR_TO_TADDR(assembly->GetLoadedImageContents(&extent->length)) );
                 extent->type = CLRDATA_MODULE_PE_FILE;
-                extent++;
-            }
-            if (file->HasNativeImage())
-            {
-                extent->base = TO_CDADDR(PTR_TO_TADDR(file->GetLoadedNative()->GetBase()));
-                extent->length = file->GetLoadedNative()->GetVirtualSize();
-                extent->type = CLRDATA_MODULE_PREJIT_FILE;
                 extent++;
             }
 
@@ -2730,23 +2712,23 @@ ClrDataModule::RequestGetModuleData(
     ZeroMemory(outGMD, sizeof(DacpGetModuleData));
 
     Module* pModule = GetModule();
-    PEFile *pPEFile = pModule->GetFile();
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    outGMD->PEFile = TO_CDADDR(PTR_HOST_TO_TADDR(pPEFile));
+    outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pPEAssembly));
     outGMD->IsDynamic = pModule->IsReflection();
 
-    if (pPEFile != NULL)
+    if (pPEAssembly != NULL)
     {
-        outGMD->IsInMemory = pPEFile->GetPath().IsEmpty();
+        outGMD->IsInMemory = pPEAssembly->GetPath().IsEmpty();
 
         COUNT_T peSize;
-        outGMD->LoadedPEAddress = TO_CDADDR(PTR_TO_TADDR(pPEFile->GetLoadedImageContents(&peSize)));
+        outGMD->LoadedPEAddress = TO_CDADDR(PTR_TO_TADDR(pPEAssembly->GetLoadedImageContents(&peSize)));
         outGMD->LoadedPESize = (ULONG64)peSize;
 
-        // Can not get the file layout for a dynamic module
+        // Can not get the assembly layout for a dynamic module
         if (!outGMD->IsDynamic)
         {
-            outGMD->IsFileLayout = pPEFile->GetLoaded()->IsFlat();
+            outGMD->IsFileLayout = pPEAssembly->GetLoadedLayout()->IsFlat();
         }
     }
 
@@ -2835,12 +2817,6 @@ ClrDataModule::SetJITCompilerFlags(
         {
             hr = E_INVALIDARG;
         }
-#ifdef FEATURE_PREJIT
-        else if (m_module->HasNativeImage())
-        {
-            hr = CORDBG_E_CANT_CHANGE_JIT_SETTING_FOR_ZAP_MODULE;
-        }
-#endif
         else
         {
             _ASSERTE(m_module != NULL);
@@ -2889,17 +2865,10 @@ ClrDataModule::GetMdInterface(PVOID* retIface)
     {
         if (m_mdImport == NULL)
         {
-            if (!m_module->GetFile()->HasMetadata())
-            {
-                status = E_NOINTERFACE;
-                goto Exit;
-            }
-
             //
             // Make sure internal MD is in RW format.
             //
             IMDInternalImport* rwMd;
-
             status = ConvertMDInternalImport(m_module->GetMDImport(), &rwMd);
             if (FAILED(status))
             {

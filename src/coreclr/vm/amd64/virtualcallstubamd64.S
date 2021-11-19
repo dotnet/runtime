@@ -87,22 +87,3 @@ Fail_RWCLAS:
 
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
 
-#ifdef FEATURE_PREJIT
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-
-        PROLOG_WITH_TRANSITION_BLOCK 0, 0, 0, 0, 0
-
-        lea             rdi, [rsp + __PWTB_TransitionBlock] // pTransitionBlock
-        mov             rsi, r11                            // indirection cell address
-
-        mov             rdx,0                               // sectionIndex
-        mov             rcx,0                               // pModule
-
-        call            C_FUNC(StubDispatchFixupWorker)
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-PATCH_LABEL StubDispatchFixupPatchLabel
-        TAILJMP_RAX
-
-NESTED_END StubDispatchFixupStub, _TEXT
-#endif

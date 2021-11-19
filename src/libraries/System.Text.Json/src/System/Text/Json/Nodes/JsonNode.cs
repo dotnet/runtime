@@ -164,6 +164,8 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Gets the value for the current <see cref="JsonValue"/>.
         /// </summary>
+        /// <typeparam name="T">The type of the value to obtain from the <see cref="JsonValue"/>.</typeparam>
+        /// <returns>A value converted from the <see cref="JsonValue"/> instance.</returns>
         /// <remarks>
         ///   {T} can be the type or base type of the underlying value.
         ///   If the underlying value is a <see cref="JsonElement"/> then {T} can also be the type of any primitive

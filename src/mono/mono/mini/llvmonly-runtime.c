@@ -5,6 +5,7 @@
  */
 
 #include <config.h>
+#include <mono/metadata/tokentype.h>
 #include "llvmonly-runtime.h"
 #include "aot-runtime.h"
 
@@ -650,16 +651,31 @@ mini_llvmonly_init_vtable_slot (MonoVTable *vtable, int slot)
  * Similar to mono_delegate_ctor ().
  */
 void
-mini_llvmonly_init_delegate (MonoDelegate *del)
+mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 {
 	ERROR_DECL (error);
-	MonoFtnDesc *ftndesc = *(MonoFtnDesc**)del->method_code;
+	MonoFtnDesc *ftndesc;
 
-	/*
-	 * We store a MonoFtnDesc in del->method_code.
-	 * It would be better to store an ftndesc in del->method_ptr too,
-	 * but we don't have a a structure which could own its memory.
-	 */
+	if (!info && !del->method) {
+		// Multicast delegate init
+		// Have to set the invoke_impl field
+		// FIXME: Cache
+		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (mono_get_delegate_invoke_internal (del->object.vtable->klass), NULL);
+		gpointer arg = NULL;
+		gpointer addr = mini_llvmonly_load_method_delegate (invoke_impl, FALSE, FALSE, &arg, error);
+		mono_error_assert_ok (error);
+		del->invoke_impl = mini_llvmonly_create_ftndesc (invoke_impl, addr, arg);
+		return;
+	}
+
+	if (G_UNLIKELY (!info)) {
+		g_assert (del->method);
+		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method);
+	}
+
+	/* Cache the target method address in MonoDelegateTrampInfo */
+	ftndesc = (MonoFtnDesc*)info->method_ptr;
+
 	if (G_UNLIKELY (!ftndesc)) {
 		MonoMethod *m = del->method;
 		gboolean need_unbox = FALSE;
@@ -667,7 +683,7 @@ mini_llvmonly_init_delegate (MonoDelegate *del)
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			m = mono_marshal_get_synchronized_wrapper (m);
 
-		if (m_class_is_valuetype (m->klass) && mono_method_signature_internal (m)->hasthis)
+		if (m_class_is_valuetype (m->klass) && mono_method_signature_internal (m)->hasthis && !(info->invoke_sig->param_count > info->sig->param_count))
 			need_unbox = TRUE;
 
 		gpointer arg = NULL;
@@ -676,33 +692,40 @@ mini_llvmonly_init_delegate (MonoDelegate *del)
 			return;
 		ftndesc = mini_llvmonly_create_ftndesc (m, addr, arg);
 		mono_memory_barrier ();
-		*del->method_code = (guint8*)ftndesc;
+		//*del->method_code = (guint8*)ftndesc;
+		info->method_ptr = ftndesc;
 	}
 	del->method_ptr = ftndesc->addr;
 	del->extra_arg = ftndesc->arg;
+
+	WrapperSubtype subtype = mono_marshal_get_delegate_invoke_subtype (info->invoke, del);
+
+	ftndesc = info->invoke_impl;
+	if (G_UNLIKELY (!ftndesc) || subtype != WRAPPER_SUBTYPE_NONE) {
+		ERROR_DECL (error);
+		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (info->invoke, del);
+		gpointer arg = NULL;
+		gpointer addr = mini_llvmonly_load_method_delegate (invoke_impl, FALSE, FALSE, &arg, error);
+		mono_error_assert_ok (error);
+		ftndesc = mini_llvmonly_create_ftndesc (invoke_impl, addr, arg);
+		if (subtype == WRAPPER_SUBTYPE_NONE) {
+			mono_memory_barrier ();
+			info->invoke_impl = ftndesc;
+		} else {
+			// FIXME: Cache
+		}
+	}
+	del->invoke_impl = ftndesc;
 }
 
 void
 mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 {
-	ERROR_DECL (error);
-	gpointer addr, arg;
-	gboolean need_unbox;
-
 	g_assert (target);
 
-	method = mono_object_get_virtual_method_internal (target, method);
+	del->method = mono_object_get_virtual_method_internal (target, method);
 
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		method = mono_marshal_get_synchronized_wrapper (method);
-	need_unbox = m_class_is_valuetype (method->klass);
-
-	del->method = method;
-	addr = mini_llvmonly_load_method_delegate (method, FALSE, need_unbox, &arg, error);
-	if (mono_error_set_pending_exception (error))
-		return;
-	del->method_ptr = addr;
-	del->extra_arg = arg;
+	mini_llvmonly_init_delegate (del, NULL);
 }
 
 /*
@@ -762,6 +785,7 @@ gpointer
 mini_llvmonly_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
 {
 	ERROR_DECL (error);
+
 	gpointer res = resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE, error);
 	if (!is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);

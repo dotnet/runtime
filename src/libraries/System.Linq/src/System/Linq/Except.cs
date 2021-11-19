@@ -37,8 +37,27 @@ namespace System.Linq
             return ExceptIterator(first, second, comparer);
         }
 
+        /// <summary>
+        /// Produces the set difference of two sequences according to a specified key selector function.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of the input sequence.</typeparam>
+        /// <typeparam name="TKey">The type of key to identify elements by.</typeparam>
+        /// <param name="first">An <see cref="IEnumerable{TSource}" /> whose keys that are not also in <paramref name="second"/> will be returned.</param>
+        /// <param name="second">An <see cref="IEnumerable{TKey}" /> whose keys that also occur in the first sequence will cause those elements to be removed from the returned sequence.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <returns>A sequence that contains the set difference of the elements of two sequences.</returns>
         public static IEnumerable<TSource> ExceptBy<TSource, TKey>(this IEnumerable<TSource> first, IEnumerable<TKey> second, Func<TSource, TKey> keySelector) => ExceptBy(first, second, keySelector, null);
 
+        /// <summary>
+        /// Produces the set difference of two sequences according to a specified key selector function.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of the input sequence.</typeparam>
+        /// <typeparam name="TKey">The type of key to identify elements by.</typeparam>
+        /// <param name="first">An <see cref="IEnumerable{TSource}" /> whose keys that are not also in <paramref name="second"/> will be returned.</param>
+        /// <param name="second">An <see cref="IEnumerable{TKey}" /> whose keys that also occur in the first sequence will cause those elements to be removed from the returned sequence.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{TKey}" /> to compare values.</param>
+        /// <returns>A sequence that contains the set difference of the elements of two sequences.</returns>
         public static IEnumerable<TSource> ExceptBy<TSource, TKey>(this IEnumerable<TSource> first, IEnumerable<TKey> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
             if (first is null)

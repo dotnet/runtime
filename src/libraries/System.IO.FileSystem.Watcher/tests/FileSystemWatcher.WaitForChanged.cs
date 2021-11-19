@@ -111,6 +111,7 @@ namespace System.IO.Tests
         [InlineData(WatcherChangeTypes.Changed, false)]
         [InlineData(WatcherChangeTypes.Renamed, true)]
         [InlineData(WatcherChangeTypes.All, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58418", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst), nameof(PlatformDetection.IsArm64Process))]
         public void NonZeroTimeout_NoActivity_TimesOut(WatcherChangeTypes changeType, bool enabledBeforeWait)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

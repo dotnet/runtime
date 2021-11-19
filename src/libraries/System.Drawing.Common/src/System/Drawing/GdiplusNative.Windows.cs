@@ -269,13 +269,13 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern IntPtr GdipCreateHalftonePalette();
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawBeziers(HandleRef graphics, HandleRef pen, PointF* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawBeziersI(HandleRef graphics, HandleRef pen, Point* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillPath(HandleRef graphics, HandleRef brush, HandleRef path);
 
             [DllImport(LibraryName, ExactSpelling = true)]

@@ -253,7 +253,7 @@ namespace Internal.TypeSystem
 
         private void ValidateAndMergeIntervalWithFollowingIntervals(List<FieldLayoutInterval> fieldLayoutInterval, int intervalIndex)
         {
-            while(true)
+            while (true)
             {
                 if (intervalIndex + 1 == fieldLayoutInterval.Count)
                 {

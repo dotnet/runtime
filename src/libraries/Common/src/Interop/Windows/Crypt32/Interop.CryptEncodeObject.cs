@@ -10,15 +10,15 @@ internal static partial class Interop
     {
         internal static unsafe bool CryptEncodeObject(MsgEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, void* pvStructInfo, byte[]? pbEncoded, ref int pcbEncoded)
         {
-            return CryptEncodeObject(dwCertEncodingType, (IntPtr)lpszStructType, pvStructInfo, pbEncoded, ref pcbEncoded);
+            return CryptEncodeObject(dwCertEncodingType, (nint)lpszStructType, pvStructInfo, pbEncoded, ref pcbEncoded);
         }
 
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern unsafe bool CryptEncodeObject(
+        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        private static unsafe partial bool CryptEncodeObject(
             MsgEncodingType dwCertEncodingType,
-            IntPtr lpszStructType,
+            nint lpszStructType,
             void* pvStructInfo,
-            [Out] byte[]? pbEncoded,
-            [In, Out] ref int pcbEncoded);
+            byte[]? pbEncoded,
+            ref int pcbEncoded);
     }
 }

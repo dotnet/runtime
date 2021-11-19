@@ -607,6 +607,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
     CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
     CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
+    CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
 
     CORINFO_HELP_COUNT,
 };
@@ -892,16 +893,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
     CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
 
-    CORINFO_INTRINSIC_InterlockedAdd32,
-    CORINFO_INTRINSIC_InterlockedAdd64,
-    CORINFO_INTRINSIC_InterlockedXAdd32,
-    CORINFO_INTRINSIC_InterlockedXAdd64,
-    CORINFO_INTRINSIC_InterlockedXchg32,
-    CORINFO_INTRINSIC_InterlockedXchg64,
-    CORINFO_INTRINSIC_InterlockedCmpXchg32,
-    CORINFO_INTRINSIC_InterlockedCmpXchg64,
-    CORINFO_INTRINSIC_MemoryBarrier,
-    CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_ByReference_Ctor,
     CORINFO_INTRINSIC_ByReference_Value,
     CORINFO_INTRINSIC_GetRawHandle,
@@ -1729,6 +1720,7 @@ enum CORINFO_OS
 {
     CORINFO_WINNT,
     CORINFO_UNIX,
+    CORINFO_MACOS,
 };
 
 struct CORINFO_CPU
@@ -1849,9 +1841,12 @@ struct CORINFO_Array : public CORINFO_Object
 #endif // HOST_64BIT
 
 #if 0
-    /* Multi-dimensional arrays have the lengths and bounds here */
-    unsigned                dimLength[length];
-    unsigned                dimBound[length];
+    // Multi-dimensional arrays have the dimension lengths and bounds here.
+    // The element count of these arrays is the array rank (the number of dimensions in the
+    // multi-dimensional array). So, there is one element for each dimension. The upper bound
+    // of a dimension is `dimBound[d] + dimLength[d] - 1`.
+    int                     dimLength[rank]; // Number of array elements in each dimension.
+    int                     dimBound[rank];  // Lower bound of each dimension (possibly negative).
 #endif
 
     union
@@ -3173,6 +3168,13 @@ public:
                 CORINFO_InstructionSet instructionSet,
                 bool supportEnabled
             ) = 0;
+
+    // Notify EE that JIT needs an entry-point that is tail-callable.
+    // This is used for AOT on x64 to support delay loaded fast tailcalls.
+    // Normally the indirection cell is retrieved from the return address,
+    // but for tailcalls, the contract is that JIT leaves the indirection cell in
+    // a register during tailcall.
+    virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
 };
 
 /**********************************************************************************/

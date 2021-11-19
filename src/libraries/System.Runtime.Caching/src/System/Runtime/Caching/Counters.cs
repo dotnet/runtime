@@ -9,12 +9,12 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
 #endif
     internal sealed class Counters : EventSource
     {
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         private const string EVENT_SOURCE_NAME_ROOT = "System.Runtime.Caching.";
         private const int NUM_COUNTERS = 7;
 

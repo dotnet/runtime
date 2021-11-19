@@ -3,6 +3,7 @@
     <_targetFrameworkIdentifier Condition="'$(TargetFrameworkIdentifier)' != ''">$(TargetFrameworkIdentifier.Substring(1).ToLower())</_targetFrameworkIdentifier>
     <!-- Make sure the SDK raises the runtime items so that they are passed to conflict resolution -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <CopyLocalRuntimeTargetAssets>true</CopyLocalRuntimeTargetAssets>
     <!-- Suppress any SYSLIB9000 errors, as in these cases restore/build would succeed, the failure would be at run-time -->
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
@@ -22,14 +23,14 @@
           Condition="'$(_targetFrameworkIdentifier)' != ''" />
   <Import Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets"
           Condition="'$(TargetFramework)' != ''" />
-  
+
   <ItemGroup>
     <!-- Type duplicated: https://github.com/dotnet/runtime/issues/33998 -->
     <IgnoredTypes Include="Microsoft.Extensions.Logging.LoggingBuilderExtensions" />
     <!-- Type duplicated: https://github.com/dotnet/runtime/issues/34420 -->
     <IgnoredTypes Include="System.Collections.Generic.CollectionExtensions" />
   </ItemGroup>
-  
+
   <Target Name="LogBeginTest"
           Condition="'$(TargetFramework)' != ''">
     <Message Importance="High" Text="Testing $(TestPackageID) TFM=$(TargetFramework)" />
@@ -51,7 +52,7 @@
                    IgnoredReferences="@(IgnoredReference)" />
   </Target>
 
-  <Target Name="VerifyReferenceTypes" 
+  <Target Name="VerifyReferenceTypes"
           DependsOnTargets="ResolveReferences"
           Condition="'$(ShouldVerifyTypes)' == 'true'">
     <ItemGroup>
@@ -71,6 +72,11 @@
     <ItemGroup>
       <ReferenceLibToTest Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)' == '$(TestPackageId)'" />
       <RuntimeLibToTest Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' == '$(TestPackageId)'" />
+      <!-- Don't verify RID specific libs that aren't compatible on .NETFramework, i.e. Unix. -->
+      <RuntimeLibToTest Remove="@(RuntimeLibToTest)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and
+                                                                '%(RuntimeLibToTest.RuntimeIdentifier)' != '' and
+                                                                '%(RuntimeLibToTest.RuntimeIdentifier)' != 'win' and
+                                                                !$([System.String]::Copy('%(RuntimeLibToTest.RuntimeIdentifier)').StartsWith('win-'))" />
       <RuntimeLibToTest Condition="'%(RuntimeLibToTest.RuntimeIdentifier)' == ''" RuntimeIdentifier="none" />
     </ItemGroup>
 
@@ -79,19 +85,19 @@
 
       <!-- Some dependent packages may be excluded from compile, consider these as candiates as well.-->
       <ReferenceCopyLocalPaths Original="%(Identity)" />
-      <_referenceCopyLocalPathsPackages Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" 
+      <_referenceCopyLocalPathsPackages Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')"
                                         Condition="'%(ReferenceCopyLocalPaths.RuntimeIdentifier)' == ''"
                                         Exclude="@(ReferencePath->'%(NuGetPackageId)');$(TestPackageId)" />
       <RuntimeLibToTestDependency Include="@(_referenceCopyLocalPathsPackages->'%(Original)')" />
     </ItemGroup>
 
     <Error Condition="'@(RuntimeLibToTest)' == '' AND '@(ReferenceLibToTest)' != ''" Text="Could not locate any runtime items from Package $(TestPackageID)" />
-    
+
     <Message Condition="'@(RuntimeLibToTest)' != ''" Importance="High" Text="Testing $(TestPackageID) runtime on TFM=$(TargetFramework) RIDs=@(RuntimeLibToTest->'%(RuntimeIdentifier)'->Distinct())" />
   </Target>
 
-  <Target Name="VerifyRuntimeClosure" 
-          Inputs="%(RuntimeLibToTest.RuntimeIdentifier)" 
+  <Target Name="VerifyRuntimeClosure"
+          Inputs="%(RuntimeLibToTest.RuntimeIdentifier)"
           Outputs="unused"
           DependsOnTargets="PrepareForRuntimeTesting"
           Condition="'$(ShouldVerifyClosure)' == 'true' and '$(SkipVerifyClosureForRuntime)' != 'true' and '$(SkipVerifyRuntime)' != 'true'">
@@ -109,8 +115,8 @@
                    IgnoredReferences="@(IgnoredReference)" />
   </Target>
 
-  <Target Name="VerifyRuntimeTypes" 
-          Inputs="%(RuntimeLibToTest.RuntimeIdentifier)" 
+  <Target Name="VerifyRuntimeTypes"
+          Inputs="%(RuntimeLibToTest.RuntimeIdentifier)"
           Outputs="unused"
           DependsOnTargets="PrepareForRuntimeTesting"
           Condition="'$(ShouldVerifyTypes)' == 'true' and '$(SkipVerifyRuntime)' != 'true'">
@@ -146,7 +152,7 @@
     </TestDependsOn>
     <InnerTargets>Test</InnerTargets>
   </PropertyGroup>
-  
+
   <!-- Runs all tests scenarios for this project -->
-  <Target Name="Test" DependsOnTargets="$(TestDependsOn)"/>
+  <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
 </Project>

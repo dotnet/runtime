@@ -45,21 +45,8 @@
 class ReflectionInvocation {
 
 public:
-    static
-    void QCALLTYPE CompileMethod(MethodDesc * pMD);
-
-    static
-    void QCALLTYPE RunClassConstructor(QCall::TypeHandle pType);
-
-    static
-    void QCALLTYPE RunModuleConstructor(QCall::ModuleHandle pModule);
-
-    static
-    void QCALLTYPE PrepareMethod(MethodDesc* pMD, TypeHandle *pInstantiation, UINT32 cInstantiation);
 
     static FCDECL1(void, PrepareDelegate, Object* delegateUNSAFE);
-    static FCDECL1(void, PrepareContractedDelegate, Object* delegateUNSAFE);
-    static FCDECL0(void, ProbeForSufficientStack);
     static FCDECL0(void, EnsureSufficientExecutionStack);
     static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
 
@@ -78,23 +65,23 @@ public:
     static FCDECL3(Object*, AllocateValueType, ReflectClassBaseObject *targetType, Object *valueUNSAFE, CLR_BOOL fForceTypeChange);
 };
 
-class ReflectionSerialization {
-public:
-    static
-    void QCALLTYPE GetUninitializedObject(QCall::TypeHandle pType, QCall::ObjectHandleOnStack retObject);
-};
+extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD);
+
+extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHandle pType);
+
+extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::ModuleHandle pModule);
+
+extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc* pMD, TypeHandle *pInstantiation, UINT32 cInstantiation);
+
+extern "C" void QCALLTYPE ReflectionSerialization_GetUninitializedObject(QCall::TypeHandle pType, QCall::ObjectHandleOnStack retObject);
 
 class ReflectionEnum {
 public:
     static FCDECL1(Object *, InternalGetEnumUnderlyingType, ReflectClassBaseObject *target);
     static FCDECL1(INT32, InternalGetCorElementType, Object *pRefThis);
-
-    static
-    void QCALLTYPE GetEnumValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames);
-
     static FCDECL2_IV(Object*, InternalBoxEnum, ReflectClassBaseObject* pEnumType, INT64 value);
-    static FCDECL2(FC_BOOL_RET, InternalEquals, Object *pRefThis, Object* pRefTarget);
-    static FCDECL2(FC_BOOL_RET, InternalHasFlag, Object *pRefThis, Object* pRefFlags);
 };
+
+extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames);
 
 #endif // _REFLECTIONINVOCATION_H_

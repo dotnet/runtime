@@ -11,25 +11,25 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InitializeAssemblyLoadContext")]
         private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext, bool isCollectible);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyLoadContextStrong);
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_PrepareForAssemblyLoadContextRelease")]
+        private static extern void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void LoadFromStream(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
+        private static extern void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", CharSet = CharSet.Unicode)]
         internal static extern void InternalSetProfileRoot(string directoryPath);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyLoadContext);
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", CharSet = CharSet.Unicode)]
+        internal static extern void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContext, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", CharSet = CharSet.Unicode)]
+        private static extern void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Assembly[] GetLoadedAssemblies();
@@ -37,16 +37,16 @@ namespace System.Runtime.Loader
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsTracingEnabled();
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolvingHandlerInvoked", CharSet = CharSet.Unicode)]
         internal static extern bool TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyResolveHandlerInvoked", CharSet = CharSet.Unicode)]
         internal static extern bool TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", CharSet = CharSet.Unicode)]
         internal static extern bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", CharSet = CharSet.Unicode)]
         internal static extern bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
@@ -72,8 +72,8 @@ namespace System.Runtime.Loader
         }
 
 #if TARGET_WINDOWS
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyLoadContext, IntPtr hModule, ObjectHandleOnStack retAssembly);
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromInMemoryModule")]
+        private static extern IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyBinder, IntPtr hModule, ObjectHandleOnStack retAssembly);
 
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace System.Runtime.Loader
             return context.ResolveUsingEvent(assemblyName);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]
         private static extern IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
         // Returns the load context in which the specified assembly has been loaded

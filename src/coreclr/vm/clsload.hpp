@@ -899,24 +899,13 @@ private:
                                                   ClassLoadLevel level = CLASS_LOADED,
                                                   const InstantiationContext *pInstContext = NULL);
 
-    static TypeHandle LookupTypeKeyUnderLock(TypeKey *pKey,
-                                             EETypeHashTable *pTable,
-                                             CrstBase *pLock);
+    static TypeHandle LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable);
 
-    static TypeHandle LookupTypeKey(TypeKey *pKey,
-                                    EETypeHashTable *pTable,
-                                    CrstBase *pLock,
-                                    BOOL fCheckUnderLock);
-
-    static TypeHandle LookupInLoaderModule(TypeKey* pKey, BOOL fCheckUnderLock);
-#ifdef FEATURE_PREJIT
-    static TypeHandle LookupInPreferredZapModule(TypeKey* pKey, BOOL fCheckUnderLock);
-#endif // FEATURE_PREJIT
+    static TypeHandle LookupInLoaderModule(TypeKey* pKey);
 
     // Lookup a handle in the appropriate table
     // (declaring module for TypeDef or loader-module for constructed types)
     static TypeHandle LookupTypeHandleForTypeKey(TypeKey *pTypeKey);
-    static TypeHandle LookupTypeHandleForTypeKeyInner(TypeKey *pTypeKey, BOOL fCheckUnderLock);
 
     static void DECLSPEC_NORETURN  ThrowTypeLoadException(TypeKey *pKey, UINT resIDWhy);
 

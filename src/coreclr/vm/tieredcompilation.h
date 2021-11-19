@@ -24,7 +24,7 @@ class TieredCompilationManager
 #ifdef FEATURE_TIERED_COMPILATION
 
 public:
-#if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
+#if defined(DACCESS_COMPILE)
     TieredCompilationManager() {}
 #else
     TieredCompilationManager();

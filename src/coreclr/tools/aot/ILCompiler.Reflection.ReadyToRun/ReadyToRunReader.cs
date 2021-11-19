@@ -877,7 +877,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             while (!curParser.IsNull())
             {
                 IAssemblyMetadata mdReader = GetGlobalMetadata();
-                var decoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(provider, default(TGenericContext), mdReader.MetadataReader, this, (int)curParser.Offset);
+                var decoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(provider, default(TGenericContext), mdReader?.MetadataReader, this, (int)curParser.Offset);
 
                 TMethod customMethod = decoder.ParseMethod();
 
@@ -887,7 +887,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 ReadyToRunMethod r2rMethod = _runtimeFunctionToMethod[runtimeFunctionId];
                 if (!Object.ReferenceEquals(customMethod, null) && !foundMethods.ContainsKey(customMethod))
                     foundMethods.Add(customMethod, r2rMethod);
-                foundMethods.Add(customMethod, r2rMethod);
                 curParser = allEntriesEnum.GetNext();
             }
         }
@@ -1078,7 +1077,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
 
-                PgoInfoKey key = new PgoInfoKey(GetGlobalMetadata(), owningType, methodHandle, methodTypeArgs);
+                PgoInfoKey key = new PgoInfoKey(mdReader, owningType, methodHandle, methodTypeArgs);
                 PgoInfo info = new PgoInfo(key, this, pgoFormatVersion, Image, pgoOffset);
                 _pgoInfos.Add(key, info);
                 curParser = allEntriesEnum.GetNext();

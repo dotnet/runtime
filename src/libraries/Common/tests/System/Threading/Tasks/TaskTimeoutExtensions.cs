@@ -76,10 +76,9 @@ namespace System.Threading.Tasks
                 var exceptions = new List<Exception>();
                 foreach (Task t in tasks)
                 {
-                    switch (t.Status)
+                    if (t.IsCompleted && t.GetRealException() is Exception e)
                     {
-                        case TaskStatus.Faulted: exceptions.Add(t.Exception); break;
-                        case TaskStatus.Canceled: exceptions.Add(new TaskCanceledException(t)); break;
+                        exceptions.Add(e);
                     }
                 }
 
@@ -100,15 +99,9 @@ namespace System.Threading.Tasks
             {
                 t.ContinueWith(a =>
                 {
-                    if (a.IsFaulted)
+                    if (a.GetRealException() is Exception e)
                     {
-                        tcs.TrySetException(a.Exception.InnerExceptions);
-                        Interlocked.Decrement(ref remaining);
-                    }
-                    else if (a.IsCanceled)
-                    {
-                        tcs.TrySetCanceled();
-                        Interlocked.Decrement(ref remaining);
+                        tcs.TrySetException(e);
                     }
                     else if (Interlocked.Decrement(ref remaining) == 0)
                     {
@@ -117,6 +110,21 @@ namespace System.Threading.Tasks
                 }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
             return tcs.Task;
+        }
+
+        // Gets the exception (if any) from the Task, for both faulted and cancelled tasks
+        private static Exception? GetRealException(this Task task)
+        {
+            try
+            {
+                task.GetAwaiter().GetResult();
+            }
+            catch (Exception e)
+            {
+                return e;
+            }
+
+            return null;
         }
     }
 }

@@ -362,6 +362,7 @@ CommonKey3:CommonKey4=IniValue6";
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void OnLoadErrorWillBeCalledOnJsonParseError()
         {
             _fileSystem.WriteFile(Path.Combine(_basePath, "error.json"), @"{""JsonKey1"": ", absolute: true);
@@ -873,6 +874,7 @@ IniKey1=IniValue2");
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void GetDefaultBasePathForSources()
         {
             var builder = new ConfigurationBuilder();
@@ -903,7 +905,7 @@ IniKey1=IniValue2");
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void CanEnumerateProviders()
         {
             var config = CreateBuilder()
@@ -979,16 +981,21 @@ IniKey1=IniValue2");
 
                 MyOptions options = null;
 
+                bool optionsInitialized = false;
                 while (!cts.IsCancellationRequested)
                 {
                     options = config.Get<MyOptions>();
+                    optionsInitialized = true;
                 }
 
-                Assert.Equal("CmdValue1", options.CmdKey1);
-                Assert.Equal("IniValue1", options.IniKey1);
-                Assert.Equal("JsonValue1", options.JsonKey1);
-                Assert.Equal("MemValue1", options.MemKey1);
-                Assert.Equal("XmlValue1", options.XmlKey1);
+                if (optionsInitialized)
+                {
+                    Assert.Equal("CmdValue1", options.CmdKey1);
+                    Assert.Equal("IniValue1", options.IniKey1);
+                    Assert.Equal("JsonValue1", options.JsonKey1);
+                    Assert.Equal("MemValue1", options.MemKey1);
+                    Assert.Equal("XmlValue1", options.XmlKey1);
+                }
             }
         }
 

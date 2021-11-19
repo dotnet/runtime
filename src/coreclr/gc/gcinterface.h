@@ -6,7 +6,7 @@
 
 // The major version of the GC/EE interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 4
+#define GC_INTERFACE_MAJOR_VERSION 5
 
 // The minor version of the GC/EE interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
@@ -920,6 +920,8 @@ public:
 
     // Enables or disables the given keyword or level on the private event provider.
     virtual void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) = 0;
+
+    virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) = 0;
 
     IGCHeap() {}
     virtual ~IGCHeap() {}

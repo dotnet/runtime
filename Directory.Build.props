@@ -20,6 +20,7 @@
     <_hostOS Condition="'$(TargetOS)' == 'Browser'">Browser</_hostOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
+    <TargetsAppleMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</TargetsAppleMobile>
   </PropertyGroup>
 
   <!-- Platform property is required by RepoLayout.props in Arcade SDK. -->
@@ -29,6 +30,7 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm'">arm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'armel'">armel</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm64'">arm64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 's390x'">s390x</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'Browser'">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
@@ -40,18 +42,29 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>$(PreviousReleaseMajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
-    <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
-    <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppCurrentVersion>7.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
-    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
-    <NetCoreAppMinimum>netcoreapp3.1</NetCoreAppMinimum>
-    <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
-    <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
-    <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
+    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
+
+    <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
+    <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
+
+    <NetCoreAppLatestStableVersion>5.0</NetCoreAppLatestStableVersion>
+    <NetCoreAppLatestStablePackageBaselineVersion>$(NetCoreAppLatestStableVersion).0</NetCoreAppLatestStablePackageBaselineVersion>
+    <NetCoreAppLatestStable>net$(NetCoreAppLatestStableVersion)</NetCoreAppLatestStable>
+
+    <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
+
+    <NetFrameworkMinimum>net462</NetFrameworkMinimum>
+    <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
+    <!-- Don't build for NETFramework during source-build. -->
+    <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
   </PropertyGroup>
 
   <PropertyGroup>
@@ -72,15 +85,13 @@
 
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</AndroidAppBuilderDir>
-    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmAppBuilderDir>
+    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
     <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WorkloadBuildTasksDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
-    <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'RuntimeConfigParser', 'Debug', '$(NetCoreAppToolCurrent)'))</RuntimeConfigParserDir>
-    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'JsonToItemsTaskFactory', 'Debug', '$(NetCoreAppToolCurrent)'))</JsonToItemsTaskFactoryDir>
-
+    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', 'net461', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetFrameworkToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
     <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
@@ -89,8 +100,7 @@
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <WorkloadBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WorkloadBuildTasksDir)', 'WorkloadBuildTasks.dll'))</WorkloadBuildTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
-    <RuntimeConfigParserTasksAssemblyPath>$([MSBuild]::NormalizePath('$(RuntimeConfigParserDir)', 'RuntimeConfigParser.dll'))</RuntimeConfigParserTasksAssemblyPath>
-    <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</ILAsmToolPath>
   </PropertyGroup>
 
@@ -113,7 +123,7 @@
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.LastIndexOfAny("-"))</_distroRidIndex>
+    <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
 
     <_runtimeOS>$(RuntimeOS)</_runtimeOS>
     <_runtimeOS Condition="'$(_runtimeOS)' == ''">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_runtimeOS>
@@ -206,6 +216,10 @@
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(Configuration)', 'corehost'))</DotNetHostBinDir>
+  </PropertyGroup>
+
   <!--Feature switches -->
   <PropertyGroup>
     <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and ('$(Configuration)' == 'Release' or '$(Configuration)' == 'Checked')">true</EnableNgenOptimization>
@@ -270,6 +284,8 @@
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Warnings to always disable -->
+    <NoWarn>$(NoWarn),CS8969</NoWarn>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -279,9 +295,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <!-- We have very special projects that don't always contain default references. We also build MSBuild Tasks
-    and there are some implicit namespaces that clash, i.e System.Threading.Tasks. -->
-    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
   </PropertyGroup>
 
   <PropertyGroup>

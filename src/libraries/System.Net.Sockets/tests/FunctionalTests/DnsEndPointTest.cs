@@ -272,7 +272,7 @@ namespace System.Net.Sockets.Tests
                 bool willRaiseEvent = sock.ConnectAsync(args);
                 if (willRaiseEvent)
                 {
-                    Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                    Assert.True(complete.WaitOne(TestSettings.PassingTestLongTimeout), "Timed out while waiting for connection");
                     complete.Dispose(); // only dispose on success as we know we're done with the instance
                 }
 
@@ -332,7 +332,7 @@ namespace System.Net.Sockets.Tests
 
                 if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args))
                 {
-                    Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                    Assert.True(complete.WaitOne(TestSettings.PassingTestLongTimeout), "Timed out while waiting for connection");
                 }
 
                 Assert.Equal(SocketError.Success, args.SocketError);
@@ -348,7 +348,7 @@ namespace System.Net.Sockets.Tests
 
                 if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args))
                 {
-                    Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                    Assert.True(complete.WaitOne(TestSettings.PassingTestLongTimeout), "Timed out while waiting for connection");
                 }
 
                 complete.Dispose(); // only dispose on success as we know we're done with the instance
@@ -404,7 +404,7 @@ namespace System.Net.Sockets.Tests
                 OnConnectAsyncCompleted(null, args);
             }
 
-            Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+            Assert.True(complete.WaitOne(TestSettings.PassingTestLongTimeout), "Timed out while waiting for connection");
             complete.Dispose(); // only dispose on success as we know we're done with the instance
 
             AssertHostNotFoundOrNoData(args);

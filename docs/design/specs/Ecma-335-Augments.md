@@ -7,6 +7,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Signatures](#signatures)
 - [Heap sizes](#heap-sizes)
 - [Metadata merging](#metadata-merging)
+- [Metadata logical format](#metadata-logical-format)
 - [Module Initializer](#module-initializer)
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
@@ -362,6 +363,14 @@ This text should be deleted, and the _metadata merging_ entry should be removed 
 > * ~~If there are duplicates and two or more have an accessibility other than
 >   **compilercontrolled**, an error has occurred.~~
 
+## Metadata logical format
+
+The requirement to sort InterfaceImpl table using the Interface column as a secondary key in § II.22 _Metadata logical format: tables_ is a spec bug. The interface declaration order affects resolution and a requirement to sort it would make it impossible to emit certain sequences of interfaces (e.g. not possible to have an interface list I1, I2, while also having interface list I2, I1 elsewhere in the module).
+
+The text should be deleted:
+
+> Furthermore, ~~the InterfaceImpl table is sorted using the Interface column as a secondary key, and~~ the GenericParam table is sorted using the Number column as a secondary key.
+
 ## Module Initializer
 
 All modules may have a module initializer. A module initializer is defined as the type initializer (§ II.10.5.3) of the `<Module>` type (§ II.10.8).
@@ -468,7 +477,7 @@ static or instance members) or overrides (for virtual instance methods) a member
 simply substitute each generic parameter with its generic argument, and compare the resulting member
 signatures. [*Example*: The following illustrates this point:
 
-### II.9.11, Constrains on Generic Parameters
+### II.9.11, Constraints on Generic Parameters
 
 (Change first paragraph)
 

@@ -46,10 +46,6 @@ if(CLR_CMAKE_TARGET_UNIX)
     endif()
 endif()
 
-if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0))
-    add_compile_options(-Wno-error=stringop-truncation)
-endif()
-
 include(configure.cmake)
 
 set(NATIVEGLOBALIZATION_SOURCES

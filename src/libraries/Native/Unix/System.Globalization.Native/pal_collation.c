@@ -365,6 +365,25 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     {
         ucol_setAttribute(pClonedCollator, UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, pErr);
 
+#if !defined(STATIC_ICU)
+    if (ucol_setMaxVariable_ptr != NULL)
+    {
+        // by default, ICU alternate shifted handling only ignores punctuation, but
+        // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
+        // to include all symbols and currency
+        ucol_setMaxVariable(pClonedCollator, UCOL_REORDER_CODE_CURRENCY, pErr);
+    }
+    else
+    {
+        assert(ucol_setVariableTop_ptr != NULL);
+        // 0xfdfc is the last currency character before the first digit character
+        // in http://source.icu-project.org/repos/icu/icu/tags/release-52-1/source/data/unidata/FractionalUCA.txt
+        const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
+        ucol_setVariableTop_ptr(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
+    }
+
+#else // !defined(STATIC_ICU)
+
         // by default, ICU alternate shifted handling only ignores punctuation, but
         // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
         // to include all symbols and currency
@@ -376,6 +395,8 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
         const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
         ucol_setVariableTop(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
 #endif
+
+#endif //!defined(STATIC_ICU)
     }
 
     ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);
@@ -521,7 +542,7 @@ static UChar* s_breakIteratorRules = NULL;
 // We are customizing the break iterator to exclude the CRxLF rule which don't allow breaking between CR and LF.
 // The general rules syntax explained in the doc https://unicode-org.github.io/icu/userguide/boundaryanalysis/break-rules.html.
 // The ICU latest rules definition exist here https://github.com/unicode-org/icu/blob/main/icu4c/source/data/brkitr/rules/char.txt.
-static UBreakIterator* CreateCustomizedBreakIterator()
+static UBreakIterator* CreateCustomizedBreakIterator(void)
 {
     static UChar emptyString[1];
     UBreakIterator* breaker;
@@ -794,6 +815,7 @@ static int32_t GetSearchIteratorUsingCollator(
     if (!U_SUCCESS(err))
     {
         int32_t r;
+        (void)r;
         r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;
@@ -803,6 +825,7 @@ static int32_t GetSearchIteratorUsingCollator(
     if (!U_SUCCESS(err))
     {
         int32_t r;
+        (void)r;
         r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;

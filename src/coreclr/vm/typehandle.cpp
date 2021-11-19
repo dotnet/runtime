@@ -16,10 +16,6 @@
 #include "array.h"
 #include "castcache.h"
 
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#endif
-
 #ifdef _DEBUG_IMPL
 
 BOOL TypeHandle::Verify()
@@ -299,16 +295,6 @@ PTR_Module TypeHandle::GetLoaderModule() const
         return AsTypeDesc()->GetLoaderModule();
     else
         return AsMethodTable()->GetLoaderModule();
-}
-
-PTR_Module TypeHandle::GetZapModule() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsTypeDesc())
-        return AsTypeDesc()->GetZapModule();
-    else
-        return AsMethodTable()->GetZapModule();
 }
 
 PTR_BaseDomain TypeHandle::GetDomain() const
@@ -640,7 +626,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         if (IsTypeDesc())
             return AsTypeDesc()->CanCastTo(type, pVisited);
 
-#ifndef CROSSGEN_COMPILE
         // we check nullable case first because it is not cacheable.
         // object castability and type castability disagree on T --> Nullable<T>,
         // so we can't put this in the cache
@@ -649,7 +634,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
             // do not allow type T to be cast to Nullable<T>
             return FALSE;
         }
-#endif  //!CROSSGEN_COMPILE
 
         return AsMethodTable()->CanCastTo(type.AsMethodTable(), pVisited);
     }
@@ -1037,46 +1021,6 @@ BOOL TypeHandle::HasUnrestoredTypeKey()  const
         return AsMethodTable()->HasUnrestoredTypeKey();
 }
 
-#ifdef FEATURE_PREJIT
-void TypeHandle::DoRestoreTypeKey()
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsEncodedFixup());
-    }
-    CONTRACT_END
-
-#ifndef DACCESS_COMPILE
-    if (IsTypeDesc())
-    {
-        AsTypeDesc()->DoRestoreTypeKey();
-    }
-    else
-    {
-        MethodTable* pMT = AsMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
-        pMT->DoRestoreTypeKey();
-    }
-#endif
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
-    {
-        StackSString name;
-        TypeString::AppendTypeDebug(name, *this);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "GENERICS:RestoreTypeKey: type %S at %p\n", name.GetUnicode(), AsPtr()));
-    }
-#endif
-#endif
-
-
-    RETURN;
-}
-#endif
-
 void TypeHandle::CheckRestore() const
 {
     CONTRACTL
@@ -1097,20 +1041,6 @@ void TypeHandle::CheckRestore() const
 }
 
 #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-BOOL TypeHandle::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited) const
-{
-    STATIC_STANDARD_VM_CONTRACT;
-
-    _ASSERTE(GetAppDomain()->IsCompilationDomain());
-
-    if (!IsTypeDesc())
-        return AsMethodTable()->ComputeNeedsRestore(image, pVisited);
-    else
-        return AsTypeDesc()->ComputeNeedsRestore(image, pVisited);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 BOOL
 TypeHandle::IsExternallyVisible() const
@@ -1147,7 +1077,6 @@ TypeHandle::IsExternallyVisible() const
     return paramType.IsExternallyVisible();
 } // TypeHandle::IsExternallyVisible
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF TypeHandle::GetManagedClassObject() const
 {
     CONTRACTL
@@ -1193,7 +1122,6 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
         }
     }
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1635,13 +1563,8 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
                 {
                     for (DWORD i = 0; i < pMT->GetNumGenericArgs(); i++)
                     {
-#ifdef FEATURE_PREJIT
-                        CHECK_MSGF(ZapSig::CompareTypeHandleFieldToTypeHandle(pMT->GetInstantiation().GetRawArgs()[i].GetValuePtr(), pKey->GetInstantiation()[i]),
-                               ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
-#else
                         CHECK_MSGF(pMT->GetInstantiation()[i] == pKey->GetInstantiation()[i],
                                ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
-#endif
                     }
                 }
             }

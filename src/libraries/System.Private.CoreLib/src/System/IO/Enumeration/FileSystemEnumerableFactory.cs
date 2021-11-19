@@ -5,11 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO.Enumeration
-#else
 namespace System.IO.Enumeration
-#endif
 {
     internal static class FileSystemEnumerableFactory
     {

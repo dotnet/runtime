@@ -101,8 +101,20 @@ namespace Internal.JitInterface
             private static readonly IntPtr s_jit;
         }
 
+        private struct LikelyClassRecord
+        {
+            public IntPtr clsHandle;
+            public uint likelihood;
+
+            public LikelyClassRecord(IntPtr clsHandle, uint likelihood)
+            {
+                this.clsHandle = clsHandle;
+                this.likelihood = likelihood;
+            }
+        }
+
         [DllImport(JitLibrary)]
-        private extern static IntPtr getLikelyClass(PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset, out uint pLikelihood, out uint pNumberOfClasses);
+        private extern static uint getLikelyClasses(LikelyClassRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
@@ -128,6 +140,9 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
+        [DllImport(JitSupportLibrary)]
+        private extern static void JitSetOs(IntPtr jit, CORINFO_OS os);
+
         private IntPtr AllocException(Exception ex)
         {
             _lastException = ExceptionDispatchInfo.Capture(ex);
@@ -148,9 +163,10 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        public static void Startup()
+        public static void Startup(CORINFO_OS os)
         {
             jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
+            JitSetOs(JitPointerAccessor.Get(), os);
         }
 
         public CorInfoImpl()
@@ -234,7 +250,7 @@ namespace Internal.JitInterface
 
         private static PgoSchemaElem? ComputeLikelyClass(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
         {
-            // getLikelyClass will use two entries from the native schema table. There must be at least two present to avoid ovberruning the buffer
+            // getLikelyClasses will use two entries from the native schema table. There must be at least two present to avoid overruning the buffer
             if (index > (nativeSchema.Length - 2))
                 return null;
 
@@ -242,11 +258,13 @@ namespace Internal.JitInterface
             {
                 fixed(byte* pInstrumentationData = &instrumentationData[0])
                 {
-                    IntPtr classType = getLikelyClass(pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset, out uint likelihood, out uint numberOfClasses);
+                    // We're going to store only the most popular type to reduce size of the profile
+                    LikelyClassRecord* likelyClasses = stackalloc LikelyClassRecord[1];
+                    uint numberOfClasses = getLikelyClasses(likelyClasses, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
 
-                    if (classType != IntPtr.Zero)
+                    if (numberOfClasses > 0)
                     {
-                        TypeDesc type = (TypeDesc)handleToObject[classType];
+                        TypeDesc type = (TypeDesc)handleToObject[likelyClasses->clsHandle];
 #if READYTORUN
                         if (compilationModuleGroup.VersionsWithType(type))
 #endif
@@ -255,7 +273,7 @@ namespace Internal.JitInterface
                             likelyClassElem.InstrumentationKind = PgoInstrumentationKind.GetLikelyClass;
                             likelyClassElem.ILOffset = nativeSchema[index].ILOffset;
                             likelyClassElem.Count = 1;
-                            likelyClassElem.Other = (int)(likelihood | (numberOfClasses << 8));
+                            likelyClassElem.Other = (int)(likelyClasses->likelihood | (numberOfClasses << 8));
                             likelyClassElem.DataObject = new TypeSystemEntityOrUnknown[] { new TypeSystemEntityOrUnknown(type) };
                             return likelyClassElem;
                         }
@@ -348,6 +366,24 @@ namespace Internal.JitInterface
 #endif
             }
 
+            if (codeSize < _code.Length)
+            {
+                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64)
+                {
+                    // For xarch/arm32, the generated code is sometimes smaller than the memory allocated.
+                    // In that case, trim the codeBlock to the actual value.
+                    //
+                    // For arm64, the allocation request of `hotCodeSize` also includes the roData size
+                    // while the `codeSize` returned just contains the size of the native code. As such,
+                    // there is guarantee that for armarch, (codeSize == _code.Length) is always true.
+                    //
+                    // Currently, hot/cold splitting is not done and hence `codeSize` just includes the size of
+                    // hotCode. Once hot/cold splitting is done, need to trim respective `_code` or `_coldCode`
+                    // accordingly.
+                    Debug.Assert(codeSize != 0);
+                    Array.Resize(ref _code, (int)codeSize);
+                }
+            }
             PublishCode();
             PublishROData();
         }
@@ -394,7 +430,7 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
 #if READYTORUN
-            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
+            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray(), _compilation.NodeFactory);
 
             // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
             var baselineSupport = _compilation.InstructionSetSupport;
@@ -427,7 +463,7 @@ namespace Internal.JitInterface
                 _methodCodeNode.Fixups.Add(node);
             }
 #else
-            MethodIL methodIL = HandleToObject(_methodScope);
+            var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
             _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
@@ -1625,7 +1661,7 @@ namespace Internal.JitInterface
                 pResolvedToken.hClass = ObjectToHandle(owningClass);
 
 #if !SUPPORT_JIT
-                _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
+                _compilation.TypeSystemContext.EnsureLoadableMethod(method);
 #endif
 
 #if READYTORUN
@@ -1636,7 +1672,7 @@ namespace Internal.JitInterface
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, method);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
             }
             else
@@ -1664,7 +1700,7 @@ namespace Internal.JitInterface
                     _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, field);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #endif
             }
             else
@@ -2393,8 +2429,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
-                    TypeDesc typeOfRuntimeType = _compilation.GetTypeOfRuntimeType();
-                    return typeOfRuntimeType != null ? ObjectToHandle(typeOfRuntimeType) : null;
+                    return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType"));
 
                 default:
                     throw new NotImplementedException();
@@ -2659,9 +2694,13 @@ namespace Internal.JitInterface
 
         private uint getArrayRank(CORINFO_CLASS_STRUCT_* cls)
         {
+            uint rank = 0;
             var td = HandleToObject(cls) as ArrayType;
-            Debug.Assert(td != null);
-            return (uint)td.Rank;
+            if (td != null)
+            {
+                rank = (uint)td.Rank;
+            }
+            return rank;
         }
 
         private void* getArrayInitializationData(CORINFO_FIELD_STRUCT_* field, uint size)
@@ -2897,6 +2936,12 @@ namespace Internal.JitInterface
         private void ThrowExceptionForHelper(ref CORINFO_HELPER_DESC throwHelper)
         { throw new NotImplementedException("ThrowExceptionForHelper"); }
 
+        public static CORINFO_OS TargetToOs(TargetDetails target)
+        {
+            return target.IsWindows ? CORINFO_OS.CORINFO_WINNT : 
+                   target.IsOSX ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
+        }
+
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
         {
             pEEInfoOut = new CORINFO_EE_INFO();
@@ -2923,7 +2968,7 @@ namespace Internal.JitInterface
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
-            pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
+            pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
         }
 
         private char* getJitTimeLogFilename()
@@ -3193,7 +3238,7 @@ namespace Internal.JitInterface
             // Slow tailcalls are not supported yet
             // https://github.com/dotnet/runtime/issues/35423
 #if READYTORUN
-            throw new NotImplementedException(nameof(getTailCallHelpers));
+            throw new RequiresRuntimeJitException(nameof(getTailCallHelpers));
 #else
             return false;
 #endif
@@ -3529,6 +3574,42 @@ namespace Internal.JitInterface
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }
+        }
+
+        private bool doesFieldBelongToClass(CORINFO_FIELD_STRUCT_* fld, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var field = HandleToObject(fld);
+            var queryType = HandleToObject(cls);
+
+            Debug.Assert(!field.IsStatic);
+
+            // doesFieldBelongToClass implements the predicate of...
+            // if field is not associated with the class in any way, return false.
+            // if field is the only FieldDesc that the JIT might see for a given class handle
+            // and logical field pair then return true. This is needed as the field handle here
+            // is used as a key into a hashtable mapping writes to fields to value numbers.
+            //
+            // In this implmentation this is made more complex as the JIT is exposed to CORINFO_FIELD_STRUCT
+            // pointers which represent exact instantions, so performing exact matching is the necessary approach
+
+            // BaseType._field, BaseType -> true
+            // BaseType._field, DerivedType -> true
+            // BaseType<__Canon>._field, BaseType<__Canon> -> true
+            // BaseType<__Canon>._field, BaseType<string> -> false
+            // BaseType<__Canon>._field, BaseType<object> -> false
+            // BaseType<sbyte>._field, BaseType<sbyte> -> true
+            // BaseType<sbyte>._field, BaseType<byte> -> false
+
+            var fieldOwnerType = field.OwningType;
+
+            while (queryType != null)
+            {
+                if (fieldOwnerType == queryType)
+                    return true;
+                queryType = queryType.BaseType;
+            }
+
+            return false;
         }
 
         private bool isMethodDefinedInCoreLib()

@@ -60,6 +60,7 @@
     <UseDefaultPlatformManifestFallbackVersions>true</UseDefaultPlatformManifestFallbackVersions>
     <WindowsForwarderFileVersion>10.0.19041.1</WindowsForwarderFileVersion>
     <MicrosoftDiaSymReaderNativeFileVersion>14.28.29715.1</MicrosoftDiaSymReaderNativeFileVersion>
+    <MsQuicFileVersion>1.8.0.0</MsQuicFileVersion>
   </PropertyGroup>
 
   <Import Project="$(LibrariesProjectRoot)NetCoreAppLibrary.props" />
@@ -123,6 +124,7 @@
     <PlatformManifestFileEntry Include="api-ms-win-core-datetime-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-debug-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-errorhandling-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
+    <PlatformManifestFileEntry Include="api-ms-win-core-fibers-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-file-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-file-l1-2-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-file-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
@@ -161,7 +163,7 @@
     <PlatformManifestFileEntry Include="api-ms-win-crt-utility-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="API-MS-Win-core-xstate-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
@@ -171,7 +173,7 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <!-- Mono-specific files -->
-    <PlatformManifestFileEntry Include="libmonosgen-2.0.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="monosgen-2.0.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.dylib" IsNative="true" />
@@ -216,9 +218,9 @@
     <PlatformManifestFileEntry Include="icudt_EFIGS.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
-    <PlatformManifestFileEntry Include="binding_support.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet_support.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="library_mono.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.iffe.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
+    <PlatformManifestFileEntry Include="library-dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="pal_random.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
@@ -237,7 +239,7 @@
     <ExcludeFromClosure Include="@(NetFxReference)" />
  </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <!-- Add a reference to Microsoft.DiaSymReader.Native if one does not already exist. -->
     <PackageReference Include="Microsoft.DiaSymReader.Native"
                       Exclude="@(PackageReference)"

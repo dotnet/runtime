@@ -21,6 +21,18 @@ void SetBreakOnDebugBreakOrAV(bool value)
     breakOnDebugBreakorAV = value;
 }
 
+static bool breakOnException = false;
+
+bool BreakOnException()
+{
+    return breakOnException;
+}
+
+void SetBreakOnException(bool value)
+{
+    breakOnException = value;
+}
+
 void DebugBreakorAV(int val)
 {
     if (IsDebuggerPresent())

@@ -47,6 +47,8 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask ShutdownCompleted(CancellationToken cancellationToken = default);
 
+        internal abstract ValueTask WaitForWriteCompletionAsync(CancellationToken cancellationToken = default);
+
         internal abstract void Shutdown();
 
         internal abstract void Flush();

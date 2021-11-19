@@ -69,6 +69,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Resettable completions to be used for multiple calls to send.
             public readonly ResettableCompletionSource<uint> SendResettableCompletionSource = new ResettableCompletionSource<uint>();
 
+            public ShutdownWriteState ShutdownWriteState;
+
+            // Set once writes have been shutdown.
+            public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
             public ShutdownState ShutdownState;
             // The value makes sure that we release the handles only once.
             public int ShutdownDone;
@@ -95,6 +100,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         // inbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
+            if (!connectionState.TryAddStream(this))
+            {
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+            // this assignment should be done before SetCallbackHandlerDelegate to prevent NRE in HandleEventConnectionClose
+            // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
+            _state.ConnectionState = connectionState;
+
             _state.Handle = streamHandle;
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
@@ -117,14 +130,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            if (!connectionState.TryAddStream(this))
-            {
-                _state.StateGCHandle.Free();
-                throw new ObjectDisposedException(nameof(QuicConnection));
-            }
-
-            _state.ConnectionState = connectionState;
-
             _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
@@ -139,6 +144,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal MsQuicStream(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags)
         {
             Debug.Assert(connectionState.Handle != null);
+
+            if (!connectionState.TryAddStream(this))
+            {
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+            // this assignment should be done before StreamOpenDelegate to prevent NRE in HandleEventConnectionClose
+            // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
+            _state.ConnectionState = connectionState;
 
             _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
@@ -169,15 +182,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.StateGCHandle.Free();
                 throw;
             }
-
-            if (!connectionState.TryAddStream(this))
-            {
-                _state.Handle?.Dispose();
-                _state.StateGCHandle.Free();
-                throw new ObjectDisposedException(nameof(QuicConnection));
-            }
-
-            _state.ConnectionState = connectionState;
 
             _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
@@ -265,7 +269,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
+            using CancellationTokenRegistration registration = HandleWriteStartState(buffers.IsEmpty, cancellationToken);
 
             await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
@@ -281,7 +285,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
+            using CancellationTokenRegistration registration = HandleWriteStartState(buffers.IsEmpty, cancellationToken);
 
             await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
@@ -292,20 +296,20 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
+            using CancellationTokenRegistration registration = HandleWriteStartState(buffer.IsEmpty, cancellationToken);
 
             await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
             HandleWriteCompletedState();
         }
 
-        private CancellationTokenRegistration HandleWriteStartState(CancellationToken cancellationToken)
+        private CancellationTokenRegistration HandleWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
         {
             if (_state.SendState == SendState.Closed)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
             }
-            else if ( _state.SendState == SendState.Aborted)
+            if (_state.SendState == SendState.Aborted)
             {
                 if (_state.SendErrorCode != -1)
                 {
@@ -363,10 +367,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
-                else if (_state.SendState == SendState.ConnectionClosed)
+                if (_state.SendState == SendState.ConnectionClosed)
                 {
                     throw GetConnectionAbortedException(_state);
                 }
+
+                // Change the state in the same lock where we check for final states to prevent coming back from Aborted/ConnectionClosed.
+                Debug.Assert(_state.SendState != SendState.Pending);
+                _state.SendState = emptyBuffer ? SendState.Finished : SendState.Pending;
             }
 
             return registration;
@@ -574,12 +582,26 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            bool shouldComplete = false;
+
             lock (_state)
             {
                 if (_state.SendState < SendState.Aborted)
                 {
                     _state.SendState = SendState.Aborted;
                 }
+
+                if (_state.ShutdownWriteState == ShutdownWriteState.None)
+                {
+                    _state.ShutdownWriteState = ShutdownWriteState.Canceled;
+                    shouldComplete = true;
+                }
+            }
+
+            if (shouldComplete)
+            {
+                _state.ShutdownWriteCompletionSource.SetException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Write was aborted.")));
             }
 
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND, errorCode);
@@ -626,13 +648,33 @@ namespace System.Net.Quic.Implementations.MsQuic
             await _state.ShutdownCompletionSource.Task.ConfigureAwait(false);
         }
 
+        internal override ValueTask WaitForWriteCompletionAsync(CancellationToken cancellationToken = default)
+        {
+            // TODO: What should happen if this is called for a unidirectional stream and there are no writes?
+
+            ThrowIfDisposed();
+
+            lock (_state)
+            {
+                if (_state.ShutdownWriteState == ShutdownWriteState.ConnectionClosed)
+                {
+                    throw GetConnectionAbortedException(_state);
+                }
+            }
+
+            return new ValueTask(_state.ShutdownWriteCompletionSource.Task.WaitAsync(cancellationToken));
+        }
+
         internal override void Shutdown()
         {
             ThrowIfDisposed();
 
             lock (_state)
             {
-                _state.SendState = SendState.Finished;
+                if (_state.SendState < SendState.Finished)
+                {
+                    _state.SendState = SendState.Finished;
+                }
             }
 
             // it is ok to send shutdown several times, MsQuic will ignore it
@@ -855,6 +897,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Peer has stopped receiving data, don't send anymore.
                     case QUIC_STREAM_EVENT_TYPE.PEER_RECEIVE_ABORTED:
                         return HandleEventPeerRecvAborted(state, ref evt);
+                    // Occurs when shutdown is completed for the send side.
+                    // This only happens for shutdown on sending, not receiving
+                    // Receive shutdown can only be abortive.
+                    case QUIC_STREAM_EVENT_TYPE.SEND_SHUTDOWN_COMPLETE:
+                        return HandleEventSendShutdownComplete(state, ref evt);
                     // Shutdown for both sending and receiving is completed.
                     case QUIC_STREAM_EVENT_TYPE.SHUTDOWN_COMPLETE:
                         return HandleEventShutdownComplete(state, ref evt);
@@ -987,20 +1034,34 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventPeerRecvAborted(State state, ref StreamEvent evt)
         {
-            bool shouldComplete = false;
+            bool shouldSendComplete = false;
+            bool shouldShutdownWriteComplete = false;
             lock (state)
             {
                 if (state.SendState == SendState.None || state.SendState == SendState.Pending)
                 {
-                    shouldComplete = true;
+                    shouldSendComplete = true;
                 }
+
+                if (state.ShutdownWriteState == ShutdownWriteState.None)
+                {
+                    state.ShutdownWriteState = ShutdownWriteState.Canceled;
+                    shouldShutdownWriteComplete = true;
+                }
+
                 state.SendState = SendState.Aborted;
                 state.SendErrorCode = (long)evt.Data.PeerReceiveAborted.ErrorCode;
             }
 
-            if (shouldComplete)
+            if (shouldSendComplete)
             {
                 state.SendResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicStreamAbortedException(state.SendErrorCode)));
+            }
+
+            if (shouldShutdownWriteComplete)
+            {
+                state.ShutdownWriteCompletionSource.SetException(
                     ExceptionDispatchInfo.SetCurrentStackTrace(new QuicStreamAbortedException(state.SendErrorCode)));
             }
 
@@ -1015,6 +1076,38 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
+        private static uint HandleEventSendShutdownComplete(State state, ref StreamEvent evt)
+        {
+            // Graceful will be false in three situations:
+            // 1. The peer aborted reads and the PEER_RECEIVE_ABORTED event was raised.
+            //    ShutdownWriteCompletionSource is already complete with an error.
+            // 2. We aborted writes.
+            //    ShutdownWriteCompletionSource is already complete with an error.
+            // 3. The connection was closed.
+            //    SHUTDOWN_COMPLETE event will be raised immediately after this event. It will handle completing with an error.
+            //
+            // Only use this event with sends gracefully completed.
+            if (evt.Data.SendShutdownComplete.Graceful != 0)
+            {
+                bool shouldComplete = false;
+                lock (state)
+                {
+                    if (state.ShutdownWriteState == ShutdownWriteState.None)
+                    {
+                        state.ShutdownWriteState = ShutdownWriteState.Finished;
+                        shouldComplete = true;
+                    }
+                }
+
+                if (shouldComplete)
+                {
+                    state.ShutdownWriteCompletionSource.SetResult();
+                }
+            }
+
+            return MsQuicStatusCodes.Success;
+        }
+
         private static uint HandleEventShutdownComplete(State state, ref StreamEvent evt)
         {
             StreamEventDataShutdownComplete shutdownCompleteEvent = evt.Data.ShutdownComplete;
@@ -1025,6 +1118,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             bool shouldReadComplete = false;
+            bool shouldShutdownWriteComplete = false;
             bool shouldShutdownComplete = false;
 
             lock (state)
@@ -1033,6 +1127,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.TraceId} Stream completing resettable event source.");
 
                 shouldReadComplete = CleanupReadStateAndCheckPending(state, ReadState.ReadsCompleted);
+
+                if (state.ShutdownWriteState == ShutdownWriteState.None)
+                {
+                    // TODO: We can get to this point if the stream is unidirectional and there are no writes.
+                    // Consider what is the best behavior here with write shutdown and the read side of
+                    // unidirecitonal streams in the future.
+                    state.ShutdownWriteState = ShutdownWriteState.Finished;
+                    shouldShutdownWriteComplete = true;
+                }
 
                 if (state.ShutdownState == ShutdownState.None)
                 {
@@ -1044,6 +1147,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (shouldReadComplete)
             {
                 state.ReceiveResettableCompletionSource.Complete(0);
+            }
+
+            if (shouldShutdownWriteComplete)
+            {
+                state.ShutdownWriteCompletionSource.SetResult();
             }
 
             if (shouldShutdownComplete)
@@ -1157,12 +1265,6 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAGS flags)
         {
-            lock (_state)
-            {
-                Debug.Assert(_state.SendState != SendState.Pending);
-                _state.SendState = buffer.IsEmpty ? SendState.Finished : SendState.Pending;
-            }
-
             if (buffer.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
@@ -1211,13 +1313,6 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlySequence<byte> buffers,
            QUIC_SEND_FLAGS flags)
         {
-
-            lock (_state)
-            {
-                Debug.Assert(_state.SendState != SendState.Pending);
-                _state.SendState = buffers.IsEmpty ? SendState.Finished : SendState.Pending;
-            }
-
             if (buffers.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
@@ -1281,12 +1376,6 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlyMemory<ReadOnlyMemory<byte>> buffers,
            QUIC_SEND_FLAGS flags)
         {
-            lock (_state)
-            {
-                Debug.Assert(_state.SendState != SendState.Pending);
-                _state.SendState = buffers.IsEmpty ? SendState.Finished : SendState.Pending;
-            }
-
             if (buffers.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
@@ -1374,6 +1463,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             bool shouldCompleteRead = false;
             bool shouldCompleteSend = false;
+            bool shouldCompleteShutdownWrite = false;
             bool shouldCompleteShutdown = false;
 
             lock (state)
@@ -1385,6 +1475,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldCompleteSend = true;
                 }
                 state.SendState = SendState.ConnectionClosed;
+
+                if (state.ShutdownWriteState == ShutdownWriteState.None)
+                {
+                    shouldCompleteShutdownWrite = true;
+                }
+                state.ShutdownWriteState = ShutdownWriteState.ConnectionClosed;
 
                 if (state.ShutdownState == ShutdownState.None)
                 {
@@ -1402,6 +1498,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (shouldCompleteSend)
             {
                 state.SendResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
+            }
+
+            if (shouldCompleteShutdownWrite)
+            {
+                state.ShutdownWriteCompletionSource.SetException(
                     ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
 
@@ -1504,6 +1606,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// Stream is closed for reading.
             /// </summary>
             Closed
+        }
+
+        private enum ShutdownWriteState
+        {
+            None = 0,
+            Canceled,
+            Finished,
+            ConnectionClosed
         }
 
         private enum ShutdownState

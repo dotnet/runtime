@@ -1481,6 +1481,11 @@ Thread::Thread()
     m_fInteropDebuggingHijacked = FALSE;
     m_profilerCallbackState = 0;
 
+    for (int i = 0; i < MAX_NOTIFICATION_PROFILERS + 1; ++i)
+    {
+        m_dwProfilerEvacuationCounters[i] = 0;
+    }
+
     m_pProfilerFilterContext = NULL;
 
     m_CacheStackBase = 0;
@@ -8540,18 +8545,6 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         if (pMD != NULL)
         {
             pMD->EnumMemoryRegions(flags);
-#if defined(FEATURE_EH_FUNCLETS) && defined(FEATURE_PREJIT)
-            // Enumerate unwind info
-            // Note that we don't do this based on the MethodDesc because in theory there isn't a 1:1 correspondence
-            // between MethodDesc and code (and so unwind info, and even debug info).  Eg., EnC creates new versions
-            // of the code, but the MethodDesc always points at the latest version (which isn't necessarily
-            // the one on the stack).  In practice this is unlikely to be a problem since wanting a minidump
-            // and making EnC edits are usually mutually exclusive.
-            if (frameIter.m_crawl.IsFrameless())
-            {
-                frameIter.m_crawl.GetJitManager()->EnumMemoryRegionsForMethodUnwindInfo(flags, frameIter.m_crawl.GetCodeInfo());
-            }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(FEATURE_PREJIT)
         }
 
         previousSP = currentSP;
