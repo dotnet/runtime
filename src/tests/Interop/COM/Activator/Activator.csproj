@@ -5,6 +5,7 @@
     <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -18,7 +19,7 @@
     <ProjectReference Include="Servers\AssemblyContracts.csproj" />
   </ItemGroup>
   <!-- Set up an isolated directory for the server assemblies -->
-  <Target Name="SetUpIsolatedDirectory" AfterTargets="CopyFilesToOutputDirectory">
+  <Target Name="SetUpIslatedDirectory" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <ServerAssemblyDest>$(OutDir)/Servers</ServerAssemblyDest>
     </PropertyGroup>

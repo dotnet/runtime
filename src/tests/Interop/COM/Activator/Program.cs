@@ -41,10 +41,10 @@ sealed class ClassFactoryWrapper
             ref Guid riid,
             out IntPtr ppvObject)
     {
-        object[] args = new object[] { pUnkOuter, riid, ppvObject };
-        Marshal.ThrowExceptionForHR(IClassFactory_Create.Invoke(_obj, BindingFlags.DoNotWrapExceptions, binder: null, args, culture: null));
-        riid = args[1];
-        ppvObject = args[2];
+        object[] args = new object[] { pUnkOuter, riid, null };
+        IClassFactory_Create.Invoke(_obj, BindingFlags.DoNotWrapExceptions, binder: null, args, culture: null);
+        riid = (Guid)args[1];
+        ppvObject = (IntPtr)args[2];
     }
 }
 
@@ -52,8 +52,8 @@ namespace Activator
 {
     unsafe class Program
     {
-        private static delegate*<ComActivationContext, object> GetClassFactoryForTypeMethod = (delegate*<ComActivationContext, object>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("GetClassFactoryForType").MethodHandle.GetFunctionPointer();
-        private static delegate*<ComActivationContext, bool, void> ClassRegistrationScenarioForType = (delegate*<ComActivationContext, bool, void>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("ClassRegistrationScenarioForType").MethodHandle.GetFunctionPointer();
+        private static delegate*<ComActivationContext, object> GetClassFactoryForTypeMethod = (delegate*<ComActivationContext, object>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("GetClassFactoryForType", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
+        private static delegate*<ComActivationContext, bool, void> ClassRegistrationScenarioForType = (delegate*<ComActivationContext, bool, void>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("ClassRegistrationScenarioForType", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
 
         private static ClassFactoryWrapper GetClassFactoryForType(ComActivationContext context)
         {
@@ -256,8 +256,8 @@ namespace Activator
                     Assert.False(inst.DidUnregister());
 
                     cxt.InterfaceId = Guid.Empty;
-                    ClassRegistrationScenarioForType(cxt, register: true);
-                    ClassRegistrationScenarioForType(cxt, register: false);
+                    ClassRegistrationScenarioForType(cxt, true);
+                    ClassRegistrationScenarioForType(cxt, false);
 
                     Assert.True(inst.DidRegister(), $"User-defined register function should have been called.");
                     Assert.True(inst.DidUnregister(), $"User-defined unregister function should have been called.");
@@ -295,7 +295,7 @@ namespace Activator
                     bool exceptionThrown = false;
                     try
                     {
-                        ClassRegistrationScenarioForType(cxt, register: true);
+                        ClassRegistrationScenarioForType(cxt, true);
                     }
                     catch
                     {
@@ -307,7 +307,7 @@ namespace Activator
                     exceptionThrown = false;
                     try
                     {
-                        ClassRegistrationScenarioForType(cxt, register: false);
+                        ClassRegistrationScenarioForType(cxt, false);
                     }
                     catch
                     {
