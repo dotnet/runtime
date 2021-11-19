@@ -231,11 +231,11 @@ namespace System.Xml
 
         internal void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            if (!XmlCharType.IsLowSurrogate(lowChar) ||
-                 !XmlCharType.IsHighSurrogate(highChar))
+            if (!XmlCharType.IsLowSurrogate(lowChar) || !XmlCharType.IsHighSurrogate(highChar))
             {
                 throw XmlConvert.CreateInvalidSurrogatePairException(lowChar, highChar);
             }
+
             int surrogateChar = XmlCharType.CombineSurrogateChar(lowChar, highChar);
 
             if (_cacheAttrValue)
@@ -245,9 +245,9 @@ namespace System.Xml
                 _attrValue.Append(lowChar);
             }
 
-            _textWriter.Write("&#x");
-            _textWriter.Write(surrogateChar.ToString("X", NumberFormatInfo.InvariantInfo));
-            _textWriter.Write(';');
+            Span<char> span = stackalloc char[12];
+            int charsWritten = WriteCharToSpan(span, surrogateChar);
+            _textWriter.Write(span[..charsWritten]);
         }
 
         internal void Write(string text)
@@ -544,13 +544,13 @@ namespace System.Xml
             _textWriter.Write(span[..charsWritten]);
         }
 
-        private static int WriteCharToSpan(Span<char> destination, char ch)
+        private static int WriteCharToSpan(Span<char> destination, int ch)
         {
             Debug.Assert(destination.Length >= 12);
             destination[0] = '&';
             destination[1] = '#';
             destination[2] = 'x';
-            bool result = ((int)ch).TryFormat(destination[3..], out int charsWritten, "X", NumberFormatInfo.InvariantInfo);
+            bool result = ch.TryFormat(destination[3..], out int charsWritten, "X", NumberFormatInfo.InvariantInfo);
             Debug.Assert(result);
             destination[charsWritten + 3] = ';';
             return charsWritten + 4;
