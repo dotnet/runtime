@@ -291,7 +291,8 @@ namespace
                 pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
             }
 
-            return !pNestedType.GetMethodTable()->ContainsPointers();
+            // Types that have GC Pointer fields (objects or byrefs) are disqualified from ManagedSequential layout.
+            return pNestedType.GetMethodTable()->ContainsPointers() != FALSE;
         }
 
         // No other type permitted for ManagedSequential.
