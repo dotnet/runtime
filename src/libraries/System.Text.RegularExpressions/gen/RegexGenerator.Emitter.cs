@@ -750,7 +750,7 @@ namespace System.Text.RegularExpressions.Generator
 
             int labelCounter = 0;
             string DefineLabel(string prefix = "L") => $"{prefix}{labelCounter++}";
-            void MarkLabel(string label) => writer.WriteLine($"{label}:");
+            void MarkLabel(string label, bool addEmptyStatement = false) => writer.WriteLine($"{label}:{(addEmptyStatement ? " ;" : "")}");
             void Goto(string label) => writer.WriteLine($"goto {label};");
             string doneLabel = "NoMatch";
             string originalDoneLabel = doneLabel;
@@ -772,16 +772,10 @@ namespace System.Text.RegularExpressions.Generator
 
             // Emit failure
             writer.WriteLine("// No match");
-            MarkLabel(originalDoneLabel);
+            MarkLabel(originalDoneLabel, !expressionHasCaptures);
             if (expressionHasCaptures)
             {
                 EmitUncaptureUntil("0");
-            }
-            else
-            {
-                // We can't have a label at the end of the method, so explicitly
-                // add a "return;" if the End label would otherwise be an issue.
-                writer.WriteLine("return;");
             }
             return;
 
@@ -1174,15 +1168,11 @@ namespace System.Text.RegularExpressions.Generator
                         EmitAtomicNodeLoop(node);
                         break;
 
+                    case RegexNode.Onelazy:
+                    case RegexNode.Notonelazy:
+                    case RegexNode.Setlazy:
                     case RegexNode.Lazyloop:
-                        // An atomic lazy loop amounts to doing the minimum amount of work possible.
-                        // That means iterating as little as is required, which means a repeater
-                        // for the min, and if min is 0, doing nothing.
-                        Debug.Assert(node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic));
-                        if (node.M > 0)
-                        {
-                            EmitNodeRepeater(node);
-                        }
+                        EmitLazy(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Alternate:
@@ -1193,12 +1183,6 @@ namespace System.Text.RegularExpressions.Generator
                     case RegexNode.Notoneloop:
                     case RegexNode.Setloop:
                         EmitSingleCharLoop(node, subsequent, emitLengthChecksIfRequired);
-                        break;
-
-                    case RegexNode.Onelazy:
-                    case RegexNode.Notonelazy:
-                    case RegexNode.Setlazy:
-                        EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Concatenate:
@@ -1682,17 +1666,27 @@ namespace System.Text.RegularExpressions.Generator
                 // It's left pointing to the backtracking label for everything subsequent in the expression.
             }
 
-            void EmitSingleCharLazy(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
+            void EmitLazy(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
+                bool isSingleChar = node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily;
+
                 // Emit the min iterations as a repeater.  Any failures here don't necessitate backtracking,
                 // as the lazy itself failed to match.
                 if (node.M > 0)
                 {
-                    EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                    if (isSingleChar)
+                    {
+                        EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                    }
+                    else
+                    {
+                        EmitNodeRepeater(node);
+                    }
                 }
 
-                // If the whole thing was actually that repeater, we're done.
-                if (node.M == node.N)
+                // If the whole thing was actually that repeater, we're done. Similarly, if this is actually an atomic
+                // lazy loop, nothing will ever backtrack into this node, so we never need to iterate more than the minimum.
+                if (node.M == node.N || node.Next is { Type: RegexNode.Atomic })
                 {
                     return;
                 }
@@ -1762,7 +1756,15 @@ namespace System.Text.RegularExpressions.Generator
                 // for the next time we backtrack.
                 writer.WriteLine($"runtextpos = {nextPos};");
                 LoadTextSpanLocal(writer);
-                EmitSingleChar(node);
+                if (isSingleChar)
+                {
+                    EmitSingleChar(node);
+                }
+                else
+                {
+                    writer.WriteLine();
+                    EmitNode(node.Child(0));
+                }
                 TransferTextSpanPosToRunTextPos();
                 writer.WriteLine($"{nextPos} = runtextpos;");
 
@@ -1772,7 +1774,7 @@ namespace System.Text.RegularExpressions.Generator
                 doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
 
                 writer.WriteLine();
-                MarkLabel(endLoopLabel);
+                MarkLabel(endLoopLabel, addEmptyStatement: true);
 
                 // We explicitly do not reset doneLabel back to originalDoneLabel.
                 // It's left pointing to the backtracking label for everything subsequent in the expression.
