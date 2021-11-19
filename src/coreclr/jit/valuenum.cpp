@@ -4289,16 +4289,10 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
         // This is the value that should be stored at "arr[inx]".
         newValAtInx = vnStore->VNApplySelectorsAssign(VNK_Liberal, hAtArrTypeAtArrAtInx, fldSeq, rhsVN, indType);
 
-        var_types arrElemFldType = arrElemType; // Uses arrElemType unless we has a non-null fldSeq
-        if (vnStore->IsVNFunc(newValAtInx))
-        {
-            VNFuncApp funcApp;
-            vnStore->GetVNFunc(newValAtInx, &funcApp);
-            if (funcApp.m_func == VNF_MapStore)
-            {
-                arrElemFldType = vnStore->TypeOfVN(newValAtInx);
-            }
-        }
+        // TODO-VNTypes: the validation below is a workaround for logic in ApplySelectorsAssignTypeCoerce
+        // not handling some cases correctly. Remove once ApplySelectorsAssignTypeCoerce has been fixed.
+        var_types arrElemFldType =
+            (fldSeq != nullptr) ? eeGetFieldType(fldSeq->GetTail()->GetFieldHandle()) : arrElemType;
 
         if (indType != arrElemFldType)
         {
