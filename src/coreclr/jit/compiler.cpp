@@ -1847,6 +1847,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         impSpillCliquePredMembers = JitExpandArray<BYTE>(getAllocator());
         impSpillCliqueSuccMembers = JitExpandArray<BYTE>(getAllocator());
 
+        new (&genIPmappings, jitstd::placement_t()) jitstd::list<IPmappingDsc>(getAllocator(CMK_DebugInfo));
+#ifdef DEBUG
+        new (&genPreciseIPmappings, jitstd::placement_t()) jitstd::list<PreciseIPMapping>(getAllocator(CMK_DebugOnly));
+#endif
+
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();
 
         //
@@ -5366,6 +5371,14 @@ void Compiler::generatePatchpointInfo()
         patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
         JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
+    }
+
+    if (lvaMonAcquired != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaMonAcquired);
+        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset());
+        JITDUMP("--OSR-- monitor acquired V%02u offset is FP %d\n", lvaMonAcquired,
+                patchpointInfo->MonitorAcquiredOffset());
     }
 
     // Register this with the runtime.

@@ -410,8 +410,6 @@ namespace System.Text.RegularExpressions.Tests
             {
                 throw new Xunit.Sdk.EqualException(result2, result1);
             }
-
-            Assert.NotEqual(GetRegexCodes(new Regex(pattern1, RegexOptions.RightToLeft)), GetRegexCodes(new Regex(pattern2)));
         }
 
         [Theory]
@@ -476,9 +474,12 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:ab|cd|ae)f", "(?>ab|cd|ae)f")]
         public void PatternsReduceDifferently(string pattern1, string pattern2)
         {
-            var r1 = new Regex(pattern1);
-            var r2 = new Regex(pattern2);
-            Assert.NotEqual(GetRegexCodes(r1), GetRegexCodes(r2));
+            string result1 = GetRegexCodes(new Regex(pattern1));
+            string result2 = GetRegexCodes(new Regex(pattern2));
+            if (result1 == result2)
+            {
+                throw new Xunit.Sdk.EqualException(result2, result1);
+            }
         }
 
         [Theory]

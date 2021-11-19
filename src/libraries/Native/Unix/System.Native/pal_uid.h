@@ -75,14 +75,6 @@ PALEXPORT int32_t SystemNative_SetEUid(uint32_t euid);
 PALEXPORT int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* groups, int32_t* ngroups);
 
 /**
-* Gets and returns the real user's identity.
-* Implemented as shim to getuid(2).
-*
-* Always succeeds.
-*/
-PALEXPORT uint32_t SystemNative_GetUid(void);
-
-/**
 * Gets groups associated with current process.
 *
 * Returns number of groups for success.

@@ -424,6 +424,9 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
+
+        bool addPreciseMappings =
+            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
 
         DebugInfo currentDI;
@@ -441,7 +444,13 @@ void CodeGen::genCodeForBBlist()
                     genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
                     firstMapping = false;
                 }
+
 #ifdef DEBUG
+                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
+                {
+                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                }
+
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
