@@ -6792,8 +6792,6 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
-        LowerStoreIndir(ind);
-
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
         {
             // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
@@ -6802,11 +6800,16 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
             ssize_t   intCns = 0;
             var_types type   = TYP_UNKNOWN;
 
-            if (ind->TypeIs(TYP_FLOAT))
+            if (ind->TypeIs(TYP_FLOAT)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+                && data->IsFPZero()
+#endif
+            )
             {
                 float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
                 intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
                 type         = TYP_INT;
+                printf("qwe");
             }
 #ifdef TARGET_AMD64
             else
@@ -6820,12 +6823,11 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
             if (type != TYP_UNKNOWN)
             {
                 data->BashToConst(intCns, type);
-#if defined(TARGET_ARM64)
-                data->SetContained();
-#endif
                 ind->ChangeType(type);
             }
         }
+
+        LowerStoreIndir(ind);
     }
 }
 
