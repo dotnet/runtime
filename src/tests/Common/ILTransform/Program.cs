@@ -13,6 +13,7 @@ public class ILTransform
             bool deduplicateClassNames = false;
             string classToDeduplicate = "";
             bool fixImplicitSharedLibraries = false;
+            bool addILFactAttributes = false;
             foreach (string arg in args)
             {
                 if (arg[0] == '-')
@@ -33,6 +34,10 @@ public class ILTransform
                     else if (arg.StartsWith("-i"))
                     {
                         fixImplicitSharedLibraries = true;
+                    }
+                    else if (arg.StartsWith("-f"))
+                    {
+                        addILFactAttributes = true;
                     }
                     else
                     {
@@ -71,6 +76,8 @@ public class ILTransform
                 testStore.DumpDuplicateProjectContent(log);
                 testStore.DumpDuplicateSimpleProjectNames(log);
                 testStore.DumpDuplicateEntrypointClasses(log);
+                testStore.DumpProjectsWithoutFactAttributes(log);
+                testStore.DumpCommandLineVariations(log);
             }
 
             if (fixImplicitSharedLibraries)
@@ -79,8 +86,8 @@ public class ILTransform
             }
             else
             {
-                testStore.RewriteAllTests(deduplicateClassNames, classToDeduplicate);
-                if (!deduplicateClassNames)
+                testStore.RewriteAllTests(deduplicateClassNames, classToDeduplicate, addILFactAttributes);
+                if (!deduplicateClassNames && !addILFactAttributes)
                 {
                     testStore.GenerateAllWrappers(wrapperRoot);
                 }

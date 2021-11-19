@@ -37,13 +37,17 @@ public struct TestCount
 {
     public int Total;
     public int Pri0;
+    public int Fact;
+    public int ILProj;
 
     public int Pri1 => Total - Pri0;
 
-    public TestCount(int total, int pri0)
+    public TestCount(int total, int pri0, int fact, int il)
     {
         Total = total;
         Pri0 = pri0;
+        Fact = fact;
+        ILProj = il;
     }
 }
 
@@ -53,6 +57,8 @@ public class TestProject
     public readonly string RelativePath;
     public readonly string OutputType;
     public readonly string CLRTestKind;
+    public readonly string CLRTestProjectToRun;
+    public readonly string CLRTestExecutionArguments;
     public readonly DebugOptimize DebugOptimize;
     public readonly string Priority;
     public readonly string[] CompileFiles;
@@ -61,6 +67,7 @@ public class TestProject
     public readonly string TestClassSourceFile;
     public readonly int TestClassLine;
     public readonly int MainMethodLine;
+    public readonly bool HasFactAttribute;
 
     public string? TestProjectAlias;
     public string? DeduplicatedClassName;
@@ -70,6 +77,8 @@ public class TestProject
         string relativePath,
         string outputType,
         string clrTestKind,
+        string clrTestProjectToRun,
+        string clrTestExecutionArguments,
         DebugOptimize debugOptimize,
         string priority,
         string[] compileFiles,
@@ -77,12 +86,15 @@ public class TestProject
         string testClassName,
         string testClassSourceFile,
         int testClassLine,
-        int mainMethodLine)
+        int mainMethodLine,
+        bool hasFactAttribute)
     {
         AbsolutePath = absolutePath;
         RelativePath = relativePath;
         OutputType = outputType;
         CLRTestKind = clrTestKind;
+        CLRTestProjectToRun = clrTestProjectToRun;
+        CLRTestExecutionArguments = clrTestExecutionArguments;
         DebugOptimize = debugOptimize;
         Priority = priority;
         CompileFiles = compileFiles;
@@ -91,6 +103,7 @@ public class TestProject
         TestClassSourceFile = testClassSourceFile;
         TestClassLine = testClassLine;
         MainMethodLine = mainMethodLine;
+        HasFactAttribute = hasFactAttribute;
     }
 
     public static bool IsIdentifier(char c)
@@ -155,8 +168,16 @@ public class TestProject
         {
             string ref1 = ProjectReferences[refIndex];
             string ref2 = project2.ProjectReferences[refIndex];
-            if (ref1 != ref2 && File.ReadAllText(ref1) != File.ReadAllText(ref2))
+            try
             {
+                if (ref1 != ref2 && File.ReadAllText(ref1) != File.ReadAllText(ref2))
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error comparing projects {ref1} and {ref2} referenced from {AbsolutePath} and {project2.AbsolutePath}: {ex.Message}");
                 return false;
             }
         }
@@ -164,8 +185,16 @@ public class TestProject
         {
             string file1 = CompileFiles[fileIndex];
             string file2 = project2.CompileFiles[fileIndex];
-            if (file1 != file2 && File.ReadAllText(file1) != File.ReadAllText(file2))
+            try
             {
+                if (file1 != file2 && File.ReadAllText(file1) != File.ReadAllText(file2))
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error comparing files {file1} and {file2} referenced from {AbsolutePath} and {project2.AbsolutePath}: {ex.Message}");
                 return false;
             }
         }
@@ -208,12 +237,12 @@ class TestProjectStore
     {
         for (int level = 1; level <= 2; level++)
         {
-            string title = string.Format("COUNT |  PRI0 |  PRI1 | PARTITIONING: {0}", level);
+            string title = string.Format("COUNT |  PRI0  |  PRI1  |  FACT  | ILPROJ | PARTITIONING: {0}", level);
             writer.WriteLine(title);
             writer.WriteLine(new string('-', title.Length));
             Dictionary<string, TestCount> folderCounts = new Dictionary<string, TestCount>();
 
-            foreach (TestProject project in _projects)
+            foreach (TestProject project in _projects.Where(p => p.TestClassName != ""))
             {
                 string[] folderSplit = project.RelativePath.Split(Path.DirectorySeparatorChar);
                 StringBuilder folderNameBuilder = new StringBuilder();
@@ -232,11 +261,19 @@ class TestProjectStore
                 {
                     count.Pri0++;
                 }
+                if (project.HasFactAttribute)
+                {
+                    count.Fact++;
+                }
+                if (Path.GetExtension(project.RelativePath).ToLower() == ".ilproj")
+                {
+                    count.ILProj++;
+                }
                 folderCounts[folderName] = count;
             }
             foreach (KeyValuePair<string, TestCount> kvp in folderCounts.OrderBy(kvp => kvp.Key))
             {
-                writer.WriteLine("{0,5} | {1,5} | {2,5} | {3}", kvp.Value.Total, kvp.Value.Pri0, kvp.Value.Pri1, kvp.Key);
+                writer.WriteLine("{0,5} | {1,6} | {2,6} | {3,6} | {4,6} | {5}", kvp.Value.Total, kvp.Value.Pri0, kvp.Value.Pri1, kvp.Value.Fact, kvp.Value.ILProj, kvp.Key);
             }
             writer.WriteLine();
         }
@@ -398,7 +435,60 @@ class TestProjectStore
         writer.WriteLine();
     }
 
-    public void RewriteAllTests(bool deduplicateClassNames, string classToDeduplicate)
+    public void DumpProjectsWithoutFactAttributes(TextWriter writer)
+    {
+        writer.WriteLine("PROJECTS WITHOUT FACT ATTRIBUTES");
+        writer.WriteLine("--------------------------------");
+
+        foreach (TestProject project in _projects.Where(p => p.TestClassName != "" && !p.HasFactAttribute).OrderBy(p => p.RelativePath))
+        {
+            writer.WriteLine(project.AbsolutePath);
+        }
+
+        writer.WriteLine();
+    }
+
+    public void DumpCommandLineVariations(TextWriter writer)
+    {
+        Dictionary<string, List<TestProject>> commandlineVariations = new Dictionary<string, List<TestProject>>();
+        foreach (TestProject project in _projects)
+        {
+            if (project.CLRTestExecutionArguments != "")
+            {
+                if (!commandlineVariations.TryGetValue(project.CLRTestProjectToRun, out List<TestProject>? projects))
+                {
+                    projects = new List<TestProject>();
+                    commandlineVariations.Add(project.CLRTestProjectToRun, projects);
+                }
+                projects.Add(project);
+            }
+        }
+
+        if (commandlineVariations.TryGetValue("", out List<TestProject>? singleProjects))
+        {
+            writer.WriteLine("SINGLE TESTS WITH COMMAND-LINE ARGUMENTS");
+            writer.WriteLine("----------------------------------------");
+            foreach (TestProject project in singleProjects.OrderBy(p => p.RelativePath))
+            {
+                writer.WriteLine("{0} -> {1}", project.AbsolutePath, project.CLRTestExecutionArguments);
+            }
+        }
+        writer.WriteLine();
+
+        writer.WriteLine("TEST GROUPS WITH VARIANT ARGUMENTS");
+        writer.WriteLine("----------------------------------");
+        foreach (KeyValuePair<string, List<TestProject>> group in commandlineVariations.OrderByDescending(clv => clv.Value.Count))
+        {
+            writer.WriteLine(group.Key);
+            foreach (TestProject project in group.Value.OrderBy(p => p.RelativePath))
+            {
+                writer.WriteLine("    -> {0}", project.CLRTestExecutionArguments);
+            }
+        }
+        writer.WriteLine();
+    }
+
+    public void RewriteAllTests(bool deduplicateClassNames, string classToDeduplicate, bool addILFactAttributes)
     {
         HashSet<string> classNameDuplicates = new HashSet<string>(_classNameMap.Where(kvp => kvp.Value.Count > 1).Select(kvp => kvp.Key));
 
@@ -409,7 +499,7 @@ class TestProjectStore
             {
                 continue;
             }
-            new ILRewriter(project, classNameDuplicates, deduplicateClassNames, _rewrittenFiles).Rewrite();
+            new ILRewriter(project, classNameDuplicates, deduplicateClassNames, _rewrittenFiles, addILFactAttributes).Rewrite();
             index++;
             if (index % 500 == 0)
             {
@@ -581,7 +671,9 @@ class TestProjectStore
         string projectDir = Path.GetDirectoryName(absolutePath)!;
 
         string outputType = "";
-        string testKind = "";
+        string clrTestKind = "";
+        string clrTestProjectToRun = "";
+        string clrTestExecutionArguments = "";
         string priority = "";
         string debugType = "";
         string optimize = "";
@@ -609,7 +701,15 @@ class TestProjectStore
                                 break;
 
                             case "CLRTestKind":
-                                testKind = property.InnerText;
+                                clrTestKind = property.InnerText;
+                                break;
+
+                            case "CLRTestProjectToRun":
+                                clrTestProjectToRun = SanitizeFileName(property.InnerText, absolutePath);
+                                break;
+
+                            case "CLRTestExecutionArguments":
+                                clrTestExecutionArguments = property.InnerText;
                                 break;
 
                             case "DebugType":
@@ -665,6 +765,7 @@ class TestProjectStore
         string testClassSourceFile = "";
         int testClassLine = -1;
         int mainMethodLine = -1;
+        bool hasFactAttribute = false;
         foreach (string compileFile in compileFiles)
         {
             AnalyzeSource(
@@ -672,14 +773,17 @@ class TestProjectStore
                 testClassName: ref testClassName,
                 testClassSourceFile: ref testClassSourceFile,
                 testClassLine: ref testClassLine,
-                mainMethodLine: ref mainMethodLine);
+                mainMethodLine: ref mainMethodLine,
+                hasFactAttribute: ref hasFactAttribute);
         }
 
         _projects.Add(new TestProject(
             absolutePath,
             relativePath,
             outputType,
-            testKind,
+            clrTestKind,
+            clrTestProjectToRun,
+            clrTestExecutionArguments,
             new DebugOptimize(InitCaps(debugType), InitCaps(optimize)),
             priority,
             compileFiles.ToArray(),
@@ -687,7 +791,18 @@ class TestProjectStore
             testClassName,
             testClassSourceFile,
             testClassLine,
-            mainMethodLine));
+            mainMethodLine,
+            hasFactAttribute));
+    }
+
+    private static string SanitizeFileName(string fileName, string projectPath)
+    {
+        string projectName = Path.GetFileNameWithoutExtension(projectPath);
+        return Path.GetFullPath(
+            fileName
+            .Replace("$(MSBuildProjectName)", projectName)
+            .Replace("$(MSBuildThisFileName)", projectName),
+            Path.GetDirectoryName(projectPath)!);
     }
 
     private static string InitCaps(string s)
@@ -703,12 +818,12 @@ class TestProjectStore
         return s;
     }
 
-    private static void AnalyzeSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
+    private static void AnalyzeSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine, ref bool hasFactAttribute)
     {
         if (path.IndexOf('*') < 0 && path.IndexOf('?') < 0)
         {
             // Exact path
-            AnalyzeFileSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine);
+            AnalyzeFileSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine, ref hasFactAttribute);
             return;
         }
 
@@ -729,20 +844,20 @@ class TestProjectStore
 
         foreach (string file in Directory.EnumerateFiles(directory, pattern, searchOption))
         {
-            AnalyzeFileSource(file, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine);
+            AnalyzeFileSource(file, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine, ref hasFactAttribute);
         }
     }
 
-    private static void AnalyzeFileSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
+    private static void AnalyzeFileSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine, ref bool hasFactAttribute)
     {
         switch (Path.GetExtension(path).ToLower())
         {
             case ".il":
-                AnalyzeILSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine);
+                AnalyzeILSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine, ref hasFactAttribute);
                 break;
 
             case ".cs":
-                AnalyzeCSSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine);
+                AnalyzeCSSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine, ref hasFactAttribute);
                 break;
 
             default:
@@ -766,7 +881,7 @@ class TestProjectStore
         return Char.IsDigit(c) || Char.IsLetter(c) || c == '_' || c == '@';
     }
 
-    private static void AnalyzeCSSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
+    private static void AnalyzeCSSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine, ref bool hasFactAttribute)
     {
         List<string> lines = new List<string>(File.ReadAllLines(path));
 
@@ -775,6 +890,10 @@ class TestProjectStore
         for (int mainLine = lines.Count; --mainLine >= 0;)
         {
             string line = lines[mainLine];
+            if (line.IndexOf("[Fact]") >= 0 || line.IndexOf("[ConditionalFact]") >= 0)
+            {
+                hasFactAttribute = true;
+            }
             int mainPos = line.IndexOf("int Main()");
             if (mainPos >= 0)
             {
@@ -839,7 +958,7 @@ class TestProjectStore
         }
     }
 
-    private static void AnalyzeILSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
+    private static void AnalyzeILSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine, ref bool hasFactAttribute)
     {
         List<string> lines = new List<string>(File.ReadAllLines(path));
 
@@ -851,6 +970,14 @@ class TestProjectStore
             if (mainPos >= 0)
             {
                 mainMethodLine = lineIndex;
+                for (int factIndex = lineIndex; factIndex < lineIndex + 10 && factIndex < lines.Count; factIndex++)
+                {
+                    if (lines[factIndex].IndexOf("FactAttribute") >= 0)
+                    {
+                        hasFactAttribute = true;
+                        break;
+                    }
+                }
             }
             const string TestEntrypointTag = " TestEntrypoint(";
             int entrypointPos = line.IndexOf(TestEntrypointTag);

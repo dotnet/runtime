@@ -9,13 +9,7 @@ public class ILRewriter
 {
     static string[] s_xUnitLines =
     {
-        ".assembly extern xunit.core",
-        "{",
-        "    .publickeytoken = (",
-        "        8d 05 b1 bb 7a 6f db 6c",
-        "     )",
-        "     .ver 2:4:2:0",
-        "}",
+        ".assembly extern xunit.core {}",
     };
 
     static string[] s_factLines =
@@ -29,13 +23,15 @@ public class ILRewriter
     private readonly HashSet<string> _classNameDuplicates;
     private readonly bool _deduplicateClassNames;
     private readonly HashSet<string> _rewrittenFiles;
+    private readonly bool _addILFactAttributes;
 
-    public ILRewriter(TestProject testProject, HashSet<string> classNameDuplicates, bool deduplicateClassNames, HashSet<string> rewrittenFiles)
+    public ILRewriter(TestProject testProject, HashSet<string> classNameDuplicates, bool deduplicateClassNames, HashSet<string> rewrittenFiles, bool addILFactAttributes)
     {
         _testProject = testProject;
         _classNameDuplicates = classNameDuplicates;
         _deduplicateClassNames = deduplicateClassNames;
         _rewrittenFiles = rewrittenFiles;
+        _addILFactAttributes = addILFactAttributes;
     }
 
     public void Rewrite()
@@ -66,23 +62,30 @@ public class ILRewriter
                 int lineInBody = lineIndex;
                 while (!lines[lineInBody].Contains('{'))
                 {
-                    lineInBody++;
+                    if (++lineInBody >= lines.Count)
+                    {
+                        Console.Error.WriteLine("Opening brace for main method not found in file: {0}", ilSource);
+                        break;
+                    }
                 }
 
-                string firstMainBodyLine = lines[lineInBody + 1];
-                int indent = 0;
-                while (indent < firstMainBodyLine.Length && firstMainBodyLine[indent] <= ' ')
+                if (_addILFactAttributes && !_testProject.HasFactAttribute && Path.GetExtension(_testProject.TestClassSourceFile).ToLower() == ".il")
                 {
-                    indent++;
+                    string firstMainBodyLine = lines[lineInBody + 1];
+                    int indent = 0;
+                    while (indent < firstMainBodyLine.Length && firstMainBodyLine[indent] <= ' ')
+                    {
+                        indent++;
+                    }
+                    string indentString = firstMainBodyLine.Substring(0, indent);
+                    string[] indentedFactLines = new string[s_factLines.Length];
+                    for (int i = 0; i < s_factLines.Length; i++)
+                    {
+                        indentedFactLines[i] = indentString + s_factLines[i];
+                    }
+                    lines.InsertRange(lineInBody + 1, indentedFactLines);
+                    rewritten = true;
                 }
-                string indentString = firstMainBodyLine.Substring(0, indent);
-                string[] indentedFactLines = new string[s_factLines.Length];
-                for (int i = 0; i < s_factLines.Length; i++)
-                {
-                    indentedFactLines[i] = indentString + s_factLines[i];
-                }
-                lines.InsertRange(lineInBody + 1, indentedFactLines);
-                rewritten = true;
 
                 /*
                 int closingParen = line.IndexOf(')', mainPos + MainTag.Length);
@@ -138,73 +141,111 @@ public class ILRewriter
 
         if (!_deduplicateClassNames)
         {
+            bool hasXunitReference = false;
             string testName = _testProject.TestProjectAlias!;
-            for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+            bool isILTest = Path.GetExtension(_testProject.TestClassSourceFile).ToLower() == ".il";
+            bool addFactAttribute = _addILFactAttributes && !_testProject.HasFactAttribute && isILTest;
+            if (isILTest)
             {
-                int assemblyClosingBraceLine = lineIndex;
-                while (!lines[assemblyClosingBraceLine].Contains('}'))
+                for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
                 {
-                    assemblyClosingBraceLine++;
-                }
-                lines.InsertRange(assemblyClosingBraceLine + 1, s_xUnitLines);
-                rewritten = true;
-
-                /*
-                int start = assemblyIndex + AssemblyTag.Length;
-                for (; ;)
-                {
-                    int start = assemblyIndex + AssemblyTag.Length;
-                    for (; ; )
+                    string line = lines[lineIndex];
+                    if (line.StartsWith(".assembly extern xunit.core"))
                     {
-                        while (start < line.Length && Char.IsWhiteSpace(line[start]))
+                        hasXunitReference = true;
+                        if (!line.Contains('}'))
                         {
-                            start++;
+                            int endLine = lineIndex;
+                            do
+                            {
+                                endLine++;
+                            }
+                            while (!lines[endLine].Contains('}'));
+                            lines.RemoveRange(lineIndex + 1, endLine - lineIndex);
+                            lines[lineIndex] = s_xUnitLines[0];
+                            rewritten = true;
                         }
-                        const string LibraryTag = "library";
-                        if (start + LibraryTag.Length <= line.Length && line.Substring(start, LibraryTag.Length) == LibraryTag)
+                        break;
+                    }
+                }
+
+                for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+                {
+                    string line = lines[lineIndex];
+                    if (line.StartsWith(".assembly"))
+                    {
+                        while (!lines[lineIndex].Contains('}'))
                         {
-                            start += LibraryTag.Length;
-                            continue;
-                        }
-                        const string LegacyTag = "legacy";
-                        if (start + LegacyTag.Length <= line.Length && line.Substring(start, LegacyTag.Length) == LegacyTag)
-                        {
-                            start += LegacyTag.Length;
-                            continue;
+                            lineIndex++;
                         }
 
-                        if (start + 2 <= line.Length && line[start] == '/' && line[start + 1] == '*')
+                        line = lines[++lineIndex];
+                        if (addFactAttribute && !hasXunitReference)
                         {
-                            start += 2;
-                            while (start + 2 <= line.Length && !(line[start] == '*' && line[start + 1] == '/'))
+                            lines.InsertRange(lineIndex, s_xUnitLines);
+                            rewritten = true;
+                        }
+                        break;
+                    }
+
+                    /*
+                    int start = assemblyIndex + AssemblyTag.Length;
+                    for (; ;)
+                    {
+                        int start = assemblyIndex + AssemblyTag.Length;
+                        for (; ; )
+                        {
+                            while (start < line.Length && Char.IsWhiteSpace(line[start]))
                             {
                                 start++;
                             }
-                            continue;
+                            const string LibraryTag = "library";
+                            if (start + LibraryTag.Length <= line.Length && line.Substring(start, LibraryTag.Length) == LibraryTag)
+                            {
+                                start += LibraryTag.Length;
+                                continue;
+                            }
+                            const string LegacyTag = "legacy";
+                            if (start + LegacyTag.Length <= line.Length && line.Substring(start, LegacyTag.Length) == LegacyTag)
+                            {
+                                start += LegacyTag.Length;
+                                continue;
+                            }
+
+                            if (start + 2 <= line.Length && line[start] == '/' && line[start + 1] == '*')
+                            {
+                                start += 2;
+                                while (start + 2 <= line.Length && !(line[start] == '*' && line[start + 1] == '/'))
+                                {
+                                    start++;
+                                }
+                                continue;
+                            }
+                            break;
                         }
-                        break;
+                        bool quoted = (start < line.Length && line[start] == '\'');
+                        if (quoted)
+                        {
+                            start++;
+                        }
+                        int end = start;
+                        while (end < line.Length && line[end] != '\'' && (quoted || TestProject.IsIdentifier(line[end])))
+                        {
+                            end++;
+                        }
+                        string ident = line.Substring(start, end - start);
+                        if (ident != testName)
+                        {
+                            line = line.Substring(0, start) + (quoted ? "" : "'") + testName + (quoted ? "" : "'") + line.Substring(end);
+                            lines[lineIndex] = line;
+                            rewritten = true;
+                            break;
+                        }
                     }
-                    bool quoted = (start < line.Length && line[start] == '\'');
-                    if (quoted)
-                    {
-                        start++;
-                    }
-                    int end = start;
-                    while (end < line.Length && line[end] != '\'' && (quoted || TestProject.IsIdentifier(line[end])))
-                    {
-                        end++;
-                    }
-                    string ident = line.Substring(start, end - start);
-                    if (ident != testName)
-                    {
-                        line = line.Substring(0, start) + (quoted ? "" : "'") + testName + (quoted ? "" : "'") + line.Substring(end);
-                        lines[lineIndex] = line;
-                        rewritten = true;
-                        break;
-                    }
+                    */
                 }
-                */
             }
+        }
 
         /*
         for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
