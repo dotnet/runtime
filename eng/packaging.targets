@@ -41,7 +41,7 @@
     <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
+  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' or $(PreReleaseVersionLabel)' == 'mauipreview'">
     <!-- If no servicing version is set we need to default to 0 in order for dependency versions to
     be calculated propertly, if we don't set it to 0, we would get the dependency version using the
     product Patch Version -->
