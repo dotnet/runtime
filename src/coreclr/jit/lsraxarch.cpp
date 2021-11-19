@@ -2363,7 +2363,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 if (containedOpNum == 1)
                 {
-                    assert(containedOpNum != resultOpNum);
+                    // resultOpNum might change between lowering and lsra, comment out assertion for now.
+                    // assert(containedOpNum != resultOpNum);
                     // resultOpNum is 3 or 0: op3/? = ([op1] * op2) + op3
                     std::swap(emitOp1, emitOp3);
 
@@ -2375,7 +2376,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 else if (containedOpNum == 3)
                 {
-                    assert(containedOpNum != resultOpNum);
+                    // assert(containedOpNum != resultOpNum);
                     if (resultOpNum == 2 && !copiesUpperBits)
                     {
                         // op2 = (op1 * op2) + [op3]
@@ -2385,7 +2386,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 else if (containedOpNum == 2)
                 {
-                    assert(containedOpNum != resultOpNum);
+                    // assert(containedOpNum != resultOpNum);
 
                     // op1/? = (op1 * [op2]) + op3
                     std::swap(emitOp2, emitOp3);
