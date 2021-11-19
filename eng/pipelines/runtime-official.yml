@@ -342,6 +342,7 @@ stages:
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: SourceBuildPackages
+        timeoutInMinutes: 95
 
 
   #

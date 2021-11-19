@@ -25,6 +25,8 @@
     <RestoreProjects Include="Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <RestoreProjects Include="Common\XUnitWrapperGenerator\XUnitWrapperGenerator.csproj" />
+    <RestoreProjects Include="Common\XUnitWrapperLibrary\XUnitWrapperLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
@@ -215,6 +217,7 @@
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
+      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
 
     <Copy
@@ -231,6 +234,10 @@
 
     <Copy
         SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
 
     <AndroidAppBuilderTask
@@ -285,6 +292,7 @@
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
+      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
     <ItemGroup>
       <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
@@ -309,6 +317,10 @@
         DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="%(TestDlls.Identity)"
@@ -478,7 +490,7 @@
 
   <Target Name="CrossgenFramework"
       DependsOnTargets="GenerateLayout"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__DoCrossgen2)' == '1' and !$(MonoAot) and !$(MonoFullAot)" >
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
       <CrossgenDir>$(__BinDir)</CrossgenDir>

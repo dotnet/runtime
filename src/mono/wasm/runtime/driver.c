@@ -485,12 +485,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 
 #ifdef DEBUG
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+	// monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
-	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
@@ -1070,41 +1070,6 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	int resultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 	assert (resultType != MARSHAL_TYPE_VT);
 	return resultType;
-}
-
-// FIXME: This function is retained specifically because runtime-test.js uses it
-EMSCRIPTEN_KEEPALIVE int
-mono_unbox_int (MonoObject *obj)
-{
-	if (!obj)
-		return 0;
-	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
-
-	void *ptr = mono_object_unbox (obj);
-	switch (mono_type_get_type (type)) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-		return *(signed char*)ptr;
-	case MONO_TYPE_U1:
-		return *(unsigned char*)ptr;
-	case MONO_TYPE_I2:
-		return *(short*)ptr;
-	case MONO_TYPE_U2:
-		return *(unsigned short*)ptr;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_I:
-		return *(int*)ptr;
-	case MONO_TYPE_U4:
-		return *(unsigned int*)ptr;
-	case MONO_TYPE_CHAR:
-		return *(short*)ptr;
-	// WASM doesn't support returning longs to JS
-	// case MONO_TYPE_I8:
-	// case MONO_TYPE_U8:
-	default:
-		printf ("Invalid type %d to mono_unbox_int\n", mono_type_get_type (type));
-		return 0;
-	}
 }
 
 EMSCRIPTEN_KEEPALIVE int

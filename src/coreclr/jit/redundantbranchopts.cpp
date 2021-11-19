@@ -116,6 +116,11 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
         return false;
     }
 
+    const ValueNumStore::VN_RELATION_KIND vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
+                                                           ValueNumStore::VN_RELATION_KIND::VRK_Reverse,
+                                                           ValueNumStore::VN_RELATION_KIND::VRK_Swap,
+                                                           ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse};
+
     while (domBlock != nullptr)
     {
         // Check the current dominator
@@ -134,21 +139,21 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 //
                 // Look for an exact match and also try the various swapped/reversed forms.
                 //
-                const ValueNum treeVN   = tree->GetVN(VNK_Liberal);
-                const ValueNum domCmpVN = domCmpTree->GetVN(VNK_Liberal);
-                const ValueNum domCmpSwpVN =
-                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
-                const ValueNum domCmpRevVN =
-                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
-                const ValueNum domCmpSwpRevVN =
-                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse);
+                const ValueNum                  treeVN          = tree->GetVN(VNK_Liberal);
+                const ValueNum                  domCmpVN        = domCmpTree->GetVN(VNK_Liberal);
+                ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
+                bool                            matched         = false;
 
-                const bool matchCmp       = ((domCmpVN != ValueNumStore::NoVN) && (domCmpVN == treeVN));
-                const bool matchSwp       = ((domCmpSwpVN != ValueNumStore::NoVN) && (domCmpSwpVN == treeVN));
-                const bool matchRev       = ((domCmpRevVN != ValueNumStore::NoVN) && (domCmpRevVN == treeVN));
-                const bool matchSwpRev    = ((domCmpSwpRevVN != ValueNumStore::NoVN) && (domCmpSwpRevVN == treeVN));
-                const bool domIsSameRelop = matchCmp || matchSwp;
-                const bool domIsRevRelop  = matchRev || matchSwpRev;
+                for (auto vnRelation : vnRelations)
+                {
+                    const ValueNum relatedVN = vnStore->GetRelatedRelop(domCmpVN, vnRelation);
+                    if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == treeVN))
+                    {
+                        vnRelationMatch = vnRelation;
+                        matched         = true;
+                        break;
+                    }
+                }
 
                 // Note we could also infer the tree relop's value from relops higher in the dom tree
                 // that involve the same operands but are not swaps or reverses.
@@ -157,17 +162,19 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 //
                 // That is left as a future enhancement.
                 //
-                if (domIsSameRelop || domIsRevRelop)
+                if (matched)
                 {
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
-                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has %srelop with %s liberal VN\n", domBlock->bbNum,
-                            block->bbNum, matchSwp || matchSwpRev ? "swapped " : "",
-                            domIsSameRelop ? "the same" : "a reverse");
+                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with %s liberal VN\n", domBlock->bbNum,
+                            block->bbNum, ValueNumStore::VNRelationString(vnRelationMatch));
                     DISPTREE(domCmpTree);
                     JITDUMP(" Redundant compare; current relop:\n");
                     DISPTREE(tree);
+
+                    const bool domIsSameRelop = (vnRelationMatch == ValueNumStore::VN_RELATION_KIND::VRK_Same) ||
+                                                (vnRelationMatch == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
 
                     BasicBlock* const trueSuccessor  = domBlock->bbJumpDest;
                     BasicBlock* const falseSuccessor = domBlock->bbNext;
@@ -787,6 +794,14 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         return false;
     }
 
+    // If there's just one statement, bail.
+    //
+    if (stmt == block->firstStmt())
+    {
+        JITDUMP(" -- no, no prior stmt\n");
+        return false;
+    }
+
     GenTree* const jumpTree = stmt->GetRootNode();
 
     if (!jumpTree->OperIs(GT_JTRUE))
@@ -813,7 +828,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
     // If relop's value is known, bail.
     //
-    const ValueNum treeVN = tree->GetVN(VNK_Liberal);
+    const ValueNum treeVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
 
     if (vnStore->IsVNConstant(treeVN))
     {
@@ -821,13 +836,9 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         return false;
     }
 
-    // If there's just one statement, bail.
+    // Save off the jump tree's liberal exceptional VN.
     //
-    if (stmt == block->firstStmt())
-    {
-        JITDUMP(" -- no, no prior stmt\n");
-        return false;
-    }
+    const ValueNum treeExcVN = vnStore->VNExceptionSet(tree->GetVN(VNK_Liberal));
 
     JITDUMP("\noptRedundantRelop in " FMT_BB "; jump tree is\n", block->bbNum);
     DISPTREE(jumpTree);
@@ -836,9 +847,16 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     //  * makes the current relop redundant;
     //  * can safely and profitably forward substituted to the jump.
     //
-    Statement* prevStmt      = stmt;
-    GenTree*   candidateTree = nullptr;
-    bool       reverse       = false;
+    Statement*                      prevStmt        = stmt;
+    GenTree*                        candidateTree   = nullptr;
+    Statement*                      candidateStmt   = nullptr;
+    ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
+    bool                            sideEffect      = false;
+
+    const ValueNumStore::VN_RELATION_KIND vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
+                                                           ValueNumStore::VN_RELATION_KIND::VRK_Reverse,
+                                                           ValueNumStore::VN_RELATION_KIND::VRK_Swap,
+                                                           ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse};
 
     // We need to keep track of which locals might be killed by
     // the trees between the expression we want to forward substitute
@@ -858,6 +876,13 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
     while (true)
     {
+        // If we've run a cross a side effecting pred tree, stop looking.
+        //
+        if (sideEffect)
+        {
+            break;
+        }
+
         prevStmt = prevStmt->GetPrevStmt();
 
         // Backwards statement walks wrap around, so if we get
@@ -882,12 +907,22 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        // If prevTree has side effects other than GTF_EXCEPT or GTF_ASG, bail.
+        // If prevTree has side effects other than GTF_EXCEPT or GTF_ASG, bail,
+        // unless it is in the immediately preceeding statement.
+        //
+        // (we'll later show that any exception must come from the RHS as the LHS
+        // will be a simple local).
         //
         if ((prevTree->gtFlags & GTF_SIDE_EFFECT) != (prevTree->gtFlags & (GTF_EXCEPT | GTF_ASG)))
         {
-            JITDUMP(" -- prev tree has side effects\n");
-            break;
+            if (prevStmt->GetNextStmt() != stmt)
+            {
+                JITDUMP(" -- prev tree has side effects and is not next to jumpTree\n");
+                break;
+            }
+
+            JITDUMP(" -- prev tree has side effects, allowing as prev tree is immediately before jumpTree\n");
+            sideEffect = true;
         }
 
         if (!prevTree->OperIs(GT_ASG))
@@ -946,46 +981,43 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         definedLocals[definedLocalsCount++] = prevTreeLcl;
 
-        // If the VN of RHS is the VN of the current tree, or is "related", consider forward sub.
+        // If the normal liberal VN of RHS is the normal liberal VN of the current tree, or is "related",
+        // consider forward sub.
         //
-        // Todo: generalize to allow when normal VN of RHS == normal VN of tree, and RHS except set contains tree except
-        // set.
-        // The concern here is whether can we forward sub an excepting (but otherwise non-side effecting tree) and
-        // guarantee
-        // the same side effect behavior.
-        //
-        // A common case we see is that there's a compare of an array element guarded by a bounds check,
-        // so prevTree is something like:
-        //
-        //    (ASG lcl, (COMMA (bds-check), (NE (array-indir), ...)))
-        //
-        // This may have the same normal VN as our tree, but also has an exception set.
-        //
-        // Another common pattern is that the prevTree contains a call.
-        //
-        const ValueNum domCmpVN    = prevTreeRHS->GetVN(VNK_Liberal);
-        const ValueNum domCmpSwpVN = vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
-        const ValueNum domCmpRevVN = vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
-        const ValueNum domCmpSwpRevVN =
-            vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse);
+        const ValueNum domCmpVN = vnStore->VNNormalValue(prevTreeRHS->GetVN(VNK_Liberal));
+        bool           matched  = false;
 
-        const bool matchCmp       = ((domCmpVN != ValueNumStore::NoVN) && (domCmpVN == treeVN));
-        const bool matchSwp       = ((domCmpSwpVN != ValueNumStore::NoVN) && (domCmpSwpVN == treeVN));
-        const bool matchRev       = ((domCmpRevVN != ValueNumStore::NoVN) && (domCmpRevVN == treeVN));
-        const bool matchSwpRev    = ((domCmpSwpRevVN != ValueNumStore::NoVN) && (domCmpSwpRevVN == treeVN));
-        const bool domIsSameRelop = matchCmp || matchSwp;
-        const bool domIsRevRelop  = matchRev || matchSwpRev;
+        for (auto vnRelation : vnRelations)
+        {
+            const ValueNum relatedVN = vnStore->GetRelatedRelop(domCmpVN, vnRelation);
+            if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == treeVN))
+            {
+                vnRelationMatch = vnRelation;
+                matched         = true;
+                break;
+            }
+        }
 
-        // If the tree is some unrelated computation, keep looking farther up.
-        //
-        if (!domIsSameRelop && !domIsRevRelop)
+        if (!matched)
         {
             JITDUMP(" -- prev tree VN is not related\n");
             continue;
         }
 
-        JITDUMP("  -- prev tree has %srelop with %s liberal VN\n", matchSwp || matchSwpRev ? "swapped " : "",
-                domIsSameRelop ? "the same" : "a reverse");
+        JITDUMP("  -- prev tree has relop with %s liberal VN\n", ValueNumStore::VNRelationString(vnRelationMatch));
+
+        // If the jump tree VN has exceptions, verify that the RHS tree has a superset.
+        //
+        if (treeExcVN != vnStore->VNForEmptyExcSet())
+        {
+            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeRHS->GetVN(VNK_Liberal));
+
+            if (!vnStore->VNExcIsSubset(prevTreeExcVN, treeExcVN))
+            {
+                JITDUMP(" -- prev tree does not anticipate all jump tree exceptions\n");
+                break;
+            }
+        }
 
         // See if we can safely move a copy of prevTreeRHS later, to replace tree.
         // We can, if none of its lcls are killed.
@@ -1015,9 +1047,9 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        // Heuristic: if the lcl defined here is live out, forward sub
-        // won't result in the original becoming dead. If the local is not
-        // live out that still may happen, but it's less likely.
+        // If the lcl defined here is live out, forward sub is problematic.
+        // We'll either create a redundant tree (as the original won't be dead)
+        // or lose the def (if we actually move the RHS tree).
         //
         if (VarSetOps::IsMember(this, block->bbLiveOut, prevTreeLclDsc->lvVarIndex))
         {
@@ -1027,7 +1059,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         JITDUMP(" -- prev tree is viable candidate for relop fwd sub!\n");
         candidateTree = prevTreeRHS;
-        reverse       = domIsRevRelop;
+        candidateStmt = prevStmt;
     }
 
     if (candidateTree == nullptr)
@@ -1035,27 +1067,54 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         return false;
     }
 
-    // Looks good -- we are going to forward-sub candidateTree
-    //
-    GenTree* const substituteTree = gtCloneExpr(candidateTree);
+    GenTree* substituteTree = nullptr;
+    bool     usedCopy       = false;
 
-    // If we need the reverse compare, make it so
-    //
-    if (reverse)
+    if (candidateStmt->GetNextStmt() == stmt)
     {
-        substituteTree->SetOper(GenTree::ReverseRelop(substituteTree->OperGet()));
-
-        // This substitute tree will have the VN the same as the original.
-        // (modulo excep sets...? hmmm)
-        substituteTree->SetVNsFromNode(tree);
+        // We are going forward-sub candidateTree
+        //
+        substituteTree = candidateTree;
+    }
+    else
+    {
+        // We going to forward-sub a copy of candidateTree
+        //
+        assert(!sideEffect);
+        substituteTree = gtCloneExpr(candidateTree);
+        usedCopy       = true;
     }
 
-    // We just intentionally created a duplicate -- we don't want CSE to undo this.
-    // (hopefully, the original is now dead).
+    // If we need the reverse compare, make it so.
+    // We also need to set a proper VN.
     //
-    // Also this relop is now a subtree of a jump.
+    if ((vnRelationMatch == ValueNumStore::VN_RELATION_KIND::VRK_Reverse) ||
+        (vnRelationMatch == ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse))
+    {
+        // Copy the vn info as it will be trashed when we change the oper.
+        //
+        ValueNumPair origVNP = substituteTree->gtVNPair;
+
+        // Update the tree. Note we don't actually swap operands...?
+        //
+        substituteTree->SetOper(GenTree::ReverseRelop(substituteTree->OperGet()));
+
+        // Compute the right set of VNs for this new tree.
+        //
+        ValueNum origNormConVN = vnStore->VNConservativeNormalValue(origVNP);
+        ValueNum origNormLibVN = vnStore->VNLiberalNormalValue(origVNP);
+        ValueNum newNormConVN  = vnStore->GetRelatedRelop(origNormConVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
+        ValueNum newNormLibVN  = vnStore->GetRelatedRelop(origNormLibVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
+        ValueNumPair newNormalVNP(newNormLibVN, newNormConVN);
+        ValueNumPair origExcVNP = vnStore->VNPExceptionSet(origVNP);
+        ValueNumPair newVNP     = vnStore->VNPWithExc(newNormalVNP, origExcVNP);
+
+        substituteTree->SetVNs(newVNP);
+    }
+
+    // This relop is now a subtree of a jump.
     //
-    substituteTree->gtFlags |= (GTF_DONT_CSE | GTF_RELOP_JMP_USED);
+    substituteTree->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
     // Swap in the new tree.
     //
@@ -1065,6 +1124,13 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     gtUpdateStmtSideEffects(stmt);
 
     DEBUG_DESTROY_NODE(tree);
+
+    // If we didn't forward sub a copy, the candidateStmt must be removed.
+    //
+    if (!usedCopy)
+    {
+        fgRemoveStmt(block, candidateStmt);
+    }
 
     JITDUMP(" -- done! new jump tree is\n");
     DISPTREE(jumpTree);

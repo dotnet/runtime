@@ -464,4 +464,4 @@ FAIL:
 	ret
 }
 }
-.assembly blt_r8.exe{}
+.assembly blt_r8{}

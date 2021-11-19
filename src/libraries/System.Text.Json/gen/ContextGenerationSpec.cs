@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Text.Json.Reflection;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -15,6 +16,8 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("ContextTypeRef={ContextTypeRef}")]
     internal sealed class ContextGenerationSpec
     {
+        public Location Location { get; init; }
+
         public JsonSourceGenerationOptionsAttribute GenerationOptions { get; init; }
 
         public Type ContextType { get; init; }

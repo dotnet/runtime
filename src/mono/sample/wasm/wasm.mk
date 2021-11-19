@@ -30,4 +30,4 @@ run-browser:
 	fi
 
 run-console:
-	cd bin/$(CONFIG)/AppBundle && ~/.jsvu/v8 --stack-trace-limit=1000 --single-threaded --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run $(CONSOLE_DLL) $(ARGS)
+	cd bin/$(CONFIG)/AppBundle && ~/.jsvu/v8 --stack-trace-limit=1000 --single-threaded --expose_wasm main.js -- $(DOTNET_MONO_LOG_LEVEL) --run $(CONSOLE_DLL) $(ARGS)

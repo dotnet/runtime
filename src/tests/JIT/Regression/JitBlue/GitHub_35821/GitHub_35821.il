@@ -12,6 +12,7 @@
   .ver 5:0:0:0
 }
 .assembly projs { }
+.assembly extern xunit.core {}
 .module projs.dll
 // MVID: {379016DB-73C2-41D4-9E5F-5B727BC70E2C}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
@@ -34,6 +35,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       48 (0x30)
     .maxstack  8

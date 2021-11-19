@@ -689,7 +689,16 @@ int LinearScan::BuildNode(GenTree* tree)
             if (index != nullptr)
             {
                 srcCount++;
-                BuildUse(index);
+                if (index->OperIs(GT_BFIZ) && index->isContained())
+                {
+                    GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                    assert(cast->isContained() && (cns == 0));
+                    BuildUse(cast->CastOp());
+                }
+                else
+                {
+                    BuildUse(index);
+                }
             }
             assert(dstCount == 1);
 
@@ -811,8 +820,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicConvertToInt32:
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
             // No special handling required.
             break;
 
@@ -822,17 +829,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicEqual:
             // No special handling required.
             break;
-
-        case SIMDIntrinsicNarrow:
-        {
-            // Op1 will write to dst before Op2 is free
-            BuildUse(op1);
-            RefPosition* op2Use = BuildUse(op2);
-            setDelayFree(op2Use);
-            srcCount  = 2;
-            buildUses = false;
-            break;
-        }
 
         case SIMDIntrinsicInitN:
         {
@@ -870,7 +866,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
         case SIMDIntrinsicHWAccel:
-        case SIMDIntrinsicWiden:
         case SIMDIntrinsicInvalid:
             assert(!"These intrinsics should not be seen during register allocation");
             FALLTHROUGH;

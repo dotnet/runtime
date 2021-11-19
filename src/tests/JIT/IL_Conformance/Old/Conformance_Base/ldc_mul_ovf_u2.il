@@ -1391,5 +1391,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_mul_ovf_u2.exe{}
+.assembly ldc_mul_ovf_u2{}
 

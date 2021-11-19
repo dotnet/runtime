@@ -9,6 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly ptr_types { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit Test
@@ -28,6 +29,9 @@
     .method private hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  8
       ldtoken    int8*

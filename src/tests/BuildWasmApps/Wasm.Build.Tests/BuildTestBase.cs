@@ -147,7 +147,7 @@ namespace Wasm.Build.Tests
             string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config), "AppBundle");
             (string testCommand, string extraXHarnessArgs) = host switch
             {
-                RunHost.V8 => ("wasm test", "--js-file=runtime.js --engine=V8 -v trace"),
+                RunHost.V8 => ("wasm test", "--js-file=main.js --engine=V8 -v trace"),
                 _          => ("wasm test-browser", $"-v trace -b {host}")
             };
 
@@ -254,7 +254,7 @@ namespace Wasm.Build.Tests
                 <TargetFramework>{s_targetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
+                <WasmMainJSPath>test-main.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -310,7 +310,7 @@ namespace Wasm.Build.Tests
                 initProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory, "runtime-test.js"), Path.Combine(_projectDir, "runtime-test.js"));
+                File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"), Path.Combine(_projectDir, "test-main.js"));
             }
             else if (_projectDir is null)
             {
@@ -486,7 +486,7 @@ namespace Wasm.Build.Tests
             AssertFilesExist(bundleDir, new []
             {
                 "index.html",
-                "runtime.js",
+                "main.js",
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",

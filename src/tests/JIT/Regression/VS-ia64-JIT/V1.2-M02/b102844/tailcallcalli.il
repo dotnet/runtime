@@ -20,6 +20,7 @@
 {
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module bug.exe
 // MVID: {643CA244-98FB-40AF-A64C-CDBA1F121F03}
 .imagebase 0x00400000
@@ -86,6 +87,9 @@
     .method private hidebysig static int32 
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       17 (0x11)
       .maxstack  4

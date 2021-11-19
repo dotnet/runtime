@@ -8,7 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly ldobj.exe{
+.assembly 'ldobj'{
 
 }
 

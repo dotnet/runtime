@@ -2788,173 +2788,47 @@ namespace System.Runtime.Intrinsics
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
-        [Intrinsic]
         public static unsafe (Vector256<ushort> Lower, Vector256<ushort> Upper) Widen(Vector256<byte> source)
-        {
-            Unsafe.SkipInit(out Vector256<ushort> lower);
-            Unsafe.SkipInit(out Vector256<ushort> upper);
-
-            for (int i = 0; i < Vector256<ushort>.Count; i++)
-            {
-                var value = (ushort)source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector256<ushort>.Count; i < Vector256<byte>.Count; i++)
-            {
-                var value = (ushort)source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector256<ushort>.Count, value);
-            }
-
-            return (lower, upper);
-        }
+            => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector256{Int16}" /> into two <see cref="Vector256{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
-        [Intrinsic]
         public static unsafe (Vector256<int> Lower, Vector256<int> Upper) Widen(Vector256<short> source)
-        {
-            Unsafe.SkipInit(out Vector256<int> lower);
-            Unsafe.SkipInit(out Vector256<int> upper);
-
-            for (int i = 0; i < Vector256<int>.Count; i++)
-            {
-                var value = (int)source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector256<int>.Count; i < Vector256<short>.Count; i++)
-            {
-                var value = (int)source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector256<int>.Count, value);
-            }
-
-            return (lower, upper);
-        }
+            => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector256{Int32}" /> into two <see cref="Vector256{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
-        [Intrinsic]
         public static unsafe (Vector256<long> Lower, Vector256<long> Upper) Widen(Vector256<int> source)
-        {
-            Unsafe.SkipInit(out Vector256<long> lower);
-            Unsafe.SkipInit(out Vector256<long> upper);
-
-            for (int i = 0; i < Vector256<long>.Count; i++)
-            {
-                var value = (long)source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector256<long>.Count; i < Vector256<int>.Count; i++)
-            {
-                var value = (long)source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector256<long>.Count, value);
-            }
-
-            return (lower, upper);
-        }
+            => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector256{SByte}" /> into two <see cref="Vector256{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
-        [Intrinsic]
         public static unsafe (Vector256<short> Lower, Vector256<short> Upper) Widen(Vector256<sbyte> source)
-        {
-            Unsafe.SkipInit(out Vector256<short> lower);
-            Unsafe.SkipInit(out Vector256<short> upper);
-
-            for (int i = 0; i < Vector256<short>.Count; i++)
-            {
-                var value = (short)source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector256<short>.Count; i < Vector256<sbyte>.Count; i++)
-            {
-                var value = (short)source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector256<short>.Count, value);
-            }
-
-            return (lower, upper);
-        }
+            => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector256{Single}" /> into two <see cref="Vector256{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
-        [Intrinsic]
         public static unsafe (Vector256<double> Lower, Vector256<double> Upper) Widen(Vector256<float> source)
-        {
-            Unsafe.SkipInit(out Vector256<double> lower);
-            Unsafe.SkipInit(out Vector256<double> upper);
-
-            for (int i = 0; i < Vector256<double>.Count; i++)
-            {
-                var value = (double)source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector256<double>.Count; i < Vector256<float>.Count; i++)
-            {
-                var value = (double)source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector256<double>.Count, value);
-            }
-
-            return (lower, upper);
-        }
+            => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector256{UInt16}" /> into two <see cref="Vector256{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
-        [Intrinsic]
         public static unsafe (Vector256<uint> Lower, Vector256<uint> Upper) Widen(Vector256<ushort> source)
-        {
-            Unsafe.SkipInit(out Vector256<uint> lower);
-            Unsafe.SkipInit(out Vector256<uint> upper);
-
-            for (int i = 0; i < Vector256<uint>.Count; i++)
-            {
-                var value = (uint)source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector256<uint>.Count; i < Vector256<ushort>.Count; i++)
-            {
-                var value = (uint)source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector256<uint>.Count, value);
-            }
-
-            return (lower, upper);
-        }
+            => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector256{UInt32}" /> into two <see cref="Vector256{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
-        [Intrinsic]
         public static unsafe (Vector256<ulong> Lower, Vector256<ulong> Upper) Widen(Vector256<uint> source)
-        {
-            Unsafe.SkipInit(out Vector256<ulong> lower);
-            Unsafe.SkipInit(out Vector256<ulong> upper);
-
-            for (int i = 0; i < Vector256<ulong>.Count; i++)
-            {
-                var value = (ulong)source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector256<ulong>.Count; i < Vector256<uint>.Count; i++)
-            {
-                var value = (ulong)source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector256<ulong>.Count, value);
-            }
-
-            return (lower, upper);
-        }
+            => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -3075,6 +2949,202 @@ namespace System.Runtime.Intrinsics
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
             Unsafe.Add(ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector)), index) = value;
+        }
+
+        [Intrinsic]
+        internal static Vector256<ushort> WidenLower(Vector256<byte> source)
+        {
+            Unsafe.SkipInit(out Vector256<ushort> lower);
+
+            for (int i = 0; i < Vector256<ushort>.Count; i++)
+            {
+                var value = (ushort)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<int> WidenLower(Vector256<short> source)
+        {
+            Unsafe.SkipInit(out Vector256<int> lower);
+
+            for (int i = 0; i < Vector256<int>.Count; i++)
+            {
+                var value = (int)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<long> WidenLower(Vector256<int> source)
+        {
+            Unsafe.SkipInit(out Vector256<long> lower);
+
+            for (int i = 0; i < Vector256<long>.Count; i++)
+            {
+                var value = (long)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<short> WidenLower(Vector256<sbyte> source)
+        {
+            Unsafe.SkipInit(out Vector256<short> lower);
+
+            for (int i = 0; i < Vector256<short>.Count; i++)
+            {
+                var value = (short)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<double> WidenLower(Vector256<float> source)
+        {
+            Unsafe.SkipInit(out Vector256<double> lower);
+
+            for (int i = 0; i < Vector256<double>.Count; i++)
+            {
+                var value = (double)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<uint> WidenLower(Vector256<ushort> source)
+        {
+            Unsafe.SkipInit(out Vector256<uint> lower);
+
+            for (int i = 0; i < Vector256<uint>.Count; i++)
+            {
+                var value = (uint)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<ulong> WidenLower(Vector256<uint> source)
+        {
+            Unsafe.SkipInit(out Vector256<ulong> lower);
+
+            for (int i = 0; i < Vector256<ulong>.Count; i++)
+            {
+                var value = (ulong)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static Vector256<ushort> WidenUpper(Vector256<byte> source)
+        {
+            Unsafe.SkipInit(out Vector256<ushort> upper);
+
+            for (int i = Vector256<ushort>.Count; i < Vector256<byte>.Count; i++)
+            {
+                var value = (ushort)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<ushort>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<int> WidenUpper(Vector256<short> source)
+        {
+            Unsafe.SkipInit(out Vector256<int> upper);
+
+            for (int i = Vector256<int>.Count; i < Vector256<short>.Count; i++)
+            {
+                var value = (int)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<int>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<long> WidenUpper(Vector256<int> source)
+        {
+            Unsafe.SkipInit(out Vector256<long> upper);
+
+            for (int i = Vector256<long>.Count; i < Vector256<int>.Count; i++)
+            {
+                var value = (long)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<long>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<short> WidenUpper(Vector256<sbyte> source)
+        {
+            Unsafe.SkipInit(out Vector256<short> upper);
+
+            for (int i = Vector256<short>.Count; i < Vector256<sbyte>.Count; i++)
+            {
+                var value = (short)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<short>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<double> WidenUpper(Vector256<float> source)
+        {
+            Unsafe.SkipInit(out Vector256<double> upper);
+
+            for (int i = Vector256<double>.Count; i < Vector256<float>.Count; i++)
+            {
+                var value = (double)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<double>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<uint> WidenUpper(Vector256<ushort> source)
+        {
+            Unsafe.SkipInit(out Vector256<uint> upper);
+
+            for (int i = Vector256<uint>.Count; i < Vector256<ushort>.Count; i++)
+            {
+                var value = (uint)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<uint>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<ulong> WidenUpper(Vector256<uint> source)
+        {
+            Unsafe.SkipInit(out Vector256<ulong> upper);
+
+            for (int i = Vector256<ulong>.Count; i < Vector256<uint>.Count; i++)
+            {
+                var value = (ulong)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<ulong>.Count, value);
+            }
+
+            return upper;
         }
     }
 }

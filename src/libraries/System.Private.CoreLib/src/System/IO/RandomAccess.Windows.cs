@@ -18,9 +18,6 @@ namespace System.IO
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
 
-        // TODO: Use SystemPageSize directly when #57442 is fixed.
-        private static readonly int s_cachedPageSize = Environment.SystemPageSize;
-
         internal static unsafe long GetFileLength(SafeFileHandle handle)
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
@@ -441,7 +438,7 @@ namespace System.IO
             THandler handler, [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
             where THandler : struct, IMemoryHandler<T>
         {
-            int pageSize = s_cachedPageSize;
+            int pageSize = Environment.SystemPageSize;
             Debug.Assert(BitOperations.IsPow2(pageSize), "Page size is not a power of two.");
             // We take advantage of the fact that the page size is
             // a power of two to avoid an expensive modulo operation.

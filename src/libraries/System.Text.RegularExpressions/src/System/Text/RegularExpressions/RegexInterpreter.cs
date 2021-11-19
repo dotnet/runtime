@@ -15,7 +15,6 @@ namespace System.Text.RegularExpressions
 
         private readonly RegexCode _code;
         private readonly TextInfo _textInfo;
-        private readonly FindFirstCharMode _findFirstCharMode;
 
         private int _operator;
         private int _codepos;
@@ -29,48 +28,6 @@ namespace System.Text.RegularExpressions
 
             _code = code;
             _textInfo = culture.TextInfo;
-
-            // Determine what searching mode FindFirstChar will employ.
-            if ((_code.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End)) != 0)
-            {
-                _findFirstCharMode = (_code.LeadingAnchor, code.RightToLeft) switch
-                {
-                    (RegexPrefixAnalyzer.Beginning, false) => FindFirstCharMode.LeadingAnchor_LeftToRight_Beginning,
-                    (RegexPrefixAnalyzer.Beginning, true) => FindFirstCharMode.LeadingAnchor_RightToLeft_Beginning,
-                    (RegexPrefixAnalyzer.Start, false) => FindFirstCharMode.LeadingAnchor_LeftToRight_Start,
-                    (RegexPrefixAnalyzer.Start, true) => FindFirstCharMode.LeadingAnchor_RightToLeft_Start,
-                    (RegexPrefixAnalyzer.End, false) => FindFirstCharMode.LeadingAnchor_LeftToRight_End,
-                    (RegexPrefixAnalyzer.End, true) => FindFirstCharMode.LeadingAnchor_RightToLeft_End,
-                    (_, false) => FindFirstCharMode.LeadingAnchor_LeftToRight_EndZ,
-                    (_, true) => FindFirstCharMode.LeadingAnchor_RightToLeft_EndZ,
-                };
-            }
-            else if (code.BoyerMoorePrefix is RegexBoyerMoore rbm)
-            {
-                _findFirstCharMode = rbm.PatternSupportsIndexOf ?
-                    FindFirstCharMode.IndexOf :
-                    FindFirstCharMode.BoyerMoore;
-            }
-            else if (code.LeadingCharClasses is not null)
-            {
-                (string charClass, bool caseInsensitive) = code.LeadingCharClasses[0];
-                bool isSet = !RegexCharClass.IsSingleton(charClass);
-                _findFirstCharMode = (code.RightToLeft, caseInsensitive, isSet) switch
-                {
-                    (false, false, false) => FindFirstCharMode.LeadingCharClass_LeftToRight_CaseSensitive_Singleton,
-                    (false, false, true) => FindFirstCharMode.LeadingCharClass_LeftToRight_CaseSensitive_Set,
-                    (false, true, false) => FindFirstCharMode.LeadingCharClass_LeftToRight_CaseInsensitive_Singleton,
-                    (false, true, true) => FindFirstCharMode.LeadingCharClass_LeftToRight_CaseInsensitive_Set,
-                    (true, false, false) => FindFirstCharMode.LeadingCharClass_RightToLeft_CaseSensitive_Singleton,
-                    (true, false, true) => FindFirstCharMode.LeadingCharClass_RightToLeft_CaseSensitive_Set,
-                    (true, true, false) => FindFirstCharMode.LeadingCharClass_RightToLeft_CaseInsensitive_Singleton,
-                    (true, true, true) => FindFirstCharMode.LeadingCharClass_RightToLeft_CaseInsensitive_Set,
-                };
-            }
-            else
-            {
-                _findFirstCharMode = FindFirstCharMode.NoSearch;
-            }
         }
 
         protected override void InitTrackCount() => runtrackcount = _code.TrackCount;
@@ -372,306 +329,8 @@ namespace System.Text.RegularExpressions
 
         private void Backwardnext() => runtextpos += _rightToLeft ? 1 : -1;
 
-        private enum FindFirstCharMode
-        {
-            LeadingAnchor_LeftToRight_Beginning,
-            LeadingAnchor_LeftToRight_Start,
-            LeadingAnchor_LeftToRight_EndZ,
-            LeadingAnchor_LeftToRight_End,
-
-            LeadingAnchor_RightToLeft_Beginning,
-            LeadingAnchor_RightToLeft_Start,
-            LeadingAnchor_RightToLeft_EndZ,
-            LeadingAnchor_RightToLeft_End,
-
-            IndexOf,
-            BoyerMoore,
-
-            LeadingCharClass_LeftToRight_CaseSensitive_Singleton,
-            LeadingCharClass_LeftToRight_CaseSensitive_Set,
-            LeadingCharClass_LeftToRight_CaseInsensitive_Singleton,
-            LeadingCharClass_LeftToRight_CaseInsensitive_Set,
-
-            LeadingCharClass_RightToLeft_CaseSensitive_Singleton,
-            LeadingCharClass_RightToLeft_CaseSensitive_Set,
-            LeadingCharClass_RightToLeft_CaseInsensitive_Singleton,
-            LeadingCharClass_RightToLeft_CaseInsensitive_Set,
-
-            NoSearch,
-        }
-
-        protected override bool FindFirstChar()
-        {
-            // Return early if we know there's not enough input left to match.
-            if (!_code.RightToLeft)
-            {
-                if (runtextpos > runtextend - _code.Tree.MinRequiredLength)
-                {
-                    runtextpos = runtextend;
-                    return false;
-                }
-            }
-            else
-            {
-                if (runtextpos - _code.Tree.MinRequiredLength < runtextbeg)
-                {
-                    runtextpos = runtextbeg;
-                    return false;
-                }
-            }
-
-            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
-            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
-            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
-            // to boost our position to the next line, and then continue normally with any Boyer-Moore or
-            // leading char class searches.
-            if (_code.LeadingAnchor == RegexPrefixAnalyzer.Bol &&
-                !_code.RightToLeft) // don't bother customizing this optimization for the very niche RTL + Multiline case
-            {
-                // If we're not currently positioned at the beginning of a line (either
-                // the beginning of the string or just after a line feed), find the next
-                // newline and position just after it.
-                if (runtextpos > runtextbeg && runtext![runtextpos - 1] != '\n')
-                {
-                    int newline = runtext.IndexOf('\n', runtextpos);
-                    if (newline == -1 || newline + 1 > runtextend)
-                    {
-                        runtextpos = runtextend;
-                        return false;
-                    }
-
-                    runtextpos = newline + 1;
-                }
-            }
-
-            switch (_findFirstCharMode)
-            {
-                // If the pattern is anchored, we can update our position appropriately and return immediately.
-                // If there's a Boyer-Moore prefix, we can also validate it.
-
-                case FindFirstCharMode.LeadingAnchor_LeftToRight_Beginning:
-                    if (runtextpos > runtextbeg)
-                    {
-                        runtextpos = runtextend;
-                        return false;
-                    }
-                    return NoPrefixOrPrefixMatches();
-
-                case FindFirstCharMode.LeadingAnchor_LeftToRight_Start:
-                    if (runtextpos > runtextstart)
-                    {
-                        runtextpos = runtextend;
-                        return false;
-                    }
-                    return NoPrefixOrPrefixMatches();
-
-                case FindFirstCharMode.LeadingAnchor_LeftToRight_EndZ:
-                    if (runtextpos < runtextend - 1)
-                    {
-                        runtextpos = runtextend - 1;
-                    }
-                    return NoPrefixOrPrefixMatches();
-
-                case FindFirstCharMode.LeadingAnchor_LeftToRight_End:
-                    if (runtextpos < runtextend)
-                    {
-                        runtextpos = runtextend;
-                    }
-                    return NoPrefixOrPrefixMatches();
-
-                case FindFirstCharMode.LeadingAnchor_RightToLeft_Beginning:
-                    if (runtextpos > runtextbeg)
-                    {
-                        runtextpos = runtextbeg;
-                    }
-                    return NoPrefixOrPrefixMatches();
-
-                case FindFirstCharMode.LeadingAnchor_RightToLeft_Start:
-                    if (runtextpos < runtextstart)
-                    {
-                        runtextpos = runtextbeg;
-                        return false;
-                    }
-                    return NoPrefixOrPrefixMatches();
-
-                case FindFirstCharMode.LeadingAnchor_RightToLeft_EndZ:
-                    if (runtextpos < runtextend - 1 || (runtextpos == runtextend - 1 && runtext![runtextpos] != '\n'))
-                    {
-                        runtextpos = runtextbeg;
-                        return false;
-                    }
-                    return NoPrefixOrPrefixMatches();
-
-                case FindFirstCharMode.LeadingAnchor_RightToLeft_End:
-                    if (runtextpos < runtextend)
-                    {
-                        runtextpos = runtextbeg;
-                        return false;
-                    }
-                    return NoPrefixOrPrefixMatches();
-
-                // There was a prefix.  Scan for it.
-
-                case FindFirstCharMode.IndexOf:
-                    {
-                        int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(_code.BoyerMoorePrefix!.Pattern);
-                        if (i >= 0)
-                        {
-                            runtextpos += i;
-                            return true;
-                        }
-                        runtextpos = runtextend;
-                        return false;
-                    }
-
-                case FindFirstCharMode.BoyerMoore:
-                    runtextpos = _code.BoyerMoorePrefix!.Scan(runtext!, runtextpos, runtextbeg, runtextend);
-                    if (runtextpos >= 0)
-                    {
-                        return true;
-                    }
-                    runtextpos = _code.RightToLeft ? runtextbeg : runtextend;
-                    return false;
-
-                // There's a leading character class. Search for it.
-
-                case FindFirstCharMode.LeadingCharClass_LeftToRight_CaseSensitive_Singleton:
-                    {
-                        ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                        int i = span.IndexOf(RegexCharClass.SingletonChar(_code.LeadingCharClasses![0].CharClass));
-                        if (i >= 0)
-                        {
-                            runtextpos += i;
-                            return true;
-                        }
-                        runtextpos = runtextend;
-                        return false;
-                    }
-
-                case FindFirstCharMode.LeadingCharClass_LeftToRight_CaseSensitive_Set:
-                    {
-                        string set = _code.LeadingCharClasses![0].CharClass;
-                        ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                        for (int i = 0; i < span.Length; i++)
-                        {
-                            if (RegexCharClass.CharInClass(span[i], set, ref _code.LeadingCharClassAsciiLookup))
-                            {
-                                runtextpos += i;
-                                return true;
-                            }
-                        }
-                        runtextpos = runtextend;
-                        return false;
-                    }
-
-                case FindFirstCharMode.LeadingCharClass_LeftToRight_CaseInsensitive_Singleton:
-                    {
-                        char ch = RegexCharClass.SingletonChar(_code.LeadingCharClasses![0].CharClass);
-                        TextInfo ti = _textInfo;
-                        ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                        for (int i = 0; i < span.Length; i++)
-                        {
-                            if (ch == ti.ToLower(span[i]))
-                            {
-                                runtextpos += i;
-                                return true;
-                            }
-                        }
-                        runtextpos = runtextend;
-                        return false;
-                    }
-
-                case FindFirstCharMode.LeadingCharClass_LeftToRight_CaseInsensitive_Set:
-                    {
-                        string set = _code.LeadingCharClasses![0].CharClass;
-                        ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                        TextInfo ti = _textInfo;
-                        for (int i = 0; i < span.Length; i++)
-                        {
-                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.LeadingCharClassAsciiLookup))
-                            {
-                                runtextpos += i;
-                                return true;
-                            }
-                        }
-                        runtextpos = runtextend;
-                        return false;
-                    }
-
-                case FindFirstCharMode.LeadingCharClass_RightToLeft_CaseSensitive_Singleton:
-                    {
-                        ReadOnlySpan<char> span = runtext.AsSpan(runtextbeg, runtextpos - runtextbeg);
-                        int i = span.LastIndexOf(RegexCharClass.SingletonChar(_code.LeadingCharClasses![0].CharClass));
-                        if (i >= 0)
-                        {
-                            runtextpos = runtextbeg + i + 1;
-                            return true;
-                        }
-                        runtextpos = runtextbeg;
-                        return false;
-                    }
-
-                case FindFirstCharMode.LeadingCharClass_RightToLeft_CaseSensitive_Set:
-                    {
-                        string set = _code.LeadingCharClasses![0].CharClass;
-                        ReadOnlySpan<char> span = runtext.AsSpan(runtextbeg, runtextpos - runtextbeg);
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (RegexCharClass.CharInClass(span[i], set, ref _code.LeadingCharClassAsciiLookup))
-                            {
-                                runtextpos = runtextbeg + i + 1;
-                                return true;
-                            }
-                        }
-                        runtextpos = runtextbeg;
-                        return false;
-                    }
-
-                case FindFirstCharMode.LeadingCharClass_RightToLeft_CaseInsensitive_Singleton:
-                    {
-                        char ch = RegexCharClass.SingletonChar(_code.LeadingCharClasses![0].CharClass);
-                        TextInfo ti = _textInfo;
-                        ReadOnlySpan<char> span = runtext.AsSpan(runtextbeg, runtextpos - runtextbeg);
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (ch == ti.ToLower(span[i]))
-                            {
-                                runtextpos = runtextbeg + i + 1;
-                                return true;
-                            }
-                        }
-                        runtextpos = runtextbeg;
-                        return false;
-                    }
-
-                case FindFirstCharMode.LeadingCharClass_RightToLeft_CaseInsensitive_Set:
-                    {
-                        string set = _code.LeadingCharClasses![0].CharClass;
-                        ReadOnlySpan<char> span = runtext.AsSpan(runtextbeg, runtextpos - runtextbeg);
-                        TextInfo ti = _textInfo;
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.LeadingCharClassAsciiLookup))
-                            {
-                                runtextpos = runtextbeg + i + 1;
-                                return true;
-                            }
-                        }
-                        runtextpos = runtextbeg;
-                        return false;
-                    }
-
-                // Nothing special to look for.  Just return true indicating this is a valid position to try to match.
-
-                default:
-                    Debug.Assert(_findFirstCharMode == FindFirstCharMode.NoSearch);
-                    return true;
-            }
-
-            bool NoPrefixOrPrefixMatches() =>
-                _code.BoyerMoorePrefix is not RegexBoyerMoore rbm ||
-                rbm.IsMatch(runtext!, runtextpos, runtextbeg, runtextend);
-        }
+        protected override bool FindFirstChar() =>
+            _code.FindOptimizations.TryFindNextStartingPosition(runtext!, ref runtextpos, runtextbeg, runtextstart, runtextend);
 
         protected override void Go()
         {
@@ -1230,7 +889,7 @@ namespace System.Text.RegularExpressions
 
                             int operand0 = Operand(0);
                             string set = _code.Strings[operand0];
-                            ref int[]? setLookup = ref _code.StringsAsciiLookup[operand0];
+                            ref uint[]? setLookup = ref _code.StringsAsciiLookup[operand0];
 
                             while (c-- > 0)
                             {
@@ -1322,7 +981,7 @@ namespace System.Text.RegularExpressions
                             int len = Math.Min(Operand(1), Forwardchars());
                             int operand0 = Operand(0);
                             string set = _code.Strings[operand0];
-                            ref int[]? setLookup = ref _code.StringsAsciiLookup[operand0];
+                            ref uint[]? setLookup = ref _code.StringsAsciiLookup[operand0];
                             int i;
 
                             for (i = len; i > 0; i--)

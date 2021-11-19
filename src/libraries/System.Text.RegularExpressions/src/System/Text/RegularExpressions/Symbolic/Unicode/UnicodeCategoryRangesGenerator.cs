@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 
@@ -10,6 +11,7 @@ namespace System.Text.RegularExpressions.Symbolic.Unicode
 {
 #if DEBUG
     /// <summary>Utility for generating unicode category ranges and corresponing binary decision diagrams.</summary>
+    [ExcludeFromCodeCoverage]
     internal static class UnicodeCategoryRangesGenerator
     {
         /// <summary>Generator for BDD Unicode category definitions.</summary>
@@ -88,6 +90,7 @@ namespace {namespacename}
     }
 
     /// <summary>Used internally for creating a collection of ranges for serialization.</summary>
+    [ExcludeFromCodeCoverage]
     internal sealed class Ranges
     {
         public readonly List<int[]> ranges = new List<int[]>();

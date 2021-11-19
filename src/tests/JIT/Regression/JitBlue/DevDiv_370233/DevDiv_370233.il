@@ -1,5 +1,6 @@
 .assembly extern mscorlib{}
 .assembly DevDiv_370233{}
+.assembly extern xunit.core {}
 .class C extends [mscorlib]System.Object
 {
    .method static unsigned int32 M(bool, bool)
@@ -112,6 +113,9 @@
 
    .method static int32 Main() cil managed
    {
+       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+           01 00 00 00
+       )
        .entrypoint
 
        .try

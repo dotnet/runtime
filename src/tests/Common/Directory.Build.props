@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <IsTestsCommonProject>true</IsTestsCommonProject>
+  </PropertyGroup>
+
   <!-- SDK Style projects auto-magically include this file. -->
   <Import Project="..\Directory.Build.props" />
 </Project>
