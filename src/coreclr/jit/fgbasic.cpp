@@ -4651,6 +4651,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             if (block->isLoopAlign())
             {
+                loopAlignCandidates++;
                 succBlock->bbFlags |= BBF_LOOP_ALIGN;
                 JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for loop# %d.", block->bbNum,
                         succBlock->bbNum, block->bbNatLoopNum);
@@ -4802,6 +4803,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         fgUnlinkBlock(block);
         block->bbFlags |= BBF_REMOVED;
     }
+
+    // If this was marked for alignment, remove it
+    block->unmarkLoopAlign(this DEBUG_ARG("Removed block"));
 
     if (bPrev != nullptr)
     {

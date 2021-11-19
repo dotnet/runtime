@@ -1,4 +1,0 @@
-trigger: none
-
-extends:
-    template: runtime-staging-template.yml

@@ -1,0 +1,24 @@
+﻿<Project>
+  <ItemGroup>
+    <!-- Properties used for filtering -->
+    <CompilerVisibleProperty Include="RuntimeFlavor" />
+    <CompilerVisibleProperty Include="TargetOS" />
+    <CompilerVisibleProperty Include="TargetArchitecture" />
+    <CompilerVisibleProperty Include="Priority" />
+    <!-- Properties that influence test harness generation -->
+    <CompilerVisibleProperty Include="ReferenceSystemPrivateCoreLib" />
+    <CompilerVisibleProperty Include="IsMergedTestRunnerAssembly" />
+    <CompilerVisibleProperty Include="TestFilter" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IsOutOfProcessTestAssembly" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TestAssemblyRelativePath" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TestDisplayName" />
+  </ItemGroup>
+
+  <Target Name="AddOutOfProcessTestAssembliesToCompilation" AfterTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <OutOfProcessTests IsOutOfProcessTestAssembly="true" TestAssemblyRelativePath="$([MSBuild]::MakeRelative('$(OutputPath)', '%(Identity)'))" TestDisplayName="$([MSBuild]::MakeRelative('$(TestBinDir)', '%(Identity)'))" />
+      <!-- Change the extension to .cmd to match the existing test names for out-of-proc test runs. -->
+      <AdditionalFiles Include="@(OutOfProcessTests)" TestDisplayName="$([System.IO.Path]::ChangeExtension('%(TestDisplayName)', '.cmd'))" />
+    </ItemGroup>
+  </Target>
+</Project>

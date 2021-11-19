@@ -4736,10 +4736,6 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     {
         whyNot = "localloc";
     }
-    else if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
-    {
-        whyNot = "synchronized method";
-    }
     else if (opts.IsReversePInvoke())
     {
         whyNot = "reverse pinvoke";
