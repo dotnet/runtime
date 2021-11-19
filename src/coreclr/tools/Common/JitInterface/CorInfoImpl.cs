@@ -366,6 +366,24 @@ namespace Internal.JitInterface
 #endif
             }
 
+            if (codeSize < _code.Length)
+            {
+                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64)
+                {
+                    // For xarch/arm32, the generated code is sometimes smaller than the memory allocated.
+                    // In that case, trim the codeBlock to the actual value.
+                    //
+                    // For arm64, the allocation request of `hotCodeSize` also includes the roData size
+                    // while the `codeSize` returned just contains the size of the native code. As such,
+                    // there is guarantee that for armarch, (codeSize == _code.Length) is always true.
+                    //
+                    // Currently, hot/cold splitting is not done and hence `codeSize` just includes the size of
+                    // hotCode. Once hot/cold splitting is done, need to trim respective `_code` or `_coldCode`
+                    // accordingly.
+                    Debug.Assert(codeSize != 0);
+                    Array.Resize(ref _code, (int)codeSize);
+                }
+            }
             PublishCode();
             PublishROData();
         }
@@ -1265,25 +1283,38 @@ namespace Internal.JitInterface
                 methodWithTokenDecl = new MethodWithToken(decl, declToken, null, false, null, devirtualizedMethodOwner: decl.OwningType);
             }
             MethodWithToken methodWithTokenImpl;
+#endif
 
             if (decl == originalImpl)
             {
+#if READYTORUN
                 methodWithTokenImpl = methodWithTokenDecl;
+#endif
                 if (info->pResolvedTokenVirtualMethod != null)
                 {
                     info->resolvedTokenDevirtualizedMethod = *info->pResolvedTokenVirtualMethod;
                 }
                 else
                 {
-                    info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, decl, methodWithTokenDecl);
+                    info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, decl
+#if READYTORUN
+                        , methodWithTokenDecl
+#endif
+                        );
                 }
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
             else
             {
+#if READYTORUN
                 methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition()), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
+#endif
 
-                info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, impl, methodWithTokenImpl);
+                info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, impl
+#if READYTORUN
+                    , methodWithTokenImpl
+#endif
+                    );
 
                 if (unboxingStub)
                 {
@@ -1297,6 +1328,7 @@ namespace Internal.JitInterface
                 }
             }
 
+#if READYTORUN
             // Testing has not shown that concerns about virtual matching are significant
             // Only generate verification for builds with the stress mode enabled
             if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
@@ -1304,9 +1336,6 @@ namespace Internal.JitInterface
                 ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
                 _methodCodeNode.Fixups.Add(virtualResolutionNode);
             }
-#else
-            info->resolvedTokenDevirtualizedMethod = default(CORINFO_RESOLVED_TOKEN);
-            info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
@@ -1315,9 +1344,21 @@ namespace Internal.JitInterface
 
             return true;
 
+            static CORINFO_RESOLVED_TOKEN CreateResolvedTokenFromMethod(CorInfoImpl jitInterface, MethodDesc method
 #if READYTORUN
-            static CORINFO_RESOLVED_TOKEN CreateResolvedTokenFromMethod(CorInfoImpl jitInterface, MethodDesc method, MethodWithToken methodWithToken)
+                , MethodWithToken methodWithToken
+#endif
+                )
             {
+#if !READYTORUN
+                MethodDesc unboxedMethodDesc = method.IsUnboxingThunk() ? method.GetUnboxedMethod() : method;
+                var methodWithToken = new
+                {
+                    Method = unboxedMethodDesc,
+                    OwningType = unboxedMethodDesc.OwningType,
+                };
+#endif
+
                 CORINFO_RESOLVED_TOKEN result = default(CORINFO_RESOLVED_TOKEN);
                 MethodILScope scope = jitInterface._compilation.GetMethodIL(methodWithToken.Method);
                 if (scope == null)
@@ -1326,19 +1367,22 @@ namespace Internal.JitInterface
                 }
                 result.tokenScope = jitInterface.ObjectToHandle(scope);
                 result.tokenContext = jitInterface.contextFromMethod(method);
+#if READYTORUN
                 result.token = methodWithToken.Token.Token;
                 if (methodWithToken.Token.TokenType != CorTokenType.mdtMethodDef)
                 {
                     Debug.Assert(false); // This should never happen, but we protect against total failure with the throw below.
                     throw new RequiresRuntimeJitException("Attempt to devirtualize and unable to create token for devirtualized method");
                 }
+#else
+                result.token = (mdToken)0x06BAAAAD;
+#endif
                 result.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod;
                 result.hClass = jitInterface.ObjectToHandle(methodWithToken.OwningType);
                 result.hMethod = jitInterface.ObjectToHandle(method);
 
                 return result;
             }
-#endif
         }
 
         private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
@@ -3773,7 +3817,11 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, out var instrumentationData);
+                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, out var instrumentationData
+#if !READYTORUN
+                        , _compilation.CanConstructType
+#endif
+                        );
 
                     pgoResults.pInstrumentationData = (byte*)GetPin(instrumentationData);
                     pgoResults.countSchemaItems = (uint)nativeSchemas.Length;

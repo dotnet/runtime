@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly 'RMV-2-15-12'{}
 .assembly extern mscorlib {}
 
@@ -47,6 +48,9 @@
     ret
 }
 .method public static int32 Main(){
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
     .try{
         call void CMain::DeferJitIndirect()

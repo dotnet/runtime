@@ -12,6 +12,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 // TODO: use the contract once this is exposed from contracts
 .assembly extern System.Runtime { }
 
@@ -833,6 +834,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       23 (0x17)
     .maxstack  1

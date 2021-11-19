@@ -4,6 +4,7 @@
 .assembly extern mscorlib {}
 
 .assembly DevDiv_279829 {}
+.assembly extern xunit.core {}
 
 .class public Test_DevDiv_279829
 {
@@ -25,6 +26,9 @@
 
     .method private static int32 Main(class [mscorlib]System.String[])
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack 1
 

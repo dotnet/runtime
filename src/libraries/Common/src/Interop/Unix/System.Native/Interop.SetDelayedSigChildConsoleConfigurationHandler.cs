@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetDelayedSigChildConsoleConfigurationHandler")]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetDelayedSigChildConsoleConfigurationHandler")]
         [SuppressGCTransition]
-        internal static extern unsafe void SetDelayedSigChildConsoleConfigurationHandler(delegate* unmanaged<void> callback);
+        internal static unsafe partial void SetDelayedSigChildConsoleConfigurationHandler(delegate* unmanaged<void> callback);
     }
 }

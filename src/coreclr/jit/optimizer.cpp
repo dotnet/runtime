@@ -20,16 +20,16 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::optInit()
 {
-    optLoopsMarked = false;
-    fgHasLoops     = false;
+    optLoopsMarked      = false;
+    fgHasLoops          = false;
+    loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
     optLoopCount = 0;
     optLoopTable = nullptr;
 
 #ifdef DEBUG
-    loopAlignCandidates = 0;
-    loopsAligned        = 0;
+    loopsAligned = 0;
 #endif
 
     /* Keep track of the number of calls and indirect calls made by this method */
@@ -78,13 +78,14 @@ void Compiler::optSetBlockWeights()
 
         if (!usingProfileWeights && firstBBDominatesAllReturns)
         {
+            // If the weight is already zero (and thus rarely run), there's no point scaling it.
             if (block->bbWeight != BB_ZERO_WEIGHT)
             {
-                // Calculate our bbWeight:
-                //
-                //  o BB_UNITY_WEIGHT if we dominate all BBJ_RETURN blocks
-                //  o otherwise BB_UNITY_WEIGHT / 2
-                //
+                // If the block dominates all return blocks, leave the weight alone. Otherwise,
+                // scale the weight by 0.5 as a heuristic that some other path gets some of the dynamic flow.
+                // Note that `optScaleLoopBlocks` has a similar heuristic for loop blocks that don't dominate
+                // their loop back edge.
+
                 bool blockDominatesAllReturns = true; // Assume that we will dominate
 
                 for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
@@ -99,6 +100,10 @@ void Compiler::optSetBlockWeights()
                 if (block == fgFirstBB)
                 {
                     firstBBDominatesAllReturns = blockDominatesAllReturns;
+
+                    // Don't scale the weight of the first block, since it is guaranteed to execute.
+                    // If the first block does not dominate all the returns, we won't scale any of the function's
+                    // block weights.
                 }
                 else
                 {
@@ -108,6 +113,12 @@ void Compiler::optSetBlockWeights()
                     if (!blockDominatesAllReturns)
                     {
                         INDEBUG(changed = true);
+
+                        // TODO-Cleanup: we should use:
+                        //    block->scaleBBWeight(0.5);
+                        // since we are inheriting "from ourselves", but that leads to asm diffs due to minutely
+                        // different floating-point value in the calculation, and some code that compares weights
+                        // for equality.
                         block->inheritWeightPercentage(block, 50);
                     }
                 }
@@ -128,29 +139,25 @@ void Compiler::optSetBlockWeights()
 #endif
 }
 
-/*****************************************************************************
- *
- *  Marks the blocks between 'begBlk' and 'endBlk' as part of a loop.
- */
-
-void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool excludeEndBlk)
+//------------------------------------------------------------------------
+// optScaleLoopBlocks: Scale the weight of loop blocks from 'begBlk' to 'endBlk'.
+//
+// Arguments:
+//      begBlk - first block of range. Must be marked as a loop head (BBF_LOOP_HEAD).
+//      endBlk - last block of range (inclusive). Must be reachable from `begBlk`.
+//
+// Operation:
+//      Calculate the 'loop weight'. This is the amount to scale the weight of each block in the loop.
+//      Our heuristic is that loops are weighted eight times more than straight-line code
+//      (scale factor is BB_LOOP_WEIGHT_SCALE). If the loops are all properly formed this gives us these weights:
+//
+//          1 -- non-loop basic block
+//          8 -- single loop nesting
+//         64 -- double loop nesting
+//        512 -- triple loop nesting
+//
+void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 {
-    /* Calculate the 'loopWeight',
-       this is the amount to increase each block in the loop
-       Our heuristic is that loops are weighted eight times more
-       than straight line code.
-       Thus we increase each block by 7 times the weight of
-       the loop header block,
-       if the loops are all properly formed gives us:
-       (assuming that BB_LOOP_WEIGHT_SCALE is 8)
-
-          1 -- non loop basic block
-          8 -- single loop nesting
-         64 -- double loop nesting
-        512 -- triple loop nesting
-
-    */
-
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
     noway_assert(fgReachable(begBlk, endBlk));
@@ -159,17 +166,16 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nMarking a loop from " FMT_BB " to " FMT_BB, begBlk->bbNum,
-               excludeEndBlk ? endBlk->bbPrev->bbNum : endBlk->bbNum);
+        printf("\nMarking a loop from " FMT_BB " to " FMT_BB, begBlk->bbNum, endBlk->bbNum);
     }
 #endif
 
-    /* Build list of backedges for block begBlk */
+    // Build list of back edges for block begBlk.
     flowList* backedgeList = nullptr;
 
     for (BasicBlock* const predBlock : begBlk->PredBlocks())
     {
-        /* Is this a backedge? */
+        // Is this a back edge?
         if (predBlock->bbNum >= begBlk->bbNum)
         {
             backedgeList = new (this, CMK_FlowList) flowList(predBlock, backedgeList);
@@ -181,24 +187,41 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
         }
     }
 
-    /* At least one backedge must have been found (the one from endBlk) */
+    // At least one backedge must have been found (the one from endBlk).
     noway_assert(backedgeList);
 
-    BasicBlock* curBlk = begBlk;
+    auto reportBlockWeight = [&](BasicBlock* blk, const char* message) {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\n    " FMT_BB "(wt=" FMT_WT ")%s", blk->bbNum, blk->getBBWeight(this), message);
+        }
+#endif // DEBUG
+    };
 
-    while (true)
+    for (BasicBlock* const curBlk : BasicBlockRangeList(begBlk, endBlk))
     {
-        noway_assert(curBlk);
+        // Don't change the block weight if it came from profile data.
+        if (curBlk->hasProfileWeight())
+        {
+            reportBlockWeight(curBlk, "; unchanged: has profile weight");
+            continue;
+        }
 
-        // For curBlk to be part of a loop that starts at begBlk
-        // curBlk must be reachable from begBlk and (since this is a loop)
-        // likewise begBlk must be reachable from curBlk.
-        //
+        // Don't change the block weight if it's known to be rarely run.
+        if (curBlk->isRunRarely())
+        {
+            reportBlockWeight(curBlk, "; unchanged: run rarely");
+            continue;
+        }
+
+        // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
+        // (since this is a loop) begBlk must likewise be reachable from curBlk.
 
         if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
         {
-            /* If this block reaches any of the backedge blocks we set reachable   */
-            /* If this block dominates any of the backedge blocks we set dominates */
+            // If `curBlk` reaches any of the back edge blocks we set `reachable`.
+            // If `curBlk` dominates any of the back edge blocks we set `dominates`.
             bool reachable = false;
             bool dominates = false;
 
@@ -206,88 +229,75 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
             {
                 BasicBlock* backedge = tmp->getBlock();
 
-                if (!curBlk->isRunRarely())
-                {
-                    reachable |= fgReachable(curBlk, backedge);
-                    dominates |= fgDominate(curBlk, backedge);
+                reachable |= fgReachable(curBlk, backedge);
+                dominates |= fgDominate(curBlk, backedge);
 
-                    if (dominates && reachable)
-                    {
-                        break;
-                    }
+                if (dominates && reachable)
+                {
+                    // No need to keep looking; we've already found all the info we need.
+                    break;
                 }
             }
 
             if (reachable)
             {
+                // If the block has BB_ZERO_WEIGHT, then it should be marked as rarely run, and skipped, above.
                 noway_assert(curBlk->bbWeight > BB_ZERO_WEIGHT);
 
-                if (!curBlk->hasProfileWeight())
+                weight_t scale = BB_LOOP_WEIGHT_SCALE;
+
+                if (!dominates)
                 {
-                    weight_t scale = BB_LOOP_WEIGHT_SCALE;
-
-                    if (!dominates)
-                    {
-                        scale = scale / 2;
-                    }
-
-                    curBlk->scaleBBWeight(scale);
+                    // If `curBlk` reaches but doesn't dominate any back edge to `endBlk` then there must be at least
+                    // some other path to `endBlk`, so don't give `curBlk` all the execution weight.
+                    scale = scale / 2;
                 }
 
-                JITDUMP("\n    " FMT_BB "(wt=" FMT_WT ")", curBlk->bbNum, curBlk->getBBWeight(this));
+                curBlk->scaleBBWeight(scale);
+
+                reportBlockWeight(curBlk, "");
+            }
+            else
+            {
+                reportBlockWeight(curBlk, "; unchanged: back edge unreachable");
             }
         }
-
-        /* Stop if we've reached the last block in the loop */
-
-        if (curBlk == endBlk)
+        else
         {
-            break;
-        }
-
-        curBlk = curBlk->bbNext;
-
-        /* If we are excluding the endBlk then stop if we've reached endBlk */
-
-        if (excludeEndBlk && (curBlk == endBlk))
-        {
-            break;
+            reportBlockWeight(curBlk, "; unchanged: block not in loop");
         }
     }
 }
 
-/*****************************************************************************
- *
- *   Unmark the blocks between 'begBlk' and 'endBlk' as part of a loop.
- */
-
+//------------------------------------------------------------------------
+// optUnmarkLoopBlocks: Unmark the blocks between 'begBlk' and 'endBlk' as part of a loop.
+//
+// Arguments:
+//      begBlk - first block of range. Must be marked as a loop head (BBF_LOOP_HEAD).
+//      endBlk - last block of range (inclusive). Must be reachable from `begBlk`.
+//
+// Operation:
+//      A set of blocks that were previously marked as a loop are now to be unmarked, since we have decided that
+//      for some reason this loop no longer exists. Basically we are just resetting the blocks bbWeight to their
+//      previous values.
+//
 void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 {
-    /* A set of blocks that were previously marked as a loop are now
-       to be unmarked, since we have decided that for some reason this
-       loop no longer exists.
-       Basically we are just reseting the blocks bbWeight to their
-       previous values.
-    */
-
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
-
     noway_assert(!opts.MinOpts());
 
     unsigned backEdgeCount = 0;
 
     for (BasicBlock* const predBlock : begBlk->PredBlocks())
     {
-        /* is this a backward edge? (from predBlock to begBlk) */
-
+        // Is this a backward edge? (from predBlock to begBlk)
         if (begBlk->bbNum > predBlock->bbNum)
         {
             continue;
         }
 
-        /* We only consider back-edges that are BBJ_COND or BBJ_ALWAYS for loops */
-
+        // We only consider back-edges that are BBJ_COND or BBJ_ALWAYS for loops.
         if ((predBlock->bbJumpKind != BBJ_COND) && (predBlock->bbJumpKind != BBJ_ALWAYS))
         {
             continue;
@@ -296,7 +306,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         backEdgeCount++;
     }
 
-    /* Only unmark the loop blocks if we have exactly one loop back edge */
+    // Only unmark the loop blocks if we have exactly one loop back edge.
     if (backEdgeCount != 1)
     {
 #ifdef DEBUG
@@ -314,71 +324,62 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #endif
         return;
     }
-    noway_assert(backEdgeCount == 1);
     noway_assert(fgReachable(begBlk, endBlk));
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nUnmarking loop at " FMT_BB, begBlk->bbNum);
+        printf("\nUnmarking a loop from " FMT_BB " to " FMT_BB, begBlk->bbNum, endBlk->bbNum);
     }
 #endif
 
-    BasicBlock* curBlk = begBlk;
-    while (true)
+    for (BasicBlock* const curBlk : BasicBlockRangeList(begBlk, endBlk))
     {
-        noway_assert(curBlk);
-
-        // For curBlk to be part of a loop that starts at begBlk
-        // curBlk must be reachable from begBlk and (since this is a loop)
-        // likewise begBlk must be reachable from curBlk.
-        //
-        if (!curBlk->isRunRarely() && fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
-        {
-            // Don't unmark blocks that are set to BB_MAX_WEIGHT
-            // Don't unmark blocks when we are using profile weights
-            //
-            if (!curBlk->isMaxBBWeight() && !curBlk->hasProfileWeight())
-            {
-                weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
-
-                if (!fgDominate(curBlk, endBlk))
-                {
-                    scale *= 2;
-                }
-
-                curBlk->scaleBBWeight(scale);
-            }
-
-            JITDUMP("\n    " FMT_BB "(wt=" FMT_WT ")", curBlk->bbNum, curBlk->getBBWeight(this));
-        }
-
-        /* Stop if we've reached the last block in the loop */
-
-        if (curBlk == endBlk)
-        {
-            break;
-        }
-
-        curBlk = curBlk->bbNext;
-
-        /* Stop if we go past the last block in the loop, as it may have been deleted */
+        // Stop if we go past the last block in the loop, as it may have been deleted.
         if (curBlk->bbNum > endBlk->bbNum)
         {
             break;
+        }
+
+        // Don't change the block weight if it's known to be rarely run.
+        if (curBlk->isRunRarely())
+        {
+            continue;
+        }
+
+        // Don't change the block weight if it came from profile data.
+        if (curBlk->hasProfileWeight())
+        {
+            continue;
+        }
+
+        // Don't unmark blocks that are maximum weight.
+        if (curBlk->isMaxBBWeight())
+        {
+            continue;
+        }
+
+        // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
+        // (since this is a loop) begBlk must likewise be reachable from curBlk.
+        //
+        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        {
+            weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
+
+            if (!fgDominate(curBlk, endBlk))
+            {
+                scale *= 2;
+            }
+
+            curBlk->scaleBBWeight(scale);
+
+            JITDUMP("\n    " FMT_BB "(wt=" FMT_WT ")", curBlk->bbNum, curBlk->getBBWeight(this));
         }
     }
 
     JITDUMP("\n");
 
-#if FEATURE_LOOP_ALIGN
-    if (begBlk->isLoopAlign())
-    {
-        // Clear the loop alignment bit on the head of a loop, since it's no longer a loop.
-        begBlk->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Removing LOOP_ALIGN flag from removed loop in " FMT_BB "\n", begBlk->bbNum);
-    }
-#endif
+    begBlk->unmarkLoopAlign(this DEBUG_ARG("Removed loop"));
 }
 
 /*****************************************************************************************************
@@ -550,13 +551,18 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         {
             printf("\nUpdateLoopsBeforeRemoveBlock After: ");
             optPrintLoopInfo(loopNum);
+            printf("\n");
         }
 #endif
     }
 
-    if ((skipUnmarkLoop == false) && ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_COND)) &&
-        (block->bbJumpDest->isLoopHead()) && (block->bbJumpDest->bbNum <= block->bbNum) && fgDomsComputed &&
-        (fgCurBBEpochSize == fgDomBBcount + 1) && fgReachable(block->bbJumpDest, block))
+    if ((skipUnmarkLoop == false) &&                                              //
+        ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_COND)) && //
+        block->bbJumpDest->isLoopHead() &&                                        //
+        (block->bbJumpDest->bbNum <= block->bbNum) &&                             //
+        fgDomsComputed &&                                                         //
+        (fgCurBBEpochSize == fgDomBBcount + 1) &&                                 //
+        fgReachable(block->bbJumpDest, block))
     {
         optUnmarkLoopBlocks(block->bbJumpDest, block);
     }
@@ -571,7 +577,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
 void Compiler::optPrintLoopInfo(unsigned      loopInd,
                                 BasicBlock*   lpHead,
-                                BasicBlock*   lpFirst,
                                 BasicBlock*   lpTop,
                                 BasicBlock*   lpEntry,
                                 BasicBlock*   lpBottom,
@@ -579,16 +584,8 @@ void Compiler::optPrintLoopInfo(unsigned      loopInd,
                                 BasicBlock*   lpExit,
                                 unsigned      parentLoop) const
 {
-    noway_assert(lpHead);
-
-    printf(FMT_LP ", from " FMT_BB, loopInd, lpFirst->bbNum);
-    if (lpTop != lpFirst)
-    {
-        printf(" (loop top is " FMT_BB ")", lpTop->bbNum);
-    }
-
-    printf(" to " FMT_BB " (Head=" FMT_BB ", Entry=" FMT_BB ", ExitCnt=%d", lpBottom->bbNum, lpHead->bbNum,
-           lpEntry->bbNum, lpExitCnt);
+    printf(FMT_LP ", from " FMT_BB " to " FMT_BB " (Head=" FMT_BB ", Entry=" FMT_BB ", ExitCnt=%d", loopInd,
+           lpTop->bbNum, lpBottom->bbNum, lpHead->bbNum, lpEntry->bbNum, lpExitCnt);
 
     if (lpExitCnt == 1)
     {
@@ -609,15 +606,15 @@ void Compiler::optPrintLoopInfo(unsigned      loopInd,
 
 void Compiler::optPrintLoopInfo(unsigned lnum) const
 {
-    noway_assert(lnum < optLoopCount);
+    assert(lnum < optLoopCount);
 
-    const LoopDsc* ldsc = &optLoopTable[lnum]; // lnum is the INDEX to the loop table.
+    const LoopDsc* ldsc = &optLoopTable[lnum];
 
-    optPrintLoopInfo(lnum, ldsc->lpHead, ldsc->lpFirst, ldsc->lpTop, ldsc->lpEntry, ldsc->lpBottom, ldsc->lpExitCnt,
-                     ldsc->lpExit, ldsc->lpParent);
+    optPrintLoopInfo(lnum, ldsc->lpHead, ldsc->lpTop, ldsc->lpEntry, ldsc->lpBottom, ldsc->lpExitCnt, ldsc->lpExit,
+                     ldsc->lpParent);
 }
 
-#endif
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // optPopulateInitInfo: Populate loop init info in the loop table.
@@ -1035,13 +1032,8 @@ bool Compiler::optExtractInitTestIncr(
  *  out of entries in loop table.
  */
 
-bool Compiler::optRecordLoop(BasicBlock*   head,
-                             BasicBlock*   first,
-                             BasicBlock*   top,
-                             BasicBlock*   entry,
-                             BasicBlock*   bottom,
-                             BasicBlock*   exit,
-                             unsigned char exitCnt)
+bool Compiler::optRecordLoop(
+    BasicBlock* head, BasicBlock* top, BasicBlock* entry, BasicBlock* bottom, BasicBlock* exit, unsigned char exitCnt)
 {
     // Record this loop in the table, if there's room.
 
@@ -1055,7 +1047,6 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
     }
 
     // Assumed preconditions on the loop we're adding.
-    assert(first->bbNum <= top->bbNum);
     assert(top->bbNum <= entry->bbNum);
     assert(entry->bbNum <= bottom->bbNum);
     assert(head->bbNum < top->bbNum || head->bbNum > bottom->bbNum);
@@ -1073,7 +1064,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
         for (unsigned char prevPlus1 = optLoopCount; prevPlus1 > 0; prevPlus1--)
         {
             unsigned char prev = prevPlus1 - 1;
-            if (optLoopTable[prev].lpContainedBy(first, bottom))
+            if (optLoopTable[prev].lpContainedBy(top, bottom))
             {
                 loopInd = prev;
             }
@@ -1091,17 +1082,16 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
         // The loop is well-formed.
         assert(optLoopTable[i].lpWellFormed());
         // Check for disjoint.
-        if (optLoopTable[i].lpDisjoint(first, bottom))
+        if (optLoopTable[i].lpDisjoint(top, bottom))
         {
             continue;
         }
         // Otherwise, assert complete containment (of optLoopTable[i] in new loop).
-        assert(optLoopTable[i].lpContainedBy(first, bottom));
+        assert(optLoopTable[i].lpContainedBy(top, bottom));
     }
 #endif // DEBUG
 
     optLoopTable[loopInd].lpHead    = head;
-    optLoopTable[loopInd].lpFirst   = first;
     optLoopTable[loopInd].lpTop     = top;
     optLoopTable[loopInd].lpBottom  = bottom;
     optLoopTable[loopInd].lpEntry   = entry;
@@ -1257,7 +1247,7 @@ void Compiler::optPrintLoopRecording(unsigned loopInd) const
 
     printf("Recorded loop %s", (loopInd != optLoopCount ? "(extended) " : ""));
     optPrintLoopInfo(optLoopCount, // Not necessarily the loop index, but the number of loops that have been added.
-                     loop.lpHead, loop.lpFirst, loop.lpTop, loop.lpEntry, loop.lpBottom, loop.lpExitCnt, loop.lpExit);
+                     loop.lpHead, loop.lpTop, loop.lpEntry, loop.lpBottom, loop.lpExitCnt, loop.lpExit);
 
     // If an iterator loop print the iterator and the initialization.
     if (loop.lpFlags & LPFLG_ITER)
@@ -1341,14 +1331,13 @@ namespace
 {
 //------------------------------------------------------------------------
 // LoopSearch: Class that handles scanning a range of blocks to detect a loop,
-//             moving blocks to make the loop body contiguous, and recording
-//             the loop.
+//             moving blocks to make the loop body contiguous, and recording the loop.
 //
 // We will use the following terminology:
 //   HEAD    - the basic block that flows into the loop ENTRY block (Currently MUST be lexically before entry).
 //             Not part of the looping of the loop.
-//   FIRST   - the lexically first basic block (in bbNext order) within this loop.
-//   TOP     - the target of the backward edge from BOTTOM. In most cases FIRST and TOP are the same.
+//   TOP     - the target of the backward edge from BOTTOM, and the lexically first basic block (in bbNext order)
+//             within this loop.
 //   BOTTOM  - the lexically last block in the loop (i.e. the block from which we jump to the top)
 //   EXIT    - the predecessor of loop's unique exit edge, if it has a unique exit edge; else nullptr
 //   ENTRY   - the entry in the loop (not necessarly the TOP), but there must be only one entry
@@ -1359,14 +1348,14 @@ namespace
 //   between TOP and BOTTOM as part of the loop even if they aren't part of the SCC.
 //   Regarding nesting:  Since a given block can only have one back-edge (we only detect loops with back-edges
 //   from BBJ_COND or BBJ_ALWAYS blocks), no two loops will share the same BOTTOM.  Two loops may share the
-//   same FIRST/TOP/ENTRY as reported by LoopSearch, and optCanonicalizeLoopNest will subsequently re-write
-//   the CFG so that no two loops share the same FIRST/TOP/ENTRY anymore.
+//   same TOP/ENTRY as reported by LoopSearch, and optCanonicalizeLoopNest will subsequently re-write
+//   the CFG so that no two loops share the same TOP/ENTRY anymore.
 //
 //        |
 //        v
 //      head
 //        |
-//        |  top/first <--+
+//        |      top   <--+
 //        |       |       |
 //        |      ...      |
 //        |       |       |
@@ -1450,7 +1439,10 @@ class LoopSearch
             {
                 return BlockSetOps::IsMember(comp, newBlocksInLoop, blockNum - oldBlockMaxNum);
             }
-            return BlockSetOps::IsMember(comp, oldBlocksInLoop, blockNum);
+            else
+            {
+                return BlockSetOps::IsMember(comp, oldBlocksInLoop, blockNum);
+            }
         }
 
         void Insert(unsigned int blockNum)
@@ -1493,7 +1485,6 @@ class LoopSearch
 
     // See LoopSearch class comment header for a diagram relating these fields:
     BasicBlock* head;   // Predecessor of unique entry edge
-    BasicBlock* first;  // Lexically first in-loop block
     BasicBlock* top;    // Successor of back-edge from BOTTOM
     BasicBlock* bottom; // Predecessor of back-edge to TOP, also lexically last in-loop block
     BasicBlock* entry;  // Successor of unique entry edge
@@ -1524,12 +1515,12 @@ public:
     //
     bool RecordLoop()
     {
-        /* At this point we have a compact loop - record it in the loop table
-        * If we found only one exit, record it in the table too
-        * (otherwise an exit = nullptr in the loop table means multiple exits) */
+        // At this point we have a compact loop - record it in the loop table.
+        // If we found only one exit, record it in the table too
+        // (otherwise an exit = nullptr in the loop table means multiple exits).
 
         BasicBlock* onlyExit = (exitCount == 1 ? lastExit : nullptr);
-        if (comp->optRecordLoop(head, first, top, entry, bottom, onlyExit, exitCount))
+        if (comp->optRecordLoop(head, top, entry, bottom, onlyExit, exitCount))
         {
             // Record the BOTTOM block for future reference before returning.
             assert(bottom->bbNum <= oldBlockMaxNum);
@@ -1573,12 +1564,11 @@ public:
     //
     bool FindLoop(BasicBlock* head, BasicBlock* top, BasicBlock* bottom)
     {
-        /* Is this a loop candidate? - We look for "back edges", i.e. an edge from BOTTOM
-        * to TOP (note that this is an abuse of notation since this is not necessarily a back edge
-        * as the definition says, but merely an indication that we have a loop there).
-        * Thus, we have to be very careful and after entry discovery check that it is indeed
-        * the only place we enter the loop (especially for non-reducible flow graphs).
-        */
+        // Is this a loop candidate? - We look for "back edges", i.e. an edge from BOTTOM
+        // to TOP (note that this is an abuse of notation since this is not necessarily a back edge
+        // as the definition says, but merely an indication that we have a loop there).
+        // Thus, we have to be very careful and after entry discovery check that it is indeed
+        // the only place we enter the loop (especially for non-reducible flow graphs).
 
         if (top->bbNum > bottom->bbNum) // is this a backward edge? (from BOTTOM to TOP)
         {
@@ -1597,21 +1587,20 @@ public:
             (bottom->bbJumpKind == BBJ_EHCATCHRET) || (bottom->bbJumpKind == BBJ_CALLFINALLY) ||
             (bottom->bbJumpKind == BBJ_SWITCH))
         {
-            /* BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
-            * BBJ_SWITCH that has a backward jump appears only for labeled break. */
+            // BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
+            // BBJ_SWITCH that has a backward jump appears only for labeled break.
             return false;
         }
 
-        /* The presence of a "back edge" is an indication that a loop might be present here
-        *
-        * LOOP:
-        *        1. A collection of STRONGLY CONNECTED nodes i.e. there is a path from any
-        *           node in the loop to any other node in the loop (wholly within the loop)
-        *        2. The loop has a unique ENTRY, i.e. there is only one way to reach a node
-        *           in the loop from outside the loop, and that is through the ENTRY
-        */
+        // The presence of a "back edge" is an indication that a loop might be present here.
+        //
+        // Definition: A loop is:
+        //        1. A collection of STRONGLY CONNECTED nodes i.e. there is a path from any
+        //           node in the loop to any other node in the loop (wholly within the loop)
+        //        2. The loop has a unique ENTRY, i.e. there is only one way to reach a node
+        //           in the loop from outside the loop, and that is through the ENTRY
 
-        /* Let's find the loop ENTRY */
+        // Let's find the loop ENTRY
         BasicBlock* entry = FindEntry(head, top, bottom);
 
         if (entry == nullptr)
@@ -1627,10 +1616,6 @@ public:
         this->bottom    = bottom;
         this->lastExit  = nullptr;
         this->exitCount = 0;
-
-        // Now we find the "first" block -- the earliest block reachable within the loop.
-        // With our current algorithm, this is always the same as "top".
-        this->first = top;
 
         if (!HasSingleEntryCycle())
         {
@@ -1662,27 +1647,25 @@ public:
         //
         // Here, BB10 is more nested than BB02.
 
-        if (bottom->hasTryIndex() && !comp->bbInTryRegions(bottom->getTryIndex(), first))
+        if (bottom->hasTryIndex() && !comp->bbInTryRegions(bottom->getTryIndex(), top))
         {
-            JITDUMP("Loop 'first' " FMT_BB " is in an outer EH region compared to loop 'bottom' " FMT_BB ". Rejecting "
+            JITDUMP("Loop 'top' " FMT_BB " is in an outer EH region compared to loop 'bottom' " FMT_BB ". Rejecting "
                     "loop.\n",
-                    first->bbNum, bottom->bbNum);
+                    top->bbNum, bottom->bbNum);
             return false;
         }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         // Disqualify loops where the first block of the loop is a finally target.
-        // The main problem is when multiple loops share a 'first' block that is a finally
+        // The main problem is when multiple loops share a 'top' block that is a finally
         // target and we canonicalize the loops by adding a new loop head. In that case, we
         // need to update the blocks so the finally target bit is moved to the newly created
-        // block, and removed from the old 'first' block. This is 'hard', so at this point
-        // in the RyuJIT codebase (when we don't expect to keep the "old" ARM32 code generator
-        // long-term), it's easier to disallow the loop than to update the flow graph to
-        // support this case.
+        // block, and removed from the old 'top' block. This is 'hard', so it's easier to disallow
+        // the loop than to update the flow graph to support this case.
 
-        if ((first->bbFlags & BBF_FINALLY_TARGET) != 0)
+        if ((top->bbFlags & BBF_FINALLY_TARGET) != 0)
         {
-            JITDUMP("Loop 'first' " FMT_BB " is a finally target. Rejecting loop.\n", first->bbNum);
+            JITDUMP("Loop 'top' " FMT_BB " is a finally target. Rejecting loop.\n", top->bbNum);
             return false;
         }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -1729,18 +1712,16 @@ private:
         {
             if (head->bbJumpDest->bbNum <= bottom->bbNum && head->bbJumpDest->bbNum >= top->bbNum)
             {
-                /* OK - we enter somewhere within the loop */
+                // OK - we enter somewhere within the loop.
 
-                /* some useful asserts
-                * Cannot enter at the top - should have being caught by redundant jumps */
-
+                // Cannot enter at the top - should have being caught by redundant jumps
                 assert((head->bbJumpDest != top) || (head->bbFlags & BBF_KEEP_BBJ_ALWAYS));
 
                 return head->bbJumpDest;
             }
             else
             {
-                /* special case - don't consider now */
+                // special case - don't consider now
                 // assert (!"Loop entered in weird way!");
                 return nullptr;
             }
@@ -1748,12 +1729,12 @@ private:
         // Can we fall through into the loop?
         else if (head->bbJumpKind == BBJ_NONE || head->bbJumpKind == BBJ_COND)
         {
-            /* The ENTRY is at the TOP (a do-while loop) */
+            // The ENTRY is at the TOP (a do-while loop)
             return top;
         }
         else
         {
-            return nullptr; // head does not flow into the loop bail for now
+            return nullptr; // HEAD does not flow into the loop; bail for now
         }
     }
 
@@ -1767,8 +1748,7 @@ private:
     //    false - Did not find a single-entry cycle.
     //
     // Notes:
-    //    Will mark (in `loopBlocks`) all blocks found to participate in the
-    //    cycle.
+    //    Will mark (in `loopBlocks`) all blocks found to participate in the cycle.
     //
     bool HasSingleEntryCycle()
     {
@@ -1785,9 +1765,7 @@ private:
             BasicBlock* block = worklist.back();
             worklist.pop_back();
 
-            /* Make sure ENTRY dominates all blocks in the loop
-            * This is necessary to ensure condition 2. above
-            */
+            // Make sure ENTRY dominates all blocks in the loop.
             if (block->bbNum > oldBlockMaxNum)
             {
                 // This is a new block we added to connect fall-through, so the
@@ -2212,7 +2190,7 @@ private:
 
             if ((block->bbJumpKind == BBJ_COND) && (block->bbJumpDest == newNext))
             {
-                /* Reverse the jump condition */
+                // Reverse the jump condition
                 GenTree* test = block->lastNode();
                 noway_assert(test->OperIsConditionalJump());
 
@@ -2280,7 +2258,7 @@ private:
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
-                    /* exit from a block other than BOTTOM */
+                    // Exit from a block other than BOTTOM
                     lastExit = block;
                     exitCount++;
                 }
@@ -2291,13 +2269,13 @@ private:
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHFILTERRET:
-                /* The "try" associated with this "finally" must be in the
-                * same loop, so the finally block will return control inside the loop */
+                // The "try" associated with this "finally" must be in the same loop, so the
+                // finally block will return control inside the loop.
                 break;
 
             case BBJ_THROW:
             case BBJ_RETURN:
-                /* those are exits from the loop */
+                // Those are exits from the loop
                 lastExit = block;
                 exitCount++;
                 break;
@@ -2326,14 +2304,17 @@ private:
         }
     }
 };
-}
+} // end (anonymous) namespace
 
-/*****************************************************************************
- * Find the natural loops, using dominators. Note that the test for
- * a loop is slightly different from the standard one, because we have
- * not done a depth first reordering of the basic blocks.
- */
-
+//------------------------------------------------------------------------
+// optFindNaturalLoops: Find the natural loops, using dominators. Note that the test for
+// a loop is slightly different from the standard one, because we have not done a depth
+// first reordering of the basic blocks.
+//
+// See LoopSearch class comment header for a description of the loops found.
+//
+// We will find and record a maximum of BasicBlock::MAX_LOOP_NUM loops (currently 64).
+//
 void Compiler::optFindNaturalLoops()
 {
 #ifdef DEBUG
@@ -2358,9 +2339,7 @@ void Compiler::optFindNaturalLoops()
     {
         BasicBlock* top = head->bbNext;
 
-        //  Blocks that are rarely run have a zero bbWeight and should
-        //  never be optimized here
-
+        // Blocks that are rarely run have a zero bbWeight and should never be optimized here.
         if (top->bbWeight == BB_ZERO_WEIGHT)
         {
             continue;
@@ -2378,16 +2357,16 @@ void Compiler::optFindNaturalLoops()
 #if COUNT_LOOPS
                 if (!hasMethodLoops)
                 {
-                    /* mark the method as containing natural loops */
+                    // Mark the method as containing natural loops
                     totalLoopMethods++;
                     hasMethodLoops = true;
                 }
 
-                /* increment total number of loops found */
+                // Increment total number of loops found
                 totalLoopCount++;
                 loopsThisMethod++;
 
-                /* keep track of the number of exits */
+                // Keep track of the number of exits
                 loopExitCountTable.record(static_cast<unsigned>(search.GetExitCount()));
 
                 // Note that we continue to look for loops even if
@@ -2437,13 +2416,13 @@ NO_MORE_LOOPS:
     {
         // Need to renumber blocks now since loop canonicalization
         // depends on it; can defer the rest of fgUpdateChangedFlowGraph()
-        // until after canonicalizing loops.  Dominator information is
+        // until after canonicalizing loops. Dominator information is
         // recorded in terms of block numbers, so flag it invalid.
         fgDomsComputed = false;
         fgRenumberBlocks();
     }
 
-    // Now the loop indices are stable.  We can figure out parent/child relationships
+    // Now the loop indices are stable. We can figure out parent/child relationships
     // (using table indices to name loops), and label blocks.
     for (unsigned char loopInd = 1; loopInd < optLoopCount; loopInd++)
     {
@@ -2460,9 +2439,10 @@ NO_MORE_LOOPS:
         }
     }
 
-    // Now label the blocks with the innermost loop to which they belong.  Since parents
+    // Now label the blocks with the innermost loop to which they belong. Since parents
     // precede children in the table, doing the labeling for each loop in order will achieve
-    // this -- the innermost loop labeling will be done last.
+    // this -- the innermost loop labeling will be done last. (Inner loop blocks will be
+    // labeled multiple times before being correct at the end.)
     for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
         for (BasicBlock* const blk : optLoopTable[loopInd].LoopBlocks())
@@ -2494,7 +2474,7 @@ NO_MORE_LOOPS:
     }
 
 #ifdef DEBUG
-    if (verbose && optLoopCount > 0)
+    if (verbose && (optLoopCount > 0))
     {
         printf("\nFinal natural loop table:\n");
         for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
@@ -2506,34 +2486,43 @@ NO_MORE_LOOPS:
 #endif // DEBUG
 }
 
-//-----------------------------------------------------------------------------
+//------------------------------------------------------------------------
+// optIdentifyLoopsForAlignment: Determine which loops should be considered for alignment.
 //
-// All the inner loops that whose block weight meets a threshold are marked
-// as needing alignment.
+// All innermost loops whose block weight meets a threshold are candidates for alignment.
+// The `first` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
+// (the loop table itself is not changed).
 //
-
+// Depends on the loop table, and on block weights being set.
+//
 void Compiler::optIdentifyLoopsForAlignment()
 {
 #if FEATURE_LOOP_ALIGN
     if (codeGen->ShouldAlignLoops())
     {
-        for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
+        for (BasicBlock::loopNumber loopInd = 0; loopInd < optLoopCount; loopInd++)
         {
-            BasicBlock* first = optLoopTable[loopInd].lpFirst;
-
             // An innerloop candidate that might need alignment
             if (optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP)
             {
-                if (first->getBBWeight(this) >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
+                BasicBlock* top       = optLoopTable[loopInd].lpTop;
+                weight_t    topWeight = top->getBBWeight(this);
+                if (topWeight >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
                 {
-                    first->bbFlags |= BBF_LOOP_ALIGN;
-                    JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
-                            first->bbNum, first->getBBWeight(this));
+                    // Sometimes with JitOptRepeat > 1, we might end up finding the loops twice. In such
+                    // cases, make sure to count them just once.
+                    if (!top->isLoopAlign())
+                    {
+                        loopAlignCandidates++;
+                        top->bbFlags |= BBF_LOOP_ALIGN;
+                        JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
+                                top->bbNum, top->getBBWeight(this));
+                    }
                 }
                 else
                 {
                     JITDUMP("Skip alignment for " FMT_LP " that starts at " FMT_BB " weight=" FMT_WT ".\n", loopInd,
-                            first->bbNum, first->getBBWeight(this));
+                            top->bbNum, topWeight);
                 }
             }
         }
@@ -2668,7 +2657,7 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 {
     bool modified = false;
 
-    // Is the top of the current loop not in any nested loop?
+    // Is the top of the current loop in any nested loop?
     if (optLoopTable[loopInd].lpTop->bbNatLoopNum != loopInd)
     {
         if (optCanonicalizeLoop(loopInd))
@@ -2677,8 +2666,9 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
         }
     }
 
-    for (unsigned char child = optLoopTable[loopInd].lpChild; child != BasicBlock::NOT_IN_LOOP;
-         child               = optLoopTable[child].lpSibling)
+    for (unsigned char child = optLoopTable[loopInd].lpChild; //
+         child != BasicBlock::NOT_IN_LOOP;                    //
+         child = optLoopTable[child].lpSibling)
     {
         if (optCanonicalizeLoopNest(child))
         {
@@ -2706,7 +2696,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // Otherwise, the top of this loop is also part of a nested loop.
     //
     // Insert a new unique top for this loop. We must be careful to put this new
-    // block in the correct EH region. Note that f->bbPrev might be in a different
+    // block in the correct EH region. Note that t->bbPrev might be in a different
     // EH region. For example:
     //
     // try {
@@ -2781,16 +2771,15 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // simplify things, we disqualify this type of loop, so we should never see this here.
 
     BasicBlock* h = optLoopTable[loopInd].lpHead;
-    BasicBlock* f = optLoopTable[loopInd].lpFirst;
     BasicBlock* b = optLoopTable[loopInd].lpBottom;
 
     // The loop must be entirely contained within a single handler region.
-    assert(BasicBlock::sameHndRegion(f, b));
+    assert(BasicBlock::sameHndRegion(t, b));
 
     // If the bottom block is in the same "try" region, then we extend the EH
     // region. Otherwise, we add the new block outside the "try" region.
-    bool        extendRegion = BasicBlock::sameTryRegion(f, b);
-    BasicBlock* newT         = fgNewBBbefore(BBJ_NONE, f, extendRegion);
+    const bool  extendRegion = BasicBlock::sameTryRegion(t, b);
+    BasicBlock* newT         = fgNewBBbefore(BBJ_NONE, t, extendRegion);
     if (!extendRegion)
     {
         // We need to set the EH region manually. Set it to be the same
@@ -2804,7 +2793,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // a call to fgUpdateChangedFlowGraph which will recompute the reachability sets anyway.
 
     // Redirect the "bottom" of the current loop to "newT".
-    BlockToBlockMap* blockMap = new (getAllocatorLoopHoist()) BlockToBlockMap(getAllocatorLoopHoist());
+    BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopOpt)) BlockToBlockMap(getAllocator(CMK_LoopOpt));
     blockMap->Set(t, newT);
     optRedirectBlock(b, blockMap);
 
@@ -2861,14 +2850,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         }
     }
 
-    assert(newT->bbNext == f);
-    if (f != t)
-    {
-        newT->bbJumpKind = BBJ_ALWAYS;
-        newT->bbJumpDest = t;
-        newT->bbStmtList = nullptr;
-        fgInsertStmtAtEnd(newT, fgNewStmtFromTree(gtNewOperNode(GT_NOP, TYP_VOID, nullptr)));
-    }
+    assert(newT->bbNext == t);
 
     // If it had been a do-while loop (top == entry), update entry, as well.
     BasicBlock* origE = optLoopTable[loopInd].lpEntry;
@@ -2876,8 +2858,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     {
         optLoopTable[loopInd].lpEntry = newT;
     }
-    optLoopTable[loopInd].lpTop   = newT;
-    optLoopTable[loopInd].lpFirst = newT;
+    optLoopTable[loopInd].lpTop = newT;
 
     newT->bbNatLoopNum = loopInd;
 
@@ -2902,8 +2883,9 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // If any loops nested in "loopInd" have the same head and entry as "loopInd",
     // it must be the case that they were do-while's (since "h" fell through to the entry).
     // The new node "newT" becomes the head of such loops.
-    for (unsigned char childLoop = optLoopTable[loopInd].lpChild; childLoop != BasicBlock::NOT_IN_LOOP;
-         childLoop               = optLoopTable[childLoop].lpSibling)
+    for (unsigned char childLoop = optLoopTable[loopInd].lpChild; //
+         childLoop != BasicBlock::NOT_IN_LOOP;                    //
+         childLoop = optLoopTable[childLoop].lpSibling)
     {
         if (optLoopTable[childLoop].lpEntry == origE && optLoopTable[childLoop].lpHead == h &&
             newT->bbJumpKind == BBJ_NONE && newT->bbNext == origE)
@@ -3796,11 +3778,7 @@ PhaseStatus Compiler::optUnrollLoops()
 #if FEATURE_LOOP_ALIGN
         for (block = head->bbNext;; block = block->bbNext)
         {
-            if (block->isLoopAlign())
-            {
-                block->bbFlags &= ~BBF_LOOP_ALIGN;
-                JITDUMP("Removing LOOP_ALIGN flag from unrolled loop in " FMT_BB "\n", block->bbNum);
-            }
+            block->unmarkLoopAlign(this DEBUG_ARG("Unrolled loop"));
 
             if (block == bottom)
             {
@@ -4631,16 +4609,77 @@ PhaseStatus Compiler::optOptimizeLayout()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+//------------------------------------------------------------------------
+// optMarkLoopHeads: Mark all potential loop heads as BBF_LOOP_HEAD. A potential loop head is a block
+// targeted by a lexical back edge, where the source of the back edge is reachable from the block.
+// Note that if there are no lexical back edges, there can't be any loops.
+//
+// If there are any potential loop heads, set `fgHasLoops` to `true`.
+//
+// Assumptions:
+//    The reachability sets must be computed and valid.
+//
+void Compiler::optMarkLoopHeads()
+{
+    assert(!fgCheapPredsValid);
+    assert(fgReachabilitySetsValid);
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In optMarkLoopHeads()\n");
+    }
+#endif
+
+    bool hasLoops = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        // Set BBF_LOOP_HEAD if we have backwards branches to this block.
+
+        unsigned blockNum = block->bbNum;
+        for (BasicBlock* const predBlock : block->PredBlocks())
+        {
+            if (blockNum <= predBlock->bbNum)
+            {
+                if (predBlock->bbJumpKind == BBJ_CALLFINALLY)
+                {
+                    // Loops never have BBJ_CALLFINALLY as the source of their "back edge".
+                    continue;
+                }
+
+                // If block can reach predBlock then we have a loop head
+                if (BlockSetOps::IsMember(this, predBlock->bbReach, blockNum))
+                {
+                    hasLoops = true;
+                    block->bbFlags |= BBF_LOOP_HEAD;
+                    break; // No need to look at more `block` predecessors
+                }
+            }
+        }
+    }
+
+    fgHasLoops = hasLoops;
+}
+
 //-----------------------------------------------------------------------------
-// optFindLoops: find and classify natural loops
+// optFindLoops: find loops in the function.
+//
+// The JIT recognizes two types of loops in a function: natural loops and "general" (or "unnatural") loops.
+// Natural loops are those which get added to the loop table. Most downstream optimizations require
+// using natural loops. See `optFindNaturalLoops` for a definition of the criteria for recognizing a natural loop.
+// A general loop is defined as a lexical (program order) range of blocks where a later block branches to an
+// earlier block (that is, there is a back edge in the flow graph), and the later block is reachable from the earlier
+// block. General loops are used for weighting flow graph blocks (when there is no block profile data), as well as
+// for determining if we require fully interruptible GC information.
 //
 // Notes:
-//  Also (re)sets all non-IBC block weights, and marks loops potentially needing
-//  alignment padding.
+//  Also (re)sets all non-IBC block weights, and marks loops potentially needing alignment padding.
 //
 PhaseStatus Compiler::optFindLoops()
 {
     noway_assert(opts.OptimizationEnabled());
+    assert(fgDomsComputed);
 
 #ifdef DEBUG
     if (verbose)
@@ -4649,50 +4688,46 @@ PhaseStatus Compiler::optFindLoops()
     }
 #endif
 
+    optMarkLoopHeads();
+
     optSetBlockWeights();
 
     /* Were there any loops in the flow graph? */
 
     if (fgHasLoops)
     {
-        /* now that we have dominator information we can find loops */
-
         optFindNaturalLoops();
 
-        unsigned loopNum = 0;
+        // Now find the general loops and scale block weights.
 
-        /* Iterate over the flow graph, marking all loops */
+        unsigned generalLoopCount = 0;
 
-        /* We will use the following terminology:
-         * top        - the first basic block in the loop (i.e. the head of the backward edge)
-         * bottom     - the last block in the loop (i.e. the block from which we jump to the top)
-         * lastBottom - used when we have multiple back-edges to the same top
-         */
+        // We will use the following terminology:
+        // top        - the first basic block in the loop (i.e. the head of the backward edge)
+        // bottom     - the last block in the loop (i.e. the block from which we jump to the top)
+        // lastBottom - used when we have multiple back edges to the same top
 
         for (BasicBlock* const top : Blocks())
         {
+            // Only consider `top` blocks already determined to be potential loop heads.
+            if (!top->isLoopHead())
+            {
+                continue;
+            }
+
             BasicBlock* foundBottom = nullptr;
 
             for (BasicBlock* const bottom : top->PredBlocks())
             {
-                /* Is this a loop candidate? - We look for "back edges" */
+                // Is this a loop candidate? - We look for "back edges"
 
-                /* is this a backward edge? (from BOTTOM to TOP) */
-
+                // Is this a backward edge? (from BOTTOM to TOP)
                 if (top->bbNum > bottom->bbNum)
                 {
                     continue;
                 }
 
-                /* 'top' also must have the BBF_LOOP_HEAD flag set */
-
-                if (top->isLoopHead() == false)
-                {
-                    continue;
-                }
-
-                /* We only consider back-edges that are BBJ_COND or BBJ_ALWAYS for loops */
-
+                // We only consider back-edges that are BBJ_COND or BBJ_ALWAYS for loops.
                 if ((bottom->bbJumpKind != BBJ_COND) && (bottom->bbJumpKind != BBJ_ALWAYS))
                 {
                     continue;
@@ -4714,15 +4749,15 @@ PhaseStatus Compiler::optFindLoops()
 
             if (foundBottom)
             {
-                loopNum++;
+                generalLoopCount++;
 
                 /* Mark all blocks between 'top' and 'bottom' */
 
-                optMarkLoopBlocks(top, foundBottom, false);
+                optScaleLoopBlocks(top, foundBottom);
             }
 
             // We track at most 255 loops
-            if (loopNum == 255)
+            if (generalLoopCount == 255)
             {
 #if COUNT_LOOPS
                 totalUnnatLoopOverflows++;
@@ -4731,32 +4766,21 @@ PhaseStatus Compiler::optFindLoops()
             }
         }
 
-        // Check if any of the loops need alignment
-
-        JITDUMP("\n");
-        optIdentifyLoopsForAlignment();
+        JITDUMP("\nFound a total of %d general loops.\n", generalLoopCount);
 
 #if COUNT_LOOPS
-        totalUnnatLoopCount += loopNum;
+        totalUnnatLoopCount += generalLoopCount;
 #endif
 
-#ifdef DEBUG
-        if (verbose)
-        {
-            if (loopNum > 0)
-            {
-                printf("\nFound a total of %d loops.", loopNum);
-                printf("\nAfter loop weight marking:\n");
-                fgDispBasicBlocks();
-                printf("\n");
-            }
-        }
-
-        fgDebugCheckLoopTable();
-#endif
-        optLoopsMarked = true;
+        // Check if any of the loops need alignment
+        optIdentifyLoopsForAlignment();
     }
 
+#ifdef DEBUG
+    fgDebugCheckLoopTable();
+#endif
+
+    optLoopsMarked = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -5486,8 +5510,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     {
         printf("\nHoisting a copy of ");
         printTreeID(origExpr);
-        printf(" into PreHeader for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n", lnum,
-               optLoopTable[lnum].lpFirst->bbNum, optLoopTable[lnum].lpBottom->bbNum);
+        printf(" into PreHeader for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n", lnum, optLoopTable[lnum].lpTop->bbNum,
+               optLoopTable[lnum].lpBottom->bbNum);
         gtDispTree(origExpr);
         printf("\n");
     }
@@ -6756,7 +6780,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
         JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB
                 ">, firstBlock is %s\n",
-                block->bbNum, refCntWtd2str(blockWeight), loopNum, loopDsc->lpFirst->bbNum, loopDsc->lpBottom->bbNum,
+                block->bbNum, refCntWtd2str(blockWeight), loopNum, loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum,
                 dspBool(block == loopDsc->lpEntry));
 
         if (blockWeight < (BB_UNITY_WEIGHT / 10))
@@ -7587,10 +7611,9 @@ void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
     // alignment
     if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
     {
-        BasicBlock* first = optLoopTable[lnum].lpFirst;
-        first->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Removing LOOP_ALIGN flag for " FMT_LP " that starts at " FMT_BB " because loop has a call.\n", lnum,
-                first->bbNum);
+        BasicBlock* top = optLoopTable[lnum].lpTop;
+
+        top->unmarkLoopAlign(this DEBUG_ARG("Loop with call"));
     }
 #endif
 

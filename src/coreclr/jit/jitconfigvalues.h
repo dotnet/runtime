@@ -67,6 +67,11 @@ CONFIG_INTEGER(JitAlignLoopAdaptive,
                W("JitAlignLoopAdaptive"),
                1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
 
+CONFIG_INTEGER(JitHideAlignBehindJmp,
+               W("JitHideAlignBehindJmp"),
+               1) // If set, try to hide align instruction (if any) behind an unconditional jump instruction (if any)
+                  // that is present before the loop start.
+
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
 
@@ -226,6 +231,9 @@ CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't
                                                                    // linear layout
 CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block with bbNum; 1 == display with both
                                                            // bbNum and bbID
+
+CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
+CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
 
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))

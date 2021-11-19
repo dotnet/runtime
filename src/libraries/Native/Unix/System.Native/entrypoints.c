@@ -244,7 +244,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetEGid)
     DllImportEntry(SystemNative_SetEUid)
     DllImportEntry(SystemNative_GetGroupList)
-    DllImportEntry(SystemNative_GetUid)
     DllImportEntry(SystemNative_CreateAutoreleasePool)
     DllImportEntry(SystemNative_DrainAutoreleasePool)
     DllImportEntry(SystemNative_iOSSupportVersion)

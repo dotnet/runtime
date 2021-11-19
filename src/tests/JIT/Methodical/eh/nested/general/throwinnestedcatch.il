@@ -11,6 +11,7 @@
 .assembly extern mscorlib {}
 .assembly extern common {}
 .assembly test {}
+.assembly extern xunit.core {}
 
 .module throwinnestedcatch.exe
 
@@ -45,6 +46,9 @@
 
   .method public static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
     ldsfld     class [common]TestUtil.TestLog test::testLog

@@ -1362,7 +1362,7 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
  *  execute a call or not.
  */
 
-inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
+void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 {
     /* Bail if this is not a backward edge */
 
@@ -1436,7 +1436,7 @@ void Compiler::fgLoopCallMark()
  *  Note the fact that the given block is a loop header.
  */
 
-inline void Compiler::fgMarkLoopHead(BasicBlock* block)
+void Compiler::fgMarkLoopHead(BasicBlock* block)
 {
 #ifdef DEBUG
     if (verbose)
@@ -1683,12 +1683,9 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     // Create a block for the start of the try region, where the monitor enter call
     // will go.
-
-    assert(fgFirstBB->bbFallsThrough());
-
-    BasicBlock* tryBegBB  = fgNewBBafter(BBJ_NONE, fgFirstBB, false);
-    BasicBlock* tryNextBB = tryBegBB->bbNext;
-    BasicBlock* tryLastBB = fgLastBB;
+    BasicBlock* const tryBegBB  = fgSplitBlockAtEnd(fgFirstBB);
+    BasicBlock* const tryNextBB = tryBegBB->bbNext;
+    BasicBlock* const tryLastBB = fgLastBB;
 
     // If we have profile data the new block will inherit the next block's weight
     if (tryNextBB->hasProfileWeight())
@@ -1799,10 +1796,10 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
 
-    { // Scope the variables of the variable initialization
-
-        // Initialize the 'acquired' boolean.
-
+    // Create IR to initialize the 'acquired' boolean.
+    //
+    if (!opts.IsOSR())
+    {
         GenTree* zero     = gtNewZeroConNode(genActualType(typeMonAcquired));
         GenTree* varNode  = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
         GenTree* initNode = gtNewAssignNode(varNode, zero);
@@ -1825,7 +1822,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     unsigned lvaCopyThis = 0;
     if (!info.compIsStatic)
     {
-        lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+        lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
 
         GenTree* thisNode = gtNewLclvNode(info.compThisArg, TYP_REF);
@@ -1835,7 +1832,12 @@ void Compiler::fgAddSyncMethodEnterExit()
         fgNewStmtAtEnd(tryBegBB, initNode);
     }
 
-    fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, tryBegBB, true /*enter*/);
+    // For OSR, we do not need the enter tree as the monitor is acquired by the original method.
+    //
+    if (!opts.IsOSR())
+    {
+        fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, tryBegBB, true /*enter*/);
+    }
 
     // exceptional case
     fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);

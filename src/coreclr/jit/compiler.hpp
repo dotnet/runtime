@@ -3617,17 +3617,6 @@ inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
 }
 
-inline Compiler::fgWalkResult Compiler::CountSharedStaticHelper(GenTree** pTree, fgWalkData* data)
-{
-    if (Compiler::IsSharedStaticHelper(*pTree))
-    {
-        int* pCount = (int*)data->pCallbackData;
-        (*pCount)++;
-    }
-
-    return WALK_CONTINUE;
-}
-
 //  TODO-Cleanup: Replace calls to IsSharedStaticHelper with new HelperCallProperties
 //
 
@@ -3674,34 +3663,30 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
     return result1;
 }
 
-inline bool Compiler::IsGcSafePoint(GenTree* tree)
+inline bool Compiler::IsGcSafePoint(GenTreeCall* call)
 {
-    if (tree->IsCall())
+    if (!call->IsFastTailCall())
     {
-        GenTreeCall* call = tree->AsCall();
-        if (!call->IsFastTailCall())
+        if (call->IsUnmanaged() && call->IsSuppressGCTransition())
         {
-            if (call->IsUnmanaged() && call->IsSuppressGCTransition())
-            {
-                // Both an indirect and user calls can be unmanaged
-                // and have a request to suppress the GC transition so
-                // the check is done prior to the separate handling of
-                // indirect and user calls.
-                return false;
-            }
-            else if (call->gtCallType == CT_INDIRECT)
+            // Both an indirect and user calls can be unmanaged
+            // and have a request to suppress the GC transition so
+            // the check is done prior to the separate handling of
+            // indirect and user calls.
+            return false;
+        }
+        else if (call->gtCallType == CT_INDIRECT)
+        {
+            return true;
+        }
+        else if (call->gtCallType == CT_USER_FUNC)
+        {
+            if ((call->gtCallMoreFlags & GTF_CALL_M_NOGCCHECK) == 0)
             {
                 return true;
             }
-            else if (call->gtCallType == CT_USER_FUNC)
-            {
-                if ((call->gtCallMoreFlags & GTF_CALL_M_NOGCCHECK) == 0)
-                {
-                    return true;
-                }
-            }
-            // otherwise we have a CT_HELPER
         }
+        // otherwise we have a CT_HELPER
     }
 
     return false;
@@ -3778,59 +3763,6 @@ inline bool Compiler::compIsProfilerHookNeeded()
 #else  // !PROFILING_SUPPORTED
     return false;
 #endif // !PROFILING_SUPPORTED
-}
-
-/*****************************************************************************
- *
- *  Check for the special case where the object is the constant 0.
- *  As we can't even fold the tree (null+fldOffs), we are left with
- *  op1 and op2 both being a constant. This causes lots of problems.
- *  We simply grab a temp and assign 0 to it and use it in place of the NULL.
- */
-
-inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
-{
-    /* If it is not a GC type, we will be able to fold it.
-       So don't need to do anything */
-
-    if (!varTypeIsGC(obj->TypeGet()))
-    {
-        return obj;
-    }
-
-    if (obj->gtOper == GT_CNS_INT)
-    {
-        assert(obj->gtType == TYP_REF || obj->gtType == TYP_BYREF);
-
-        // We can see non-zero byrefs for RVA statics or for frozen strings.
-        if (obj->AsIntCon()->gtIconVal != 0)
-        {
-#ifdef DEBUG
-            if (!obj->TypeIs(TYP_BYREF))
-            {
-                assert(obj->TypeIs(TYP_REF));
-                assert(obj->IsIconHandle(GTF_ICON_STR_HDL));
-                if (!doesMethodHaveFrozenString())
-                {
-                    assert(compIsForInlining());
-                    assert(impInlineInfo->InlinerCompiler->doesMethodHaveFrozenString());
-                }
-            }
-#endif // DEBUG
-            return obj;
-        }
-
-        unsigned tmp = lvaGrabTemp(true DEBUGARG("CheckForNullPointer"));
-
-        // We don't need to spill while appending as we are only assigning
-        // NULL to a freshly-grabbed temp.
-
-        impAssignTempGen(tmp, obj, (unsigned)CHECK_SPILL_NONE);
-
-        obj = gtNewLclvNode(tmp, obj->gtType);
-    }
-
-    return obj;
 }
 
 /*****************************************************************************
@@ -4783,6 +4715,41 @@ inline void LclVarDsc::setLvRefCntWtd(weight_t newValue, RefCountState state)
 #endif
 
     m_lvRefCntWtd = newValue;
+}
+
+//------------------------------------------------------------------------------
+// compCanHavePatchpoints: return true if patchpoints are supported in this
+//   method.
+//
+// Arguments:
+//    reason - [out, optional] reason why patchpoints are not supported
+//
+// Returns:
+//    True if patchpoints are supported in this method.
+//
+inline bool Compiler::compCanHavePatchpoints(const char** reason)
+{
+    const char* whyNot = nullptr;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (compLocallocSeen)
+    {
+        whyNot = "localloc";
+    }
+    else if (opts.IsReversePInvoke())
+    {
+        whyNot = "reverse pinvoke";
+    }
+#else
+    whyNot = "OSR feature not defined in build";
+#endif
+
+    if (reason != nullptr)
+    {
+        *reason = whyNot;
+    }
+
+    return whyNot == nullptr;
 }
 
 /*****************************************************************************/

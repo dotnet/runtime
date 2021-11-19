@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
-        <target state="needs-review-translation">Errore interno in ScanRegex.</target>
+        <target state="translated">Errore interno in ScanRegex.</target>
         <note>{Locked="ScanRegex"}</note>
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="needs-review-translation">RegexGeneratorAttribute non è valido</target>
+        <target state="translated">RegexGeneratorAttribute non è valido</target>
         <note>{Locked="RegexGeneratorAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
-        <target state="needs-review-translation">Utilizzo di RegexGenerator non valido</target>
+        <target state="translated">Utilizzo di RegexGenerator non valido</target>
         <note>{Locked="RegexGenerator"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
         <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
+        <target state="translated">Le sostituzioni regex con sostituzioni di gruppi non sono supportate con RegexOptions.NonBacktracking.</target>
         <note>{Locked="RegexOptions.NonBacktracking"}</note>
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
@@ -219,7 +219,7 @@
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="needs-review-translation">I numeri del gruppo Capture devono essere minori o uguali a Int32.MaxValue.</target>
+        <target state="translated">I numeri del gruppo Capture devono essere minori o uguali a Int32.MaxValue.</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">

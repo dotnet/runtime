@@ -11,6 +11,7 @@
 
 
 }
+.assembly extern xunit.core {}
 
 .module 'switch7.exe'
 
@@ -58,6 +59,9 @@
 
   .method public hidebysig static void Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals (int32 V_0)

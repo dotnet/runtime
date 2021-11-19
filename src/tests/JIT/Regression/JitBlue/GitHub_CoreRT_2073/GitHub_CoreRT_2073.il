@@ -9,6 +9,7 @@
 .assembly extern mscorlib {}
 
 .assembly GitHub_CoreRT_2073 {}
+.assembly extern xunit.core {}
 
 .class public Test_GitHub_CoreRT_2073
 {
@@ -40,6 +41,9 @@
 
 .method public hidebysig static int32  Main(string[] args) cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       14 (0xe)
   .maxstack  8

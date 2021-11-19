@@ -25,6 +25,8 @@
     <RestoreProjects Include="Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <RestoreProjects Include="Common\XUnitWrapperGenerator\XUnitWrapperGenerator.csproj" />
+    <RestoreProjects Include="Common\XUnitWrapperLibrary\XUnitWrapperLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
@@ -488,7 +490,7 @@
 
   <Target Name="CrossgenFramework"
       DependsOnTargets="GenerateLayout"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__DoCrossgen2)' == '1' and !$(MonoAot) and !$(MonoFullAot)" >
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
       <CrossgenDir>$(__BinDir)</CrossgenDir>

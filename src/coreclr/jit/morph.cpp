@@ -1712,27 +1712,6 @@ void fgArgInfo::SortArgs()
     assert(begTab == (endTab + 1));
     assert(argsRemaining == 0);
 
-#if !FEATURE_FIXED_OUT_ARGS
-    // Finally build the regArgList
-    //
-    callTree->AsCall()->regArgList      = NULL;
-    callTree->AsCall()->regArgListCount = regCount;
-
-    unsigned regInx = 0;
-    for (curInx = 0; curInx < argCount; curInx++)
-    {
-        fgArgTabEntry* curArgTabEntry = argTable[curInx];
-
-        if (curArgTabEntry->GetRegNum() != REG_STK)
-        {
-            // Encode the argument register in the register mask
-            //
-            callTree->AsCall()->regArgList[regInx] = curArgTabEntry->GetRegNum();
-            regInx++;
-        }
-    }
-#endif // !FEATURE_FIXED_OUT_ARGS
-
     argsSorted = true;
 }
 
@@ -3829,7 +3808,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
         if (copyBlkClass != NO_CLASS_HANDLE)
         {
-            fgMakeOutgoingStructArgCopy(call, args, argIndex, copyBlkClass);
+            fgMakeOutgoingStructArgCopy(call, args, copyBlkClass);
         }
 
         if (argx->gtOper == GT_MKREFANY)
@@ -4764,16 +4743,11 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
 // Arguments:
 //    call - call being processed
 //    args - args for the call
-///   argIndex - arg being processed
 //    copyBlkClass - class handle for the struct
 //
-// Return value:
-//    tree that computes address of the outgoing arg
+// The arg is updated if necessary with the copy.
 //
-void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
-                                           GenTreeCall::Use*    args,
-                                           unsigned             argIndex,
-                                           CORINFO_CLASS_HANDLE copyBlkClass)
+void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, GenTreeCall::Use* args, CORINFO_CLASS_HANDLE copyBlkClass)
 {
     GenTree* argx = args->GetNode();
     noway_assert(argx->gtOper != GT_MKREFANY);
@@ -4808,10 +4782,11 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             // * (may not copy) if there is exactly one use of the local in the method,
             //   and the call is not in loop, this is a last use.
             //
-            const bool isTailCallLastUse = call->IsTailCall();
-            const bool isCallLastUse     = (totalAppearances == 1) && !fgMightHaveLoop();
-            const bool isNoReturnLastUse = (totalAppearances == 1) && call->IsNoReturn();
-            if (isTailCallLastUse || isCallLastUse || isNoReturnLastUse)
+            // fgMightHaveLoop() is expensive; check it last, only if necessary.
+            //
+            if (call->IsTailCall() ||                              //
+                ((totalAppearances == 1) && call->IsNoReturn()) || //
+                ((totalAppearances == 1) && !fgMightHaveLoop()))
             {
                 args->SetNode(lcl);
                 assert(argEntry->GetNode() == lcl);
@@ -4915,8 +4890,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
 
     args->SetNode(arg);
     call->fgArgInfo->EvalToTmp(argEntry, tmp, arg);
-
-    return;
 }
 
 #ifdef TARGET_ARM
@@ -9305,10 +9278,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             fgWalkTreePost(&value, resetMorphedFlag);
 #endif // DEBUG
 
-            GenTree* const nullCheckedArr = impCheckForNullPointer(arr);
-            GenTree* const arrIndexNode   = gtNewIndexRef(TYP_REF, nullCheckedArr, index);
-            GenTree* const arrStore       = gtNewAssignNode(arrIndexNode, value);
-            arrStore->gtFlags |= GTF_ASG;
+            GenTree* const arrIndexNode = gtNewIndexRef(TYP_REF, arr, index);
+            GenTree* const arrStore     = gtNewAssignNode(arrIndexNode, value);
 
             GenTree* result = fgMorphTree(arrStore);
             if (argSetup != nullptr)
@@ -10968,7 +10939,8 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
         var_types toType     = op1->AsCast()->CastToType();
         bool      isUnsigned = op1->IsUnsigned();
 
-        if ((op2->CastFromType() != fromType) || (op2->CastToType() != toType) || (op2->IsUnsigned() != isUnsigned))
+        if (varTypeIsFloating(fromType) || (op2->CastFromType() != fromType) || (op2->CastToType() != toType) ||
+            (op2->IsUnsigned() != isUnsigned))
         {
             return nullptr;
         }
@@ -11103,7 +11075,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             if (op1->OperKind() & GTK_RELOP)
             {
-                noway_assert((oper == GT_JTRUE) || (op1->gtFlags & GTF_RELOP_QMARK));
                 /* Mark the comparison node with GTF_RELOP_JMP_USED so it knows that it does
                    not need to materialize the result as a 0 or 1. */
 
@@ -12076,12 +12047,6 @@ DONE_MORPHING_CHILDREN:
 
             effectiveOp1 = op1->gtEffectiveVal();
 
-            if (effectiveOp1->OperIsConst())
-            {
-                op1                 = gtNewOperNode(GT_IND, tree->TypeGet(), op1);
-                tree->AsOp()->gtOp1 = op1;
-            }
-
             // If we are storing a small type, we might be able to omit a cast.
             if (effectiveOp1->OperIs(GT_IND) && varTypeIsSmall(effectiveOp1))
             {
@@ -12401,27 +12366,9 @@ DONE_MORPHING_CHILDREN:
 
                 if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
                 {
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-
                     // Fold (x + 0).
-
                     if ((op2->AsIntConCommon()->IconValue() == 0) && !gtIsActiveCSE_Candidate(tree))
                     {
-
-                        // If this addition is adding an offset to a null pointer,
-                        // avoid the work and yield the null pointer immediately.
-                        // Dereferencing the pointer in either case will have the
-                        // same effect.
-
-                        if (!optValnumCSE_phase && varTypeIsGC(op2->TypeGet()) &&
-                            ((op1->gtFlags & GTF_ALL_EFFECT) == 0))
-                        {
-                            op2->gtType = tree->gtType;
-                            DEBUG_DESTROY_NODE(op1);
-                            DEBUG_DESTROY_NODE(tree);
-                            return op2;
-                        }
-
                         // Remove the addition iff it won't change the tree type
                         // to TYP_REF.
 
@@ -13159,15 +13106,6 @@ DONE_MORPHING_CHILDREN:
 
                 return addr;
             }
-            else if (op1->gtOper == GT_CAST)
-            {
-                GenTree* casting = op1->AsCast()->CastOp();
-                if (casting->gtOper == GT_LCL_VAR || casting->gtOper == GT_CLS_VAR)
-                {
-                    DEBUG_DESTROY_NODE(op1);
-                    tree->AsOp()->gtOp1 = op1 = casting;
-                }
-            }
             else if ((op1->gtOper == GT_COMMA) && !optValnumCSE_phase)
             {
                 // Perform the transform ADDR(COMMA(x, ..., z)) == COMMA(x, ..., ADDR(z)).
@@ -13578,7 +13516,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             }
 
             noway_assert((op1->gtFlags & GTF_RELOP_JMP_USED) == 0);
-            op1->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+            op1->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
             op1->SetVNsFromNode(cmp);
 
             DEBUG_DESTROY_NODE(cmp);
@@ -15382,17 +15320,14 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                          * Remove the loop from the table */
 
                         optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
-#if FEATURE_LOOP_ALIGN
-                        optLoopTable[loopNum].lpFirst->bbFlags &= ~BBF_LOOP_ALIGN;
-                        JITDUMP("Removing LOOP_ALIGN flag from bogus loop in " FMT_BB "\n",
-                                optLoopTable[loopNum].lpFirst->bbNum);
-#endif
+
+                        optLoopTable[loopNum].lpTop->unmarkLoopAlign(this DEBUG_ARG("Bogus loop"));
 
 #ifdef DEBUG
                         if (verbose)
                         {
                             printf("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
-                                   optLoopTable[loopNum].lpFirst->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
+                                   optLoopTable[loopNum].lpTop->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
                         }
 #endif
                     }
@@ -16448,9 +16383,6 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
         cond2Expr  = nestedQmark->gtGetOp1();
         true2Expr  = nestedQmark->gtGetOp2()->AsColon()->ThenNode();
         false2Expr = nestedQmark->gtGetOp2()->AsColon()->ElseNode();
-
-        assert(cond2Expr->gtFlags & GTF_RELOP_QMARK);
-        cond2Expr->gtFlags &= ~GTF_RELOP_QMARK;
     }
     else
     {
@@ -16467,10 +16399,6 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
         false2Expr = gtNewIconNode(0, TYP_I_IMPL);
     }
     assert(false2Expr->OperGet() == trueExpr->OperGet());
-
-    // Clear flags as they are now going to be part of JTRUE.
-    assert(condExpr->gtFlags & GTF_RELOP_QMARK);
-    condExpr->gtFlags &= ~GTF_RELOP_QMARK;
 
     // Create the chain of blocks. See method header comment.
     // The order of blocks after this is the following:
@@ -16641,9 +16569,6 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     GenTree* condExpr  = qmark->gtGetOp1();
     GenTree* trueExpr  = qmark->gtGetOp2()->AsColon()->ThenNode();
     GenTree* falseExpr = qmark->gtGetOp2()->AsColon()->ElseNode();
-
-    assert(condExpr->gtFlags & GTF_RELOP_QMARK);
-    condExpr->gtFlags &= ~GTF_RELOP_QMARK;
 
     assert(!varTypeIsFloating(condExpr->TypeGet()));
 
