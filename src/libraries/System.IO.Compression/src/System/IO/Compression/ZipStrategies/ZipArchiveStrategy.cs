@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.IO.Compression
 {
-    internal abstract class ZipArchiveStrategy : IZipArchiveStrategy, IDisposable
+    internal abstract class ZipArchiveStrategy : IDisposable
     {
         private readonly ReadOnlyCollection<ZipArchiveEntry> _entriesCollection;
         private Encoding? _entryNameEncoding;

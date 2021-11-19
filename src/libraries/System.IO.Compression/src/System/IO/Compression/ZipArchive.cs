@@ -11,7 +11,7 @@ namespace System.IO.Compression
 {
     public class ZipArchive : IDisposable
     {
-        internal IZipArchiveStrategy Strategy { get; }
+        internal ZipArchiveStrategy Strategy { get; }
 
 #if DEBUG_FORCE_ZIP64
         public bool _forceZip64;
@@ -184,7 +184,7 @@ namespace System.IO.Compression
         public ZipArchiveEntry? GetEntry(string entryName)
             => Strategy.GetEntry(entryName);
 
-        private IZipArchiveStrategy ChooseStrategy(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
+        private ZipArchiveStrategy ChooseStrategy(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
         {
             return mode switch
             {
