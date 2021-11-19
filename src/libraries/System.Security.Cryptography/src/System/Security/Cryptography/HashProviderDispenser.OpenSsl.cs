@@ -94,6 +94,11 @@ namespace Internal.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
+                if (data.IsEmpty)
+                {
+                    return;
+                }
+
                 _running = true;
                 Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
             }
@@ -166,6 +171,11 @@ namespace Internal.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
+                if (data.IsEmpty)
+                {
+                    return;
+                }
+
                 _running = true;
                 Check(Interop.Crypto.HmacUpdate(_hmacCtx, data, data.Length));
             }
