@@ -4488,10 +4488,10 @@ public:
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
     void impAppendStmtCheck(Statement* stmt, unsigned chkLevel);
-    void impAppendStmt(Statement* stmt, unsigned chkLevel);
+    void impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsumedDebugInfo = true);
     void impAppendStmt(Statement* stmt);
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
-    Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di);
+    Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
     void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
     void impAssignTempGen(unsigned         tmp,
                           GenTree*         val,
