@@ -280,7 +280,7 @@ struct TailCallArgBuffer
 #define SWITCHED_OUT_FIBER_OSID 0xbaadf00d;
 
 #ifdef _DEBUG
-// A thread doesn't recieve its id until fully constructed.
+// A thread doesn't receive its id until fully constructed.
 #define UNINITIALIZED_THREADID 0xbaadf00d
 #endif //_DEBUG
 

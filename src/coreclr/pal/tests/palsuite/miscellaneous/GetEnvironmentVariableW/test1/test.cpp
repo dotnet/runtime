@@ -32,7 +32,7 @@ PALTEST(miscellaneous_GetEnvironmentVariableW_test1_paltest_getenvironmentvariab
         return FAIL;
     }
 
-    /* Recieve and allocate the correct amount of memory for the buffer */
+    /* Receive and allocate the correct amount of memory for the buffer */
     size = ReturnValueForLargeBuffer = 
         GetEnvironmentVariable(convert("PATH"),    
                                pResultBuffer,  

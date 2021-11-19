@@ -4302,7 +4302,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 
 //
 // This method is called by the debugger helper thread when it times out waiting for a set of threads to
-// synchronize. Its used to chase down threads that are not syncronizing quickly. It returns true if all the threads are
+// synchronize. Its used to chase down threads that are not synchronizing quickly. It returns true if all the threads are
 // now synchronized. This also means that we own the thread store lock.
 //
 // This can be safely called if we're already suspended.

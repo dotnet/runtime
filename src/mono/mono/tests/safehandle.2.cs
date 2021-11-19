@@ -71,7 +71,7 @@ public class Tests {
 		try {
 			mono_safe_handle_ref2 (ref m);
 		} catch (MissingMethodException) {
-			Console.WriteLine ("Good: got exception requried");
+			Console.WriteLine ("Good: got exception required");
 			return 0;
 		}
 

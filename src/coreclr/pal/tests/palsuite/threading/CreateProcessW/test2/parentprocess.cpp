@@ -222,7 +222,7 @@ PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/
                        NULL);              /* overlapped buffer*/
 
 
-    /* Confirm that we recieved the same string that we originally */
+    /* Confirm that we received the same string that we originally */
     /* wrote to the child and was received on both stdout & stderr.*/
     if (strncmp(szTestString, szStdOutBuf, strlen(szTestString)) != 0
         || strncmp(szTestString, szStdErrBuf, strlen(szTestString)) != 0)

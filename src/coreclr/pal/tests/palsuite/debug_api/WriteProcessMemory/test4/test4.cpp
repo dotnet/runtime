@@ -98,7 +98,7 @@ PALTEST(debug_api_WriteProcessMemory_test4_paltest_writeprocessmemory_test4, "de
             if(GetLastError() != ERROR_NOACCESS)
             {
                 Fail("ERROR: GetLastError() should have returned "
-                     "ERROR_NOACCESS , but intead it returned "
+                     "ERROR_NOACCESS , but instead it returned "
                      "%d.\n",GetLastError());
             }
         }

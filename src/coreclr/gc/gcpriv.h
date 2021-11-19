@@ -3621,7 +3621,7 @@ public:
     // During a GC whose plan gen is not gen2, if a region's survival rate 
     // is very high and most of the survival comes from old generations' cards,
     // it would be much better to promote that region directly into gen2 
-    // intead of having to go through gen1 then get promoted to gen2.
+    // instead of having to go through gen1 then get promoted to gen2.
     //
     // I'm reusing g_mark_list_piece for these since g_mark_list_piece is
     // not used while we are marking. So this means we can only use this up 

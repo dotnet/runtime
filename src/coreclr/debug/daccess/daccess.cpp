@@ -8037,7 +8037,7 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
                 if (hTable)
                 {
                     // Yikes!  The handle table callbacks don't produce the handle type or
-                    // the AppDomain that we need, and it's too difficult to propogate out
+                    // the AppDomain that we need, and it's too difficult to propagate out
                     // these things (especially the type) without worrying about performance
                     // implications for the GC.  Instead we'll have the callback walk each
                     // type individually.  There are only a few handle types, and the handle

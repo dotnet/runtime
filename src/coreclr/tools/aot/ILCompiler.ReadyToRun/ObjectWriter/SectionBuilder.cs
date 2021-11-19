@@ -359,7 +359,7 @@ namespace ILCompiler.PEWriter
         /// Look up final file position for a given symbol. This assumes the section have already been placed.
         /// </summary>
         /// <param name="symbol">Symbol to look up</param>
-        /// <returns>File position of the symbol, from the begining of the emitted image</returns>
+        /// <returns>File position of the symbol, from the beginning of the emitted image</returns>
         public int GetSymbolFilePosition(ISymbolNode symbol)
         {
             SymbolTarget symbolTarget = _symbolMap[symbol];

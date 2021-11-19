@@ -158,7 +158,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_ByValue_Object(VARIANT valu
 
     if (obj == NULL)
     {
-        printf("Marshal_ByValue (Native side) recieved an invalid IDispatch pointer\n");
+        printf("Marshal_ByValue (Native side) received an invalid IDispatch pointer\n");
         return FALSE;
     }
 
@@ -183,7 +183,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_ByValue_Object_IUnknown(VAR
 
     if (obj == NULL)
     {
-        printf("Marshal_ByValue (Native side) recieved an invalid IUnknown pointer\n");
+        printf("Marshal_ByValue (Native side) received an invalid IUnknown pointer\n");
         return FALSE;
     }
 
@@ -431,7 +431,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_ByRef_Object(VARIANT* value
 
     if (obj == NULL)
     {
-        printf("Marshal_ByRef (Native side) recieved an invalid IDispatch pointer\n");
+        printf("Marshal_ByRef (Native side) received an invalid IDispatch pointer\n");
         return FALSE;
     }
 
@@ -456,7 +456,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_ByRef_Object_IUnknown(VARIA
 
     if (obj == NULL)
     {
-        printf("Marshal_ByRef (Native side) recieved an invalid IUnknown pointer\n");
+        printf("Marshal_ByRef (Native side) received an invalid IUnknown pointer\n");
         return FALSE;
     }
 
@@ -729,7 +729,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_Struct_ByValue_Object(Varia
 
     if (obj == NULL)
     {
-        printf("Marshal_Struct_ByValue (Native side) recieved an invalid IDispatch pointer\n");
+        printf("Marshal_Struct_ByValue (Native side) received an invalid IDispatch pointer\n");
         return FALSE;
     }
 
@@ -754,7 +754,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_Struct_ByValue_Object_IUnkn
 
     if (obj == NULL)
     {
-        printf("Marshal_Struct_ByValue (Native side) recieved an invalid IUnknown pointer\n");
+        printf("Marshal_Struct_ByValue (Native side) received an invalid IUnknown pointer\n");
         return FALSE;
     }
 
@@ -997,7 +997,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_Struct_ByRef_Object(Variant
 
     if (obj == NULL)
     {
-        printf("Marshal_Struct_ByRef (Native side) recieved an invalid IDispatch pointer\n");
+        printf("Marshal_Struct_ByRef (Native side) received an invalid IDispatch pointer\n");
         return FALSE;
     }
 
@@ -1022,7 +1022,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_Struct_ByRef_Object_IUnknow
 
     if (obj == NULL)
     {
-        printf("Marshal_Struct_ByRef (Native side) recieved an invalid IUnknown pointer\n");
+        printf("Marshal_Struct_ByRef (Native side) received an invalid IUnknown pointer\n");
         return FALSE;
     }
 
