@@ -300,17 +300,7 @@ namespace System.IO
             }
             else if (errorInfo.Error == Interop.Error.ENOENT) // Some parts of the path don't exist yet.
             {
-                // Try create parents bottom to top and track those that could not
-                // be created due to missing parents. Then create them top to bottom.
-                ValueListBuilder<int> stackDir = new(stackalloc int[32]); // 32 arbitrarily chosen
-                try
-                {
-                    CreateParentsAndDirectory(fullPath, ref stackDir);
-                }
-                finally
-                {
-                    stackDir.Dispose();
-                }
+                CreateParentsAndDirectory(fullPath);
             }
             else
             {
@@ -318,8 +308,11 @@ namespace System.IO
             }
         }
 
-        private static void CreateParentsAndDirectory(string fullPath, ref ValueListBuilder<int> stackDir)
+        private static void CreateParentsAndDirectory(string fullPath)
         {
+            // Try create parents bottom to top and track those that could not
+            // be created due to missing parents. Then create them top to bottom.
+            using ValueListBuilder<int> stackDir = new(stackalloc int[32]); // 32 arbitrarily chosen
             stackDir.Append(fullPath.Length);
 
             int i = fullPath.Length - 1;

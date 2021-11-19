@@ -14,9 +14,8 @@ internal static partial class Interop
 
         internal static int MkDir(ReadOnlySpan<char> path, int mode)
         {
-            var converter = new ValueUtf8Converter(stackalloc byte[DefaultPathBufferSize]);
+            using ValueUtf8Converter converter = new(stackalloc byte[DefaultPathBufferSize]);
             int result = MkDir(ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path)), mode);
-            converter.Dispose();
             return result;
         }
     }
