@@ -39,7 +39,7 @@ static void
 hot_reload_stub_cleanup_on_close (MonoImage *image);
 
 static void
-hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int *idx);
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx);
 
 static int
 hot_reload_stub_relative_delta_index (MonoImage *image_dmeta, int token);
@@ -147,7 +147,7 @@ hot_reload_stub_cleanup_on_close (MonoImage *image)
 }
 
 void
-hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int *idx)
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx)
 {
 	g_assert_not_reached ();
 }

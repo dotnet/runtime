@@ -57,7 +57,7 @@ static void
 hot_reload_cleanup_on_close (MonoImage *image);
 
 static void
-hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx);
+hot_reload_effective_table_slow (const MonoTableInfo **t, int idx);
 
 static void
 hot_reload_apply_changes (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
@@ -879,7 +879,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 }
 
 static gboolean
-effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, const MonoTableInfo **t, int *idx)
+effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, const MonoTableInfo **t, int idx)
 {
 	GList *ptr =info->delta_image_last;
 	uint32_t exposed_gen = hot_reload_get_thread_generation ();
@@ -900,13 +900,11 @@ effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, cons
 	g_assert (delta_info != NULL);
 
 	*t = &delta_info->mutants [tbl_index];
-	/* idx unchanged */
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "effective table[mutant] for %s: 0x%08x -> 0x%08x (rows = 0x%08x) (gen %d)", mono_meta_table_name (tbl_index), *idx, *idx, table_info_get_rows (*t), metadata_update_local_generation (base, info, dmeta));
 	return TRUE;
 }
 
 void
-hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
+hot_reload_effective_table_slow (const MonoTableInfo **t, int idx)
 {
 	/* FIXME: don't let any thread other than the updater thread see values from a delta image
 	 * with a generation past update_published
@@ -920,64 +918,9 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
 	if (!info)
 		return;
 
-	if (effective_table_mutant (base, info, tbl_index, t, idx))
-		return;
+	gboolean success = effective_table_mutant (base, info, tbl_index, t, idx);
 
-	gboolean any_modified = info->any_modified_rows[tbl_index];
-
-	if (G_LIKELY (*idx < table_info_get_rows (*t) && !any_modified))
-		return;
-
-	/* FIXME: when adding methods this won't work anymore.  We will need to update the delta
-	 * images' suppressed columns (see the Note in pass2 about
-	 * CMiniMdRW::m_SuppressedDeltaColumns) with the baseline values. */
-	/* The only column from the updates that matters the RVA, which is looked up elsewhere. */
-	if (tbl_index == MONO_TABLE_METHOD)
-		return;
-
-	GList *list = info->delta_image;
-	MonoImage *dmeta = NULL;
-	int ridx;
-	MonoTableInfo *table;
-	int g = 0;
-
-	/* Candidate: the last delta that had updates for the requested row */
-	MonoImage *cand_dmeta = NULL;
-	MonoTableInfo *cand_table = NULL;
-	int cand_ridx = -1;
-	int cand_g = 0;
-
-	gboolean cont;
-	do {
-		g_assertf (list, "couldn't find idx=0x%08x in assembly=%s", *idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
-		dmeta = (MonoImage*)list->data;
-		list = list->next;
-		table = &dmeta->tables [tbl_index];
-		int rel_row = hot_reload_relative_delta_index (dmeta, mono_metadata_make_token (tbl_index, *idx + 1));
-		g_assert (rel_row == -1 || (rel_row > 0 && rel_row <= table_info_get_rows (table)));
-		g++;
-		if (rel_row != -1) {
-			cand_dmeta = dmeta;
-			cand_table = table;
-			cand_ridx = rel_row - 1;
-			cand_g = g;
-		}
-		ridx = rel_row - 1;
-		if (!any_modified) {
-			/* if the table only got additions, not modifications, don't continue after we find the first image that has the right number of rows */
-			cont = ridx < 0 || ridx >= table_info_get_rows (table);
-		} else {
-			/* otherwise, keep going in case a later generation modified the row again */
-			cont = list != NULL;
-		}
-	} while (cont);
-
-	if (cand_ridx != -1) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "effective table for %s: 0x%08x -> 0x%08x (rows = 0x%08x) (gen %d, g %d)", mono_meta_table_name (tbl_index), *idx, cand_ridx, table_info_get_rows (cand_table), metadata_update_local_generation (base, info, cand_dmeta), cand_g);
-
-		*t = cand_table;
-		*idx = cand_ridx;
-	}
+	g_assert (success);
 }
 
 /*

@@ -21,7 +21,7 @@ typedef struct _MonoComponentHotReload {
 	uint32_t (*thread_expose_published) (void);
 	uint32_t (*get_thread_generation) (void);
 	void (*cleanup_on_close) (MonoImage *image);
-	void (*effective_table_slow) (const MonoTableInfo **t, int *idx);
+	void (*effective_table_slow) (const MonoTableInfo **t, int idx);
 	int (*relative_delta_index) (MonoImage *image_dmeta, int token);
 	void (*apply_changes) (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
 	void (*image_close_except_pools_all) (MonoImage *base_image);
