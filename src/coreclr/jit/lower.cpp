@@ -6809,7 +6809,6 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
                 float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
                 intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
                 type         = TYP_INT;
-                printf("qwe");
             }
 #ifdef TARGET_AMD64
             else
