@@ -934,7 +934,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: Checked
+    buildConfig: checked
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
@@ -1011,7 +1011,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: Release
+    buildConfig: release
     runtimeFlavor: mono
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
