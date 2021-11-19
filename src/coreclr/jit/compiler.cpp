@@ -1849,7 +1849,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
         new (&genIPmappings, jitstd::placement_t()) jitstd::list<IPmappingDsc>(getAllocator(CMK_DebugInfo));
 #ifdef DEBUG
-        new (&genPreciseIPmappings, jitstd::placement_t()) jitstd::list<PreciseIPMapping>(getAllocator(CMK_DebugInfo));
+        new (&genPreciseIPmappings, jitstd::placement_t()) jitstd::list<PreciseIPMapping>(getAllocator(CMK_DebugOnly));
 #endif
 
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();

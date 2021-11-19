@@ -10616,9 +10616,7 @@ void CodeGen::genIPmappingGen()
     for (jitstd::list<IPmappingDsc>::iterator it = compiler->genIPmappings.begin();
          it != compiler->genIPmappings.end();)
     {
-        const IPmappingDsc& dsc = *it;
-
-        UNATIVE_OFFSET dscNativeOfs = dsc.ipmdNativeLoc.CodeOffset(GetEmitter());
+        UNATIVE_OFFSET dscNativeOfs = it->ipmdNativeLoc.CodeOffset(GetEmitter());
         if (dscNativeOfs != prevNativeOfs)
         {
             prevNativeOfs = dscNativeOfs;
@@ -10631,18 +10629,16 @@ void CodeGen::genIPmappingGen()
         jitstd::list<IPmappingDsc>::iterator prev = it;
         --prev;
 
-        const IPmappingDsc& prevDsc = *prev;
-
         // Prev and current mappings have same native offset.
         // If one does not map to IL then remove that one.
-        if (prevDsc.ipmdKind == IPmappingDscKind::NoMapping)
+        if (prev->ipmdKind == IPmappingDscKind::NoMapping)
         {
             compiler->genIPmappings.erase(prev);
             ++it;
             continue;
         }
 
-        if (dsc.ipmdKind == IPmappingDscKind::NoMapping)
+        if (it->ipmdKind == IPmappingDscKind::NoMapping)
         {
             it = compiler->genIPmappings.erase(it);
             continue;
@@ -10652,8 +10648,8 @@ void CodeGen::genIPmappingGen()
         // If previous is the prolog, keep both if this one is at IL offset 0.
         // (TODO: Why? Debugger has no problem breaking on the prolog mapping
         // it seems.)
-        if ((prevDsc.ipmdKind == IPmappingDscKind::Prolog) && (dsc.ipmdKind == IPmappingDscKind::Normal) &&
-            (dsc.ipmdLoc.GetOffset() == 0))
+        if ((prev->ipmdKind == IPmappingDscKind::Prolog) && (it->ipmdKind == IPmappingDscKind::Normal) &&
+            (it->ipmdLoc.GetOffset() == 0))
         {
             ++it;
             continue;
@@ -10665,7 +10661,7 @@ void CodeGen::genIPmappingGen()
         // statement if the user tries to put a breakpoint there, and then have
         // the option of seeing the epilog or not based on SetUnmappedStopMask
         // for the stepper.
-        if (dsc.ipmdKind == IPmappingDscKind::Epilog)
+        if (it->ipmdKind == IPmappingDscKind::Epilog)
         {
             ++it;
             continue;
@@ -10673,8 +10669,8 @@ void CodeGen::genIPmappingGen()
 
         // For managed return values we store all calls. Keep both in this case
         // too.
-        if (((prevDsc.ipmdKind == IPmappingDscKind::Normal) && (prevDsc.ipmdLoc.IsCall())) ||
-            ((dsc.ipmdKind == IPmappingDscKind::Normal) && (dsc.ipmdLoc.IsCall())))
+        if (((prev->ipmdKind == IPmappingDscKind::Normal) && (prev->ipmdLoc.IsCall())) ||
+            ((it->ipmdKind == IPmappingDscKind::Normal) && (it->ipmdLoc.IsCall())))
         {
             ++it;
             continue;
@@ -10682,7 +10678,7 @@ void CodeGen::genIPmappingGen()
 
         // Otherwise report the higher offset unless the previous mapping is a
         // label.
-        if (prevDsc.ipmdIsLabel)
+        if (prev->ipmdIsLabel)
         {
             it = compiler->genIPmappings.erase(it);
         }
