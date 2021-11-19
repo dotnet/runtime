@@ -2025,6 +2025,8 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	stackval *sp = (stackval*)context->stack_pointer;
 	MonoMethod *target_method = method;
+
+	#if DEBUG_INTERP
 	printf ("[ENTER] %s\n", mono_method_full_name (method, TRUE));
 
 	if (strcmp (method->name, "MonoResolveUnmanagedDll") == 0) {
@@ -2033,6 +2035,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 		char* first_arg_str = mono_string_to_utf8_checked_internal (first_arg, error);
 		printf ("MonoResolveUnmanagedDll wants to load unmanaged DLL: %s\n", first_arg_str);
 	}
+	#endif
 
 	error_init (error);
 	if (exc)
@@ -2071,10 +2074,9 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	interp_exec_method (&frame, context, NULL);
 	MONO_EXIT_GC_UNSAFE;
 
+	#if DEBUG_INTERP
 	printf ("[EXIT]\n");
-	if (strcmp (method->name, "MonoResolveUnmanagedDll") == 0) {
-		printf ("MonoResolveUnmanagedDll has exited\n");
-	}
+	#endif
 
 	context->stack_pointer = (guchar*)sp;
 
@@ -3486,7 +3488,9 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 #ifdef ENABLE_EXPERIMENT_TIERED
 	mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
 #endif
+	#if DEBUG_INTERP
 	g_print ("(%p) Call %s\n", mono_thread_internal_current (), mono_method_get_full_name (frame->imethod->method));
+	#endif
 
 #if defined(ENABLE_HYBRID_SUSPEND) || defined(ENABLE_COOP_SUSPEND)
 	mono_threads_safepoint ();
