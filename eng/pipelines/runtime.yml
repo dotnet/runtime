@@ -934,7 +934,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: checked
+    buildConfig: Checked
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
@@ -1011,14 +1011,14 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: release
+    buildConfig: Release
     runtimeFlavor: mono
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      liveRuntimeBuildConfig: release
+      liveRuntimeBuildConfig: Release
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
