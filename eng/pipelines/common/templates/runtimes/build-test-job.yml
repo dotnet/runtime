@@ -130,7 +130,7 @@ jobs:
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: '$(managedTestArtifactRootFolderPath)'
+        rootFolder: '$(binTestsPath)/AnyOS.$(archType).$(buildConfigUpper)'
         includeRootFolder: false
         archiveExtension: '.tar.gz'
         archiveType: tar
