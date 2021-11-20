@@ -36,7 +36,13 @@
 
 #include <stdint.h>
 #include <stdarg.h>
-#include "zconf.h"
+
+/* Added ZLIB_COMPAT check to choose between the two available zconf files */
+#if defined(ZLIB_COMPAT)
+#  include "zconf.h.in"
+#else
+#  include "zconf-ng.h"
+#endif
 
 #ifndef ZCONF_H
 #  error Missing zconf.h add binary output directory to include directories

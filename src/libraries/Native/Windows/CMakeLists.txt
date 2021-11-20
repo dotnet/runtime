@@ -65,6 +65,13 @@ if (${CLR_CMAKE_HOST_ARCH} STREQUAL "x86")
     add_compile_options(/Gz)
 endif ()
 
+if(${CLR_CMAKE_HOST_ARCH} STREQUAL arm OR ${CLR_CMAKE_HOST_ARCH} STREQUAL arm64)
+    add_compile_options(-DZLIB_COMPAT=0) # Must be explicitly set
+    add_compile_options(-DWITH_GZFILEOP=1) # Must be explicitly set
+    add_compile_options(-D_CRT_SECURE_NO_WARNINGS=1) # Mute errors like change strerror to strerror_s
+    add_compile_options(-D_CRT_NONSTDC_NO_WARNINGS=1) # Mute errors like change read to POSIX _read
+endif ()
+
 # enable control-flow-guard support for native components
 add_compile_options(/guard:cf)
 list(APPEND __SharedLinkArgs /guard:cf)

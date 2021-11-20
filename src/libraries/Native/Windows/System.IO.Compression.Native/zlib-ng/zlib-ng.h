@@ -90,14 +90,18 @@ typedef void  (*free_func)  (void *opaque, void *address);
 
 struct internal_state;
 
+/*
+total_in and total_out were changed to z_size_t to remove build error
+C4267: '=': conversion from 'size_t' to 'unsigned long', possible loss of data
+*/
 typedef struct zng_stream_s {
     const uint8_t         *next_in;   /* next input byte */
     uint32_t              avail_in;   /* number of bytes available at next_in */
-    size_t                total_in;   /* total number of input bytes read so far */
+    z_size_t                total_in;   /* total number of input bytes read so far */
 
     uint8_t               *next_out;  /* next output byte will go here */
     uint32_t              avail_out;  /* remaining free space at next_out */
-    size_t                total_out;  /* total number of bytes output so far */
+    z_size_t                total_out;  /* total number of bytes output so far */
 
     const char            *msg;       /* last error message, NULL if no error */
     struct internal_state *state;     /* not visible by applications */

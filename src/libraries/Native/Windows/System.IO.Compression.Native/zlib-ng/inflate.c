@@ -1166,10 +1166,14 @@ static uint32_t syncsearch(uint32_t *have, const uint8_t *buf, uint32_t len) {
     return next;
 }
 
+/*
+'in' and 'out' parameters were changed to z_size_t to remove build error
+C4267: '=': conversion from 'size_t' to 'unsigned long', possible loss of data
+*/
 int32_t Z_EXPORT PREFIX(inflateSync)(PREFIX3(stream) *strm) {
     unsigned len;               /* number of bytes to look at or looked at */
     int flags;                  /* temporary to save header status */
-    size_t in, out;             /* temporary to save total_in and total_out */
+    z_size_t in, out;             /* temporary to save total_in and total_out */
     unsigned char buf[4];       /* to restore bit buffer to byte string */
     struct inflate_state *state;
 

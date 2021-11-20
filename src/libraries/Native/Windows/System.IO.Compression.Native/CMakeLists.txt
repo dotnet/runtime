@@ -24,9 +24,10 @@ if(${CLR_CMAKE_HOST_ARCH} STREQUAL arm OR ${CLR_CMAKE_HOST_ARCH} STREQUAL arm64)
         zlib-ng/deflate_slow.c
         zlib-ng/deflate.c
         zlib-ng/functable.c
-        zlib-ng/gzlib.c
-        zlib-ng/gzread.c
-        zlib-ng/gzwrite.c
+        # Exclude files to fix error LNK2019: unresolved external symbol 'gzFile' open referenced in functions gz_open, gz_close, gz_load, gz_comp
+        # zlib-ng/gzlib.c
+        # zlib-ng/gzread.c
+        # zlib-ng/gzwrite.c
         zlib-ng/infback.c
         zlib-ng/inffast.c
         zlib-ng/inflate.c
@@ -35,7 +36,7 @@ if(${CLR_CMAKE_HOST_ARCH} STREQUAL arm OR ${CLR_CMAKE_HOST_ARCH} STREQUAL arm64)
         zlib-ng/trees.c
         zlib-ng/uncompr.c
         zlib-ng/zutil.c
-)
+    )
 elseif(${CLR_CMAKE_HOST_ARCH} STREQUAL x86 OR ${CLR_CMAKE_HOST_ARCH} STREQUAL x64)
     set(NATIVECOMPRESSION_SOURCES
         zlib-intel/adler32.c
@@ -53,7 +54,7 @@ elseif(${CLR_CMAKE_HOST_ARCH} STREQUAL x86 OR ${CLR_CMAKE_HOST_ARCH} STREQUAL x6
         zlib-intel/trees.c
         zlib-intel/x86.c
         zlib-intel/zutil.c
-)
+    )
 else()
     set(NATIVECOMPRESSION_SOURCES
         zlib/adler32.c
@@ -68,7 +69,7 @@ else()
     )
 endif()
 
-set (NATIVECOMPRESSION_SOURCES
+set(NATIVECOMPRESSION_SOURCES
     ${NATIVECOMPRESSION_SOURCES}
     ../../AnyOS/zlib/pal_zlib.c
     ../../AnyOS/brotli/common/constants.c
