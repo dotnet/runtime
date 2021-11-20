@@ -106,7 +106,7 @@ jobs:
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
           eq(variables['isManualOrIsNotPR'], true),
-          eq(true, true))
+          eq(variables['isFullMatrix'], true))
 
 #
 # MacCatalyst interp - requires AOT Compilation and Interp flags
