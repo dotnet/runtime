@@ -54,14 +54,16 @@ partial struct TNative
 }
 ```
 
-The analyzer will report an error if neither the construtor nor the ToManaged method is defined. When one of those two methods is missing, the direction of marshalling (managed to native/native to managed) that relies on the missing method is considered unsupported for the corresponding managed type. The FreeNative method is only required when there are resources that need to be released.
+The analyzer will report an error if neither the constructor nor the `ToManaged` method is defined. When one of those two methods is missing, the direction of marshalling (managed to native/native to managed) that relies on the missing method is considered unsupported for the corresponding managed type. The `FreeNative` method is only required when there are resources that need to be released.
 
 
 > :question: Does this API surface and shape work for all marshalling scenarios we plan on supporting? It may have issues with the current "layout class" by-value `[Out]` parameter marshalling where the runtime updates a `class` typed object in place. We already recommend against using classes for interop for performance reasons and a struct value passed via `ref` or `out` with the same members would cover this scenario.
 
 If the native type `TNative` also has a public `Value` property, then the value of the `Value` property will be passed to native code instead of the `TNative` value itself. As a result, the type `TNative` will be allowed to be non-blittable and the type of the `Value` property will be required to be blittable. If the `Value` property is settable, then when marshalling in the native-to-managed direction, a default value of `TNative` will have its `Value` property set to the native value. If `Value` does not have a setter, then marshalling from native to managed is not supported.
 
-A `ref` or `ref readonly` typed `Value` property is unsupported. If a ref-return is required, the type author can supply a `GetPinnableReference` method on the native type. If a `GetPinnableReference` method is supplied, then the `Value` property must have a pointer-sized primitive type.
+If a `Value` property is provided, the developer may also provide a ref-returning or readonly-ref-returning `GetPinnableReference` method. The `GetPinnableReference` method will be called before the `Value` property getter is called. The ref returned by `GetPinnableReference` will be pinned with a `fixed` statement, but the pinned value will not be used (it acts exclusively as a side-effect).
+
+A `ref` or `ref readonly` typed `Value` property is unsupported. If a ref-return is required, the type author can supply a `GetPinnableReference` method on the native type to pin the desired `ref` to return and then use `System.Runtime.CompilerServices.Unsafe.AsPointer` to get a pointer from the `ref` that will have already been pinned by the time the `Value` getter is called.
 
 ```csharp
 [NativeMarshalling(typeof(TMarshaler))]
@@ -72,14 +74,14 @@ public struct TManaged
 
 public struct TMarshaler
 {
-     public TNative(TManaged managed) {}
+     public TMarshaler(TManaged managed) {}
      public TManaged ToManaged() {}
 
      public void FreeNative() {}
 
      public ref TNative GetPinnableReference() {}
 
-     public TNative Value { get; set; }
+     public TNative* Value { get; set; }
 }
 
 ```
@@ -88,7 +90,7 @@ public struct TMarshaler
 
 #### Pinning
 
-Since C# 7.3 added a feature to enable custom pinning logic for user types, we should also add support for custom pinning logic. If the user provides a `GetPinnableReference` method that matches the requirements to be used in a `fixed` statement and the pointed-to type is blittable, then we will support using pinning to marshal the managed value when possible. The analyzer should issue a warning when the pointed-to type would not match the final native type, accounting for the `Value` property on the native type. Since `MarshalUsingAttribute` is applied at usage time instead of at type authoring time, we will not enable the pinning feature since the implementation of `GetPinnableReference` unless the pointed-to return type matches the native type.
+Since C# 7.3 added a feature to enable custom pinning logic for user types, we should also add support for custom pinning logic. If the user provides a `GetPinnableReference` method on the managed type that matches the requirements to be used in a `fixed` statement and the pointed-to type is blittable, then we will support using pinning to marshal the managed value when possible. The analyzer should issue a warning when the pointed-to type would not match the final native type, accounting for the `Value` property on the native type. Since `MarshalUsingAttribute` is applied at usage time instead of at type authoring time, we will not enable the pinning feature since the implementation of `GetPinnableReference` is likely designed to match the default marshalling rules provided by the type author, not the rules provided by the marshaller provided by the `MarshalUsingAttribute`.
 
 #### Caller-allocated memory
 
@@ -100,14 +102,14 @@ partial struct TNative
      public TNative(TManaged managed, Span<byte> buffer) {}
 
      public const int BufferSize = /* */;
-    
+
      public const bool RequiresStackBuffer = /* */;
 }
 ```
 
 When these members are present, the source generator will call the two-parameter constructor with a possibly stack-allocated buffer of `BufferSize` bytes when a stack-allocated buffer is usable. If a stack-allocated buffer is a requirement, the `RequiresStackBuffer` field should be set to `true` and the `buffer` will be guaranteed to be allocated on the stack. Setting the `RequiresStackBuffer` field to `false` is the same as omitting the field definition. Since a dynamically allocated buffer is not usable in all scenarios, for example Reverse P/Invoke and struct marshalling, a one-parameter constructor must also be provided for usage in those scenarios. This may also be provided by providing a two-parameter constructor with a default value for the second parameter.
 
-Type authors can pass down the `buffer` pointer to native code by defining a `GetPinnableReference()` method on the native type that returns a reference to the first element of the span. When the `RequiresStackBuffer` field is set to `true`, the type author is free to use APIs that would be dangerous in non-stack-allocated scenarios such as `MemoryMarshal.GetReference()` and `Unsafe.AsPointer()`.
+Type authors can pass down the `buffer` pointer to native code by defining a `Value` property that returns a pointer to the first element, generally through code using `MemoryMarshal.GetReference()` and `Unsafe.AsPointer`. If `RequiresStackBuffer` is not provided or set to `false`, the `buffer` span must be pinned to be used safely. The `buffer` span can be pinned by defining a `GetPinnableReference()` method on the native type that returns a reference to the first element of the span.
 
 ### Usage
 
