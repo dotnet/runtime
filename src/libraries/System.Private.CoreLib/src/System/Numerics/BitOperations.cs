@@ -736,7 +736,6 @@ namespace System.Numerics
                 return Crc32.ComputeCrc32C(crc, data);
             }
 
-
             // Software fallback
             ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
             crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
@@ -767,7 +766,6 @@ namespace System.Numerics
                 // uint32_t __crc32ch (uint32_t a, uint16_t b)
                 return Crc32.ComputeCrc32C(crc, data);
             }
-
 
             // Software fallback
             if (!BitConverter.IsLittleEndian)
@@ -807,7 +805,6 @@ namespace System.Numerics
                 // uint32_t __crc32ch (uint32_t a, uint32_t b)
                 return Crc32.ComputeCrc32C(crc, data);
             }
-
 
             // Software fallback
             if (!BitConverter.IsLittleEndian)
