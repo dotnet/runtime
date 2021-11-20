@@ -367,7 +367,7 @@
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
       <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
       <!-- 84.0.4147.105 is 768962 for example -->
-      <ChromiumRevision>929512</ChromiumRevision>
+      <ChromiumRevision>96.0.4664.45</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
       <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
     </PropertyGroup>
