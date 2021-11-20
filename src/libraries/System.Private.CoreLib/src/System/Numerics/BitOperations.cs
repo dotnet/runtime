@@ -738,8 +738,8 @@ namespace System.Numerics
 
 
             // Software fallback
-            int tableIndex = (int)((crc ^ data) & 0xFF);
-            crc = s_crcTable[tableIndex] ^ (crc >> 8);
+            ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
 
             return crc;
         }
