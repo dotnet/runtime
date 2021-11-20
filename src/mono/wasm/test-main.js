@@ -23,6 +23,7 @@ const originalConsole = {
 };
 
 let isXUnitDoneCheck = false;
+let isXmlDoneCheck = false;
 
 function proxyMethod(prefix, func, asJson) {
     return function () {
@@ -42,7 +43,12 @@ function proxyMethod(prefix, func, asJson) {
             isXUnitDoneCheck = true;
         }
 
-        if (asJson) {
+        if (payload.length > 500 && payload.indexOf("STARTRESULTXML") !== -1) {
+            originalConsole.log('Sending RESULTXML')
+            isXmlDoneCheck = true;
+            func(payload);
+        }
+        else if (asJson) {
             func(JSON.stringify({
                 method: prefix,
                 payload: payload,
@@ -66,10 +72,12 @@ function proxyJson(func) {
         console[m] = proxyMethod(`console.${m}`, func, true);
 }
 
+let consoleWebSocket;
+
 if (is_browser) {
     const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
-    let consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket = new WebSocket(consoleUrl);
     // redirect output so that when emscripten starts it's already redirected
     proxyJson(function (msg) {
         if (consoleWebSocket.readyState === WebSocket.OPEN) {
@@ -238,7 +246,7 @@ function set_exit_code(exit_code, reason) {
     }
     if (is_browser) {
         const stack = (new Error()).stack.replace(/\n/g, "").replace(/[ ]*at/g, " at").replace(/https?:\/\/[0-9.:]*/g, "").replace("Error", "");
-        const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} ${stack}.`;
+        const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} isXmlDoneCheck=${isXmlDoneCheck} ${stack}.`;
 
         // Notify the selenium script
         Module.exit_code = exit_code;
@@ -258,8 +266,11 @@ function set_exit_code(exit_code, reason) {
         console.log("Flushed stdout!");
 
         console.log('1 ' + messsage);
+        console.log("1 consoleWebSocket.bufferedAmount: " + consoleWebSocket.bufferedAmount);
         setTimeout(() => {
             originalConsole.log('2 ' + messsage);
+            console.log("2 consoleWebSocket.bufferedAmount: " + consoleWebSocket.bufferedAmount);
+
             // tell xharness WasmTestMessagesProcessor we are done. 
             console.log("WASM EXIT " + exit_code);
         }, 100);
