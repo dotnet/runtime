@@ -1,0 +1,13 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=@PC_LIB_INSTALL_DIR@
+sharedlibdir=${libdir}
+includedir=@PC_INC_INSTALL_DIR@
+
+Name: zlib@SUFFIX@
+Description: zlib-ng compression library
+Version: @ZLIB_FULL_VERSION@
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz@SUFFIX@
+Cflags: -I${includedir}

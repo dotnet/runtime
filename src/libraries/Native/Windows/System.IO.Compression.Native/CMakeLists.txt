@@ -10,7 +10,33 @@ if (GEN_SHARED_LIB)
     include (GenerateExportHeader)
 endif()
 
-if(${CLR_CMAKE_HOST_ARCH} STREQUAL x86 OR ${CLR_CMAKE_HOST_ARCH} STREQUAL x64)
+if(${CLR_CMAKE_HOST_ARCH} STREQUAL arm OR ${CLR_CMAKE_HOST_ARCH} STREQUAL arm64)
+    set(NATIVECOMPRESSION_SOURCES
+        zlib-ng/adler32.c
+        zlib-ng/chunkset.c
+        zlib-ng/compare258.c
+        zlib-ng/compress.c
+        zlib-ng/crc32_comb.c
+        zlib-ng/crc32.c
+        zlib-ng/deflate_fast.c
+        zlib-ng/deflate_medium.c
+        zlib-ng/deflate_quick.c
+        zlib-ng/deflate_slow.c
+        zlib-ng/deflate.c
+        zlib-ng/functable.c
+        zlib-ng/gzlib.c
+        zlib-ng/gzread.c
+        zlib-ng/gzwrite.c
+        zlib-ng/infback.c
+        zlib-ng/inffast.c
+        zlib-ng/inflate.c
+        zlib-ng/inftrees.c
+        zlib-ng/insert_string.c
+        zlib-ng/trees.c
+        zlib-ng/uncompr.c
+        zlib-ng/zutil.c
+)
+elseif(${CLR_CMAKE_HOST_ARCH} STREQUAL x86 OR ${CLR_CMAKE_HOST_ARCH} STREQUAL x64)
     set(NATIVECOMPRESSION_SOURCES
         zlib-intel/adler32.c
         zlib-intel/compress.c
