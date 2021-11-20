@@ -74,14 +74,14 @@ namespace System.Drawing.Imaging
         /// Copy the native GDI+ EncoderParameters data from a chunk of memory into a managed EncoderParameters object.
         /// See ConvertToMemory for more info.
         /// </summary>
-        internal static EncoderParameters ConvertFromMemory(IntPtr memory)
+        internal static unsafe EncoderParameters ConvertFromMemory(IntPtr memory)
         {
             if (memory == IntPtr.Zero)
             {
                 throw Gdip.StatusException(Gdip.InvalidParameter);
             }
 
-            int count = Marshal.ReadInt32(memory);
+            int count = *(int*)memory;
 
             EncoderParameters p = new EncoderParameters(count);
             int size = Marshal.SizeOf<EncoderParameter>();
@@ -89,10 +89,10 @@ namespace System.Drawing.Imaging
 
             for (int i = 0; i < count; i++)
             {
-                Guid guid = Marshal.PtrToStructure<Guid>((IntPtr)(i * size + arrayOffset))!;
-                int numberOfValues = Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 16));
-                EncoderParameterValueType type = (EncoderParameterValueType)Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 20));
-                IntPtr value = Marshal.ReadIntPtr((IntPtr)(i * size + arrayOffset + 24));
+                Guid guid = *(Guid*)(IntPtr)(i * size + arrayOffset);
+                int numberOfValues = *(int*)(IntPtr)(i * size + arrayOffset + 16);
+                EncoderParameterValueType type = (EncoderParameterValueType)(*(int*)(IntPtr)(i * size + arrayOffset + 20));
+                IntPtr value = *(nint*)(IntPtr)(i * size + arrayOffset + 24);
 
                 p._param[i] = new EncoderParameter(new Encoder(guid), numberOfValues, type, value);
             }

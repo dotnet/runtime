@@ -367,7 +367,7 @@ namespace System.Drawing
         public const int ERROR_CANCELLED = 1223;
 
         [StructLayout(LayoutKind.Sequential)]
-        public class ENHMETAHEADER
+        public struct ENHMETAHEADER
         {
             /// The ENHMETAHEADER structure is defined natively as a union with WmfHeader.
             /// Extreme care should be taken if changing the layout of the corresponding managed

@@ -169,7 +169,7 @@ namespace System.Drawing.Imaging
             return imageCodecs;
         }
 
-        private static ImageCodecInfo[] ConvertFromMemory(IntPtr memoryStart, int numCodecs)
+        private static unsafe ImageCodecInfo[] ConvertFromMemory(IntPtr memoryStart, int numCodecs)
         {
             ImageCodecInfo[] codecs = new ImageCodecInfo[numCodecs];
 
@@ -178,31 +178,30 @@ namespace System.Drawing.Imaging
             for (index = 0; index < numCodecs; index++)
             {
                 IntPtr curcodec = (IntPtr)((long)memoryStart + (int)Marshal.SizeOf<ImageCodecInfoPrivate>() * index);
-                ImageCodecInfoPrivate codecp = new ImageCodecInfoPrivate();
-                Marshal.PtrToStructure<ImageCodecInfoPrivate>(curcodec, codecp);
+                ImageCodecInfoPrivate* codecp = (ImageCodecInfoPrivate*)curcodec;
 
                 codecs[index] = new ImageCodecInfo();
-                codecs[index].Clsid = codecp.Clsid;
-                codecs[index].FormatID = codecp.FormatID;
-                codecs[index].CodecName = Marshal.PtrToStringUni(codecp.CodecName);
-                codecs[index].DllName = Marshal.PtrToStringUni(codecp.DllName);
-                codecs[index].FormatDescription = Marshal.PtrToStringUni(codecp.FormatDescription);
-                codecs[index].FilenameExtension = Marshal.PtrToStringUni(codecp.FilenameExtension);
-                codecs[index].MimeType = Marshal.PtrToStringUni(codecp.MimeType);
+                codecs[index].Clsid = codecp->Clsid;
+                codecs[index].FormatID = codecp->FormatID;
+                codecs[index].CodecName = Marshal.PtrToStringUni(codecp->CodecName);
+                codecs[index].DllName = Marshal.PtrToStringUni(codecp->DllName);
+                codecs[index].FormatDescription = Marshal.PtrToStringUni(codecp->FormatDescription);
+                codecs[index].FilenameExtension = Marshal.PtrToStringUni(codecp->FilenameExtension);
+                codecs[index].MimeType = Marshal.PtrToStringUni(codecp->MimeType);
 
-                codecs[index].Flags = (ImageCodecFlags)codecp.Flags;
-                codecs[index].Version = (int)codecp.Version;
+                codecs[index].Flags = (ImageCodecFlags)codecp->Flags;
+                codecs[index].Version = (int)codecp->Version;
 
-                codecs[index].SignaturePatterns = new byte[codecp.SigCount][];
-                codecs[index].SignatureMasks = new byte[codecp.SigCount][];
+                codecs[index].SignaturePatterns = new byte[codecp->SigCount][];
+                codecs[index].SignatureMasks = new byte[codecp->SigCount][];
 
-                for (int j = 0; j < codecp.SigCount; j++)
+                for (int j = 0; j < codecp->SigCount; j++)
                 {
-                    codecs[index].SignaturePatterns![j] = new byte[codecp.SigSize];
-                    codecs[index].SignatureMasks![j] = new byte[codecp.SigSize];
+                    codecs[index].SignaturePatterns![j] = new byte[codecp->SigSize];
+                    codecs[index].SignatureMasks![j] = new byte[codecp->SigSize];
 
-                    Marshal.Copy((IntPtr)((long)codecp.SigMask + j * codecp.SigSize), codecs[index].SignatureMasks![j], 0, codecp.SigSize);
-                    Marshal.Copy((IntPtr)((long)codecp.SigPattern + j * codecp.SigSize), codecs[index].SignaturePatterns![j], 0, codecp.SigSize);
+                    Marshal.Copy((IntPtr)((long)codecp->SigMask + j * codecp->SigSize), codecs[index].SignatureMasks![j], 0, codecp->SigSize);
+                    Marshal.Copy((IntPtr)((long)codecp->SigPattern + j * codecp->SigSize), codecs[index].SignaturePatterns![j], 0, codecp->SigSize);
                 }
             }
 

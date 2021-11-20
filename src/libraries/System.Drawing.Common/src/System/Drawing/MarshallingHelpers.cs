@@ -41,46 +41,34 @@ namespace System.Drawing
         // Copies a Ptr to an array of Points and releases the memory
         public static void FromUnManagedMemoryToPointI(IntPtr prt, Point[] pts)
         {
-            int nPointSize = Marshal.SizeOf<Point>();
-            IntPtr pos = prt;
-            for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                pts[i] = Marshal.PtrToStructure<Point>(pos)!;
-
+            var sourceSpan = new Span<Point>((void*)dest, pts.Length);
+            sourceSpan.CopyTo(new Span<Point>(pts));
             Marshal.FreeHGlobal(prt);
         }
 
         // Copies a Ptr to an array of Points and releases the memory
         public static void FromUnManagedMemoryToPoint(IntPtr prt, PointF[] pts)
         {
-            int nPointSize = Marshal.SizeOf<PointF>();
-            IntPtr pos = prt;
-            for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                pts[i] = Marshal.PtrToStructure<PointF>(pos)!;
-
+            var sourceSpan = new Span<PointF>((void*)dest, pts.Length);
+            sourceSpan.CopyTo(new Span<PointF>(pts));
             Marshal.FreeHGlobal(prt);
         }
 
         // Copies an array of Points to unmanaged memory
         public static IntPtr FromPointToUnManagedMemoryI(Point[] pts)
         {
-            int nPointSize = Marshal.SizeOf<Point>();
-            IntPtr dest = Marshal.AllocHGlobal(nPointSize * pts.Length);
-            IntPtr pos = dest;
-            for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                Marshal.StructureToPtr<Point>(pts[i], pos, false);
-
+            IntPtr dest = Marshal.AllocHGlobal(sizeof(Point) * pts.Length);
+            var destinationSpan = new Span<Point>((void*)dest, pts.Length);
+            pts.CopyTo(destinationSpan);
             return dest;
         }
 
         // Copies an array of Points to unmanaged memory
         public static IntPtr FromPointToUnManagedMemory(PointF[] pts)
         {
-            int nPointSize = Marshal.SizeOf<PointF>();
-            IntPtr dest = Marshal.AllocHGlobal(nPointSize * pts.Length);
-            IntPtr pos = dest;
-            for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                Marshal.StructureToPtr<PointF>(pts[i], pos, false);
-
+            IntPtr dest = Marshal.AllocHGlobal(sizeof(PointF) * pts.Length);
+            var destinationSpan = new Span<PointF>((void*)dest, pts.Length);
+            pts.CopyTo(destinationSpan);
             return dest;
         }
     }
