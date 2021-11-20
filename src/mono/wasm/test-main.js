@@ -379,6 +379,8 @@ async function loadDotnet(file) {
 }
 
 initConsole.then(() => {
+    Module.print = console.log;
+    Module.printErr = console.error;
     loadDotnet("./dotnet.js").catch(function (err) {
     console.error(err);
     set_exit_code(1, "failed to load the dotnet.js file");
