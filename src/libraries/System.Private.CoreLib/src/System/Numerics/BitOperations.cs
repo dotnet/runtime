@@ -777,7 +777,7 @@ namespace System.Numerics
 
             crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
             data >>= 8;
-            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
 
             return crc;
         }
