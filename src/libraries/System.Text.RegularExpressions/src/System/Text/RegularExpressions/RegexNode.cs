@@ -240,6 +240,8 @@ namespace System.Text.RegularExpressions
         [Conditional("DEBUG")]
         private void ValidateFinalTreeInvariants()
         {
+            Debug.Assert(Type == Capture, "Every generated tree should begin with a capture node");
+
             var toExamine = new Stack<RegexNode>();
             toExamine.Push(this);
             while (toExamine.Count > 0)
@@ -2244,17 +2246,10 @@ namespace System.Text.RegularExpressions
                         supported = M == N || AncestorsAllowBacktracking(Next);
                         break;
 
-                    // Loop repeaters are the same, except their child also needs to be supported.
-                    // We also support such loops being atomic.
+                    // For greedy and lazy loops, they're supported if the node they wrap is supported
+                    // and either the node is actually a repeater, is atomic, or is in the tree in a
+                    // location where backtracking is allowed.
                     case Loop:
-                        supported =
-                            (M == N || (Next != null && Next.Type == Atomic)) &&
-                            Child(0).SupportsSimplifiedCodeGenerationImplementation();
-                        break;
-
-                    // Similarly, as long as the wrapped node supports simplified code gen,
-                    // Lazy is supported if it's a repeater or atomic, but also if it's in
-                    // a place where backtracking is allowed (e.g. it's top-level).
                     case Lazyloop:
                         supported =
                             (M == N || (Next != null && Next.Type == Atomic) || AncestorsAllowBacktracking(Next)) &&

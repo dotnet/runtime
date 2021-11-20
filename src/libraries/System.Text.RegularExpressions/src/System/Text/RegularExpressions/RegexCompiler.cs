@@ -74,6 +74,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringIndexOfCharInt = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int) })!;
         private static readonly MethodInfo s_stringLastIndexOfCharIntInt = typeof(string).GetMethod("LastIndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
 
         protected ILGenerator? _ilg;
 
@@ -1679,6 +1680,11 @@ namespace System.Text.RegularExpressions
             Ldloc(runtextposLocal);
             Stloc(originalruntextposLocal);
 
+            // int runstackpos = 0;
+            LocalBuilder runstackpos = DeclareInt32();
+            Ldc(0);
+            Stloc(runstackpos);
+
             // The implementation tries to use const indexes into the span wherever possible, which we can do
             // in all places except for variable-length loops.  For everything else, we know at any point in
             // the regex exactly how far into it we are, and we can use that to index into the span created
@@ -2091,7 +2097,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNode.Loop:
-                        EmitAtomicNodeLoop(node);
+                        EmitLoop(node);
                         break;
 
                     case RegexNode.Onelazy:
@@ -3111,12 +3117,116 @@ namespace System.Text.RegularExpressions
                 MarkLabel(skipUpdatesLabel);
             }
 
-            // Emits the code to handle a non-backtracking, variable-length loop around another node.
-            void EmitAtomicNodeLoop(RegexNode node)
+            // Emits the code to handle a backtracking loop
+            void EmitLoop(RegexNode node)
             {
-                Debug.Assert(node.Type == RegexNode.Loop);
-                Debug.Assert(node.M == node.N || (node.Next != null && (node.Next.Type is RegexNode.Atomic or RegexNode.Capture)));
-                Debug.Assert(node.M < int.MaxValue);
+                // If the loop is atomic, emit it as such and avoid all backtracking.
+                if (node.Next is { Type: RegexNode.Atomic })
+                {
+                    EmitAtomicNodeLoop(node);
+                    return;
+                }
+
+                // If the loop is actually a repeater, similarly emit it as such and avoid all backtracking.
+                if (node.M == node.N)
+                {
+                    EmitNodeRepeater(node);
+                    return;
+                }
+
+                // Emit backtracking around an atomic loop, but tracking the starting position of each iteration
+                // along the way so that we can backtrack through each position.
+
+                Debug.Assert(node.M < node.N);
+                Label backtrackingLabel = DefineLabel();
+                Label endLoop = DefineLabel();
+                LocalBuilder startingStackPos = DeclareInt32();
+                LocalBuilder endingStackPos = DeclareInt32();
+
+                // We're about to enter a loop, so ensure our text position is 0.
+                TransferTextSpanPosToRunTextPos();
+
+                // Grab the current position, then emit the loop as atomic, except keeping track of the position
+                // before each iteration match, which enables us to then apply the backtracking.
+
+                // int startingStackPos = runstackpos;
+                Ldloc(runstackpos);
+                Stloc(startingStackPos);
+
+                EmitAtomicNodeLoop(node, trackStartingPositions: true);
+                TransferTextSpanPosToRunTextPos();
+
+                // int endingStackPos = runstackpos;
+                Ldloc(runstackpos);
+                Stloc(endingStackPos);
+
+                LocalBuilder? crawlPos = null;
+                if (expressionHasCaptures)
+                {
+                    // int crawlPos = base.Crawlpos();
+                    crawlPos = DeclareInt32();
+                    Ldthis();
+                    Call(s_crawlposMethod);
+                    Stloc(crawlPos);
+                }
+                if (node.M > 0)
+                {
+                    // startingStackPos += node.M;
+                    Ldloc(startingStackPos);
+                    Ldc(node.M);
+                    Add();
+                    Stloc(startingStackPos);
+                }
+
+                // goto endLoop;
+                BrFar(endLoop);
+
+                // Backtracking section. Subsequent failures will jump to here, at which
+                // point we decrement the matched count as long as it's above the minimum
+                // required, and try again by flowing to everything that comes after this.
+
+                // Backtrack:
+                // if (startingStackPos >= endingStackPos) goto endLoop;
+                MarkLabel(backtrackingLabel);
+                Label originalDoneLabel = doneLabel;
+                Ldloc(startingStackPos);
+                Ldloc(endingStackPos);
+                BgeFar(originalDoneLabel);
+                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
+
+                if (expressionHasCaptures)
+                {
+                    // Uncapture any captures if the expression has any.  It's possible the captures it has
+                    // are before this node, in which case this is wasted effort, but still functionally correct.
+                    EmitUncaptureUntil(crawlPos!);
+                }
+
+                // runtextpos = base.runstack[--endingStackPos];
+                Ldthisfld(s_runstackField);
+                Ldloc(endingStackPos);
+                Ldc(1);
+                Sub();
+                Stloc(endingStackPos);
+                Ldloc(endingStackPos);
+                LdelemI4();
+                Stloc(runtextposLocal);
+
+                LoadTextSpanLocal();
+
+                MarkLabel(endLoop);
+
+                // We explicitly do not reset doneLabel back to originalDoneLabel.
+                // It's left pointing to the backtracking label for everything subsequent in the expression.
+            }
+
+            // Emits the code to handle a non-backtracking, variable-length loop around another node.
+            // If trackStartingPositions is true, it will also handle emitting code to use runstack[runstackpos]
+            // to store the starting positions of each iteration.
+            void EmitAtomicNodeLoop(RegexNode node, bool trackStartingPositions = false)
+            {
+                Debug.Assert(node.Type == RegexNode.Loop, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
+                Debug.Assert(node.N >= node.M, $"Unexpected M={node.M}, N={node.N}");
 
                 // If this is actually a repeater, emit that instead.
                 if (node.M == node.N)
@@ -3167,6 +3277,43 @@ namespace System.Text.RegularExpressions
                 // Save off runtextpos.
                 Ldloc(runtextposLocal);
                 Stloc(startingRunTextPosLocal);
+
+                if (trackStartingPositions)
+                {
+                    // Track the starting position of each loop iteration to enable backtracking.
+
+                    // if (runstackpos != base.runstack.Length) goto storeLabel;
+                    Ldloc(runstackpos);
+                    Ldthisfld(s_runstackField);
+                    Ldlen();
+                    Label storeLabel = DefineLabel();
+                    Bne(storeLabel);
+
+                    // Array.Resize<int>(ref base.runstack, base.runstack.Length * 2);
+                    Ldthis();
+                    _ilg!.Emit(OpCodes.Ldflda, s_runstackField);
+                    Ldthisfld(s_runstackField);
+                    Ldlen();
+                    _ilg!.Emit(OpCodes.Conv_I4);
+                    Ldc(2);
+                    Mul();
+                    Call(s_arrayResize);
+
+                    // storeLabel:
+                    MarkLabel(storeLabel);
+
+                    // base.runstack[runstackpos] = runtextpos;
+                    Ldthisfld(s_runstackField);
+                    Ldloc(runstackpos);
+                    Ldloc(runtextposLocal);
+                    StelemI4();
+
+                    // runstackpos++;
+                    Ldloc(runstackpos);
+                    Ldc(1);
+                    Add();
+                    Stloc(runstackpos);
+                }
 
                 // Emit the child.
                 Debug.Assert(textSpanPos == 0);
