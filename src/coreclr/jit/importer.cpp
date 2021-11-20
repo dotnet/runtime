@@ -21325,6 +21325,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
+    // Bail if optimizations are disabled.
+    if (opts.OptimizationDisabled())
+    {
+        return;
+    }
+
 #if defined(DEBUG)
     // Bail if devirt is disabled.
     if (JitConfig.JitEnableDevirtualization() == 0)
