@@ -1258,8 +1258,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                                             optAssertionKind assertionKind,
                                             bool             helperCallArgs)
 {
-    assert((op1 != nullptr) && !op1->OperIs(GT_LIST));
-    assert((op2 == nullptr) || !op2->OperIs(GT_LIST));
+    assert(op1 != nullptr);
     assert(!helperCallArgs || (op2 != nullptr));
 
     AssertionDsc assertion = {OAK_INVALID};
