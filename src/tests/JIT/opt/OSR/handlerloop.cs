@@ -10,11 +10,11 @@ class OSRHandlerLoop
     public static int Main()
     {
         int result = 0;
-        int expected = 704982705;
+        int expected = 0;
         try
         {
             result++;
-            expected = 100000;
+            expected = 704982705;
         }
         finally
         {
