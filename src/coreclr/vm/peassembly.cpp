@@ -77,16 +77,18 @@ void PEAssembly::EnsureLoaded()
     }
     CONTRACT_END;
 
-    // Catch attempts to load x64 assemblies on x86, etc.
-    ValidatePEFileMachineType(this);
-
-    // See if we do not have anything to load or have already loaded it.
-    if (IsLoaded())
-    {
+    if (IsDynamic())
         RETURN;
+
+    // Ensure that loaded layout is available.
+    PEImageLayout* pLayout = GetPEImage()->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
+    if (pLayout == NULL)
+    {
+        EEFileLoadException::Throw(this, COR_E_BADIMAGEFORMAT, NULL);
     }
 
-    // Note that we may be racing other threads here, in the case of domain neutral files
+    // Catch attempts to load x64 assemblies on x86, etc.
+    ValidatePEFileMachineType(this);
 
 #if !defined(TARGET_64BIT)
     if (!GetPEImage()->Has32BitNTHeaders())
@@ -95,35 +97,6 @@ void PEAssembly::EnsureLoaded()
         EEFileLoadException::Throw(this, COR_E_BADIMAGEFORMAT, NULL);
     }
 #endif
-
-    // Since we couldn't call LoadLibrary, we must be an IL only image
-    // or the image may still contain unfixed up stuff
-    if (!GetPEImage()->IsILOnly())
-    {
-        if (!GetPEImage()->HasV1Metadata())
-            ThrowHR(COR_E_FIXUPSINEXE); // <TODO>@todo: better error</TODO>
-    }
-
-    if (GetPEImage()->IsFile())
-    {
-#ifdef TARGET_UNIX
-        bool loadILImage = GetPEImage()->IsILOnly();
-#else // TARGET_UNIX
-        bool loadILImage = GetPEImage()->IsILOnly() && GetPEImage()->IsInBundle();
-#endif // TARGET_UNIX
-        if (loadILImage)
-        {
-            GetPEImage()->Load();
-        }
-        else
-        {
-            GetPEImage()->LoadFromMapped();
-        }
-    }
-    else
-    {
-        GetPEImage()->LoadNoFile();
-    }
 
     RETURN;
 }

@@ -37,20 +37,18 @@ public:
     // ------------------------------------------------------------
     enum
     {
-        LAYOUT_MAPPED =1,
-        LAYOUT_FLAT =2,
-        LAYOUT_LOADED =4,
-        LAYOUT_LOADED_FOR_INTROSPECTION =8,
-        LAYOUT_ANY =0xf
+        LAYOUT_FLAT   = 2,
+        LAYOUT_LOADED = 4,
+        LAYOUT_ANY = 0xf
     };
-
 
 public:
 #ifndef DACCESS_COMPILE
     static PEImageLayout* CreateFlat(const void *flat, COUNT_T size,PEImage* pOwner);
-    static PEImageLayout* CreateFromHMODULE(HMODULE mappedbase,PEImage* pOwner, BOOL bTakeOwnership);
-    static PEImageLayout* LoadFromFlat(PEImageLayout* pflatimage);
-    static PEImageLayout* Load(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow = NULL);
+#ifndef TARGET_UNIX
+    static PEImageLayout* CreateFromHMODULE(HMODULE hModule,PEImage* pOwner);
+#endif
+    static PEImageLayout* Load(PEImage* pOwner, HRESULT* loadFailure);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
     static PEImageLayout* LoadConverted(PEImage* pOwner, BOOL isInBundle = FALSE);
     static PEImageLayout* LoadNative(LPCWSTR fullPath);
@@ -63,7 +61,6 @@ public:
     // Refcount above images.
     void AddRef();
     ULONG Release();
-    const SString& GetPath();
 
     void ApplyBaseRelocations();
 
@@ -76,11 +73,9 @@ private:
     Volatile<LONG> m_refCount;
 public:
     PEImage* m_pOwner;
-    DWORD m_Layout;
 };
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;
-
 
 //RawImageView is built on external data, does not need cleanup
 class RawImageLayout: public PEImageLayout
@@ -94,8 +89,9 @@ protected:
 
 public:
     RawImageLayout(const void *flat, COUNT_T size,PEImage* pOwner);
-    RawImageLayout(const void *mapped, PEImage* pOwner, BOOL bTakeOwnerShip, BOOL bFixedUp);
 };
+
+class FlatImageLayout;
 
 // ConvertedImageView is for the case when we manually layout a flat image
 class ConvertedImageLayout: public PEImageLayout
@@ -106,7 +102,7 @@ protected:
     CLRMapViewHolder m_FileView;
 public:
 #ifndef DACCESS_COMPILE
-    ConvertedImageLayout(PEImageLayout* source, BOOL isInBundle = FALSE);
+    ConvertedImageLayout(FlatImageLayout* source, BOOL isInBundle = FALSE);
     virtual ~ConvertedImageLayout();
 #endif
 private:
@@ -127,7 +123,10 @@ protected:
 public:
 #ifndef DACCESS_COMPILE
     MappedImageLayout(PEImage* pOwner);
+    virtual ~MappedImageLayout();
 #endif
+private:
+    PT_RUNTIME_FUNCTION m_pExceptionDir;
 };
 
 #if !defined(TARGET_UNIX)
@@ -138,7 +137,9 @@ protected:
     HINSTANCE m_Module;
 public:
 #ifndef DACCESS_COMPILE
-    LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow);
+    LoadedImageLayout(PEImage* pOwner, HRESULT* returnDontThrow);
+    LoadedImageLayout(PEImage* pOwner, HMODULE hModule);
+
     ~LoadedImageLayout()
     {
         CONTRACTL
@@ -160,9 +161,10 @@ class FlatImageLayout: public PEImageLayout
     VPTR_VTABLE_CLASS(FlatImageLayout,PEImageLayout)
     VPTR_UNIQUE(0x59)
 protected:
-    HandleHolder m_FileMap;
     CLRMapViewHolder m_FileView;
 public:
+    HandleHolder m_FileMap;
+
 #ifndef DACCESS_COMPILE
     FlatImageLayout(PEImage* pOwner);
 #endif

@@ -127,8 +127,6 @@ inline PTR_PEImageLayout PEImage::GetExistingLayoutInternal(DWORD imageLayoutMas
 
     if (imageLayoutMask&PEImageLayout::LAYOUT_LOADED)
         pRetVal=m_pLayouts[IMAGE_LOADED];
-    if (pRetVal==NULL && (imageLayoutMask & PEImageLayout::LAYOUT_MAPPED))
-        pRetVal=m_pLayouts[IMAGE_MAPPED];
     if (pRetVal==NULL && (imageLayoutMask & PEImageLayout::LAYOUT_FLAT))
         pRetVal=m_pLayouts[IMAGE_FLAT];
 
@@ -155,7 +153,7 @@ inline PTR_PEImageLayout PEImage::GetLoadedLayout()
 inline BOOL PEImage::IsOpened()
 {
     LIMITED_METHOD_CONTRACT;
-    return m_pLayouts[IMAGE_LOADED]!=NULL ||m_pLayouts[IMAGE_MAPPED]!=NULL || m_pLayouts[IMAGE_FLAT] !=NULL;
+    return m_pLayouts[IMAGE_LOADED]!=NULL || m_pLayouts[IMAGE_FLAT] !=NULL;
 }
 
 

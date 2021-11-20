@@ -73,9 +73,9 @@ public:
     ULONG Release();
 
 #ifndef DACCESS_COMPILE
-    static PTR_PEImage LoadFlat(const void *flat, COUNT_T size);
+    static PTR_PEImage CreateFromByteArray(const BYTE* flat, COUNT_T size);
 #ifndef TARGET_UNIX
-    static PTR_PEImage LoadImage(HMODULE hMod);
+    static PTR_PEImage CreateFromHMODULE(HMODULE hMod);
 #endif // !TARGET_UNIX
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
@@ -84,10 +84,6 @@ public:
 
     static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle = TRUE);
     void AddToHashMap();
-
-    void   Load();
-    void   LoadNoFile();
-    void   LoadFromMapped();
 #endif
 
     BOOL IsOpened();
@@ -100,6 +96,7 @@ public:
     ULONG GetPathHash();
     const SString& GetPath();
     const SString& GetPathToLoad();
+    LPCWSTR GetPathForErrorMessages() { return GetPath(); }
 
     BOOL IsFile();
     BOOL IsInBundle() const;
@@ -109,8 +106,6 @@ public:
     INT64 GetUncompressedSize() const;
 
     HRESULT TryOpenFile();
-
-    LPCWSTR GetPathForErrorMessages();
 
     void GetMVID(GUID *pMvid);
     BOOL HasV1Metadata();
@@ -161,10 +156,10 @@ private:
     PTR_PEImageLayout GetOrCreateLayoutInternal(DWORD imageLayoutMask);
 
     // Create the mapped layout
-    PTR_PEImageLayout CreateLayoutMapped();
+    PTR_PEImageLayout CreateLayoutMapped(bool throwOnFailure);
 
     // Create the flat layout
-    PTR_PEImageLayout CreateLayoutFlat(BOOL bPermitWriteableSections);
+    PTR_PEImageLayout CreateLayoutFlat();
 
     void   SetLayout(DWORD dwLayout, PTR_PEImageLayout pLayout);
 #endif
@@ -284,9 +279,8 @@ private:
     enum
     {
         IMAGE_FLAT=0,
-        IMAGE_MAPPED=1,
-        IMAGE_LOADED=2,
-        IMAGE_COUNT=3
+        IMAGE_LOADED=1,
+        IMAGE_COUNT=2
     };
 
     SimpleRWLock *m_pLayoutLock;

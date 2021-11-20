@@ -56,7 +56,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
     // waiting for it to happen during HasNTHeaders. This allows us to
     // get the assembly name for images that contain native code for a
     // non-native platform.
-    PEImageLayout* pLayout = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_FLAT);
+    PEImageLayout* pLayout = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
 
     pImage->VerifyIsAssembly();
 
