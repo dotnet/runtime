@@ -36,14 +36,14 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    internal static class MarshallingHelpers
+    internal static unsafe class MarshallingHelpers
     {
         // Copies a Ptr to an array of Points and releases the memory
         public static void FromUnManagedMemoryToPointI(IntPtr ptr, Point[] pts)
         {
             var sourceSpan = new Span<Point>((void*)ptr, pts.Length);
             sourceSpan.CopyTo(new Span<Point>(pts));
-            Marshal.FreeHGlobal(prt);
+            Marshal.FreeHGlobal(ptr);
         }
 
         // Copies a Ptr to an array of Points and releases the memory
@@ -51,7 +51,7 @@ namespace System.Drawing
         {
             var sourceSpan = new Span<PointF>((void*)ptr, pts.Length);
             sourceSpan.CopyTo(new Span<PointF>(pts));
-            Marshal.FreeHGlobal(prt);
+            Marshal.FreeHGlobal(ptr);
         }
 
         // Copies an array of Points to unmanaged memory
