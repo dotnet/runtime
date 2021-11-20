@@ -36,7 +36,7 @@ public class Gen<T>
 
 }
 
-public class Test
+public class Test_class07
 {
     public static int counter = 0;
     public static bool result = true;

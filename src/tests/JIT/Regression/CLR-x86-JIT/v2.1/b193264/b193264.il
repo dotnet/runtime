@@ -25,6 +25,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module pinned.exe
 // MVID: {D6DF3AAB-BC31-4E88-8EC0-2E585288A52B}
 .imagebase 0x00400000
@@ -65,6 +66,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       76 (0x4c)
     .maxstack  2

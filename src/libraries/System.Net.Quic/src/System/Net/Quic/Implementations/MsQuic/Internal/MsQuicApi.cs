@@ -135,7 +135,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
+            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) ||
+                NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
             {
                 try
                 {

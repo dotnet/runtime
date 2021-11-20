@@ -7,6 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>

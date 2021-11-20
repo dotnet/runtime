@@ -9,7 +9,7 @@ internal static partial class Interop
     {
         // NOTE: The out parameters are PULARGE_INTEGERs and may require
         // some byte munging magic.
-        [DllImport(Libraries.Kernel32, EntryPoint = "GetDiskFreeSpaceExW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
-        internal static extern bool GetDiskFreeSpaceEx(string drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetDiskFreeSpaceExW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial bool GetDiskFreeSpaceEx(string drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
     }
 }

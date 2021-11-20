@@ -141,10 +141,10 @@ DWORD EETypeHashTable::GetCount()
     return BaseGetElementCount();
 }
 
-static DWORD HashTypeHandle(DWORD level, TypeHandle t);
+static DWORD HashTypeHandle(TypeHandle t);
 
 // Calculate hash value for a type def or instantiated type def
-static DWORD HashPossiblyInstantiatedType(DWORD level, mdTypeDef token, Instantiation inst)
+static DWORD HashPossiblyInstantiatedType(mdTypeDef token, Instantiation inst)
 {
     CONTRACTL
     {
@@ -161,17 +161,10 @@ static DWORD HashPossiblyInstantiatedType(DWORD level, mdTypeDef token, Instanti
     dwHash = ((dwHash << 5) + dwHash) ^ token;
     if (!inst.IsEmpty())
     {
-        dwHash = ((dwHash << 5) + dwHash) ^ inst.GetNumArgs();
-
-        // Hash two levels of the hiearchy. A simple nesting of generics instantiations is
-        // pretty common in generic collections, e.g.: ICollection<KeyValuePair<TKey, TValue>>
-        if (level < 2)
+        // Hash n type parameters
+        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
-            // Hash n type parameters
-            for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-            {
-                dwHash = ((dwHash << 5) + dwHash) ^ HashTypeHandle(level+1, inst[i]);
-            }
+            dwHash = ((dwHash << 5) + dwHash) ^ inst[i].AsTAddr();
         }
     }
 
@@ -179,7 +172,7 @@ static DWORD HashPossiblyInstantiatedType(DWORD level, mdTypeDef token, Instanti
 }
 
 // Calculate hash value for a function pointer type
-static DWORD HashFnPtrType(DWORD level, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes)
+static DWORD HashFnPtrType(BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -188,31 +181,29 @@ static DWORD HashFnPtrType(DWORD level, BYTE callConv, DWORD numArgs, TypeHandle
     dwHash = ((dwHash << 5) + dwHash) ^ ELEMENT_TYPE_FNPTR;
     dwHash = ((dwHash << 5) + dwHash) ^ callConv;
     dwHash = ((dwHash << 5) + dwHash) ^ numArgs;
-    if (level < 1)
+
+    for (DWORD i = 0; i <= numArgs; i++)
     {
-        for (DWORD i = 0; i <= numArgs; i++)
-        {
-            dwHash = ((dwHash << 5) + dwHash) ^ HashTypeHandle(level+1, retAndArgTypes[i]);
-        }
+        dwHash = ((dwHash << 5) + dwHash) ^ retAndArgTypes[i].AsTAddr();
     }
 
     return dwHash;
 }
 
 // Calculate hash value for an array/pointer/byref type
-static DWORD HashParamType(DWORD level, CorElementType kind, TypeHandle typeParam)
+static DWORD HashParamType(CorElementType kind, TypeHandle typeParam)
 {
     WRAPPER_NO_CONTRACT;
     INT_PTR dwHash = 5381;
 
     dwHash = ((dwHash << 5) + dwHash) ^ kind;
-    dwHash = ((dwHash << 5) + dwHash) ^ HashTypeHandle(level, typeParam);
+    dwHash = ((dwHash << 5) + dwHash) ^ typeParam.AsTAddr();
 
     return dwHash;
 }
 
 // Calculate hash value from type handle
-static DWORD HashTypeHandle(DWORD level, TypeHandle t)
+static DWORD HashTypeHandle(TypeHandle t)
 {
     CONTRACTL
     {
@@ -229,29 +220,30 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
 
     if (t.HasTypeParam())
     {
-        retVal = HashParamType(level, t.GetInternalCorElementType(), t.GetTypeParam());
-    }
-    else if (t.IsGenericVariable())
-    {
-        retVal = (dac_cast<PTR_TypeVarTypeDesc>(t.AsTypeDesc())->GetToken());
+        retVal = HashParamType(t.GetInternalCorElementType(), t.GetTypeParam());
     }
     else if (t.HasInstantiation())
     {
-        retVal = HashPossiblyInstantiatedType(level, t.GetCl(), t.GetInstantiation());
+        retVal = HashPossiblyInstantiatedType(t.GetCl(), t.GetInstantiation());
     }
     else if (t.IsFnPtrType())
     {
         FnPtrTypeDesc* pTD = t.AsFnPtrType();
-        retVal = HashFnPtrType(level, pTD->GetCallConv(), pTD->GetNumArgs(), pTD->GetRetAndArgTypesPointer());
+        retVal = HashFnPtrType(pTD->GetCallConv(), pTD->GetNumArgs(), pTD->GetRetAndArgTypesPointer());
+    }
+    else if (t.IsGenericVariable())
+    {
+        _ASSERTE(!"Generic variables are unexpected here.");
+        retVal = t.AsTAddr();
     }
     else
-        retVal = HashPossiblyInstantiatedType(level, t.GetCl(), Instantiation());
+        retVal = HashPossiblyInstantiatedType(t.GetCl(), Instantiation());
 
     return retVal;
 }
 
 // Calculate hash value from key
-static DWORD HashTypeKey(TypeKey* pKey)
+DWORD HashTypeKey(TypeKey* pKey)
 {
     CONTRACTL
     {
@@ -265,15 +257,15 @@ static DWORD HashTypeKey(TypeKey* pKey)
 
     if (pKey->GetKind() == ELEMENT_TYPE_CLASS)
     {
-        return HashPossiblyInstantiatedType(0, pKey->GetTypeToken(), pKey->GetInstantiation());
+        return HashPossiblyInstantiatedType(pKey->GetTypeToken(), pKey->GetInstantiation());
     }
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
-        return HashFnPtrType(0, pKey->GetCallConv(), pKey->GetNumArgs(), pKey->GetRetAndArgTypes());
+        return HashFnPtrType(pKey->GetCallConv(), pKey->GetNumArgs(), pKey->GetRetAndArgTypes());
     }
     else
     {
-        return HashParamType(0, pKey->GetKind(), pKey->GetElementType());
+        return HashParamType(pKey->GetKind(), pKey->GetElementType());
     }
 }
 
@@ -552,7 +544,7 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
 
     pNewEntry->SetTypeHandle(data);
 
-    BaseInsertEntry(HashTypeHandle(0, data), pNewEntry);
+    BaseInsertEntry(HashTypeHandle(data), pNewEntry);
 }
 
 #endif // #ifndef DACCESS_COMPILE

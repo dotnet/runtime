@@ -944,11 +944,7 @@ namespace System.Net.WebSockets
                 if (Interlocked.CompareExchange(ref _operating, InProgress, Free) != Free)
                 {
                     // If it was already "in-use" check if Dispose was called.
-                    if (_disposeCalled)
-                    {
-                        // Dispose was called - throw ObjectDisposed.
-                        throw new ObjectDisposedException(GetType().FullName);
-                    }
+                    ObjectDisposedException.ThrowIf(_disposeCalled, this);
 
                     Debug.Fail("Only one outstanding async operation is allowed per HttpListenerAsyncEventArgs instance.");
                     // Only one at a time.

@@ -316,4 +316,4 @@ END:
 }
 }
 
-.assembly sub_ovf_i2.exe{}
+.assembly sub_ovf_i2{}

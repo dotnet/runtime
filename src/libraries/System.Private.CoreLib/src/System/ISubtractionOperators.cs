@@ -13,7 +13,7 @@ namespace System
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TOther">The type that will be subtracted from <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the difference of <typeparamref name="TOther" /> subtracted from <typeparamref name="TSelf" />.</typeparam>
-    [RequiresPreviewFeatures]
+    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface ISubtractionOperators<TSelf, TOther, TResult>
         where TSelf : ISubtractionOperators<TSelf, TOther, TResult>
     {

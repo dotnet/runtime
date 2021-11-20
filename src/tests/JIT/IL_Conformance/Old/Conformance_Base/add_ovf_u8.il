@@ -318,4 +318,4 @@ END:
 }
 }
 
-.assembly add_ovf_u8.exe{}
+.assembly add_ovf_u8{}

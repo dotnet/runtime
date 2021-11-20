@@ -102,11 +102,6 @@ int32_t SystemNative_SetEUid(uint32_t euid)
     return seteuid(euid);
 }
 
-uint32_t SystemNative_GetUid()
-{
-    return getuid();
-}
-
 #ifdef USE_GROUPLIST_LOCK
 static pthread_mutex_t s_groupLock = PTHREAD_MUTEX_INITIALIZER;
 #endif

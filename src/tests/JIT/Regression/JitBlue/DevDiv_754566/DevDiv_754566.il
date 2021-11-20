@@ -16,6 +16,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module test.exe
 // MVID: {A80A87C4-1DDB-4F93-AB31-444266FDFA55}
 .imagebase 0x00400000
@@ -49,6 +50,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       73 (0x49)
     .maxstack  2

@@ -115,6 +115,6 @@ END:
 }
 
 
-.assembly ldc_c_switch.exe {}
+.assembly ldc_c_switch {}
 
 

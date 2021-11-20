@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly b07947 {}
+.assembly extern xunit.core {}
 .class public repro
 {
 
@@ -53,6 +54,9 @@
 
     .method static int32 Main(class System.String[]) 
     {
+    	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    	    01 00 00 00
+    	)
     	.entrypoint
     	.maxstack	5
     	.locals	init (unsigned int16 i)

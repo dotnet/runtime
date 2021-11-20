@@ -124,8 +124,8 @@ namespace System.Net.Security
         {
             // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
             SafeFreeCredentials cred = !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
-                        AcquireCredentialsHandleSchannelCred(certificateContext?.Certificate, protocols, policy, isServer) :
-                        AcquireCredentialsHandleSchCredentials(certificateContext?.Certificate, protocols, policy, isServer);
+                        AcquireCredentialsHandleSchannelCred(certificateContext, protocols, policy, isServer) :
+                        AcquireCredentialsHandleSchCredentials(certificateContext, protocols, policy, isServer);
             if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
             {
                 AttachCertificateStore(cred, certificateContext.Trust._store!);
@@ -141,9 +141,9 @@ namespace System.Net.Security
             {
                 clientCertPolicy.pwszSslCtlStoreName = ptr;
                 Interop.SECURITY_STATUS errorCode = Interop.SspiCli.SetCredentialsAttributesW(
-                            ref cred._handle,
+                            cred._handle,
                             (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY,
-                            ref clientCertPolicy,
+                            clientCertPolicy,
                             sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
 
                 if (errorCode != Interop.SECURITY_STATUS.OK)
@@ -157,8 +157,9 @@ namespace System.Net.Security
 
         // This is legacy crypto API used on .NET Framework and older Windows versions.
         // It only supports TLS up to 1.2
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(X509Certificate2? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
+            X509Certificate2? certificate = certificateContext?.Certificate;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
             Interop.SspiCli.CredentialUse direction;
@@ -183,6 +184,10 @@ namespace System.Net.Security
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
                 flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
+                if (certificateContext?.Trust?._sendTrustInHandshake == true)
+                {
+                    flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
+                }
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
@@ -203,8 +208,9 @@ namespace System.Net.Security
         }
 
         // This function uses new crypto API to support TLS 1.3 and beyond.
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(X509Certificate2? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
+            X509Certificate2? certificate = certificateContext?.Certificate;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
             Interop.SspiCli.CredentialUse direction;
@@ -212,6 +218,10 @@ namespace System.Net.Security
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
                 flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
+                if (certificateContext?.Trust?._sendTrustInHandshake == true)
+                {
+                    flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
+                }
             }
             else
             {

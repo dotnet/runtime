@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Strategies;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -16,9 +17,6 @@ namespace System.IO
     public static partial class RandomAccess
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
-
-        // TODO: Use SystemPageSize directly when #57442 is fixed.
-        private static readonly int s_cachedPageSize = Environment.SystemPageSize;
 
         internal static unsafe long GetFileLength(SafeFileHandle handle)
         {
@@ -437,23 +435,21 @@ namespace System.IO
         // The pinned MemoryHandles and the pointer to the segments must be cleaned-up
         // with the CleanupScatterGatherBuffers method.
         private static unsafe bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
-            THandler handler, out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
-            where THandler: struct, IMemoryHandler<T>
+            THandler handler, [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
+            where THandler : struct, IMemoryHandler<T>
         {
-            int pageSize = s_cachedPageSize;
+            int pageSize = Environment.SystemPageSize;
             Debug.Assert(BitOperations.IsPow2(pageSize), "Page size is not a power of two.");
             // We take advantage of the fact that the page size is
             // a power of two to avoid an expensive modulo operation.
             long alignedAtPageSizeMask = pageSize - 1;
 
             int buffersCount = buffers.Count;
-            handlesToDispose = new MemoryHandle[buffersCount];
+            handlesToDispose = null;
             segmentsPtr = IntPtr.Zero;
             totalBytes = 0;
 
-            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            long* segments = (long*) NativeMemory.Alloc((nuint)(buffersCount + 1), sizeof(long));
-            segments[buffersCount] = 0;
+            long* segments = null;
 
             bool success = false;
             try
@@ -469,36 +465,55 @@ namespace System.IO
                         return false;
                     }
 
-                    MemoryHandle handle = handlesToDispose[i] = handler.Pin(in buffer);
-                    long ptr = segments[i] = (long)handle.Pointer;
+                    MemoryHandle handle = handler.Pin(in buffer);
+                    long ptr = (long)handle.Pointer;
                     if ((ptr & alignedAtPageSizeMask) != 0)
                     {
+                        handle.Dispose();
                         return false;
                     }
+
+                    // We avoid allocations if there are no
+                    // buffers or the first one is unacceptable.
+                    (handlesToDispose ??= new MemoryHandle[buffersCount])[i] = handle;
+                    if (segments == null)
+                    {
+                        // "The array must contain enough elements to store nNumberOfBytesToWrite
+                        // bytes of data, and one element for the terminating NULL."
+                        segments = (long*)NativeMemory.Alloc((nuint)buffersCount + 1, sizeof(long));
+                        segments[buffersCount] = 0;
+                    }
+                    segments[i] = ptr;
                 }
 
                 segmentsPtr = (IntPtr)segments;
                 totalBytes = (int)totalBytes64;
                 success = true;
-                return true;
+                return handlesToDispose != null;
             }
             finally
             {
                 if (!success)
                 {
-                    CleanupScatterGatherBuffers(handlesToDispose, (IntPtr) segments);
+                    CleanupScatterGatherBuffers(handlesToDispose, (IntPtr)segments);
                 }
             }
         }
 
-        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[] handlesToDispose, IntPtr segmentsPtr)
+        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[]? handlesToDispose, IntPtr segmentsPtr)
         {
-            foreach (MemoryHandle handle in handlesToDispose)
+            if (handlesToDispose != null)
             {
-                handle.Dispose();
+                foreach (MemoryHandle handle in handlesToDispose)
+                {
+                    handle.Dispose();
+                }
             }
 
-            NativeMemory.Free((void*) segmentsPtr);
+            if (segmentsPtr != IntPtr.Zero)
+            {
+                NativeMemory.Free((void*)segmentsPtr);
+            }
         }
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
@@ -510,7 +525,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
                 return ReadScatterAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -607,7 +622,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
                 return WriteGatherAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -671,13 +686,12 @@ namespace System.IO
 
         private static async ValueTask WriteGatherAtOffsetMultipleSyscallsAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
         {
-            long bytesWritten = 0;
             int buffersCount = buffers.Count;
             for (int i = 0; i < buffersCount; i++)
             {
                 ReadOnlyMemory<byte> rom = buffers[i];
-                await WriteAtOffsetAsync(handle, rom, fileOffset + bytesWritten, cancellationToken).ConfigureAwait(false);
-                bytesWritten += rom.Length;
+                await WriteAtOffsetAsync(handle, rom, fileOffset, cancellationToken).ConfigureAwait(false);
+                fileOffset += rom.Length;
             }
         }
 

@@ -1790,10 +1790,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     LoopDsc& loop = optLoopTable[loopInd];
 
-    JITDUMP("\nCloning loop " FMT_LP ": [head: " FMT_BB ", first: " FMT_BB ", top: " FMT_BB ", entry: " FMT_BB
-            ", bottom: " FMT_BB ", child: " FMT_LP "].\n",
-            loopInd, loop.lpHead->bbNum, loop.lpFirst->bbNum, loop.lpTop->bbNum, loop.lpEntry->bbNum,
-            loop.lpBottom->bbNum, loop.lpChild);
+    JITDUMP("\nCloning loop " FMT_LP ": [head: " FMT_BB ", top: " FMT_BB ", entry: " FMT_BB ", bottom: " FMT_BB
+            ", child: " FMT_LP "].\n",
+            loopInd, loop.lpHead->bbNum, loop.lpTop->bbNum, loop.lpEntry->bbNum, loop.lpBottom->bbNum, loop.lpChild);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
     unsigned depth         = optLoopDepth(loopInd);
@@ -2223,28 +2222,28 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
         return false;
     }
     GenTreeBoundsChk* arrBndsChk = before->AsBoundsChk();
-    if (arrBndsChk->gtIndex->gtOper != GT_LCL_VAR)
+    if (arrBndsChk->GetIndex()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
 
-    // For span we may see gtArrLen is a local var or local field or constant.
+    // For span we may see the array length is a local var or local field or constant.
     // We won't try and extract those.
-    if (arrBndsChk->gtArrLen->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
+    if (arrBndsChk->GetArrayLength()->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
     {
         return false;
     }
-    if (arrBndsChk->gtArrLen->gtGetOp1()->gtOper != GT_LCL_VAR)
+    if (arrBndsChk->GetArrayLength()->gtGetOp1()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
-    unsigned arrLcl = arrBndsChk->gtArrLen->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+    unsigned arrLcl = arrBndsChk->GetArrayLength()->gtGetOp1()->AsLclVarCommon()->GetLclNum();
     if (lhsNum != BAD_VAR_NUM && arrLcl != lhsNum)
     {
         return false;
     }
 
-    unsigned indLcl = arrBndsChk->gtIndex->AsLclVarCommon()->GetLclNum();
+    unsigned indLcl = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
 
     if (lhsNum == BAD_VAR_NUM)
     {

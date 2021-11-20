@@ -73,6 +73,21 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
+        public void ReadFileOverMaxArrayLength()
+        {
+            string path = GetTestFilePath();
+            using (FileStream fs = File.Create(path))
+            {
+                fs.SetLength(Array.MaxLength + 1L);
+            }
+
+            // File is too large for ReadAllBytes at once
+            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
+        }
+
+        [Fact]
         public void Overwrite()
         {
             string path = GetTestFilePath();
@@ -178,6 +193,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60427")]
         public async Task ReadAllBytes_NonSeekableFileStream_InWindows()
         {
             string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
@@ -190,7 +206,7 @@ namespace System.IO.Tests
             {
                 Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
                 Task<byte[]> readTask = Task.Run(() => File.ReadAllBytes(pipePath), cts.Token);
-                cts.CancelAfter(TimeSpan.FromSeconds(50));
+                cts.CancelAfter(TimeSpan.FromSeconds(3));
 
                 await writingServerTask;
                 byte[] readBytes = await readTask;

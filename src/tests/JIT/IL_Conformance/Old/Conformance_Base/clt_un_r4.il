@@ -868,4 +868,4 @@ FAIL:
 	ret
 }
 }
-.assembly clt_un_r4.exe{}
+.assembly clt_un_r4{}

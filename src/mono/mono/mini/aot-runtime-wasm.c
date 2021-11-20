@@ -16,7 +16,7 @@
 static char
 type_to_c (MonoType *t)
 {
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return 'I';
 
 handle_enum:

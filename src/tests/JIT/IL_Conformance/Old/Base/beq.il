@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly beq.exe{}
+.assembly 'beq'{}
 
 .method public	static int32 main(class [mscorlib]System.String[]) {
 .locals		(class [mscorlib]System.String)

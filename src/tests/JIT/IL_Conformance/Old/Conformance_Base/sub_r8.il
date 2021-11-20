@@ -584,4 +584,4 @@ END:
 	ret
 }
 }
-.assembly sub_r8.exe{}
+.assembly sub_r8{}

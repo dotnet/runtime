@@ -11,7 +11,6 @@
 
   <!-- Default priority building values. -->
   <PropertyGroup>
-    <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Library'">SharedLibrary</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
   </PropertyGroup>
@@ -81,7 +80,6 @@
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(RuntimeFlavor)' == 'mono'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
@@ -95,8 +93,6 @@
 
   <!-- RunOnly projects have a special build for dependent projects -->
   <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
-
-  <Import Project="$(MSBuildThisFileDirectory)Common\override.targets" />
 
   <!-- We enable auto-unification of assembly references after importing the common targets.  Binding redirects are not needed
        for coreclr since it auto-unifies, so the warnings we get without this setting are just noise -->
@@ -226,12 +222,11 @@
           BeforeTargets="BeforeResolveReferences"
   >
    <MSBuild Projects="$(MSBuildProjectFullPath)"
-            Targets="GetLiveRefAssemblies"
-            Condition="'$(ReferenceSystemPrivateCoreLib)' != 'true'">
+            Targets="GetLiveRefAssemblies">
     <Output TaskParameter="TargetOutputs" ItemName="Reference" />
    </MSBuild>
 
-    <ItemGroup>
+    <ItemGroup >
       <Reference Include="$(TargetingPackPath)/*.dll" >
         <Private>false</Private>
       </Reference>
@@ -254,10 +249,6 @@
 
   <PropertyGroup>
     <ProjectAssetsFile>$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">
-    <ProjectAssetsFile></ProjectAssetsFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -388,7 +379,7 @@
           TargetDir="wasm-test-runner/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(MonoProjectRoot)\wasm\runtime-test.js"
+          Include="$(MonoProjectRoot)\wasm\test-main.js"
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal
@@ -409,6 +400,32 @@
 
   </Target>
 
+  <Target Name="GetRequiresProcessIsolation" Returns="@(ProjectRequiringProcessIsolation)">
+    <ItemGroup Condition="'$(RequiresProcessIsolation)' == 'true'">
+      <ProjectRequiringProcessIsolation Include="$(MSBuildProjectFullPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration">
+    <MSBuild Projects="@(ProjectReference)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
+      <Output TaskParameter="TargetOutputs" ItemName="ReferencedProjectRequiringProcessIsolation" />
+    </MSBuild>
+
+    <ItemGroup>
+      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation)" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation)" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestAssembly)' == 'true')">
+    <ReferenceXUnitWrapperGenerator Condition="'$(ReferenceXUnitWrapperGenerator)' == ''">true</ReferenceXUnitWrapperGenerator>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(ReferenceXUnitWrapperGenerator)' == 'true'">
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
 

@@ -796,7 +796,9 @@ emit_info_symbol (MonoAotCompile *acfg, const char *name, gboolean func)
 	if (acfg->llvm) {
 		emit_label (acfg, name);
 		/* LLVM generated code references this */
-		sprintf (symbol, "%s%s%s", acfg->user_symbol_prefix, acfg->global_prefix, name);
+		int n = snprintf (symbol, MAX_SYMBOL_SIZE, "%s%s%s", acfg->user_symbol_prefix, acfg->global_prefix, name);
+		if (n >= MAX_SYMBOL_SIZE)
+			symbol[MAX_SYMBOL_SIZE - 1] = 0;
 		emit_label (acfg, symbol);
 
 #ifndef TARGET_WIN32_MSVC
@@ -3581,7 +3583,7 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 		*p = MONO_TYPE_PINNED;
 		++p;
 	}
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		*p = MONO_TYPE_BYREF;
 		++p;
 	}
@@ -6925,6 +6927,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			case MONO_PATCH_INFO_FIELD:
 				encode_field_info (acfg, (MonoClassField *)template_->data, p, &p);
 				break;
+			case MONO_PATCH_INFO_METHOD:
+				encode_method_ref (acfg, (MonoMethod*)template_->data, p, &p);
+				break;
 			default:
 				g_assert_not_reached ();
 				break;
@@ -8765,14 +8770,14 @@ get_concrete_sig (MonoMethodSignature *sig)
 
 	//printf ("%s\n", mono_signature_full_name (sig));
 
-	if (sig->ret->byref)
-		copy->ret = m_class_get_this_arg (mono_defaults.int_class);
+	if (m_type_is_byref (sig->ret))
+		copy->ret = mono_class_get_byref_type (mono_defaults.int_class);
 	else
 		copy->ret = mini_get_underlying_type (sig->ret);
 	if (!is_concrete_type (copy->ret))
 		concrete = FALSE;
 	for (i = 0; i < sig->param_count; ++i) {
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			MonoType *t = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->params [i]));
 			t = mini_get_underlying_type (t);
 			copy->params [i] = m_class_get_this_arg (mono_class_from_mono_type_internal (t));
@@ -9342,7 +9347,7 @@ mono_aot_get_method_name (MonoCompile *cfg)
 static gboolean
 append_mangled_type (GString *s, MonoType *t)
 {
-	if (t->byref)
+	if (m_type_is_byref (t))
 		g_string_append_printf (s, "b");
 	switch (t->type) {
 	case MONO_TYPE_VOID:
@@ -9451,7 +9456,7 @@ append_mangled_signature (GString *s, MonoMethodSignature *sig)
 	supported = append_mangled_type (s, sig->ret);
 	if (!supported)
 		return FALSE;
-		g_string_append_printf (s, "_");
+	g_string_append_printf (s, "_");
 	if (sig->hasthis)
 		g_string_append_printf (s, "this_");
 	for (i = 0; i < sig->param_count; ++i) {
@@ -9464,7 +9469,7 @@ append_mangled_signature (GString *s, MonoMethodSignature *sig)
 }
 
 static void
-append_mangled_wrapper_type (GString *s, guint32 wrapper_type) 
+append_mangled_wrapper_type (GString *s, guint32 wrapper_type)
 {
 	const char *label;
 
@@ -10612,7 +10617,7 @@ mono_aot_type_hash (MonoType *t1)
 {
 	guint hash = t1->type;
 
-	hash |= t1->byref << 6; /* do not collide with t1->type values */
+	hash |= m_type_is_byref (t1) << 6; /* do not collide with t1->type values */
 	switch (t1->type) {
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
@@ -12904,8 +12909,15 @@ resolve_class (ClassProfileData *cdata)
 	}
 	if (cdata->inst) {
 		resolve_ginst (cdata->inst);
-		if (!cdata->inst->inst)
+		if (!cdata->inst->inst) {
+			/*
+			 * The instance might not be found if its arguments are in another assembly,
+			 * use the definition instead.
+			 */
+			cdata->klass = klass;
+			//printf ("[%s] %s.%s\n", cdata->image->name, cdata->ns, cdata->name);
 			return;
+		}
 		MonoGenericContext ctx;
 
 		memset (&ctx, 0, sizeof (ctx));
@@ -12984,12 +12996,14 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 				printf ("Unable to load method '%s' because its class '%s.%s' is not loaded.\n", mdata->name, mdata->klass->ns, mdata->klass->name);
 			continue;
 		}
+
 		miter = NULL;
 		while ((m = mono_class_get_methods (klass, &miter))) {
 			ERROR_DECL (error);
 
 			if (strcmp (m->name, mdata->name))
 				continue;
+
 			MonoMethodSignature *sig = mono_method_signature_internal (m);
 			if (!sig)
 				continue;
@@ -13016,9 +13030,11 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 			char *sig_str = mono_signature_full_name (sig);
 			gboolean match = !strcmp (sig_str, mdata->signature);
 			g_free (sig_str);
-			if (!match)
-
-				continue;
+			if (!match) {
+				// The signature might not match for methods on gtds
+				if (!mono_class_is_gtd (klass))
+					continue;
+			}
 			//printf ("%s\n", mono_method_full_name (m, 1));
 			mdata->method = m;
 			break;
@@ -13109,8 +13125,14 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 			continue;
 		if (!m->is_inflated)
 			continue;
-		if (mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))
+		if (mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) {
+			if (acfg->aot_opts.profile_only && m_class_get_image (m->klass) == acfg->image) {
+				// Add the fully shared version to its home image
+				add_profile_method (acfg, m);
+				count ++;
+			}
 			continue;
+		}
 
 		if (acfg->aot_opts.dedup_include) {
 			/* Add all instances from the profile */

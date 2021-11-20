@@ -34,7 +34,7 @@ namespace System.Text.Json.Nodes
 
             if (_converter != null)
             {
-                options ??= JsonSerializerOptions.s_defaultOptions;
+                options ??= JsonSerializerOptions.Default;
 
                 if (_converter.IsInternalConverterForNumberType)
                 {

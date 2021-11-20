@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer, WasmRootBuffer } from "./roots";
-import { MonoString, MonoStringNull } from "./types";
-import { Module } from "./modules";
+import { CharPtr, MonoString, MonoStringNull, NativePointer } from "./types";
+import { Module } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
+import { getI32 } from "./memory";
 
 export class StringDecoder {
 
@@ -31,9 +32,9 @@ export class StringDecoder {
         cwraps.mono_wasm_string_get_data(mono_string, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = mono_wasm_empty_string;
-        const lengthBytes = Module.HEAP32[pLengthBytes / 4],
-            pChars = Module.HEAP32[ppChars / 4],
-            isInterned = Module.HEAP32[pIsInterned / 4];
+        const lengthBytes = getI32(pLengthBytes),
+            pChars = getI32(ppChars),
+            isInterned = getI32(pIsInterned);
 
         if (pLengthBytes && pChars) {
             if (
@@ -42,7 +43,7 @@ export class StringDecoder {
                 interned_string_table.has(<any>mono_string) //TODO remove 2x lookup
             ) {
                 result = interned_string_table.get(<any>mono_string)!;
-                // console.log("intern table cache hit", mono_string, result.length);
+                // console.log(`intern table cache hit ${mono_string} ${result.length}`);
             } else {
                 result = this.decode(<any>pChars, <any>pChars + lengthBytes);
                 if (isInterned) {
@@ -186,9 +187,9 @@ export function js_string_to_mono_string(string: string): MonoString | null {
     return js_string_to_mono_string_new(string);
 }
 
-function js_string_to_mono_string_new(string: string) {
+export function js_string_to_mono_string_new(string: string): MonoString {
     const buffer = Module._malloc((string.length + 1) * 2);
-    const buffer16 = (<any>buffer / 2) | 0;
+    const buffer16 = (<any>buffer >>> 1) | 0;
     for (let i = 0; i < string.length; i++)
         Module.HEAP16[buffer16 + i] = string.charCodeAt(i);
     Module.HEAP16[buffer16 + string.length] = 0;

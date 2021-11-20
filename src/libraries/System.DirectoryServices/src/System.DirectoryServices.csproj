@@ -182,6 +182,9 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />

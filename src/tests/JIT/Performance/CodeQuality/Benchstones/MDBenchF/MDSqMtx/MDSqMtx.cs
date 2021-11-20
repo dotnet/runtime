@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.MDBenchF
 {
@@ -63,18 +59,6 @@ public static class MDSqMtx
                 {
                     c[i,j] = c[i,j] + a[i,k] * a[k,j];
                 }
-            }
-        }
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                Bench();
             }
         }
     }

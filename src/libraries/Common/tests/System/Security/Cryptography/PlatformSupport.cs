@@ -12,8 +12,8 @@ namespace Test.Cryptography
         internal const TestPlatforms AppleCrypto = TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
         internal const TestPlatforms MobileAppleCrypto = TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
 
-        // Platforms that support OpenSSL - all Unix except OSX/iOS/tvOS/MacCatalyst and Android
-        internal const TestPlatforms OpenSSL = TestPlatforms.AnyUnix & ~(AppleCrypto | TestPlatforms.Android);
+        // Platforms that support OpenSSL - all Unix except OSX/iOS/tvOS/MacCatalyst, Android, and Browser
+        internal const TestPlatforms OpenSSL = TestPlatforms.AnyUnix & ~(AppleCrypto | TestPlatforms.Android | TestPlatforms.Browser);
 
         // Whether or not the current platform supports RC2
         internal static readonly bool IsRC2Supported = !PlatformDetection.IsAndroid;

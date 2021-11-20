@@ -23,9 +23,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Xunit.Performance;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
@@ -46,12 +43,6 @@ namespace BenchmarksGame
             return 100;
         }
 
-        [Benchmark(InnerIterationCount = 4000)]
-        public static void RunBench()
-        {
-            Benchmark.Iterate(() => Bench(5000, false));
-        }
-
         static void Bench(int n, bool verbose)
         {
             MakeCumulative(IUB);
@@ -64,8 +55,6 @@ namespace BenchmarksGame
                 MakeRandomFasta("THREE", "Homo sapiens frequency", HomoSapiens, n * 5, s);
             }
         }
-
-
 
         public static IEnumerable<R> TransformQueue<T, R>(BlockingCollection<T> queue,
             Func<T, R> transform, int threadCount)

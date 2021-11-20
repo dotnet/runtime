@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // test that LDSFLD of a literal static field throws a MissingFieldException
 
 .assembly extern mscorlib {}
@@ -9,20 +10,23 @@
 
 
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_LiteralStatic
        extends [mscorlib]System.Object
 {
   .field public static literal int32 i = int32(123)
 
   .method public static void  RunTest()
   {
-      ldsfld int32 Test::i
+      ldsfld int32 Test_LiteralStatic::i
       ret
   }
 
 
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       34 (0x22)
     .maxstack  8
@@ -32,7 +36,7 @@
     .try
     {
      
-      call void Test::RunTest()
+      call void Test_LiteralStatic::RunTest()
 
       ldstr      "Did not catch expected MissingFieldException"
       call       void [System.Console]System.Console::WriteLine(string)

@@ -128,7 +128,7 @@ namespace System.Text.RegularExpressions
             Regex.ValidateOptions(options);
             Regex.ValidateMatchTimeout(matchTimeout);
 
-            CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            CultureInfo culture = RegexParser.GetTargetCulture(options);
             Key key = new Key(pattern, culture.ToString(), options, matchTimeout);
 
             Regex? regex = Get(key);
