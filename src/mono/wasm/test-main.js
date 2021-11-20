@@ -87,6 +87,7 @@ if (is_browser) {
     };
 
     consoleWebSocket.onclose = function (event) {
+        originalConsole.log(`websocket closede: ${event}`);
         console = originalConsole;
     }
 }
