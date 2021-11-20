@@ -1130,9 +1130,9 @@ protected:
 
     void genConsumeRegs(GenTree* tree);
     void genConsumeOperands(GenTreeOp* tree);
-#ifdef FEATURE_HW_INTRINSICS
-    void genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* tree);
-#endif // FEATURE_HW_INTRINSICS
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
+#endif
     void genEmitGSCookieCheck(bool pushReg);
     void genCodeForShift(GenTree* tree);
 

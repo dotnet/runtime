@@ -424,6 +424,9 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
+
+        bool addPreciseMappings =
+            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
 
         DebugInfo currentDI;
@@ -443,7 +446,7 @@ void CodeGen::genCodeForBBlist()
                 }
 
 #ifdef DEBUG
-                if ((JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) && ilOffset->gtStmtDI.IsValid())
+                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
                 {
                     genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
                 }
@@ -1620,14 +1623,18 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
             // Only load/store HW intrinsics can be contained (and the address may also be contained).
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->gtHWIntrinsicId);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->GetHWIntrinsicId());
             assert((category == HW_Category_MemoryLoad) || (category == HW_Category_MemoryStore));
-            int numArgs = HWIntrinsicInfo::lookupNumArgs(tree->AsHWIntrinsic());
-            genConsumeAddress(tree->gtGetOp1());
+            size_t numArgs = tree->AsHWIntrinsic()->GetOperandCount();
+            genConsumeAddress(tree->AsHWIntrinsic()->Op(1));
             if (category == HW_Category_MemoryStore)
             {
-                assert((numArgs == 2) && !tree->gtGetOp2()->isContained());
-                genConsumeReg(tree->gtGetOp2());
+                assert(numArgs == 2);
+
+                GenTree* op2 = tree->AsHWIntrinsic()->Op(2);
+                assert(op2->isContained());
+
+                genConsumeReg(op2);
             }
             else
             {
@@ -1671,7 +1678,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 // Return Value:
 //    None.
 //
-
 void CodeGen::genConsumeOperands(GenTreeOp* tree)
 {
     GenTree* firstOp  = tree->gtOp1;
@@ -1687,54 +1693,25 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
     }
 }
 
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// genConsumeHWIntrinsicOperands: Do liveness update for the operands of a GT_HWINTRINSIC node
+// genConsumeOperands: Do liveness update for the operands of a multi-operand node,
+//                     currently GT_SIMD or GT_HWINTRINSIC
 //
 // Arguments:
-//    node - the GenTreeHWIntrinsic node whose operands will have their liveness updated.
+//    tree - the GenTreeMultiOp whose operands will have their liveness updated.
 //
 // Return Value:
 //    None.
 //
-
-void CodeGen::genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* node)
+void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 {
-    int      numArgs = HWIntrinsicInfo::lookupNumArgs(node);
-    GenTree* op1     = node->gtGetOp1();
-    if (op1 == nullptr)
+    for (GenTree* operand : tree->Operands())
     {
-        assert((numArgs == 0) && (node->gtGetOp2() == nullptr));
-        return;
-    }
-    if (op1->OperIs(GT_LIST))
-    {
-        int foundArgs = 0;
-        assert(node->gtGetOp2() == nullptr);
-        for (GenTreeArgList* list = op1->AsArgList(); list != nullptr; list = list->Rest())
-        {
-            GenTree* operand = list->Current();
-            genConsumeRegs(operand);
-            foundArgs++;
-        }
-        assert(foundArgs == numArgs);
-    }
-    else
-    {
-        genConsumeRegs(op1);
-        GenTree* op2 = node->gtGetOp2();
-        if (op2 != nullptr)
-        {
-            genConsumeRegs(op2);
-            assert(numArgs == 2);
-        }
-        else
-        {
-            assert(numArgs == 1);
-        }
+        genConsumeRegs(operand);
     }
 }
-#endif // FEATURE_HW_INTRINSICS
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
 #if FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------

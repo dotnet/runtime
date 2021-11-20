@@ -298,9 +298,8 @@ namespace System.IO
             {
                 return; // Path already exists and it's a directory.
             }
-            else if (errorInfo.Error == Interop.Error.ENOENT)
+            else if (errorInfo.Error == Interop.Error.ENOENT) // Some parts of the path don't exist yet.
             {
-                // Some parts of the path don't exist yet.
                 CreateParentsAndDirectory(fullPath);
             }
             else
@@ -309,20 +308,19 @@ namespace System.IO
             }
         }
 
-        public static void CreateParentsAndDirectory(string fullPath)
+        private static void CreateParentsAndDirectory(string fullPath)
         {
             // Try create parents bottom to top and track those that could not
             // be created due to missing parents. Then create them top to bottom.
-            List<string> stackDir = new List<string>();
-
-            stackDir.Add(fullPath);
+            using ValueListBuilder<int> stackDir = new(stackalloc int[32]); // 32 arbitrarily chosen
+            stackDir.Append(fullPath.Length);
 
             int i = fullPath.Length - 1;
-            // Trim trailing separator.
             if (PathInternal.IsDirectorySeparator(fullPath[i]))
             {
-                i--;
+                i--; // Trim trailing separator.
             }
+
             do
             {
                 // Find the end of the parent directory.
@@ -332,13 +330,11 @@ namespace System.IO
                     i--;
                 }
 
-                // Try create it.
-                string mkdirPath = fullPath.Substring(0, i);
+                ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, i);
                 int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
                 if (result == 0)
                 {
-                    // Created parent.
-                    break;
+                    break; // Created parent.
                 }
 
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -348,7 +344,7 @@ namespace System.IO
                     // We'll try to create its parent on the next iteration.
 
                     // Track this path for later creation.
-                    stackDir.Add(mkdirPath);
+                    stackDir.Append(mkdirPath.Length);
                 }
                 else if (errorInfo.Error == Interop.Error.EEXIST)
                 {
@@ -358,15 +354,15 @@ namespace System.IO
                 }
                 else
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString(), isDirectory: true);
                 }
                 i--;
             } while (i > 0);
 
             // Create directories that had missing parents.
-            for (i = stackDir.Count - 1; i >= 0; i--)
+            for (i = stackDir.Length - 1; i >= 0; i--)
             {
-                string mkdirPath = stackDir[i];
+                ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, stackDir[i]);
                 int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
                 if (result < 0)
                 {
@@ -386,7 +382,7 @@ namespace System.IO
                         }
                     }
 
-                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString(), isDirectory: true);
                 }
             }
         }

@@ -2094,15 +2094,11 @@ namespace System.Text.RegularExpressions
                         EmitAtomicNodeLoop(node);
                         break;
 
+                    case RegexNode.Onelazy:
+                    case RegexNode.Notonelazy:
+                    case RegexNode.Setlazy:
                     case RegexNode.Lazyloop:
-                        // An atomic lazy loop amounts to doing the minimum amount of work possible.
-                        // That means iterating as little as is required, which means a repeater
-                        // for the min, and if min is 0, doing nothing.
-                        Debug.Assert(node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic));
-                        if (node.M > 0)
-                        {
-                            EmitNodeRepeater(node);
-                        }
+                        EmitLazy(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Atomic:
@@ -2117,12 +2113,6 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Notoneloop:
                     case RegexNode.Setloop:
                         EmitSingleCharLoop(node, subsequent, emitLengthChecksIfRequired);
-                        break;
-
-                    case RegexNode.Onelazy:
-                    case RegexNode.Notonelazy:
-                    case RegexNode.Setlazy:
-                        EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Concatenate:
@@ -2558,17 +2548,27 @@ namespace System.Text.RegularExpressions
                 MarkLabel(endLoop);
             }
 
-            void EmitSingleCharLazy(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
+            void EmitLazy(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
+                bool isSingleChar = node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily;
+
                 // Emit the min iterations as a repeater.  Any failures here don't necessitate backtracking,
                 // as the lazy itself failed to match.
                 if (node.M > 0)
                 {
-                    EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                    if (isSingleChar)
+                    {
+                        EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                    }
+                    else
+                    {
+                        EmitNodeRepeater(node);
+                    }
                 }
 
-                // If the whole thing was actually that repeater, we're done.
-                if (node.M == node.N)
+                // If the whole thing was actually that repeater, we're done. Similarly, if this is actually an atomic
+                // lazy loop, nothing will ever backtrack into this node, so we never need to iterate more than the minimum.
+                if (node.M == node.N || node.Next is { Type: RegexNode.Atomic })
                 {
                     return;
                 }
@@ -2657,7 +2657,14 @@ namespace System.Text.RegularExpressions
                 Ldloc(nextPos);
                 Stloc(runtextposLocal);
                 LoadTextSpanLocal();
-                EmitSingleChar(node);
+                if (isSingleChar)
+                {
+                    EmitSingleChar(node);
+                }
+                else
+                {
+                    EmitNode(node.Child(0));
+                }
                 TransferTextSpanPosToRunTextPos();
                 Ldloc(runtextposLocal);
                 Stloc(nextPos);

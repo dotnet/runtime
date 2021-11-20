@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
@@ -150,6 +151,29 @@ partial class Test
         public async Task UnsupportedType_NoDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [ConditionalTheory]
+        [InlineData(UnmanagedType.Interface)]
+        [InlineData(UnmanagedType.IDispatch)]
+        [InlineData(UnmanagedType.IInspectable)]
+        [InlineData(UnmanagedType.IUnknown)]
+        [InlineData(UnmanagedType.SafeArray)]
+        public async Task UnsupportedUnmanagedType_NoDiagnostic(UnmanagedType unmanagedType)
+        {
+            string source = $@"
+using System.Runtime.InteropServices;
+unsafe partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern void Method_Parameter([MarshalAs(UnmanagedType.{unmanagedType}, MarshalType = ""DNE"")]int p);
+
+    [DllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.{unmanagedType}, MarshalType = ""DNE"")]
+    public static extern int Method_Return();
+}}
+";
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 

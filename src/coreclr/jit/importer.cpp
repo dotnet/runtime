@@ -11644,7 +11644,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
             setMethodHasPartialCompilationPatchpoint();
 
-            // Change block to BBJ_THROW so we won't trigger importation of sucessors.
+            // Change block to BBJ_THROW so we won't trigger importation of successors.
             //
             block->bbJumpKind = BBJ_THROW;
 
@@ -18855,7 +18855,7 @@ unsigned Compiler::impGetSpillTmpBase(BasicBlock* block)
     SetSpillTempsBase callback(baseTmp);
 
     // We do *NOT* need to reset the SpillClique*Members because a block can only be the predecessor
-    // to one spill clique, and similarly can only be the sucessor to one spill clique
+    // to one spill clique, and similarly can only be the successor to one spill clique
     impWalkSpillCliqueFromPred(block, &callback);
 
     return baseTmp;
@@ -20639,7 +20639,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                     // Enable for all parameterless (=invariant) hw intrinsics such as
                     // Vector128<>.Zero and Vector256<>.AllBitSets. We might consider
                     // doing that for Vector.Create(cns) as well.
-                    if ((argNode->gtGetOp1() == nullptr) && (argNode->gtGetOp2() == nullptr))
+                    if (argNode->AsHWIntrinsic()->GetOperandCount() == 0)
                     {
                         substitute = true;
                     }
@@ -20899,6 +20899,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->IsTailPrefixedCall())
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
+        return;
+    }
+
+    // Delegate Invoke method doesn't have a body and gets special cased instead.
+    // Don't even bother trying to inline it.
+    if (call->IsDelegateInvoke())
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
         return;
     }
 
