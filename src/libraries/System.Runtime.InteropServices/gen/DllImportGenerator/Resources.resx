@@ -214,6 +214,12 @@
   <data name="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</value>
   </data>
+  <data name="MarshallerGetPinnableReferenceRequiresValuePropertyDescription" xml:space="preserve">
+    <value>The use cases for 'GetPinnableReference' are not applicable in any scenarios where a 'Value' property is not also required.</value>
+  </data>
+  <data name="MarshallerGetPinnableReferenceRequiresValuePropertyMessage" xml:space="preserve">
+    <value>The 'GetPinnableReference' method cannot be provided on the native type '{0}' unless a 'Value' property is also provided</value>
+  </data>
   <data name="NativeGenericTypeMustBeClosedDescription" xml:space="preserve">
     <value>The native type '{0}' must be a closed generic so the emitted code can use a specific instantiation.</value>
   </data>
