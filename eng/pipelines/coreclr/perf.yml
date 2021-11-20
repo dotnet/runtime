@@ -114,20 +114,20 @@ jobs:
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
-# build coreclr and libraries
+  # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
       platforms:
       - Linux_x64
-      # - windows_x64
-      # - windows_x86
-      # - Linux_musl_x64
+      - windows_x64
+      - windows_x86
+      - Linux_musl_x64
       jobParameters:
         testGroup: perf
 
-# build mono on wasm
+  # build mono on wasm
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -148,7 +148,7 @@ jobs:
           archiveType: zip
           archiveExtension: .zip
 
-# build mono for AOT
+  # build mono for AOT
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -170,7 +170,7 @@ jobs:
           archiveType: tar
           tarCompression: gz
 
-# build mono Android scenarios
+  # build mono Android scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -192,7 +192,7 @@ jobs:
           archiveType: tar
           tarCompression: gz
     
-# build mono iOS scenarios
+  # build mono iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -214,7 +214,7 @@ jobs:
           archiveType: tar
           tarCompression: gz
 
-# build mono
+  # build mono
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/mono/templates/build-job.yml
@@ -223,7 +223,7 @@ jobs:
       platforms:
       - Linux_x64
 
-# run mono and maui android scenarios
+  # run mono and maui android scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -239,7 +239,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
 
-# run mono iOS scenarios and maui iOS scenarios
+  # run mono iOS scenarios and maui iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -484,7 +484,7 @@ jobs:
         additionalSetupParameters: '--latestdotnet'
         logicalmachine: 'perftiger'
 
-# build maui workload packs
+  # build maui workload packs
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -505,7 +505,7 @@ jobs:
         extraStepsParameters:
           name: MonoRuntimePacks
   
-# build maui app
+  # build maui app
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
