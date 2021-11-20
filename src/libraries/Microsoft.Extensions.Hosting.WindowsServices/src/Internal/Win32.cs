@@ -4,9 +4,11 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
 {
+    [SupportedOSPlatform("windows")]
     internal static class Win32
     {
         // https://docs.microsoft.com/en-us/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
@@ -37,7 +39,12 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
                 procEntry.dwSize = Marshal.SizeOf(typeof(PROCESSENTRY32));
                 if (Process32First(snapshotHandle, ref procEntry))
                 {
-                    var currentProcessId = Process.GetCurrentProcess().Id;
+                    int currentProcessId =
+#if NET
+                        Environment.ProcessId;
+#else
+                        Process.GetCurrentProcess().Id;
+#endif
                     do
                     {
                         if (currentProcessId == procEntry.th32ProcessID)

@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Xml;
 using System.Xml;
 
@@ -25,8 +26,8 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// </summary>
         // don't create an instance of this directly
         protected XmlDocumentDecryptor()
-            : this(DefaultEncryptedXmlFactory)
         {
+            // _encryptedXmlFactory stays null by default
         }
 
         // for testing only
@@ -84,8 +85,15 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <returns>An XmlReader which can read the document.</returns>
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
+#if NET
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException();
+            }
+#endif
+
             // Perform the actual decryption step, updating the XmlDocument in-place.
-            EncryptedXml encryptedXml = _encryptedXmlFactory(document);
+            EncryptedXml encryptedXml = _encryptedXmlFactory?.Invoke(document) ?? new EncryptedXml(document);
             encryptedXml.DecryptDocument();
 
             // Finally, return the new XmlReader from the updated XmlDocument.
@@ -93,8 +101,5 @@ namespace Microsoft.Extensions.Configuration.Xml
             // but that's fine since we transformed the document anyway.
             return document.CreateNavigator().ReadSubtree();
         }
-
-        private static EncryptedXml DefaultEncryptedXmlFactory(XmlDocument document)
-            => new EncryptedXml(document);
     }
 }
