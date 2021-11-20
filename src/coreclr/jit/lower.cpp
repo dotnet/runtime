@@ -6800,24 +6800,29 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
             ssize_t   intCns = 0;
             var_types type   = TYP_UNKNOWN;
 
-            if (ind->TypeIs(TYP_FLOAT)
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
-                && data->IsFPZero()
+#ifdef TARGET_XARCH
+            bool shouldSwitchToInteger = true;
+#else // TARGET_ARMARCH
+            bool shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
 #endif
-            )
+            
+            if (shouldSwitchToInteger)
             {
-                float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
-                intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
-                type         = TYP_INT;
-            }
-#ifdef TARGET_AMD64
-            else
-            {
-                assert(ind->TypeIs(TYP_DOUBLE));
-                intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
-                type   = TYP_LONG;
-            }
+                if (ind->TypeIs(TYP_FLOAT))
+                {
+                    float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
+                    intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
+                    type         = TYP_INT;
+                }
+#ifdef TARGET_64BIT
+                else
+                {
+                    assert(ind->TypeIs(TYP_DOUBLE));
+                    intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
+                    type   = TYP_LONG;
+                }
 #endif
+            }
 
             if (type != TYP_UNKNOWN)
             {
