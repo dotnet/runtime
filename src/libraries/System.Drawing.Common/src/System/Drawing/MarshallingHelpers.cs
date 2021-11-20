@@ -39,17 +39,17 @@ namespace System.Drawing
     internal static class MarshallingHelpers
     {
         // Copies a Ptr to an array of Points and releases the memory
-        public static void FromUnManagedMemoryToPointI(IntPtr prt, Point[] pts)
+        public static void FromUnManagedMemoryToPointI(IntPtr ptr, Point[] pts)
         {
-            var sourceSpan = new Span<Point>((void*)dest, pts.Length);
+            var sourceSpan = new Span<Point>((void*)ptr, pts.Length);
             sourceSpan.CopyTo(new Span<Point>(pts));
             Marshal.FreeHGlobal(prt);
         }
 
         // Copies a Ptr to an array of Points and releases the memory
-        public static void FromUnManagedMemoryToPoint(IntPtr prt, PointF[] pts)
+        public static void FromUnManagedMemoryToPoint(IntPtr ptr, PointF[] pts)
         {
-            var sourceSpan = new Span<PointF>((void*)dest, pts.Length);
+            var sourceSpan = new Span<PointF>((void*)ptr, pts.Length);
             sourceSpan.CopyTo(new Span<PointF>(pts));
             Marshal.FreeHGlobal(prt);
         }
