@@ -448,9 +448,6 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetArchitecture=$(TargetArchitecture)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesTargetOSConfigurationArchitecture=$(LibrariesTargetOSConfigurationArchitecture)"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(CoreCLROverridePath)' != ''">$(GroupBuildCmd) "/p:CoreCLROverridePath=$(CoreCLROverridePath)"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(MonoOverridePath)' != ''">$(GroupBuildCmd) "/p:MonoOverridePath=$(MonoOverridePath)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetOS=$(TargetOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeOS=$(RuntimeOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>

@@ -226,7 +226,7 @@
     <Output TaskParameter="TargetOutputs" ItemName="Reference" />
    </MSBuild>
 
-    <ItemGroup >
+    <ItemGroup>
       <Reference Include="$(TargetingPackPath)/*.dll" >
         <Private>false</Private>
       </Reference>
@@ -235,7 +235,7 @@
   </Target>
 
   <Target Name="GetLiveRefAssemblies" Returns="@(LibrariesRefAssembliesDlls)"
-          DependsOnTargets="ResolveLibrariesFromLocalBuild">
+          DependsOnTargets="ResolveLibrariesRefAssembliesFromLocalBuild">
     <ItemGroup>
       <LibrariesRefAssembliesDlls Include="@(LibrariesRefAssemblies)" Condition="'%(Extension)' == '.dll'" Private="false" />
     </ItemGroup>
