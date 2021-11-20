@@ -16,6 +16,9 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
     <!-- Exceeds VM resources in CI on compilation: https://github.com/dotnet/runtime/issues/61339 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/issues/61756 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->
@@ -405,11 +408,16 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <Samples_BuildInParallel Condition="'$(OS)' == 'Windows_NT'">false</Samples_BuildInParallel>
+    <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">true</Samples_BuildInParallel>
+  </PropertyGroup>
+
   <!-- Don't build samples, and functional tests on EAT, AOT, and WBT lanes -->
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(TestWasmBuildTests)' != 'true'">
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       Exclude="@(ProjectExclusions)"
-                      BuildInParallel="true" />
+                      BuildInParallel="$(Samples_BuildInParallel)" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
