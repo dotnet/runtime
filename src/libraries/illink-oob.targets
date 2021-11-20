@@ -22,7 +22,6 @@
       <_OOBsToIgnore Include="System.Composition.Runtime" />
       <_OOBsToIgnore Include="System.Composition.TypedParts" />
       <_OOBsToIgnore Include="System.Configuration.ConfigurationManager" />
-      <_OOBsToIgnore Include="System.Speech" />
 
       <_NetCoreAppRuntimeAssemblies Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll;$(NetCoreAppCurrentRuntimePath)*msquic.dll" />
       <_RuntimePackTrimmedAssemblies Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
