@@ -6799,6 +6799,12 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
             double    dblCns = data->AsDblCon()->gtDconVal;
             ssize_t   intCns = 0;
             var_types type   = TYP_UNKNOWN;
+            // XARCH: we can always contain the immediates.
+            // ARM64: zero can always be contained, other cases will use immediates from the data
+            //        section and it is not a clear win to switch them to inline integers.
+            // ARM:   FP constants are assembled from integral ones, so it is always profitable
+            //        to directly use the integers as it avoids the int -> float conversion.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
             bool shouldSwitchToInteger = true;
