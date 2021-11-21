@@ -2233,6 +2233,10 @@ namespace System.Text.RegularExpressions
                     case UpdateBumpalong:
                         supported = true;
                         break;
+                    // Backreferences are supported.
+                    case Ref:
+                        supported = true;
+                        break;
 
                     // Single character greedy/lazy loops are supported if either they're actually a repeater
                     // or they're not contained in any construct other than simple nesting (e.g. concat, capture).

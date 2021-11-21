@@ -1945,6 +1945,95 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(textSpanPos == 0);
             }
 
+            // Emits the code to handle a backreference.
+            void EmitBackreference(RegexNode node)
+            {
+                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
+
+                TransferTextSpanPosToRunTextPos();
+
+                Label end = DefineLabel();
+
+                // if (!base.IsMatched(capnum)) goto (!ecmascript ? doneLabel : end);
+                Ldthis();
+                Ldc(capnum);
+                Call(s_isMatchedMethod);
+                BrfalseFar((node.Options & RegexOptions.ECMAScript) == 0 ? doneLabel : end);
+
+                using RentedLocalBuilder matchLength = RentInt32Local();
+                using RentedLocalBuilder matchIndex = RentInt32Local();
+                using RentedLocalBuilder i = RentInt32Local();
+
+                // int matchLength = base.MatchLength(capnum);
+                Ldthis();
+                Ldc(capnum);
+                Call(s_matchLengthMethod);
+                Stloc(matchLength);
+
+                // if (textSpan.Length < matchLength) goto doneLabel;
+                Ldloca(textSpanLocal);
+                Call(s_spanGetLengthMethod);
+                Ldloc(matchLength);
+                BltFar(doneLabel);
+
+                // int matchIndex = base.MatchIndex(capnum);
+                Ldthis();
+                Ldc(capnum);
+                Call(s_matchIndexMethod);
+                Stloc(matchIndex);
+
+                Label condition = DefineLabel();
+                Label body = DefineLabel();
+
+                // for (int i = 0; ...)
+                Ldc(0);
+                Stloc(i);
+                Br(condition);
+
+                MarkLabel(body);
+
+                // if (runtext[matchIndex + i] != textSpan[i]) goto doneLabel;
+                Ldloc(runtextLocal);
+                Ldloc(matchIndex);
+                Ldloc(i);
+                Add();
+                Call(s_stringGetCharsMethod);
+                if (IsCaseInsensitive(node))
+                {
+                    CallToLower();
+                }
+                Ldloca(textSpanLocal);
+                Ldloc(i);
+                Call(s_spanGetItemMethod);
+                LdindU2();
+                if (IsCaseInsensitive(node))
+                {
+                    CallToLower();
+                }
+                BneFar(doneLabel);
+
+                // for (...; ...; i++)
+                Ldloc(i);
+                Ldc(1);
+                Add();
+                Stloc(i);
+
+                // for (...; i < matchLength; ...)
+                MarkLabel(condition);
+                Ldloc(i);
+                Ldloc(matchLength);
+                Blt(body);
+
+                // runtextpos += matchLength;
+                Ldloc(runtextposLocal);
+                Ldloc(matchLength);
+                Add();
+                Stloc(runtextposLocal);
+                LoadTextSpanLocal();
+
+                MarkLabel(end);
+            }
+
             // Emits the code for a Capture node.
             void EmitCapture(RegexNode node, RegexNode? subsequent = null)
             {
@@ -1955,11 +2044,7 @@ namespace System.Text.RegularExpressions
                 // in sync with MapCapNum in RegexWriter.
                 Debug.Assert(node.Type == RegexNode.Capture);
                 Debug.Assert(node.N == -1, "Currently only support capnum, not uncapnum");
-                int capnum = node.M;
-                if (capnum != -1 && _code!.Caps != null)
-                {
-                    capnum = (int)_code.Caps[capnum]!;
-                }
+                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
 
                 // runtextpos += textSpanPos;
                 // textSpan = textSpan.Slice(textSpanPos);
@@ -2108,7 +2193,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNode.Atomic:
-                        EmitNode(node.Child(0), subsequent);
+                        EmitAtomic(node, subsequent);
                         break;
 
                     case RegexNode.Alternate:
@@ -2123,6 +2208,10 @@ namespace System.Text.RegularExpressions
 
                     case RegexNode.Concatenate:
                         EmitConcatenation(node, subsequent, emitLengthChecksIfRequired);
+                        break;
+
+                    case RegexNode.Ref:
+                        EmitBackreference(node);
                         break;
 
                     case RegexNode.Capture:
@@ -2153,6 +2242,17 @@ namespace System.Text.RegularExpressions
                         Debug.Fail($"Unexpected node type: {node.Type}");
                         break;
                 }
+            }
+
+            // Emits the node for an atomic.
+            void EmitAtomic(RegexNode node, RegexNode? subsequent)
+            {
+                // Atomic simply outputs the code for the child, but it ensures that any done label left
+                // set by the child is reset to what it was prior to the node's processing.  That way,
+                // anything later that tries to jump back won't see labels set inside the atomic.
+                Label originalDoneLabel = doneLabel;
+                EmitNode(node.Child(0), subsequent);
+                doneLabel = originalDoneLabel;
             }
 
             // Emits the code to handle updating base.runtextpos to runtextpos in response to

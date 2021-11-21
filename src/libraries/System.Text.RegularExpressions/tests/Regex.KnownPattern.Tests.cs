@@ -504,8 +504,6 @@ namespace System.Text.RegularExpressions.Tests
 
             Regex rBack = await RegexHelpers.GetRegexAsync(engine, @"(\w)\1+.\b");
             Regex rNoBack = await RegexHelpers.GetRegexAsync(engine, @"(?>(\w)\1+).\b");
-            string[] inputs = { "aaad", "aaaa" };
-
             Match back, noback;
 
             back = rBack.Match("cccd.");

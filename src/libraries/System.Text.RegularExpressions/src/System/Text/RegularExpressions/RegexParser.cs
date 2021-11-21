@@ -2071,6 +2071,17 @@ namespace System.Text.RegularExpressions
             return i >= 0 && i < _capsize;
         }
 
+        /// <summary>
+        /// When generating code on a regex that uses a sparse set
+        /// of capture slots, we hash them to a dense set of indices
+        /// for an array of capture slots. Instead of doing the hash
+        /// at match time, it's done at compile time, here.
+        /// </summary>
+        internal static int MapCaptureNumber(int capnum, Hashtable? caps) =>
+            capnum == -1 ? -1 :
+            caps != null ? (int)caps[capnum]! :
+            capnum;
+
         /// <summary>Looks up the slot number for a given name</summary>
         private bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
 

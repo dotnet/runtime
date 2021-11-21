@@ -1032,6 +1032,49 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
+            // Emits the code to handle a backreference.
+            void EmitBackreference(RegexNode node)
+            {
+                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
+
+                TransferTextSpanPosToRunTextPos();
+
+                using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
+                {
+                    string matchLength = ReserveName("matchLength");
+                    writer.WriteLine($"int {matchLength} = base.MatchLength({capnum});");
+                    using (EmitBlock(writer, $"if ({textSpanLocal}.Length < {matchLength})"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                    writer.WriteLine();
+
+                    string matchIndex = ReserveName("matchIndex");
+                    writer.WriteLine($"int {matchIndex} = base.MatchIndex({capnum});");
+
+                    string i = ReserveName("i");
+                    using (EmitBlock(writer, $"for (int {i} = 0; {i} < {matchLength}; {i}++)"))
+                    {
+                        using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, $"runtext[{matchIndex} + {i}]", IsCaseInsensitive(node))} != {ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{i}]", IsCaseInsensitive(node))})"))
+                        {
+                            writer.WriteLine($"goto {doneLabel};");
+                        }
+                    }
+                    writer.WriteLine();
+
+                    writer.WriteLine($"runtextpos += {matchLength};");
+                    LoadTextSpanLocal(writer);
+                }
+
+                if ((node.Options & RegexOptions.ECMAScript) == 0)
+                {
+                    using (EmitBlock(writer, "else"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                }
+            }
+
             // Emits the code for a Capture node.
             void EmitCapture(RegexNode node, RegexNode? subsequent = null)
             {
@@ -1040,11 +1083,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Get the capture number.  This needs to be kept in sync with MapCapNum in RegexWriter.
                 Debug.Assert(node.Type == RegexNode.Capture);
                 Debug.Assert(node.N == -1, "Currently only support capnum, not uncapnum");
-                int capnum = node.M;
-                if (capnum != -1 && rm.Code.Caps != null)
-                {
-                    capnum = (int)rm.Code.Caps[capnum]!;
-                }
+                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
 
                 TransferTextSpanPosToRunTextPos();
                 string startingRunTextPosName = ReserveName("startingRunTextPos");
@@ -1133,7 +1172,7 @@ namespace System.Text.RegularExpressions.Generator
                         return;
 
                     case RegexNode.Atomic:
-                        EmitNode(node.Child(0), subsequent);
+                        EmitAtomic(node, subsequent);
                         return;
                 }
 
@@ -1200,6 +1239,10 @@ namespace System.Text.RegularExpressions.Generator
                         EmitConcatenation(node, subsequent, emitLengthChecksIfRequired);
                         break;
 
+                    case RegexNode.Ref:
+                        EmitBackreference(node);
+                        break;
+
                     case RegexNode.Capture:
                         EmitCapture(node, subsequent);
                         break;
@@ -1260,6 +1303,17 @@ namespace System.Text.RegularExpressions.Generator
 
                     return contains;
                 }
+            }
+
+            // Emits the node for an atomic.
+            void EmitAtomic(RegexNode node, RegexNode? subsequent)
+            {
+                // Atomic simply outputs the code for the child, but it ensures that any done label left
+                // set by the child is reset to what it was prior to the node's processing.  That way,
+                // anything later that tries to jump back won't see labels set inside the atomic.
+                string originalDoneLabel = doneLabel;
+                EmitNode(node.Child(0), subsequent);
+                doneLabel = originalDoneLabel;
             }
 
             // Emits the code to handle updating base.runtextpos to runtextpos in response to
