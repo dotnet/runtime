@@ -6800,9 +6800,9 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
             ssize_t   intCns = 0;
             var_types type   = TYP_UNKNOWN;
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM)
             bool shouldSwitchToInteger = true;
-#else // TARGET_ARMARCH
+#else // TARGET_ARM64
             bool shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
 #endif
             
