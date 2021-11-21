@@ -5,7 +5,7 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Speech.Internal.SrgsCompiler.AppDomainGrammarProxy.GetTypeForRule(Assembly,String)</property>
+      <property name="Target">M:System.Speech.Internal.SrgsCompiler.AppDomainGrammarProxy.GetTypeForRule(System.Reflection.Assembly,System.String)</property>
     </attribute>
   </assembly>
 </linker>
