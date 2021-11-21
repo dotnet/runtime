@@ -1075,6 +1075,29 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
+            // Emits the code for a if(backreference)-then-else conditionals.
+            void EmitBackreferenceConditional(RegexNode node)
+            {
+                int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
+                int startingTextSpanPos = textSpanPos;
+
+                using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
+                {
+                    EmitNode(node.Child(0));
+                    TransferTextSpanPosToRunTextPos();
+                }
+
+                if (node.ChildCount() > 1)
+                {
+                    textSpanPos = startingTextSpanPos;
+                    using (EmitBlock(writer, "else"))
+                    {
+                        EmitNode(node.Child(1));
+                        TransferTextSpanPosToRunTextPos();
+                    }
+                }
+            }
+
             // Emits the code for a Capture node.
             void EmitCapture(RegexNode node, RegexNode? subsequent = null)
             {
@@ -1241,6 +1264,10 @@ namespace System.Text.RegularExpressions.Generator
 
                     case RegexNode.Ref:
                         EmitBackreference(node);
+                        break;
+
+                    case RegexNode.Testref:
+                        EmitBackreferenceConditional(node);
                         break;
 
                     case RegexNode.Capture:

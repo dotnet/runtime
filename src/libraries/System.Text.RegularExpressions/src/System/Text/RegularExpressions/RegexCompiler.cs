@@ -2034,6 +2034,40 @@ namespace System.Text.RegularExpressions
                 MarkLabel(end);
             }
 
+            // Emits the code for a if(backreference)-then-else conditionals.
+            void EmitBackreferenceConditional(RegexNode node)
+            {
+                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
+                int startingTextSpanPos = textSpanPos;
+                bool hasNo = node.ChildCount() > 1;
+
+                Label no = DefineLabel();
+                Label end = DefineLabel();
+
+                // if (!base.IsMatched(capnum)) goto end/no;
+                Ldthis();
+                Ldc(capnum);
+                Call(s_isMatchedMethod);
+                BrfalseFar(hasNo ? no : end);
+
+                // yes branch
+                EmitNode(node.Child(0));
+                TransferTextSpanPosToRunTextPos();
+
+                if (hasNo)
+                {
+                    BrFar(end);
+
+                    // no branch
+                    MarkLabel(no);
+                    textSpanPos = startingTextSpanPos;
+                    EmitNode(node.Child(1));
+                    TransferTextSpanPosToRunTextPos();
+                }
+
+                MarkLabel(end);
+            }
+
             // Emits the code for a Capture node.
             void EmitCapture(RegexNode node, RegexNode? subsequent = null)
             {
@@ -2212,6 +2246,10 @@ namespace System.Text.RegularExpressions
 
                     case RegexNode.Ref:
                         EmitBackreference(node);
+                        break;
+
+                    case RegexNode.Testref:
+                        EmitBackreferenceConditional(node);
                         break;
 
                     case RegexNode.Capture:

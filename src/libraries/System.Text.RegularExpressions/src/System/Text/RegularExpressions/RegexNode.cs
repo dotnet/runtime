@@ -308,8 +308,11 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case Testref:
+                        Debug.Assert(childCount is 1 or 2, $"Expected one or two children for {node.TypeName}, got {childCount}");
+                        break;
+
                     case Testgroup:
-                        Debug.Assert(childCount >= 1, $"Expected at least one child for {node.TypeName}, got {childCount}.");
+                        Debug.Assert(childCount is 2 or 3, $"Expected two or three children for {node.TypeName}, got {childCount}");
                         break;
 
                     case Concatenate:
@@ -2231,11 +2234,16 @@ namespace System.Text.RegularExpressions
                     case Empty:
                     case Nothing:
                     case UpdateBumpalong:
-                        supported = true;
-                        break;
-                    // Backreferences are supported.
+                    // Backreferences are supported
                     case Ref:
                         supported = true;
+                        break;
+
+                    // Conditional backreference tests are also supported, so long as both their yes/no branches are supported.
+                    case Testref:
+                        supported =
+                            Child(0).SupportsSimplifiedCodeGenerationImplementation() &&
+                            (childCount == 1 || Child(1).SupportsSimplifiedCodeGenerationImplementation());
                         break;
 
                     // Single character greedy/lazy loops are supported if either they're actually a repeater
@@ -2339,6 +2347,15 @@ namespace System.Text.RegularExpressions
                                 }
                             }
                         }
+                        break;
+
+                    case Testgroup:
+                        supported = false;
+                        break;
+
+                    default:
+                        Debug.Fail($"Unknown type: {Type}");
+                        supported = false;
                         break;
                 }
             }
