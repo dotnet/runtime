@@ -4291,6 +4291,14 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 {
 	ERROR_DECL (error);
 
+	if (method->is_generic && acfg->aot_opts.profile_only) {
+		// Add the fully shared version to its home image
+		// This has already been added just need to add it to profile_methods so its not skipped
+		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+		g_hash_table_insert (acfg->profile_methods, method, method);
+		return;
+	}
+
 	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
 		MonoMethod *orig = method;
 
@@ -13013,20 +13021,24 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 				continue;
 			if (mdata->inst) {
 				resolve_ginst (mdata->inst);
-				if (!mdata->inst->inst)
-					continue;
-				MonoGenericContext ctx;
+				if (mdata->inst->inst) {
+					MonoGenericContext ctx;
 
-				memset (&ctx, 0, sizeof (ctx));
-				ctx.method_inst = mdata->inst->inst;
+					memset (&ctx, 0, sizeof (ctx));
+					ctx.method_inst = mdata->inst->inst;
 
-				m = mono_class_inflate_generic_method_checked (m, &ctx, error);
-				if (!m)
-					continue;
-				sig = mono_method_signature_checked (m, error);
-				if (!is_ok (error)) {
-					mono_error_cleanup (error);
-					continue;
+					m = mono_class_inflate_generic_method_checked (m, &ctx, error);
+					if (!m)
+						continue;
+					sig = mono_method_signature_checked (m, error);
+					if (!is_ok (error)) {
+						mono_error_cleanup (error);
+						continue;
+					}
+				} else {
+					/* Use the generic definition */
+					mdata->method = m;
+					break;
 				}
 			}
 			char *sig_str = mono_signature_full_name (sig);
