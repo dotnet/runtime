@@ -66,26 +66,30 @@ function proxyJson(func) {
         console[m] = proxyMethod(`console.${m}`, func, true);
 }
 
+var initConsole = Promise.resolve();
 if (is_browser) {
     const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
     let consoleWebSocket = new WebSocket(consoleUrl);
     // redirect output so that when emscripten starts it's already redirected
-    proxyJson(function (msg) {
-        if (consoleWebSocket.readyState === WebSocket.OPEN) {
-            consoleWebSocket.send(msg);
-        }
-        else {
-            originalConsole.log(msg);
-        }
+    initConsole = new Promise(resolve => {
+        consoleWebSocket.onopen = function () {
+            proxyJson((msg) => {
+                consoleWebSocket.send(msg);
+            });
+            originalConsole.log("browser: Console websocket connected.");
+            resolve();
+        };
     });
 
-    consoleWebSocket.onopen = function (event) {
-        originalConsole.log("browser: Console websocket connected.");
-    };
     consoleWebSocket.onerror = function (event) {
         originalConsole.error(`websocket error: ${event}`);
     };
+
+    consoleWebSocket.onclose = function (event) {
+        originalConsole.log(`websocket closede: ${event}`);
+        console = originalConsole;
+    }
 }
 
 if (typeof globalThis.crypto === 'undefined') {
@@ -113,8 +117,12 @@ if (typeof globalThis.performance === 'undefined') {
         }
     }
 }
+
 var Module = {
+    print: console.log,
+    printErr: console.error,
     config: null,
+    preRun: [],
     configSrc: "./mono-config.json",
     onConfigLoaded: () => {
         if (!Module.config) {
@@ -150,7 +158,6 @@ var Module = {
         set_exit_code(1, error);
     },
 };
-
 
 const App = {
     init: async function () {
@@ -258,11 +265,8 @@ function set_exit_code(exit_code, reason) {
         console.log("Flushed stdout!");
 
         console.log('1 ' + messsage);
-        setTimeout(() => {
-            originalConsole.log('2 ' + messsage);
-            // tell xharness WasmTestMessagesProcessor we are done. 
-            console.log("WASM EXIT " + exit_code);
-        }, 100);
+        originalConsole.log('2 ' + messsage);
+        console.log("WASM EXIT " + exit_code);
     } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }
@@ -356,23 +360,14 @@ async function loadDotnet(file) {
         loadScript = async function (file) {
             const script = document.createElement("script");
             script.src = file;
+            const moduleLoaded = new Promise(resolve => Module.preRun.push(() => { resolve(Module); }));
             document.head.appendChild(script);
-            let timeout = 100;
-            // bysy spin waiting for script to load into global namespace
-            while (timeout > 0) {
-                if (globalThis.Module) {
-                    return globalThis.Module;
-                }
-                // delay 10ms
-                await new Promise(resolve => setTimeout(resolve, 10));
-                timeout--;
-            }
-            throw new Error("Can't load " + file);
+            return await moduleLoaded;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
         loadScript = async function (file) {
-            globalThis.load(file)
+            globalThis.load(file);
             return globalThis.Module;
         }
     }
@@ -383,8 +378,11 @@ async function loadDotnet(file) {
     return loadScript(file);
 }
 
-loadDotnet("./dotnet.js").catch(function (err) {
+initConsole.then(() => {
+    Module.print = console.log;
+    Module.printErr = console.error;
+    loadDotnet("./dotnet.js").catch(function (err) {
     console.error(err);
     set_exit_code(1, "failed to load the dotnet.js file");
     throw err;
-});
+})});

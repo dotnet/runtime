@@ -19,7 +19,6 @@ export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) =>
     runtime_is_initialized_reject = reject;
 });
 
-
 export async function mono_wasm_pre_init(): Promise<void> {
     const moduleExt = Module as EmscriptenModuleMono;
     if (moduleExt.configSrc) {
