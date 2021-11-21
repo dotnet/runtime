@@ -61,16 +61,20 @@ namespace System.IO
         //
         public override int Read()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
                 ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
-            if (_pos == _s.Length)
+
+            int pos = _pos;
+            if ((uint)pos < s.Length)
             {
-                return -1;
+                _pos++;
+                return s[pos];
             }
 
-            return _s[_pos++];
+            return -1;
         }
 
         // Reads a block of characters. This method will read up to count
