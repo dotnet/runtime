@@ -41,16 +41,19 @@ namespace System.IO
         //
         public override int Peek()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
                 ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
-            if (_pos == _s.Length)
+
+            int pos = _pos;
+            if ((uint)pos < s.Length)
             {
-                return -1;
+                return s[pos];
             }
 
-            return _s[_pos];
+            return -1;
         }
 
         // Reads the next character from the underlying string. The returned value
@@ -177,10 +180,11 @@ namespace System.IO
             {
                 ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
-            if ((uint)_pos >= (uint)s.Length)
+            var pos = _pos;
+            if ((uint)pos >= (uint)s.Length)
                 return null;
 
-            ReadOnlySpan<char> remaining = s.AsSpan(_pos);
+            ReadOnlySpan<char> remaining = s.AsSpan(pos);
             int foundLineLength = remaining.IndexOfAny('\r', '\n');
             if (foundLineLength >= 0)
             {
@@ -189,13 +193,22 @@ namespace System.IO
                     : new string(remaining.Slice(0, foundLineLength));
 
                 char ch = remaining[foundLineLength];
-                _pos += foundLineLength + 1;
-                if (ch == '\r' && _pos < s.Length && s[_pos] == '\n')
+                pos += foundLineLength + 1;
+                if (ch == '\r')
                 {
-                    _pos++;
+                    if ((uint)pos < s.Length && s[pos] == '\n')
+                    {
+                        ++pos;
+                    }
                 }
-
+                _pos = pos;
                 return result;
+            }
+            else if (remaining.Length == s.Length)
+            {
+                // Return source string if only one line avoiding allocation
+                _pos = s.Length;
+                return s;
             }
             else
             {
