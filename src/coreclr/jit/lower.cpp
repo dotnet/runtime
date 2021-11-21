@@ -6794,7 +6794,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     {
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
         {
-            // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
+            // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
             GenTree*  data   = ind->Data();
             double    dblCns = data->AsDblCon()->gtDconVal;
             ssize_t   intCns = 0;
