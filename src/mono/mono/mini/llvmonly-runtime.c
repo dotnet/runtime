@@ -319,6 +319,26 @@ llvmonly_imt_tramp_3 (gpointer *arg, MonoMethod *imt_method)
 		return arg [5];
 }
 
+static gpointer
+llvmonly_fallback_imt_tramp_1 (gpointer *arg, MonoMethod *imt_method)
+{
+	if (G_LIKELY (arg [0] == imt_method))
+		return arg [1];
+	else
+		return NULL;
+}
+
+static gpointer
+llvmonly_fallback_imt_tramp_2 (gpointer *arg, MonoMethod *imt_method)
+{
+	if (arg [0] == imt_method)
+		return arg [1];
+	else if (arg [2] == imt_method)
+		return arg [3];
+	else
+		return NULL;
+}
+
 /*
  * A version of the imt trampoline used for generic virtual/variant iface methods.
  * Unlikely a normal imt trampoline, its possible that IMT_METHOD is not found
@@ -415,8 +435,19 @@ mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_ent
 		res [0] = (gpointer)llvmonly_imt_tramp;
 		break;
 	}
-	if (virtual_generic || fail_tramp)
-		res [0] = (gpointer)llvmonly_fallback_imt_tramp;
+	if (virtual_generic || fail_tramp) {
+		switch (real_count) {
+		case 1:
+			res [0] = (gpointer)llvmonly_fallback_imt_tramp_1;
+			break;
+		case 2:
+			res [0] = (gpointer)llvmonly_fallback_imt_tramp_2;
+			break;
+		default:
+			res [0] = (gpointer)llvmonly_fallback_imt_tramp;
+			break;
+		}
+	}
 	res [1] = buf;
 
 	return res;
