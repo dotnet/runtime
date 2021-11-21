@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <windows.h>
 
-#define HOST_64BIT
-
 typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;
 typedef size_t uint64_t;

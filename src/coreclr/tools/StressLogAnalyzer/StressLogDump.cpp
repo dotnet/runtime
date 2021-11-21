@@ -6,15 +6,30 @@
 
 //
 // ==--==
-#include "pch.h"
 
 #include "strike.h"
 #include "util.h"
 #include <stdio.h>
 #include <ctype.h>
 
+#define ARRAY_SIZE(a)   (sizeof (a) / sizeof ((a)[0]))
+
 #ifndef STRESS_LOG
 #define STRESS_LOG
+
+class MapViewHolder
+{
+    void* whatever;
+};
+
+typedef unsigned char uint8_t;
+typedef unsigned int uint32_t;
+#ifdef HOST_WINDOWS
+typedef long long int64_t;
+#else
+#define FEATURE_PAL
+#endif
+typedef size_t uint64_t;
 #endif // STRESS_LOG
 #define STRESS_LOG_READONLY
 #include "../../../inc/stresslog.h"
@@ -80,14 +95,15 @@ const char *getFacilityName(DWORD_PTR lf)
         #include "../../../inc/loglf.h"
         { LF_ALWAYS, "LF_ALWAYS" }
     };
-    static char buff[1024] = "`";
+    const int buff_length = 1024;
+    static char buff[buff_length] = "`";
     if ( lf == LF_ALL )
     {
         return "`ALL`";
     }
     else if ((((DWORD)lf) & (LF_ALWAYS | 0xfffe | LF_GC)) == (LF_ALWAYS | LF_GC))
     {
-        sprintf_s<ARRAY_SIZE(buff)>(buff, "`GC l=%d`", (lf >> 16) & 0x7fff);
+        sprintf_s(buff, ARRAY_SIZE(buff), "`GC l=%d`", (int)((lf >> 16) & 0x7fff));
         return buff;
     }
     else
@@ -119,7 +135,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     else if (threadId & 0x4000000000000000)
         fprintf(file, "BG%2d %13.9f : ", (unsigned)threadId, timeStamp);
     else
-        fprintf(file, "%4x %13.9f : ", threadId, timeStamp);
+        fprintf(file, "%4x %13.9f : ", (int)threadId, timeStamp);
     fprintf(file, "%-20s ", getFacilityName ( facility ));
 
     if (fPrintFormatString)
@@ -130,6 +146,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     void** argsPtr = args;
     const SIZE_T capacity_buff = 2048;
     LPWSTR buff = (LPWSTR)alloca(capacity_buff * sizeof(WCHAR));
+    const int format_length = 256;
     static char formatCopy[256];
 
     int iArgCount = 0;
@@ -162,8 +179,8 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                         // Print the string up to that point
                     c = *ptr;
                     *ptr = 0;       // Terminate the string temporarily
-                    vfprintf(file, format, (va_list)args);
-                    *ptr = c;       // Put it back
+                    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]); 
+                    *ptr = c;       // Put it back  
 
                         // move the argument pointers past the part the was printed
                     format = ptr + 1;
@@ -176,7 +193,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                         case 'M':   // format as a method Desc
                             if (g_bDacBroken)
                             {
-                                fprintf(file," (MethodDesc: %p)",arg);
+                                fprintf(file," (MethodDesc: %p)", (void*)arg);
                             }
                             else
                             {
@@ -190,7 +207,8 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     DacpMethodDescData MethodDescData;
                                     MethodDescData.Request(g_sos,(CLRDATA_ADDRESS)arg);
 
-                                    static WCHAR wszNameBuffer[1024]; // should be large enough
+                                    const int name_buffer_length = 1024;
+                                    static WCHAR wszNameBuffer[name_buffer_length]; // should be large enough
                                     if (g_sos->GetMethodDescName(arg, 1024, wszNameBuffer, NULL) != S_OK)
                                     {
                                         wcscpy_s(wszNameBuffer, ARRAY_SIZE(wszNameBuffer), W("UNKNOWN METHODDESC"));
@@ -206,7 +224,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                         case 'T':       // format as a MethodTable
                             if (g_bDacBroken)
                             {
-                                fprintf(file, "(MethodTable: %p)",arg);
+                                fprintf(file, "(MethodTable: %p)", (void*)arg);
                             }
                             else
                             {
@@ -248,7 +266,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     fprintf (file, " (%s", Symbol);
                                     if (Displacement)
                                     {
-                                        fprintf (file, "+%#x", Displacement);
+                                        fprintf (file, "+%#llx", Displacement);
                                     }
                                     fprintf (file, ")");
                                 }
@@ -298,8 +316,9 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
             iArgCount++;
         }
     }
-        // Print anything after the last special format instruction.
-    vfprintf(file, format, (va_list)args);
+
+    // Print anything after the last special format instruction.
+    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]); 
     fprintf(file, "\n");
 }
 
@@ -329,6 +348,9 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     ULONG64 g_hThisInst;
     BOOL    bDoGcHist = (fileName == NULL);
     FILE*   file = NULL;
+    const int format_length = 257;
+    char format[format_length];
+    format[format_length - 1] = format[0] = 0;
 
     // Fetch the circular buffer bookkeeping data
     StressLog inProcLog;
@@ -472,9 +494,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
         fprintf(file, "\nTHREAD  TIMESTAMP     FACILITY                              MESSAGE\n");
         fprintf(file, "  ID  (sec from start)\n");
         fprintf(file, "--------------------------------------------------------------------------------------\n");
-    }
-    char format[257];
-    format[256] = format[0] = 0;
+    }    
     void** args;
     unsigned msgCtr;
     msgCtr = 0;
@@ -532,7 +552,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             latestLog->readPtr = NULL;
             if (!bDoGcHist)
             {
-                fprintf(file, "------------ Last message from thread %x -----------\n", latestLog->threadId);
+                fprintf(file, "------------ Last message from thread %llx -----------\n", latestLog->threadId);
             }
         }
 
