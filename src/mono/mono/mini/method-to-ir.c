@@ -2586,8 +2586,8 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	MonoInst *slot_ins;
 	EMIT_NEW_AOTCONST (cfg, slot_ins, MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
 
-	// Can't add basic blocks during decompose/interp entry mode etc.
-	if (cfg->after_method_to_ir || cfg->interp_entry_only) {
+	// Can't add basic blocks during interp entry mode
+	if (cfg->disable_inline_rgctx_fetch || cfg->interp_entry_only) {
 		MonoInst *args [2] = { rgctx, slot_ins };
 		if (entry->in_mrgctx)
 			call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);

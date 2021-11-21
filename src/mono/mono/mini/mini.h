@@ -1481,6 +1481,7 @@ typedef struct {
 	guint            code_exec_only : 1;
 	guint            interp_entry_only : 1;
 	guint            after_method_to_ir : 1;
+	guint            disable_inline_rgctx_fetch : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
