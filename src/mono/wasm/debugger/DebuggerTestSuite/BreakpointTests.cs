@@ -658,5 +658,28 @@ namespace DebuggerTests
                 "VisibleMethod"
             );
         }
+
+        [Fact]
+        public async Task DebuggerAttributeStopOnDebuggerHiddenCallWithDebuggerBreakCall()
+        {
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 1);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunDebuggerBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunDebuggerBreak"
+            );
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1,
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1,
+                "RunDebuggerBreak");
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                835,
+                8,
+                "VisibleMethodDebuggerBreak");
+        }
     }
 }

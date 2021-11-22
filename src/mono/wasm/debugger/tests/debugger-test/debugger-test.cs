@@ -818,8 +818,21 @@ public class DebuggerAttribute
         currentCount++;
     }
 
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethodDebuggerBreak()
+    {
+        System.Diagnostics.Debugger.Break();
+        currentCount++;
+    }
+
     public static void VisibleMethod()
     {
+        currentCount++;
+    }
+
+    public static void VisibleMethodDebuggerBreak()
+    {
+        System.Diagnostics.Debugger.Break();
         currentCount++;
     }
 
@@ -827,5 +840,11 @@ public class DebuggerAttribute
     {
         HiddenMethod();
         VisibleMethod();
+    }
+
+    public static void RunDebuggerBreak()
+    {
+        HiddenMethodDebuggerBreak();
+        VisibleMethodDebuggerBreak();
     }
 }
