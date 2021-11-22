@@ -7,6 +7,8 @@ agent:
 
 commands:
   - brew bundle --no-lock --file eng/Brewfile
+  - brew install mono-libgdiplus
+  - export LD_LIBRARY_PATH=/usr/local/opt/openssl/lib:$LD_LIBRARY_PATH
   - ./build.sh -subset clr -a x64 -c release
   - ./build.sh libs -c release
   - ./src/tests/build.sh Release x64
