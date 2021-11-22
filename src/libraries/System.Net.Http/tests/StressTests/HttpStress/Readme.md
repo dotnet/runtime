@@ -6,7 +6,7 @@ Provides stress testing scenaria for System.Net.Http.HttpClient and the underlyi
 
 Prerequisite: the runtime and the libraries should be [live-built](https://github.com/dotnet/runtime/tree/main/docs/workflow/building/libraries) with `build.cmd`/`build.sh`.
 
-Use the script `build-local.sh` / `Build-Local.ps1` to build the stress project against the live-built runtime. This will acquire the latest daily SDK, which is TFM-compatible with the live-built runtime. 
+Use the script `build-local.sh` / `build-local.ps1` to build the stress project against the live-built runtime. This will acquire the latest daily SDK, which is TFM-compatible with the live-built runtime. 
 
 ```bash
 $ build-local.sh [StressConfiguration] [LibrariesConfiguration]
@@ -21,7 +21,7 @@ $ run-stress-Release-Release.sh [stress suite args]
 To get the full list of available parameters:
 
 ```bash
-$ run-stress-Release-Release.sh.sh -help
+$ run-stress-Release-Release.sh -help
 ```
 
 ### Building and running with Docker
@@ -37,11 +37,11 @@ Docker and compose-compose are required for this step (both included in [docker 
 From the stress folder:
 
 ```powershell
-PS> .\run-docker-compose.ps1 -b
+PS> .\run-docker-compose.ps1
 ```
 
 ```bash
-$ ./run-docker-compose.sh -b
+$ ./run-docker-compose.sh
 ```
 
 This will build libraries and stress suite to a linux docker image and initialize a stress run using docker-compose.
@@ -54,11 +54,23 @@ on how windows containers can be enabled on your machine.
 Once ready, simply run:
 
 ```powershell
-PS> .\run-docker-compose.ps1 -b -w
+PS> .\run-docker-compose.ps1 -w
 ```
 
 For more details on how the `run-docker-compose.ps1` script can be used:
 
 ```powershell
 Get-Help .\run-docker-compose.ps1
+```
+
+#### Passing arguments to HttpStress
+
+The following will run the stress client and server containers passing the argument `-http 2.0` to both:
+
+```bash
+./run-docker-compose.sh -clientstressargs "-http 2.0" -serverstressargs "-http 2.0"
+```
+
+```powershell
+./run-docker-compose.sh -w -clientStressArgs "-http 2.0" -serverStressArgs "-http 2.0"
 ```
