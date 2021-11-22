@@ -234,11 +234,6 @@ public class AppleAppBuilderTask : Task
                 throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
         }
 
-        if (EnableAppSandbox && TargetOS != TargetNames.MacCatalyst)
-        {
-            throw new InvalidOperationException("App Sandbox can only be enabled for Mac Catalyst builds.");
-        }
-
         var generator = new Xcode(Log, TargetOS, Arch);
 
         if (GenerateXcodeProject)
