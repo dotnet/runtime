@@ -39,17 +39,27 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data.
+                    // Response body fully consumed
                     return 0;
                 }
 
-                // Try to consume from data we already have in the buffer.
-                int bytesRead = ReadChunksFromConnectionBuffer(buffer, cancellationRegistration: default);
-                if (bytesRead > 0)
+                if (buffer.Length == 0)
                 {
-                    return bytesRead;
+                    if (PeekChunkFromConnectionBuffer())
+                    {
+                        return 0;
+                    }
+                }
+                else
+                {
+                    // Try to consume from data we already have in the buffer.
+                    int bytesRead = ReadChunksFromConnectionBuffer(buffer, cancellationRegistration: default);
+                    if (bytesRead > 0)
+                    {
+                        return bytesRead;
+                    }
                 }
 
                 // Nothing available to consume.  Fall back to I/O.
@@ -70,7 +80,8 @@ namespace System.Net.Http
                         // as the connection buffer.  That avoids an unnecessary copy while still reading
                         // the maximum amount we'd otherwise read at a time.
                         Debug.Assert(_connection.RemainingBuffer.Length == 0);
-                        bytesRead = _connection.Read(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining)));
+                        Debug.Assert(buffer.Length != 0);
+                        int bytesRead = _connection.Read(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining)));
                         if (bytesRead == 0)
                         {
                             throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _chunkBytesRemaining));
@@ -83,15 +94,30 @@ namespace System.Net.Http
                         return bytesRead;
                     }
 
+                    if (buffer.Length == 0)
+                    {
+                        _connection.Read(buffer);
+                    }
+
                     // We're only here if we need more data to make forward progress.
                     _connection.Fill();
 
                     // Now that we have more, see if we can get any response data, and if
                     // we can we're done.
-                    int bytesCopied = ReadChunksFromConnectionBuffer(buffer, cancellationRegistration: default);
-                    if (bytesCopied > 0)
+                    if (buffer.Length == 0)
                     {
-                        return bytesCopied;
+                        if (PeekChunkFromConnectionBuffer())
+                        {
+                            return 0;
+                        }
+                    }
+                    else
+                    {
+                        int bytesCopied = ReadChunksFromConnectionBuffer(buffer, cancellationRegistration: default);
+                        if (bytesCopied > 0)
+                        {
+                            return bytesCopied;
+                        }
                     }
                 }
             }
@@ -177,6 +203,11 @@ namespace System.Net.Http
                                 _state = ParsingState.ExpectChunkTerminator;
                             }
                             return bytesRead;
+                        }
+
+                        if (buffer.Length == 0)
+                        {
+                            await _connection.ReadAsync(buffer).ConfigureAwait(false);
                         }
 
                         // We're only here if we need more data to make forward progress.

@@ -1708,8 +1708,6 @@ namespace System.Net.Http
         private int ReadBuffered(Span<byte> destination)
         {
             // This is called when reading the response body.
-            Debug.Assert(destination.Length != 0);
-
             int remaining = _readLength - _readOffset;
             if (remaining > 0)
             {
@@ -1731,7 +1729,7 @@ namespace System.Net.Http
 
             // Do a buffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
-            int bytesRead = _stream.Read(_readBuffer, 0, _readBuffer.Length);
+            int bytesRead = _stream.Read(_readBuffer, 0, destination.Length == 0 ? 0 : _readBuffer.Length);
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             _readLength = bytesRead;
 
