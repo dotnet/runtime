@@ -994,7 +994,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<bool> Step(MessageId msgId, StepKind kind, CancellationToken token)
         {
-            var stepKind = kind;
             ExecutionContext context = GetContext(msgId);
             if (context.CallStack == null)
                 return false;
@@ -1002,26 +1001,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (context.CallStack.Count <= 1 && kind == StepKind.Out)
                 return false;
 
-            var a = context.store;
-            var b = context.CallStack.FirstOrDefault();
-            var loc = b.Location;
-            var sId = loc.IlLocation.Method.SourceId;
-            var c = loc.IlLocation.Method; //RUN, how to get location of HiddenMethod?
-            if (c.IsHiddenFromDebugger)
-                stepKind = StepKind.Over;
-
-            var step = await context.SdbAgent.Step(context.ThreadId, stepKind, token);
+            var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
             if (step == false) {
                 context.ClearState();
                 await SendCommand(msgId, "Debugger.stepOut", new JObject(), token);
                 return false;
-            }
-            var frameTop = context.CallStack.FirstOrDefault();
-            var loc2 = frameTop.Location;
-            if (loc.Equals(loc2))
-            {
-                var sthWrong = true;
-                step = sthWrong;
             }
 
             SendResponse(msgId, Result.Ok(new JObject()), token);
