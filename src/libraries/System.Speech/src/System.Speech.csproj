@@ -119,7 +119,6 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Compile Include="Internal\Synthesis\EngineSiteSapi.cs" />
     <Compile Include="Internal\Synthesis\ISSmlParser.cs" />
     <Compile Include="Internal\Synthesis\PcmConverter.cs" />
-    <Compile Include="Internal\Synthesis\SafeNativeMethods.cs" />
     <Compile Include="Internal\Synthesis\SpeakInfo.cs" />
     <Compile Include="Internal\Synthesis\SpeechSeg.cs" />
     <Compile Include="Internal\Synthesis\SSmlParser.cs" />
@@ -198,6 +197,28 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Compile Include="Synthesis\VoiceInfo.cs" />
     <Compile Include="Synthesis\TTSEngine\SAPIEngineTypes.cs" />
     <Compile Include="Synthesis\TTSEngine\TTSEngineTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+            Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.MMSYSERR.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.MMSYSERR.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutClose.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutGetDevCaps.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutGetDevCaps.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutGetNumDevs.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutGetNumDevs.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutOpen.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutPause.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutPrepareHeader.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutPrepareHeader.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutReset.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutReset.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutRestart.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutRestart.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutWrite.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutWrite.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <EmbeddedResource Include="Resources\Strings.resx">
