@@ -126,12 +126,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationOrArgumentException(ReadOnlySpan<byte> propertyName, int currentDepth)
+        public static void ThrowInvalidOperationOrArgumentException(ReadOnlySpan<byte> propertyName, int currentDepth, int maxDepth)
         {
             currentDepth &= JsonConstants.RemoveFlagsBitMask;
-            if (currentDepth >= JsonConstants.MaxWriterDepth)
+            if (currentDepth >= maxDepth)
             {
-                ThrowInvalidOperationException(SR.Format(SR.DepthTooLarge, currentDepth, JsonConstants.MaxWriterDepth));
+                ThrowInvalidOperationException(SR.Format(SR.DepthTooLarge, currentDepth, maxDepth));
             }
             else
             {
@@ -141,11 +141,11 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException(int currentDepth)
+        public static void ThrowInvalidOperationException(int currentDepth, int maxDepth)
         {
             currentDepth &= JsonConstants.RemoveFlagsBitMask;
-            Debug.Assert(currentDepth >= JsonConstants.MaxWriterDepth);
-            ThrowInvalidOperationException(SR.Format(SR.DepthTooLarge, currentDepth, JsonConstants.MaxWriterDepth));
+            Debug.Assert(currentDepth >= maxDepth);
+            ThrowInvalidOperationException(SR.Format(SR.DepthTooLarge, currentDepth, maxDepth));
         }
 
         [DoesNotReturn]
@@ -183,12 +183,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationOrArgumentException(ReadOnlySpan<char> propertyName, int currentDepth)
+        public static void ThrowInvalidOperationOrArgumentException(ReadOnlySpan<char> propertyName, int currentDepth, int maxDepth)
         {
             currentDepth &= JsonConstants.RemoveFlagsBitMask;
-            if (currentDepth >= JsonConstants.MaxWriterDepth)
+            if (currentDepth >= maxDepth)
             {
-                ThrowInvalidOperationException(SR.Format(SR.DepthTooLarge, currentDepth, JsonConstants.MaxWriterDepth));
+                ThrowInvalidOperationException(SR.Format(SR.DepthTooLarge, currentDepth, maxDepth));
             }
             else
             {
@@ -433,9 +433,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException(ExceptionResource resource, int currentDepth, byte token, JsonTokenType tokenType)
+        public static void ThrowInvalidOperationException(ExceptionResource resource, int currentDepth, int maxDepth, byte token, JsonTokenType tokenType)
         {
-            throw GetInvalidOperationException(resource, currentDepth, token, tokenType);
+            throw GetInvalidOperationException(resource, currentDepth, maxDepth, token, tokenType);
         }
 
         [DoesNotReturn]
@@ -508,9 +508,9 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static InvalidOperationException GetInvalidOperationException(ExceptionResource resource, int currentDepth, byte token, JsonTokenType tokenType)
+        public static InvalidOperationException GetInvalidOperationException(ExceptionResource resource, int currentDepth, int maxDepth, byte token, JsonTokenType tokenType)
         {
-            string message = GetResourceString(resource, currentDepth, token, tokenType);
+            string message = GetResourceString(resource, currentDepth, maxDepth, token, tokenType);
             InvalidOperationException ex = GetInvalidOperationException(message);
             ex.Source = ExceptionSourceValueToRethrowAsJsonException;
             return ex;
@@ -524,7 +524,7 @@ namespace System.Text.Json
 
         // This function will convert an ExceptionResource enum value to the resource string.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string GetResourceString(ExceptionResource resource, int currentDepth, byte token, JsonTokenType tokenType)
+        private static string GetResourceString(ExceptionResource resource, int currentDepth, int maxDepth, byte token, JsonTokenType tokenType)
         {
             string message = "";
             switch (resource)
@@ -536,7 +536,7 @@ namespace System.Text.Json
                         SR.Format(SR.MismatchedObjectArray, (char)token);
                     break;
                 case ExceptionResource.DepthTooLarge:
-                    message = SR.Format(SR.DepthTooLarge, currentDepth & JsonConstants.RemoveFlagsBitMask, JsonConstants.MaxWriterDepth);
+                    message = SR.Format(SR.DepthTooLarge, currentDepth & JsonConstants.RemoveFlagsBitMask, maxDepth);
                     break;
                 case ExceptionResource.CannotStartObjectArrayWithoutProperty:
                     message = SR.Format(SR.CannotStartObjectArrayWithoutProperty, tokenType);
