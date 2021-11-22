@@ -671,12 +671,12 @@ namespace DebuggerTests
                 "RunDebuggerBreak"
             );
             await SendCommandAndCheck(null, "Debugger.resume",
-                null,
+                "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1,
-                bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1,
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
                 "RunDebuggerBreak");
             await SendCommandAndCheck(null, "Debugger.resume",
-                null,
+                "dotnet://debugger-test.dll/debugger-test.cs",
                 835,
                 8,
                 "VisibleMethodDebuggerBreak");
