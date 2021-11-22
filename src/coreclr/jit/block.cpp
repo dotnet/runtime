@@ -721,8 +721,7 @@ const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
 
     auto& buffer    = buffers[nextBufferIndex];
     nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
-    _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding,
-                "", bbID);
+    _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
     return buffer;
 }
 
