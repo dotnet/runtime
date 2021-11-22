@@ -5,38 +5,42 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Tests;
 using System.Linq;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
+using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed class Http1CloseResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTest
+    public sealed class Http1CloseResponseStreamZeroByteReadTest : Http1ResponseStreamZeroByteReadTestBase
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n";
 
         protected override async Task WriteAsync(Stream stream, byte[] data) => await stream.WriteAsync(data);
     }
 
-    public sealed class Http1RawResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTest
+    public sealed class Http1RawResponseStreamZeroByteReadTest : Http1ResponseStreamZeroByteReadTestBase
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 101 Switching Protocols\r\n\r\n";
 
         protected override async Task WriteAsync(Stream stream, byte[] data) => await stream.WriteAsync(data);
     }
 
-    public sealed class Http1ContentLengthResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTest
+    public sealed class Http1ContentLengthResponseStreamZeroByteReadTest : Http1ResponseStreamZeroByteReadTestBase
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n";
 
         protected override async Task WriteAsync(Stream stream, byte[] data) => await stream.WriteAsync(data);
     }
 
-    public sealed class Http1SingleChunkResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTest
+    public sealed class Http1SingleChunkResponseStreamZeroByteReadTest : Http1ResponseStreamZeroByteReadTestBase
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n";
 
@@ -48,7 +52,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class Http1MultiChunkResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTest
+    public sealed class Http1MultiChunkResponseStreamZeroByteReadTest : Http1ResponseStreamZeroByteReadTestBase
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n";
 
@@ -63,7 +67,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public abstract class ResponseStreamZeroByteReadTest
+    public abstract class Http1ResponseStreamZeroByteReadTestBase
     {
         protected abstract string GetResponseHeaders();
 
@@ -185,6 +189,126 @@ namespace System.Net.Http.Functional.Tests
             {
                 _readCallback(buffer.Length);
                 return base.ReadAsync(buffer, cancellationToken);
+            }
+        }
+    }
+
+    public sealed class Http1ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
+    {
+        public Http1ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Version UseVersion => HttpVersion.Version11;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class Http2ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
+    {
+        public Http2ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    public sealed class Http3ResponseStreamZeroByteReadTest_MsQuic : ResponseStreamZeroByteReadTestBase
+    {
+        public Http3ResponseStreamZeroByteReadTest_MsQuic(ITestOutputHelper output) : base(output) { }
+
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    public sealed class Http3ResponseStreamZeroByteReadTest_Mock : ResponseStreamZeroByteReadTestBase
+    {
+        public Http3ResponseStreamZeroByteReadTest_Mock(ITestOutputHelper output) : base(output) { }
+
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
+    }
+
+    public abstract class ResponseStreamZeroByteReadTestBase : HttpClientHandlerTestBase
+    {
+        public ResponseStreamZeroByteReadTestBase(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ZeroByteRead_BlocksUntilDataIsAvailable(bool async)
+        {
+            var zeroByteReadIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+                using HttpClient client = CreateHttpClient();
+                using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                using Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+                var responseBuffer = new byte[1];
+                Assert.Equal(1, await ReadAsync(async, responseStream, responseBuffer));
+                Assert.Equal(42, responseBuffer[0]);
+
+                Task<int> zeroByteReadTask = ReadAsync(async, responseStream, Array.Empty<byte>());
+                Assert.False(zeroByteReadTask.IsCompleted);
+
+                zeroByteReadIssued.SetResult();
+                Assert.Equal(0, await zeroByteReadTask);
+                Assert.Equal(0, await ReadAsync(async, responseStream, Array.Empty<byte>()));
+
+                Assert.Equal(1, await ReadAsync(async, responseStream, responseBuffer));
+                Assert.Equal(1, responseBuffer[0]);
+
+                Assert.Equal(0, await ReadAsync(async, responseStream, Array.Empty<byte>()));
+
+                Assert.Equal(1, await ReadAsync(async, responseStream, responseBuffer));
+                Assert.Equal(2, responseBuffer[0]);
+
+                zeroByteReadTask = ReadAsync(async, responseStream, Array.Empty<byte>());
+                Assert.False(zeroByteReadTask.IsCompleted);
+
+                zeroByteReadIssued.SetResult();
+                Assert.Equal(0, await zeroByteReadTask);
+                Assert.Equal(0, await ReadAsync(async, responseStream, Array.Empty<byte>()));
+
+                Assert.Equal(1, await ReadAsync(async, responseStream, responseBuffer));
+                Assert.Equal(3, responseBuffer[0]);
+
+                Assert.Equal(0, await ReadAsync(async, responseStream, responseBuffer));
+            },
+            async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+
+                    await connection.SendResponseAsync(headers: new[] { new HttpHeaderData("Content-Length", "4") }, isFinal: false);
+
+                    await connection.SendResponseBodyAsync(new byte[] { 42 }, isFinal: false);
+
+                    await zeroByteReadIssued.Task;
+                    zeroByteReadIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                    await connection.SendResponseBodyAsync(new byte[] { 1, 2 }, isFinal: false);
+
+                    await zeroByteReadIssued.Task;
+
+                    await connection.SendResponseBodyAsync(new byte[] { 3 }, isFinal: true);
+                });
+            });
+
+            static Task<int> ReadAsync(bool async, Stream stream, byte[] buffer)
+            {
+                if (async)
+                {
+                    return stream.ReadAsync(buffer).AsTask();
+                }
+                else
+                {
+                    return Task.Run(() => stream.Read(buffer));
+                }
             }
         }
     }
