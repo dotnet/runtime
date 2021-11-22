@@ -1476,7 +1476,7 @@ public:
 
         static const GenConditionDesc& Get(GenCondition condition)
         {
-            assert(condition.GetCode() < MINIPAL_LENGTHOF(map));
+            assert(condition.GetCode() < ArrLen(map));
             const GenConditionDesc& desc = map[condition.GetCode()];
             assert(desc.jumpKind1 != EJ_NONE);
             assert((desc.oper == GT_NONE) || (desc.oper == GT_AND) || (desc.oper == GT_OR));

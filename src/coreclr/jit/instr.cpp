@@ -72,7 +72,7 @@ const char* CodeGen::genInsName(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < MINIPAL_LENGTHOF(insNames));
+    assert((unsigned)ins < ArrLen(insNames));
     assert(insNames[ins] != nullptr);
 
     return insNames[ins];
@@ -243,7 +243,7 @@ void CodeGen::instGen(instruction ins)
 // static inline
 bool CodeGenInterface::instIsFP(instruction ins)
 {
-    assert((unsigned)ins < MINIPAL_LENGTHOF(instInfo));
+    assert((unsigned)ins < ArrLen(instInfo));
 
 #ifdef TARGET_XARCH
     return (instInfo[ins] & INS_FLAGS_x87Instr) != 0;

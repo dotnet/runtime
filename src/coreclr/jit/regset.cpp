@@ -921,7 +921,7 @@ bool RegSet::tmpAllFree() const
         return false;
     }
 
-    for (unsigned i = 0; i < MINIPAL_LENGTHOF(tmpUsed); i++)
+    for (unsigned i = 0; i < ArrLen(tmpUsed); i++)
     {
         if (tmpUsed[i] != nullptr)
         {
