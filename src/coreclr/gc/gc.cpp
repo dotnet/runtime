@@ -2704,6 +2704,7 @@ BOOL        gc_heap::heap_analyze_enabled = FALSE;
 
 #ifndef MULTIPLE_HEAPS
 
+bool gc_heap::maxgen_size_inc_per_heap_p = false;
 alloc_list gc_heap::loh_alloc_list [NUM_LOH_ALIST-1];
 alloc_list gc_heap::gen2_alloc_list[NUM_GEN2_ALIST-1];
 alloc_list gc_heap::poh_alloc_list [NUM_POH_ALIST-1];
@@ -13505,6 +13506,8 @@ gc_heap::init_gc_heap (int  h_number)
 
     gen0_allocated_after_gc_p = false;
 
+    maxgen_size_inc_per_heap_p = false;
+
 #ifdef RECORD_LOH_STATE
     loh_state_index = 0;
 #endif //RECORD_LOH_STATE
@@ -19469,6 +19472,30 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 }
 #endif //USE_REGIONS
 
+BOOL gc_heap::consumed_enough_gen2_budget_p (dynamic_data* dd_max, uint32_t memory_load)
+{
+    // we computed gen2 budget under some memory load - check if the memory load is significantly higher now
+    uint32_t prev_remaining_memory = 100 - dd_entry_memory_load (dd_max);
+    uint32_t curr_remaining_memory = 100 - memory_load;
+
+    // if the previous memory load was already at the limit, the situation cannot have gotten worse
+    if (prev_remaining_memory <= 0)
+        return FALSE;
+
+    // if the memory load is at the limit now, assume some action is required
+    if (curr_remaining_memory <= 0)
+        return TRUE;
+
+    // check if we have consumed a fraction of the budget that is higher than the factor the situation is worse by now
+    // e.g.: if the memory load had been 90% when we computed the budget, we had 10% free
+    //       if the memory load is 98% now, we have 2% free - so we require at least 20% of the budget to be consumed
+    float budget_fraction_remaining = (float)dd_new_allocation (dd_max) / (float)dd_desired_allocation (dd_max);
+    float budget_fraction_consumed = budget_fraction_remaining > 0.0f ? (1.0f - budget_fraction_remaining) : 1.0f;
+    float memory_fraction_remaining = (float)curr_remaining_memory/(float)prev_remaining_memory;
+
+    return (budget_fraction_consumed >= memory_fraction_remaining);
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:6326) // "Potential comparison of a constant with another constant" is intentional in this function.
@@ -19800,11 +19827,16 @@ int gc_heap::generation_to_condemn (int n_initial,
 
             high_memory_load = TRUE;
 
+            // a background gen 2 may create some fragmentation by freeing objects -
+            // let's not trigger a blocking gen 2 unless enough gen 2 or uoh budget has been consumed
+            dynamic_data* dd_max = dynamic_data_of (max_generation);
+            BOOL consumed_enough_gen2_budget = (n == max_generation) || consumed_enough_gen2_budget_p (dd_max, memory_load);
+
             if (memory_load >= v_high_memory_load_th || low_memory_detected)
             {
                 // TODO: Perhaps in 64-bit we should be estimating gen1's fragmentation as well since
                 // gen1/gen0 may take a lot more memory than gen2.
-                if (!high_fragmentation)
+                if (!high_fragmentation && consumed_enough_gen2_budget && maxgen_size_inc_per_heap_p)
                 {
                     high_fragmentation = dt_estimate_reclaim_space_p (tuning_deciding_condemned_gen, max_generation);
                 }
@@ -19812,7 +19844,7 @@ int gc_heap::generation_to_condemn (int n_initial,
             }
             else
             {
-                if (!high_fragmentation)
+                if (!high_fragmentation && consumed_enough_gen2_budget && maxgen_size_inc_per_heap_p)
                 {
                     high_fragmentation = dt_estimate_high_frag_p (tuning_deciding_condemned_gen, max_generation, available_physical);
                 }
@@ -19891,7 +19923,7 @@ int gc_heap::generation_to_condemn (int n_initial,
         if (high_memory_load || v_high_memory_load)
         {
             dynamic_data* dd_max = dynamic_data_of (max_generation);
-            if (((float)dd_new_allocation (dd_max) / (float)dd_desired_allocation (dd_max)) < 0.9)
+            if (consumed_enough_gen2_budget_p (dd_max, memory_load))
             {
                 dprintf (GTC_LOG, ("%Id left in gen2 alloc (%Id)",
                     dd_new_allocation (dd_max), dd_desired_allocation (dd_max)));
@@ -24366,6 +24398,9 @@ void gc_heap::get_memory_info (uint32_t* memory_load,
                                uint64_t* available_page_file)
 {
     GCToOSInterface::GetMemoryStatus(is_restricted_physical_mem ? total_physical_mem  : 0,  memory_load, available_physical, available_page_file);
+
+    // hack for testing
+    //*memory_load = 97;
 }
 
 //returns TRUE is an overflow happened.
@@ -24853,6 +24888,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
 #ifdef MULTIPLE_HEAPS
     gc_t_join.join(this, gc_join_begin_mark_phase);
+    if (condemned_gen_number == (max_generation-1))
+        maxgen_size_inc_per_heap_p = false;
     if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
@@ -28463,6 +28500,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
                          growth, end_seg_allocated, condemned_allocated));
 
             maxgen_size_inc_p = true;
+
+            maxgen_size_inc_per_heap_p = true;
         }
         else
         {
@@ -38217,6 +38256,25 @@ static size_t linear_allocation_model (float allocation_fraction, size_t new_all
     return new_allocation;
 }
 
+ptrdiff_t gc_heap::estimate_usable_free_list_space (int gen_number)
+{
+    size_t usable_free_list_space = generation_free_list_space (generation_of (gen_number)) / 2;
+    if (gen_number == max_generation)
+    {
+        // in the case of SOH, take ephemeral free list space into account as well
+        for (int ephemeral_gen = 0; ephemeral_gen < max_generation; ephemeral_gen++)
+        {
+            // making the pessimistic assumption that only half of it usable,
+            // and subtract from that half the budget
+            ptrdiff_t remaining_budget = dd_new_allocation (dynamic_data_of (ephemeral_gen));
+            size_t usable_ephemeral_free_list_space = generation_free_list_space (generation_of (ephemeral_gen)) / 2;
+            if (remaining_budget > 0 && usable_ephemeral_free_list_space > (size_t)remaining_budget)
+                usable_free_list_space += usable_ephemeral_free_list_space - remaining_budget;
+        }
+    }
+    return usable_free_list_space;
+}
+
 size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                                         size_t out, int gen_number,
                                         int pass)
@@ -38261,6 +38319,29 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
 
                 // use the smaller one
                 f = min (f, f_conserve);
+            }
+
+            dd_entry_memory_load (dd) = settings.entry_memory_load;
+            if (settings.entry_memory_load >= high_memory_load_th)
+            {
+                // compute what fraction of memory is still available
+                float free_fraction = max ((100.0f - settings.entry_memory_load) / 100.0f, 0.0f);
+
+                // compute a conservative growth factor based on this fraction
+                float f_high_memory_load = 1.05f + free_fraction;
+
+                // look at free list space in this generation (and ephemeral generations) as well
+                size_t usable_free_list_space = estimate_usable_free_list_space (gen_number);
+
+                // compute another conservative growth factor based on usable free list space
+                float free_list_fraction = out > 0 ? (float)usable_free_list_space / (float)out : 1.0f;
+                float f_free_list = 1.0f + free_list_fraction;
+
+                // use the bigger factor
+                float f_conservative = max (f_high_memory_load, f_free_list);
+
+                // but at most what we'd want to use without memory load
+                f = min (f, f_conservative);
             }
 
             size_t max_growth_size = (size_t)(max_size / f);

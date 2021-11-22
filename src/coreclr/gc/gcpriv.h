@@ -906,6 +906,8 @@ public:
     size_t    gc_elapsed_time;  // Time it took for the gc to complete
     float     gc_speed;         //  speed in bytes/msec for the gc to complete
 
+    uint32_t  entry_memory_load;// settings.entry_memory_load when we computed the budget
+
     size_t    min_size;
 
     static_data* sdata;
@@ -1654,6 +1656,9 @@ protected:
     void walk_survivors_relocation (void* profiling_context, record_surv_fn fn);
     PER_HEAP
     void walk_survivors_for_uoh (void* profiling_context, record_surv_fn fn, int gen_number);
+
+    PER_HEAP
+    BOOL consumed_enough_gen2_budget_p (dynamic_data* dd_max, uint32_t memory_load);
 
     PER_HEAP
     int generation_to_condemn (int n,
@@ -3198,6 +3203,9 @@ protected:
     ptrdiff_t estimate_gen_growth (int gen);
 
     PER_HEAP
+    ptrdiff_t estimate_usable_free_list_space (int gen);
+
+    PER_HEAP
     void decommit_ephemeral_segment_pages();
 
 #ifdef HOST_64BIT
@@ -4705,6 +4713,9 @@ protected:
     PER_HEAP
     int gen0_must_clear_bricks;
 
+    PER_HEAP
+    bool maxgen_size_inc_per_heap_p;
+
     PER_HEAP_ISOLATED
     bool maxgen_size_inc_p;
 
@@ -5221,6 +5232,11 @@ inline
 uint64_t& dd_time_clock (dynamic_data* inst)
 {
   return inst->time_clock;
+}
+inline
+uint32_t& dd_entry_memory_load(dynamic_data* inst)
+{
+    return inst->entry_memory_load;
 }
 inline
 uint64_t& dd_previous_time_clock (dynamic_data* inst)
