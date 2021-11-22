@@ -12,13 +12,7 @@
 .assembly qsort
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module qsort.exe
 // MVID: {BEFEC472-D5C8-4747-807D-713417E95FBD}
 

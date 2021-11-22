@@ -985,7 +985,7 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     regMaskTP killMask = RBM_NONE;
 #ifdef TARGET_XARCH
-    switch (node->gtHWIntrinsicId)
+    switch (node->GetHWIntrinsicId())
     {
         case NI_SSE2_MaskMove:
             // maskmovdqu uses edi as the implicit address register.
@@ -1683,10 +1683,9 @@ int LinearScan::ComputeAvailableSrcCount(GenTree* node)
 //
 void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc)
 {
-    // The LIR traversal doesn't visit GT_LIST or GT_ARGPLACE nodes.
+    // The LIR traversal doesn't visit GT_ARGPLACE nodes.
     // GT_CLS_VAR nodes should have been eliminated by rationalizer.
     assert(tree->OperGet() != GT_ARGPLACE);
-    assert(tree->OperGet() != GT_LIST);
     assert(tree->OperGet() != GT_CLS_VAR);
 
     // The set of internal temporary registers used by this node are stored in the
@@ -3089,9 +3088,11 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     {
         if (node->AsHWIntrinsic()->OperIsMemoryLoad())
         {
-            return BuildAddrUses(node->gtGetOp1());
+            return BuildAddrUses(node->AsHWIntrinsic()->Op(1));
         }
-        BuildUse(node->gtGetOp1(), candidates);
+
+        assert(node->AsHWIntrinsic()->GetOperandCount() == 1);
+        BuildUse(node->AsHWIntrinsic()->Op(1), candidates);
         return 1;
     }
 #endif // FEATURE_HW_INTRINSICS
@@ -3153,10 +3154,13 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     {
         use = BuildUse(node, candidates);
     }
+#ifdef FEATURE_HW_INTRINSICS
     else if (node->OperIsHWIntrinsic())
     {
-        use = BuildUse(node->gtGetOp1(), candidates);
+        assert(node->AsHWIntrinsic()->GetOperandCount() == 1);
+        use = BuildUse(node->AsHWIntrinsic()->Op(1), candidates);
     }
+#endif
     else if (!node->OperIsIndir())
     {
         return 0;
@@ -3229,15 +3233,17 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
 //
 int LinearScan::BuildBinaryUses(GenTreeOp* node, regMaskTP candidates)
 {
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2IfPresent();
+
 #ifdef TARGET_XARCH
     if (node->OperIsBinary() && isRMWRegOper(node))
     {
-        return BuildRMWUses(node, candidates);
+        assert(op2 != nullptr);
+        return BuildRMWUses(node, op1, op2, candidates);
     }
 #endif // TARGET_XARCH
-    int      srcCount = 0;
-    GenTree* op1      = node->gtOp1;
-    GenTree* op2      = node->gtGetOp2IfPresent();
+    int srcCount = 0;
     if (op1 != nullptr)
     {
         srcCount += BuildOperandUses(op1, candidates);

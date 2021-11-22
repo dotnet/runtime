@@ -2527,11 +2527,16 @@ enum class IPmappingDscKind
 
 struct IPmappingDsc
 {
-    IPmappingDsc*    ipmdNext;      // next line# record
     emitLocation     ipmdNativeLoc; // the emitter location of the native code corresponding to the IL offset
     IPmappingDscKind ipmdKind;      // The kind of mapping
     ILLocation       ipmdLoc;       // The location for normal mappings
     bool             ipmdIsLabel;   // Can this code be a branch label?
+};
+
+struct PreciseIPMapping
+{
+    emitLocation nativeLoc;
+    DebugInfo    debugInfo;
 };
 
 /*
@@ -3078,8 +3083,6 @@ public:
 
     GenTree* gtNewCpObjNode(GenTree* dst, GenTree* src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
 
-    GenTreeArgList* gtNewListNode(GenTree* op1, GenTreeArgList* op2);
-
     GenTreeCall::Use* gtNewCallArgs(GenTree* node);
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2);
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2, GenTree* node3);
@@ -3161,6 +3164,19 @@ public:
                                                  CorInfoType    simdBaseJitType,
                                                  unsigned       simdSize,
                                                  bool           isSimdAsHWIntrinsic = false);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
+                                                 GenTree**      operands,
+                                                 size_t         operandCount,
+                                                 NamedIntrinsic hwIntrinsicID,
+                                                 CorInfoType    simdBaseJitType,
+                                                 unsigned       simdSize,
+                                                 bool           isSimdAsHWIntrinsic = false);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types              type,
+                                                 IntrinsicNodeBuilder&& nodeBuilder,
+                                                 NamedIntrinsic         hwIntrinsicID,
+                                                 CorInfoType            simdBaseJitType,
+                                                 unsigned               simdSize,
+                                                 bool                   isSimdAsHWIntrinsic = false);
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
                                                    NamedIntrinsic hwIntrinsicID,
@@ -3350,11 +3366,6 @@ public:
 
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
-    GenTreeArgList* gtNewArgList(GenTree* op);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3, GenTree* op4);
-
     static fgArgTabEntry* gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
     static fgArgTabEntry* gtArgEntryByNode(GenTreeCall* call, GenTree* node);
     fgArgTabEntry* gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
@@ -3433,8 +3444,6 @@ public:
     // Create copy of an inline or guarded devirtualization candidate tree.
     GenTreeCall* gtCloneCandidateCall(GenTreeCall* call);
 
-    GenTree* gtReplaceTree(Statement* stmt, GenTree* tree, GenTree* replacementTree);
-
     void gtUpdateSideEffects(Statement* stmt, GenTree* tree);
 
     void gtUpdateTreeAncestorsSideEffects(GenTree* tree);
@@ -3459,8 +3468,8 @@ public:
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
 
-    unsigned gtSetListOrder(GenTree* list, bool regs, bool isListCallArgs);
     unsigned gtSetCallArgsOrder(const GenTreeCall::UseList& args, bool lateArgs, int* callCostEx, int* callCostSz);
+    unsigned gtSetMultiOpOrder(GenTreeMultiOp* multiOp);
 
     void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* base, bool constOnly);
 
@@ -3666,6 +3675,7 @@ public:
 #endif
 
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
+    void placeLoopAlignInstructions();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -5497,12 +5507,12 @@ public:
 
 #ifdef FEATURE_SIMD
     // Does value-numbering for a GT_SIMD tree
-    void fgValueNumberSimd(GenTree* tree);
+    void fgValueNumberSimd(GenTreeSIMD* tree);
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
     // Does value-numbering for a GT_HWINTRINSIC tree
-    void fgValueNumberHWIntrinsic(GenTree* tree);
+    void fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree);
 #endif // FEATURE_HW_INTRINSICS
 
     // Does value-numbering for a call.  We interpret some helper calls.
@@ -6307,7 +6317,6 @@ private:
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
-    GenTreeArgList* fgMorphArgList(GenTreeArgList* args, MorphAddrContext* mac);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, GenTreeCall::Use* args, CORINFO_CLASS_HANDLE copyBlkClass);
 
@@ -6380,6 +6389,7 @@ private:
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
+    GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
 
     bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
@@ -6871,13 +6881,13 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc*      optLoopTable; // loop descriptor table
-    unsigned char optLoopCount; // number of tracked loops
+    LoopDsc*      optLoopTable;        // loop descriptor table
+    unsigned char optLoopCount;        // number of tracked loops
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
 
 #ifdef DEBUG
-    unsigned char loopAlignCandidates; // number of loops identified for alignment
-    unsigned char loopsAligned;        // number of loops actually aligned
-#endif                                 // DEBUG
+    unsigned char loopsAligned; // number of loops actually aligned
+#endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   top,
@@ -8265,8 +8275,11 @@ public:
 
     // Record the instr offset mapping to the generated code
 
-    IPmappingDsc* genIPmappingList;
-    IPmappingDsc* genIPmappingLast;
+    jitstd::list<IPmappingDsc> genIPmappings;
+
+#ifdef DEBUG
+    jitstd::list<PreciseIPMapping> genPreciseIPmappings;
+#endif
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points
@@ -9377,6 +9390,7 @@ public:
     bool compLongUsed;             // Does the method use TYP_LONG
     bool compFloatingPointUsed;    // Does the method use TYP_FLOAT or TYP_DOUBLE
     bool compTailCallUsed;         // Does the method do a tailcall
+    bool compLocallocSeen;         // Does the method IL have localloc opcode
     bool compLocallocUsed;         // Does the method use localloc.
     bool compLocallocOptimized;    // Does the method have an optimized localloc
     bool compQmarkUsed;            // Does the method use GT_QMARK/GT_COLON
@@ -9686,6 +9700,9 @@ public:
 
         // If set, perform adaptive loop alignment that limits number of padding based on loop size.
         bool compJitAlignLoopAdaptive;
+
+        // If set, tries to hide alignment instructions behind unconditional jumps.
+        bool compJitHideAlignBehindJmp;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler
@@ -10191,6 +10208,10 @@ public:
 #endif
         return !info.compInitMem && opts.compDbgCode;
     }
+
+    // Returns true if the jit supports having patchpoints in this method.
+    // Optionally, get the reason why not.
+    bool compCanHavePatchpoints(const char** reason = nullptr);
 
 #if defined(DEBUG)
 
@@ -11500,6 +11521,42 @@ public:
 
                 break;
             }
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+            case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_HWINTRINSIC:
+#endif
+                if (TVisitor::UseExecutionOrder && node->IsReverseOp())
+                {
+                    assert(node->AsMultiOp()->GetOperandCount() == 2);
+
+                    result = WalkTree(&node->AsMultiOp()->Op(2), node);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&node->AsMultiOp()->Op(1), node);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                else
+                {
+                    for (GenTree** use : node->AsMultiOp()->UseEdges())
+                    {
+                        result = WalkTree(use, node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+                }
+                break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
             // Binary nodes
             default:

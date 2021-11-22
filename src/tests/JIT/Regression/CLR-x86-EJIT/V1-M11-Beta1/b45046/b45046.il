@@ -19,13 +19,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'b.exe'
 // MVID: {0573B9C2-3980-4A83-9B01-889CCC1D6FBC}
 .namespace Test

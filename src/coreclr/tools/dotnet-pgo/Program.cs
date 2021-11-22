@@ -439,7 +439,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             PrintOutput($"# Profiled methods in {name1} not in {name2}: {profiledMethods1.Select(m => m.Method).Except(profiledMethods2.Select(m => m.Method)).Count()}");
             PrintOutput($"# Profiled methods in {name2} not in {name1}: {profiledMethods2.Select(m => m.Method).Except(profiledMethods1.Select(m => m.Method)).Count()}");
             PrintOutput($"# Methods with profile data in both .mibc files: {profiledMethods1.Select(m => m.Method).Intersect(profiledMethods2.Select(m => m.Method)).Count()}");
-            var fgMatches = new List<(MethodProfileData prof1, MethodProfileData prof2)>();
+            var fgMatches = new Dictionary<MethodDesc, PgoCompareMethodFlowGraph>();
             var fgMismatches = new List<(MethodProfileData prof1, MethodProfileData prof2, List<string> mismatches)>();
 
             foreach (MethodProfileData prof1 in profiledMethods1)
@@ -448,36 +448,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 if (prof2?.SchemaData == null)
                     continue;
 
-                var (blocks1, blocks2) = (GroupBlocks(prof1), GroupBlocks(prof2));
-                var (edges1, edges2) = (GroupEdges(prof1), GroupEdges(prof2));
-
-                List<string> mismatches = new List<string>();
-                if (blocks1.Count > 0 && blocks2.Count > 0)
+                PgoCompareMethodFlowGraph graph = PgoCompareMethodFlowGraph.Create(prof1, name1, prof2, name2, out var errors);
+                if (graph != null)
                 {
-                    var in1 = blocks1.Keys.Where(k => !blocks2.ContainsKey(k)).ToList();
-                    var in2 = blocks2.Keys.Where(k => !blocks1.ContainsKey(k)).ToList();
-
-                    foreach (var m1 in in1)
-                        mismatches.Add($"{name1} has a block at {m1:x} not present in {name2}");
-                    foreach (var m2 in in2)
-                        mismatches.Add($"{name2} has a block at {m2:x} not present in {name1}");
+                    fgMatches.Add(prof1.Method, graph);
                 }
-
-                if (edges1.Count > 0 && edges2.Count > 0)
-                {
-                    var in1 = edges1.Keys.Where(k => !edges2.ContainsKey(k)).ToList();
-                    var in2 = edges2.Keys.Where(k => !edges1.ContainsKey(k)).ToList();
-
-                    foreach (var (from, to) in in1)
-                        mismatches.Add($"{name1} has an edge {from:x}->{to:x} not present in {name2}");
-                    foreach (var (from, to) in in2)
-                        mismatches.Add($"{name2} has an edge {from:x}->{to:x} not present in {name1}");
-                }
-
-                if (mismatches.Count > 0)
-                    fgMismatches.Add((prof1, prof2, mismatches));
                 else
-                    fgMatches.Add((prof1, prof2));
+                {
+                    fgMismatches.Add((prof1, prof2, errors));
+                }
             }
 
             PrintOutput($"  Of these, {fgMatches.Count} have matching flow-graphs and the remaining {fgMismatches.Count} do not");
@@ -502,37 +481,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 var blockOverlaps = new List<(MethodDesc Method, double Overlap)>();
                 var edgeOverlaps = new List<(MethodDesc Method, double Overlap)>();
 
-                foreach ((MethodProfileData prof1, MethodProfileData prof2) in fgMatches)
+                foreach ((MethodDesc method, PgoCompareMethodFlowGraph fg) in fgMatches)
                 {
-                    var (blocks1, blocks2) = (GroupBlocks(prof1), GroupBlocks(prof2));
-                    var (edges1, edges2) = (GroupEdges(prof1), GroupEdges(prof2));
+                    if (fg.ProfilesHadBasicBlocks)
+                        blockOverlaps.Add((method, fg.ComputeBlockOverlap()));
 
-                    double Overlap<TKey>(Dictionary<TKey, PgoSchemaElem> left, Dictionary<TKey, PgoSchemaElem> right)
-                    {
-                        long leftTotal = left.Values.Sum(e => e.DataLong);
-                        long rightTotal = right.Values.Sum(e => e.DataLong);
-                        Debug.Assert(left.Keys.All(k => right.ContainsKey(k)));
-                        Debug.Assert(right.Keys.All(k => left.ContainsKey(k)));
-
-                        if (leftTotal == 0 && rightTotal == 0)
-                            return 1;
-
-                        if (leftTotal == 0 || rightTotal == 0)
-                            return 0;
-
-                        var leftPW = left.ToDictionary(k => k.Key, k => k.Value.DataLong / (double)leftTotal);
-                        var rightPW = right.ToDictionary(k => k.Key, k => k.Value.DataLong / (double)rightTotal);
-
-                        double overlap = leftPW.Sum(k => Math.Min(k.Value, rightPW[k.Key]));
-                        return overlap;
-                    }
-
-                    Debug.Assert(prof1.Method == prof2.Method);
-                    if (blocks1.Count > 0 && blocks2.Count > 0)
-                        blockOverlaps.Add((prof1.Method, Overlap(blocks1, blocks2)));
-
-                    if (edges1.Count > 0 && edges2.Count > 0)
-                        edgeOverlaps.Add((prof1.Method, Overlap(edges1, edges2)));
+                    if (fg.ProfilesHadEdges)
+                        edgeOverlaps.Add((method, fg.ComputeEdgeOverlap()));
                 }
 
                 void PrintHistogram(List<(MethodDesc Method, double Overlap)> overlaps)
@@ -614,8 +569,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 int devirtToSame = 0;
                 int devirtToSameLikelihood100 = 0;
                 int devirtToSameLikelihood70 = 0;
-                foreach ((MethodProfileData prof1, MethodProfileData prof2) in fgMatches)
+                foreach ((MethodDesc method, PgoCompareMethodFlowGraph fg) in fgMatches)
                 {
+                    MethodProfileData prof1 = profile1.GetMethodProfileData(method);
+                    MethodProfileData prof2 = profile2.GetMethodProfileData(method);
+
                     List<int> typeHandleHistogramCallSites =
                         prof1.SchemaData.Concat(prof2.SchemaData)
                         .Where(e => e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass || e.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
@@ -660,6 +618,59 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
 
                         PrintOutput($"    At +{change.ilOffset:x}: {FormatDevirt(change.result1)} vs {FormatDevirt(change.result2)}");
+                    }
+                }
+
+                if (options.DumpWorstOverlapGraphsTo != null)
+                {
+                    IEnumerable<MethodDesc> toDump;
+                    if (options.DumpWorstOverlapGraphs == -1)
+                    {
+                        // Take all with less than 0.5 overlap in order.
+                        toDump =
+                            blockOverlaps
+                            .Concat(edgeOverlaps)
+                            .OrderBy(t => t.Overlap)
+                            .TakeWhile(t => t.Overlap < 0.5)
+                            .Select(t => t.Method)
+                            .Distinct();
+                    }
+                    else
+                    {
+                        // Take the first N methods ordered by min(blockOverlap, edgeOverlap).
+                        toDump =
+                            blockOverlaps
+                            .Concat(edgeOverlaps)
+                            .GroupBy(t => t.Method)
+                            .Select(g => (Method: g.Key, Overlap: g.Select(t => t.Overlap).Min()))
+                            .OrderBy(t => t.Overlap)
+                            .Select(t => t.Method)
+                            .Take(options.DumpWorstOverlapGraphs);
+                    }
+
+                    foreach (MethodDesc method in toDump)
+                    {
+                        PgoCompareMethodFlowGraph fg = fgMatches[method];
+
+                        string title = $"Flowgraph for {method}\\n{name1} vs {name2}";
+                        if (fg.ProfilesHadBasicBlocks)
+                        {
+                            title += $"\\nBasic block counts: {fg.TotalBlockCount1} vs {fg.TotalEdgeCount2}";
+                            title += $"\\nBasic block count overlap: {fg.ComputeBlockOverlap() * 100:F2}%";
+                        }
+                        if (fg.ProfilesHadEdges)
+                        {
+                            title += $"\\nEdge counts: {fg.TotalEdgeCount1} vs {fg.TotalEdgeCount2}";
+                            title += $"\\nEdge count overlap: {fg.ComputeEdgeOverlap() * 100:F2}%";
+                        }
+
+                        string dot = fg.Dump(title);
+
+                        string fileName = DebugNameFormatter.Instance.FormatName(method.OwningType, DebugNameFormatter.FormatOptions.NamespaceQualify) + "." + method.DiagnosticName;
+                        foreach (char c in Path.GetInvalidFileNameChars())
+                            fileName = fileName.Replace(c, '_');
+
+                        File.WriteAllText(Path.Combine(options.DumpWorstOverlapGraphsTo.FullName, fileName + ".dot"), dot);
                     }
                 }
             }
@@ -808,8 +819,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             List<MethodProfileData> methodsWithZeroCounters = profiledMethods.Where(CountersSumToZero).ToList();
             if (methodsWithZeroCounters.Count > 0)
             {
-                PrintOutput($"There are {methodsWithZeroCounters.Count} methods whose counters sum to 0:");
-                foreach (MethodProfileData mpd in methodsWithZeroCounters)
+                PrintOutput($"There are {methodsWithZeroCounters.Count} methods whose counters sum to 0{(methodsWithZeroCounters.Count > 10 ? " (10 shown)" : "")}:");
+                foreach (MethodProfileData mpd in methodsWithZeroCounters.Take(10))
                     PrintOutput($"  {mpd.Method}");
             }
 
@@ -915,20 +926,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return new GetLikelyClassResult { IsNull = true };
         }
 
-        private static Dictionary<int, PgoSchemaElem> GroupBlocks(MethodProfileData data)
-        {
-            return data.SchemaData
-               .Where(e => e.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount || e.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount)
-               .ToDictionary(e => e.ILOffset);
-        }
-
-        private static Dictionary<(int, int), PgoSchemaElem> GroupEdges(MethodProfileData data)
-        {
-            return data.SchemaData
-               .Where(e => e.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount || e.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount)
-               .ToDictionary(e => (e.ILOffset, e.Other));
-        }
-
         static int InnerProcessTraceFileMain(CommandLineOptions commandLineOptions)
         {
             if (commandLineOptions.TraceFile == null)
@@ -1003,9 +1000,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     PrintError("Trace file contains multiple processes to distinguish between");
                     PrintOutput("Either a pid or process name from the following list must be specified");
-                    foreach (TraceProcess proc in traceLog.Processes)
+                    foreach (TraceProcess proc in traceLog.Processes.OrderByDescending(proc => proc.CPUMSec))
                     {
-                        PrintOutput($"Procname = {proc.Name} Pid = {proc.ProcessID}");
+                        PrintOutput($"Procname = {proc.Name} Pid = {proc.ProcessID} CPUMsec = {proc.CPUMSec:F0}");
                     }
                     return 1;
                 }
@@ -1321,6 +1318,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             tsc,
                             idParser,
                             clrInstanceId.Value,
+                            commandLineOptions.PreciseDebugInfoFile,
                             s_logger);
                     }
 
@@ -1451,84 +1449,31 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     }
                 }
 
-                Dictionary<MethodDesc, SampleProfile> sampleProfiles = new Dictionary<MethodDesc, SampleProfile>();
+                SampleCorrelator correlator = null;
                 if (commandLineOptions.Spgo)
                 {
-                    MethodMemoryMap mmap = GetMethodMemMap();
-                    Dictionary<MethodDesc, MethodIL> ils = new Dictionary<MethodDesc, MethodIL>();
-                    Dictionary<MethodDesc, FlowGraph> flowGraphs = new Dictionary<MethodDesc, FlowGraph>();
-
-                    MethodIL GetMethodIL(MethodDesc desc)
-                    {
-                        if (!ils.TryGetValue(desc, out MethodIL il))
-                        {
-                            il = desc switch
-                            {
-                                EcmaMethod em => EcmaMethodIL.Create(em),
-                                var m => new InstantiatedMethodIL(m, EcmaMethodIL.Create((EcmaMethod)m.GetTypicalMethodDefinition())),
-                            };
-
-                            ils.Add(desc, il);
-                        }
-
-                        return il;
-                    }
-
-                    FlowGraph GetFlowGraph(MethodDesc desc)
-                    {
-                        if (!flowGraphs.TryGetValue(desc, out FlowGraph fg))
-                        {
-                            flowGraphs.Add(desc, fg = FlowGraph.Create(GetMethodIL(desc)));
-                        }
-
-                        return fg;
-                    }
+                    correlator = new SampleCorrelator(GetMethodMemMap());
 
                     Guid lbrGuid = Guid.Parse("99134383-5248-43fc-834b-529454e75df3");
                     bool hasLbr = traceLog.Events.Any(e => e.TaskGuid == lbrGuid);
 
                     if (!hasLbr)
                     {
-                        // No LBR data, use standard IP samples. First convert each sample to a tuple of (Method, raw IP, IL offset).
-                        (MethodDesc Method, ulong IP, int Offset) GetTuple(SampledProfileTraceData e)
+                        foreach (SampledProfileTraceData e in p.EventsInProcess.ByEventType<SampledProfileTraceData>())
                         {
-                            MemoryRegionInfo info = mmap.GetInfo(e.InstructionPointer);
-                            if (info == null)
-                                return (null, e.InstructionPointer, -1);
-
-                            int offset = info.NativeToILMap?.Lookup(checked((uint)(e.InstructionPointer - info.StartAddress))) ?? -1;
-                            return (info.Method, e.InstructionPointer, offset);
+                            correlator.AttributeSamplesToIP(e.InstructionPointer, 1);
                         }
 
-                        var samples =
-                            p.EventsInProcess.ByEventType<SampledProfileTraceData>()
-                            .Select(GetTuple)
-                            .Where(t => t.Method != null && t.Offset >= 0)
-                            .ToList();
-
-                        // Now find all samples in each method.
-                        foreach (var g in samples.GroupBy(t => t.Method))
-                        {
-                            // SPGO is quite sensitive with low counts, so check if we should not generate SPGO data for this function.
-                            if (g.Count() < commandLineOptions.SpgoMinSamples)
-                                continue;
-
-                            MethodIL il = GetMethodIL(g.Key);
-                            SampleProfile sp = SampleProfile.Create(il, GetFlowGraph(g.Key), g.Select(t => t.Offset));
-                            sampleProfiles.Add(g.Key, sp);
-                        }
-
-                        PrintOutput($"Profile is based on {samples.Count} samples");
+                        PrintOutput($"Samples outside managed code: {correlator.SamplesOutsideManagedCode}");
+                        PrintOutput($"Samples in managed code that does not have native<->IL mappings: {correlator.SamplesInManagedCodeWithoutAnyMappings}");
+                        PrintOutput($"Samples in managed code with mappings that could not be correlated: {correlator.SamplesInManagedCodeOutsideMappings}");
+                        PrintOutput($"Samples in inlinees that were not present in ETW events: {correlator.SamplesInUnknownInlinees}");
+                        PrintOutput($"Samples in managed code for which we could not get the IL: {correlator.SamplesInManagedCodeWithoutIL}");
+                        PrintOutput($"Samples in managed code that could not be attributed to the method's flow graph: {correlator.SamplesInManagedCodeOutsideFlowGraph}");
+                        PrintOutput($"Samples successfully attributed: {correlator.TotalAttributedSamples}");
                     }
                     else
                     {
-                        // We have LBR data. We use the LBR data to collect straight-line runs that the CPU did in this process inside managed methods.
-                        // That is, if we first see a branch from A -> B followed by a branch from C -> D, then we can conclude that the CPU executed
-                        // code from B -> C. We call this a 'run' and collect each run and its multiplicity.
-                        // Later, we will find all IL offsets on this path and assign samples to the distinct basic blocks corresponding to those IL offsets.
-                        Dictionary<(ulong startRun, ulong endRun), long> runs = new Dictionary<(ulong startRun, ulong endRun), long>();
-                        List<(ulong start, ulong end)> lbrRuns = new List<(ulong start, ulong end)>();
-                        LbrEntry64[] lbr64Arr = null;
                         long numLbrRecords = 0;
                         foreach (var e in traceLog.Events)
                         {
@@ -1543,7 +1488,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                             unsafe
                             {
-                                Span<LbrEntry64> lbr;
                                 if (traceLog.PointerSize == 4)
                                 {
                                     // For 32-bit machines we convert the data into a 64-bit format first.
@@ -1552,18 +1496,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                         continue;
 
                                     Span<LbrEntry32> lbr32 = data->Entries(e.EventDataLength);
-                                    if (lbr64Arr == null || lbr64Arr.Length < lbr32.Length)
-                                        lbr64Arr = new LbrEntry64[lbr32.Length];
-
-                                    for (int i = 0; i < lbr32.Length; i++)
-                                    {
-                                        ref LbrEntry64 entry = ref lbr64Arr[i];
-                                        entry.FromAddress = lbr32[i].FromAddress;
-                                        entry.ToAddress = lbr32[i].ToAddress;
-                                        entry.Reserved = lbr32[i].Reserved;
-                                    }
-
-                                    lbr = lbr64Arr[0..lbr32.Length];
+                                    correlator.AttributeSampleToLbrRuns(lbr32);
                                 }
                                 else
                                 {
@@ -1576,107 +1509,16 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                     if (data->ProcessId != p.ProcessID)
                                         continue;
 
-                                    lbr = data->Entries(e.EventDataLength);
-                                }
-
-                                // Store runs. LBR is chronological with most recent branches first.
-                                // To avoid double-counting blocks containing calls when the LBR buffer contains
-                                // both the call and the return from the call, we have to do some fancy things
-                                // when seeing cross-function branches, so we use a temporary list of runs
-                                // that we assign into the global dictionary.
-                                lbrRuns.Clear();
-                                for (int i = lbr.Length - 2; i >= 0; i--)
-                                {
-                                    ulong prevFrom = lbr[i + 1].FromAddress;
-                                    ulong prevTo = lbr[i + 1].ToAddress;
-                                    ulong curFrom = lbr[i].FromAddress;
-                                    MemoryRegionInfo prevFromMeth = methodMemMap.GetInfo(prevFrom);
-                                    MemoryRegionInfo prevToMeth = methodMemMap.GetInfo(prevTo);
-                                    MemoryRegionInfo curFromMeth = methodMemMap.GetInfo(curFrom);
-                                    // If this run is not in the same function then ignore it.
-                                    if (prevToMeth == null || prevToMeth != curFromMeth)
-                                        continue;
-
-                                    // Otherwise, if this run follows right after jumping back into the function, we might need to extend
-                                    // a previous run instead. This happens if we previously did a call out of this function and now returned back.
-                                    // TODO: Handle recursion here. The same function could return to itself and we wouldn't realize it from this check.
-                                    if (prevFromMeth != prevToMeth)
-                                    {
-                                        bool extendedPrevRun = false;
-                                        // Try to find a previous run. Iterate in reverse to simulate stack behavior of calls.
-                                        FlowGraph toFG = null;
-                                        for (int j = lbrRuns.Count - 1; j >= 0; j--)
-                                        {
-                                            MemoryRegionInfo endRunMeth = methodMemMap.GetInfo(lbrRuns[j].end);
-                                            if (endRunMeth != prevToMeth)
-                                                continue;
-
-                                            // Same function at least, check for same basic block
-                                            toFG ??= GetFlowGraph(endRunMeth.Method);
-                                            BasicBlock endRunBB = toFG.Lookup(endRunMeth.NativeToILMap.Lookup((uint)(lbrRuns[j].end - endRunMeth.StartAddress)));
-                                            BasicBlock toBB = toFG.Lookup(endRunMeth.NativeToILMap.Lookup((uint)(prevTo - endRunMeth.StartAddress)));
-                                            if (endRunBB == toBB && prevTo > lbrRuns[j].end)
-                                            {
-                                                // Same BB and the jump is to after where the previous run ends. Take that as a return to after that call and extend the previous run.
-                                                lbrRuns[j] = (lbrRuns[j].start, curFrom);
-                                                extendedPrevRun = true;
-                                                break;
-                                            }
-                                        }
-
-                                        if (extendedPrevRun)
-                                            continue;
-                                    }
-
-                                    lbrRuns.Add((prevTo, curFrom));
-                                }
-
-                                // Now insert runs.
-                                foreach (var pair in lbrRuns)
-                                {
-                                    if (runs.TryGetValue(pair, out long count))
-                                        runs[pair] = count + 1;
-                                    else
-                                        runs.Add(pair, 1);
+                                    Span<LbrEntry64> lbr64 = data->Entries(e.EventDataLength);
+                                    correlator.AttributeSampleToLbrRuns(lbr64);
                                 }
                             }
                         }
 
-                        // Group runs by memory region info, which corresponds to each .NET method.
-                        var groupedRuns =
-                            runs
-                            .Select(r => (start: r.Key.startRun, end: r.Key.endRun, count: r.Value, info: methodMemMap.GetInfo(r.Key.startRun)))
-                            .GroupBy(t => t.info);
-
-                        foreach (var g in groupedRuns)
-                        {
-                            if (g.Key == null || g.Key.NativeToILMap == null)
-                                continue;
-
-                            // Collect relative IPs of samples. Note that we cannot translate the end-points of runs from IPs to IL offsets
-                            // as we cannot assume that a straight-line execution between two IPs corresponds to a straight-line execution between
-                            // two IL offsets. SampleProfile.CreateFromLbr will be responsible for assigning samples based on the flow graph relative IPs,
-                            // the IP<->IL mapping and the flow graph.
-                            List<(uint start, uint end, long count)> samples =
-                                g
-                                .Where(t => t.end >= t.start && t.end < g.Key.EndAddress)
-                                .Select(t => ((uint)(t.start - g.Key.StartAddress), (uint)(t.end - g.Key.StartAddress), t.count))
-                                .ToList();
-
-                            if (samples.Sum(t => t.count) < commandLineOptions.SpgoMinSamples)
-                                continue;
-
-                            SampleProfile ep = SampleProfile.CreateFromLbr(
-                                GetMethodIL(g.Key.Method),
-                                GetFlowGraph(g.Key.Method),
-                                g.Key.NativeToILMap,
-                                samples);
-
-                            sampleProfiles.Add(g.Key.Method, ep);
-                        }
-
                         PrintOutput($"Profile is based on {numLbrRecords} LBR records");
                     }
+
+                    correlator.SmoothAllProfiles();
                 }
 
                 if (commandLineOptions.DisplayProcessedEvents)
@@ -1732,40 +1574,60 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             var intDecompressor = new PgoProcessor.PgoEncodedCompressedIntParser(instrumentationData, 0);
                             methodData.InstrumentationData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(pgoDataLoader, intDecompressor, true).ToArray();
                         }
-                        else if (sampleProfiles.TryGetValue(methodData.Method, out SampleProfile sp))
+                        else
                         {
-                            IEnumerable<PgoSchemaElem> schema = Enumerable.Empty<PgoSchemaElem>();
-
-                            if (commandLineOptions.SpgoIncludeBlockCounts)
+                            SampleProfile sp = correlator?.GetProfile(methodData.Method);
+                            if (sp != null && sp.AttributedSamples >= commandLineOptions.SpgoMinSamples)
                             {
-                                schema = schema.Concat(
+                                IEnumerable<PgoSchemaElem> schema =
                                     sp.SmoothedSamples
-                                    .Select(kvp =>
+                                    .Select(
+                                        kvp =>
                                         new PgoSchemaElem
                                         {
                                             InstrumentationKind = kvp.Value > uint.MaxValue ? PgoInstrumentationKind.BasicBlockLongCount : PgoInstrumentationKind.BasicBlockIntCount,
                                             ILOffset = kvp.Key.Start,
                                             Count = 1,
                                             DataLong = kvp.Value,
-                                        }));
-                            }
+                                        });
 
-                            if (commandLineOptions.SpgoIncludeEdgeCounts)
-                            {
-                                schema = schema.Concat(
-                                    sp.SmoothedEdgeSamples
-                                    .Select(kvp =>
-                                        new PgoSchemaElem
-                                        {
-                                            InstrumentationKind = kvp.Value > uint.MaxValue ? PgoInstrumentationKind.EdgeLongCount : PgoInstrumentationKind.EdgeIntCount,
-                                            ILOffset = kvp.Key.Item1.Start,
-                                            Other = kvp.Key.Item2.Start,
-                                            Count = 1,
-                                            DataLong = kvp.Value
-                                        }));
-                            }
+                                if (commandLineOptions.IncludeFullGraphs)
+                                {
+                                    schema = schema.Concat(
+                                        sp.SmoothedEdgeSamples
+                                        .Select(kvp =>
+                                            new PgoSchemaElem
+                                            {
+                                                InstrumentationKind = kvp.Value > uint.MaxValue ? PgoInstrumentationKind.EdgeLongCount : PgoInstrumentationKind.EdgeIntCount,
+                                                ILOffset = kvp.Key.Item1.Start,
+                                                Other = kvp.Key.Item2.Start,
+                                                Count = 1,
+                                                DataLong = kvp.Value
+                                            }));
+                                }
 
-                            methodData.InstrumentationData = schema.ToArray();
+                                methodData.InstrumentationData = schema.ToArray();
+
+#if DEBUG
+                                if (commandLineOptions.IncludeFullGraphs)
+                                {
+                                    var writtenBlocks =
+                                        new HashSet<int>(
+                                            methodData.InstrumentationData
+                                            .Where(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount || elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount)
+                                            .Select(elem => elem.ILOffset));
+
+                                    var writtenEdges =
+                                        new HashSet<(int, int)>(
+                                            methodData.InstrumentationData
+                                            .Where(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount || elem.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount)
+                                            .Select(elem => (elem.ILOffset, elem.Other)));
+
+                                    Debug.Assert(writtenBlocks.SetEquals(sp.FlowGraph.BasicBlocks.Select(bb => bb.Start)));
+                                    Debug.Assert(writtenEdges.SetEquals(sp.FlowGraph.BasicBlocks.SelectMany(bb => bb.Targets.Select(bbTar => (bb.Start, bbTar.Start)))));
+                                }
+#endif
+                            }
                         }
 
                         methodsUsedInProcess.Add(methodData);

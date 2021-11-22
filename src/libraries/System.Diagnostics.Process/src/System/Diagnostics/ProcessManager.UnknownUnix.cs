@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Diagnostics
 {
     internal static partial class ProcessManager
@@ -14,6 +16,8 @@ namespace System.Diagnostics
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static ProcessInfo[] GetProcessInfos(string machineName)
         {
             throw new PlatformNotSupportedException();

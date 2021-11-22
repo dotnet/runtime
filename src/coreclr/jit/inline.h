@@ -726,6 +726,18 @@ public:
         return m_Parent;
     }
 
+    // Get the sibling context.
+    InlineContext* GetSibling() const
+    {
+        return m_Sibling;
+    }
+
+    // Get the first child context.
+    InlineContext* GetChild() const
+    {
+        return m_Child;
+    }
+
     // Get the code pointer for this context.
     const BYTE* GetCode() const
     {
@@ -806,7 +818,6 @@ public:
 private:
     InlineContext(InlineStrategy* strategy);
 
-private:
     InlineStrategy*   m_InlineStrategy;    // overall strategy
     InlineContext*    m_Parent;            // logical caller (parent)
     InlineContext*    m_Child;             // first child

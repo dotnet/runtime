@@ -81,6 +81,10 @@ namespace System.Text.RegularExpressions
         {
         }
 
+        /// <summary>Gets the culture to use based on the specified options.</summary>
+        internal static CultureInfo GetTargetCulture(RegexOptions options) =>
+            (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+
         public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
             var parser = new RegexParser(pattern, options, culture, stackalloc int[OptionStackDefaultSize]);
@@ -319,7 +323,12 @@ namespace System.Text.RegularExpressions
                         goto ContinueOuterScan;
 
                     case '[':
-                        AddUnitSet(ScanCharClass(UseOptionI(), scanOnly: false)!.ToStringClass(_options));
+                        {
+                            string setString = ScanCharClass(UseOptionI(), scanOnly: false)!.ToStringClass(_options);
+                            _unit = UseOptionI() && RegexCharClass.MakeCaseSensitiveIfPossible(setString, _culture) is string newSetString ?
+                                new RegexNode(RegexNode.Set, _options & ~RegexOptions.IgnoreCase, newSetString) :
+                                new RegexNode(RegexNode.Set, _options, setString);
+                        }
                         break;
 
                     case '(':
@@ -378,14 +387,9 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '.':
-                        if (UseOptionS())
-                        {
-                            AddUnitSet(RegexCharClass.AnyClass);
-                        }
-                        else
-                        {
-                            AddUnitNotone('\n');
-                        }
+                        _unit = UseOptionS() ?
+                            new RegexNode(RegexNode.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
+                            new RegexNode(RegexNode.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
                         break;
 
                     case '{':
@@ -734,20 +738,16 @@ namespace System.Text.RegularExpressions
                 {
                     // we aren't in a range, and now there is a subtraction.  Usually this happens
                     // only when a subtraction follows a range, like [a-z-[b]]
+                    MoveRight();
+                    RegexCharClass? rcc = ScanCharClass(caseInsensitive, scanOnly);
                     if (!scanOnly)
                     {
-                        MoveRight(1);
-                        charClass!.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly)!);
+                        charClass!.AddSubtraction(rcc!);
 
                         if (CharsRight() > 0 && RightChar() != ']')
                         {
                             throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
                         }
-                    }
-                    else
-                    {
-                        MoveRight(1);
-                        ScanCharClass(caseInsensitive, scanOnly);
                     }
                 }
                 else
@@ -1173,32 +1173,32 @@ namespace System.Text.RegularExpressions
                 case 'w':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.ECMAWordClass : RegexCharClass.WordClass);
+                        new RegexNode(RegexNode.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.ECMAWordClass : RegexCharClass.WordClass);
 
                 case 'W':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.NotECMAWordClass : RegexCharClass.NotWordClass);
+                        new RegexNode(RegexNode.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.NotECMAWordClass : RegexCharClass.NotWordClass);
 
                 case 's':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.ECMASpaceClass : RegexCharClass.SpaceClass);
+                        new RegexNode(RegexNode.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.ECMASpaceClass : RegexCharClass.SpaceClass);
 
                 case 'S':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.NotECMASpaceClass : RegexCharClass.NotSpaceClass);
+                        new RegexNode(RegexNode.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.NotECMASpaceClass : RegexCharClass.NotSpaceClass);
 
                 case 'd':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.ECMADigitClass : RegexCharClass.DigitClass);
+                        new RegexNode(RegexNode.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.ECMADigitClass : RegexCharClass.DigitClass);
 
                 case 'D':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.NotECMADigitClass : RegexCharClass.NotDigitClass);
+                        new RegexNode(RegexNode.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.NotECMADigitClass : RegexCharClass.NotDigitClass);
 
                 case 'p':
                 case 'P':
@@ -1219,6 +1219,22 @@ namespace System.Text.RegularExpressions
 
                 default:
                     return ScanBasicBackslash(scanOnly);
+            }
+
+            static RegexOptions RemoveIgnoreCaseIfNotEcma(RegexOptions options)
+            {
+                // This function is used for \w, \W, \d, \D, \s, and \S to remove IgnoreCase,
+                // since they already include the notion of casing in their definitions.
+                // However, for compatibility, if ECMAScript is specified, we avoid stripping
+                // out the IgnoreCase.  We should revisit this as part of https://github.com/dotnet/runtime/issues/61048,
+                // as it seems wrong that specifying ECMAScript (which implies non-Unicode) would
+                // then still involve lowercasing potentially Unicode character inputs to match
+                // against these sets.
+                if ((options & RegexOptions.ECMAScript) == 0)
+                {
+                    options &= ~RegexOptions.IgnoreCase;
+                }
+                return options;
             }
         }
 
@@ -1354,12 +1370,9 @@ namespace System.Text.RegularExpressions
             Textto(backpos);
             ch = ScanCharEscape();
 
-            if (UseOptionI())
-            {
-                ch = _culture.TextInfo.ToLower(ch);
-            }
-
-            return scanOnly ? null : new RegexNode(RegexNode.One, _options, ch);
+            return !scanOnly ?
+                RegexNode.CreateOneWithCaseConversion(ch, _options, _culture) :
+                null;
         }
 
         /*
@@ -1369,7 +1382,7 @@ namespace System.Text.RegularExpressions
         {
             if (CharsRight() == 0)
             {
-                return new RegexNode(RegexNode.One, _options, '$');
+                return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
             }
 
             char ch = RightChar();
@@ -1469,7 +1482,7 @@ namespace System.Text.RegularExpressions
                 {
                     case '$':
                         MoveRight();
-                        return new RegexNode(RegexNode.One, _options, '$');
+                        return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
 
                     case '&':
                         capnum = 0;
@@ -1502,7 +1515,7 @@ namespace System.Text.RegularExpressions
             // unrecognized $: literalize
 
             Textto(backpos);
-            return new RegexNode(RegexNode.One, _options, '$');
+            return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
         }
 
         /// <summary>Throws on unsupported capture references for NonBacktracking in replacement patterns.</summary>
@@ -2149,50 +2162,26 @@ namespace System.Text.RegularExpressions
         /// <summary>Add a string to the last concatenate.</summary>
         private void AddConcatenate(int pos, int cch, bool isReplacement)
         {
-            if (cch == 0)
+            switch (cch)
             {
-                return;
-            }
+                case 0:
+                    return;
 
-            RegexNode node;
-            if (cch > 1)
-            {
-                string str = UseOptionI() && !isReplacement ?
-#if REGEXGENERATOR
-                    StringExtensions.Create
-#else
-                    string.Create
-#endif
-                        (cch, (_pattern, _culture, pos, cch), static (dest, state) =>
+                case 1:
+                    _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(_pattern[pos], isReplacement ? _options & ~RegexOptions.IgnoreCase : _options, _culture));
+                    break;
+
+                case > 1 when !UseOptionI() || isReplacement:
+                    _concatenation!.AddChild(new RegexNode(RegexNode.Multi, _options & ~RegexOptions.IgnoreCase, _pattern.Substring(pos, cch)));
+                    break;
+
+                default:
+                    foreach (char c in _pattern.AsSpan(pos, cch))
                     {
-                        // We do the ToLower character-by character for consistency with the rest of the implementation.
-                        // With surrogate pairs, doing a ToLower on the entire string is more correct linguistically, but
-                        // Regex doesn't support surrogates, and not doing this character-by-character then causes differences
-                        // from matching where characters are lowercased individually.
-                        ReadOnlySpan<char> src = state._pattern.AsSpan(state.pos, state.cch);
-                        TextInfo ti = state._culture.TextInfo;
-                        for (int i = 0; i < dest.Length; i++)
-                        {
-                            dest[i] = ti.ToLower(src[i]);
-                        }
-                    }) :
-                    _pattern.Substring(pos, cch);
-
-                node = new RegexNode(RegexNode.Multi, _options, str);
+                        _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(c, _options, _culture));
+                    }
+                    break;
             }
-            else
-            {
-                char ch = _pattern[pos];
-
-                if (UseOptionI() && !isReplacement)
-                {
-                    ch = _culture.TextInfo.ToLower(ch);
-                }
-
-                node = new RegexNode(RegexNode.One, _options, ch);
-            }
-
-            _concatenation!.AddChild(node);
         }
 
         /// <summary>Push the parser state (in response to an open paren)</summary>
@@ -2243,11 +2232,11 @@ namespace System.Text.RegularExpressions
 
             if (_group!.Type == RegexNode.Testgroup || _group.Type == RegexNode.Testref)
             {
-                _group.AddChild(_concatenation!.ReverseLeft());
+                _group.AddChild(_concatenation!.ReverseConcatenationIfRightToLeft());
             }
             else
             {
-                _alternation!.AddChild(_concatenation!.ReverseLeft());
+                _alternation!.AddChild(_concatenation!.ReverseConcatenationIfRightToLeft());
             }
 
             _concatenation = new RegexNode(RegexNode.Concatenate, _options);
@@ -2273,29 +2262,7 @@ namespace System.Text.RegularExpressions
         private RegexNode? Unit() => _unit;
 
         /// <summary>Sets the current unit to a single char node</summary>
-        private void AddUnitOne(char ch)
-        {
-            if (UseOptionI())
-            {
-                ch = _culture.TextInfo.ToLower(ch);
-            }
-
-            _unit = new RegexNode(RegexNode.One, _options, ch);
-        }
-
-        /// <summary>Sets the current unit to a single inverse-char node</summary>
-        private void AddUnitNotone(char ch)
-        {
-            if (UseOptionI())
-            {
-                ch = _culture.TextInfo.ToLower(ch);
-            }
-
-            _unit = new RegexNode(RegexNode.Notone, _options, ch);
-        }
-
-        /// <summary>Sets the current unit to a single set node</summary>
-        private void AddUnitSet(string cc) => _unit = new RegexNode(RegexNode.Set, _options, cc);
+        private void AddUnitOne(char ch) => _unit = RegexNode.CreateOneWithCaseConversion(ch, _options, _culture);
 
         /// <summary>Sets the current unit to a subtree</summary>
         private void AddUnitNode(RegexNode node) => _unit = node;
@@ -2308,7 +2275,7 @@ namespace System.Text.RegularExpressions
         {
             if (_group!.Type == RegexNode.Testgroup || _group.Type == RegexNode.Testref)
             {
-                _group.AddChild(_concatenation!.ReverseLeft());
+                _group.AddChild(_concatenation!.ReverseConcatenationIfRightToLeft());
 
                 if (_group.Type == RegexNode.Testref && _group.ChildCount() > 2 || _group.ChildCount() > 3)
                 {
@@ -2317,7 +2284,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                _alternation!.AddChild(_concatenation!.ReverseLeft());
+                _alternation!.AddChild(_concatenation!.ReverseConcatenationIfRightToLeft());
                 _group.AddChild(_alternation);
             }
 

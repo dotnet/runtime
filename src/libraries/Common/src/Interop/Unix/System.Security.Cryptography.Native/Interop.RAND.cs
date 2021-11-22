@@ -15,7 +15,7 @@ internal static partial class Interop
             return CryptoNative_GetRandomBytes(pbBuffer, count) != 0;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern unsafe int CryptoNative_GetRandomBytes(byte* buf, int num);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static unsafe partial int CryptoNative_GetRandomBytes(byte* buf, int num);
     }
 }

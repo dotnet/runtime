@@ -864,31 +864,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            if (sig->numArgs == 1)
-            {
-                op1     = impPopStack().val;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            }
-            else if (sig->numArgs == 2)
-            {
-                op2     = impPopStack().val;
-                op1     = impPopStack().val;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-            }
-            else
-            {
-                assert(sig->numArgs >= 3);
+            IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
-                GenTreeArgList* tmp = nullptr;
-
-                for (unsigned i = 0; i < sig->numArgs; i++)
-                {
-                    tmp = gtNewListNode(impPopStack().val, tmp);
-                }
-
-                op1     = tmp;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            for (int i = sig->numArgs - 1; i >= 0; i--)
+            {
+                nodeBuilder.AddOperand(i, impPopStack().val);
             }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1767,9 +1750,11 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
             op1     = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op1);
 
-            GenTree* opList = new (this, GT_LIST) GenTreeArgList(op1, gtNewArgList(op2, op3, op4, op5));
-            retNode         = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, opList, intrinsic, simdBaseJitType,
-                                                                    simdSize, /* isSimdAsHWIntrinsic */ false);
+            const bool isSimdAsHWIntrinsic = false;
+
+            retNode = new (this, GT_HWINTRINSIC)
+                GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic, simdBaseJitType, simdSize,
+                                   isSimdAsHWIntrinsic, op1, op2, op3, op4, op5);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(indexBaseJitType);
             break;
         }

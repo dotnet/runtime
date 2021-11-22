@@ -3,6 +3,7 @@
 
 
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
@@ -254,6 +255,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals init (class Class1 V_0,

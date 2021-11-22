@@ -2015,6 +2015,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             case CEE_LOCALLOC:
 
+                compLocallocSeen = true;
+
                 // We now allow localloc callees to become candidates in some cases.
                 if (makeInlineObservations)
                 {
@@ -4649,6 +4651,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             if (block->isLoopAlign())
             {
+                loopAlignCandidates++;
                 succBlock->bbFlags |= BBF_LOOP_ALIGN;
                 JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for loop# %d.", block->bbNum,
                         succBlock->bbNum, block->bbNatLoopNum);
@@ -4800,6 +4803,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         fgUnlinkBlock(block);
         block->bbFlags |= BBF_REMOVED;
     }
+
+    // If this was marked for alignment, remove it
+    block->unmarkLoopAlign(this DEBUG_ARG("Removed block"));
 
     if (bPrev != nullptr)
     {

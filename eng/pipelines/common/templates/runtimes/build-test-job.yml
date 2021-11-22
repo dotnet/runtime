@@ -5,14 +5,6 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
-  liveRuntimeBuildConfig: ''
-
-  # Determines librariesbuild configuration to use for the tests. Setting this property implies
-  # a dependency of this job on the appropriate libraries build and is used
-  # to construct the name of the Azure artifact representing libraries build
-  # to use for building the tests.
-  liveLibrariesBuildConfig: ''
-
   displayNameArgs: ''
   condition: true
   stagedBuild: false
@@ -45,13 +37,8 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
-    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-      liveRuntimeBuildParams: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
-    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      liveRuntimeBuildParams: ${{ format('mono.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
 
     ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc'), not(and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64'))), not(eq(parameters.osGroup, 'OSX'))) }}:
       compilerArg: '-clang9'
@@ -86,12 +73,8 @@ jobs:
     variables:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
-      - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-        - name: liveRuntimeBuildParams
-          value: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
-      - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-        - name: liveRuntimeBuildParams
-          value: ${{ format('mono.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+      - name: liveRuntimeBuildParams
+        value: 'libs.ref -c Release -ci'
       - name: compilerArg
         value: ''
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
@@ -135,7 +118,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci /p:TargetOS=AnyOS
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
@@ -147,7 +130,7 @@ jobs:
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(managedTestArtifactRootFolderPath)
+        rootFolder: '$(binTestsPath)/AnyOS.$(archType).$(buildConfigUpper)'
         includeRootFolder: false
         archiveExtension: '.tar.gz'
         archiveType: tar
@@ -174,6 +157,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_Lib${{ parameters.liveLibrariesBuildConfig }}_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

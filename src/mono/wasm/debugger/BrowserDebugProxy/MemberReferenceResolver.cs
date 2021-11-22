@@ -18,22 +18,20 @@ namespace Microsoft.WebAssembly.Diagnostics
         private SessionId sessionId;
         private int scopeId;
         private MonoProxy proxy;
-        private ExecutionContext ctx;
+        private ExecutionContext context;
         private PerScopeCache scopeCache;
         private ILogger logger;
         private bool localsFetched;
         private int linqTypeId;
-        private MonoSDBHelper sdbHelper;
 
         public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId sessionId, int scopeId, ILogger logger)
         {
             this.sessionId = sessionId;
             this.scopeId = scopeId;
             this.proxy = proxy;
-            this.ctx = ctx;
+            this.context = ctx;
             this.logger = logger;
             scopeCache = ctx.GetCacheForScope(scopeId);
-            sdbHelper = proxy.SdbHelper;
             linqTypeId = -1;
         }
 
@@ -42,11 +40,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.sessionId = sessionId;
             scopeId = -1;
             this.proxy = proxy;
-            this.ctx = ctx;
+            this.context = ctx;
             this.logger = logger;
             scopeCache = new PerScopeCache(objectValues);
             localsFetched = true;
-            sdbHelper = proxy.SdbHelper;
             linqTypeId = -1;
         }
 
@@ -56,7 +53,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (DotnetObjectId.TryParse(objRet?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var exceptionObject = await sdbHelper.GetObjectValues(sessionId, int.Parse(objectId.Value), GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
+                    var exceptionObject = await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
                     var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                     exceptionObjectMessage["value"]["value"] = objRet["value"]?["className"]?.Value<string>() + ": " + exceptionObjectMessage["value"]?["value"]?.Value<string>();
                     return exceptionObjectMessage["value"]?.Value<JObject>();
@@ -70,10 +67,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (DotnetObjectId.TryParse(objRet?["get"]?["objectIdValue"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var commandParams = new MemoryStream();
-                    var commandParamsWriter = new MonoBinaryWriter(commandParams);
-                    commandParamsWriter.WriteObj(objectId, sdbHelper);
-                    var ret = await sdbHelper.InvokeMethod(sessionId, commandParams.ToArray(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
+                    using var commandParamsWriter = new MonoBinaryWriter();
+                    commandParamsWriter.WriteObj(objectId, context.SdbAgent);
+                    var ret = await context.SdbAgent.InvokeMethod(commandParamsWriter.GetParameterBuffer(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
                     return await GetValueFromObject(ret, token);
                 }
 
@@ -93,38 +89,59 @@ namespace Microsoft.WebAssembly.Diagnostics
                 classNameToFind += part.Trim();
                 if (typeId != -1)
                 {
-                    var fields = await sdbHelper.GetTypeFields(sessionId, typeId, token);
+                    var fields = await context.SdbAgent.GetTypeFields(typeId, token);
                     foreach (var field in fields)
                     {
                         if (field.Name == part.Trim())
                         {
-                            var isInitialized = await sdbHelper.TypeIsInitialized(sessionId, typeId, token);
+                            var isInitialized = await context.SdbAgent.TypeIsInitialized(typeId, token);
                             if (isInitialized == 0)
                             {
-                                isInitialized = await sdbHelper.TypeInitialize(sessionId, typeId, token);
+                                isInitialized = await context.SdbAgent.TypeInitialize(typeId, token);
                             }
-                            var valueRet = await sdbHelper.GetFieldValue(sessionId, typeId, field.Id, token);
+                            var valueRet = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
                             return await GetValueFromObject(valueRet, token);
                         }
                     }
-                    var methodId = await sdbHelper.GetPropertyMethodIdByName(sessionId, typeId, part.Trim(), token);
+                    var methodId = await context.SdbAgent.GetPropertyMethodIdByName(typeId, part.Trim(), token);
                     if (methodId != -1)
                     {
-                        var commandParamsObj = new MemoryStream();
-                        var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                        using var commandParamsObjWriter = new MonoBinaryWriter();
                         commandParamsObjWriter.Write(0); //param count
-                        var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
+                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
                     }
                 }
                 var store = await proxy.LoadStore(sessionId, token);
-                foreach (var asm in store.assemblies)
+                var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
+                var classNameToFindWithNamespace =
+                    string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace) ?
+                    classNameToFind :
+                    methodInfo.TypeInfo.Namespace + "." + classNameToFind;
+
+                var searchResult = await TryFindNameInAssembly(store.assemblies, classNameToFindWithNamespace);
+                if (searchResult == null)
+                    searchResult = await TryFindNameInAssembly(store.assemblies, classNameToFind);
+                if (searchResult != null)
+                    typeId = (int)searchResult;
+
+                async Task<int?> TryGetTypeIdFromName(string typeName, AssemblyInfo assembly)
                 {
-                    var type = asm.GetTypeByName(classNameToFind);
-                    if (type != null)
+                    var type = assembly.GetTypeByName(typeName);
+                    if (type == null)
+                        return null;
+                    return await context.SdbAgent.GetTypeIdFromToken(assembly.DebugId, type.Token, token);
+                }
+
+                async Task<int?> TryFindNameInAssembly(List<AssemblyInfo> assemblies, string name)
+                {
+                    foreach (var asm in assemblies)
                     {
-                        typeId = await sdbHelper.GetTypeIdFromToken(sessionId, asm.DebugId, type.Token, token);
+                        var typeId = await TryGetTypeIdFromName(name, asm);
+                        if (typeId != null)
+                            return typeId;
                     }
+                    return null;
                 }
             }
             return null;
@@ -195,12 +212,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            rootObject = await TryToRunOnLoadedClasses(varName, token);
-                            return rootObject;
+                            break;
                         }
                     }
                 }
             }
+            if (rootObject == null)
+                rootObject = await TryToRunOnLoadedClasses(varName, token);
             scopeCache.MemberReferences[varName] = rootObject;
             return rootObject;
         }
@@ -267,18 +285,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                         switch (objectId.Scheme)
                         {
                             case "array":
-                                rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(objectId.Value), token);
+                                rootObject["value"] = await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
                                 return (JObject)rootObject["value"][elementIdx]["value"];
                             case "object":
-                                var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
-                                int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], "ToArray", token);
-                                var commandParamsObj = new MemoryStream();
-                                var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
-                                commandParamsObjWriter.WriteObj(objectId, sdbHelper);
-                                var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, elementAccess.Expression.ToString(), token);
+                                var typeIds = await context.SdbAgent.GetTypeIdFromObject(int.Parse(objectId.Value), true, token);
+                                int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], "ToArray", token);
+                                var commandParamsObjWriter = new MonoBinaryWriter();
+                                commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
+                                var toArrayRetMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, elementAccess.Expression.ToString(), token);
                                 rootObject = await GetValueFromObject(toArrayRetMethod, token);
                                 DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
-                                rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(arrayObjectId.Value), token);
+                                rootObject["value"] = await context.SdbAgent.GetArrayValues(int.Parse(arrayObjectId.Value), token);
                                 return (JObject)rootObject["value"][elementIdx]["value"];
                             default:
                                 throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
@@ -317,56 +334,55 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (rootObject != null)
                 {
                     DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
-                    var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
-                    int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], methodName, token);
-                    var className = await sdbHelper.GetTypeNameOriginal(sessionId, typeIds[0], token);
+                    var typeIds = await context.SdbAgent.GetTypeIdFromObject(int.Parse(objectId.Value), true, token);
+                    int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], methodName, token);
+                    var className = await context.SdbAgent.GetTypeNameOriginal(typeIds[0], token);
                     if (methodId == 0) //try to search on System.Linq.Enumerable
                     {
                         if (linqTypeId == -1)
-                            linqTypeId = await sdbHelper.GetTypeByName(sessionId, "System.Linq.Enumerable", token);
-                        methodId = await sdbHelper.GetMethodIdByName(sessionId, linqTypeId, methodName, token);
+                            linqTypeId = await context.SdbAgent.GetTypeByName("System.Linq.Enumerable", token);
+                        methodId = await context.SdbAgent.GetMethodIdByName(linqTypeId, methodName, token);
                         if (methodId != 0)
                         {
                             foreach (var typeId in typeIds)
                             {
-                                var genericTypeArgs = await sdbHelper.GetTypeParamsOrArgsForGenericType(sessionId, typeId, token);
+                                var genericTypeArgs = await context.SdbAgent.GetTypeParamsOrArgsForGenericType(typeId, token);
                                 if (genericTypeArgs.Count > 0)
                                 {
                                     isTryingLinq = 1;
-                                    methodId = await sdbHelper.MakeGenericMethod(sessionId, methodId, genericTypeArgs, token);
+                                    methodId = await context.SdbAgent.MakeGenericMethod(methodId, genericTypeArgs, token);
                                     break;
                                 }
                             }
                         }
                     }
                     if (methodId == 0) {
-                        var typeName = await sdbHelper.GetTypeName(sessionId, typeIds[0], token);
+                        var typeName = await context.SdbAgent.GetTypeName(typeIds[0], token);
                         throw new Exception($"Method '{methodName}' not found in type '{typeName}'");
                     }
-                    var commandParamsObj = new MemoryStream();
-                    var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                    using var commandParamsObjWriter = new MonoBinaryWriter();
                     if (isTryingLinq == 0)
-                        commandParamsObjWriter.WriteObj(objectId, sdbHelper);
+                        commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
                     if (method.ArgumentList != null)
                     {
                         commandParamsObjWriter.Write((int)method.ArgumentList.Arguments.Count + isTryingLinq);
                         if (isTryingLinq == 1)
-                            commandParamsObjWriter.WriteObj(objectId, sdbHelper);
+                            commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
                         foreach (var arg in method.ArgumentList.Arguments)
                         {
                             if (arg.Expression is LiteralExpressionSyntax)
                             {
-                                if (!await commandParamsObjWriter.WriteConst(sessionId, arg.Expression as LiteralExpressionSyntax, sdbHelper, token))
+                                if (!await commandParamsObjWriter.WriteConst(arg.Expression as LiteralExpressionSyntax, context.SdbAgent, token))
                                     return null;
                             }
                             if (arg.Expression is IdentifierNameSyntax)
                             {
                                 var argParm = arg.Expression as IdentifierNameSyntax;
-                                if (!await commandParamsObjWriter.WriteJsonValue(sessionId, memberAccessValues[argParm.Identifier.Text], sdbHelper, token))
+                                if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[argParm.Identifier.Text], context.SdbAgent, token))
                                     return null;
                             }
                         }
-                        var retMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
+                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
                     }
                 }
