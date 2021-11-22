@@ -38,14 +38,17 @@ static int
 wasm_get_stack_base (void)
 {
 	//g_assert_not_reached ();
-	return 163840;
+	return 1;
 }
 
 static int
 wasm_get_stack_size (void)
 {
 	//g_assert_not_reached ();
-	return 1638400;
+
+	// TODO: Figure out what impact this has and how to pick or determine a sensible value.
+	// Currently it seems to make no difference even if picking the value 1.
+	return 16384;
 }
 
 #endif
