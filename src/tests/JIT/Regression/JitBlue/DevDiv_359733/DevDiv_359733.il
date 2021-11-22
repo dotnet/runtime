@@ -10,6 +10,7 @@
 
 .assembly extern mscorlib {}
 .assembly DevDiv_1359733 {}
+.assembly extern xunit.core {}
 
 .class private C extends [mscorlib]System.Object
 {
@@ -40,6 +41,9 @@
 
     .method private static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         .try

@@ -99,7 +99,6 @@ build_Tests()
     export __CopyNativeProjectsAfterCombinedTestBuild
     export __CopyNativeTestBinaries
     export __Priority
-    export __DoCrossgen2
     export __CreatePerfmap
     export __CompositeBuildMode
     export __BuildTestWrappersOnly
@@ -188,13 +187,11 @@ handle_arguments_local() {
             ;;
 
         crossgen2|-crossgen2)
-            __DoCrossgen2=1
             __TestBuildMode=crossgen2
             ;;
 
         composite|-composite)
             __CompositeBuildMode=1
-            __DoCrossgen2=1
             __TestBuildMode=crossgen2
             ;;
 
@@ -294,7 +291,6 @@ __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
 __DistroRid=""
-__DoCrossgen2=
 __CompositeBuildMode=
 __CreatePerfmap=
 __TestBuildMode=
@@ -303,7 +299,6 @@ __BuildTestDir="%3B"
 __BuildTestTree="%3B"
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=0
-__IsMSBuildOnNETCoreSupported=0
 __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
 __PortableBuild=1
@@ -312,7 +307,6 @@ __RootBinDir="$__RepoRootDir/artifacts"
 __RunTests=0
 __SkipConfigure=0
 __SkipGenerateLayout=0
-__SkipGenerateVersion=0
 __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""

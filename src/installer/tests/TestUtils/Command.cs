@@ -206,11 +206,9 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                     Process.Start();
                     break;
                 }
-                catch (Win32Exception e) when (i < 3 && e.Message.Contains("Text file busy"))
+                catch (Win32Exception e) when (i < 4 && e.Message.Contains("Text file busy"))
                 {
-                    // 10 ms is short, but the race we're trying to avoid is in-between
-                    // "fork" and "exec", so it should be fast
-                    Thread.Sleep(10);
+                    Thread.Sleep(i * 20);
                 }
             }
 

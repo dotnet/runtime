@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PlatformSupportsDualModeIPv4PacketInfo")]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PlatformSupportsDualModeIPv4PacketInfo")]
         [SuppressGCTransition]
-        internal static extern int PlatformSupportsDualModeIPv4PacketInfo();
+        internal static partial int PlatformSupportsDualModeIPv4PacketInfo();
     }
 }

@@ -9,20 +9,20 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxCreate")]
-        internal static extern SafeX509StoreCtxHandle X509StoreCtxCreate();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxCreate")]
+        internal static partial SafeX509StoreCtxHandle X509StoreCtxCreate();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxDestroy")]
-        internal static extern void X509StoreCtxDestroy(IntPtr v);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxDestroy")]
+        internal static partial void X509StoreCtxDestroy(IntPtr v);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetChain")]
-        internal static extern SafeX509StackHandle X509StoreCtxGetChain(SafeX509StoreCtxHandle ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetChain")]
+        internal static partial SafeX509StackHandle X509StoreCtxGetChain(SafeX509StoreCtxHandle ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetCurrentCert")]
-        internal static extern SafeX509Handle X509StoreCtxGetCurrentCert(SafeX509StoreCtxHandle ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetCurrentCert")]
+        internal static partial SafeX509Handle X509StoreCtxGetCurrentCert(SafeX509StoreCtxHandle ctx);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_X509StoreCtxCommitToChain(SafeX509StoreCtxHandle ctx);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_X509StoreCtxCommitToChain(SafeX509StoreCtxHandle ctx);
 
         internal static void X509StoreCtxCommitToChain(SafeX509StoreCtxHandle ctx)
         {
@@ -32,8 +32,8 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_X509StoreCtxResetForSignatureError(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_X509StoreCtxResetForSignatureError(
             SafeX509StoreCtxHandle ctx,
             out SafeX509StoreHandle newStore);
 
@@ -55,11 +55,11 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetSharedUntrusted")]
-        private static extern SafeSharedX509StackHandle X509StoreCtxGetSharedUntrusted_private(SafeX509StoreCtxHandle ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetSharedUntrusted")]
+        private static partial SafeSharedX509StackHandle X509StoreCtxGetSharedUntrusted_private(SafeX509StoreCtxHandle ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetTargetCert")]
-        internal static extern IntPtr X509StoreCtxGetTargetCert(SafeX509StoreCtxHandle ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetTargetCert")]
+        internal static partial IntPtr X509StoreCtxGetTargetCert(SafeX509StoreCtxHandle ctx);
 
         internal static SafeSharedX509StackHandle X509StoreCtxGetSharedUntrusted(SafeX509StoreCtxHandle ctx)
         {

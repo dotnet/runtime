@@ -34,6 +34,8 @@ namespace System.IO.Hashing.Tests
         private const string DotNetHashesThis3 = DotNetHashesThis + DotNetHashesThis + DotNetHashesThis;
         private const string DotNetNCHashing = ".NET now has non-crypto hashing";
         private const string DotNetNCHashing3 = DotNetNCHashing + DotNetNCHashing + DotNetNCHashing;
+        private const string SixteenBytes = ".NET Hashes This";
+        private const string SixteenBytes3 = SixteenBytes + SixteenBytes + SixteenBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -90,6 +92,11 @@ namespace System.IO.Hashing.Tests
                     $"{DotNetNCHashing} (x3)",
                     Encoding.ASCII.GetBytes(DotNetNCHashing3),
                     "65242024"),
+                // stripe size
+                new TestCase(
+                    $"{SixteenBytes} (x3)",
+                    Encoding.ASCII.GetBytes(SixteenBytes3),
+                    "29DA7472")
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash32();

@@ -640,11 +640,11 @@ INST2(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,     
 INST2(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,                                              Writes_OF                                                                      | Writes_CF
                                                                                                                                                                                                         | Reads_CF      )
 INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              Undefined_OF                                                                   | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      ) 
+                                                                                                                                                                                                        | Reads_CF      )
 INST2(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF
                                                                                                                                                                                                         | Reads_CF      )
 INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              Writes_OF                                                                      | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )   
+                                                                                                                                                                                                        | Reads_CF      )
 INST2(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,                                              Undefined_OF                                                                   | Writes_CF
                                                                                                                                                                                                         | Reads_CF      )
 INST2(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
@@ -683,6 +683,7 @@ INST1(stosq,            "stosq",            IUM_RD, 0x00AB48,                   
 
 INST1(int3,             "int3",             IUM_RD, 0x0000CC,                                                            INS_FLAGS_None )
 INST1(nop,              "nop",              IUM_RD, 0x000090,                                                            INS_FLAGS_None )
+INST1(pause,            "pause",            IUM_RD, 0x0090F3,                                                            INS_FLAGS_None )
 INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None )
 INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None )
 

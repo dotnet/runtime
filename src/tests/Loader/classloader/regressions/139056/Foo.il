@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 1.2.30612.00
 //  Copyright (C) Microsoft Corporation 1998-2003. All rights reserved.
@@ -100,12 +101,15 @@
 
 } // end of class Bar
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_Foo
        extends [mscorlib]System.Object
 {
 
   .method public static int32 Main()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (class Bar V_0,
              	  class Foo V_1, 

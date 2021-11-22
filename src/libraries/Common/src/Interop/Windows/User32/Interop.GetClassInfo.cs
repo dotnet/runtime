@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static extern bool GetClassInfoW(IntPtr hInst, string lpszClass, ref WNDCLASS wc);
+        [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        public static partial bool GetClassInfoW(IntPtr hInst, string lpszClass, ref WNDCLASS wc);
     }
 }

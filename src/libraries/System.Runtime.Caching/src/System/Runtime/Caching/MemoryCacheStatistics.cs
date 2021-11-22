@@ -319,6 +319,12 @@ namespace System.Runtime.Caching
 #endif
                 return trimmedOrExpired;
             }
+            catch (ObjectDisposedException)
+            {
+                // There is a small window for _memoryCache to be disposed after we check our own
+                // disposed bit. No big deal.
+                return 0;
+            }
             finally
             {
                 Interlocked.Exchange(ref _inCacheManagerThread, 0);

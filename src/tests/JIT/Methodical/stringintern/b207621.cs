@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-internal class Test
+internal class Test_b207621
 {
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     private static string FooBar()

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
         /// </summary>
-        public static new ECDsa Create()
+        public static new partial ECDsa Create()
         {
             return new ECDsaImplementation.ECDsaSecurityTransforms();
         }
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
         /// <param name="curve">
         /// The <see cref="ECCurve"/> representing the elliptic curve.
         /// </param>
-        public static ECDsa Create(ECCurve curve)
+        public static partial ECDsa Create(ECCurve curve)
         {
             ECDsa ecdsa = Create();
             ecdsa.GenerateKey(curve);
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         /// <param name="parameters">
         /// The <see cref="ECParameters"/> representing the elliptic curve parameters.
         /// </param>
-        public static ECDsa Create(ECParameters parameters)
+        public static partial ECDsa Create(ECParameters parameters)
         {
             ECDsa ecdsa = Create();
             ecdsa.ImportParameters(parameters);

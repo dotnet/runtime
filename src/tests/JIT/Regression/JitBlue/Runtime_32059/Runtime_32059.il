@@ -4,12 +4,16 @@
 
 .assembly extern System.Runtime {}
 .assembly Runtime_32059 {}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit Runtime_32059 extends [System.Runtime]System.Object
 {
 
 .method public hidebysig static int32 Main(string[] args) cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .locals init (valuetype [System.Runtime]System.DateTime V_0)
   .maxstack 12

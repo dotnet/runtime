@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 namespace NativeVarargsTest
 {

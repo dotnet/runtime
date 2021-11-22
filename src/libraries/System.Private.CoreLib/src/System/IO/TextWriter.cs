@@ -48,19 +48,7 @@ namespace System.IO
         }
 
         public virtual IFormatProvider FormatProvider
-        {
-            get
-            {
-                if (_internalFormatProvider == null)
-                {
-                    return CultureInfo.CurrentCulture;
-                }
-                else
-                {
-                    return _internalFormatProvider;
-                }
-            }
-        }
+            => _internalFormatProvider ?? CultureInfo.CurrentCulture;
 
         public virtual void Close()
         {

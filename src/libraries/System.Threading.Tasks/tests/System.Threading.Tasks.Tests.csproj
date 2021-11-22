@@ -15,6 +15,7 @@
     <Compile Include="MethodCoverage.cs" />
     <Compile Include="CESchedulerPairTests.cs" />
     <!-- Task -->
+    <Compile Include="Task\AsyncEnumerableToBlockingEnumerableTests.cs" />
     <Compile Include="Task\ExecutionContextFlowTest.cs" />
     <Compile Include="Task\RunContinuationsAsynchronouslyTests.cs" />
     <Compile Include="Task\TPLTestException.cs" />
@@ -52,12 +53,9 @@
     <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\YieldAwaitableTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
-             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs"
-             Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
-             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs" Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="Task\TaskDisposeTests.cs" />
   </ItemGroup>
 </Project>

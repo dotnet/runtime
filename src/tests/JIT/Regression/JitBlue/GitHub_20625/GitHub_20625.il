@@ -17,6 +17,7 @@
 .assembly GitHub_20625
 {
 }
+.assembly extern xunit.core {}
 
 .class private abstract auto ansi beforefieldinit Base
        extends [System.Runtime]System.Object
@@ -123,6 +124,9 @@
   .method private hidebysig static int32
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
     .maxstack  2

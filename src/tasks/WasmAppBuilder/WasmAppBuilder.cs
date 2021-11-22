@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -173,12 +174,12 @@ public class WasmAppBuilder : Task
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
         }
-        FileCopyChecked(MainJS!, Path.Combine(AppDir, "runtime.js"), string.Empty);
+        FileCopyChecked(MainJS!, Path.Combine(AppDir, "main.js"), string.Empty);
 
         string indexHtmlPath = Path.Combine(AppDir, "index.html");
         if (!File.Exists(indexHtmlPath))
         {
-            var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+            var html = @"<html><body><script type=""text/javascript"" src=""main.js""></script></body></html>";
             File.WriteAllText(indexHtmlPath, html);
         }
 
@@ -222,6 +223,7 @@ public class WasmAppBuilder : Task
             Directory.CreateDirectory(supportFilesDir);
 
             var i = 0;
+            StringDictionary targetPathTable = new();
             foreach (var item in FilesToIncludeInFileSystem)
             {
                 string? targetPath = item.GetMetadata("TargetPath");
@@ -232,6 +234,21 @@ public class WasmAppBuilder : Task
 
                 // We normalize paths from `\` to `/` as MSBuild items could use `\`.
                 targetPath = targetPath.Replace('\\', '/');
+                if (targetPathTable.ContainsKey(targetPath))
+                {
+                    string firstPath = Path.GetFullPath(targetPathTable[targetPath]!);
+                    string secondPath = Path.GetFullPath(item.ItemSpec);
+
+                    if (firstPath == secondPath)
+                    {
+                        Log.LogWarning($"Found identical vfs mappings for target path: {targetPath}, source file: {firstPath}. Ignoring.");
+                        continue;
+                    }
+
+                    throw new LogAsErrorException($"Found more than one file mapping to the target VFS path: {targetPath}. Source files: {firstPath}, and {secondPath}");
+                }
+
+                targetPathTable[targetPath] = item.ItemSpec;
 
                 var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
 
@@ -348,9 +365,16 @@ public class WasmAppBuilder : Task
         }
 
         Log.LogMessage(MessageImportance.Low, $"Copying file from '{src}' to '{dst}'");
-        File.Copy(src, dst, true);
-        _fileWrites.Add(dst);
+        try
+        {
+            File.Copy(src, dst, true);
+            _fileWrites.Add(dst);
 
-        return true;
+            return true;
+        }
+        catch (IOException ioex)
+        {
+            throw new LogAsErrorException($"{label} Failed to copy {src} to {dst} because {ioex.Message}");
+        }
     }
 }

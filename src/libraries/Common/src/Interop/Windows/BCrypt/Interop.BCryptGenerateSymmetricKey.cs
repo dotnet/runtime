@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
-        [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        internal static unsafe extern NTSTATUS BCryptGenerateSymmetricKey(
+        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe partial NTSTATUS BCryptGenerateSymmetricKey(
             SafeBCryptAlgorithmHandle hAlgorithm,
             out SafeBCryptKeyHandle phKey,
             IntPtr pbKeyObject,
@@ -19,8 +19,8 @@ internal static partial class Interop
             int cbSecret,
             uint dwFlags);
 
-        [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        internal static unsafe extern NTSTATUS BCryptGenerateSymmetricKey(
+        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe partial NTSTATUS BCryptGenerateSymmetricKey(
             nuint hAlgorithm,
             out SafeBCryptKeyHandle phKey,
             IntPtr pbKeyObject,

@@ -5,7 +5,7 @@ namespace Dynamic
 {
     using System;
     using System.Collections.Generic;
-    using TestLibrary;
+    using Xunit;
 
     internal class CollectionTest
     {
@@ -40,28 +40,28 @@ namespace Dynamic
             }
 
             // Call method returning array
-            Assert.AreAllEqual(expected, obj.Array_PlusOne_Ret(array));
+            AssertExtensions.CollectionEqual(expected, obj.Array_PlusOne_Ret(array));
 
             // Call method with array in/out
             int[] inout = new int[len];
             System.Array.Copy(array, inout, len);
             obj.Array_PlusOne_InOut(ref inout);
-            Assert.AreAllEqual(expected, inout);
+            AssertExtensions.CollectionEqual(expected, inout);
 
             // Call method returning array as variant
-            Assert.AreAllEqual(expected, obj.ArrayVariant_PlusOne_Ret(array));
+            AssertExtensions.CollectionEqual(expected, obj.ArrayVariant_PlusOne_Ret(array));
 
             // Call method with array as variant in/out
             inout = new int[len];
             System.Array.Copy(array, inout, len);
             obj.ArrayVariant_PlusOne_InOut(ref inout);
-            Assert.AreAllEqual(expected, inout);
+            AssertExtensions.CollectionEqual(expected, inout);
         }
 
         private void CustomCollection()
         {
             // Add to the collection
-            Assert.AreEqual(0, obj.Count);
+            Assert.Equal(0, obj.Count);
             string[] array = { "ONE", "TWO", "THREE" };
             foreach (string s in array)
             {
@@ -69,14 +69,14 @@ namespace Dynamic
             }
 
             // Get item by index
-            Assert.AreEqual(array[0], obj[0]);
-            Assert.AreEqual(array[0], obj.Item(0));
-            Assert.AreEqual(array[0], obj.Item[0]);
-            Assert.AreEqual(array[1], obj[1]);
-            Assert.AreEqual(array[1], obj.Item(1));
-            Assert.AreEqual(array[2], obj[2]);
-            Assert.AreEqual(array[2], obj.Item(2));
-            Assert.AreEqual(array.Length, obj.Count);
+            Assert.Equal(array[0], obj[0]);
+            Assert.Equal(array[0], obj.Item(0));
+            Assert.Equal(array[0], obj.Item[0]);
+            Assert.Equal(array[1], obj[1]);
+            Assert.Equal(array[1], obj.Item(1));
+            Assert.Equal(array[2], obj[2]);
+            Assert.Equal(array[2], obj.Item(2));
+            Assert.Equal(array.Length, obj.Count);
 
             // Enumerate collection
             List<string> list = new List<string>();
@@ -87,7 +87,7 @@ namespace Dynamic
             {
                 list.Add((string)enumerator.Current);
             }
-            Assert.AreAllEqual(array, list);
+            AssertExtensions.CollectionEqual(array, list);
 
             list.Clear();
             enumerator.Reset();
@@ -95,7 +95,7 @@ namespace Dynamic
             {
                 list.Add((string)enumerator.Current);
             }
-            Assert.AreAllEqual(array, list);
+            AssertExtensions.CollectionEqual(array, list);
 
             // Iterate over object that handles DISPID_NEWENUM
             list.Clear();
@@ -103,34 +103,34 @@ namespace Dynamic
             {
                 list.Add(str);
             }
-            Assert.AreAllEqual(array, list);
+            AssertExtensions.CollectionEqual(array, list);
 
             array = new string[] { "NEW_ONE", "NEW_TWO", "NEW_THREE" };
             // Update items by index
             obj[0] = array[0];
-            Assert.AreEqual(array[0], obj[0]);
+            Assert.Equal(array[0], obj[0]);
             obj[1] = array[1];
-            Assert.AreEqual(array[1], obj[1]);
+            Assert.Equal(array[1], obj[1]);
             obj[2] = array[2];
-            Assert.AreEqual(array[2], obj[2]);
-            Assert.AreEqual(array.Length, obj.Count);
+            Assert.Equal(array[2], obj[2]);
+            Assert.Equal(array.Length, obj.Count);
 
             list.Clear();
             foreach (string str in obj)
             {
                 list.Add(str);
             }
-            Assert.AreAllEqual(array, list);
+            AssertExtensions.CollectionEqual(array, list);
 
             // Remove item
             obj.Remove(1);
-            Assert.AreEqual(2, obj.Count);
-            Assert.AreEqual(array[0], obj[0]);
-            Assert.AreEqual(array[2], obj[1]);
+            Assert.Equal(2, obj.Count);
+            Assert.Equal(array[0], obj[0]);
+            Assert.Equal(array[2], obj[1]);
 
             // Clear collection
             obj.Clear();
-            Assert.AreEqual(0, obj.Count);
+            Assert.Equal(0, obj.Count);
         }
 
         private void IndexChain()
@@ -138,12 +138,12 @@ namespace Dynamic
             dynamic collection = obj.GetDispatchCollection();
             collection.Add(collection);
 
-            Assert.AreEqual(1, collection.Item[0][0][0].Count);
+            Assert.Equal(1, collection.Item[0][0][0].Count);
 
             collection[0].Add(obj);
 
-            Assert.AreEqual(2, collection.Count);
-            Assert.AreEqual(2, collection[0].Item[1].GetDispatchCollection()[0].Count);
+            Assert.Equal(2, collection.Count);
+            Assert.Equal(2, collection[0].Item[1].GetDispatchCollection()[0].Count);
         }
     }
 }

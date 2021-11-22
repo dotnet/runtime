@@ -10,8 +10,8 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
-        private static extern SafeEcKeyHandle CryptoNative_EcKeyCreateByOid(string oid);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid", CharSet = CharSet.Ansi)]
+        private static partial SafeEcKeyHandle CryptoNative_EcKeyCreateByOid(string oid);
         internal static SafeEcKeyHandle? EcKeyCreateByOid(string oid)
         {
             SafeEcKeyHandle handle = CryptoNative_EcKeyCreateByOid(oid);
@@ -23,19 +23,19 @@ internal static partial class Interop
             return handle;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
-        internal static extern void EcKeyDestroy(IntPtr a);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
+        internal static partial void EcKeyDestroy(IntPtr a);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGenerateKey")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EcKeyGenerateKey(SafeEcKeyHandle eckey);
+        internal static partial bool EcKeyGenerateKey(SafeEcKeyHandle eckey);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyUpRef")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyUpRef")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EcKeyUpRef(IntPtr r);
+        internal static partial bool EcKeyUpRef(IntPtr r);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_EcKeyGetSize(SafeEcKeyHandle ecKey, out int keySize);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_EcKeyGetSize(SafeEcKeyHandle ecKey, out int keySize);
         internal static int EcKeyGetSize(SafeEcKeyHandle key)
         {
             int keySize;
@@ -47,8 +47,8 @@ internal static partial class Interop
             throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGetCurveName2")]
-        private static extern int CryptoNative_EcKeyGetCurveName(SafeEcKeyHandle ecKey, out int nid);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGetCurveName2")]
+        private static partial int CryptoNative_EcKeyGetCurveName(SafeEcKeyHandle ecKey, out int nid);
 
         internal static string EcKeyGetCurveName(SafeEcKeyHandle key)
         {

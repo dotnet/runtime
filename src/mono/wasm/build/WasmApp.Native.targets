@@ -7,7 +7,6 @@
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
-      _CheckEmccIsExpectedVersion;
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
       _GeneratePInvokeTable;
@@ -152,6 +151,8 @@
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
       <_WasmPInvokeHPath>$(_WasmRuntimePackIncludeDir)wasm\pinvoke.h</_WasmPInvokeHPath>
       <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
+      <DisableParallelAot Condition="'$(DisableParallelAot)' == ''">false</DisableParallelAot>
+      <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">$(DisableParallelAot)</DisableParallelEmccCompile>
 
       <_DriverGenCNeeded Condition="'$(_DriverGenCNeeded)' == '' and '$(_WasmShouldAOT)' == 'true'">true</_DriverGenCNeeded>
 
@@ -161,6 +162,7 @@
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
 
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
+      <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</EmccLinkOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
 
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
@@ -221,8 +223,11 @@
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
       <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" Exclude="$(_WasmRuntimePackSrcDir)\*.iffe.js"/>
-      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js" Kind="pre-js" />
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js" Kind="extern-pre-js" />
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
+
+      <EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
     </ItemGroup>
 
     <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
@@ -257,14 +262,17 @@
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
       Assemblies="@(_WasmAssembliesInternal)"
-      OutputPath="$(_WasmICallTablePath)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </IcallTableGenerator>
+      OutputPath="$(_WasmICallTablePath)" />
+
+    <!-- Writing this explicitly, so it gets picked up when the target is skipped -->
+    <ItemGroup>
+      <FileWrites Include="$(_WasmICallTablePath)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == true" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
-  <Target Name="_WasmCompileNativeFiles">
+  <Target Name="_WasmCompileNativeFiles" DependsOnTargets="_CheckEmccIsExpectedVersion">
     <PropertyGroup>
       <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
       <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
@@ -282,7 +290,7 @@
     <!-- warm up the cache -->
     <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
 
-    <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
+    <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
     <ItemGroup>
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" Dependencies="%(_WasmRuntimePackSrcFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileRsp)" />
@@ -291,6 +299,7 @@
           SourceFiles="@(_WasmSourceFileToCompile)"
           Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"'
           EnvironmentVariables="@(EmscriptenEnvVars)"
+          DisableParallelCompile="$(DisableParallelEmccCompile)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
@@ -300,18 +309,19 @@
           Inputs="@(_BitcodeFile);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)"
           Outputs="@(_BitcodeFile->'%(ObjectFile)')"
           Condition="'$(_WasmShouldAOT)' == 'true' and @(_BitcodeFile->Count()) > 0"
-          DependsOnTargets="_WasmWriteRspForCompilingBitcode"
+          DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmWriteRspForCompilingBitcode"
           Returns="@(FileWrites)">
 
     <ItemGroup>
       <_BitCodeFile Dependencies="%(_BitCodeFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)" />
     </ItemGroup>
 
-    <Message Text="Compiling assembly bitcode files..." Importance="High" Condition="@(_BitCodeFile->Count()) > 0" />
+    <Message Text="Compiling assembly bitcode files with $(EmccLinkOptimizationFlag) ..." Importance="High" Condition="@(_BitCodeFile->Count()) > 0" />
     <EmccCompile
           SourceFiles="@(_BitCodeFile)"
           Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; &quot;@$(_EmccCompileBitcodeRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)"
+          DisableParallelCompile="$(DisableParallelEmccCompile)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
@@ -346,8 +356,9 @@
 
       <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
       <_EmccLinkStepArgs Include="--pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
+      <_EmccLinkStepArgs Include="--extern-pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'extern-pre-js'" />
       <_EmccLinkStepArgs Include="--post-js &quot;%(_WasmExtraJSFile.Identity)&quot;"    Condition="'%(_WasmExtraJSFile.Kind)' == 'post-js'" />
-      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library' or '%(_WasmExtraJSFile.Kind)' == 'pre-js' or '%(_WasmExtraJSFile.Kind)' == 'post-js'" />
+      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library' or '%(_WasmExtraJSFile.Kind)' == 'pre-js' or '%(_WasmExtraJSFile.Kind)' == 'post-js' or '%(_WasmExtraJSFile.Kind)' == 'extern-post-js'" />
 
       <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
@@ -367,10 +378,10 @@
   <Target Name="_WasmLinkDotNet"
           Inputs="@(_WasmLinkDependencies);$(_EmccDefaultFlagsRsp);$(_EmccLinkRsp)"
           Outputs="$(_WasmIntermediateOutputPath)dotnet.js;$(_WasmIntermediateOutputPath)dotnet.wasm"
-          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
+          DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
           Returns="@(FileWrites)" >
 
-    <Message Text="Linking with emcc. This may take a while ..." Importance="High" />
+    <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
     <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
     <ItemGroup>
@@ -422,9 +433,23 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
 
-    <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
+    <PropertyGroup>
+      <_EmccVersionCommand>emcc --version</_EmccVersionCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(_EmccVersionCommand)" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low" IgnoreExitCode="true">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
+      <Output TaskParameter="ExitCode" PropertyName="_EmccVersionExitCode" />
     </Exec>
+
+    <!-- If `emcc -version` failed, then run it again, so we can surface the output as *Errors*. This allows the errors to show up correctly,
+         versus trying to use the output lines with the Error task -->
+    <Exec Condition="$(_EmccVersionExitCode) != '0'"
+          Command="$(_EmccVersionCommand)"
+          WorkingDirectory="$(_WasmIntermediateOutputPath)"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          CustomErrorRegularExpression=".*"
+          />
 
     <!-- we want to get the first line from the output, which has the version.
          Rest of the lines are the license -->

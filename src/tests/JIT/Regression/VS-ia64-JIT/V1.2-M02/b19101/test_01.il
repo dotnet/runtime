@@ -8,11 +8,15 @@
 }
 .assembly extern mscorlib{}
 .assembly double_ulong_e_1{}
+.assembly extern xunit.core {}
 
   .class public auto ansi beforefieldinit Driver extends [mscorlib]System.Object
   {
     .method public hidebysig static int32 Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
 
 	ldc.r8     1.

@@ -10,18 +10,11 @@ namespace System.IO.Tests
 {
     public class File_AppendAllTextAsync : File_ReadWriteAllTextAsync
     {
+        protected override bool IsAppend => true;
+
         protected override Task WriteAsync(string path, string content) => File.AppendAllTextAsync(path, content);
 
-        [Fact]
-        public override async Task OverwriteAsync()
-        {
-            string path = GetTestFilePath();
-            string lines = new string('c', 200);
-            string appendLines = new string('b', 100);
-            await WriteAsync(path, lines);
-            await WriteAsync(path, appendLines);
-            Assert.Equal(lines + appendLines, await ReadAsync(path));
-        }
+        protected override Task WriteAsync(string path, string content, Encoding encoding) => File.AppendAllTextAsync(path, content, encoding);
 
         [Fact]
         public override Task TaskAlreadyCanceledAsync()
@@ -60,18 +53,9 @@ namespace System.IO.Tests
 
     public class File_AppendAllLinesAsync : File_ReadWriteAllLines_EnumerableAsync
     {
-        protected override Task WriteAsync(string path, string[] content) => File.AppendAllLinesAsync(path, content);
+        protected override bool IsAppend => true;
 
-        [Fact]
-        public override async Task OverwriteAsync()
-        {
-            string path = GetTestFilePath();
-            string[] lines = new string[] { new string('c', 200) };
-            string[] appendLines = new string[] { new string('b', 100) };
-            await WriteAsync(path, lines);
-            await WriteAsync(path, appendLines);
-            Assert.Equal(new string[] { lines[0], appendLines[0] }, await ReadAsync(path));
-        }
+        protected override Task WriteAsync(string path, string[] content) => File.AppendAllLinesAsync(path, content);
 
         [Fact]
         public override Task TaskAlreadyCanceledAsync()

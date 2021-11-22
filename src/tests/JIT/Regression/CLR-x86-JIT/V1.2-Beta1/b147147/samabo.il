@@ -10,6 +10,7 @@
 .assembly samabo
 {
 }
+.assembly extern xunit.core {}
 
 
 .class public sequential ansi sealed beforefieldinit MyStruct
@@ -27,6 +28,9 @@
 
   .method private hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       19 (0x13)
     .maxstack  2

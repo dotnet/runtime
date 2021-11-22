@@ -265,8 +265,8 @@ int __cdecl main(int argc, char* argv[])
         }
     }
 
-    MetricsSummary baseMetrics;
-    MetricsSummary diffMetrics;
+    MetricsSummary totalBaseMetrics;
+    MetricsSummary totalDiffMetrics;
 
     while (true)
     {
@@ -362,16 +362,21 @@ int __cdecl main(int argc, char* argv[])
             }
         }
 
+        MetricsSummary baseMetrics;
         jittedCount++;
         st3.Start();
         res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics);
         st3.Stop();
         LogDebug("Method %d compiled in %fms, result %d", reader->GetMethodContextIndex(), st3.GetMilliseconds(), res);
 
+        totalBaseMetrics.AggregateFrom(baseMetrics);
+
         if ((res == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
         {
             mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
         }
+
+        MetricsSummary diffMetrics;
 
         if (o.nameOfJit2 != nullptr)
         {
@@ -386,6 +391,8 @@ int __cdecl main(int argc, char* argv[])
             st4.Stop();
             LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
                      st4.GetMilliseconds(), res2);
+
+            totalDiffMetrics.AggregateFrom(diffMetrics);
 
             if ((res2 == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
             {
@@ -529,6 +536,9 @@ int __cdecl main(int argc, char* argv[])
                 else
                 {
                     InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &matchCount, &reader, &failingToReplayMCL, &diffMCL);
+
+                    totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
+                    totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
                 }
             }
         }
@@ -609,12 +619,12 @@ int __cdecl main(int argc, char* argv[])
 
     if (o.baseMetricsSummaryFile != nullptr)
     {
-        baseMetrics.SaveToFile(o.baseMetricsSummaryFile);
+        totalBaseMetrics.SaveToFile(o.baseMetricsSummaryFile);
     }
 
     if (o.diffMetricsSummaryFile != nullptr)
     {
-        diffMetrics.SaveToFile(o.diffMetricsSummaryFile);
+        totalDiffMetrics.SaveToFile(o.diffMetricsSummaryFile);
     }
 
     if (methodStatsEmitter != nullptr)

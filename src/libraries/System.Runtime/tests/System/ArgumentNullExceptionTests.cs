@@ -49,29 +49,37 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ThrowIfNull_NonNull_DoesntThrow()
+        public static unsafe void ThrowIfNull_NonNull_DoesntThrow()
         {
             foreach (object o in new[] { new object(), "", "argument" })
             {
                 ArgumentNullException.ThrowIfNull(o);
                 ArgumentNullException.ThrowIfNull(o, "paramName");
             }
+
+            int i = 0;
+            ArgumentNullException.ThrowIfNull(&i);
+            ArgumentNullException.ThrowIfNull(&i, "paramName");
         }
 
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("name")]
-        public static void ThrowIfNull_Null_ThrowsArgumentNullException(string paramName)
+        public static unsafe void ThrowIfNull_Null_ThrowsArgumentNullException(string paramName)
         {
-            AssertExtensions.Throws<ArgumentNullException>(paramName, () => ArgumentNullException.ThrowIfNull(null, paramName));
+            AssertExtensions.Throws<ArgumentNullException>(paramName, () => ArgumentNullException.ThrowIfNull((object)null, paramName));
+            AssertExtensions.Throws<ArgumentNullException>(paramName, () => ArgumentNullException.ThrowIfNull((void*)null, paramName));
         }
 
         [Fact]
-        public static void ThrowIfNull_UsesArgumentExpression()
+        public static unsafe void ThrowIfNull_UsesArgumentExpression()
         {
-            object something = null;
-            AssertExtensions.Throws<ArgumentNullException>(nameof(something), () => ArgumentNullException.ThrowIfNull(something));
+            object someObject = null;
+            AssertExtensions.Throws<ArgumentNullException>(nameof(someObject), () => ArgumentNullException.ThrowIfNull(someObject));
+
+            byte* somePointer = null;
+            AssertExtensions.Throws<ArgumentNullException>(nameof(somePointer), () => ArgumentNullException.ThrowIfNull(somePointer));
         }
     }
 }

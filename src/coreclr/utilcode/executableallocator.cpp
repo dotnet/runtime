@@ -4,14 +4,15 @@
 #include "pedecoder.h"
 #include "executableallocator.h"
 
-#if USE_UPPER_ADDRESS
+#if USE_LAZY_PREFERRED_RANGE
 // Preferred region to allocate the code in.
-BYTE * ExecutableAllocator::g_codeMinAddr;
-BYTE * ExecutableAllocator::g_codeMaxAddr;
-BYTE * ExecutableAllocator::g_codeAllocStart;
+BYTE * ExecutableAllocator::g_lazyPreferredRangeStart;
 // Next address to try to allocate for code in the preferred region.
-BYTE * ExecutableAllocator::g_codeAllocHint;
-#endif // USE_UPPER_ADDRESS
+BYTE * ExecutableAllocator::g_lazyPreferredRangeHint;
+#endif // USE_LAZY_PREFERRED_RANGE
+
+BYTE * ExecutableAllocator::g_preferredRangeMin;
+BYTE * ExecutableAllocator::g_preferredRangeMax;
 
 bool ExecutableAllocator::g_isWXorXEnabled = false;
 
@@ -50,12 +51,9 @@ size_t ExecutableAllocator::Granularity()
     return g_SystemInfo.dwAllocationGranularity;
 }
 
-// Use this function to initialize the g_codeAllocHint
-// during startup. base is runtime .dll base address,
-// size is runtime .dll virtual size.
-void ExecutableAllocator::InitCodeAllocHint(size_t base, size_t size, int randomPageOffset)
+void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int randomPageOffset)
 {
-#if USE_UPPER_ADDRESS
+#if USE_LAZY_PREFERRED_RANGE
 
 #ifdef _DEBUG
     // If GetForceRelocs is enabled we don't constrain the pMinAddr
@@ -64,39 +62,25 @@ void ExecutableAllocator::InitCodeAllocHint(size_t base, size_t size, int random
 #endif
 
     //
-    // If we are using the UPPER_ADDRESS space (on Win64)
-    // then for any code heap that doesn't specify an address
-    // range using [pMinAddr..pMaxAddr] we place it in the
-    // upper address space
-    // This enables us to avoid having to use long JumpStubs
-    // to reach the code for our ngen-ed images.
-    // Which are also placed in the UPPER_ADDRESS space.
+    // If we are using USE_LAZY_PREFERRED_RANGE then we try to allocate memory close
+    // to coreclr.dll.  This avoids having to create jump stubs for calls to
+    // helpers and R2R images loaded close to coreclr.dll.
     //
     SIZE_T reach = 0x7FFF0000u;
 
-    // We will choose the preferred code region based on the address of clr.dll. The JIT helpers
-    // in clr.dll are the most heavily called functions.
-    g_codeMinAddr = (base + size > reach) ? (BYTE *)(base + size - reach) : (BYTE *)0;
-    g_codeMaxAddr = (base + reach > base) ? (BYTE *)(base + reach) : (BYTE *)-1;
+    // We will choose the preferred code region based on the address of coreclr.dll. The JIT helpers
+    // in coreclr.dll are the most heavily called functions.
+    g_preferredRangeMin = (base + size > reach) ? (BYTE *)(base + size - reach) : (BYTE *)0;
+    g_preferredRangeMax = (base + reach > base) ? (BYTE *)(base + reach) : (BYTE *)-1;
 
     BYTE * pStart;
 
-    if (g_codeMinAddr <= (BYTE *)CODEHEAP_START_ADDRESS &&
-        (BYTE *)CODEHEAP_START_ADDRESS < g_codeMaxAddr)
-    {
-        // clr.dll got loaded at its preferred base address? (OS without ASLR - pre-Vista)
-        // Use the code head start address that does not cause collisions with NGen images.
-        // This logic is coupled with scripts that we use to assign base addresses.
-        pStart = (BYTE *)CODEHEAP_START_ADDRESS;
-    }
-    else
     if (base > UINT32_MAX)
     {
-        // clr.dll got address assigned by ASLR?
         // Try to occupy the space as far as possible to minimize collisions with other ASLR assigned
         // addresses. Do not start at g_codeMinAddr exactly so that we can also reach common native images
-        // that can be placed at higher addresses than clr.dll.
-        pStart = g_codeMinAddr + (g_codeMaxAddr - g_codeMinAddr) / 8;
+        // that can be placed at higher addresses than coreclr.dll.
+        pStart = g_preferredRangeMin + (g_preferredRangeMax - g_preferredRangeMin) / 8;
     }
     else
     {
@@ -108,31 +92,35 @@ void ExecutableAllocator::InitCodeAllocHint(size_t base, size_t size, int random
     // Randomize the address space
     pStart += GetOsPageSize() * randomPageOffset;
 
-    g_codeAllocStart = pStart;
-    g_codeAllocHint = pStart;
+    g_lazyPreferredRangeStart = pStart;
+    g_lazyPreferredRangeHint = pStart;
 #endif
 }
 
-// Use this function to reset the g_codeAllocHint
-// after unloading an AppDomain
-void ExecutableAllocator::ResetCodeAllocHint()
+void ExecutableAllocator::InitPreferredRange()
+{
+#ifdef TARGET_UNIX
+    void *start, *end;
+    PAL_GetExecutableMemoryAllocatorPreferredRange(&start, &end);
+    g_preferredRangeMin = (BYTE *)start;
+    g_preferredRangeMax = (BYTE *)end;
+#endif
+}
+
+void ExecutableAllocator::ResetLazyPreferredRangeHint()
 {
     LIMITED_METHOD_CONTRACT;
-#if USE_UPPER_ADDRESS
-    g_codeAllocHint = g_codeAllocStart;
+#if USE_LAZY_PREFERRED_RANGE
+    g_lazyPreferredRangeHint = g_lazyPreferredRangeStart;
 #endif
 }
-
-// Returns TRUE if p is located in near clr.dll that allows us
-// to use rel32 IP-relative addressing modes.
+// Returns TRUE if p is is located in the memory area where we prefer to put
+// executable code and static fields. This area is typically close to the
+// coreclr library.
 bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
 {
     LIMITED_METHOD_CONTRACT;
-#if USE_UPPER_ADDRESS
-    if (g_codeMinAddr <= (BYTE *)p && (BYTE *)p < g_codeMaxAddr)
-        return true;
-#endif
-    return false;
+    return g_preferredRangeMin <= (BYTE *)p && (BYTE *)p < g_preferredRangeMax;
 }
 
 ExecutableAllocator* ExecutableAllocator::Instance()
@@ -553,7 +541,7 @@ void* ExecutableAllocator::Reserve(size_t size)
 
     BYTE *result = NULL;
 
-#if USE_UPPER_ADDRESS
+#if USE_LAZY_PREFERRED_RANGE
     //
     // If we are using the UPPER_ADDRESS space (on Win64)
     // then for any heap that will contain executable code
@@ -563,32 +551,32 @@ void* ExecutableAllocator::Reserve(size_t size)
     // to reach the code for our ngen-ed images on x64,
     // since they are also placed in the UPPER_ADDRESS space.
     //
-    BYTE * pHint = g_codeAllocHint;
+    BYTE * pHint = g_lazyPreferredRangeHint;
 
-    if (size <= (SIZE_T)(g_codeMaxAddr - g_codeMinAddr) && pHint != NULL)
+    if (size <= (SIZE_T)(g_preferredRangeMax - g_preferredRangeMin) && pHint != NULL)
     {
         // Try to allocate in the preferred region after the hint
-        result = (BYTE*)ReserveWithinRange(size, pHint, g_codeMaxAddr);
+        result = (BYTE*)ReserveWithinRange(size, pHint, g_preferredRangeMax);
         if (result != NULL)
         {
-            g_codeAllocHint = result + size;
+            g_lazyPreferredRangeHint = result + size;
         }
         else
         {
             // Try to allocate in the preferred region before the hint
-            result = (BYTE*)ReserveWithinRange(size, g_codeMinAddr, pHint + size);
+            result = (BYTE*)ReserveWithinRange(size, g_preferredRangeMin, pHint + size);
 
             if (result != NULL)
             {
-                g_codeAllocHint = result + size;
+                g_lazyPreferredRangeHint = result + size;
             }
 
-            g_codeAllocHint = NULL;
+            g_lazyPreferredRangeHint = NULL;
         }
     }
 
     // Fall through to
-#endif // USE_UPPER_ADDRESS
+#endif // USE_LAZY_PREFERRED_RANGE
 
     if (result == NULL)
     {

@@ -138,8 +138,8 @@ typedef struct SeqPointInfo SeqPointInfo;
 #define printf g_print
 #endif
 
-#define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
-#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
@@ -1063,7 +1063,9 @@ typedef enum {
 	/* Same as MONO_PATCH_INFO_METHOD_FTNDESC */
 	MONO_RGCTX_INFO_METHOD_FTNDESC                = 33,
 	/* mono_type_size () for a class */
-	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34
+	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34,
+	/* A gsharedvt_out wrapper for a method */
+	MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT    = 35
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */
@@ -1123,6 +1125,7 @@ typedef struct {
 
 typedef struct
 {
+	MonoClass *klass;
 	MonoMethod *invoke;
 	MonoMethod *method;
 	MonoMethodSignature *invoke_sig;

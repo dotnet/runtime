@@ -9,6 +9,7 @@
 .assembly extern mscorlib {}
 .assembly extern common {}
 .assembly rethrowinfinallyaftercatch {}
+.assembly extern xunit.core {}
 
 .module rethrowinfinallyaftercatch.exe
 
@@ -56,6 +57,9 @@
     .method public hidebysig static int32 
             Main(string[] args) cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals init (class [mscorlib]System.Exception eo,
