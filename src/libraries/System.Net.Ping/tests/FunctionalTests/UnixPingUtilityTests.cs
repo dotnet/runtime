@@ -26,7 +26,6 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(1000)]
         [InlineData(1500)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public static void TimeoutIsRespected(int timeout)
         {
             Process p = ConstructPingProcess(IPAddress.Parse(TestSettings.UnreachableAddress), 50, timeout);
