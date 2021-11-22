@@ -37,7 +37,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => $"session-{sessionId}";
     }
 
-    public struct MessageId
+    public class MessageId
     {
         public readonly string sessionId;
         public readonly int id;
@@ -127,7 +127,24 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             //Log ("protocol", $"from result: {obj}");
             JObject o;
-            if (obj["result"] is JObject && obj["result"]["type"].Value<string>() == "object")
+            if (obj["ownProperties"] != null && obj["prototype"]?["class"]?.Value<string>() == "Array")
+            {
+                var ret = new JArray();
+                var arrayItems = obj["ownProperties"];
+                foreach (JProperty arrayItem in arrayItems)
+                {
+                    if (arrayItem.Name != "length")
+                        ret.Add(arrayItem.Value["value"]);
+                }
+                o = JObject.FromObject(new
+                {
+                    result = JObject.FromObject(new
+                    {
+                        value = ret
+                    })
+                });
+            }
+            else if (obj["result"] is JObject && obj["result"]["type"].Value<string>() == "object")
             {
                 if (obj["result"]["class"].Value<string>() == "Array")
                 {
@@ -150,7 +167,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     });
                 }
             }
-            else
+            else if (obj["result"] != null)
                 o = JObject.FromObject(new
                 {
                     result = JObject.FromObject(new
@@ -158,6 +175,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                         value = obj["result"]
                     })
                 });
+            else
+            {
+                o = JObject.FromObject(new
+                {
+                    result = JObject.FromObject(new
+                    {
+                        value = obj
+                    })
+                });
+            }
 
             return new Result(o, obj["hasException"] as JObject);
         }

@@ -15,6 +15,23 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
+    public class MessageIdFirefox : MessageId
+    {
+        public readonly string toId;
+
+        public MessageIdFirefox(string sessionId, int id, string toId):base(sessionId, id)
+        {
+            this.toId = toId;
+        }
+
+        public static implicit operator SessionId(MessageIdFirefox id) => new SessionId(id.sessionId);
+
+        public override string ToString() => $"msg-{sessionId}:::{id}:::{toId}";
+
+        public override int GetHashCode() => (sessionId?.GetHashCode() ?? 0) ^ (toId?.GetHashCode() ?? 0) ^ id.GetHashCode();
+
+        public override bool Equals(object obj) => (obj is MessageIdFirefox) ? ((MessageIdFirefox)obj).sessionId == sessionId && ((MessageIdFirefox)obj).id == id && ((MessageIdFirefox)obj).toId == toId : false;
+    }
     internal class FirefoxMonoProxy : MonoProxy
     {
         private int portBrowser;
@@ -197,7 +214,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
             Log("protocol", $"browser: {msg}");
 
-            if (res["resultID"] == null)
+            if (res["prototype"] != null || res["frames"] != null)
+            {
+                var msgId = new MessageIdFirefox(null, 0, res["from"].Value<string>());
+                OnResponse(msgId, Result.FromJsonFirefox(res));
+            }
+            else if (res["resultID"] == null)
                 pending_ops.Add(OnEvent(res.ToObject<SessionId>(), res, token));
             else
             {
@@ -213,10 +235,25 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     SendCommandInternal(msgId, "", o, token);
                 }
+                else if (res["result"] is JObject && res["result"]["type"].Value<string>() == "object" && res["result"]["class"].Value<string>() == "Array")
+                {
+                    var msgIdNew = new MessageIdFirefox(null, 0, res["result"]["actor"].Value<string>());
+                    SendCommandInternal(msgIdNew, "", JObject.FromObject(new
+                    {
+                        type = "prototypeAndProperties",
+                        to = res["result"]["actor"].Value<string>()
+                    }), token);
+
+                    var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
+                    var msgId = new MessageIdFirefox(null, id + 1, "");
+                    var pendingTask = pending_cmds[msgId];
+                    pending_cmds.Remove(msgId);
+                    pending_cmds.Add(msgIdNew, pendingTask);
+                }
                 else
                 {
                     var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
-                    var msgId = new MessageId(null, id + 1);
+                    var msgId = new MessageIdFirefox(null, id + 1, "");
 
                     OnResponse(msgId, Result.FromJsonFirefox(res));
 
@@ -247,12 +284,17 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal override Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
-            if (method == "evaluateJSAsync")
+            if (method != "")
             {
-                int id = Interlocked.Increment(ref next_cmd_id);
                 var tcs = new TaskCompletionSource<Result>();
-                var msgId = new MessageId(sessionId.sessionId, id);
-                //Log ("verbose", $"add cmd id {sessionId}-{id}");
+                MessageId msgId;
+                if (method == "evaluateJSAsync")
+                {
+                    int id = Interlocked.Increment(ref next_cmd_id);
+                    msgId = new MessageIdFirefox(sessionId.sessionId, id, "");
+                }
+                else
+                    msgId = new MessageIdFirefox(sessionId.sessionId, 0, args["to"].Value<string>());
                 pending_cmds[msgId] = tcs;
                 Send(this.browser, args, token);
 
@@ -429,40 +471,36 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return false;
                         Result resp = await SendCommand(sessionId, "", args, token);
 
-                        if (args["location"]["sourceUrl"].Value<string>().EndsWith(".cs"))
+                        string bpid = "";
+
+                        var req = JObject.FromObject(new
                         {
-                            string bpid = "";
+                            url = args["location"]["sourceUrl"].Value<string>(),
+                            lineNumber = args["location"]["line"].Value<int>() - 1,
+                            columnNumber = args["location"]["column"].Value<int>()
+                        });
 
-                            var req = JObject.FromObject(new
-                            {
-                                url = args["location"]["sourceUrl"].Value<string>(),
-                                lineNumber = args["location"]["line"].Value<int>(),
-                                columnNumber = args["location"]["column"].Value<int>()
-                            });
+                        var request = BreakpointRequest.Parse(bpid, req);
+                        bool loaded = context.Source.Task.IsCompleted;
 
-                            var request = BreakpointRequest.Parse(bpid, req);
-                            bool loaded = context.Source.Task.IsCompleted;
+                        if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
+                        {
+                            DebugStore store = await RuntimeReady(sessionId, token);
 
-                            if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
-                            {
-                                DebugStore store = await RuntimeReady(sessionId, token);
-
-                                Log("verbose", $"BP req {args}");
-                                await SetBreakpoint(sessionId, store, request, !loaded, token);
-                            }
-
-                            if (loaded)
-                            {
-                                context.BreakpointRequests[bpid] = request;
-                            }
-                            var o = JObject.FromObject(new
-                            {
-                                from = args["to"].Value<string>()
-                            });
-                            //SendEventInternal(id, "", o, token);
-                            return true;
+                            Log("verbose", $"BP req {args}");
+                            await SetBreakpoint(sessionId, store, request, !loaded, token);
                         }
-                        break;
+
+                        if (loaded)
+                        {
+                            context.BreakpointRequests[bpid] = request;
+                        }
+                        var o = JObject.FromObject(new
+                        {
+                            from = args["to"].Value<string>()
+                        });
+                        //SendEventInternal(id, "", o, token);
+                        return true;
                     }
                 case "prototypeAndProperties":
                 case "slice":
@@ -605,6 +643,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (var variable in res)
             {
                 JObject variableDesc;
+                if (variable["value"] == null) //skipping properties for now
+                    continue;
                 if (variable["value"]["objectId"] != null)
                 {
                     variableDesc = JObject.FromObject(new
@@ -655,8 +695,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 to = actorName,
                 type = "evaluateJSAsync",
-                text = cmd.expression
-            });
+                text = cmd.expression,
+                options = new { eager = true, mapped = new { await = true } }
+                });
             return SendCommand(id, "evaluateJSAsync", o, token);
         }
 
@@ -705,7 +746,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected override async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, JObject args, CancellationToken token)
         {
-            var orig_callframes = args?["callFrames"]?.Values<JObject>();
+            var orig_callframes = await SendCommand(sessionId, "frames", args, token);
+
             var callFrames = new List<object>();
             var frames = new List<Frame>();
             var commandParamsWriter = new MonoBinaryWriter();
@@ -743,7 +785,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     where = new
                     {
                         actor = location.Id.ToString(),
-                        line = location.Line,
+                        line = location.Line + 1,
                         column = location.Column
                     }
                 });
@@ -757,17 +799,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             string[] bp_list = new string[bp == null ? 0 : 1];
             if (bp != null)
                 bp_list[0] = bp.StackId;
-            if (orig_callframes != null)
+            foreach (JObject frame in orig_callframes.Value["result"]?["value"]?["frames"])
             {
-                foreach (JObject frame in orig_callframes)
+                string function_name = frame["displayName"]?.Value<string>();
+                if (!(  function_name.StartsWith("Module._mono_wasm", StringComparison.Ordinal) ||
+                        function_name.StartsWith("Module.mono_wasm", StringComparison.Ordinal) ||
+                        function_name == "mono_wasm_fire_debugger_agent_message" ||
+                        function_name == "_mono_wasm_fire_debugger_agent_message" ||
+                        function_name == "(wasmcall)"))
                 {
-                    string function_name = frame["functionName"]?.Value<string>();
-                    string url = frame["url"]?.Value<string>();
-                    if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
-                            url.StartsWith("wasm://wasm/", StringComparison.Ordinal) || function_name == "_mono_wasm_fire_debugger_agent_message"))
-                    {
-                        callFrames.Add(frame);
-                    }
+                    callFrames.Add(frame);
                 }
             }
             var o = JObject.FromObject(new
