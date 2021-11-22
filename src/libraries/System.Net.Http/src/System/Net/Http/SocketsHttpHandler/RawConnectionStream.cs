@@ -45,9 +45,9 @@ namespace System.Net.Http
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data
+                    // Response body fully consumed
                     return 0;
                 }
 
@@ -74,7 +74,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (bytesRead == 0)
+                if (bytesRead == 0 && buffer.Length != 0)
                 {
                     // A cancellation request may have caused the EOF.
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
