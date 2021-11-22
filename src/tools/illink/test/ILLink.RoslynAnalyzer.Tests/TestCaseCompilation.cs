@@ -56,7 +56,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return (new CompilationWithAnalyzers (comp, SupportedDiagnosticAnalyzers, compWithAnalyzerOptions), comp.GetSemanticModel (src));
 		}
 
-		public static async Task<Compilation> GetCompilation (string source, IEnumerable<MetadataReference>? additionalReferences = null, IEnumerable<SyntaxTree>? additionalSources = null)
+		public static async Task<Compilation> GetCompilation (string source, IEnumerable<MetadataReference>? additionalReferences = null)
 			=> (await CreateCompilation (source, additionalReferences: additionalReferences ?? Array.Empty<MetadataReference> ())).Compilation.Compilation;
 
 		class SimpleAnalyzerOptions : AnalyzerConfigOptionsProvider

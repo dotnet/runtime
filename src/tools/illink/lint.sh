@@ -13,4 +13,4 @@ while [[ -h $source ]]; do
 done
 
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
-"$scriptroot/eng/dotnet.sh" format illink.sln --exclude src/analyzer src/tuner external $@
+"$scriptroot/eng/dotnet.sh" format illink.sln --exclude external $@

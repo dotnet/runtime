@@ -578,7 +578,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
 		{
-			return TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out MethodDefinition _originalMethod, out MethodDefinition _linkedMethod);
+			return TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out _, out _);
 		}
 
 		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType, out MethodDefinition originalMethod, out MethodDefinition linkedMethod)
@@ -1222,7 +1222,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static string GetFullMemberNameFromDefinition (IMetadataTokenProvider member)
 		{
-			return GetFullMemberNameFromDefinition (member, out string genericMember);
+			return GetFullMemberNameFromDefinition (member, out _);
 		}
 
 		static string GetFullMemberNameFromDefinition (IMetadataTokenProvider member, out string genericMember)

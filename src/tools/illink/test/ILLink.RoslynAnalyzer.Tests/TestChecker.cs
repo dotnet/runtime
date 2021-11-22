@@ -10,7 +10,6 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Xunit;
@@ -182,13 +181,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 				var producedBy = (ProducedBy) 0x0;
 				switch (expression) {
 				case BinaryExpressionSyntax binaryExpressionSyntax:
-					Enum.TryParse<ProducedBy> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy);
+					if (!Enum.TryParse<ProducedBy> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy))
+						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 					producedBy |= besProducedBy;
 					producedBy |= GetProducedBy (binaryExpressionSyntax.Right);
 					break;
 
 				case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
-					Enum.TryParse<ProducedBy> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy);
+					if (!Enum.TryParse<ProducedBy> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy))
+						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 					producedBy |= maeProducedBy;
 					break;
 
@@ -282,15 +283,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 
-			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{(string.Join (Environment.NewLine, _diagnostics))}";
+			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{string.Join (Environment.NewLine, _diagnostics)}";
 			return false;
 		}
 
-		private void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
+		private static void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
 		{
 			var arg = Assert.Single (LinkerTestBase.GetAttributeArguments (attribute));
 			var text = LinkerTestBase.GetStringFromExpression (arg.Value);
-			foreach (var diagnostic in _diagnostics)
+			foreach (var diagnostic in diagnosticMessages)
 				Assert.DoesNotContain (text, diagnostic.GetMessage ());
 		}
 
