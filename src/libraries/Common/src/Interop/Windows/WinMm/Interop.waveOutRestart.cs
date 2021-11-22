@@ -13,7 +13,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="hwo">Handle to the waveform-audio output device.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport(Libraries.WinMM)]
-        internal static extern MMSYSERR waveOutRestart(IntPtr hwo);
+        [GeneratedDllImport(Libraries.WinMM)]
+        internal static partial MMSYSERR waveOutRestart(IntPtr hwo);
     }
 }

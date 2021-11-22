@@ -33,8 +33,8 @@ internal static partial class Interop
         /// respect to the sample size.</param>
         /// <param name="cbwh">Size, in bytes, of the WaveHeader structure.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport(Libraries.WinMM)]
-        internal static extern MMSYSERR waveOutPrepareHeader(IntPtr hwo, IntPtr pwh, int cbwh);
+        [GeneratedDllImport(Libraries.WinMM)]
+        internal static partial MMSYSERR waveOutPrepareHeader(IntPtr hwo, IntPtr pwh, int cbwh);
 
         /// <summary>
         /// This function cleans up the preparation performed by waveOutPrepareHeader.
@@ -46,7 +46,7 @@ internal static partial class Interop
         /// to be cleaned up.</param>
         /// <param name="cbwh">Size, in bytes, of the WaveHeader structure.</param>
         /// <returns>MMSYSERR</returns>
-        [DllImport(Libraries.WinMM)]
-        internal static extern MMSYSERR waveOutUnprepareHeader(IntPtr hwo, IntPtr pwh, int cbwh);
+        [GeneratedDllImport(Libraries.WinMM)]
+        internal static partial MMSYSERR waveOutUnprepareHeader(IntPtr hwo, IntPtr pwh, int cbwh);
     }
 }

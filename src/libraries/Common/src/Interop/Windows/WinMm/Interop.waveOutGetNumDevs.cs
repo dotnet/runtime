@@ -14,7 +14,7 @@ internal static partial class Interop
         /// </summary>
         /// <returns>The number of devices indicates success. Zero indicates that
         /// no devices are present or that an error occurred.</returns>
-        [DllImport(Libraries.WinMM)]
-        internal static extern int waveOutGetNumDevs();
+        [GeneratedDllImport(Libraries.WinMM)]
+        internal static partial int waveOutGetNumDevs();
     }
 }
