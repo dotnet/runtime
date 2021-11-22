@@ -1733,7 +1733,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
         const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
 
         // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_CONTAINS_STACK_PTR)) == 0)
+        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
         {
             unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
@@ -5876,7 +5876,7 @@ bool Compiler::verIsByRefLike(const typeInfo& ti)
     {
         return false;
     }
-    return info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_CONTAINS_STACK_PTR;
+    return info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_BYREF_LIKE;
 }
 
 bool Compiler::verIsSafeToReturnByRef(const typeInfo& ti)
@@ -5897,7 +5897,7 @@ bool Compiler::verIsBoxable(const typeInfo& ti)
             || ti.IsUnboxedGenericTypeVar() ||
             (ti.IsType(TI_STRUCT) &&
              // exclude byreflike structs
-             !(info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_CONTAINS_STACK_PTR)));
+             !(info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_BYREF_LIKE)));
 }
 
 // Is it a boxed value type?
@@ -14698,7 +14698,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         info.compCompHnd->getChildType(resolvedToken.hClass, &elemTypeHnd);
                         assert(!(elemTypeHnd == nullptr && corType == CORINFO_TYPE_VALUECLASS));
                         Verify(elemTypeHnd == nullptr ||
-                                   !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_CONTAINS_STACK_PTR),
+                                   !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_BYREF_LIKE),
                                "newarr of byref-like objects");
                         verVerifyCall(opcode, &resolvedToken, nullptr, ((prefixFlags & PREFIX_TAILCALL_EXPLICIT) != 0),
                                       ((prefixFlags & PREFIX_READONLY) != 0), delegateCreateStart, codeAddr - 1,
@@ -15816,7 +15816,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     CORINFO_CLASS_HANDLE elemTypeHnd;
                     info.compCompHnd->getChildType(resolvedToken.hClass, &elemTypeHnd);
                     Verify(elemTypeHnd == nullptr ||
-                               !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_CONTAINS_STACK_PTR),
+                               !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_BYREF_LIKE),
                            "array of byref-like type");
                 }
 
