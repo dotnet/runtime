@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class Kernel32
+    internal static partial class Wkscli
     {
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial bool CloseHandle(IntPtr handle);
+        [GeneratedDllImport(Libraries.Wkscli, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int NetWkstaGetInfo(string server, int level, ref IntPtr buffer);
     }
 }

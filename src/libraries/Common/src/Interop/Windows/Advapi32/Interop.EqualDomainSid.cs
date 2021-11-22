@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class Kernel32
+    internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial bool CloseHandle(IntPtr handle);
+        [GeneratedDllImport(Interop.Libraries.Advapi32)]
+        public static partial bool EqualDomainSid(IntPtr pSid1, IntPtr pSid2, ref bool equal);
     }
 }
