@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-[StructLayout(LayoutKind.Explicit, Size = 16)]
+[StructLayout(LayoutKind.Explicit, Size = 24)]
 public struct ComplexStruct
 {
     [FieldOffset(0)]
@@ -15,6 +15,12 @@ public struct ComplexStruct
 
     [FieldOffset(8)]
     public double Double;
+
+    [FieldOffset(8)]
+    public ulong High;
+
+    [FieldOffset(16)]
+    public ulong Low;
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 16)]
@@ -30,7 +36,7 @@ public struct InnerStruct
     public int Low;
 }
 
-public class Test_NestedStructsWithExplicitLayout {
+public class Test_NestedStructsWithExplicitLayout_Case01 {
     private ComplexStruct currentCount = default;
 
     private void IncrementCount()
@@ -44,18 +50,25 @@ public class Test_NestedStructsWithExplicitLayout {
     {
         try
         {
-            var instance = new Test_NestedStructsWithExplicitLayout();
+            var instance = new Test_NestedStructsWithExplicitLayout_Case01();
             instance.IncrementCount();
+            var result = 99 + instance.currentCount.Inner.High;
+
+            if (result == 100)
+            {
+                Console.WriteLine("PASS: union of Explict + Explicit works correctly");
+            }
+
+            return result;
         }
         catch (TypeLoadException e)
         {
+            Console.WriteLine("FAIL: type was not loaded");
             return 101;
         }
         catch (Exception e)
         {
             return 102;
         }
-
-        return 100;
     }
 }

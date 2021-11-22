@@ -5,6 +5,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="nested.cs" />
+    <Compile Include="case02.cs" />
   </ItemGroup>
 </Project>
