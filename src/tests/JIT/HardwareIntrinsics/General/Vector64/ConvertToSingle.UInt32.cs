@@ -17,9 +17,9 @@ namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void ConvertToSingleSingle()
+        private static void ConvertToSingleUInt32()
         {
-            var test = new VectorUnaryOpTest__ConvertToSingleSingle();
+            var test = new VectorUnaryOpTest__ConvertToSingleUInt32();
 
             // Validates basic functionality works, using Unsafe.Read
             test.RunBasicScenario_UnsafeRead();
@@ -52,7 +52,7 @@ namespace JIT.HardwareIntrinsics.General
         }
     }
 
-    public sealed unsafe class VectorUnaryOpTest__ConvertToSingleSingle
+    public sealed unsafe class VectorUnaryOpTest__ConvertToSingleUInt32
     {
         private struct DataTable
         {
@@ -113,7 +113,7 @@ namespace JIT.HardwareIntrinsics.General
                 return testStruct;
             }
 
-            public void RunStructFldScenario(VectorUnaryOpTest__ConvertToSingleSingle testClass)
+            public void RunStructFldScenario(VectorUnaryOpTest__ConvertToSingleUInt32 testClass)
             {
                 var result = Vector64.ConvertToSingle(_fld1);
 
@@ -135,13 +135,13 @@ namespace JIT.HardwareIntrinsics.General
 
         private DataTable _dataTable;
 
-        static VectorUnaryOpTest__ConvertToSingleSingle()
+        static VectorUnaryOpTest__ConvertToSingleUInt32()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt32(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<UInt32>, byte>(ref _clsVar1), ref Unsafe.As<UInt32, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
         }
 
-        public VectorUnaryOpTest__ConvertToSingleSingle()
+        public VectorUnaryOpTest__ConvertToSingleUInt32()
         {
             Succeeded = true;
 
@@ -221,7 +221,7 @@ namespace JIT.HardwareIntrinsics.General
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new VectorUnaryOpTest__ConvertToSingleSingle();
+            var test = new VectorUnaryOpTest__ConvertToSingleUInt32();
             var result = Vector64.ConvertToSingle(test._fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
