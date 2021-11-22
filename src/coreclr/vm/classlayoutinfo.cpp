@@ -288,7 +288,11 @@ namespace
             }
             else
             {
+#ifdef FEATURE_64BIT_ALIGNMENT
+                pManagedPlacementInfo->m_alignment = pNestedType.RequiresAlign8() ? 8 : TARGET_POINTER_SIZE;
+#else
                 pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
+#endif
             }
 
             // Types that have GC Pointer fields (objects or byrefs) are disqualified from ManagedSequential layout.
