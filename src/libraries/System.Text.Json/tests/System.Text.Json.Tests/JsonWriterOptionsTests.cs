@@ -15,7 +15,8 @@ namespace System.Text.Json.Tests
             var expectedOption = new JsonWriterOptions
             {
                 Indented = false,
-                SkipValidation = false
+                SkipValidation = false,
+                MaxDepth = 0,
             };
             Assert.Equal(expectedOption, options);
         }
@@ -28,28 +29,40 @@ namespace System.Text.Json.Tests
             var expectedOption = new JsonWriterOptions
             {
                 Indented = false,
-                SkipValidation = false
+                SkipValidation = false,
+                MaxDepth = 0,
             };
             Assert.Equal(expectedOption, options);
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public static void JsonWriterOptions(bool indented, bool skipValidation)
+        [InlineData(true, true, 0)]
+        [InlineData(true, false, 1)]
+        [InlineData(false, true, 1024)]
+        [InlineData(false, false, 1024 * 1024)]
+        public static void JsonWriterOptions(bool indented, bool skipValidation, int maxDepth)
         {
             var options = new JsonWriterOptions();
             options.Indented = indented;
             options.SkipValidation = skipValidation;
+            options.MaxDepth = maxDepth;
 
             var expectedOption = new JsonWriterOptions
             {
                 Indented = indented,
-                SkipValidation = skipValidation
+                SkipValidation = skipValidation,
+                MaxDepth = maxDepth,
             };
             Assert.Equal(expectedOption, options);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(-100)]
+        public static void JsonWriterOptions_MaxDepth_InvalidParameters(int maxDepth)
+        {
+            var options = new JsonWriterOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxDepth = maxDepth);
         }
     }
 }
