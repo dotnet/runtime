@@ -4,6 +4,8 @@
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -102,17 +104,27 @@ namespace System.Net.Http
                     return ValueTask.FromCanceled<int>(cancellationToken);
                 }
 
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data.
+                    // Response body fully consumed
                     return new ValueTask<int>(0);
                 }
 
-                // Try to consume from data we already have in the buffer.
-                int bytesRead = ReadChunksFromConnectionBuffer(buffer.Span, cancellationRegistration: default);
-                if (bytesRead > 0)
+                if (buffer.Length == 0)
                 {
-                    return new ValueTask<int>(bytesRead);
+                    if (PeekChunkFromConnectionBuffer())
+                    {
+                        return new ValueTask<int>(0);
+                    }
+                }
+                else
+                {
+                    // Try to consume from data we already have in the buffer.
+                    int bytesRead = ReadChunksFromConnectionBuffer(buffer.Span, cancellationRegistration: default);
+                    if (bytesRead > 0)
+                    {
+                        return new ValueTask<int>(bytesRead);
+                    }
                 }
 
                 // We may have just consumed the remainder of the response (with no actual data
@@ -132,7 +144,6 @@ namespace System.Net.Http
                 // Should only be called if ReadChunksFromConnectionBuffer returned 0.
 
                 Debug.Assert(_connection != null);
-                Debug.Assert(buffer.Length > 0);
 
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
@@ -154,6 +165,7 @@ namespace System.Net.Http
                             // as the connection buffer.  That avoids an unnecessary copy while still reading
                             // the maximum amount we'd otherwise read at a time.
                             Debug.Assert(_connection.RemainingBuffer.Length == 0);
+                            Debug.Assert(buffer.Length != 0);
                             int bytesRead = await _connection.ReadAsync(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining))).ConfigureAwait(false);
                             if (bytesRead == 0)
                             {
@@ -172,10 +184,20 @@ namespace System.Net.Http
 
                         // Now that we have more, see if we can get any response data, and if
                         // we can we're done.
-                        int bytesCopied = ReadChunksFromConnectionBuffer(buffer.Span, ctr);
-                        if (bytesCopied > 0)
+                        if (buffer.Length == 0)
                         {
-                            return bytesCopied;
+                            if (PeekChunkFromConnectionBuffer())
+                            {
+                                return 0;
+                            }
+                        }
+                        else
+                        {
+                            int bytesCopied = ReadChunksFromConnectionBuffer(buffer.Span, ctr);
+                            if (bytesCopied > 0)
+                            {
+                                return bytesCopied;
+                            }
                         }
                     }
                 }
@@ -235,6 +257,15 @@ namespace System.Net.Http
                 }
             }
 
+            private bool PeekChunkFromConnectionBuffer()
+            {
+                ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(maxBytesToRead: 0, cancellationRegistration: default);
+
+                // ReadChunkFromConnectionBuffer will return 'default' (NullRef with Length=0) if no data is available or
+                // _connection.RemainingBuffer.Slice(0, bytesToConsume) if there is.
+                return !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(bytesRead.Span));
+            }
+
             private int ReadChunksFromConnectionBuffer(Span<byte> buffer, CancellationTokenRegistration cancellationRegistration)
             {
                 int totalBytesRead = 0;
@@ -256,7 +287,8 @@ namespace System.Net.Http
 
             private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
             {
-                Debug.Assert(maxBytesToRead > 0 && _connection != null);
+                // PeekChunkFromConnectionBuffer relies on this method returning 'default' instead of an empty buffer in cases where no data is available
+                Debug.Assert(_connection != null);
 
                 try
                 {
@@ -310,7 +342,7 @@ namespace System.Net.Http
                             }
 
                             int bytesToConsume = Math.Min(maxBytesToRead, (int)Math.Min((ulong)connectionBuffer.Length, _chunkBytesRemaining));
-                            Debug.Assert(bytesToConsume > 0);
+                            Debug.Assert(bytesToConsume > 0 || maxBytesToRead == 0);
 
                             _connection.ConsumeFromRemainingBuffer(bytesToConsume);
                             _chunkBytesRemaining -= (ulong)bytesToConsume;
