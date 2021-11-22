@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
 
 if [ $# -eq 0 ]; then
-    echo "Script for enabling CLang sanitizers for debug builds."
-    echo "*Only tested on Ubuntu x64."
+    echo "Script for enabling Clang sanitizers for debug builds."
+    echo "*Tested on Ubuntu and Fedora x64."
     echo "*This script must be 'sourced' (via dot+space) so that changes to environment variables are preserved. Run like this:"
     if [ "$(dirname $0)" = "." ]; then
         echo " . enablesanitizers.sh [options]"
     else
         echo " cd $(dirname $0);. enablesanitizers.sh [options]; cd -"
     fi
-    echo "Usage: [asan] [ubsan] [lsan] [all] [off] [clangx.y]"
+    echo "Usage: [asan] [ubsan] [lsan] [all] [off] [symbolizer] [clangx.y]"
     echo " asan: optional argument to enable Address Sanitizer."
     echo " ubsan: optional argument to enable Undefined Behavior Sanitizer."
     echo " lsan - optional argument to enable memory Leak Sanitizer."
     echo " all - optional argument to enable asan, ubsan and lsan."
     echo " off - optional argument to turn off all sanitizers."
+    echo " symbolizer - optional argument to export llvm-symbolizer path. "
     echo " clangx.y - optional argument to specify clang version x.y. which is used to resolve stack traces. Default is 3.6"
 else
-    # default to clang 3.6 instead of 3.5 because it supports print_stacktrace (otherwise only one stack frame)
-    __ClangMajorVersion=3
-    __ClangMinorVersion=6
+    __ClangMajorVersion=
+    __ClangMinorVersion=
 
     __EnableASan=0
     __EnableUBSan=0
     __EnableLSan=0
     __TurnOff=0
     __Options=
-    __ExportSymbolizerPath=1
+    __ExportSymbolizerPath=0
 
     for i in "$@"
         do
@@ -50,28 +50,28 @@ else
             off)
                 __TurnOff=1
                 ;;
+            symbolizer)
+                __ExportSymbolizerPath=1
+                ;;
             clang3.5)
                 __ClangMajorVersion=3
                 __ClangMinorVersion=5
+                __ExportSymbolizerPath=1
                 ;;
             clang3.6)
                 __ClangMajorVersion=3
                 __ClangMinorVersion=6
+                __ExportSymbolizerPath=1
                 ;;
-            clang3.7)
-                __ClangMajorVersion=3
-                __ClangMinorVersion=7
-                __ExportSymbolizerPath=0
-                ;;
-            clang3.8)
-                __ClangMajorVersion=3
-                __ClangMinorVersion=8
-                __ExportSymbolizerPath=0
-                ;;
-            clang3.9)
-                __ClangMajorVersion=3
-                __ClangMinorVersion=9
-                __ExportSymbolizerPath=0
+            clang*)
+                # clangx.y or clang-x.y
+                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
+                parts=(${version//./ })
+                __ClangMajorVersion="${parts[0]}"
+                __ClangMinorVersion="${parts[1]}"
+                if [[ -z "$__ClangMinorVersion" ]]; then
+                    __ClangMinorVersion=0;
+                fi
                 ;;
             *)
                 echo "Unknown arg: $i"
@@ -117,13 +117,13 @@ else
         # 'atos' (for Darwin) otherwise it returns error
         if [ $__ExportSymbolizerPath == 1 ]; then
             # used by ASan at run-time
-            ASAN_SYMBOLIZER_PATH="/usr/bin/llvm-symbolizer-$__ClangMajorVersion.$__ClangMinorVersion"
+            ASAN_SYMBOLIZER_PATH="/usr/bin/llvm-symbolizer${__ClangMajorVersion:+-${__ClangMajorVersion}.${__ClangMinorVersion}}"
             export ASAN_SYMBOLIZER_PATH
             echo "Setting ASAN_SYMBOLIZER_PATH=$ASAN_SYMBOLIZER_PATH"
         else
             unset ASAN_SYMBOLIZER_PATH
         fi
-        echo "Done. You can now run: build.sh Debug clang$__ClangMajorVersion.$__ClangMinorVersion"
+        echo "Done. You can now run: build.sh Debug clang${__ClangMajorVersion:+-${__ClangMajorVersion}.${__ClangMinorVersion}}"
     fi
 
     unset __ClangMajorVersion
