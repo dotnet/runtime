@@ -11,7 +11,10 @@
 
   <!-- Default priority building values. -->
   <PropertyGroup>
-    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
+    <CLRTestTargetUnsupported Condition="'$(IsMergedTestAssembly)' == 'true' and $(BuildAsStandalone)">true</CLRTestTargetUnsupported>
+    <OutputType Condition="'$(IsMergedTestAssembly)' == 'true' and !$(BuildAsStandalone)">Exe</OutputType>
+    <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
+    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
   </PropertyGroup>
 
