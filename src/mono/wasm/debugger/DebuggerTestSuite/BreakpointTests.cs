@@ -662,7 +662,7 @@ namespace DebuggerTests
         [Fact]
         public async Task DebuggerAttributeStopOnDebuggerHiddenCallWithDebuggerBreakCall()
         {
-            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 1);
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 0);
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunDebuggerBreak'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
@@ -670,11 +670,13 @@ namespace DebuggerTests
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
                 "RunDebuggerBreak"
             );
-            await SendCommandAndCheck(null, "Debugger.resume",
+            Console.WriteLine(bp_init.Value["locations"][0]["lineNumber"].Value<int>());
+            var pause_location = await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1,
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
                 "RunDebuggerBreak");
+            Console.WriteLine(pause_location["callFrames"][0]["location"]["lineNumber"]);
             await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 834,
