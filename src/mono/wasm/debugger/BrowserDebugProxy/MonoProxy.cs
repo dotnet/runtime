@@ -751,6 +751,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebugStore store = await LoadStore(sessionId, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
+                if (context.IsSkippingHiddenMethod == true)
+                {
+                    context.IsSkippingHiddenMethod = false;
+                    await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
+                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                    return true;
+                }
+                if (j == 0 && method?.Info.IsHiddenFromDebugger == true)
+                {
+                    context.IsSkippingHiddenMethod = true;
+                    await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);
+                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                    return true;
+                }
+
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
 
                 // When hitting a breakpoint on the "IncrementCount" method in the standard
@@ -979,6 +994,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<bool> Step(MessageId msgId, StepKind kind, CancellationToken token)
         {
+            var stepKind = kind;
             ExecutionContext context = GetContext(msgId);
             if (context.CallStack == null)
                 return false;
@@ -986,11 +1002,26 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (context.CallStack.Count <= 1 && kind == StepKind.Out)
                 return false;
 
-            var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
+            var a = context.store;
+            var b = context.CallStack.FirstOrDefault();
+            var loc = b.Location;
+            var sId = loc.IlLocation.Method.SourceId;
+            var c = loc.IlLocation.Method; //RUN, how to get location of HiddenMethod?
+            if (c.IsHiddenFromDebugger)
+                stepKind = StepKind.Over;
+
+            var step = await context.SdbAgent.Step(context.ThreadId, stepKind, token);
             if (step == false) {
                 context.ClearState();
                 await SendCommand(msgId, "Debugger.stepOut", new JObject(), token);
                 return false;
+            }
+            var frameTop = context.CallStack.FirstOrDefault();
+            var loc2 = frameTop.Location;
+            if (loc.Equals(loc2))
+            {
+                var sthWrong = true;
+                step = sthWrong;
             }
 
             SendResponse(msgId, Result.Ok(new JObject()), token);
