@@ -6,7 +6,7 @@ Provides stress testing scenaria for System.Net.Http.HttpClient and the underlyi
 
 Prerequisite: the runtime and the libraries should be [live-built](https://github.com/dotnet/runtime/tree/main/docs/workflow/building/libraries) with `build.cmd`/`build.sh`.
 
-Use the script `build-local.sh` / `build-local.ps1` to build the stress project against the live-built runtime. This will acquire the latest daily SDK, which is TFM-compatible with the live-built runtime. 
+Use the script `build-local.sh` / `build-local.ps1` to build the stress project against the live-built runtime. This will acquire the latest daily SDK, which is TFM-compatible with the live-built runtime.
 
 ```bash
 $ build-local.sh [StressConfiguration] [LibrariesConfiguration]
