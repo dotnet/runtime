@@ -524,6 +524,9 @@ bool Compiler::fgCanSwitchToOptimized()
 //------------------------------------------------------------------------
 // fgSwitchToOptimized: Switch the opt level from tier 0 to optimized
 //
+// Arguments:
+//    reason - reason why opt level was switched
+//
 // Assumptions:
 //    - fgCanSwitchToOptimized() is true
 //    - compSetOptimizationLevel() has not been called
@@ -532,15 +535,16 @@ bool Compiler::fgCanSwitchToOptimized()
 //    This method is to be called at some point before compSetOptimizationLevel() to switch the opt level to optimized
 //    based on information gathered in early phases.
 
-void Compiler::fgSwitchToOptimized()
+void Compiler::fgSwitchToOptimized(const char* reason)
 {
     assert(fgCanSwitchToOptimized());
 
     // Switch to optimized and re-init options
-    JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because of loop\n****\n");
+    JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because: %s\n****\n", reason);
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
