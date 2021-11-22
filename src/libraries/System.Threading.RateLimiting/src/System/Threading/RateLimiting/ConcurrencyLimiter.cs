@@ -32,7 +32,7 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="ConcurrencyLimiter"/>.</param>
         public ConcurrencyLimiter(ConcurrencyLimiterOptions options)
         {
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _permitCount = _options.PermitLimit;
         }
 
@@ -45,7 +45,7 @@ namespace System.Threading.RateLimiting
             // These amounts of resources can never be acquired
             if (permitCount > _options.PermitLimit)
             {
-                throw new ArgumentOutOfRangeException(nameof(permitCount), $"{permitCount} permits exceeds the permit limit of {_options.PermitLimit}.");
+                throw new ArgumentOutOfRangeException(nameof(permitCount), permitCount, SR.Format(SR.PermitLimitExceeded, permitCount, _options.PermitLimit));
             }
 
             // Return SuccessfulLease or FailedLease to indicate limiter state
@@ -72,12 +72,10 @@ namespace System.Threading.RateLimiting
         /// <inheritdoc/>
         protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             // These amounts of resources can never be acquired
             if (permitCount > _options.PermitLimit)
             {
-                throw new ArgumentOutOfRangeException(nameof(permitCount), $"{permitCount} permits exceeds the permit limit of {_options.PermitLimit}.");
+                throw new ArgumentOutOfRangeException(nameof(permitCount), permitCount, SR.Format(SR.PermitLimitExceeded, permitCount, _options.PermitLimit));
             }
 
             // Return SuccessfulLease if requestedCount is 0 and resources are available
@@ -105,9 +103,9 @@ namespace System.Threading.RateLimiting
                 CancellationTokenRegistration ctr = default;
                 if (cancellationToken.CanBeCanceled)
                 {
-                    ctr = cancellationToken.Register(obj =>
+                    ctr = cancellationToken.Register(static obj =>
                     {
-                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException(cancellationToken));
+                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException());
                     }, tcs);
                 }
 
@@ -152,7 +150,7 @@ namespace System.Threading.RateLimiting
             lock (Lock)
             {
                 _permitCount += releaseCount;
-                Debug.Assert(_permitCount <=  _options.PermitLimit);
+                Debug.Assert(_permitCount <= _options.PermitLimit);
 
                 while (_queue.Count > 0)
                 {
@@ -190,7 +188,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private class ConcurrencyLease : RateLimitLease
+        private sealed class ConcurrencyLease : RateLimitLease
         {
             private bool _disposed;
             private readonly ConcurrencyLimiter? _limiter;

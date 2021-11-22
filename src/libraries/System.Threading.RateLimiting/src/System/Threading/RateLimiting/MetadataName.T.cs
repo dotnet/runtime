@@ -19,7 +19,7 @@ namespace System.Threading.RateLimiting
         /// <param name="name">The name of the <see cref="MetadataName"/> object.</param>
         public MetadataName(string name)
         {
-            _name = name;
+            _name = name ?? throw new ArgumentNullException(nameof(name));
         }
 
         /// <summary>
@@ -30,19 +30,19 @@ namespace System.Threading.RateLimiting
         /// <inheritdoc/>
         public override string ToString()
         {
-            return _name ?? string.Empty;
+            return _name;
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return _name == null ? 0 : _name.GetHashCode();
+            return _name.GetHashCode();
         }
 
         /// <inheritdoc/>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is MetadataName<T> && Equals((MetadataName<T>)obj);
+            return obj is MetadataName<T> m && Equals(m);
         }
 
         /// <inheritdoc/>
@@ -52,8 +52,8 @@ namespace System.Threading.RateLimiting
             {
                 return false;
             }
-            // NOTE: intentionally ordinal and case sensitive, matches CNG.
-            return _name == other._name;
+
+            return string.Equals(_name, other._name, StringComparison.Ordinal);
         }
 
         /// <summary>

@@ -39,13 +39,15 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentOutOfRangeException(nameof(queueLimit));
             }
-            if (tokensPerPeriod < 0)
+            if (tokensPerPeriod <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(tokensPerPeriod));
             }
             if (replenishmentPeriod.TotalDays > 49)
             {
-                throw new ArgumentOutOfRangeException(nameof(replenishmentPeriod), "Over 49 days is not supported");
+                // Environment.TickCount is an int and represents milliseconds since system started
+                // it has a range of -2B - +2B, we cast it to a uint to get a range of 0 - 4B which is 49.7 days before the value will repeat
+                throw new ArgumentOutOfRangeException(nameof(replenishmentPeriod), replenishmentPeriod, SR.ReplenishmentLimitTooHigh);
             }
 
             TokenLimit = tokenLimit;

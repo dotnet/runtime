@@ -4,7 +4,7 @@
 namespace System.Threading.RateLimiting
 {
     /// <summary>
-    /// Controls the behaviour of <see cref="RateLimiter.WaitAsync"/> when not enough resources can be leased.
+    /// Controls the behavior of <see cref="RateLimiter.WaitAsync"/> when not enough resources can be leased.
     /// </summary>
     public enum QueueProcessingOrder
     {

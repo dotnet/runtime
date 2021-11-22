@@ -334,7 +334,7 @@ namespace System.Threading.RateLimiting.Test
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            await Assert.ThrowsAsync<OperationCanceledException>(() => limiter.WaitAsync(1, cts.Token).DefaultTimeout());
+            await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).DefaultTimeout());
 
             lease.Dispose();
 

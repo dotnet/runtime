@@ -32,8 +32,8 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="TokenBucketRateLimiter"/>.</param>
         public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options)
         {
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _tokenCount = options.TokenLimit;
-            _options = options;
 
             if (_options.AutoReplenishment)
             {
@@ -50,7 +50,7 @@ namespace System.Threading.RateLimiting
             // These amounts of resources can never be acquired
             if (tokenCount > _options.TokenLimit)
             {
-                throw new ArgumentOutOfRangeException(nameof(tokenCount), $"{tokenCount} tokens exceeds the token limit of {_options.TokenLimit}.");
+                throw new ArgumentOutOfRangeException(nameof(tokenCount), tokenCount, SR.Format(SR.TokenLimitExceeded, tokenCount, _options.TokenLimit));
             }
 
             // Return SuccessfulLease or FailedLease depending to indicate limiter state
@@ -78,12 +78,10 @@ namespace System.Threading.RateLimiting
         /// <inheritdoc/>
         protected override ValueTask<RateLimitLease> WaitAsyncCore(int tokenCount, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             // These amounts of resources can never be acquired
             if (tokenCount > _options.TokenLimit)
             {
-                throw new ArgumentOutOfRangeException(nameof(tokenCount), $"{tokenCount} token(s) exceeds the permit limit of {_options.TokenLimit}.");
+                throw new ArgumentOutOfRangeException(nameof(tokenCount), tokenCount, SR.Format(SR.TokenLimitExceeded, tokenCount, _options.TokenLimit));
             }
 
             // Return SuccessfulAcquisition if requestedCount is 0 and resources are available
@@ -110,9 +108,9 @@ namespace System.Threading.RateLimiting
                 CancellationTokenRegistration ctr = default;
                 if (cancellationToken.CanBeCanceled)
                 {
-                    ctr = cancellationToken.Register(obj =>
+                    ctr = cancellationToken.Register(static obj =>
                     {
-                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException(cancellationToken));
+                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException());
                     }, tcs);
                 }
 
@@ -131,6 +129,7 @@ namespace System.Threading.RateLimiting
             int replenishAmount = tokenCount - _tokenCount + _queueCount;
             // can't have 0 replenish periods, that would mean it should be a successful lease
             // if TokensPerPeriod is larger than the replenishAmount needed then it would be 0
+            Debug.Assert(_options.TokensPerPeriod > 0);
             int replenishPeriods = Math.Max(replenishAmount / _options.TokensPerPeriod, 1);
 
             return new TokenBucketLease(false, TimeSpan.FromTicks(_options.ReplenishmentPeriod.Ticks * replenishPeriods));
@@ -268,7 +267,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private class TokenBucketLease : RateLimitLease
+        private sealed class TokenBucketLease : RateLimitLease
         {
             private readonly TimeSpan? _retryAfter;
 

@@ -8,6 +8,7 @@ namespace System.Threading.RateLimiting
 {
     /// <summary>
     /// Abstraction for leases returned by <see cref="RateLimiter"/> implementations.
+    /// A lease represents the success or failure to acquire a resource and any potential metadata that is relevant to the acquisition operation.
     /// </summary>
     public abstract class RateLimitLease : IDisposable
     {
@@ -39,7 +40,7 @@ namespace System.Threading.RateLimiting
                 return false;
             }
 
-            var successful = TryGetMetadata(metadataName.Name, out var rawMetadata);
+            bool successful = TryGetMetadata(metadataName.Name, out object? rawMetadata);
             if (successful)
             {
                 metadata = rawMetadata is null ? default : (T)rawMetadata;
@@ -61,9 +62,9 @@ namespace System.Threading.RateLimiting
         /// <returns>List of key-value pairs of metadata name and metadata object.</returns>
         public virtual IEnumerable<KeyValuePair<string, object?>> GetAllMetadata()
         {
-            foreach (var name in MetadataNames)
+            foreach (string name in MetadataNames)
             {
-                if (TryGetMetadata(name, out var metadata))
+                if (TryGetMetadata(name, out object? metadata))
                 {
                     yield return new KeyValuePair<string, object?>(name, metadata);
                 }
@@ -83,6 +84,6 @@ namespace System.Threading.RateLimiting
         /// Dispose method for implementations to write.
         /// </summary>
         /// <param name="disposing"></param>
-        protected abstract void Dispose(bool disposing);
+        protected virtual void Dispose(bool disposing) { }
     }
 }

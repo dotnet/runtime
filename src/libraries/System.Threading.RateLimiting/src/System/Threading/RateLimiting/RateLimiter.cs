@@ -59,6 +59,11 @@ namespace System.Threading.RateLimiting
                 throw new ArgumentOutOfRangeException(nameof(permitCount));
             }
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<RateLimitLease>(Task.FromCanceled<RateLimitLease>(cancellationToken));
+            }
+
             return WaitAsyncCore(permitCount, cancellationToken);
         }
 
