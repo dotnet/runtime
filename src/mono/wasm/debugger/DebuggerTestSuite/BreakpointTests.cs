@@ -677,7 +677,7 @@ namespace DebuggerTests
                 "RunDebuggerBreak");
             await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
-                835,
+                834,
                 8,
                 "VisibleMethodDebuggerBreak");
         }
