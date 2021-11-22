@@ -52,13 +52,12 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.MaxDepth = maxDepth;
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(rootObj, options));
-            InvalidOperationException innerEx = Assert.IsType<InvalidOperationException>(ex.InnerException);
 
             // Exception should contain the path and MaxDepth.
             // Since the last Parent property is null, the serializer moves onto the Children property.
             string expectedPath = "$" + string.Concat(Enumerable.Repeat(".Parent", expectedPathDepth));
             Assert.Contains(expectedPath, ex.Path);
-            Assert.Contains(effectiveMaxDepth.ToString(), innerEx.Message);
+            Assert.Contains(effectiveMaxDepth.ToString(), ex.Message);
         }
 
         private static TestClassWithCycle CreateObjectHierarchy(int i, int max, TestClassWithCycle previous)

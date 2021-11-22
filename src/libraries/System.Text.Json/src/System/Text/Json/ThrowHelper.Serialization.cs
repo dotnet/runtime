@@ -85,6 +85,13 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_SerializerCycleDetected(int maxDepth)
+        {
+            throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth)) { AppendPathInformation = true };
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException(string? message = null)
         {
             throw new JsonException(message) { AppendPathInformation = true };

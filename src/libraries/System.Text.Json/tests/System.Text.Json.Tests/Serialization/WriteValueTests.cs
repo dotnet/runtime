@@ -447,8 +447,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Peano value = Peano.CreateFromNumber(effectiveMaxDepth + 1);
             JsonException exn = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(value, options));
-            InvalidOperationException innerExn = Assert.IsType<InvalidOperationException>(exn.InnerException);
-            Assert.Contains("is equal to or larger than the maximum allowed depth", innerExn.Message);
+            Assert.Contains("A possible object cycle was detected", exn.Message);
         }
 
         public class Peano
