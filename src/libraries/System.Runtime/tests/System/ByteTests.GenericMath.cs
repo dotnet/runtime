@@ -449,6 +449,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateSaturatingFromInt16Test()
         {
             Assert.Equal((byte)0x00, NumberHelper<byte>.CreateSaturating<short>(0x0000));
@@ -500,6 +501,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateSaturatingFromSByteTest()
         {
             Assert.Equal((byte)0x00, NumberHelper<byte>.CreateSaturating<sbyte>(0x00));
@@ -581,6 +583,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateTruncatingFromInt16Test()
         {
             Assert.Equal((byte)0x00, NumberHelper<byte>.CreateTruncating<short>(0x0000));
@@ -632,6 +635,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateTruncatingFromSByteTest()
         {
             Assert.Equal((byte)0x00, NumberHelper<byte>.CreateTruncating<sbyte>(0x00));
@@ -775,6 +779,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void TryCreateFromInt16Test()
         {
             byte result;
@@ -879,6 +884,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void TryCreateFromSByteTest()
         {
             byte result;
