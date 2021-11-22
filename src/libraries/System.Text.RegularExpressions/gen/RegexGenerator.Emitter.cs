@@ -706,7 +706,7 @@ namespace System.Text.RegularExpressions.Generator
                 return count == 0 ? prefix : $"{prefix}{count}";
             }
 
-            void MarkLabel(string label, bool addEmptyStatement = false) => writer.WriteLine($"{label}:{(addEmptyStatement ? " ;" : "")}");
+            void MarkLabel(string label, bool emitSemicolon = true) => writer.WriteLine($"{label}:{(emitSemicolon ? ";" : "")}");
 
             RegexNode node = rm.Code.Tree.Root;
             Debug.Assert(node.Type == RegexNode.Capture, "Every generated tree should begin with a capture node");
@@ -783,7 +783,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Emit failure
             writer.WriteLine("// No match");
-            MarkLabel(originalDoneLabel, !expressionHasCaptures);
+            MarkLabel(originalDoneLabel);
             if (expressionHasCaptures)
             {
                 EmitUncaptureUntil("0");
@@ -991,7 +991,7 @@ namespace System.Text.RegularExpressions.Generator
                         // setting runtextpos back to what it was at the beginning of the alternation,
                         // updating textSpan to be the full length it was, and if there's a capture that
                         // needs to be reset, uncapturing it.
-                        MarkLabel(nextBranch);
+                        MarkLabel(nextBranch, emitSemicolon: false);
                         writer.WriteLine($"runtextpos = {startingRunTextPosName};");
                         LoadTextSpanLocal(writer);
                         textSpanPos = startingTextSpanPos;
@@ -1014,7 +1014,7 @@ namespace System.Text.RegularExpressions.Generator
                             doneLabel = postAlternateDoneLabel;
                             TransferTextSpanPosToRunTextPos();
                             writer.WriteLine($"goto {doneAlternateLabel};");
-                            MarkLabel(uncapture);
+                            MarkLabel(uncapture, emitSemicolon: false);
                             EmitUncaptureUntil(startingCrawlPos);
                             writer.WriteLine($"goto {doneLabel};");
                         }
@@ -1027,7 +1027,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     // Successfully completed the alternate.
-                    MarkLabel(doneAlternateLabel, addEmptyStatement: true);
+                    MarkLabel(doneAlternateLabel);
                     Debug.Assert(textSpanPos == 0);
                 }
             }
@@ -1796,7 +1796,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Backtracking section. Subsequent failures will jump to here, at which
                 // point we decrement the matched count as long as it's above the minimum
                 // required, and try again by flowing to everything that comes after this.
-                MarkLabel(backtrackingLabel);
+                MarkLabel(backtrackingLabel, emitSemicolon: false);
                 string originalDoneLabel = doneLabel;
                 using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
                 {
@@ -1899,7 +1899,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Backtracking section. Subsequent failures will jump to here.
                 string backtrackingLabel = ReserveName("Backtrack");
-                MarkLabel(backtrackingLabel);
+                MarkLabel(backtrackingLabel, emitSemicolon: false);
 
                 // Uncapture any captures if the expression has any.  It's possible the captures it has
                 // are before this node, in which case this is wasted effort, but still functionally correct.
@@ -1942,7 +1942,7 @@ namespace System.Text.RegularExpressions.Generator
                 doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
 
                 writer.WriteLine();
-                MarkLabel(endLoopLabel, addEmptyStatement: true);
+                MarkLabel(endLoopLabel);
 
                 // We explicitly do not reset doneLabel back to originalDoneLabel.
                 // It's left pointing to the backtracking label for everything subsequent in the expression.
@@ -2236,7 +2236,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Backtracking section. Subsequent failures will jump to here, at which
                 // point we decrement the matched count as long as it's above the minimum
                 // required, and try again by flowing to everything that comes after this.
-                MarkLabel(backtrackingLabel);
+                MarkLabel(backtrackingLabel, emitSemicolon: false);
                 string originalDoneLabel = doneLabel;
                 using (EmitBlock(writer, $"if ({startingTrackPos} >= {endingTrackPos})"))
                 {
@@ -2329,19 +2329,19 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If the generated code gets here, the iteration failed.
                     // Reset state, branch to done.
-                    MarkLabel(iterationLabel);
+                    MarkLabel(iterationLabel, emitSemicolon: false);
                     Debug.Assert(doneLabel == iterationLabel);
                     doneLabel = prevDone; // reset done label
                     writer.WriteLine($"runtextpos = {startingRunTextPosLocal};");
                     writer.WriteLine($"goto {doneLabel};");
 
                     // Successful iteration.
-                    MarkLabel(successfulIterationLabel);
+                    MarkLabel(successfulIterationLabel, emitSemicolon: false);
                     writer.WriteLine($"{iterationLocal}++;");
                 }
 
                 // Done:
-                MarkLabel(atomicNodeLabel, addEmptyStatement: minIterations == 0);
+                MarkLabel(atomicNodeLabel);
                 Debug.Assert(doneLabel == atomicNodeLabel);
                 doneLabel = originalDoneLabel;
 
