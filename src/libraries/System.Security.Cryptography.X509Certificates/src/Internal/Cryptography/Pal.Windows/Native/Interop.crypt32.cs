@@ -87,14 +87,8 @@ internal static partial class Interop
 
         public static unsafe bool CryptDecodeObjectPointer(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, byte[] pbEncoded, int cbEncoded, Interop.Crypt32.CryptDecodeObjectFlags dwFlags, void* pvStructInfo, ref int pcbStructInfo)
         {
-            return CryptDecodeObjectPointer(dwCertEncodingType, (IntPtr)lpszStructType, pbEncoded, cbEncoded, dwFlags, pvStructInfo, ref pcbStructInfo);
+            return Interop.Crypt32.CryptDecodeObjectPointer(dwCertEncodingType, (IntPtr)lpszStructType, pbEncoded, cbEncoded, dwFlags, pvStructInfo, ref pcbStructInfo);
         }
-
-        [GeneratedDllImport(Libraries.Crypt32, EntryPoint = "CryptDecodeObject", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static unsafe partial bool CryptDecodeObjectPointer(Interop.Crypt32.CertEncodingType dwCertEncodingType, IntPtr lpszStructType, byte[] pbEncoded, int cbEncoded, Interop.Crypt32.CryptDecodeObjectFlags dwFlags, void* pvStructInfo, ref int pcbStructInfo);
-
-        [GeneratedDllImport(Libraries.Crypt32, EntryPoint = "CryptDecodeObject", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static unsafe partial bool CryptDecodeObjectPointer(Interop.Crypt32.CertEncodingType dwCertEncodingType, [MarshalAs(UnmanagedType.LPStr)] string lpszStructType, byte[] pbEncoded, int cbEncoded, Interop.Crypt32.CryptDecodeObjectFlags dwFlags, void* pvStructInfo, ref int pcbStructInfo);
 
         public static unsafe bool CryptEncodeObject(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, void* pvStructInfo, byte[]? pbEncoded, ref int pcbEncoded)
         {
@@ -127,9 +121,9 @@ internal static partial class Interop
             return encoded;
         }
 
-        internal static SafeChainEngineHandle CertCreateCertificateChainEngine(ref CERT_CHAIN_ENGINE_CONFIG config)
+        internal static SafeChainEngineHandle CertCreateCertificateChainEngine(ref Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG config)
         {
-            if (!CertCreateCertificateChainEngine(ref config, out SafeChainEngineHandle chainEngineHandle))
+            if (!Interop.Crypt32.CertCreateCertificateChainEngine(ref config, out SafeChainEngineHandle chainEngineHandle))
             {
                 int errorCode = Marshal.GetLastWin32Error();
                 throw errorCode.ToCryptographicException();
@@ -138,21 +132,6 @@ internal static partial class Interop
             return chainEngineHandle;
         }
 
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static partial bool CertCreateCertificateChainEngine(ref CERT_CHAIN_ENGINE_CONFIG pConfig, out SafeChainEngineHandle hChainEngineHandle);
-
-        [GeneratedDllImport(Libraries.Crypt32)]
-        public static partial void CertFreeCertificateChainEngine(IntPtr hChainEngine);
-
-        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
-        public static unsafe partial bool CertGetCertificateChain(IntPtr hChainEngine, SafeCertContextHandle pCertContext, Interop.Crypt32.FILETIME* pTime, SafeCertStoreHandle hStore, ref CERT_CHAIN_PARA pChainPara, CertChainFlags dwFlags, IntPtr pvReserved, out SafeX509ChainHandle ppChainContext);
-
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static partial bool CryptHashPublicKeyInfo(IntPtr hCryptProv, int algId, int dwFlags, Interop.Crypt32.CertEncodingType dwCertEncodingType, ref Interop.Crypt32.CERT_PUBLIC_KEY_INFO pInfo, byte[] pbComputedHash, ref int pcbComputedHash);
-
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static partial bool CertSaveStore(SafeCertStoreHandle hCertStore, Interop.Crypt32.CertEncodingType dwMsgAndCertEncodingType, CertStoreSaveAs dwSaveAs, CertStoreSaveTo dwSaveTo, ref Interop.Crypt32.DATA_BLOB pvSaveToPara, int dwFlags);
-
         /// <summary>
         /// A less error-prone wrapper for CertEnumCertificatesInStore().
         ///
@@ -160,52 +139,30 @@ internal static partial class Interop
         /// the next certificate in the iteration. The final call sets pCertContext to an invalid SafeCertStoreHandle
         /// and returns "false" to indicate the end of the store has been reached.
         /// </summary>
-        public static unsafe bool CertFindCertificateInStore(SafeCertStoreHandle hCertStore, CertFindType dwFindType, void* pvFindPara, [NotNull] ref SafeCertContextHandle? pCertContext)
+        public static unsafe bool CertFindCertificateInStore(SafeCertStoreHandle hCertStore, Interop.Crypt32.CertFindType dwFindType, void* pvFindPara, [NotNull] ref SafeCertContextHandle? pCertContext)
         {
             Interop.Crypt32.CERT_CONTEXT* pPrevCertContext = pCertContext == null ? null : pCertContext.Disconnect();
-            pCertContext = CertFindCertificateInStore(hCertStore, Interop.Crypt32.CertEncodingType.All, CertFindFlags.None, dwFindType, pvFindPara, pPrevCertContext);
+            pCertContext = Interop.Crypt32.CertFindCertificateInStore(hCertStore, Interop.Crypt32.CertEncodingType.All, Interop.Crypt32.CertFindFlags.None, dwFindType, pvFindPara, pPrevCertContext);
             return !pCertContext.IsInvalid;
         }
 
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static unsafe partial SafeCertContextHandle CertFindCertificateInStore(SafeCertStoreHandle hCertStore, Interop.Crypt32.CertEncodingType dwCertEncodingType, CertFindFlags dwFindFlags, CertFindType dwFindType, void* pvFindPara, Interop.Crypt32.CERT_CONTEXT* pPrevCertContext);
-
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static unsafe partial int CertVerifyTimeValidity(ref Interop.Crypt32.FILETIME pTimeToVerify, Interop.Crypt32.CERT_INFO* pCertInfo);
-
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static unsafe partial Interop.Crypt32.CERT_EXTENSION* CertFindExtension([MarshalAs(UnmanagedType.LPStr)] string pszObjId, int cExtensions, IntPtr rgExtensions);
-
-        // Note: It's somewhat unusual to use an API enum as a parameter type to a P/Invoke but in this case, X509KeyUsageFlags was intentionally designed as bit-wise
-        // identical to the wincrypt CERT_*_USAGE values.
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static unsafe partial bool CertGetIntendedKeyUsage(Interop.Crypt32.CertEncodingType dwCertEncodingType, Interop.Crypt32.CERT_INFO* pCertInfo, out X509KeyUsageFlags pbKeyUsage, int cbKeyUsage);
-
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static unsafe partial bool CertGetValidUsages(int cCerts, ref SafeCertContextHandle rghCerts, out int cNumOIDs, void* rghOIDs, ref int pcbOIDs);
-
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static partial bool CertControlStore(SafeCertStoreHandle hCertStore, CertControlStoreFlags dwFlags, CertControlStoreType dwControlType, IntPtr pvCtrlPara);
-
-        // Note: CertDeleteCertificateFromStore always calls CertFreeCertificateContext on pCertContext, even if an error is encountered.
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static unsafe partial bool CertDeleteCertificateFromStore(Interop.Crypt32.CERT_CONTEXT* pCertContext);
-
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static partial void CertFreeCertificateChain(IntPtr pChainContext);
-
-        public static bool CertVerifyCertificateChainPolicy(ChainPolicy pszPolicyOID, SafeX509ChainHandle pChainContext, ref CERT_CHAIN_POLICY_PARA pPolicyPara, ref CERT_CHAIN_POLICY_STATUS pPolicyStatus)
+        public static unsafe bool CertGetIntendedKeyUsage(Interop.Crypt32.CertEncodingType dwCertEncodingType, Interop.Crypt32.CERT_INFO* pCertInfo, out X509KeyUsageFlags pbKeyUsage, int cbKeyUsage)
         {
-            return CertVerifyCertificateChainPolicy((IntPtr)pszPolicyOID, pChainContext, ref pPolicyPara, ref pPolicyStatus);
+            bool result = Interop.Crypt32.CertGetIntendedKeyUsage(dwCertEncodingType, pCertInfo, out Interop.Crypt32.X509KeyUsageFlags x509KeyUsageFlags, cbKeyUsage);
+            pbKeyUsage = (X509KeyUsageFlags)(int)x509KeyUsageFlags;
+            return result;
         }
 
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static partial bool CertVerifyCertificateChainPolicy(IntPtr pszPolicyOID, SafeX509ChainHandle pChainContext, ref CERT_CHAIN_POLICY_PARA pPolicyPara, ref CERT_CHAIN_POLICY_STATUS pPolicyStatus);
+        public static bool CertVerifyCertificateChainPolicy(ChainPolicy pszPolicyOID, SafeX509ChainHandle pChainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA pPolicyPara, ref Interop.Crypt32.CERT_CHAIN_POLICY_STATUS pPolicyStatus)
+        {
+            return Interop.Crypt32.CertVerifyCertificateChainPolicy((IntPtr)pszPolicyOID, pChainContext, ref pPolicyPara, ref pPolicyStatus);
+        }
 
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static unsafe partial bool CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType dwCertEncodingType, Interop.Crypt32.CERT_PUBLIC_KEY_INFO* pInfo, CryptImportPublicKeyInfoFlags dwFlags, void* pvAuxInfo, out SafeBCryptKeyHandle phKey);
-
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static partial bool CryptAcquireCertificatePrivateKey(SafeCertContextHandle pCert, CryptAcquireFlags dwFlags, IntPtr pvParameters, out SafeNCryptKeyHandle phCryptProvOrNCryptKey, out int pdwKeySpec, out bool pfCallerFreeProvOrNCryptKey);
+        public static bool CryptAcquireCertificatePrivateKey(SafeCertContextHandle pCert, Interop.Crypt32.CryptAcquireCertificatePrivateKeyFlags dwFlags, IntPtr pvParameters, out SafeNCryptKeyHandle phCryptProvOrNCryptKey, out int pdwKeySpec, out bool pfCallerFreeProvOrNCryptKey)
+        {
+            bool result = Interop.Crypt32.CryptAcquireCertificatePrivateKey(pCert, dwFlags, pvParameters, out phCryptProvOrNCryptKey, out Interop.Crypt32.CryptKeySpec pdwKeySpecEnum, out pfCallerFreeProvOrNCryptKey);
+            pdwKeySpec = (int)pdwKeySpecEnum;
+            return result;
+        }
     }
 }
