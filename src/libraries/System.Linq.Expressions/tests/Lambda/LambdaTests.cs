@@ -779,6 +779,7 @@ namespace System.Linq.Expressions.Tests
             Assert.DoesNotContain(Expression.Parameter(typeof(int)), parameters);
         }
 
+#if FEATURE_COMPILE
         [Theory, ClassData(typeof(CompilationTypes))]
         public void AboveByteMaxArityArg(bool useInterpreter)
         {
@@ -790,7 +791,6 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(23, result);
         }
 
-#if FEATURE_COMPILE
         [Fact]
         public void AboveByteMaxArityArgIL()
         {
@@ -903,7 +903,6 @@ namespace System.Linq.Expressions.Tests
 }
 ");
         }
-#endif
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void ExcessiveArity(bool useInterpreter)
@@ -912,6 +911,7 @@ namespace System.Linq.Expressions.Tests
             LambdaExpression lambda = Expression.Lambda(pars.Last(), pars);
             Assert.Throws<InvalidProgramException>(() => lambda.Compile(useInterpreter));
         }
+#endif
 
         private static int Add(ref int var, int val)
         {
