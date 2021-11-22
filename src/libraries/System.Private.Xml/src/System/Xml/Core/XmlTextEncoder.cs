@@ -541,6 +541,7 @@ namespace System.Xml
         {
             Span<char> span = stackalloc char[12];
             int charsWritten = WriteCharToSpan(span, ch);
+
             for (int i = 0; i < charsWritten; i++)
             {
                 _textWriter.Write(span[i]);
