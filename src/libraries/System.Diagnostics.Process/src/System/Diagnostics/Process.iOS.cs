@@ -36,6 +36,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal DateTime StartTimeCore
         {
             get { throw new PlatformNotSupportedException(); }
