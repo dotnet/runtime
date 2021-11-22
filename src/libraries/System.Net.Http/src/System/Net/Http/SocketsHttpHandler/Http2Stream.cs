@@ -1071,11 +1071,6 @@ namespace System.Net.Http
 
             public int ReadData(Span<byte> buffer, HttpResponseMessage responseMessage)
             {
-                if (buffer.Length == 0)
-                {
-                    return 0;
-                }
-
                 (bool wait, int bytesRead) = TryReadFromBuffer(buffer, partOfSyncRead: true);
                 if (wait)
                 {
@@ -1090,7 +1085,7 @@ namespace System.Net.Http
                 {
                     _windowManager.AdjustWindow(bytesRead, this);
                 }
-                else
+                else if (buffer.Length != 0)
                 {
                     // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
                     MoveTrailersToResponseMessage(responseMessage);

@@ -84,7 +84,7 @@ namespace System.Net.Quic.Implementations.Mock
             }
 
             int bytesRead = await streamBuffer.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-            if (bytesRead == 0)
+            if (bytesRead == 0 && buffer.Length != 0)
             {
                 if (_connection.ConnectionError is long connectonError)
                 {
