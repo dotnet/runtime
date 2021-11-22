@@ -257,23 +257,21 @@ function set_exit_code(exit_code, reason) {
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        // need to flush streams (stdout/stderr)
-        for (const stream of Module.FS.streams) {
-            if (stream && stream.stream_ops && stream.stream_ops.flush) {
-                stream.stream_ops.flush(stream);
-            }
-        }
-        console.log("Flushed stdout!");
-
         console.log('1 ' + messsage);
+        originalConsole.log('2 ' + messsage);
         console.log("1 consoleWebSocket.bufferedAmount: " + consoleWebSocket.bufferedAmount);
-        setTimeout(() => {
-            originalConsole.log('2 ' + messsage);
-            console.log("2 consoleWebSocket.bufferedAmount: " + consoleWebSocket.bufferedAmount);
+        const stop_when_ws_buffer_empty = () => {
+            if (consoleWebSocket.bufferedAmount == 0) {
+                // tell xharness WasmTestMessagesProcessor we are done. 
+                // note this sends last we bytes into the same WS
+                console.log("WASM EXIT " + exit_code);
+            }
+            else {
+                setTimeout(stop_when_ws_buffer_empty, 100);
+            }
+        };
+        stop_when_ws_buffer_empty();
 
-            // tell xharness WasmTestMessagesProcessor we are done. 
-            console.log("WASM EXIT " + exit_code);
-        }, 100);
     } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }
