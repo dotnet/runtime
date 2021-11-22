@@ -1075,7 +1075,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            // Emits the code for a if(backreference)-then-else conditionals.
+            // Emits the code for an if(backreference)-then-else conditional.
             void EmitBackreferenceConditional(RegexNode node)
             {
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
@@ -1096,6 +1096,77 @@ namespace System.Text.RegularExpressions.Generator
                         TransferTextSpanPosToRunTextPos();
                     }
                 }
+            }
+
+            // Emits the code for an if(expression)-then-else conditional.
+            void EmitExpressionConditional(RegexNode node)
+            {
+                // The first child node is the conditional expression.  If this matches, then we branch to the "yes" branch.
+                // If it doesn't match, then we branch to the optional "no" branch if it exists, or simply skip the "yes"
+                // branch, otherwise. The conditional is treated as a positive lookahead.  If it's not already
+                // such a node, wrap it in one.
+                RegexNode conditional = node.Child(0);
+                if (conditional is not { Type: RegexNode.Require })
+                {
+                    var newConditional = new RegexNode(RegexNode.Require, conditional.Options);
+                    newConditional.AddChild(conditional);
+                    conditional = newConditional;
+                }
+
+                // Get the "yes" branch and the optional "no" branch, if it exists.
+                RegexNode yesBranch = node.Child(1);
+                RegexNode? noBranch = node.ChildCount() > 2 ? node.Child(2) : null;
+
+                string end = ReserveName("end");
+                string? no = noBranch is not null ? ReserveName("NoMatch") : null;
+
+                // If the conditional expression has captures, we'll need to uncapture them in the case of no match.
+                string? startingCrawlPos = null;
+                if ((conditional.Options & RegexNode.HasCapturesFlag) != 0)
+                {
+                    startingCrawlPos = ReserveName("startingCrawlPos");
+                    writer.WriteLine($"int {startingCrawlPos} = base.Crawlpos();");
+                    writer.WriteLine();
+                }
+
+                // Emit the conditional expression.  We need to reroute any match failures to either the "no" branch
+                // if it exists, or to the end of the node (skipping the "yes" branch) if it doesn't.
+                string originalDoneLabel = doneLabel;
+                string tmpDoneLabel = no ?? end;
+                doneLabel = tmpDoneLabel;
+                EmitPositiveLookaheadAssertion(conditional);
+                if (doneLabel == tmpDoneLabel)
+                {
+                    doneLabel = originalDoneLabel;
+                }
+
+                // If we get to this point of the code, the conditional successfully matched, so run the "yes" branch.
+                // Since the "yes" branch may have a different execution path than the "no" branch or the lack of
+                // any branch, we need to store the current textSpanPosition and reset it prior to emitting the code
+                // for what comes after the "yes" branch, so that everyone is on equal footing.
+                int startingTextSpanPos = textSpanPos;
+                EmitNode(yesBranch);
+                TransferTextSpanPosToRunTextPos(); // ensure all subsequent code sees the same textSpanPos value by setting it to 0
+
+                // If there's a no branch, we need to emit it, but skipping it from a successful "yes" branch match.
+                if (no is not null)
+                {
+                    writer.WriteLine($"goto {end};");
+                    writer.WriteLine();
+
+                    // Emit the no branch, first uncapturing any captures from the expression condition that failed
+                    // to match and emit the branch.
+                    MarkLabel(no);
+                    if (startingCrawlPos is not null)
+                    {
+                        EmitUncaptureUntil(startingCrawlPos);
+                    }
+                    textSpanPos = startingTextSpanPos;
+                    EmitNode(noBranch);
+                    TransferTextSpanPosToRunTextPos(); // ensure all subsequent code sees the same textSpanPos value by setting it to 0
+                }
+
+                MarkLabel(end);
             }
 
             // Emits the code for a Capture node.
@@ -1135,6 +1206,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Save off runtextpos.  We'll need to reset this upon successful completion of the lookahead.
                 string startingRunTextPosName = ReserveName("startingRunTextPos");
                 writer.WriteLine($"int {startingRunTextPosName} = runtextpos;");
+                writer.WriteLine();
                 int startingTextSpanPos = textSpanPos;
 
                 // Emit the child.
@@ -1268,6 +1340,10 @@ namespace System.Text.RegularExpressions.Generator
 
                     case RegexNode.Testref:
                         EmitBackreferenceConditional(node);
+                        break;
+
+                    case RegexNode.Testgroup:
+                        EmitExpressionConditional(node);
                         break;
 
                     case RegexNode.Capture:

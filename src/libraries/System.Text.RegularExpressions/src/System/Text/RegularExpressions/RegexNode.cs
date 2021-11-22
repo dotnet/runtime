@@ -2350,7 +2350,10 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case Testgroup:
-                        supported = false;
+                        supported =
+                            Child(0).SupportsSimplifiedCodeGenerationImplementation() &&
+                            Child(1).SupportsSimplifiedCodeGenerationImplementation() &&
+                            (childCount == 2 || Child(2).SupportsSimplifiedCodeGenerationImplementation());
                         break;
 
                     default:
