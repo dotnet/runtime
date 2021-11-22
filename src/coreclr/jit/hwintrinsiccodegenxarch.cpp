@@ -2158,7 +2158,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     }
     else if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
-        if (targetReg == op3NodeReg)
+        if (!copiesUpperBits && (targetReg == op3NodeReg))
         {
             // op3 = (op1 * [op2]) + op3
             // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
@@ -2180,7 +2180,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         // op1 = (op1 * op2) + [op3] or op2 = (op1 * op2) + [op3]
         // ? = (op1 * op2) + [op3] or ? = (op1 * op2) + op3
         // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-        if (targetReg == op2NodeReg)
+        if (!copiesUpperBits && (targetReg == op2NodeReg))
         {
             // op2 = (op1 * op2) + [op3]
             // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
@@ -2188,19 +2188,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         }
     }
 
-    if (!copiesUpperBits && (emitOp2->GetRegNum() == targetReg))
-    {
-        assert(node->isRMWHWIntrinsic(compiler));
-
-        // We have "reg2 = (reg1 * reg2) +/- op3" where "reg1 != reg2" on a RMW intrinsic.
-        //
-        // For non-commutative intrinsics, we should have ensured that op2 was marked
-        // delay free in order to prevent it from getting assigned the same register
-        // as target. However, for commutative intrinsics, we can just swap the operands
-        // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
-
-        std::swap(emitOp1, emitOp2);
-    }
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3);
     genProduceReg(node);
 }
