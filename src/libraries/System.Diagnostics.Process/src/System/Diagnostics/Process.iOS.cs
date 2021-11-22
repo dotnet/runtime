@@ -108,6 +108,7 @@ namespace System.Diagnostics
         {
             throw new PlatformNotSupportedException();
         }
+
         private int ParentProcessId => throw new PlatformNotSupportedException();
 
         private static bool IsProcessInvalidException(Exception e) =>

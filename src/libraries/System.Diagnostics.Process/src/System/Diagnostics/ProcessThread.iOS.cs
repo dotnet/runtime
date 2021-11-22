@@ -14,8 +14,8 @@ namespace System.Diagnostics
         /// </summary>
         private ThreadPriorityLevel PriorityLevelCore
         {
-            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
-            set { throw new PlatformNotSupportedException(); }  // Not available on POSIX
+            get { throw new PlatformNotSupportedException(); }
+            set { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
@@ -26,11 +26,10 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         public TimeSpan PrivilegedProcessorTime
         {
-            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
+            get { throw new PlatformNotSupportedException(); }
         }
 
-        private DateTime GetStartTime() => throw new PlatformNotSupportedException(); // Not available on POSIX
-
+        private DateTime GetStartTime() => throw new PlatformNotSupportedException();
         /// <summary>
         /// Returns the amount of time the associated thread has spent utilizing the CPU.
         /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
@@ -40,7 +39,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         public TimeSpan TotalProcessorTime
         {
-            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
+            get { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
@@ -51,7 +50,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         public TimeSpan UserProcessorTime
         {
-            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
+            get { throw new PlatformNotSupportedException(); }
         }
     }
 }
