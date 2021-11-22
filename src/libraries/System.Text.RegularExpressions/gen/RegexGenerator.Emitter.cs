@@ -1172,12 +1172,18 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code for a Capture node.
             void EmitCapture(RegexNode node, RegexNode? subsequent = null)
             {
-                Debug.Assert(node.N == -1);
-
-                // Get the capture number.  This needs to be kept in sync with MapCapNum in RegexWriter.
                 Debug.Assert(node.Type == RegexNode.Capture);
-                Debug.Assert(node.N == -1, "Currently only support capnum, not uncapnum");
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
+                int uncapnum = RegexParser.MapCaptureNumber(node.N, rm.Code.Caps);
+
+                if (uncapnum != -1)
+                {
+                    using (EmitBlock(writer, $"if (!base.IsMatched({uncapnum}))"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                    writer.WriteLine();
+                }
 
                 TransferTextSpanPosToRunTextPos();
                 string startingRunTextPosName = ReserveName("startingRunTextPos");
@@ -1188,7 +1194,14 @@ namespace System.Text.RegularExpressions.Generator
                 EmitNode(node.Child(0), subsequent);
 
                 TransferTextSpanPosToRunTextPos();
-                writer.WriteLine($"base.Capture({capnum}, {startingRunTextPosName}, runtextpos);");
+                if (uncapnum == -1)
+                {
+                    writer.WriteLine($"base.Capture({capnum}, {startingRunTextPosName}, runtextpos);");
+                }
+                else
+                {
+                    writer.WriteLine($"base.TransferCapture({capnum}, {uncapnum}, {startingRunTextPosName}, runtextpos);");
+                }
             }
 
             // Emits code to unwind the capture stack until the crawl position specified in the provided local.

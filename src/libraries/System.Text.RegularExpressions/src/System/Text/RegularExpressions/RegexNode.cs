@@ -2304,11 +2304,10 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case Capture:
-                        // Currently we only support capnums without uncapnums (for balancing groups)
-                        supported = N == -1;
+                        supported = Child(0).SupportsSimplifiedCodeGenerationImplementation();
                         if (supported)
                         {
-                            // And we only support them in certain places in the tree.
+                            // Captures are currently only supported in certain places in the tree.
                             RegexNode? parent = Next;
                             while (parent != null)
                             {
@@ -2329,21 +2328,15 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
+                            // If we've found a supported capture, mark all of the nodes in its parent
+                            // hierarchy as containing a capture.
                             if (supported)
                             {
-                                // And we only support them if their children are supported.
-                                supported = Child(0).SupportsSimplifiedCodeGenerationImplementation();
-
-                                // If we've found a supported capture, mark all of the nodes in its parent
-                                // hierarchy as containing a capture.
-                                if (supported)
+                                parent = this;
+                                while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
                                 {
-                                    parent = this;
-                                    while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
-                                    {
-                                        parent.Options |= HasCapturesFlag;
-                                        parent = parent.Next;
-                                    }
+                                    parent.Options |= HasCapturesFlag;
+                                    parent = parent.Next;
                                 }
                             }
                         }

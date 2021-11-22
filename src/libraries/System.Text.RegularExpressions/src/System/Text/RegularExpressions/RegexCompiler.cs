@@ -2143,14 +2143,20 @@ namespace System.Text.RegularExpressions
             // Emits the code for a Capture node.
             void EmitCapture(RegexNode node, RegexNode? subsequent = null)
             {
-                Debug.Assert(node.N == -1);
                 LocalBuilder startingRunTextPos = DeclareInt32();
 
-                // Get the capture number.  This needs to be kept
-                // in sync with MapCapNum in RegexWriter.
                 Debug.Assert(node.Type == RegexNode.Capture);
-                Debug.Assert(node.N == -1, "Currently only support capnum, not uncapnum");
                 int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
+                int uncapnum = RegexParser.MapCaptureNumber(node.N, _code.Caps);
+
+                if (uncapnum != -1)
+                {
+                    // if (!IsMatched(uncapnum)) goto doneLabel;
+                    Ldthis();
+                    Ldc(uncapnum);
+                    Call(s_isMatchedMethod);
+                    BrfalseFar(doneLabel);
+                }
 
                 // runtextpos += textSpanPos;
                 // textSpan = textSpan.Slice(textSpanPos);
@@ -2164,13 +2170,27 @@ namespace System.Text.RegularExpressions
 
                 // runtextpos += textSpanPos;
                 // textSpan = textSpan.Slice(textSpanPos);
-                // Capture(capnum, startingRunTextPos, runtextpos);
                 TransferTextSpanPosToRunTextPos();
-                Ldthis();
-                Ldc(capnum);
-                Ldloc(startingRunTextPos);
-                Ldloc(runtextposLocal);
-                Call(s_captureMethod);
+
+                if (uncapnum == -1)
+                {
+                    // Capture(capnum, startingRunTextPos, runtextpos);
+                    Ldthis();
+                    Ldc(capnum);
+                    Ldloc(startingRunTextPos);
+                    Ldloc(runtextposLocal);
+                    Call(s_captureMethod);
+                }
+                else
+                {
+                    // TransferCapture(capnum, uncapnum, startingRunTextPos, runtextpos);
+                    Ldthis();
+                    Ldc(capnum);
+                    Ldc(uncapnum);
+                    Ldloc(startingRunTextPos);
+                    Ldloc(runtextposLocal);
+                    Call(s_transferCaptureMethod);
+                }
             }
 
             // Emits code to unwind the capture stack until the crawl position specified in the provided local.
