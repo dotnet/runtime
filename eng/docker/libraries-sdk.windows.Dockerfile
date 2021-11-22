@@ -18,7 +18,8 @@ USER ContainerUser
 
 COPY . /live-runtime-artifacts
 
-ENV _ASPNETCORE_SOURCE_DIR="C:/Program Files/dotnet/shared/Microsoft.AspNetCore.App/$VERSION*"
-ENV _ASPNETCORE_DEST_DIR="C:/live-runtime-artifacts/testhost/net$VERSION-windows-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
-RUN & New-Item -ItemType Directory -Path $env:_ASPNETCORE_DEST_DIR
-RUN Copy-Item -Recurse -Path $env:_ASPNETCORE_SOURCE_DIR -Destination $env:_ASPNETCORE_DEST_DIR
+# Add AspNetCore bits to testhost:
+ENV _ASPNETCORE_SOURCE="C:/Program Files/dotnet/shared/Microsoft.AspNetCore.App/$VERSION*"
+ENV _ASPNETCORE_DEST="C:/live-runtime-artifacts/testhost/net$VERSION-windows-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
+RUN & New-Item -ItemType Directory -Path $env:_ASPNETCORE_DEST
+RUN Copy-Item -Recurse -Path $env:_ASPNETCORE_SOURCE -Destination $env:_ASPNETCORE_DEST
