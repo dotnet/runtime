@@ -36,6 +36,7 @@ namespace System.Linq.Parallel
     /// Finally, if the producer notices that its buffer has exceeded an even greater threshold, it will
     /// go to sleep and wait until the consumer takes the entire buffer.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     internal sealed class OrderPreservingPipeliningMergeHelper<TOutput, TKey> : IMergeHelper<TOutput>
     {
         private readonly QueryTaskGroupState _taskGroupState; // State shared among tasks.
@@ -354,12 +355,14 @@ namespace System.Linq.Parallel
                     {
                         // Wake up all producers. Since the cancellation token has already been
                         // set, the producers will eventually stop after waking up.
-                        object[] locks = _mergeHelper._bufferLocks;
-                        for (int i = 0; i < locks.Length; i++)
-                        {
-                            lock (locks[i])
+                        if (!ParallelEnumerable.SinglePartitionMode) {
+                            object[] locks = _mergeHelper._bufferLocks;
+                            for (int i = 0; i < locks.Length; i++)
                             {
-                                Monitor.Pulse(locks[i]);
+                                lock (locks[i])
+                                {
+                                    Monitor.Pulse(locks[i]);
+                                }
                             }
                         }
 
@@ -398,6 +401,9 @@ namespace System.Linq.Parallel
                             return false;
                         }
 
+                        if (ParallelEnumerable.SinglePartitionMode)
+                            return false;
+
                         _mergeHelper._consumerWaiting[producer] = true;
                         Monitor.Wait(bufferLock);
 
@@ -416,6 +422,7 @@ namespace System.Linq.Parallel
                     // If the producer is waiting, wake it up
                     if (_mergeHelper._producerWaiting[producer])
                     {
+                        Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                         Monitor.Pulse(bufferLock);
                         _mergeHelper._producerWaiting[producer] = false;
                     }
@@ -469,15 +476,17 @@ namespace System.Linq.Parallel
             public override void Dispose()
             {
                 // Wake up any waiting producers
-                int partitionCount = _mergeHelper._buffers.Length;
-                for (int producer = 0; producer < partitionCount; producer++)
-                {
-                    object bufferLock = _mergeHelper._bufferLocks[producer];
-                    lock (bufferLock)
+                if (!ParallelEnumerable.SinglePartitionMode) {
+                    int partitionCount = _mergeHelper._buffers.Length;
+                    for (int producer = 0; producer < partitionCount; producer++)
                     {
-                        if (_mergeHelper._producerWaiting[producer])
+                        object bufferLock = _mergeHelper._bufferLocks[producer];
+                        lock (bufferLock)
                         {
-                            Monitor.Pulse(bufferLock);
+                            if (_mergeHelper._producerWaiting[producer])
+                            {
+                                Monitor.Pulse(bufferLock);
+                            }
                         }
                     }
                 }
