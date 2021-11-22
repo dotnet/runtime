@@ -25,7 +25,7 @@
 }
 .class extern ForwardedNestedType
 {
-  .class extern 'Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.ImplementationLibrary'
+  .class extern 'Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AnotherImplementationClass'
 }
 
 .module 'NestedForwarderLibrary_2.dll'
