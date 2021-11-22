@@ -72,11 +72,11 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanAcquireResourceAsync_QueuesAndGrabsNewest()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 2));
-            var lease = await limiter.WaitAsync().DefaultTimeout();
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.NewestFirst, 3));
+            var lease = await limiter.WaitAsync(2).DefaultTimeout();
 
             Assert.True(lease.IsAcquired);
-            var wait1 = limiter.WaitAsync();
+            var wait1 = limiter.WaitAsync(2);
             var wait2 = limiter.WaitAsync();
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);

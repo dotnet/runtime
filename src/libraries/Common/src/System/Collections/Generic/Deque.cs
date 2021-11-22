@@ -47,18 +47,6 @@ namespace System.Collections.Generic
         //    _size++;
         //}
 
-        public T PeekHead()
-        {
-            Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining
-            return _array[_head];
-        }
-
-        public T PeekTail()
-        {
-            Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining
-            return _array[_head];
-        }
-
         public T DequeueHead()
         {
             Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining
@@ -73,6 +61,23 @@ namespace System.Collections.Generic
             _size--;
 
             return item;
+        }
+
+        public T PeekHead()
+        {
+            Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining
+            return _array[_head];
+        }
+
+        public T PeekTail()
+        {
+            Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining
+            var index = _tail - 1;
+            if (index == -1)
+            {
+                index = _array.Length - 1;
+            }
+            return _array[index];
         }
 
         public T DequeueTail()

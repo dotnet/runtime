@@ -83,12 +83,13 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanAcquireResourceAsync_QueuesAndGrabsNewest()
         {
-            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 2,
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 3,
                 TimeSpan.FromMinutes(0), 1, autoReplenishment: false));
-            var lease = await limiter.WaitAsync().DefaultTimeout();
 
+            var lease = await limiter.WaitAsync(2).DefaultTimeout();
             Assert.True(lease.IsAcquired);
-            var wait1 = limiter.WaitAsync();
+
+            var wait1 = limiter.WaitAsync(2);
             var wait2 = limiter.WaitAsync();
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
@@ -103,6 +104,7 @@ namespace System.Threading.RateLimiting.Test
 
             lease.Dispose();
             Assert.Equal(0, limiter.GetAvailablePermits());
+            Assert.True(limiter.TryReplenish());
             Assert.True(limiter.TryReplenish());
 
             lease = await wait1.DefaultTimeout();

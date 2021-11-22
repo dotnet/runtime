@@ -8,7 +8,7 @@ namespace System.Threading.RateLimiting
 {
     /// <summary>
     /// Abstraction for leases returned by <see cref="RateLimiter"/> implementations.
-    /// A lease represents the success or failure to acquire a resource and any potential metadata that is relevant to the acquisition operation.
+    /// A lease represents the success or failure to acquire a resource and contains potential metadata that is relevant to the acquisition operation.
     /// </summary>
     public abstract class RateLimitLease : IDisposable
     {

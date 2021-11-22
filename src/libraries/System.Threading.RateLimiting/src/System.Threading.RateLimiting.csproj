@@ -11,7 +11,6 @@ System.Threading.RateLimiting.TokenBucketRateLimiter
 System.Threading.RateLimiting.RateLimitLease</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Threading\RateLimiting\Internal\Deque.cs" />
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiterOptions.cs" />
     <Compile Include="System\Threading\RateLimiting\MetadataName.cs" />
@@ -21,6 +20,8 @@ System.Threading.RateLimiting.RateLimitLease</PackageDescription>
     <Compile Include="System\Threading\RateLimiting\RateLimitLease.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiterOptions.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs"
+             Link="Common\System\Collections\Generic\Deque.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Runtime" />
