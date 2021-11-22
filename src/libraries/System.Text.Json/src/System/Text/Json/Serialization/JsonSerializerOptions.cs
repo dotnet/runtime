@@ -20,7 +20,15 @@ namespace System.Text.Json
     {
         internal const int BufferSizeDefault = 16 * 1024;
 
-        internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
+        /// <summary>
+        /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the default configuration.
+        /// </summary>
+        /// <remarks>
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
+        /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
+        /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
+        /// </remarks>
+        public static JsonSerializerOptions Default { get; } = new JsonSerializerOptions { _haveTypesBeenCreated = true };
 
         private readonly ConcurrentDictionary<Type, JsonTypeInfo> _classes = new ConcurrentDictionary<Type, JsonTypeInfo>();
 
@@ -709,9 +717,6 @@ namespace System.Text.Json
 
         internal void VerifyMutable()
         {
-            // The default options are hidden and thus should be immutable.
-            Debug.Assert(this != s_defaultOptions);
-
             if (_haveTypesBeenCreated || _context != null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable(_context);

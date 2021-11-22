@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
-        <target state="needs-review-translation">Vnitřní chyba v modulu ScanRegex.</target>
+        <target state="translated">Vnitřní chyba v modulu ScanRegex.</target>
         <note>{Locked="ScanRegex"}</note>
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="needs-review-translation">Atribut RegexGeneratorAttribute je nesprávný.</target>
+        <target state="translated">Atribut RegexGeneratorAttribute je nesprávný.</target>
         <note>{Locked="RegexGeneratorAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
-        <target state="needs-review-translation">Neplatné použití RegexGenerator</target>
+        <target state="translated">Neplatné použití RegexGenerator</target>
         <note>{Locked="RegexGenerator"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -219,7 +219,7 @@
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="needs-review-translation">Počty skupin digitalizace musí být menší nebo rovny hodnotě Int32.MaxValue.</target>
+        <target state="translated">Počty skupin digitalizace musí být menší nebo rovny hodnotě Int32.MaxValue.</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">

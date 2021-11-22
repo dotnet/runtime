@@ -10,6 +10,22 @@ namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+        [UnsupportedOSPlatformGuard("browser")]
+        internal static bool HasSymmetricEncryption { get; } =
+#if NET5_0_OR_GREATER
+            !OperatingSystem.IsBrowser();
+#else
+            true;
+#endif
+
+        [UnsupportedOSPlatformGuard("browser")]
+        internal static bool HasHMAC { get; } =
+#if NET5_0_OR_GREATER
+            !OperatingSystem.IsBrowser();
+#else
+            true;
+#endif
+
 #if NET5_0_OR_GREATER
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
@@ -20,6 +36,7 @@ namespace Internal.Cryptography
 
 #if NET5_0_OR_GREATER
         [UnsupportedOSPlatformGuard("android")]
+        [UnsupportedOSPlatformGuard("browser")]
         public static bool IsRC2Supported => !OperatingSystem.IsAndroid();
 #else
         public static bool IsRC2Supported => true;

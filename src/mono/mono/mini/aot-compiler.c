@@ -12909,8 +12909,15 @@ resolve_class (ClassProfileData *cdata)
 	}
 	if (cdata->inst) {
 		resolve_ginst (cdata->inst);
-		if (!cdata->inst->inst)
+		if (!cdata->inst->inst) {
+			/*
+			 * The instance might not be found if its arguments are in another assembly,
+			 * use the definition instead.
+			 */
+			cdata->klass = klass;
+			//printf ("[%s] %s.%s\n", cdata->image->name, cdata->ns, cdata->name);
 			return;
+		}
 		MonoGenericContext ctx;
 
 		memset (&ctx, 0, sizeof (ctx));
@@ -12989,12 +12996,14 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 				printf ("Unable to load method '%s' because its class '%s.%s' is not loaded.\n", mdata->name, mdata->klass->ns, mdata->klass->name);
 			continue;
 		}
+
 		miter = NULL;
 		while ((m = mono_class_get_methods (klass, &miter))) {
 			ERROR_DECL (error);
 
 			if (strcmp (m->name, mdata->name))
 				continue;
+
 			MonoMethodSignature *sig = mono_method_signature_internal (m);
 			if (!sig)
 				continue;
@@ -13021,9 +13030,11 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 			char *sig_str = mono_signature_full_name (sig);
 			gboolean match = !strcmp (sig_str, mdata->signature);
 			g_free (sig_str);
-			if (!match)
-
-				continue;
+			if (!match) {
+				// The signature might not match for methods on gtds
+				if (!mono_class_is_gtd (klass))
+					continue;
+			}
 			//printf ("%s\n", mono_method_full_name (m, 1));
 			mdata->method = m;
 			break;
@@ -13114,8 +13125,14 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 			continue;
 		if (!m->is_inflated)
 			continue;
-		if (mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))
+		if (mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) {
+			if (acfg->aot_opts.profile_only && m_class_get_image (m->klass) == acfg->image) {
+				// Add the fully shared version to its home image
+				add_profile_method (acfg, m);
+				count ++;
+			}
 			continue;
+		}
 
 		if (acfg->aot_opts.dedup_include) {
 			/* Add all instances from the profile */

@@ -455,6 +455,70 @@ unsafe struct Native
         }
 
         [ConditionalFact]
+        public async Task NonBlittableMarshallerGetPinnableReferenceReturnType_DoesNotReportDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public char c;
+}
+
+unsafe struct Native
+{
+    private IntPtr value;
+
+    public Native(S s)
+    {
+        value = IntPtr.Zero;
+    }
+
+    public ref char GetPinnableReference() => ref System.Runtime.CompilerServices.Unsafe.NullRef<char>();
+
+    public S ToManaged() => new S();
+
+    public IntPtr Value { get => IntPtr.Zero; set {} }
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [ConditionalFact]
+        public async Task BlittableMarshallerGetPinnableReferenceReturnType_DoesNotReportDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public byte c;
+}
+
+unsafe struct Native
+{
+    private IntPtr value;
+
+    public Native(S s) : this()
+    {
+        value = IntPtr.Zero;
+    }
+
+    public S ToManaged() => new S();
+
+    public ref byte GetPinnableReference() => ref System.Runtime.CompilerServices.Unsafe.NullRef<byte>();
+
+    public IntPtr Value { get => IntPtr.Zero; set {} }
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [ConditionalFact]
         public async Task TypeWithGetPinnableReferenceNonPointerReturnType_ReportsDiagnostic()
         {
             string source = @"
@@ -520,7 +584,7 @@ unsafe struct Native
         }
 
         [ConditionalFact]
-        public async Task TypeWithGetPinnableReferenceByRefReturnType_ReportsDiagnostic()
+        public async Task TypeWithGetPinnableReferenceByRefValuePropertyType_ReportsDiagnostic()
         {
             string source = @"
 using System;
@@ -551,7 +615,7 @@ unsafe struct Native
         }
 
         [ConditionalFact]
-        public async Task NativeTypeWithGetPinnableReferenceByRefReturnType_ReportsDiagnostic()
+        public async Task NativeTypeWithGetPinnableReferenceByRefValuePropertyType_ReportsDiagnostic()
         {
             string source = @"
 using System;
@@ -579,6 +643,67 @@ unsafe struct Native
 
             await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(RefValuePropertyUnsupportedRule).WithLocation(0).WithArguments("Native"));
+        }
+
+        [ConditionalFact]
+        public async Task NativeTypeWithGetPinnableReferenceNoValueProperty_ReportsDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public byte c;
+}
+
+[BlittableType]
+unsafe struct Native
+{
+    private byte value;
+
+    public Native(S s) : this()
+    {
+        value = s.c;
+    }
+
+    public ref byte {|#0:GetPinnableReference|}() => ref System.Runtime.CompilerServices.Unsafe.NullRef<byte>();
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(MarshallerGetPinnableReferenceRequiresValuePropertyRule).WithLocation(0).WithArguments("Native"));
+        }
+
+        [ConditionalFact]
+        public async Task NativeTypeWithGetPinnableReferenceWithNonPointerValueProperty_DoesNotReportDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public byte c;
+}
+
+[BlittableType]
+unsafe struct Native
+{
+    private byte value;
+
+    public Native(S s) : this()
+    {
+        value = s.c;
+    }
+
+    public ref byte GetPinnableReference() => ref System.Runtime.CompilerServices.Unsafe.NullRef<byte>();
+
+    public int Value { get; set; }
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [ConditionalFact]

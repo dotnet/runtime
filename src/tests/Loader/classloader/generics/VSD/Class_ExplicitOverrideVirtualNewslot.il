@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // This test is the same as ExplicitOverrideVirtualNewslotFinal.cs
 // The difference is that here the virtual methods are 'virtual newslot' as opposed to
 // 'virtual newslot final'
@@ -816,6 +817,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       73 (0x49)
     .maxstack  2

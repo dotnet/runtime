@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Int32Ptr, JSHandle, MonoArray, MonoObject, MonoString, VoidPtr } from "./types";
-import { Module } from "./modules";
+import { Module } from "./imports";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { wrap_error } from "./method-calls";
 import { _js_to_mono_obj } from "./js-to-cs";

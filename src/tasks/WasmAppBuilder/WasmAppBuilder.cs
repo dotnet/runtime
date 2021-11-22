@@ -174,12 +174,12 @@ public class WasmAppBuilder : Task
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
         }
-        FileCopyChecked(MainJS!, Path.Combine(AppDir, "runtime.js"), string.Empty);
+        FileCopyChecked(MainJS!, Path.Combine(AppDir, "main.js"), string.Empty);
 
         string indexHtmlPath = Path.Combine(AppDir, "index.html");
         if (!File.Exists(indexHtmlPath))
         {
-            var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+            var html = @"<html><body><script type=""text/javascript"" src=""main.js""></script></body></html>";
             File.WriteAllText(indexHtmlPath, html);
         }
 

@@ -52,14 +52,6 @@ void emitDispInsHelp(instrDesc* id,
                      BYTE*      code = 0,
                      size_t     sz   = 0,
                      insGroup*  ig   = NULL);
-void emitDispIns(instrDesc* id,
-                 bool       isNew,
-                 bool       doffs,
-                 bool       asmfm,
-                 unsigned   offs = 0,
-                 BYTE*      code = 0,
-                 size_t     sz   = 0,
-                 insGroup*  ig   = NULL);
 
 #endif // DEBUG
 

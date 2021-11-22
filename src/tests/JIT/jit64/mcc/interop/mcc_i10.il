@@ -3,6 +3,7 @@
 
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .assembly MCCTest {}
 .module mcc_i10.exe
 
@@ -17,6 +18,9 @@
 
     .method private static int32 Main(string[] args)
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  64
       .locals init	(

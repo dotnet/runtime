@@ -12,6 +12,7 @@
 .assembly sample
 {
 }
+.assembly extern xunit.core {}
 .module sample.exe
 // MVID: {EAE7CF60-60E9-49D2-84F9-F450B7E26DE4}
 
@@ -23,6 +24,9 @@
 {
   .method private hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       62 (0x3e)
     .maxstack  1

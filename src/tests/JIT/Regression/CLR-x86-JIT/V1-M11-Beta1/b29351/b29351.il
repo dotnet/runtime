@@ -12,12 +12,16 @@
   
   
 }
+.assembly extern xunit.core {}
 .namespace BoxTest
 {
   .class auto ansi App extends [mscorlib]System.Object
   {
     .method private static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  2
 		newobj     instance void BoxTest.App::.ctor()

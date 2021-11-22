@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib{}
 .assembly ILGEN_MODULE{}
+.assembly extern xunit.core {}
 
 // This test originally failed compilation during CSE due to value numbers that were discarded during remorphing.
 // The arguments to and return value from `ILGEN_METHOD` are not meaningful; it is enough that this function
@@ -120,6 +121,9 @@
 
     .method public static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         .try

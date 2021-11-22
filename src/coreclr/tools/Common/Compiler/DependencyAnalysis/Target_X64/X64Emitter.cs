@@ -174,6 +174,12 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitByte(0xC3);
         }
 
+        public void EmitCompareToZero(Register reg)
+        {
+            AddrMode rexAddrMode = new AddrMode(Register.RegDirect | reg, null, 0, 0, AddrModeSize.Int64);
+            EmitIndirInstructionSize(0x84, reg, ref rexAddrMode);
+        }
+
         public void EmitZeroReg(Register reg)
         {
             // High 32 bits get cleared automatically when using 32bit registers

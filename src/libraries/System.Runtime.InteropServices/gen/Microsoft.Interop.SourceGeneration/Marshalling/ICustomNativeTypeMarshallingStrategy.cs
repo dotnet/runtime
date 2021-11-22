@@ -235,7 +235,10 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
 
-            yield return GenerateValuePropertyAssignment(info, context, subContext);
+            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+            {
+                yield return GenerateValuePropertyAssignment(info, context, subContext);
+            }
 
             foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, subContext))
             {
@@ -450,7 +453,7 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshaller that enables support for a GetPinnableReference method on a native type, with a Value property fallback.
+    /// Marshaller that calls the GetPinnableReference method on the marshaller value and enables support for the Value property.
     /// </summary>
     internal sealed class PinnableMarshallerTypeMarshalling : ICustomNativeTypeMarshallingStrategy
     {
@@ -482,7 +485,7 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
 
-            if (!CanPinMarshaller(info, context) && !context.AdditionalTemporaryStateLivesAcrossStages)
+            if (!context.AdditionalTemporaryStateLivesAcrossStages)
             {
                 // <marshalerIdentifier>.Value = <nativeIdentifier>;
                 yield return GenerateValuePropertyAssignment(info, context, subContext);
@@ -503,35 +506,34 @@ namespace Microsoft.Interop
             }
 
             if (!CanPinMarshaller(info, context))
-            {
-                // <nativeIdentifier> = <marshalerIdentifier>.Value;
-                yield return ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(context.GetIdentifiers(info).native),
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            IdentifierName(subContext.GetIdentifiers(info).native),
-                            IdentifierName(ManualTypeMarshallingHelper.ValuePropertyName))));
-            }
+                yield return GenerateNativeAssignmentFromValueProperty(info, context, subContext);
+        }
+
+        private static StatementSyntax GenerateNativeAssignmentFromValueProperty(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithValuePropertyStubContext subContext)
+        {
+            // <nativeIdentifier> = <marshalerIdentifier>.Value;
+            return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(context.GetIdentifiers(info).native),
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(subContext.GetIdentifiers(info).native),
+                        IdentifierName(ManualTypeMarshallingHelper.ValuePropertyName))));
         }
 
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context)
         {
-            // fixed (<_nativeTypeSyntax> <nativeIdentifier> = &<marshalerIdentifier>)
+            // fixed (<_nativeTypeSyntax> <ignoredIdentifier> = &<marshalerIdentifier>)
+            //  <assignment to Value property>
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
             yield return FixedStatement(
                 VariableDeclaration(
                 _valuePropertyType,
                 SingletonSeparatedList(
-                    VariableDeclarator(context.GetIdentifiers(info).native)
+                    VariableDeclarator(Identifier(context.GetAdditionalIdentifier(info, "ignored")))
                         .WithInitializer(EqualsValueClause(
-                            PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                InvocationExpression(
-                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        IdentifierName(subContext.GetIdentifiers(info).native),
-                                        IdentifierName(ManualTypeMarshallingHelper.GetPinnableReferenceName)),
-                                    ArgumentList())))))),
-                EmptyStatement());
+                            IdentifierName(subContext.GetIdentifiers(info).native))))),
+                GenerateNativeAssignmentFromValueProperty(info, context, subContext));
         }
 
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
@@ -566,7 +568,7 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
 
-            if (!CanPinMarshaller(info, context))
+            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
             {
                 // <marshalerIdentifier>.Value = <nativeIdentifier>;
                 yield return GenerateValuePropertyAssignment(info, context, subContext);
@@ -586,10 +588,6 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            if (CanPinMarshaller(info, context))
-            {
-                return false;
-            }
             return _innerMarshaller.UsesNativeIdentifier(info, context);
         }
     }

@@ -16,6 +16,7 @@
 .assembly 'box'// as "box"
 {
 }
+.assembly extern xunit.core {}
 .module 'box.exe'
 // MVID: {8CBD3D83-F5B6-41AC-9D7A-099A59884AC4}
 .namespace JitTest
@@ -26,6 +27,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       159 (0x9f)
       .maxstack  2

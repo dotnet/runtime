@@ -723,7 +723,7 @@ DomainAssembly::~DomainAssembly()
     if (m_fHostAssemblyPublished)
     {
         // Remove association first.
-        UnRegisterFromHostAssembly();
+        UnregisterFromHostAssembly();
     }
 
     ModuleIterator i = IterateModules(kModIterIncludeLoading);
@@ -873,7 +873,7 @@ void DomainAssembly::RegisterWithHostAssembly()
     }
 }
 
-void DomainAssembly::UnRegisterFromHostAssembly()
+void DomainAssembly::UnregisterFromHostAssembly()
 {
     CONTRACTL
     {
