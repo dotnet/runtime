@@ -423,22 +423,29 @@
 
   </Target>
 
+
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' "/>
   <!-- TODO: I don't know why some of these conditions are required/a more principled way-->
-  <Target Name="WasmSetPublishProperties" AfterTargets="Build"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
+  <Target Name="WasmSetPublishProperties" BeforeTargets="Build"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
 
       <ItemGroup>
         <TrimmerRootAssembly Include="$(MSBuildProjectName)" />
-        <TrimmerRootAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidDir)/native/System.Private.CoreLib.dll" />
-        <TrimmerRootAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidDir)/lib/net7.0/System.Private.Runtime.InteropServices.JavaScript.dll" />
+        <TrimmerRootAssembly Include="$(ArtifactsDir)/tests//coreclr/Browser.wasm.Debug/simple/simple/simple.dll" />
+        <!-- <TrimmerRootAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidDir)/native/System.Private.CoreLib.dll" /> -->
+        <!-- <TrimmerRootAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidDir)/lib/net7.0/System.Private.Runtime.InteropServices.JavaScript.dll" /> -->
       </ItemGroup>
 
       <PropertyGroup>
         <TrimmerSingleWarn>false</TrimmerSingleWarn>
-        <PublishTrimmed>true</PublishTrimmed>
         <SelfContained>true</SelfContained>
+        <UseAppHost>true</UseAppHost>
+        <OutputType>Exe</OutputType>
+        <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+        <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
+        <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
       </PropertyGroup>
 
-      <Message Text="!!!naricc_debug!!! PublishAfterBuild: $(MSBuildProjectFullPath) priority: $(CLRTestPriority) TrimmerRootAssembly: @(TrimmerRootAssembly)" Importance="High" />
+      <Message Text="!!!naricc_debug!!! SimpleDllPath: $(ArtifactsDir)/tests//coreclr/Browser.wasm.Debug/simple/simple/simple.dll WasmSetPublishProperties: MSBuildProjectName $(MSBuildProjectName) MSBuildProjectFullPath: $(MSBuildProjectFullPath) MSBuildProjectName: MSBuildProjectName priority: $(CLRTestPriority) TrimmerRootAssembly: @(TrimmerRootAssembly)" Importance="High" />
   </Target>
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />

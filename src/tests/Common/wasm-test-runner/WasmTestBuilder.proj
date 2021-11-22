@@ -6,13 +6,14 @@
       </ItemGroup>
 
       <ItemGroup>
-	<ProjectReference Include="$(TestProject)" />
+	<ProjectReference Include="$(TestTarget)" />
       </ItemGroup>
 
       <PropertyGroup>
         <TrimmerSingleWarn>false</TrimmerSingleWarn>
         <PublishTrimmed>true</PublishTrimmed>
 	<SelfContained>true</SelfContained>
+	<TargetFramework>net6.0</TargetFramework>
 	<RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
       </PropertyGroup>
 </Project>

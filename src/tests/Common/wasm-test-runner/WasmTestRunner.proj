@@ -36,14 +36,16 @@
       <WasmResolveAssembliesBeforeBuild>false</WasmResolveAssembliesBeforeBuild>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
       <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>
-      <AssemblySearchPaths>$(TestBinDir)/publish</AssemblySearchPaths>
+      <AssemblySearchPaths>$(TestBinDir)/publish;$(TestBinDir)/publish/refs;$(MicrosoftNetCoreAppRuntimePackDir)/native/</AssemblySearchPaths>
     </PropertyGroup>
 
     <Message Text="!!!naricc_debug!!!: WasmTestRunner: TestBinDir: $(TestBinDir): Corelib: $(MicrosoftNetCoreAppRuntimePackDir)native/System.Private.CoreLib.dll" Importance="high" />
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TestBinDir)\publish\*.dll" />
-      <!-- <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackDir)native/System.Private.CoreLib.dll" /> -->
+      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/browser-wasm/native/System.Private.CoreLib.dll" />
+      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/browser-wasm/lib/net7.0/System.Runtime.dll" />
+      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/browser-wasm/lib/net7.0/System.Private.Runtime.InteropServices.JavaScript.dll" />
     </ItemGroup>
 
     <Message Importance="High" Text="AppDir: $(AppDir)" />
