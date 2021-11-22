@@ -247,7 +247,11 @@ namespace System.Xml
 
             Span<char> span = stackalloc char[12];
             int charsWritten = WriteCharToSpan(span, surrogateChar);
-            _textWriter.Write(span[..charsWritten]);
+
+            for (int i = 0; i < charsWritten; i++)
+            {
+                _textWriter.Write(span[i]);
+            }
         }
 
         internal void Write(string text)
@@ -488,15 +492,17 @@ namespace System.Xml
 
             Span<char> span = stackalloc char[12];
             int charsWritten = WriteCharToSpan(span, ch);
-            ReadOnlySpan<char> ros = span[..charsWritten];
 
             if (_cacheAttrValue)
             {
                 Debug.Assert(_attrValue != null);
-                _attrValue.Append(ros);
+                _attrValue.Append(span[..charsWritten]);
             }
 
-            _textWriter.Write(ros);
+            for (int i = 0; i < charsWritten; i++)
+            {
+                _textWriter.Write(span[i]);
+            }
         }
 
         internal void WriteEntityRef(string name)
