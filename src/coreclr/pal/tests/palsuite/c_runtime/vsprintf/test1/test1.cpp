@@ -28,7 +28,7 @@ PALTEST(c_runtime_vsprintf_test1_paltest_vsprintf_test1, "c_runtime/vsprintf/tes
         return(FAIL);
     }
 
-    testvsp(buf, MINIPAL_LENGTHOF(buf), "hello world");
+    testvsp(buf, ARRAY_SIZE(buf), "hello world");
 
     if (memcmp(checkstr, buf, strlen(checkstr)+1) != 0)
     {
@@ -36,8 +36,8 @@ PALTEST(c_runtime_vsprintf_test1_paltest_vsprintf_test1, "c_runtime/vsprintf/tes
              checkstr, 256, buf);
     }
 
-    testvsp(buf, MINIPAL_LENGTHOF(buf), "xxxxxxxxxxxxxxxxx");
-    ret = testvsp(buf, MINIPAL_LENGTHOF(buf),  "hello world");
+    testvsp(buf, ARRAY_SIZE(buf), "xxxxxxxxxxxxxxxxx");
+    ret = testvsp(buf, ARRAY_SIZE(buf),  "hello world");
 
     if (ret != strlen(checkstr))
     {

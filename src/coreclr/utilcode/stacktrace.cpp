@@ -294,9 +294,9 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
         rcBuff.Append(W(';'));
 
     // Copy the defacto NT symbol path as well.
-    size_t sympathLength = chTotal + MINIPAL_LENGTHOF(DEFAULT_SYM_PATH) + 1;
+    size_t sympathLength = chTotal + ARRAY_SIZE(DEFAULT_SYM_PATH) + 1;
 		// integer overflow occurred
-	if (sympathLength < (size_t)chTotal || sympathLength < MINIPAL_LENGTHOF(DEFAULT_SYM_PATH))
+	if (sympathLength < (size_t)chTotal || sympathLength < ARRAY_SIZE(DEFAULT_SYM_PATH))
 	{
 		return NULL;
 	}
@@ -341,7 +341,7 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
 
     if (ch != 0 && (pathLocationLength < MAX_SYM_PATH))
     {
-        chTotal = chTotal + ch - MINIPAL_LENGTHOF(STR_ENGINE_NAME);
+        chTotal = chTotal + ch - ARRAY_SIZE(STR_ENGINE_NAME);
         rcBuff.Append(W(';'));
     }
 #endif
@@ -431,7 +431,7 @@ void MagicInit()
     //
     // Try to get the API entrypoints in imagehlp.dll
     //
-    for (int i = 0; i < MINIPAL_LENGTHOF(ailFuncList); i++)
+    for (int i = 0; i < ARRAY_SIZE(ailFuncList); i++)
     {
         *(ailFuncList[i].ppvfn) = GetProcAddress(
                 g_hinstImageHlp,
@@ -508,12 +508,12 @@ DWORD_PTR dwAddr
 
     if (!_SymGetModuleInfo(g_hProcess, dwAddr, &mi))
     {
-        strcpy_s(psi->achModule, MINIPAL_LENGTHOF(psi->achModule), "<no module>");
+        strcpy_s(psi->achModule, ARRAY_SIZE(psi->achModule), "<no module>");
     }
     else
     {
-        strcpy_s(psi->achModule, MINIPAL_LENGTHOF(psi->achModule), mi.ModuleName);
-        _strupr_s(psi->achModule, MINIPAL_LENGTHOF(psi->achModule));
+        strcpy_s(psi->achModule, ARRAY_SIZE(psi->achModule), mi.ModuleName);
+        _strupr_s(psi->achModule, ARRAY_SIZE(psi->achModule));
     }
 
     CHAR rgchUndec[256];
@@ -553,7 +553,7 @@ DWORD_PTR dwAddr
         psi->dwOffset = dwAddr - mi.BaseOfImage;
     }
 
-    strcpy_s(psi->achSymbol, MINIPAL_LENGTHOF(psi->achSymbol), pszSymbol);
+    strcpy_s(psi->achSymbol, ARRAY_SIZE(psi->achSymbol), pszSymbol);
 }
 
 /****************************************************************************

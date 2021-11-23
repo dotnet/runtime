@@ -32,9 +32,9 @@ PALTEST(loader_LoadLibraryW_test5_paltest_loadlibraryw_test5, "loader/LoadLibrar
 
     /*Module name without extension but with a trailing dot*/
 #if WIN32
-    sprintf_s(ModuleName, MINIPAL_LENGTHOF(ModuleName),"%s","rotor_pal.");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName),"%s","rotor_pal.");
 #else
-    sprintf_s(ModuleName, MINIPAL_LENGTHOF(ModuleName),"%s","librotor_pal.");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName),"%s","librotor_pal.");
 #endif
 
     /* convert a normal string to a wide one */

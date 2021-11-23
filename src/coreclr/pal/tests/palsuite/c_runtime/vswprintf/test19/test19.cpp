@@ -23,7 +23,7 @@ void DoArgumentPrecTest_vswprintf(WCHAR *formatstr, int precision, void *param,
 {
     WCHAR buf[256];
 
-    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, precision, param);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, wcslen(checkstr1) + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2) + 2) != 0)
     {
@@ -42,7 +42,7 @@ void DoArgumentPrecDoubleTest_vswprintf(WCHAR *formatstr, int precision, double 
 {
     WCHAR buf[256];
 
-    testvswp(buf, MINIPAL_LENGTHOF(buf), formatstr, precision, param);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, wcslen(checkstr1) + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2) + 2) != 0)
     {

@@ -807,41 +807,41 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSLis
 	emit_section_change (w, ".debug_abbrev", 0);
 	emit_label (w, ".Ldebug_abbrev_start");
 	emit_dwarf_abbrev (w, ABBREV_COMPILE_UNIT, DW_TAG_compile_unit, TRUE,
-					   compile_unit_attr, MINIPAL_LENGTHOF (compile_unit_attr));
+					   compile_unit_attr, ARRAY_SIZE (compile_unit_attr));
 	emit_dwarf_abbrev (w, ABBREV_SUBPROGRAM, DW_TAG_subprogram, TRUE,
-					   subprogram_attr, MINIPAL_LENGTHOF (subprogram_attr));
+					   subprogram_attr, ARRAY_SIZE (subprogram_attr));
 	emit_dwarf_abbrev (w, ABBREV_PARAM, DW_TAG_formal_parameter, FALSE,
-					   param_attr, MINIPAL_LENGTHOF (param_attr));
+					   param_attr, ARRAY_SIZE (param_attr));
 	emit_dwarf_abbrev (w, ABBREV_PARAM_LOCLIST, DW_TAG_formal_parameter, FALSE,
-					   param_loclist_attr, MINIPAL_LENGTHOF (param_loclist_attr));
+					   param_loclist_attr, ARRAY_SIZE (param_loclist_attr));
 	emit_dwarf_abbrev (w, ABBREV_BASE_TYPE, DW_TAG_base_type, FALSE,
-					   base_type_attr, MINIPAL_LENGTHOF (base_type_attr));
+					   base_type_attr, ARRAY_SIZE (base_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_STRUCT_TYPE, DW_TAG_class_type, TRUE,
-					   struct_type_attr, MINIPAL_LENGTHOF (struct_type_attr));
+					   struct_type_attr, ARRAY_SIZE (struct_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_STRUCT_TYPE_NOCHILDREN, DW_TAG_class_type, FALSE,
-					   struct_type_attr, MINIPAL_LENGTHOF (struct_type_attr));
+					   struct_type_attr, ARRAY_SIZE (struct_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_DATA_MEMBER, DW_TAG_member, FALSE,
-					   data_member_attr, MINIPAL_LENGTHOF (data_member_attr));
+					   data_member_attr, ARRAY_SIZE (data_member_attr));
 	emit_dwarf_abbrev (w, ABBREV_TYPEDEF, DW_TAG_typedef, FALSE,
-					   typedef_attr, MINIPAL_LENGTHOF (typedef_attr));
+					   typedef_attr, ARRAY_SIZE (typedef_attr));
 	emit_dwarf_abbrev (w, ABBREV_ENUM_TYPE, DW_TAG_enumeration_type, TRUE,
-					   enum_type_attr, MINIPAL_LENGTHOF (enum_type_attr));
+					   enum_type_attr, ARRAY_SIZE (enum_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_ENUMERATOR, DW_TAG_enumerator, FALSE,
-					   enumerator_attr, MINIPAL_LENGTHOF (enumerator_attr));
+					   enumerator_attr, ARRAY_SIZE (enumerator_attr));
 	emit_dwarf_abbrev (w, ABBREV_NAMESPACE, DW_TAG_namespace, TRUE,
-					   namespace_attr, MINIPAL_LENGTHOF (namespace_attr));
+					   namespace_attr, ARRAY_SIZE (namespace_attr));
 	emit_dwarf_abbrev (w, ABBREV_VARIABLE, DW_TAG_variable, FALSE,
-					   variable_attr, MINIPAL_LENGTHOF (variable_attr));
+					   variable_attr, ARRAY_SIZE (variable_attr));
 	emit_dwarf_abbrev (w, ABBREV_VARIABLE_LOCLIST, DW_TAG_variable, FALSE,
-					   variable_loclist_attr, MINIPAL_LENGTHOF (variable_loclist_attr));
+					   variable_loclist_attr, ARRAY_SIZE (variable_loclist_attr));
 	emit_dwarf_abbrev (w, ABBREV_POINTER_TYPE, DW_TAG_pointer_type, FALSE,
-					   pointer_type_attr, MINIPAL_LENGTHOF (pointer_type_attr));
+					   pointer_type_attr, ARRAY_SIZE (pointer_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_REFERENCE_TYPE, DW_TAG_reference_type, FALSE,
-					   reference_type_attr, MINIPAL_LENGTHOF (reference_type_attr));
+					   reference_type_attr, ARRAY_SIZE (reference_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_INHERITANCE, DW_TAG_inheritance, FALSE,
-					   inheritance_attr, MINIPAL_LENGTHOF (inheritance_attr));
+					   inheritance_attr, ARRAY_SIZE (inheritance_attr));
 	emit_dwarf_abbrev (w, ABBREV_TRAMP_SUBPROGRAM, DW_TAG_subprogram, FALSE,
-					   tramp_subprogram_attr, MINIPAL_LENGTHOF (tramp_subprogram_attr));
+					   tramp_subprogram_attr, ARRAY_SIZE (tramp_subprogram_attr));
 	emit_byte (w, 0);
 
 	emit_section_change (w, ".debug_info", 0);
@@ -872,7 +872,7 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSLis
 	emit_symbol_diff (w, ".Ldebug_line_start", ".Ldebug_line_section_start", 0);
 
 	/* Base types */
-	for (i = 0; i < MINIPAL_LENGTHOF (basic_types); ++i) {
+	for (i = 0; i < ARRAY_SIZE (basic_types); ++i) {
 		emit_label (w, basic_types [i].die_name);
 		emit_uleb128 (w, ABBREV_BASE_TYPE);
 		emit_byte (w, basic_types [i].size);
@@ -985,10 +985,10 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 		emit_uleb128 (w, ABBREV_ENUM_TYPE);
 		emit_string (w, full_name);
 		emit_uleb128 (w, size);
-		for (k = 0; k < MINIPAL_LENGTHOF (basic_types); ++k)
+		for (k = 0; k < ARRAY_SIZE (basic_types); ++k)
 			if (basic_types [k].type == mono_class_enum_basetype_internal (klass)->type)
 				break;
-		g_assert (k < MINIPAL_LENGTHOF (basic_types));
+		g_assert (k < ARRAY_SIZE (basic_types));
 		emit_symbol_diff (w, basic_types [k].die_name, ".Ldebug_info_start", 0);
 
 		/* Emit enum values */
@@ -1155,10 +1155,10 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 		// FIXME:
 		t = mono_get_int_type ();
 	}
-	for (j = 0; j < MINIPAL_LENGTHOF (basic_types); ++j)
+	for (j = 0; j < ARRAY_SIZE (basic_types); ++j)
 		if (basic_types [j].type == t->type)
 			break;
-	if (j < MINIPAL_LENGTHOF (basic_types)) {
+	if (j < ARRAY_SIZE (basic_types)) {
 		tdie = basic_types [j].die_name;
 	} else {
 		switch (t->type) {
@@ -1215,10 +1215,10 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 		// FIXME:
 		t = mono_get_int_type ();
 	}
-	for (j = 0; j < MINIPAL_LENGTHOF (basic_types); ++j)
+	for (j = 0; j < ARRAY_SIZE (basic_types); ++j)
 		if (basic_types [j].type == t->type)
 			break;
-	if (j < MINIPAL_LENGTHOF (basic_types)) {
+	if (j < ARRAY_SIZE (basic_types)) {
 		/* Emit a boxed version of base types */
 		if (j < 64 && !base_types_emitted [j]) {
 			emit_class_dwarf_info (w, klass, FALSE);

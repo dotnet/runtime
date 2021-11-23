@@ -3139,7 +3139,7 @@ ClrDataMethodDefinition::GetName(
 
             status = GetFullMethodNameFromMetadata(m_module->GetMDImport(),
                                                    m_token,
-                                                   MINIPAL_LENGTHOF(methName),
+                                                   ARRAY_SIZE(methName),
                                                    methName);
             if (status == S_OK)
             {
@@ -3885,7 +3885,7 @@ ClrDataMethodInstance::GetName(
             wcscpy_s(name, bufLen, nameUnk);
             if (nameLen != NULL)
             {
-                *nameLen = MINIPAL_LENGTHOF(nameUnk);
+                *nameLen = ARRAY_SIZE(nameUnk);
             }
             status = S_OK;
         }

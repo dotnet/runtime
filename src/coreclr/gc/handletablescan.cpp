@@ -1083,7 +1083,7 @@ void CALLBACK BlockQueueBlocksForAsyncScan(PTR_TableSegment pSegment, uint32_t u
     if (pQNode)
     {
         // we got an existing tail - is the tail node full already?
-        if (pQNode->uEntries >= MINIPAL_LENGTHOF(pQNode->rgRange))
+        if (pQNode->uEntries >= ARRAY_SIZE(pQNode->rgRange))
         {
             // the node is full - is there another node in the queue?
             if (!pQNode->pNext)

@@ -224,7 +224,7 @@ public:
         if (bFoundHigh)
             throw ArgumentException("String 'replacement' contains invalid Unicode code points.", "replacement");
 
-        wcscpy_s(strDefault, MINIPAL_LENGTHOF(strDefault), replacement);
+        wcscpy_s(strDefault, ARRAY_SIZE(strDefault), replacement);
         strDefaultLength = replacementLength;
     }
 
@@ -421,7 +421,7 @@ public:
     // Construction
     DecoderReplacementFallbackBuffer(DecoderReplacementFallback* fallback)
     {
-        wcscpy_s(strDefault, MINIPAL_LENGTHOF(strDefault), fallback->GetDefaultString());
+        wcscpy_s(strDefault, ARRAY_SIZE(strDefault), fallback->GetDefaultString());
         strDefaultLength = PAL_wcslen((const WCHAR *)fallback->GetDefaultString());
     }
 
@@ -701,7 +701,7 @@ public:
         if (bFoundHigh)
             throw ArgumentException("String 'replacement' contains invalid Unicode code points.", "replacement");
 
-        wcscpy_s(strDefault, MINIPAL_LENGTHOF(strDefault), replacement);
+        wcscpy_s(strDefault, ARRAY_SIZE(strDefault), replacement);
         strDefaultLength = replacementLength;
     }
 
@@ -873,8 +873,8 @@ public:
     EncoderReplacementFallbackBuffer(EncoderReplacementFallback* fallback)
     {
         // 2X in case we're a surrogate pair
-        wcscpy_s(strDefault, MINIPAL_LENGTHOF(strDefault), fallback->GetDefaultString());
-        wcscat_s(strDefault, MINIPAL_LENGTHOF(strDefault), fallback->GetDefaultString());
+        wcscpy_s(strDefault, ARRAY_SIZE(strDefault), fallback->GetDefaultString());
+        wcscat_s(strDefault, ARRAY_SIZE(strDefault), fallback->GetDefaultString());
         strDefaultLength = 2 * PAL_wcslen((const WCHAR *)fallback->GetDefaultString());
 
     }

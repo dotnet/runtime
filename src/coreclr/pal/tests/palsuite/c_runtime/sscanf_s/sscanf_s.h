@@ -43,7 +43,7 @@ inline void DoStrTest_scanf_s(char *inputstr, const char *formatstr, const char 
     char buf[256] = { 0 };
     int ret;
 
-    ret = sscanf_s(inputstr, formatstr, buf, MINIPAL_LENGTHOF(buf));
+    ret = sscanf_s(inputstr, formatstr, buf, ARRAY_SIZE(buf));
     if (ret != 1)
     {
         Fail("ERROR: Expected sscanf_s to return 1, got %d.\n"
@@ -65,7 +65,7 @@ inline void DoWStrTest_scanf_s(char *inputstr, const char *formatstr, const WCHA
     WCHAR buf[256] = { 0 };
     int ret;
 
-    ret = sscanf_s(inputstr, formatstr, buf, MINIPAL_LENGTHOF(buf));
+    ret = sscanf_s(inputstr, formatstr, buf, ARRAY_SIZE(buf));
     if (ret != 1)
     {
         Fail("ERROR: Expected sscanf_s to return 1, got %d.\n"
@@ -138,8 +138,8 @@ inline void DoI64NumTest_scanf_s(char *inputstr, const char *formatstr, INT64 ch
 
     if (checknum != num)
     {
-        sprintf_s(buf, MINIPAL_LENGTHOF(buf), "%I64d", num);
-        sprintf_s(check, MINIPAL_LENGTHOF(check), "%I64d", checknum);
+        sprintf_s(buf, ARRAY_SIZE(buf), "%I64d", num);
+        sprintf_s(check, ARRAY_SIZE(check), "%I64d", checknum);
         Fail("ERROR: scanned I64 number incorrectly from \"%s\" using \"%s\".\n"
             "Expected %s, got %s.\n", inputstr, formatstr, check, buf);
     }
@@ -155,7 +155,7 @@ inline void DoCharTest_scanf_s(char *inputstr, const char *formatstr, char* chec
     for (i=0; i<256; i++)
         buf[i] = (char)-1;
 
-    ret = sscanf_s(inputstr, formatstr, buf, MINIPAL_LENGTHOF(buf));
+    ret = sscanf_s(inputstr, formatstr, buf, ARRAY_SIZE(buf));
     if (ret != 1)
     {
         Fail("ERROR: Expected sscanf_s to return 1, got %d.\n"
@@ -189,7 +189,7 @@ inline void DoWCharTest_scanf_s(char *inputstr, const char *formatstr, WCHAR* ch
     for (i=0; i<256; i++)
         buf[i] = (WCHAR)-1;
 
-    ret = sscanf_s(inputstr, formatstr, buf, MINIPAL_LENGTHOF(buf));
+    ret = sscanf_s(inputstr, formatstr, buf, ARRAY_SIZE(buf));
     if (ret != 1)
     {
         Fail("ERROR: Expected sscanf_s to return 1, got %d.\n"

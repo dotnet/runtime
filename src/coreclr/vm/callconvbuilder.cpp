@@ -523,7 +523,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
         NULL,
         0,
         namedArgs,
-        MINIPAL_LENGTHOF(namedArgs),
+        ARRAY_SIZE(namedArgs),
         domainAssembly));
 
     // If the value isn't defined, then return without setting anything.

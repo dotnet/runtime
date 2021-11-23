@@ -437,7 +437,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
                 if ((ret == ERROR_SUCCESS) && (valueType == REG_SZ) && (valueSize / sizeof(WCHAR) < MAX_LONGPATH))
                 {
                     WCHAR wzAutoKey[MAX_LONGPATH];
-                    valueSize = MINIPAL_LENGTHOF(wzAutoKey) * sizeof(WCHAR);
+                    valueSize = ARRAY_SIZE(wzAutoKey) * sizeof(WCHAR);
                     WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerAutoValue, NULL, NULL, reinterpret_cast< LPBYTE >(wzAutoKey), &valueSize);
 
                     // The OS's behavior is to consider Auto to be FALSE unless the first character is set
@@ -708,7 +708,7 @@ void _cdecl DbgWriteEx(LPCTSTR szFmt, ...)
     va_list marker;
 
     va_start(marker, szFmt);
-    _vsnwprintf_s(rcBuff, MINIPAL_LENGTHOF(rcBuff), _TRUNCATE, szFmt, marker);
+    _vsnwprintf_s(rcBuff, ARRAY_SIZE(rcBuff), _TRUNCATE, szFmt, marker);
     va_end(marker);
     WszOutputDebugString(rcBuff);
 }

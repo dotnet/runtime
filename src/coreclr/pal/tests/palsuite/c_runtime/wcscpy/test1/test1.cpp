@@ -36,7 +36,7 @@ PALTEST(c_runtime_wcscpy_test1_paltest_wcscpy_test1, "c_runtime/wcscpy/test1/pal
 
     if (ret != dest || memcmp(dest, result, sizeof(result)) != 0)
     {
-        sprintf_s(buffer, MINIPAL_LENGTHOF(buffer), "%S", dest);
+        sprintf_s(buffer, ARRAY_SIZE(buffer), "%S", dest);
         Fail("Expected wcscpy to give \"%s\" with a return value of %p, got \"%s\" "
             "with a return value of %p.\n", "foo", dest, buffer, ret);
     }

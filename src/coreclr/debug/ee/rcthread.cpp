@@ -1756,7 +1756,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
         GCX_PREEMP();
 
         DWORD ret = WaitForMultipleObjectsEx(
-            MINIPAL_LENGTHOF(waitset),
+            ARRAY_SIZE(waitset),
             waitset,
             FALSE,
             INFINITE,

@@ -2877,7 +2877,7 @@ DeepFieldDescIterator::Init(MethodTable* pMT, int iteratorType,
 
     while (pMT)
     {
-        if (m_numClasses < (int)MINIPAL_LENGTHOF(m_classes))
+        if (m_numClasses < (int)ARRAY_SIZE(m_classes))
         {
             m_classes[m_numClasses++] = pMT;
         }

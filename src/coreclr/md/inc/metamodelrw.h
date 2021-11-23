@@ -952,7 +952,7 @@ public:
     HRESULT GetGenericParamsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, MINIPAL_LENGTHOF(mdtTypeOrMethodDef)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef)),
             m_pVS[TBL_GenericParam], pRidStart, pRidEnd);
     }
 
@@ -967,7 +967,7 @@ public:
     HRESULT GetMethodSpecsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, MINIPAL_LENGTHOF(mdtMethodDefOrRef)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, ARRAY_SIZE(mdtMethodDefOrRef)),
             m_pVS[TBL_MethodSpec], pRidStart, pRidEnd);
     }
 
@@ -975,7 +975,7 @@ public:
     HRESULT GetDeclSecurityForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, MINIPAL_LENGTHOF(mdtHasDeclSecurity)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, ARRAY_SIZE(mdtHasDeclSecurity)),
             m_pVS[TBL_DeclSecurity],
             pRidStart,
             pRidEnd);
@@ -985,7 +985,7 @@ public:
     HRESULT GetCustomAttributeForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, MINIPAL_LENGTHOF(mdtHasCustomAttribute)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, ARRAY_SIZE(mdtHasCustomAttribute)),
             m_pVS[TBL_CustomAttribute],
             pRidStart,
             pRidEnd);

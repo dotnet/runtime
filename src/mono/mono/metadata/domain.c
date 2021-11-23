@@ -823,7 +823,7 @@ static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version)
 {
 	int n;
-	int max = MINIPAL_LENGTHOF (supported_runtimes);
+	int max = ARRAY_SIZE (supported_runtimes);
 	int vlen;
 
 	if (!version)

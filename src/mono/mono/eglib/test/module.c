@@ -73,7 +73,7 @@ test_module_get_module_filename (void)
 #if _WIN32
 	const HMODULE mods [ ] = {NULL, LoadLibraryW (L"msvcrt.dll"), (HMODULE)(gssize)-1 };
 
-	for (int i = 0; i < MINIPAL_LENGTHOF (mods); ++i) {
+	for (int i = 0; i < ARRAY_SIZE (mods); ++i) {
 		const HMODULE mod = mods [i];
 		for (int j = 0; j <= 2; ++j) {
 			wchar_t* str = { 0 };
@@ -89,21 +89,21 @@ test_module_get_module_filename (void)
 			switch (j) {
 			case 0:
 				success = mono_get_module_filename (mod, &str, &length);
-				length2 = GetModuleFileNameW (mod, buf2, MINIPAL_LENGTHOF (buf2)); // large buf
+				length2 = GetModuleFileNameW (mod, buf2, ARRAY_SIZE (buf2)); // large buf
 				length3 = GetModuleFileNameW (mod, buf3, 1); // small buf
 				break;
 			case 1:
 				success = mono_get_module_filename_ex (GetCurrentProcess (), mods [i], &str, &length);
-				length2 = GetModuleFileNameExW (GetCurrentProcess (), mod, buf2, MINIPAL_LENGTHOF (buf2)); // large buf
+				length2 = GetModuleFileNameExW (GetCurrentProcess (), mod, buf2, ARRAY_SIZE (buf2)); // large buf
 				length3 = GetModuleFileNameExW (GetCurrentProcess (), mod, buf3, 1); // small buf
 				break;
 			case 2:
 				success = mono_get_module_basename (GetCurrentProcess (), mod, &str, &length);
-				length2 = GetModuleBaseNameW (GetCurrentProcess (), mod, buf2, MINIPAL_LENGTHOF (buf2)); // large buf
+				length2 = GetModuleBaseNameW (GetCurrentProcess (), mod, buf2, ARRAY_SIZE (buf2)); // large buf
 				length3 = GetModuleBaseNameW (GetCurrentProcess (), mod, buf3, 1); // small buf
 				break;
 			}
-			success2 = length2 && length2 < MINIPAL_LENGTHOF (buf2);
+			success2 = length2 && length2 < ARRAY_SIZE (buf2);
 			success3 = length3 == 1;
 			printf ("j:%d s:%X s2:%X s3:%X l:%u l2:%u l3:%u str:%X b2:%X b3:%X\n",
 				j,
@@ -137,10 +137,10 @@ test_get_current_directory (void)
 	guint32 length = { 0 };
 	gboolean success = mono_get_current_directory (&str, &length);
 	wchar_t buf2 [999] = { 0 };
-	const int length2 = GetCurrentDirectoryW (MINIPAL_LENGTHOF (buf2), buf2);
-	const gboolean success2 = length2 && length2 < MINIPAL_LENGTHOF (buf2);
+	const int length2 = GetCurrentDirectoryW (ARRAY_SIZE (buf2), buf2);
+	const gboolean success2 = length2 && length2 < ARRAY_SIZE (buf2);
 	wchar_t buf3 [2] = { 0 };
-	const int length3 = GetCurrentDirectoryW (MINIPAL_LENGTHOF (buf3), buf3);
+	const int length3 = GetCurrentDirectoryW (ARRAY_SIZE (buf3), buf3);
 	const gboolean success3 = length3 > 0;
 	printf ("s:%X s2:%X s3:%X str:%X b2:%X b3:%X\n", success, success2, success3, str ? str [0] : 0, buf2 [0], buf3 [0]);
 	g_assert (length == length2);

@@ -65,5 +65,5 @@ EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_globalizationNative, MINIPAL_LENGTHOF(s_globalizationNative), name);
+    return minipal_resolve_dllimport(s_globalizationNative, ARRAY_SIZE(s_globalizationNative), name);
 }

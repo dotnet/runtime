@@ -639,7 +639,7 @@ public:
     {
         if (id != UICULTUREID_DONTCARE)
         {
-            wcsncpy_s(m_LangId, MINIPAL_LENGTHOF(m_LangId), id, MINIPAL_LENGTHOF(m_LangId));
+            wcsncpy_s(m_LangId, ARRAY_SIZE(m_LangId), id, ARRAY_SIZE(m_LangId));
             m_LangId[MINIPAL_STRLEN(m_LangId)] = W('\0');
         }
         else

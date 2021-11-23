@@ -691,7 +691,7 @@ struct FixupPrecode {
 
         m_rgCode[n++] = 0xD61F0160;   // br  x11
 
-        _ASSERTE(n == MINIPAL_LENGTHOF(m_rgCode));
+        _ASSERTE(n == ARRAY_SIZE(m_rgCode));
     }
 
     TADDR GetBase()

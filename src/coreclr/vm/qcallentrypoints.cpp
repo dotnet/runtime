@@ -321,5 +321,5 @@ static const Entry s_QCall[] =
 
 const void* QCallResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_QCall, MINIPAL_LENGTHOF(s_QCall), name);
+    return minipal_resolve_dllimport(s_QCall, ARRAY_SIZE(s_QCall), name);
 }

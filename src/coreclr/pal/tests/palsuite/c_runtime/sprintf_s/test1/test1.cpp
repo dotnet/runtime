@@ -31,7 +31,7 @@ PALTEST(c_runtime_sprintf_s_test1_paltest_sprintf_test1, "c_runtime/sprintf_s/te
     }
 
 
-    sprintf_s(buf, MINIPAL_LENGTHOF(buf), "hello world");
+    sprintf_s(buf, ARRAY_SIZE(buf), "hello world");
 
     if (memcmp(checkstr, buf, strlen(checkstr)+1) != 0)
     {

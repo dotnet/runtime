@@ -1758,7 +1758,7 @@ YYSTATIC YYCONST short yyrecover[] = {
 #define	YYAPI_TOKENTYPE		int
 #define	YYAPI_TOKENEME(t)	(t)
 #define	YYAPI_TOKENNONE		-1
-#define	YYAPI_TOKENSTR(t)	(sprintf_s(yytokbuf, MINIPAL_LENGTHOF(yytokbuf), "%d", t), yytokbuf)
+#define	YYAPI_TOKENSTR(t)	(sprintf_s(yytokbuf, ARRAY_SIZE(yytokbuf), "%d", t), yytokbuf)
 #define	YYAPI_VALUENAME		yylval
 #define	YYAPI_VALUETYPE		YYSTYPE
 #define	YYAPI_VALUEOF(v)	(v)

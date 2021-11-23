@@ -139,7 +139,7 @@ namespace
         if (!IsObjectiveCMessageSendFunction(libraryName, entrypointName))
             return nullptr;
 
-        for (int i = 0; i < MINIPAL_LENGTHOF(MsgSendEntryPoints); ++i)
+        for (int i = 0; i < ARRAY_SIZE(MsgSendEntryPoints); ++i)
         {
             void* funcMaybe = s_msgSendOverrides[i];
             if (funcMaybe != nullptr
@@ -163,7 +163,7 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
 
     BEGIN_QCALL;
 
-    _ASSERTE(msgSendFunction >= 0 && msgSendFunction < MINIPAL_LENGTHOF(s_msgSendOverrides));
+    _ASSERTE(msgSendFunction >= 0 && msgSendFunction < ARRAY_SIZE(s_msgSendOverrides));
     success = FastInterlockCompareExchangePointer(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;
 
     // Set P/Invoke override callback if we haven't already

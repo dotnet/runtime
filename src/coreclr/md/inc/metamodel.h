@@ -1624,12 +1624,12 @@ public:
     // Return RID to Constant table.
     __checkReturn
     HRESULT FindConstantFor(RID rid, mdToken typ, RID *pFoundRid)
-    { return doSearchTable(TBL_Constant, _COLPAIR(Constant,Parent), encodeToken(rid,typ,mdtHasConstant, MINIPAL_LENGTHOF(mdtHasConstant)), pFoundRid); }
+    { return doSearchTable(TBL_Constant, _COLPAIR(Constant,Parent), encodeToken(rid,typ,mdtHasConstant, ARRAY_SIZE(mdtHasConstant)), pFoundRid); }
 
     // Return RID to FieldMarshal table.
     __checkReturn
     HRESULT FindFieldMarshalFor(RID rid, mdToken typ, RID *pFoundRid)
-    { return doSearchTable(TBL_FieldMarshal, _COLPAIR(FieldMarshal,Parent), encodeToken(rid,typ,mdtHasFieldMarshal, MINIPAL_LENGTHOF(mdtHasFieldMarshal)), pFoundRid); }
+    { return doSearchTable(TBL_FieldMarshal, _COLPAIR(FieldMarshal,Parent), encodeToken(rid,typ,mdtHasFieldMarshal, ARRAY_SIZE(mdtHasFieldMarshal)), pFoundRid); }
 
     // Return RID to ClassLayout table, given the rid to a TypeDef.
     __checkReturn
@@ -1697,7 +1697,7 @@ public:
     // Return RID to Constant table.
     __checkReturn
     HRESULT FindImplMapFor(RID rid, mdToken typ, RID *pFoundRid)
-    { return doSearchTable(TBL_ImplMap, _COLPAIR(ImplMap,MemberForwarded), encodeToken(rid,typ,mdtMemberForwarded, MINIPAL_LENGTHOF(mdtMemberForwarded)), pFoundRid); }
+    { return doSearchTable(TBL_ImplMap, _COLPAIR(ImplMap,MemberForwarded), encodeToken(rid,typ,mdtMemberForwarded, ARRAY_SIZE(mdtMemberForwarded)), pFoundRid); }
 
     // Return RID to FieldRVA table.
     __checkReturn
@@ -1737,7 +1737,7 @@ public:
     {
         return SearchTableForMultipleRows(TBL_GenericParam,
                             _COLDEF(GenericParam,Owner),
-                            encodeToken(rid, mdtTypeDef, mdtTypeOrMethodDef, MINIPAL_LENGTHOF(mdtTypeOrMethodDef)),
+                            encodeToken(rid, mdtTypeDef, mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef)),
                             pEnd,
                             pFoundRid);
     }
@@ -1746,7 +1746,7 @@ public:
     {
         return SearchTableForMultipleRows(TBL_GenericParam,
                             _COLDEF(GenericParam,Owner),
-                            encodeToken(rid, mdtMethodDef, mdtTypeOrMethodDef, MINIPAL_LENGTHOF(mdtTypeOrMethodDef)),
+                            encodeToken(rid, mdtMethodDef, mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef)),
                             pEnd,
                             pFoundRid);
     }
@@ -1755,7 +1755,7 @@ public:
     {
         return SearchTableForMultipleRows(TBL_MethodSpec,
                             _COLDEF(MethodSpec,Method),
-                            encodeToken(rid, mdtMethodDef, mdtMethodDefOrRef, MINIPAL_LENGTHOF(mdtMethodDefOrRef)),
+                            encodeToken(rid, mdtMethodDef, mdtMethodDefOrRef, ARRAY_SIZE(mdtMethodDefOrRef)),
                             pEnd,
                             pFoundRid);
     }
@@ -1764,7 +1764,7 @@ public:
     {
         return SearchTableForMultipleRows(TBL_MethodSpec,
                             _COLDEF(MethodSpec,Method),
-                            encodeToken(rid, mdtMemberRef, mdtMethodDefOrRef, MINIPAL_LENGTHOF(mdtMethodDefOrRef)),
+                            encodeToken(rid, mdtMemberRef, mdtMethodDefOrRef, ARRAY_SIZE(mdtMethodDefOrRef)),
                             pEnd,
                             pFoundRid);
     }
@@ -1825,7 +1825,7 @@ public:
     {
         return SearchTableForMultipleRows(TBL_CustomAttribute,
                             _COLDEF(CustomAttribute,Parent),
-                            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, MINIPAL_LENGTHOF(mdtHasCustomAttribute)),
+                            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, ARRAY_SIZE(mdtHasCustomAttribute)),
                             pEnd,
                             pFoundRid);
     }
@@ -1844,7 +1844,7 @@ public:
     {
         return SearchTableForMultipleRows(TBL_DeclSecurity,
                             _COLDEF(DeclSecurity,Parent),
-                            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, MINIPAL_LENGTHOF(mdtHasDeclSecurity)),
+                            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, ARRAY_SIZE(mdtHasDeclSecurity)),
                             pEnd,
                             pFoundRid);
     }
@@ -1895,7 +1895,7 @@ public:
     {
         return SearchTableForMultipleRows(TBL_MethodSemantics,
                             _COLDEF(MethodSemantics,Association),
-                            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasSemantic, MINIPAL_LENGTHOF(mdtHasSemantic)),
+                            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasSemantic, ARRAY_SIZE(mdtHasSemantic)),
                             pEnd,
                             pFoundRid);
     }

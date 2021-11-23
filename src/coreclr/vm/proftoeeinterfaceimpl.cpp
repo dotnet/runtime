@@ -2420,7 +2420,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo(FunctionID functionId, LPCBYTE * pSta
 
     HRESULT hr = GetCodeInfoFromCodeStart(
         pMethodDesc->GetNativeCode(),
-        MINIPAL_LENGTHOF(codeInfos),
+        ARRAY_SIZE(codeInfos),
         &cCodeInfos,
         codeInfos);
 

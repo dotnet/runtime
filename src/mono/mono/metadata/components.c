@@ -87,7 +87,7 @@ mono_components_init (void)
 	 * to pass us the address of each component that isn't disabled.
 	 *
 	 */
-	for (int i = 0; i < MINIPAL_LENGTHOF (components); ++i)
+	for (int i = 0; i < ARRAY_SIZE (components); ++i)
 		*components [i].component = components [i].init ();
 #else
 	component_library_load_history = g_hash_table_new (g_str_hash, g_str_equal);
@@ -95,7 +95,7 @@ mono_components_init (void)
 	/* call get_component for each component and init it or its stubs and add it to loaded_components */
 	MonoComponentLibrary *component_lib = NULL;
 
-	for (int i = 0; i < MINIPAL_LENGTHOF (components); ++i) {
+	for (int i = 0; i < ARRAY_SIZE (components); ++i) {
 		*components [i].component = get_component (&components [i], &component_lib);
 		components [i].lib = component_lib;
 		if (!*components [i].component)
@@ -103,7 +103,7 @@ mono_components_init (void)
 	}
 #endif
 	/* validate components interface version */
-	for (int i = 0; i < MINIPAL_LENGTHOF (components); ++i) {
+	for (int i = 0; i < ARRAY_SIZE (components); ++i) {
 		guint64 version = (guint64)(*components [i].component)->itf_version;
 		g_assertf (version == MONO_COMPONENT_ITF_VERSION, "%s component returned unexpected interface version (expected %" PRIu64 " got %" PRIu64 ")", components [i].name, (guint64)MONO_COMPONENT_ITF_VERSION, version);
 	}

@@ -167,7 +167,7 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 		} else {
 			invert = FALSE;
 		}
-		for (i = 0; i < MINIPAL_LENGTHOF (opt_names) && optflag_get_name (i); ++i) {
+		for (i = 0; i < ARRAY_SIZE (opt_names) && optflag_get_name (i); ++i) {
 			n = optflag_get_name (i);
 			if (!strcmp (p, n)) {
 				if (invert)
@@ -177,7 +177,7 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 				break;
 			}
 		}
-		if (i == MINIPAL_LENGTHOF (opt_names) || !optflag_get_name (i)) {
+		if (i == ARRAY_SIZE (opt_names) || !optflag_get_name (i)) {
 			if (strncmp (p, "all", 3) == 0) {
 				if (invert)
 					opt = 0;
@@ -255,7 +255,7 @@ mono_parse_graph_options (const char* p)
 	const char *n;
 	int i, len;
 
-	for (i = 0; i < MINIPAL_LENGTHOF (graph_names); ++i) {
+	for (i = 0; i < ARRAY_SIZE (graph_names); ++i) {
 		n = graph_names [i].name;
 		len = strlen (n);
 		if (strncmp (p, n, len) == 0)
@@ -285,7 +285,7 @@ mono_opt_descr (guint32 flags) {
 	gboolean need_comma;
 
 	need_comma = FALSE;
-	for (i = 0; i < MINIPAL_LENGTHOF (opt_names); ++i) {
+	for (i = 0; i < ARRAY_SIZE (opt_names); ++i) {
 		if (flags & (1 << i) && optflag_get_name (i)) {
 			if (need_comma)
 				g_string_append_c (str, ',');
@@ -350,7 +350,7 @@ interp_opflags_names [] = {
 static const char*
 interp_optflag_get_name (guint32 i)
 {
-	g_assert (i < MINIPAL_LENGTHOF (interp_opflags_names));
+	g_assert (i < ARRAY_SIZE (interp_opflags_names));
 	return interp_opflags_names [i];
 }
 
@@ -362,7 +362,7 @@ interp_opt_descr (guint32 flags)
 	gboolean need_comma;
 
 	need_comma = FALSE;
-	for (i = 0; i < MINIPAL_LENGTHOF (interp_opflags_names); ++i) {
+	for (i = 0; i < ARRAY_SIZE (interp_opflags_names); ++i) {
 		if (flags & (1 << i) && interp_optflag_get_name (i)) {
 			if (need_comma)
 				g_string_append_c (str, ',');
@@ -613,7 +613,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		fprintf (mini_stats_fd, "$stattitle = \'Mono Benchmark Results (various optimizations)\';\n");
 
 		fprintf (mini_stats_fd, "$graph->set_legend(qw(");
-		for (opt = 0; opt < MINIPAL_LENGTHOF (opt_sets); opt++) {
+		for (opt = 0; opt < ARRAY_SIZE (opt_sets); opt++) {
 			guint32 opt_flags = opt_sets [opt];
 			n = mono_opt_descr (opt_flags);
 			if (!n [0])
@@ -674,7 +674,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 				return total;
 		}
 	} else {
-		for (opt = 0; opt < MINIPAL_LENGTHOF (opt_sets); ++opt) {
+		for (opt = 0; opt < ARRAY_SIZE (opt_sets); ++opt) {
 			/* builtin-types.cs & aot-tests.cs need OPT_INTRINS enabled */
 			if (!strcmp ("builtin-types", image->assembly_name) || !strcmp ("aot-tests", image->assembly_name))
 				if (!(opt_sets [opt] & MONO_OPT_INTRINS))
@@ -719,10 +719,10 @@ mini_regression_list (int verbose, int count, char *images [])
 	}
 	if (total > 0){
 		g_print ("Overall results: tests: %d, failed: %d, opt combinations: %d (pass: %.2f%%)\n",
-			 total_run, total, (int)MINIPAL_LENGTHOF (opt_sets), 100.0*(total_run-total)/total_run);
+			 total_run, total, (int)ARRAY_SIZE (opt_sets), 100.0*(total_run-total)/total_run);
 	} else {
 		g_print ("Overall results: tests: %d, 100%% pass, opt combinations: %d\n",
-			 total_run, (int)MINIPAL_LENGTHOF (opt_sets));
+			 total_run, (int)ARRAY_SIZE (opt_sets));
 	}
 
 	return total;
@@ -834,7 +834,7 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 		/* explicit option requested*/
 		interp_regression_step (image, verbose, total_run, &total, NULL, timer);
 	} else {
-		for (int opt = 0; opt < MINIPAL_LENGTHOF (interp_opt_sets); ++opt)
+		for (int opt = 0; opt < ARRAY_SIZE (interp_opt_sets); ++opt)
 			interp_regression_step (image, verbose, total_run, &total, &interp_opt_sets [opt], timer);
 	}
 
@@ -1574,7 +1574,7 @@ mini_usage_jitdeveloper (void)
 		 "Other options:\n"
 		 "    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
 
-	for (i = 0; i < MINIPAL_LENGTHOF (graph_names); ++i) {
+	for (i = 0; i < ARRAY_SIZE (graph_names); ++i) {
 		fprintf (stdout, "                           %-10s %s\n", graph_names [i].name, graph_names [i].desc);
 	}
 }
@@ -1584,7 +1584,7 @@ mini_usage_list_opt (void)
 {
 	int i;
 
-	for (i = 0; i < MINIPAL_LENGTHOF (opt_names); ++i)
+	for (i = 0; i < ARRAY_SIZE (opt_names); ++i)
 		fprintf (stdout, "                           %-10s %s\n", optflag_get_name (i), optflag_get_desc (i));
 }
 
@@ -2748,7 +2748,7 @@ mono_main (int argc, char* argv[])
 				 mono_method_full_name (method, TRUE));
 			fprintf (mini_stats_fd, "@data = (\n");
 			fprintf (mini_stats_fd, "[");
-			for (i = 0; i < MINIPAL_LENGTHOF (opt_sets); i++) {
+			for (i = 0; i < ARRAY_SIZE (opt_sets); i++) {
 				opt = opt_sets [i];
 				n = mono_opt_descr (opt);
 				if (!n [0])
@@ -2757,7 +2757,7 @@ mono_main (int argc, char* argv[])
 			}
 			fprintf (mini_stats_fd, "],\n[");
 
-			for (i = 0; i < MINIPAL_LENGTHOF (opt_sets); i++) {
+			for (i = 0; i < ARRAY_SIZE (opt_sets); i++) {
 				int j;
 				double elapsed;
 				opt = opt_sets [i];
@@ -2775,7 +2775,7 @@ mono_main (int argc, char* argv[])
 			fprintf (mini_stats_fd, "]");
 			if (no_opt_time > 0.0) {
 				fprintf (mini_stats_fd, ", \n[");
-				for (i = 0; i < MINIPAL_LENGTHOF (opt_sets); i++)
+				for (i = 0; i < ARRAY_SIZE (opt_sets); i++)
 					fprintf (mini_stats_fd, "%f,", no_opt_time);
 				fprintf (mini_stats_fd, "]");
 			}

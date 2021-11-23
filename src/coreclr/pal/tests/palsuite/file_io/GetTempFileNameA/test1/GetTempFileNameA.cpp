@@ -103,7 +103,7 @@ PALTEST(file_io_GetTempFileNameA_test1_paltest_gettempfilenamea_test1, "file_io/
         }
 
         /* now verify that it only used the first 3 characters of the prefix */
-        sprintf_s(szTempString, MINIPAL_LENGTHOF(szTempString), "%s\\%s", szDot, szLongValidPrefix);
+        sprintf_s(szTempString, ARRAY_SIZE(szTempString), "%s\\%s", szDot, szLongValidPrefix);
         if (strncmp(szTempString, szReturnedName, 6) == 0)
         {
             Fail("GetTempFileNameA: ERROR -> It appears that an improper prefix "

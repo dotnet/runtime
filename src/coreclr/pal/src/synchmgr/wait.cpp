@@ -56,7 +56,7 @@ static PalObjectTypeId sg_rgSignalableObjectIds[] =
     otiNamedMutex,
     otiSemaphore
 };
-static CAllowedObjectTypes sg_aotSignalableObject(sg_rgSignalableObjectIds, MINIPAL_LENGTHOF(sg_rgSignalableObjectIds));
+static CAllowedObjectTypes sg_aotSignalableObject(sg_rgSignalableObjectIds, ARRAY_SIZE(sg_rgSignalableObjectIds));
 
 /*++
 Function:

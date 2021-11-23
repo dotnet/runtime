@@ -207,7 +207,7 @@ RegMeta::ResolveTypeRef(
     _ASSERTE(TypeFromToken(tr) == mdtTypeRef);
 
     IfFailGo(pMiniMd->GetTypeRefRecord(RidFromToken(tr), &pTypeRefRec));
-    IfFailGo(pMiniMd->getNamespaceOfTypeRef(pTypeRefRec, wzNameSpace, MINIPAL_LENGTHOF(wzNameSpace), NULL));
+    IfFailGo(pMiniMd->getNamespaceOfTypeRef(pTypeRefRec, wzNameSpace, ARRAY_SIZE(wzNameSpace), NULL));
     if (hr != NOERROR)
     {
         _ASSERTE(hr == CLDB_S_TRUNCATION);

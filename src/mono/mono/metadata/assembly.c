@@ -837,7 +837,7 @@ static void
 remap_keys (MonoAssemblyName *aname)
 {
 	int i;
-	for (i = 0; i < MINIPAL_LENGTHOF (key_remap_table); i++) {
+	for (i = 0; i < ARRAY_SIZE (key_remap_table); i++) {
 		const KeyRemapEntry *entry = &key_remap_table [i];
 
 		if (strcmp (aname->name, entry->name) ||

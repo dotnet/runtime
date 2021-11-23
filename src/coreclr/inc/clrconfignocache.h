@@ -54,7 +54,7 @@ public:
 
         if (noPrefix)
         {
-            if (namelen >= MINIPAL_LENGTHOF(nameBuffer))
+            if (namelen >= ARRAY_SIZE(nameBuffer))
             {
                 _ASSERTE(!"Environment variable name too long.");
                 return {};
@@ -73,17 +73,17 @@ public:
             }
 
             // Priority order is DOTNET_ and then COMPlus_.
-            strcpy_s(nameBuffer, MINIPAL_LENGTHOF(nameBuffer), DOTNET_PREFIX_A);
+            strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), DOTNET_PREFIX_A);
             fallbackPrefix = COMPLUS_PREFIX_A;
         }
 
-        strcat_s(nameBuffer, MINIPAL_LENGTHOF(nameBuffer), cfg);
+        strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
 
         LPCSTR val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         if (val == NULL && fallbackPrefix != NULL)
         {
-            strcpy_s(nameBuffer, MINIPAL_LENGTHOF(nameBuffer), fallbackPrefix);
-            strcat_s(nameBuffer, MINIPAL_LENGTHOF(nameBuffer), cfg);
+            strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), fallbackPrefix);
+            strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
             val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         }
 

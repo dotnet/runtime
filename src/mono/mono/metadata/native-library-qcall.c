@@ -9,5 +9,5 @@ static Entry mono_qcalls[] =
 gpointer
 mono_lookup_pinvoke_qcall_internal (const char *name)
 {
-	return (gpointer)minipal_resolve_dllimport(mono_qcalls, MINIPAL_LENGTHOF(mono_qcalls), name);
+	return (gpointer)minipal_resolve_dllimport(mono_qcalls, ARRAY_SIZE(mono_qcalls), name);
 }

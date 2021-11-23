@@ -280,7 +280,7 @@ private:
             GetObjectNamePrefix(processID, fromRuntime, objectNamePrefix);
             // if there is a non-empty name prefix, append a '\'
             if (objectNamePrefix[0] != '\0')
-                wcscat_s(objectNamePrefix, MINIPAL_LENGTHOF(objectNamePrefix), W("\\"));
+                wcscat_s(objectNamePrefix, ARRAY_SIZE(objectNamePrefix), W("\\"));
             swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hSweepMutex"), objectNamePrefix);
             hSweepMutex          = ::WszCreateMutex(pSecurityAttributes, false,       objectName);
             swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hProfDataWriterMutex"), objectNamePrefix);

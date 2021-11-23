@@ -83,7 +83,7 @@ inline static int32_t Common_Poll(PollEvent* pollEvents, uint32_t eventCount, in
     }
 
     struct pollfd stackBuffer[(uint32_t)(2048/sizeof(struct pollfd))];
-    int useStackBuffer = eventCount <= MINIPAL_LENGTHOF(stackBuffer);
+    int useStackBuffer = eventCount <= ARRAY_SIZE(stackBuffer);
     struct pollfd* pollfds = NULL;
     if (useStackBuffer)
     {

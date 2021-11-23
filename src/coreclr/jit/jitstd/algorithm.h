@@ -148,7 +148,7 @@ void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less
         RandomAccessIterator rightFirst = newLast + 1;
         RandomAccessIterator rightLast = last;
 
-        assert(depth < MINIPAL_LENGTHOF(firstStack));
+        assert(depth < ARRAY_SIZE(firstStack));
 
         // Ideally, the 2 partitions should have the same size, that would guarantee
         // log2(n) stack space. If that's not the case then push the larger partition

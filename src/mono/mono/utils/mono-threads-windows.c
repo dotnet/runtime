@@ -208,7 +208,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	/* and returned. */
 #if defined(MONO_HAVE_SIMD_REG_AVX) && HAVE_API_SUPPORT_WIN32_CONTEXT_XSTATE
 	BYTE context_buffer [2048];
-	DWORD context_buffer_len = MINIPAL_LENGTHOF (context_buffer);
+	DWORD context_buffer_len = ARRAY_SIZE (context_buffer);
 	PCONTEXT context = NULL;
 	BOOL success = InitializeContext (context_buffer, CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL | CONTEXT_XSTATE, &context, &context_buffer_len);
 	success &= SetXStateFeaturesMask (context, XSTATE_MASK_AVX);

@@ -119,7 +119,7 @@ HRESULT __cdecl FormatRuntimeErrorVa(
     // If this is one of our errors or if it is simply a resource ID, then grab the error from the rc file.
     if ((HRESULT_FACILITY(hrRpt) == FACILITY_URT) || (HIWORD(hrRpt) == 0))
     {
-        hr = UtilLoadStringRC(LOWORD(hrRpt), rcBuf, MINIPAL_LENGTHOF(rcBuf), true);
+        hr = UtilLoadStringRC(LOWORD(hrRpt), rcBuf, ARRAY_SIZE(rcBuf), true);
         if (hr == S_OK)
         {
             _vsnwprintf_s(rcMsg, cchMsg, _TRUNCATE, rcBuf, marker);

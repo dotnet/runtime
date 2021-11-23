@@ -239,7 +239,7 @@ static int GetCurrencyNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, MINIPAL_LENGTHOF(Patterns), true);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), true);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -270,7 +270,7 @@ static int GetCurrencyPositivePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, MINIPAL_LENGTHOF(Patterns), false);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), false);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -301,7 +301,7 @@ static int GetNumberNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, MINIPAL_LENGTHOF(Patterns), true);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), true);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -333,7 +333,7 @@ static int GetPercentNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, MINIPAL_LENGTHOF(Patterns), true);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), true);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -364,7 +364,7 @@ static int GetPercentPositivePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, MINIPAL_LENGTHOF(Patterns), false);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), false);
         if (value >= 0)
         {
             unum_close(pFormat);

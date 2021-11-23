@@ -400,7 +400,7 @@ HRESULT ManagedObjectWrapper::Create(
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
 
-    _ASSERTE(runtimeDefinedCount <= (int) MINIPAL_LENGTHOF(runtimeDefinedLocal));
+    _ASSERTE(runtimeDefinedCount <= (int) ARRAY_SIZE(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);
@@ -439,7 +439,7 @@ HRESULT ManagedObjectWrapper::Create(
         { userDefined, userDefinedCount }
     };
 
-    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, MINIPAL_LENGTHOF(AllEntries), AllEntries);
+    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, ARRAY_SIZE(AllEntries), AllEntries);
 
     ManagedObjectWrapper* wrapper = new (wrapperMem) ManagedObjectWrapper
         {

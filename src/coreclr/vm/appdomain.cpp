@@ -1566,7 +1566,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     if (!VolatileLoad(&fInited))
     {
         // Make sure all types are loaded so that we can use faster GetExistingClass()
-        for (unsigned i = 0; i < MINIPAL_LENGTHOF(reflectionInvocationTypes); i++)
+        for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
             CoreLibBinder::GetClass(reflectionInvocationTypes[i]);
         }
@@ -1576,7 +1576,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     if (!pCaller->HasInstantiation())
     {
-        for (unsigned i = 0; i < MINIPAL_LENGTHOF(reflectionInvocationTypes); i++)
+        for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
             if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
                 return true;

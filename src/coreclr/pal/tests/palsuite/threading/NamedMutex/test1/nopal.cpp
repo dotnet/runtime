@@ -57,7 +57,7 @@ bool WriteHeaderInfo(const char *path, char sharedMemoryType, char version, int 
 
     // See SharedMemorySharedDataHeader for format
     char buffer[] = {sharedMemoryType, version};
-    if (write(fd, buffer, MINIPAL_LENGTHOF(buffer)) != MINIPAL_LENGTHOF(buffer))
+    if (write(fd, buffer, ARRAY_SIZE(buffer)) != ARRAY_SIZE(buffer))
         return false;
 
     return flock(fd, LOCK_SH | LOCK_NB) == 0;

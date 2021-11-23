@@ -1962,7 +1962,7 @@ mono_metadata_init (void)
 
 	type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
 
-	for (i = 0; i < MINIPAL_LENGTHOF (builtin_types); ++i)
+	for (i = 0; i < ARRAY_SIZE (builtin_types); ++i)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
 	mono_metadata_update_init ();
@@ -4087,7 +4087,7 @@ mono_metadata_free_type (MonoType *type)
 {
 	/* Note: keep in sync with do_mono_metadata_parse_type and try_get_canonical_type which
 	 * allocate memory or try to avoid allocating memory. */
-	if (type >= builtin_types && type < builtin_types + MINIPAL_LENGTHOF (builtin_types))
+	if (type >= builtin_types && type < builtin_types + ARRAY_SIZE (builtin_types))
 		return;
 
 	switch (type->type){

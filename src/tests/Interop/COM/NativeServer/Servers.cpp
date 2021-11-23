@@ -124,7 +124,7 @@ namespace
             return HRESULT_FROM_WIN32(::GetLastError());
         }
 
-        ::GetModuleFileNameW(mod, fullPath, MINIPAL_LENGTHOF(fullPath));
+        ::GetModuleFileNameW(mod, fullPath, ARRAY_SIZE(fullPath));
 
         // The default value for the key is the path to the DLL
         res = ::RegSetValueExW(

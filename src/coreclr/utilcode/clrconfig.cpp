@@ -148,7 +148,7 @@ namespace
         bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
         if (noPrefix)
         {
-            if (namelen >= MINIPAL_LENGTHOF(buff))
+            if (namelen >= ARRAY_SIZE(buff))
             {
                 _ASSERTE(!"Environment variable name too long.");
                 return NULL;
@@ -171,11 +171,11 @@ namespace
                 return NULL;
 
             // Priority order is DOTNET_ and then COMPlus_.
-            wcscpy_s(buff, MINIPAL_LENGTHOF(buff), DOTNET_PREFIX);
+            wcscpy_s(buff, ARRAY_SIZE(buff), DOTNET_PREFIX);
             fallbackPrefix = COMPLUS_PREFIX;
         }
 
-        wcscat_s(buff, MINIPAL_LENGTHOF(buff), name);
+        wcscat_s(buff, ARRAY_SIZE(buff), name);
 
         FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
@@ -188,8 +188,8 @@ namespace
             DWORD len = WszGetEnvironmentVariable(buff, temp);
             if (len == 0 && fallbackPrefix != NULL)
             {
-                wcscpy_s(buff, MINIPAL_LENGTHOF(buff), fallbackPrefix);
-                wcscat_s(buff, MINIPAL_LENGTHOF(buff), name);
+                wcscpy_s(buff, ARRAY_SIZE(buff), fallbackPrefix);
+                wcscat_s(buff, ARRAY_SIZE(buff), name);
                 len = WszGetEnvironmentVariable(buff, temp);
             }
 

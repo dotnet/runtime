@@ -575,7 +575,7 @@ bool MutualExclusionTests()
         HANDLE waitHandles[] = {m2.GetHandle(), m.GetHandle()};
         TestAssert(
             WaitForMultipleObjects(
-                MINIPAL_LENGTHOF(waitHandles),
+                ARRAY_SIZE(waitHandles),
                 waitHandles,
                 false /* waitAll */,
                 FailTimeoutMilliseconds) ==
@@ -583,7 +583,7 @@ bool MutualExclusionTests()
         TestAssert(GetLastError() == ERROR_NOT_SUPPORTED);
         TestAssert(
             WaitForMultipleObjects(
-                MINIPAL_LENGTHOF(waitHandles),
+                ARRAY_SIZE(waitHandles),
                 waitHandles,
                 true /* waitAll */,
                 FailTimeoutMilliseconds) ==
@@ -1110,7 +1110,7 @@ bool (*const TestList[])() =
 bool RunTests()
 {
     bool allPassed = true;
-    for (SIZE_T i = 0; i < MINIPAL_LENGTHOF(TestList); ++i)
+    for (SIZE_T i = 0; i < ARRAY_SIZE(TestList); ++i)
     {
         if (!TestList[i]())
         {
@@ -1121,7 +1121,7 @@ bool RunTests()
 }
 
 DWORD g_stressDurationMilliseconds = 0;
-LONG g_stressTestCounts[MINIPAL_LENGTHOF(TestList)] = {0};
+LONG g_stressTestCounts[ARRAY_SIZE(TestList)] = {0};
 LONG g_stressResult = true;
 
 DWORD PALAPI StressTest(void *arg)
@@ -1150,8 +1150,8 @@ bool StressTests(DWORD durationMinutes)
     g_stressDurationMilliseconds = durationMinutes * (60 * 1000);
 
     // Start a thread for each test
-    HANDLE threadHandles[MINIPAL_LENGTHOF(TestList)];
-    for (SIZE_T i = 0; i < MINIPAL_LENGTHOF(threadHandles); ++i)
+    HANDLE threadHandles[ARRAY_SIZE(TestList)];
+    for (SIZE_T i = 0; i < ARRAY_SIZE(threadHandles); ++i)
     {
         TestAssert(StartThread(StressTest, reinterpret_cast<void *>(i), &threadHandles[i]));
     }
@@ -1159,7 +1159,7 @@ bool StressTests(DWORD durationMinutes)
     while (true)
     {
         DWORD waitResult =
-            WaitForMultipleObjects(MINIPAL_LENGTHOF(threadHandles), threadHandles, true /* bWaitAll */, 10 * 1000 /* dwMilliseconds */);
+            WaitForMultipleObjects(ARRAY_SIZE(threadHandles), threadHandles, true /* bWaitAll */, 10 * 1000 /* dwMilliseconds */);
         TestAssert(waitResult == WAIT_OBJECT_0 || waitResult == WAIT_TIMEOUT);
         if (waitResult == WAIT_OBJECT_0)
         {
@@ -1167,7 +1167,7 @@ bool StressTests(DWORD durationMinutes)
         }
 
         Trace("'paltest_namedmutex_test1' stress test counts: ");
-        for (SIZE_T i = 0; i < MINIPAL_LENGTHOF(g_stressTestCounts); ++i)
+        for (SIZE_T i = 0; i < ARRAY_SIZE(g_stressTestCounts); ++i)
         {
             if (i != 0)
             {
@@ -1179,7 +1179,7 @@ bool StressTests(DWORD durationMinutes)
         fflush(stdout);
     }
 
-    for (SIZE_T i = 0; i < MINIPAL_LENGTHOF(threadHandles); ++i)
+    for (SIZE_T i = 0; i < ARRAY_SIZE(threadHandles); ++i)
     {
         CloseHandle(threadHandles[i]);
     }

@@ -96,7 +96,7 @@ namespace pal
     inline string_t get_exe_path()
     {
         char_t file_name[1024];
-        DWORD count = ::GetModuleFileNameW(nullptr, file_name, MINIPAL_LENGTHOF(file_name));
+        DWORD count = ::GetModuleFileNameW(nullptr, file_name, ARRAY_SIZE(file_name));
         assert(::GetLastError() != ERROR_INSUFFICIENT_BUFFER);
 
         return { file_name };

@@ -269,5 +269,5 @@ EXTERN_C const void* SystemResolveDllImport(const char* name);
 
 EXTERN_C const void* SystemResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_sysNative, MINIPAL_LENGTHOF(s_sysNative), name);
+    return minipal_resolve_dllimport(s_sysNative, ARRAY_SIZE(s_sysNative), name);
 }

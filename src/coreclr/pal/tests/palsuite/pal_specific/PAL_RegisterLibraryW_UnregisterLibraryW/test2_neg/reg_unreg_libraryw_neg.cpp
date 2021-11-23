@@ -29,7 +29,7 @@ PALTEST(pal_specific_PAL_RegisterLibraryW_UnregisterLibraryW_test2_neg_paltest_r
     }
 
     memset(ModuleName, 0, 64);
-    sprintf_s(ModuleName, MINIPAL_LENGTHOF(ModuleName), "%s", "not_exist_module_name");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName), "%s", "not_exist_module_name");
 
     /*convert a normal string to a wide one*/
     wpModuleName = convert(ModuleName);

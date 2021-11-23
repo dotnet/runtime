@@ -25,7 +25,7 @@ PALTEST(c_runtime_vswprintf_test1_paltest_vswprintf_test1, "c_runtime/vswprintf/
         return(FAIL);
 
     checkstr = convert("hello world");
-    testvswp(buf, MINIPAL_LENGTHOF(buf), checkstr);
+    testvswp(buf, ARRAY_SIZE(buf), checkstr);
 
     if (memcmp(checkstr, buf, wcslen(checkstr)*2+2) != 0)
     {

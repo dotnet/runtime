@@ -706,7 +706,7 @@ void ETW::GCLog::MovedReference(
     {
         // Moved references
 
-        _ASSERTE(pContext->cBulkMovedObjectRanges < MINIPAL_LENGTHOF(pContext->rgGCBulkMovedObjectRanges));
+        _ASSERTE(pContext->cBulkMovedObjectRanges < ARRAY_SIZE(pContext->rgGCBulkMovedObjectRanges));
         EventStructGCBulkMovedObjectRangesValue * pValue =
             &pContext->rgGCBulkMovedObjectRanges[pContext->cBulkMovedObjectRanges];
         pValue->OldRangeBase = pbMemBlockStart;
@@ -715,7 +715,7 @@ void ETW::GCLog::MovedReference(
         pContext->cBulkMovedObjectRanges++;
 
         // If buffer is now full, empty it into ETW
-        if (pContext->cBulkMovedObjectRanges == MINIPAL_LENGTHOF(pContext->rgGCBulkMovedObjectRanges))
+        if (pContext->cBulkMovedObjectRanges == ARRAY_SIZE(pContext->rgGCBulkMovedObjectRanges))
         {
             FireEtwGCBulkMovedObjectRanges(
                 pContext->iCurBulkMovedObjectRanges,
@@ -732,7 +732,7 @@ void ETW::GCLog::MovedReference(
     {
         // Surviving references
 
-        _ASSERTE(pContext->cBulkSurvivingObjectRanges < MINIPAL_LENGTHOF(pContext->rgGCBulkSurvivingObjectRanges));
+        _ASSERTE(pContext->cBulkSurvivingObjectRanges < ARRAY_SIZE(pContext->rgGCBulkSurvivingObjectRanges));
         EventStructGCBulkSurvivingObjectRangesValue * pValue =
             &pContext->rgGCBulkSurvivingObjectRanges[pContext->cBulkSurvivingObjectRanges];
         pValue->RangeBase = pbMemBlockStart;
@@ -740,7 +740,7 @@ void ETW::GCLog::MovedReference(
         pContext->cBulkSurvivingObjectRanges++;
 
         // If buffer is now full, empty it into ETW
-        if (pContext->cBulkSurvivingObjectRanges == MINIPAL_LENGTHOF(pContext->rgGCBulkSurvivingObjectRanges))
+        if (pContext->cBulkSurvivingObjectRanges == ARRAY_SIZE(pContext->rgGCBulkSurvivingObjectRanges))
         {
             FireEtwGCBulkSurvivingObjectRanges(
                 pContext->iCurBulkSurvivingObjectRanges,
@@ -1142,7 +1142,7 @@ void BulkComLogger::FlushRcw()
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
     EventDataDescCreate(&eventData[2], m_etwRcwData, sizeof(EventRCWEntry) * m_currRcw);
 
-    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, MINIPAL_LENGTHOF(eventData), eventData);
+    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, ARRAY_SIZE(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
 #endif // !defined(HOST_UNIX)
@@ -1233,7 +1233,7 @@ void BulkComLogger::FlushCcw()
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
     EventDataDescCreate(&eventData[2], m_etwCcwData, sizeof(EventCCWEntry) * m_currCcw);
 
-    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, MINIPAL_LENGTHOF(eventData), eventData);
+    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, ARRAY_SIZE(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
 #endif //!defined(HOST_UNIX)
@@ -1362,7 +1362,7 @@ void BulkComLogger::AddCcwHandle(Object **handle)
     while (curr->Next)
         curr = curr->Next;
 
-    if (curr->Count == MINIPAL_LENGTHOF(curr->Handles))
+    if (curr->Count == ARRAY_SIZE(curr->Handles))
     {
         curr->Next = new CCWEnumerationEntry;
         curr = curr->Next;
@@ -1438,7 +1438,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     EventDataDescCreate(&eventData[2], &instance, sizeof(const unsigned short)  );
     EventDataDescCreate(&eventData[3], m_buffer, m_used);
 
-    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, MINIPAL_LENGTHOF(eventData), eventData);
+    ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, ARRAY_SIZE(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 #endif //!defined(HOST_UNIX)
@@ -1741,12 +1741,12 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     CONTRACTL_END;
 
     // If there's no room for another type, flush what we've got
-    if (m_nBulkTypeValueCount == MINIPAL_LENGTHOF(m_rgBulkTypeValues))
+    if (m_nBulkTypeValueCount == ARRAY_SIZE(m_rgBulkTypeValues))
     {
         FireBulkTypeEvent();
     }
 
-    _ASSERTE(m_nBulkTypeValueCount < (int)MINIPAL_LENGTHOF(m_rgBulkTypeValues));
+    _ASSERTE(m_nBulkTypeValueCount < (int)ARRAY_SIZE(m_rgBulkTypeValues));
 
     BulkTypeValue * pVal = &m_rgBulkTypeValues[m_nBulkTypeValueCount];
 
@@ -2259,7 +2259,7 @@ VOID ETW::GCLog::RootReference(
     if (fDependentHandle)
     {
         _ASSERTE(pContext->cGCBulkRootConditionalWeakTableElementEdges <
-            MINIPAL_LENGTHOF(pContext->rgGCBulkRootConditionalWeakTableElementEdges));
+            ARRAY_SIZE(pContext->rgGCBulkRootConditionalWeakTableElementEdges));
         EventStructGCBulkRootConditionalWeakTableElementEdgeValue * pRCWTEEdgeValue =
             &pContext->rgGCBulkRootConditionalWeakTableElementEdges[pContext->cGCBulkRootConditionalWeakTableElementEdges];
         pRCWTEEdgeValue->GCKeyNodeID = pRootedNode;
@@ -2269,7 +2269,7 @@ VOID ETW::GCLog::RootReference(
 
         // If RCWTE edge buffer is now full, empty it into ETW
         if (pContext->cGCBulkRootConditionalWeakTableElementEdges ==
-            MINIPAL_LENGTHOF(pContext->rgGCBulkRootConditionalWeakTableElementEdges))
+            ARRAY_SIZE(pContext->rgGCBulkRootConditionalWeakTableElementEdges))
         {
             FireEtwGCBulkRootConditionalWeakTableElementEdge(
                 pContext->iCurBulkRootConditionalWeakTableElementEdge,
@@ -2284,7 +2284,7 @@ VOID ETW::GCLog::RootReference(
     }
     else
     {
-        _ASSERTE(pContext->cGcBulkRootEdges < MINIPAL_LENGTHOF(pContext->rgGcBulkRootEdges));
+        _ASSERTE(pContext->cGcBulkRootEdges < ARRAY_SIZE(pContext->rgGcBulkRootEdges));
         EventStructGCBulkRootEdgeValue * pBulkRootEdgeValue = &pContext->rgGcBulkRootEdges[pContext->cGcBulkRootEdges];
         pBulkRootEdgeValue->RootedNodeAddress = pRootedNode;
         pBulkRootEdgeValue->GCRootKind = nRootKind;
@@ -2293,7 +2293,7 @@ VOID ETW::GCLog::RootReference(
         pContext->cGcBulkRootEdges++;
 
         // If root edge buffer is now full, empty it into ETW
-        if (pContext->cGcBulkRootEdges == MINIPAL_LENGTHOF(pContext->rgGcBulkRootEdges))
+        if (pContext->cGcBulkRootEdges == ARRAY_SIZE(pContext->rgGcBulkRootEdges))
         {
             FireEtwGCBulkRootEdge(
                 pContext->iCurBulkRootEdge,
@@ -2351,7 +2351,7 @@ VOID ETW::GCLog::ObjectReference(
     //---------------------------------------------------------------------------------------
 
     // Add Node (pObjReferenceSource) to buffer
-    _ASSERTE(pContext->cGcBulkNodeValues < MINIPAL_LENGTHOF(pContext->rgGcBulkNodeValues));
+    _ASSERTE(pContext->cGcBulkNodeValues < ARRAY_SIZE(pContext->rgGcBulkNodeValues));
     EventStructGCBulkNodeValue * pBulkNodeValue = &pContext->rgGcBulkNodeValues[pContext->cGcBulkNodeValues];
     pBulkNodeValue->Address = pObjReferenceSource;
     pBulkNodeValue->Size = pObjReferenceSource->GetSize();
@@ -2360,7 +2360,7 @@ VOID ETW::GCLog::ObjectReference(
     pContext->cGcBulkNodeValues++;
 
     // If Node buffer is now full, empty it into ETW
-    if (pContext->cGcBulkNodeValues == MINIPAL_LENGTHOF(pContext->rgGcBulkNodeValues))
+    if (pContext->cGcBulkNodeValues == ARRAY_SIZE(pContext->rgGcBulkNodeValues))
     {
         FireEtwGCBulkNode(
             pContext->iCurBulkNodeEvent,
@@ -2402,7 +2402,7 @@ VOID ETW::GCLog::ObjectReference(
 
     for (ULONGLONG i=0; i < cRefs; i++)
     {
-        _ASSERTE(pContext->cGcBulkEdgeValues < MINIPAL_LENGTHOF(pContext->rgGcBulkEdgeValues));
+        _ASSERTE(pContext->cGcBulkEdgeValues < ARRAY_SIZE(pContext->rgGcBulkEdgeValues));
         EventStructGCBulkEdgeValue * pBulkEdgeValue = &pContext->rgGcBulkEdgeValues[pContext->cGcBulkEdgeValues];
         pBulkEdgeValue->Value = rgObjReferenceTargets[i];
         // FUTURE: ReferencingFieldID
@@ -2410,7 +2410,7 @@ VOID ETW::GCLog::ObjectReference(
         pContext->cGcBulkEdgeValues++;
 
         // If Edge buffer is now full, empty it into ETW
-        if (pContext->cGcBulkEdgeValues == MINIPAL_LENGTHOF(pContext->rgGcBulkEdgeValues))
+        if (pContext->cGcBulkEdgeValues == ARRAY_SIZE(pContext->rgGcBulkEdgeValues))
         {
             FireEtwGCBulkEdge(
                 pContext->iCurBulkEdgeEvent,

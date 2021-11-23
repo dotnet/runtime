@@ -8278,7 +8278,7 @@ void dbgOnly_IdentifySpecialEEThread()
 
     LONG  ourCount = FastInterlockIncrement(&cnt_SpecialEEThreads);
 
-    _ASSERTE(ourCount < (LONG) MINIPAL_LENGTHOF(SpecialEEThreads));
+    _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
     SpecialEEThreads[ourCount-1] = ::GetCurrentThreadId();
 }
 

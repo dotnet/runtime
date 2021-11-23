@@ -39,5 +39,5 @@ EXTERN_C const void* CompressionResolveDllImport(const char* name);
 
 EXTERN_C const void* CompressionResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_compressionNative, MINIPAL_LENGTHOF(s_compressionNative), name);
+    return minipal_resolve_dllimport(s_compressionNative, ARRAY_SIZE(s_compressionNative), name);
 }

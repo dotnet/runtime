@@ -4,9 +4,9 @@
 #ifndef HAVE_MINIPAL_UTILS_H
 #define HAVE_MINIPAL_UTILS_H
 
-#define MINIPAL_LENGTHOF(arr) (sizeof(arr)/sizeof(arr[0]))
+#define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 // Number of characters in a string literal. Excludes terminating NULL.
-#define MINIPAL_STRLEN(str) (MINIPAL_LENGTHOF(str) - 1)
+#define MINIPAL_STRLEN(str) (ARRAY_SIZE(str) - 1)
 
 #endif // HAVE_MINIPAL_UTILS_H

@@ -67,7 +67,7 @@ attach_profiler_command_try_parse_payload (
 	instance->incoming_buffer = buffer;
 
 	if (!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->attach_timeout ) ||
-		!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)MINIPAL_LENGTHOF (instance->profiler_guid)) ||
+		!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)ARRAY_SIZE (instance->profiler_guid)) ||
 		!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->profiler_path) ||
 		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->client_data_len) ||
 		!(buffer_cursor_len <= instance->client_data_len))
@@ -193,7 +193,7 @@ startup_profiler_command_try_parse_payload (
 
 	instance->incoming_buffer = buffer;
 
-	if (!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)MINIPAL_LENGTHOF (instance->profiler_guid)) ||
+	if (!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)ARRAY_SIZE (instance->profiler_guid)) ||
 		!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->profiler_path))
 		ep_raise_error ();
 

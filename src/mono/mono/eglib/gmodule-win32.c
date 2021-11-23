@@ -169,7 +169,7 @@ g_module_address (void *addr, char *file_name, size_t file_name_len,
 	if (file_name != NULL && file_name_len >= 1) {
 		/* sigh, non-const. AIX for POSIX is the same way. */
 		WCHAR fname [MAX_PATH];
-		DWORD bytes = GetModuleFileNameW (module, fname, MINIPAL_LENGTHOF (fname));
+		DWORD bytes = GetModuleFileNameW (module, fname, ARRAY_SIZE (fname));
 		if (bytes) {
 			/* Convert back to UTF-8 from wide for runtime */
 			GFixedBufferCustomAllocatorData custom_alloc_data;
