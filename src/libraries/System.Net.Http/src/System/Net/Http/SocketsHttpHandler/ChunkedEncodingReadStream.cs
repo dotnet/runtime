@@ -4,8 +4,6 @@
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -261,8 +259,7 @@ namespace System.Net.Http
                     {
                         while (true)
                         {
-                            ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue, ctr);
-                            if (bytesRead.Length == 0)
+                            if (ReadChunkFromConnectionBuffer(int.MaxValue, ctr) is not ReadOnlyMemory<byte> bytesRead || bytesRead.Length == 0)
                             {
                                 break;
                             }
@@ -290,25 +287,21 @@ namespace System.Net.Http
 
             private bool PeekChunkFromConnectionBuffer()
             {
-                ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(maxBytesToRead: 0, cancellationRegistration: default);
-
-                // ReadChunkFromConnectionBuffer will return 'default' (NullRef with Length=0) if no data is available or
-                // _connection.RemainingBuffer.Slice(0, bytesToConsume) if there is.
-                return !Unsafe.IsNullRef(ref MemoryMarshal.GetReference(bytesRead.Span));
+                return ReadChunkFromConnectionBuffer(maxBytesToRead: 0, cancellationRegistration: default).HasValue;
             }
 
             private int ReadChunksFromConnectionBuffer(Span<byte> buffer, CancellationTokenRegistration cancellationRegistration)
             {
+                Debug.Assert(buffer.Length > 0);
                 int totalBytesRead = 0;
                 while (buffer.Length > 0)
                 {
-                    ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(buffer.Length, cancellationRegistration);
-                    Debug.Assert(bytesRead.Length <= buffer.Length);
-                    if (bytesRead.Length == 0)
+                    if (ReadChunkFromConnectionBuffer(buffer.Length, cancellationRegistration) is not ReadOnlyMemory<byte> bytesRead || bytesRead.Length == 0)
                     {
                         break;
                     }
 
+                    Debug.Assert(bytesRead.Length <= buffer.Length);
                     totalBytesRead += bytesRead.Length;
                     bytesRead.Span.CopyTo(buffer);
                     buffer = buffer.Slice(bytesRead.Length);
@@ -316,9 +309,8 @@ namespace System.Net.Http
                 return totalBytesRead;
             }
 
-            private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
+            private ReadOnlyMemory<byte>? ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
             {
-                // PeekChunkFromConnectionBuffer relies on this method returning 'default' instead of an empty buffer in cases where no data is available
                 Debug.Assert(_connection != null);
 
                 try
@@ -504,8 +496,7 @@ namespace System.Net.Http
                         drainedBytes += _connection.RemainingBuffer.Length;
                         while (true)
                         {
-                            ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue, ctr);
-                            if (bytesRead.Length == 0)
+                            if (ReadChunkFromConnectionBuffer(int.MaxValue, ctr) is not ReadOnlyMemory<byte> bytesRead || bytesRead.Length == 0)
                             {
                                 break;
                             }
