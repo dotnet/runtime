@@ -1897,29 +1897,26 @@ validate_struct_fields_overlaps (guint8 *layout_check, MonoClass *klass, const i
 		ftype = mono_type_get_basic_type_from_generic (ftype);
 
 		if (mono_type_is_struct (ftype)) {
-			// recursively check the layout of the other struct
-			MonoClass *nested_klass = ftype->data.klass;
-			g_assert (nested_klass);
+			// recursively check the layout of the embedded struct
+			MonoClass *embedded_class = ftype->data.klass;
+			g_assert (embedded_class);
 
-			// if the fields of the nested klass weren't initialized at this point it would mean there's a cycle
-			// when the fields are initialized they already hold the information about their offset wihin the struct
-			g_assert (nested_klass->fields_inited);
+			mono_class_setup_fields (embedded_class);
 
-			const int nested_fields_count = mono_class_get_field_count (nested_klass);
-			int *nested_offsets = g_new0 (int, nested_fields_count);
+			const int embedded_fields_count = mono_class_get_field_count (embedded_class);
+			int *embedded_offsets = g_new0 (int, embedded_fields_count);
 			for (int j = 0; j < field_count; ++j) {
-				// TODO this is clearly incorrect, I have to look into the specification - I can't be removing the 16B that have some reason for existing...
-				nested_offsets [j] = field_offsets[i] + nested_klass->fields [j].offset - MONO_ABI_SIZEOF (MonoObject);
+				embedded_offsets [j] = field_offsets[i] + embedded_class->fields [j].offset - MONO_ABI_SIZEOF (MonoObject);
 			}
 
-			if (!validate_struct_fields_overlaps (layout_check, nested_klass, nested_offsets, nested_fields_count, invalid_field_offset)) {
+			if (!validate_struct_fields_overlaps (layout_check, embedded_class, embedded_offsets, embedded_fields_count, invalid_field_offset)) {
 				// overwrite whatever was in the invalid_field_offset with the offset of the currently checked field
 				// we want to return the outer most invalid field
 				*invalid_field_offset = field_offsets[i];
 				return FALSE;
 			}
 
-			g_free (nested_offsets);
+			g_free (embedded_offsets);
 		} else {
 			int align = 0;
 			int size = mono_type_size (field->type, &align);
