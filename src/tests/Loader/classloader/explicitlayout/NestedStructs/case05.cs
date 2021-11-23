@@ -22,20 +22,25 @@ public struct SecondLevel
 }
 
 public class Test_NestedStructsWithExplicitLayout_Case05 {
+    private void Run()
+    {
+        var x = new FirstLevel();
+        x.Object = new object();
+    }
+
     public static int Main ()
     {
         try
         {
             Console.WriteLine("ABC");
-            var x = new FirstLevel();
-            x.Object = new object();
-
-            Console.WriteLine("FAIL: object and non-object overlap was not detected");
+            var test = new Test_NestedStructsWithExplicitLayout_Case05();
+            test.Run();
+            Console.WriteLine("FAIL: object and non-object field overlap was not detected");
             return 101;
         }
         catch (TypeLoadException e)
         {
-            Console.WriteLine("PASS: object and non-object overlap was detected");
+            Console.WriteLine("PASS: object and non-object field overlap was detected");
             return 100;
         }
         catch (Exception e)
