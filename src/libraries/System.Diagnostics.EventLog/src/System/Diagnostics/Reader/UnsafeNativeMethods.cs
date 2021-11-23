@@ -405,13 +405,6 @@ namespace Microsoft.Win32
         [GeneratedDllImport(Interop.Libraries.Wevtapi)]
         internal static partial bool EvtClose(IntPtr handle);
 
-        /*
-        [DllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtClose", SetLastError = true)]
-        public static extern bool EvtClose(
-                            IntPtr eventHandle
-                                           );
-         */
-
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetEventInfo(
                             EventLogHandle eventHandle,
@@ -470,7 +463,6 @@ namespace Microsoft.Win32
                             int flags);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
-        // public static extern IntPtr EvtNextEventMetadata(
         internal static partial EventLogHandle EvtNextEventMetadata(
                             EventLogHandle eventMetadataEnum,
                             int flags);

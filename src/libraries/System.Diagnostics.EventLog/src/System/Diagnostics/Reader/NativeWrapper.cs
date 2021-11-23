@@ -281,7 +281,11 @@ namespace System.Diagnostics.Eventing.Reader
                 }
             }
 
-            return new string(buffer, 0, buffUsed / sizeof(char) - 1); // buffer includes null terminator
+            int len = buffUsed / sizeof(char) - 1; // buffer includes null terminator
+            if (len <= 0)
+                return string.Empty;
+
+            return new string(buffer, 0, len);
         }
 
         public static EventLogHandle EvtOpenSession(UnsafeNativeMethods.EvtLoginClass loginClass, ref UnsafeNativeMethods.EvtRpcLogin login, int timeout, int flags)
@@ -321,11 +325,11 @@ namespace System.Diagnostics.Eventing.Reader
                 int error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (error == Interop.Errors.ERROR_SUCCESS)
-                    { }
-                    else
-                        if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_SUCCESS
+                        && error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    {
                         EventLogException.Throw(error);
+                    }
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
                 status = UnsafeNativeMethods.EvtGetEventInfo(handle, enumType, bufferNeeded, buffer, out bufferNeeded);
@@ -472,7 +476,12 @@ namespace System.Diagnostics.Eventing.Reader
                 }
                 EventLogException.Throw(error);
             }
-            return new string(buffer, 0, bufferNeeded - 1); // buffer includes null terminator
+
+            int len = bufferNeeded - 1; // buffer includes null terminator
+            if (len <= 0)
+                return string.Empty;
+
+            return new string(buffer, 0, len);
         }
 
         public static object EvtGetObjectArrayProperty(EventLogHandle objArrayHandle, int index, int thePropertyId)
@@ -682,7 +691,11 @@ namespace System.Diagnostics.Eventing.Reader
             if (!status)
                 EventLogException.Throw(win32Error);
 
-            return new string(buffer, 0, channelNameNeeded - 1); // buffer includes null terminator
+            int len = channelNameNeeded - 1; // buffer includes null terminator
+            if (len <= 0)
+                return string.Empty;
+
+            return new string(buffer, 0, len);
         }
 
         public static string EvtNextPublisherId(EventLogHandle handle, ref bool finish)
@@ -709,7 +722,11 @@ namespace System.Diagnostics.Eventing.Reader
             if (!status)
                 EventLogException.Throw(win32Error);
 
-            return new string(buffer, 0, ProviderIdNeeded - 1); // buffer includes null terminator
+            int len = ProviderIdNeeded - 1; // buffer includes null terminator
+            if (len <= 0)
+                return string.Empty;
+
+            return new string(buffer, 0, len);
         }
 
         public static object EvtGetLogInfo(EventLogHandle handle, UnsafeNativeMethods.EvtLogPropertyId enumType)
@@ -922,7 +939,12 @@ namespace System.Diagnostics.Eventing.Reader
                 }
                 EventLogException.Throw(error);
             }
-            return new string(buffer, 0, bufferNeeded - 1); // buffer includes null terminator
+
+            int len = bufferNeeded - 1; // buffer includes null terminator
+            if (len <= 0)
+                return string.Empty;
+
+            return new string(buffer, 0, len);
         }
 
         // The EvtFormatMessage used for the obtaining of the Keywords names.
@@ -1057,7 +1079,12 @@ namespace System.Diagnostics.Eventing.Reader
                 }
                 EventLogException.Throw(error);
             }
-            return new string(buffer, 0, bufferNeeded - 1); // buffer includes null terminator
+
+            int len = bufferNeeded - 1; // buffer includes null terminator
+            if (len <= 0)
+                return string.Empty;
+
+            return new string(buffer, 0, len);
         }
 
         private static object ConvertToObject(UnsafeNativeMethods.EvtVariant val)
