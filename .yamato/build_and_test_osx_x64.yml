@@ -2,13 +2,17 @@ name: Build and Test OSX x64
 
 agent:
   type: Unity::VM::osx
-  image: slough-ops/macos-11-xcode:stable
+  image: platform-foundation/mac-bokken:latest
   flavor: m1.mac
+
+variables:
+  LD_LIBRARY_PATH: /usr/local/opt/openssl/lib
 
 commands:
   - brew bundle --no-lock --file eng/Brewfile
   - brew install mono-libgdiplus
-  - export LD_LIBRARY_PATH=/usr/local/opt/openssl/lib:$LD_LIBRARY_PATH
+  - echo $LD_LIBRARY_PATH
+  - ls /usr/local/opt/openssl/lib
   - ./build.sh -subset clr -a x64 -c release
   - ./build.sh libs -c release
   - ./src/tests/build.sh Release x64
