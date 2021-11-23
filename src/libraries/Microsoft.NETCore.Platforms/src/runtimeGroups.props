@@ -14,6 +14,14 @@
       <Architectures>x64;x86;arm;armel;arm64;s390x</Architectures>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="almalinux">
+      <Parent>rhel</Parent>
+      <Architectures>x64;arm64</Architectures>
+      <Versions>8;9</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
       <Architectures>x64;arm;arm64</Architectures>

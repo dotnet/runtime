@@ -1,5 +1,62 @@
 {
   "runtimes": {
+    "almalinux": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "almalinux-arm64": {
+      "#import": [
+        "almalinux",
+        "rhel-arm64"
+      ]
+    },
+    "almalinux-x64": {
+      "#import": [
+        "almalinux",
+        "rhel-x64"
+      ]
+    },
+    "almalinux.8": {
+      "#import": [
+        "almalinux",
+        "rhel.8"
+      ]
+    },
+    "almalinux.8-arm64": {
+      "#import": [
+        "almalinux.8",
+        "almalinux-arm64",
+        "rhel.8-arm64"
+      ]
+    },
+    "almalinux.8-x64": {
+      "#import": [
+        "almalinux.8",
+        "almalinux-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "almalinux.9": {
+      "#import": [
+        "almalinux",
+        "rhel.9"
+      ]
+    },
+    "almalinux.9-arm64": {
+      "#import": [
+        "almalinux.9",
+        "almalinux-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "almalinux.9-x64": {
+      "#import": [
+        "almalinux.9",
+        "almalinux-x64",
+        "rhel.9-x64"
+      ]
+    },
     "alpine": {
       "#import": [
         "linux-musl"
