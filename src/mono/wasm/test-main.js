@@ -43,7 +43,7 @@ function proxyMethod(prefix, func, asJson) {
             isXUnitDoneCheck = true;
         }
 
-        if (payload.length > 500 && payload.indexOf("STARTRESULTXML") !== -1) {
+        if (payload.startsWith("STARTRESULTXML")) {
             originalConsole.log('Sending RESULTXML')
             isXmlDoneCheck = true;
             func(payload);
