@@ -914,7 +914,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
+        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
             return SendResponseAsync(statusCode, headers, content, isFinal, requestId: 0);
         }
