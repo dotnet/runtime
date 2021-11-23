@@ -589,7 +589,7 @@ public:
         ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
-    ValueNum VNForMapStore(var_types type, ValueNum map, ValueNum index, ValueNum value);
+    ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
 
     ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, size_t* pStructSize = nullptr);
 

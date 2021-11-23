@@ -21,22 +21,6 @@ namespace Internal.Cryptography.Pal.Native
         //... more fields follow ...
     }
 
-    [Flags]
-    internal enum CertFindFlags : int
-    {
-        None = 0x00000000,
-    }
-
-    internal enum CertFindType : int
-    {
-        CERT_FIND_SUBJECT_CERT = 0x000b0000,
-        CERT_FIND_HASH         = 0x00010000,
-        CERT_FIND_SUBJECT_STR  = 0x00080007,
-        CERT_FIND_ISSUER_STR   = 0x00080004,
-        CERT_FIND_EXISTING     = 0x000d0000,
-        CERT_FIND_ANY          = 0x00000000,
-    }
-
     internal enum FormatObjectType : int
     {
         None = 0,
@@ -67,58 +51,6 @@ namespace Internal.Cryptography.Pal.Native
         X509_CERT_POLICIES = 16,
         X509_UNICODE_ANY_STRING = 24,
         X509_CERTIFICATE_TEMPLATE = 64,
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct CTL_USAGE
-    {
-        public int cUsageIdentifier;
-        public IntPtr rgpszUsageIdentifier;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct CERT_USAGE_MATCH
-    {
-        public CertUsageMatchType dwType;
-        public CTL_USAGE Usage;
-    }
-
-    internal enum CertUsageMatchType : int
-    {
-        USAGE_MATCH_TYPE_AND = 0x00000000,
-        USAGE_MATCH_TYPE_OR  = 0x00000001,
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct CERT_CHAIN_PARA
-    {
-        public int cbSize;
-        public CERT_USAGE_MATCH RequestedUsage;
-        public CERT_USAGE_MATCH RequestedIssuancePolicy;
-        public int dwUrlRetrievalTimeout;
-        public int fCheckRevocationFreshnessTime;
-        public int dwRevocationFreshnessTime;
-        public Interop.Crypt32.FILETIME* pftCacheResync;
-        public int pStrongSignPara;
-        public int dwStrongSignFlags;
-    }
-
-    [Flags]
-    internal enum CertChainFlags : int
-    {
-        None                                           = 0x00000000,
-        CERT_CHAIN_DISABLE_AUTH_ROOT_AUTO_UPDATE       = 0x00000100,
-        CERT_CHAIN_DISABLE_AIA                         = 0x00002000,
-        CERT_CHAIN_REVOCATION_CHECK_END_CERT           = 0x10000000,
-        CERT_CHAIN_REVOCATION_CHECK_CHAIN              = 0x20000000,
-        CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT = 0x40000000,
-        CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY         = unchecked((int)0x80000000),
-    }
-
-    internal enum ChainEngine : int
-    {
-        HCCE_CURRENT_USER = 0x0,
-        HCCE_LOCAL_MACHINE = 0x1,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -162,17 +94,6 @@ namespace Internal.Cryptography.Pal.Native
         public IntPtr* rgpszUsageIdentifier; // LPSTR*
     }
 
-    internal enum CertStoreSaveAs :  int
-    {
-        CERT_STORE_SAVE_AS_STORE = 1,
-        CERT_STORE_SAVE_AS_PKCS7 = 2,
-    }
-
-    internal enum CertStoreSaveTo : int
-    {
-        CERT_STORE_SAVE_TO_MEMORY = 2,
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct CERT_POLICY_INFO
     {
@@ -202,17 +123,6 @@ namespace Internal.Cryptography.Pal.Native
         public int dwMajorVersion;
         public int fMinorVersion;
         public int dwMinorVersion;
-    }
-
-    [Flags]
-    internal enum CertControlStoreFlags : int
-    {
-        None = 0x00000000,
-    }
-
-    internal enum CertControlStoreType : int
-    {
-        CERT_STORE_CTRL_AUTO_RESYNC = 4,
     }
 
     [Flags]
@@ -335,68 +245,9 @@ namespace Internal.Cryptography.Pal.Native
         public Guid ChainId;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct CERT_CHAIN_POLICY_PARA
-    {
-        public int cbSize;
-        public int dwFlags;
-        public IntPtr pvExtraPolicyPara;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct CERT_CHAIN_POLICY_STATUS
-    {
-        public int cbSize;
-        public int dwError;
-        public IntPtr lChainIndex;
-        public IntPtr lElementIndex;
-        public IntPtr pvExtraPolicyStatus;
-    }
-
     internal enum ChainPolicy : int
     {
         // Predefined verify chain policies
         CERT_CHAIN_POLICY_BASE = 1,
-    }
-
-    internal enum CryptAcquireFlags : int
-    {
-        CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG = 0x00040000,
-    }
-
-    [Flags]
-    internal enum ChainEngineConfigFlags : int
-    {
-        CERT_CHAIN_CACHE_END_CERT = 0x00000001,
-        CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL = 0x00000004,
-        CERT_CHAIN_USE_LOCAL_MACHINE_STORE = 0x00000008,
-        CERT_CHAIN_ENABLE_CACHE_AUTO_UPDATE = 0x00000010,
-        CERT_CHAIN_ENABLE_SHARE_STORE = 0x00000020,
-        CERT_CHAIN_DISABLE_AIA = 0x00002000,
-    }
-
-    // Windows 7 definition of the struct
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct CERT_CHAIN_ENGINE_CONFIG
-    {
-        public int cbSize;
-        public IntPtr hRestrictedRoot;
-        public IntPtr hRestrictedTrust;
-        public IntPtr hRestrictedOther;
-        public int cAdditionalStore;
-        public IntPtr rghAdditionalStore;
-        public ChainEngineConfigFlags dwFlags;
-        public int dwUrlRetrievalTimeout;
-        public int MaximumCachedCertificates;
-        public int CycleDetectionModulus;
-        public IntPtr hExclusiveRoot;
-        public IntPtr hExclusiveTrustedPeople;
-    }
-
-    [Flags]
-    internal enum CryptImportPublicKeyInfoFlags
-    {
-        NONE = 0,
-        CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG = 0x40000000,
     }
 }

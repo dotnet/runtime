@@ -1931,7 +1931,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_VALUECLASS;
 
                 if (metadataType.IsByRefLike)
-                    result |= CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR;
+                    result |= CorInfoFlag.CORINFO_FLG_BYREF_LIKE;
 
                 // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
                 if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))

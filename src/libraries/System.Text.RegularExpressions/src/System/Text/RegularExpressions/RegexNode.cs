@@ -240,6 +240,8 @@ namespace System.Text.RegularExpressions
         [Conditional("DEBUG")]
         private void ValidateFinalTreeInvariants()
         {
+            Debug.Assert(Type == Capture, "Every generated tree should begin with a capture node");
+
             var toExamine = new Stack<RegexNode>();
             toExamine.Push(this);
             while (toExamine.Count > 0)
@@ -306,8 +308,11 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case Testref:
+                        Debug.Assert(childCount is 1 or 2, $"Expected one or two children for {node.TypeName}, got {childCount}");
+                        break;
+
                     case Testgroup:
-                        Debug.Assert(childCount >= 1, $"Expected at least one child for {node.TypeName}, got {childCount}.");
+                        Debug.Assert(childCount is 2 or 3, $"Expected two or three children for {node.TypeName}, got {childCount}");
                         break;
 
                     case Concatenate:
@@ -2229,7 +2234,16 @@ namespace System.Text.RegularExpressions
                     case Empty:
                     case Nothing:
                     case UpdateBumpalong:
+                    // Backreferences are supported
+                    case Ref:
                         supported = true;
+                        break;
+
+                    // Conditional backreference tests are also supported, so long as both their yes/no branches are supported.
+                    case Testref:
+                        supported =
+                            Child(0).SupportsSimplifiedCodeGenerationImplementation() &&
+                            (childCount == 1 || Child(1).SupportsSimplifiedCodeGenerationImplementation());
                         break;
 
                     // Single character greedy/lazy loops are supported if either they're actually a repeater
@@ -2244,17 +2258,10 @@ namespace System.Text.RegularExpressions
                         supported = M == N || AncestorsAllowBacktracking(Next);
                         break;
 
-                    // Loop repeaters are the same, except their child also needs to be supported.
-                    // We also support such loops being atomic.
+                    // For greedy and lazy loops, they're supported if the node they wrap is supported
+                    // and either the node is actually a repeater, is atomic, or is in the tree in a
+                    // location where backtracking is allowed.
                     case Loop:
-                        supported =
-                            (M == N || (Next != null && Next.Type == Atomic)) &&
-                            Child(0).SupportsSimplifiedCodeGenerationImplementation();
-                        break;
-
-                    // Similarly, as long as the wrapped node supports simplified code gen,
-                    // Lazy is supported if it's a repeater or atomic, but also if it's in
-                    // a place where backtracking is allowed (e.g. it's top-level).
                     case Lazyloop:
                         supported =
                             (M == N || (Next != null && Next.Type == Atomic) || AncestorsAllowBacktracking(Next)) &&
@@ -2297,11 +2304,10 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case Capture:
-                        // Currently we only support capnums without uncapnums (for balancing groups)
-                        supported = N == -1;
+                        supported = Child(0).SupportsSimplifiedCodeGenerationImplementation();
                         if (supported)
                         {
-                            // And we only support them in certain places in the tree.
+                            // Captures are currently only supported in certain places in the tree.
                             RegexNode? parent = Next;
                             while (parent != null)
                             {
@@ -2322,24 +2328,30 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
+                            // If we've found a supported capture, mark all of the nodes in its parent
+                            // hierarchy as containing a capture.
                             if (supported)
                             {
-                                // And we only support them if their children are supported.
-                                supported = Child(0).SupportsSimplifiedCodeGenerationImplementation();
-
-                                // If we've found a supported capture, mark all of the nodes in its parent
-                                // hierarchy as containing a capture.
-                                if (supported)
+                                parent = this;
+                                while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
                                 {
-                                    parent = this;
-                                    while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
-                                    {
-                                        parent.Options |= HasCapturesFlag;
-                                        parent = parent.Next;
-                                    }
+                                    parent.Options |= HasCapturesFlag;
+                                    parent = parent.Next;
                                 }
                             }
                         }
+                        break;
+
+                    case Testgroup:
+                        supported =
+                            Child(0).SupportsSimplifiedCodeGenerationImplementation() &&
+                            Child(1).SupportsSimplifiedCodeGenerationImplementation() &&
+                            (childCount == 2 || Child(2).SupportsSimplifiedCodeGenerationImplementation());
+                        break;
+
+                    default:
+                        Debug.Fail($"Unknown type: {Type}");
+                        supported = false;
                         break;
                 }
             }
