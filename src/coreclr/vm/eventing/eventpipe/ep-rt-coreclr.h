@@ -14,8 +14,6 @@
 #include "win32threadpool.h"
 #include "clrversion.h"
 
-#undef EP_ARRAY_SIZE
-
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
 

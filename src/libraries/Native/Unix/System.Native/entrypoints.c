@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <minipal/entrypoints.h>
-#include <minipal/utils.h>
 
 // Include System.Native headers
 #include "pal_autoreleasepool.h"

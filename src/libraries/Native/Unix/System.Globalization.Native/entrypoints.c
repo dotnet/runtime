@@ -16,7 +16,6 @@ typedef uint16_t UChar;
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
-#include <minipal/utils.h>
 
 static const Entry s_globalizationNative[] =
 {

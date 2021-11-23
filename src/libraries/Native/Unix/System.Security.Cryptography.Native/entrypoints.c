@@ -28,7 +28,6 @@
 #include "pal_x509ext.h"
 #include "pal_x509_name.h"
 #include "pal_x509_root.h"
-#include <minipal/utils.h>
 
 static const Entry s_cryptoNative[] =
 {

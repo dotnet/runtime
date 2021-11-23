@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <minipal/utils.h>
 
 typedef struct
 {
