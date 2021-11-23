@@ -3,6 +3,7 @@ extern alias tests_r;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
@@ -87,32 +88,18 @@ public unsafe class DebugInfoTest
 
                 string name = $"[{meth.DeclaringType.Assembly.GetName().Name}]{meth.DeclaringType.FullName}.{meth.Name}";
 
-                if (tier != OptimizationTier.MinOptJitted && tier != OptimizationTier.QuickJitted &&
-                    tier != OptimizationTier.Optimized && tier != OptimizationTier.OptimizedTier1)
-                {
-                    Console.WriteLine("Unexpected JIT tier {0} for {1}", tier, name);
-                    result = -1;
-                    continue;
-                }
+                // If DebuggableAttribute is saying that the assembly must be debuggable, then verify debug mappings.
+                // Otherwise verify release mappings.
+                // This may seem a little strange since we do not use the tier at all -- however, we expect debug
+                // to never tier and in release, we expect the release mappings to be the "least common denominator",
+                // i.e. tier0 and tier1 mappings should both be a superset.
+                // Note that tier0 and MinOptJitted differs in mappings generated exactly due to DebuggableAttribute.
+                DebuggableAttribute debuggableAttrib = meth.DeclaringType.Assembly.GetCustomAttribute<DebuggableAttribute>();
+                bool debuggableMappings = debuggableAttrib != null && debuggableAttrib.IsJITOptimizerDisabled;
 
-                Console.WriteLine("Validating {0} jitted at {1}", name, tier);
+                Console.WriteLine("{0}: Validate mappings for {1} codegen (tier: {2})", name, debuggableMappings ? "debuggable" : "optimized", tier);
 
-                int[] expected;
-                switch (tier)
-                {
-                    case OptimizationTier.MinOptJitted:
-                    case OptimizationTier.QuickJitted:
-                        expected = attrib.Debug;
-                        break;
-                    case OptimizationTier.Optimized:
-                    case OptimizationTier.OptimizedTier1:
-                        expected = attrib.Opts;
-                        break;
-                    default:
-                        result = -1;
-                        continue;
-                }
-
+                int[] expected = debuggableMappings ? attrib.Debug : attrib.Opts;
                 if (expected == null)
                 {
                     continue;
