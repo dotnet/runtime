@@ -195,7 +195,7 @@ rename_phi_arguments_in_out_bbs(MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *
 }
 
 static int
-create_new_vars(MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, gboolean *originals_used, MonoInst **stack, guint32 *lvreg_stack, gboolean *lvreg_defined, RenameInfo **stack_history, int *stack_history_size)
+create_new_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, gboolean *originals_used, MonoInst **stack, guint32 *lvreg_stack, gboolean *lvreg_defined, RenameInfo **stack_history, int *stack_history_size)
 {
 	MonoInst *ins, *new_var;
 	int i, stack_history_len = 0;
@@ -315,9 +315,8 @@ create_new_vars(MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, gboolean *or
 static void
 restore_stack (MonoInst **stack, RenameInfo *stack_history, int stack_history_len)
 {
-	int i;
-
-	for (i = stack_history_len - 1; i >= 0; i--) {
+	int i = stack_history_len;
+	while (i-- > 0) {
 		stack [stack_history [i].idx] = stack_history [i].var;
 	}
 }
@@ -362,7 +361,7 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb)
 		if (G_UNLIKELY (cfg->verbose_level >= 4))
 			printf ("\nRENAME VARS BLOCK %d:\n", bb->block_num);
 
-		int stack_history_len = create_new_vars (cfg, max_vars, bb, originals,  stack, lvreg_stack, lvreg_defined, &stack_history, &stack_history_size);
+		int stack_history_len = create_new_vars (cfg, max_vars, bb, originals, stack, lvreg_stack, lvreg_defined, &stack_history, &stack_history_size);
 		rename_phi_arguments_in_out_bbs (cfg, bb, stack);
 
 		if (bb->dominated) {
