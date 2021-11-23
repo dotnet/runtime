@@ -901,7 +901,7 @@ namespace System.Net.Test.Common
                 }
             }
 
-            int streamId = _lastStreamId;
+            int streamId = requestId == 0 ? _lastStreamId : requestId;
 
             if (string.IsNullOrEmpty(content))
             {
