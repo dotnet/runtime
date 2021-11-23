@@ -67,6 +67,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class Http1ResponseStreamZeroByteReadTestBase
     {
         protected abstract string GetResponseHeaders();
@@ -228,6 +229,7 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class ResponseStreamZeroByteReadTestBase : HttpClientHandlerTestBase
     {
         public ResponseStreamZeroByteReadTestBase(ITestOutputHelper output) : base(output) { }
