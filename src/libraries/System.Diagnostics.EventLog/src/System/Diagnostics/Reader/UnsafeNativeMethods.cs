@@ -371,7 +371,7 @@ namespace Microsoft.Win32
                             int flags);
 
         // SEEK
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtSeek(
                             EventLogHandle resultSet,
                             long position,
@@ -412,7 +412,7 @@ namespace Microsoft.Win32
                                            );
          */
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetEventInfo(
                             EventLogHandle eventHandle,
                             EvtEventPropertyId propertyId,
@@ -420,7 +420,7 @@ namespace Microsoft.Win32
                             IntPtr bufferPtr,
                             out int bufferUsed);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetQueryInfo(
                             EventLogHandle queryHandle,
                             EvtQueryPropertyId propertyId,
@@ -429,7 +429,7 @@ namespace Microsoft.Win32
                             ref int bufferRequired);
 
         // PUBLISHER METADATA
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenPublisherMetadata(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)] string publisherId,
@@ -437,7 +437,7 @@ namespace Microsoft.Win32
                             int locale,
                             int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetPublisherMetadataProperty(
                             EventLogHandle publisherMetadataHandle,
                             EvtPublisherMetadataPropertyId propertyId,
@@ -448,12 +448,12 @@ namespace Microsoft.Win32
 
         // NEW
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetObjectArraySize(
                             EventLogHandle objectArray,
                             out int objectArraySize);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetObjectArrayProperty(
                             EventLogHandle objectArray,
                             int propertyId,
@@ -464,20 +464,18 @@ namespace Microsoft.Win32
                             out int propertyValueBufferUsed);
 
         // NEW 2
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenEventMetadataEnum(
                             EventLogHandle publisherMetadata,
-                            int flags
-                                    );
+                            int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         // public static extern IntPtr EvtNextEventMetadata(
         internal static partial EventLogHandle EvtNextEventMetadata(
                             EventLogHandle eventMetadataEnum,
-                            int flags
-                                    );
+                            int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetEventMetadataProperty(
                             EventLogHandle eventMetadata,
                             EvtEventMetadataPropertyId propertyId,
@@ -488,73 +486,66 @@ namespace Microsoft.Win32
 
         // Channel Configuration Native Api
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenChannelEnum(
                             EventLogHandle session,
                             int flags);
 
-        [DllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
-        internal static extern bool EvtNextChannelPath(
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool EvtNextChannelPath(
                             EventLogHandle channelEnum,
                             int channelPathBufferSize,
-                            // StringBuilder channelPathBuffer,
-                            [Out, MarshalAs(UnmanagedType.LPWStr)]StringBuilder channelPathBuffer,
-                            out int channelPathBufferUsed
-                                    );
+                            [Out] char[]? channelPathBuffer,
+                            out int channelPathBufferUsed);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenPublisherEnum(
                             EventLogHandle session,
                             int flags);
 
-        [DllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
-        internal static extern bool EvtNextPublisherId(
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool EvtNextPublisherId(
                             EventLogHandle publisherEnum,
                             int publisherIdBufferSize,
-                            [Out, MarshalAs(UnmanagedType.LPWStr)]StringBuilder publisherIdBuffer,
-                            out int publisherIdBufferUsed
-                                    );
+                            [Out] char[]? publisherIdBuffer,
+                            out int publisherIdBufferUsed);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenChannelConfig(
                             EventLogHandle session,
-                            [MarshalAs(UnmanagedType.LPWStr)]string channelPath,
-                            int flags
-                                    );
+                            [MarshalAs(UnmanagedType.LPWStr)] string channelPath,
+                            int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtSaveChannelConfig(
                             EventLogHandle channelConfig,
-                            int flags
-                                    );
+                            int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtSetChannelConfigProperty(
                             EventLogHandle channelConfig,
                             EvtChannelConfigPropertyId propertyId,
                             int flags,
-                            ref EvtVariant propertyValue
-                                    );
+                            ref EvtVariant propertyValue);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetChannelConfigProperty(
                             EventLogHandle channelConfig,
                             EvtChannelConfigPropertyId propertyId,
                             int flags,
                             int propertyValueBufferSize,
                             IntPtr propertyValueBuffer,
-                            out int propertyValueBufferUsed
-                                   );
+                            out int propertyValueBufferUsed);
 
         // Log Information Native Api
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtOpenLog(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)] string path,
                             PathType flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtGetLogInfo(
                             EventLogHandle log,
                             EvtLogPropertyId propertyId,
@@ -564,7 +555,7 @@ namespace Microsoft.Win32
 
         // LOG MANIPULATION
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtExportLog(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)] string channelPath,
@@ -572,40 +563,37 @@ namespace Microsoft.Win32
                             [MarshalAs(UnmanagedType.LPWStr)] string targetFilePath,
                             int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtArchiveExportedLog(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)]string logFilePath,
                             int locale,
-                            int flags
-                                        );
+                            int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtClearLog(
                             EventLogHandle session,
                             [MarshalAs(UnmanagedType.LPWStr)]string channelPath,
                             [MarshalAs(UnmanagedType.LPWStr)]string targetFilePath,
-                            int flags
-                                        );
+                            int flags);
 
         // RENDERING
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtCreateRenderContext(
                             int valuePathsCount,
                             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)]
                                 string[] valuePaths,
                             EvtRenderContextFlags flags);
 
-        [DllImport(Interop.Libraries.Wevtapi, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
-        internal static extern bool EvtRender(
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool EvtRender(
                             EventLogHandle context,
                             EventLogHandle eventHandle,
                             EvtRenderFlags flags,
                             int buffSize,
-                            [Out, MarshalAs(UnmanagedType.LPWStr)]StringBuilder buffer,
+                            [Out] char[]? buffer,
                             out int buffUsed,
-                            out int propCount
-                                        );
+                            out int propCount);
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtRender", SetLastError = true)]
         internal static partial bool EvtRender(
@@ -615,8 +603,7 @@ namespace Microsoft.Win32
                             int buffSize,
                             IntPtr buffer,
                             out int buffUsed,
-                            out int propCount
-                                        );
+                            out int propCount);
 
         [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Auto)]
         internal struct EvtStringVariant
@@ -629,20 +616,22 @@ namespace Microsoft.Win32
             public uint Type;
         };
 
-        [DllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
+        [DllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern bool EvtFormatMessage(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
                              uint messageId,
                              int valueCount,
                              EvtStringVariant[] values,
-                             [MarshalAs(UnmanagedType.I4)]EvtFormatMessageFlags flags,
+                             EvtFormatMessageFlags flags,
                              int bufferSize,
-                             [Out, MarshalAs(UnmanagedType.LPWStr)]StringBuilder buffer,
-                             out int bufferUsed
-                                        );
+                             [Out] char[]? buffer,
+                             out int bufferUsed);
+#pragma warning restore DLLIMPORTGENANALYZER015
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtFormatMessage", CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtFormatMessage", SetLastError = true)]
         internal static partial bool EvtFormatMessageBuffer(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
@@ -657,7 +646,7 @@ namespace Microsoft.Win32
         // SESSION
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
-        [DllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static extern EventLogHandle EvtOpenSession(
                             EvtLoginClass loginClass,
                             ref EvtRpcLogin login,
@@ -666,11 +655,11 @@ namespace Microsoft.Win32
 #pragma warning restore DLLIMPORTGENANALYZER015
 
         // BOOKMARK
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtCreateBookmark", CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtCreateBookmark", SetLastError = true)]
         internal static partial EventLogHandle EvtCreateBookmark(
                             [MarshalAs(UnmanagedType.LPWStr)] string bookmarkXml);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial bool EvtUpdateBookmark(
                             EventLogHandle bookmark,
                             EventLogHandle eventHandle);
