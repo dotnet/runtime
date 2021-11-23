@@ -13,6 +13,7 @@
 {
   
 }
+.assembly extern xunit.core {}
 .module '1'
 // MVID: {9A90DFD6-02B6-45EC-9CEF-25C2CAF3BF19}
 
@@ -130,6 +131,9 @@
 
   .method private static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       34 (0x22)
     .maxstack  20

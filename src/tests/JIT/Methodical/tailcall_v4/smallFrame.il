@@ -29,6 +29,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module retbuf_bug.exe
 // MVID: {FD923469-B98F-4B21-ABCA-4105B0A8ED94}
 .imagebase 0x00400000
@@ -62,6 +63,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       408 (0x198)
     .maxstack  2

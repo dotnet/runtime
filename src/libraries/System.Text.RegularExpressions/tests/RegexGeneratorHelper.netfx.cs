@@ -10,5 +10,8 @@ namespace System.Text.RegularExpressions.Tests
     {
         internal static Task<Regex> SourceGenRegexAsync(string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+
+        internal static Task<Regex[]> SourceGenRegexAsync((string pattern, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .assembly TestCase4 {}
 
 
@@ -59,10 +60,13 @@
   }
 }
 
-.class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+.class public auto ansi beforefieldinit Test_TestCase4 extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
     newobj     instance void C::.ctor()

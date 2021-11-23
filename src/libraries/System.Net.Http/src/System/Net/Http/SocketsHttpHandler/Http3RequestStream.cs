@@ -235,6 +235,7 @@ namespace System.Net.Http
                     // A read stream is required to finish up the request.
                     responseContent.SetStream(new Http3ReadStream(this));
                 }
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received response: {_response}");
 
                 // Process any Set-Cookie headers.
                 if (_connection.Pool.Settings._useCookies)

@@ -11,16 +11,13 @@ namespace System.Net.Http.Headers
 {
     public class TransferCodingHeaderValue : ICloneable
     {
-        // Use ObjectCollection<T> since we may have multiple parameters with the same name.
-        private ObjectCollection<NameValueHeaderValue>? _parameters;
+        // Use UnvalidatedObjectCollection<T> since we may have multiple parameters with the same name.
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _parameters;
         private string _value = null!; // empty constructor only used internally and value set with non null
 
-        public string Value
-        {
-            get { return _value; }
-        }
+        public string Value => _value;
 
-        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         internal TransferCodingHeaderValue()
         {
@@ -94,7 +91,7 @@ namespace System.Net.Http.Headers
 
                 current++; // skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    (ObjectCollection<NameValueHeaderValue>)transferCodingHeader.Parameters);
+                    (UnvalidatedObjectCollection<NameValueHeaderValue>)transferCodingHeader.Parameters);
 
                 if (parameterLength == 0)
                 {

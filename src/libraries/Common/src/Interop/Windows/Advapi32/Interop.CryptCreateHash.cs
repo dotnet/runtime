@@ -15,8 +15,8 @@ internal static partial class Interop
             None = 0,
         }
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptCreateHash(
+        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial bool CryptCreateHash(
             SafeProvHandle hProv,
             int Algid,
             SafeKeyHandle hKey,

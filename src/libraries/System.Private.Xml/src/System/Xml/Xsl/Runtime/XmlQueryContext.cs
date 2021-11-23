@@ -301,7 +301,7 @@ namespace System.Xml.Xsl.Runtime
                         objActualArgs[i] = args[i];
                         break;
                     default:
-                        Debug.Fail("This XmlTypeCode should never be inferred from a Clr type: " + xmlTypeFormalArg.TypeCode);
+                        Debug.Fail($"This XmlTypeCode should never be inferred from a Clr type: {xmlTypeFormalArg.TypeCode}");
                         break;
                 }
 

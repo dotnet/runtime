@@ -52,4 +52,4 @@ FAIL:
 	ret
 }
 }
-.assembly dup8.exe{}
+.assembly dup8{}

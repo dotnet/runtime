@@ -1619,7 +1619,7 @@ exit_pinvoke:
  *   Initialize del->interp_method.
  */
 static void
-interp_init_delegate (MonoDelegate *del, MonoError *error)
+interp_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **out_info, MonoError *error)
 {
 	MonoMethod *method;
 
@@ -1668,6 +1668,25 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 		/* Return any errors from method compilation */
 		mono_interp_transform_method ((InterpMethod *) del->interp_method, get_context (), error);
 		return_if_nok (error);
+	}
+
+	/*
+	 * Compute a MonoDelegateTrampInfo for this delegate if possible and pass it back to
+	 * the caller.
+	 * Keep a 1 element cache in imethod->del_info. This should be good enough since most methods
+	 * are only associated with one delegate type.
+	 */
+	if (out_info)
+		*out_info = NULL;
+	if (mono_llvm_only) {
+		InterpMethod *imethod = del->interp_method;
+		method = imethod->method;
+		if (imethod->del_info && imethod->del_info->klass == del->object.vtable->klass) {
+			*out_info = imethod->del_info;
+		} else if (!imethod->del_info) {
+			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method);
+			*out_info = imethod->del_info;
+		}
 	}
 }
 
@@ -2007,6 +2026,20 @@ interp_entry (InterpEntryData *data)
 	sp_args = sp = (stackval*)context->stack_pointer;
 
 	method = rmethod->method;
+
+	if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke")) {
+		/*
+		 * This happens when AOT code for the invoke wrapper is not found.
+		 * Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
+		 */
+		ERROR_DECL (error);
+		MonoDelegate *del = (MonoDelegate*)data->this_arg;
+		// FIXME: This is slow
+		method = mono_marshal_get_delegate_invoke (method, del);
+		data->rmethod = mono_interp_get_imethod (method, error);
+		mono_error_assert_ok (error);
+	}
+
 	sig = mono_method_signature_internal (method);
 
 	// FIXME: Optimize this
@@ -3414,8 +3447,33 @@ main_loop:
 			LOCAL_VAR (ip [1], gint64) = READ64 (ip + 2); /* note union usage */
 			ip += 6;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TAILCALL)
+		MINT_IN_CASE(MINT_TAILCALL_VIRT)
 		MINT_IN_CASE(MINT_JMP) {
-			InterpMethod *new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			gboolean is_tailcall = *ip != MINT_JMP;
+			InterpMethod *new_method;
+
+			if (is_tailcall) {
+				guint16 params_offset = ip [1];
+				guint16 params_size = ip [3];
+
+				// Copy the params to their location at the start of the frame
+				memmove (frame->stack, (guchar*)frame->stack + params_offset, params_size);
+				new_method = (InterpMethod*)frame->imethod->data_items [ip [2]];
+
+				if (*ip == MINT_TAILCALL_VIRT) {
+					gint16 slot = (gint16)ip [4];
+					MonoObject *this_arg = LOCAL_VAR (0, MonoObject*);
+					new_method = get_virtual_method_fast (new_method, this_arg->vtable, slot);
+					if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (new_method->method->klass)) {
+						/* unbox */
+						gpointer unboxed = mono_object_unbox_internal (this_arg);
+						LOCAL_VAR (0, gpointer) = unboxed;
+					}
+				}
+			} else {
+				new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			}
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
 				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
@@ -6781,19 +6839,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], double) = scalbn (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], gint32));
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ILOGB) {
-			int result;
-			double x = LOCAL_VAR (ip [2], double);
-			if (FP_ILOGB0 != INT_MIN && x == 0.0)
-				result = INT_MIN;
-			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
-				result = INT_MAX;
-			else
-				result = ilogb (x);
-			LOCAL_VAR (ip [1],  gint32) = result;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 
 #define MATH_UNOPF(mathfunc) \
 	LOCAL_VAR (ip [1], float) = mathfunc (LOCAL_VAR (ip [2], float)); \
@@ -6834,19 +6879,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], float) = scalbnf (LOCAL_VAR (ip [2], float), LOCAL_VAR (ip [3], gint32));
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ILOGBF) {
-			int result;
-			float x = LOCAL_VAR (ip [2], float);
-			if (FP_ILOGB0 != INT_MIN && x == 0.0)
-				result = INT_MIN;
-			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
-				result = INT_MAX;
-			else
-				result = ilogbf (x);
-			LOCAL_VAR (ip [1], gint32) = result;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 
 		MINT_IN_CASE(MINT_INTRINS_ENUM_HASFLAG) {
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [4]];
@@ -7518,6 +7550,14 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 			func (copy_jit_info_data.jit_info_array [i], user_data);
 		g_free (copy_jit_info_data.jit_info_array);
 	}
+}
+
+static gboolean
+interp_sufficient_stack (gsize size)
+{
+	ThreadContext *context = get_context ();
+
+	return (context->stack_pointer + size) < (context->stack_start + INTERP_STACK_SIZE);
 }
 
 static void

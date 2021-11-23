@@ -1918,8 +1918,8 @@ void LinearScan::identifyCandidates()
     }
 #endif
 
-    JITDUMP("floatVarCount = %d; hasLoops = %d, singleExit = %d\n", floatVarCount, compiler->fgHasLoops,
-            (compiler->fgReturnBlocks == nullptr || compiler->fgReturnBlocks->next == nullptr));
+    JITDUMP("floatVarCount = %d; hasLoops = %s, singleExit = %s\n", floatVarCount, dspBool(compiler->fgHasLoops),
+            dspBool(compiler->fgReturnBlocks == nullptr || compiler->fgReturnBlocks->next == nullptr));
 
     // Determine whether to use the 2nd, more aggressive, threshold for fp callee saves.
     if (floatVarCount > 6 && compiler->fgHasLoops &&
@@ -6297,9 +6297,8 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     saveLcl->SetRegNum(lclVarReg);
     SetLsraAdded(saveLcl);
 
-    GenTreeSIMD* simdNode =
-        new (compiler, GT_SIMD) GenTreeSIMD(LargeVectorSaveType, saveLcl, nullptr, SIMDIntrinsicUpperSave,
-                                            varDsc->GetSimdBaseJitType(), genTypeSize(varDsc->lvType));
+    GenTreeSIMD* simdNode = compiler->gtNewSIMDNode(LargeVectorSaveType, saveLcl, SIMDIntrinsicUpperSave,
+                                                    varDsc->GetSimdBaseJitType(), genTypeSize(varDsc));
 
     if (simdNode->GetSimdBaseJitType() == CORINFO_TYPE_UNDEF)
     {
@@ -6364,9 +6363,8 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     restoreLcl->SetRegNum(lclVarReg);
     SetLsraAdded(restoreLcl);
 
-    GenTreeSIMD* simdNode =
-        new (compiler, GT_SIMD) GenTreeSIMD(varDsc->lvType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore,
-                                            varDsc->GetSimdBaseJitType(), genTypeSize(varDsc->lvType));
+    GenTreeSIMD* simdNode = compiler->gtNewSIMDNode(varDsc->TypeGet(), restoreLcl, SIMDIntrinsicUpperRestore,
+                                                    varDsc->GetSimdBaseJitType(), genTypeSize(varDsc->lvType));
 
     if (simdNode->GetSimdBaseJitType() == CORINFO_TYPE_UNDEF)
     {

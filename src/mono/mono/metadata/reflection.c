@@ -2126,7 +2126,7 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 	for (mod = info->modifiers; mod; mod = mod->next) {
 		modval = GPOINTER_TO_UINT (mod->data);
 		if (!modval) { /* byref: must be last modifier */
-			type = m_class_get_this_arg (klass);
+			type = mono_class_get_byref_type (klass);
 			goto leave;
 		} else if (modval == -1) {
 			klass = mono_class_create_ptr (m_class_get_byval_arg (klass));

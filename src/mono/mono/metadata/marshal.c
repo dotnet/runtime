@@ -2198,6 +2198,29 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	return res;
 }
 
+WrapperSubtype
+mono_marshal_get_delegate_invoke_subtype (MonoMethod *method, MonoDelegate *del)
+{
+	MonoMethodSignature *sig;
+
+	sig = mono_method_signature_internal (method);
+
+	if (!del || !del->method)
+		return WRAPPER_SUBTYPE_NONE;
+
+	if (!del->target && mono_method_signature_internal (del->method)->hasthis) {
+		if (!(del->method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m_class_is_valuetype (del->method->klass) && sig->param_count ==  mono_method_signature_internal (del->method)->param_count + 1)
+			return WRAPPER_SUBTYPE_NONE;
+		else
+			return WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
+	}
+
+	if (mono_method_signature_internal (del->method)->param_count == sig->param_count + 1 && (del->method->flags & METHOD_ATTRIBUTE_STATIC))
+		return WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND;
+
+	return WRAPPER_SUBTYPE_NONE;
+}
+
 /**
  * mono_marshal_get_delegate_invoke:
  * The returned method invokes all methods in a multicast delegate.
@@ -2306,7 +2329,7 @@ get_runtime_invoke_type (MonoType *t, gboolean ret)
 			return t;
 
 		/* Can't share this with 'I' as that needs another indirection */
-		return m_class_get_this_arg (mono_defaults.int_class);
+		return mono_class_get_byref_type (mono_defaults.int_class);
 	}
 
 	if (MONO_TYPE_IS_REFERENCE (t))

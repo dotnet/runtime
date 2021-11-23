@@ -1783,22 +1783,22 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		if (mono_class_has_failure (klass))
 			goto fail;
 	}
-	
+
 	// Loop on all implemented interfaces...
 	for (i = 0; i < klass->interface_offsets_count; i++) {
 		MonoClass *parent = klass->parent;
 		int ic_offset;
 		gboolean interface_is_explicitly_implemented_by_class;
-		gboolean variant_itf;
+		gboolean variant_itf = FALSE;
 		int im_index;
-		
+
 		ic = klass->interfaces_packed [i];
 		ic_offset = mono_class_interface_offset (klass, ic);
 
 		mono_class_setup_methods (ic);
 		if (mono_class_has_failure (ic))
 			goto fail;
-		
+
 		// Check if this interface is explicitly implemented (instead of just inherited)
 		if (parent != NULL) {
 			int implemented_interfaces_index;
@@ -1812,6 +1812,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				if (variant_itf) {
 					if (mono_class_is_variant_compatible (ic, klass->interfaces [implemented_interfaces_index], FALSE)) {
 						MonoClass *impl_itf;
+						(void)impl_itf; // conditionally used
 						impl_itf = klass->interfaces [implemented_interfaces_index];
 						TRACE_INTERFACE_VTABLE (printf ("  variant interface '%s' is explicitly implemented by '%s'\n", mono_type_full_name (m_class_get_byval_arg (ic)), mono_type_full_name (m_class_get_byval_arg (impl_itf))));
 						interface_is_explicitly_implemented_by_class = TRUE;

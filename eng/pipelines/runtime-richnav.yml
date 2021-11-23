@@ -25,11 +25,6 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 jobs:
-#
-# Evaluate paths
-#
-- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-  - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

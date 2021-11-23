@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <DefineConstants>$(DefineConstants);CP_NO_ZEROMEMORY</DefineConstants>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.
 
@@ -59,7 +60,6 @@ System.Formats.Asn1.AsnWriter</PackageDescription>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

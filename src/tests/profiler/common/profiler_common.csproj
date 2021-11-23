@@ -3,7 +3,6 @@
     <OutputType>Library</OutputType>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ProfilerTestRunner.cs" />

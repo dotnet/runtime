@@ -326,6 +326,9 @@
   <data name="ArgumentAndArgumentListInitialized" xml:space="preserve">
     <value>Only one of Arguments or ArgumentList may be used.</value>
   </data>
+  <data name="ArgumentListMayNotContainNull" xml:space="preserve">
+    <value>ArgumentList may not contain null.</value>
+  </data>
   <data name="KillEntireProcessTree_DisallowedBecauseTreeContainsCallingProcess" xml:space="preserve">
     <value>Cannot be used to terminate a process tree containing the calling process.</value>
   </data>

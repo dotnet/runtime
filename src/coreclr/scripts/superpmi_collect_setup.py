@@ -22,12 +22,12 @@
 # 4.  Lastly, it sets the pipeline variables.
 #
 # Below are the helix queues it sets depending on the OS/architecture:
-# | Arch  | windows              | Linux                                                                                                                                |
-# |-------|----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-# | x86   | Windows.10.Amd64.X86 |                                                                                                                                      |
-# | x64   | Windows.10.Amd64.X86 | Ubuntu.1804.Amd64                                                                                                                    |
-# | arm   | -                    | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
+# | Arch  | windows                 | Linux                                                                                                                                |
+# |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+# | x86   | Windows.10.Amd64.X86.Rt |                                                                                                                                      |
+# | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    |
+# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
+# | arm64 | Windows.10.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
 #
 ################################################################################
 ################################################################################
@@ -37,7 +37,7 @@ import os
 import stat
 
 from coreclr_arguments import *
-from azdo_pipelines_util import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
+from jitutil import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
 
 
 # Start of parser object creation.
@@ -387,7 +387,7 @@ def main(main_args):
     creator = ""
     ci = True
     if is_windows:
-        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86"
+        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
     else:
         if arch == "arm":
             helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
@@ -398,7 +398,7 @@ def main(main_args):
 
     # create superpmi directory
     print('Copying {} -> {}'.format(superpmi_src_directory, superpmi_dst_directory))
-    copy_directory(superpmi_src_directory, superpmi_dst_directory, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
+    copy_directory(superpmi_src_directory, superpmi_dst_directory, verbose_output=True, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
     if is_windows:
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
@@ -407,7 +407,7 @@ def main(main_args):
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
 
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
-    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
+    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
     # Copy all the test files to CORE_ROOT
     # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
@@ -448,7 +448,7 @@ def main(main_args):
             run_command(["ls", "-l", folder_name])
 
         make_readable(coreclr_args.input_directory)
-        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, match_func=acceptable_copy)
+        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
     # Workitem directories
     workitem_directory = os.path.join(source_directory, "workitem")

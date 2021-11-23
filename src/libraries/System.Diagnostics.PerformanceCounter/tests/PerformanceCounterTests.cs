@@ -39,6 +39,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounter_CreateCounter_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
@@ -151,6 +152,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60403", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounter_NextValue_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "_Total", "."))
@@ -186,6 +188,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounter_BeginInitEndInit_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
@@ -267,6 +270,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounter_Decrement_DecrementReadOnly()
         {
             string categoryName = nameof(PerformanceCounter_Decrement_DecrementReadOnly) + "_Category";

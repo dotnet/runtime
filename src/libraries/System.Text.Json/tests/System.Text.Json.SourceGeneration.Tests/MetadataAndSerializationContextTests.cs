@@ -40,6 +40,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
+    [JsonSerializable(typeof(PersonStruct?))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;
@@ -85,6 +86,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterPropertyFactory);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.ClassWithBadCustomConverter);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.StructWithBadCustomConverter);
+            Assert.Null(MetadataAndSerializationContext.Default.NullablePersonStruct.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.PersonStruct.SerializeHandler);
         }
     }
 }

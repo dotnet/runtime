@@ -705,7 +705,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		/*
 		 * Note that the VAR/MVAR cases are different from the rest.  The other cases duplicate @type,
 		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
-		 * ->byref and ->attrs from @type are propagated to the returned type.
+		 * ->byref__ and ->attrs from @type are propagated to the returned type.
 		 */
 		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
 		nt->byref__ = type->byref__;

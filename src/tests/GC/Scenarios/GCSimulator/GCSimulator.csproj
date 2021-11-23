@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <IsGCSimulatorTest>true</IsGCSimulatorTest>
     <CLRTestExecutionArguments>-t 1 -tp 0 -dz 17 -sdz 17 -dc 20000 -sdc 8000 -lt 2 -dp 0.0 -dw 0.4</CLRTestExecutionArguments>
     <CLRTestPriority>1</CLRTestPriority>

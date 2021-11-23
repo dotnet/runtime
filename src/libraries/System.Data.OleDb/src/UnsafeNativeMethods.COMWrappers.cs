@@ -12,8 +12,8 @@ namespace System.Data.Common
         // Oleaut32
         //
 
-        [DllImport(Interop.Libraries.OleAut32)]
-        internal static unsafe extern OleDbHResult GetErrorInfo(
+        [GeneratedDllImport(Interop.Libraries.OleAut32)]
+        internal static unsafe partial OleDbHResult GetErrorInfo(
             int dwReserved,
             System.IntPtr* ppIErrorInfo);
 

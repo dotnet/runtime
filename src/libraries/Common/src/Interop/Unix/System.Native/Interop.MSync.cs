@@ -16,7 +16,7 @@ internal static partial class Interop
             MS_INVALIDATE = 0x10,
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MSync", SetLastError = true)]
-        internal static extern int MSync(IntPtr addr, ulong len, MemoryMappedSyncFlags flags);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MSync", SetLastError = true)]
+        internal static partial int MSync(IntPtr addr, ulong len, MemoryMappedSyncFlags flags);
     }
 }

@@ -41,7 +41,7 @@ export function mono_wasm_globalization_init(globalization_mode: GlobalizationMo
             invariantMode = true;
         } else {
             const msg = "invariant globalization mode is inactive and no ICU data archives were loaded";
-            console.error("MONO_WASM: ERROR: " + msg);
+            console.error(`MONO_WASM: ERROR: ${msg}`);
             throw new Error(msg);
         }
     }

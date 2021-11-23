@@ -544,13 +544,13 @@ namespace System.Media
                 {
                     fccType = mmioFOURCC('W', 'A', 'V', 'E')
                 };
-                var ck = new Interop.WinMM.MMCKINFO();
-                if (Interop.WinMM.mmioDescend(hMIO, ckRIFF, null, Interop.WinMM.MMIO_FINDRIFF) != 0)
+                var ck = default(Interop.WinMM.MMCKINFO);
+                if (Interop.WinMM.mmioDescend(hMIO, &ckRIFF, null, Interop.WinMM.MMIO_FINDRIFF) != 0)
                 {
                     throw new InvalidOperationException(SR.Format(SR.SoundAPIInvalidWaveFile, _soundLocation));
                 }
 
-                while (Interop.WinMM.mmioDescend(hMIO, ck, ckRIFF, 0) == 0)
+                while (Interop.WinMM.mmioDescend(hMIO, &ck, &ckRIFF, 0) == 0)
                 {
                     if (ck.dwDataOffset + ck.cksize > ckRIFF.dwDataOffset + ckRIFF.cksize)
                     {
@@ -584,7 +584,7 @@ namespace System.Media
                             // multiple formats?
                         }
                     }
-                    Interop.WinMM.mmioAscend(hMIO, ck, 0);
+                    Interop.WinMM.mmioAscend(hMIO, &ck, 0);
                 }
 
                 if (waveFormat == null)

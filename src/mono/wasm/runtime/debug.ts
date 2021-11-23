@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from "./modules";
+import { Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr } from "./types";
@@ -113,13 +113,17 @@ export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}): void {
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
     cwraps.mono_wasm_set_is_debugger_attached(true);
-    return runtimeHelpers.loaded_files;
+    return MONO.loaded_files;
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
     if (objectId.startsWith("dotnet:array:")) {
-        const ret = details.map((p: any) => p.value);
-        return ret;
+        let ret : Array<any>;
+        if (details.dimensionsDetails == undefined || details.dimensionsDetails.length == 1)
+        {
+            ret = details.items.map((p: any) => p.value);
+            return ret;
+        }
     }
 
     const proxy: any = {};

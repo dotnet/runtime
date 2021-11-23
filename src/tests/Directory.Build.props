@@ -3,7 +3,7 @@
   <PropertyGroup>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
-  
+
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
@@ -178,5 +178,10 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false</CLRTestMSBuildArgs>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsTestsCommonProject)' != 'true'">
+    <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 </Project>

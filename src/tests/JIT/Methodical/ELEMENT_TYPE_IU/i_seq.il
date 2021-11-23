@@ -11,7 +11,8 @@
 }
 .assembly 'test'
 { }
-.class private auto ansi Test extends [mscorlib]System.Object
+.assembly extern xunit.core {}
+.class private auto ansi Test_i_seq extends [mscorlib]System.Object
 {
 .method private hidebysig static native int calc(native int, native int) il managed
 {
@@ -46,18 +47,21 @@ stop:
 
 .method private hidebysig static int32 Main() il managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack  5
 	ldc.i4.s 6
 	ldc.i4.1
-	call native int Test::calc(native int, native int)
+	call native int Test_i_seq::calc(native int, native int)
 	ldc.i4 720
 	conv.i
 	ceq
 	brfalse ERROR
 	ldc.i4.s 6
 	ldc.i4.0
-	call native int Test::calc(native int, native int)
+	call native int Test_i_seq::calc(native int, native int)
 	ldc.i4 21
 	conv.i
 	ceq

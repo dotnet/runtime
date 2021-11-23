@@ -3,7 +3,7 @@ setlocal
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
-set __sourceDir=%~dp0\Windows
+set __sourceRootDir=%~dp0
 set __repoRoot=%~dp0..\..\..
 set __engNativeDir=%__repoRoot%\eng\native
 set __artifactsDir=%__repoRoot%\artifacts
@@ -49,13 +49,17 @@ if NOT [%errorlevel%] == [0] goto :Failure
 echo Commencing build of native components
 echo.
 
+call "%__engNativeDir%\version\copy_version_files.cmd"
+
 :: cmake requires forward slashes in paths
 set __cmakeRepoRoot=%__repoRoot:\=/%
 set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 if /i "%__BuildArch%" == "wasm" (
-    set __sourceDir=%~dp0\Unix
+    set __sourceDir=%__sourceRootDir%\Unix
+) else (
+    set __sourceDir=%__sourceRootDir%\Windows
 )
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
@@ -84,10 +88,6 @@ set MSBUILD_EMPTY_PROJECT_CONTENT= ^
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.props"
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.targets"
 
-:: generate version file
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-    "%__repoRoot%\eng\empty.csproj" /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
-    /t:GenerateNativeVersionFile /restore
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"

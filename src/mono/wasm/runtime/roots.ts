@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { Module } from "./modules";
+import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types";
 
 const maxScratchRoots = 8192;
@@ -125,7 +125,7 @@ export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
 
 function _zero_region(byteOffset: VoidPtr, sizeBytes: number) {
     if (((<any>byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
-        Module.HEAP32.fill(0, <any>byteOffset / 4, sizeBytes / 4);
+        Module.HEAP32.fill(0, <any>byteOffset >>> 2, sizeBytes >>> 2);
     else
         Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
 }
@@ -170,7 +170,7 @@ export class WasmRootBuffer {
         const capacityBytes = capacity * 4;
 
         this.__offset = offset;
-        this.__offset32 = (<number><any>offset / 4) | 0;
+        this.__offset32 = <number><any>offset >>> 2;
         this.__count = capacity;
         this.length = capacity;
         this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || "noname");
@@ -196,13 +196,18 @@ export class WasmRootBuffer {
         return this.__offset32 + index;
     }
 
+    // NOTE: These functions do not use the helpers from memory.ts because WasmRoot.get and WasmRoot.set
+    //  are hot-spots when you profile any application that uses the bindings extensively.
+
     get(index: number): ManagedPointer {
         this._check_in_range(index);
-        return <any>Module.HEAP32[this.get_address_32(index)];
+        const offset = this.get_address_32(index);
+        return <any>Module.HEAP32[offset];
     }
 
     set(index: number, value: ManagedPointer): ManagedPointer {
-        Module.HEAP32[this.get_address_32(index)] = <any>value;
+        const offset = this.get_address_32(index);
+        Module.HEAP32[offset] = <any>value;
         return value;
     }
 
@@ -230,7 +235,7 @@ export class WasmRootBuffer {
     }
 
     toString(): string {
-        return "[root buffer @" + this.get_address(0) + ", size " + this.__count + "]";
+        return `[root buffer @${this.get_address(0)}, size ${this.__count} ]`;
     }
 }
 
@@ -278,6 +283,9 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     release(): void {
+        if (!this.__buffer)
+            throw new Error("No buffer");
+
         const maxPooledInstances = 128;
         if (_scratch_root_free_instances.length > maxPooledInstances) {
             _mono_wasm_release_scratch_index(this.__index);
@@ -290,6 +298,6 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     toString(): string {
-        return "[root @" + this.get_address() + "]";
+        return `[root @${this.get_address()}]`;
     }
 }

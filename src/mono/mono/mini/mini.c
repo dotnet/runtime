@@ -836,7 +836,7 @@ type_from_stack_type (MonoInst *ins)
 		if (ins->klass)
 			return m_class_get_this_arg (ins->klass);
 		else
-			return m_class_get_this_arg (mono_defaults.object_class);
+			return mono_class_get_byref_type (mono_defaults.object_class);
 	case STACK_OBJ:
 		/* ins->klass may not be set for ldnull.
 		 * Also, if we have a boxed valuetype, we want an object lass,
@@ -3403,7 +3403,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		for (i = 0; verbose_method_names [i] != NULL; i++){
 			const char *name = verbose_method_names [i];
 
-			if ((strchr (name, '.') > name) || strchr (name, ':')) {
+			if ((strchr (name, '.') > name) || strchr (name, ':') || strchr (name, '*')) {
 				MonoMethodDesc *desc;
 				
 				desc = mono_method_desc_new (name, TRUE);

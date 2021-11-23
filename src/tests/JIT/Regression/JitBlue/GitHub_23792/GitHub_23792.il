@@ -16,8 +16,9 @@
 .assembly extern mscorlib{}
 .assembly extern System.Console{}
 .assembly a {}
+.assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_GitHub_23792
        extends [mscorlib]System.Object
 {
 
@@ -45,6 +46,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
   // Code size       119 (0x77)
   .maxstack  3
@@ -80,7 +84,7 @@
   IL_002a:  call       native int [mscorlib]System.IntPtr::op_Explicit(int32)
   IL_002f:  ldc.i4.8
   IL_0030:  call       native int [mscorlib]System.IntPtr::op_Explicit(int32)
-  IL_0035:  call       uint8& Test::Run1(uint8&,
+  IL_0035:  call       uint8& Test_GitHub_23792::Run1(uint8&,
                                         native int,
                                         native int)
   IL_003a:  stloc.2
@@ -91,7 +95,7 @@
   IL_0043:  call       native int [mscorlib]System.IntPtr::op_Explicit(int32)
   IL_0048:  ldc.i4.8
   IL_0049:  call       native int [mscorlib]System.IntPtr::op_Explicit(int32)
-  IL_004e:  call       uint8& Test::Run2(uint8&,
+  IL_004e:  call       uint8& Test_GitHub_23792::Run2(uint8&,
                                         native int,
                                         native int)
   IL_0053:  stloc.3

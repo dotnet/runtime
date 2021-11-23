@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-public class Test 
+public class Test_GetTotalAllocatedBytes 
 {
     struct Counts
     {
