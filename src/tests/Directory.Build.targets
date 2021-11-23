@@ -264,6 +264,11 @@
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+      <DisableImplicitFrameworkReferences >false</DisableImplicitFrameworkReferences>
+      <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+  </PropertyGroup>
+
   <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
   </PropertyGroup>
@@ -426,7 +431,7 @@
 
   <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' "/>
   <!-- TODO: I don't know why some of these conditions are required/a more principled way-->
-  <Target Name="WasmSetPublishProperties" BeforeTargets="Build"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
+  <Target Name="WasmSetPublishProperties" BeforeTargets="ProcessFrameworkReferences"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
 
       <ItemGroup>
         <TrimmerRootAssembly Include="$(MSBuildProjectName)" />
@@ -443,6 +448,7 @@
         <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
         <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
         <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+        <TargetFramework>net6.0</TargetFramework>
       </PropertyGroup>
 
       <Message Text="!!!naricc_debug!!! SimpleDllPath: $(ArtifactsDir)/tests//coreclr/Browser.wasm.Debug/simple/simple/simple.dll WasmSetPublishProperties: MSBuildProjectName $(MSBuildProjectName) MSBuildProjectFullPath: $(MSBuildProjectFullPath) MSBuildProjectName: MSBuildProjectName priority: $(CLRTestPriority) TrimmerRootAssembly: @(TrimmerRootAssembly)" Importance="High" />
