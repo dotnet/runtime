@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import productVersion from "consts:productVersion";
+import configuration from "consts:configuration";
 
 import {
     mono_wasm_new_root, mono_wasm_new_roots, mono_wasm_release_roots,
@@ -142,7 +143,8 @@ function initializeImportsAndExports(
         BINDING: exports.binding,
         INTERNAL: exports.internal,
         Module: module,
-        productVersion: productVersion
+        productVersion,
+        configuration
     };
 
     if (module.configSrc) {
@@ -371,4 +373,5 @@ export interface DotNetPublicAPI {
     Module: any,
     runtimeId: number,
     productVersion: string,
+    configuration: string,
 }
