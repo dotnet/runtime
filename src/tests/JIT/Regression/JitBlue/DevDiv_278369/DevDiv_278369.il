@@ -13,6 +13,7 @@
 .assembly extern mscorlib {}
 
 .assembly r {}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit C extends [mscorlib]System.Object
 {
@@ -41,6 +42,9 @@ label:
 
     .method private hidebysig static int32 Main(string[] args) cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         newobj instance void C::.ctor()

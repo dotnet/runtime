@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly 'enum' { }
+.assembly extern xunit.core {}
 .namespace BoxTest
 {
   .class value auto ansi serializable sealed ToPrintOrNotToPrint extends [mscorlib]System.Enum
@@ -135,6 +136,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       47 (0x2f)
       .maxstack  3

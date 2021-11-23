@@ -27,7 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(RepoRoot)\src\mono\wasm\runtime-test.js" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(RepoRoot)\src\mono\wasm\test-main.js" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
@@ -66,6 +66,7 @@
 
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) -parallel none</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
       <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>

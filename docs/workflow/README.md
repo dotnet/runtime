@@ -9,7 +9,7 @@ The repo can be built for the following platforms, using the provided setup and 
 | x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
 | x86   | &#x2714; |          |          |          |
 | ARM   | &#x2714; | &#x2714; |          |          |
-| ARM64 | &#x2714; | &#x2714; |          |          |
+| ARM64 | &#x2714; | &#x2714; | &#x2714; |          |
 |       | [Requirements](requirements/windows-requirements.md) | [Requirements](requirements/linux-requirements.md) | [Requirements](requirements/macos-requirements.md) | [Requirements](requirements/freebsd-requirements.md)
 
 Before proceeding further, please click on the link above that matches your machine and ensure you have installed all the prerequisites for the build to work.

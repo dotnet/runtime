@@ -23,8 +23,8 @@ internal static partial class Interop
             return handle;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
-        internal static extern void EcKeyDestroy(IntPtr a);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
+        internal static partial void EcKeyDestroy(IntPtr a);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]

@@ -96,6 +96,16 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE
 
+private:
+    struct VolatileEntry;
+    typedef DPTR(struct VolatileEntry) PTR_VolatileEntry;
+    struct VolatileEntry
+    {
+        VALUE               m_sValue;           // The derived-class format of an entry
+        PTR_VolatileEntry   m_pNextEntry;       // Pointer to the next entry in the bucket chain (or NULL)
+        DacEnumerableHashValue       m_iHashValue;       // The hash value associated with the entry
+    };
+
 protected:
     // This opaque structure provides enumeration context when walking the set of entries which share a common
     // hash code. Initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash.
@@ -106,6 +116,7 @@ protected:
         TADDR   m_pEntry;               // The entry the caller is currently looking at (or NULL to begin
                                         // with). This is a VolatileEntry* and should always be a target address
                                         // not a DAC PTR_.
+        DPTR(PTR_VolatileEntry)   m_curBuckets;   // The bucket table we are working with.
     };
 
     // This opaque structure provides enumeration context when walking all entries in the table. Initialized
@@ -176,16 +187,9 @@ protected:
     PTR_Module m_pModule;
 
 private:
+    private:
     // Internal implementation details. Nothing of interest to sub-classers for here on.
-
-    struct VolatileEntry;
-    typedef DPTR(struct VolatileEntry) PTR_VolatileEntry;
-    struct VolatileEntry
-    {
-        VALUE               m_sValue;           // The derived-class format of an entry
-        PTR_VolatileEntry   m_pNextEntry;       // Pointer to the next entry in the bucket chain (or NULL)
-        DacEnumerableHashValue       m_iHashValue;       // The hash value associated with the entry
-    };
+    DPTR(VALUE) BaseFindFirstEntryByHashCore(DPTR(PTR_VolatileEntry) curBuckets, DacEnumerableHashValue iHash, LookupContext* pContext);
 
 #ifndef DACCESS_COMPILE
     // Determine loader heap to be used for allocation of entries and bucket lists.
@@ -206,11 +210,27 @@ private:
         return m_pBuckets;
     }
 
+    // our bucket table uses two extra slots - slot [0] contains the length of the table,
+    //                                         slot [1] will contain the next version of the table if it resizes
+    static const int SLOT_LENGTH = 0;
+    static const int SLOT_NEXT = 1;
+    // normal slots start at slot #2
+    static const int SKIP_SPECIAL_SLOTS = 2;
+    
+    static DWORD GetLength(DPTR(PTR_VolatileEntry) buckets)
+    {
+        return (DWORD)dac_cast<TADDR>(buckets[SLOT_LENGTH]);
+    }
+
+    static DPTR(PTR_VolatileEntry) GetNext(DPTR(PTR_VolatileEntry) buckets)
+    {
+        return dac_cast<DPTR(PTR_VolatileEntry)>(buckets[SLOT_NEXT]);
+    }
+
     // Loader heap provided at construction time. May be NULL (in which case m_pModule must *not* be NULL).
     LoaderHeap             *m_pHeap;
 
     DPTR(PTR_VolatileEntry)                  m_pBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
-    DWORD                                    m_cBuckets;  // Count of buckets in the above array (always non-zero)
     DWORD                                    m_cEntries;  // Count of elements
 };
 

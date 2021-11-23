@@ -385,7 +385,7 @@ namespace System.Data.Odbc
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
-                ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
+                ODBC32.SQLRETURN retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
                 if (buffer.Length + 2 <= cbActual)
                 {
                     // 2 bytes for unicode null-termination character
@@ -393,11 +393,11 @@ namespace System.Data.Odbc
                     buffer = new byte[cbActual + 2];
                     retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
                 }
-                if ((ODBC32.RetCode.SUCCESS == retcode) || (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode))
+                if ((ODBC32.SQLRETURN.SUCCESS == retcode) || (ODBC32.SQLRETURN.SUCCESS_WITH_INFO == retcode))
                 {
                     value = (BitConverter.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode).GetString(buffer, 0, Math.Min(cbActual, buffer.Length));
                 }
-                else if (retcode == ODBC32.RetCode.ERROR)
+                else if (retcode == ODBC32.SQLRETURN.ERROR)
                 {
                     string sqlstate = GetDiagSqlState();
                     if (("HYC00" == sqlstate) || ("HY092" == sqlstate) || ("IM001" == sqlstate))
@@ -418,15 +418,15 @@ namespace System.Data.Odbc
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
-                ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
+                ODBC32.SQLRETURN retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
 
-                if ((ODBC32.RetCode.SUCCESS == retcode) || (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode))
+                if ((ODBC32.SQLRETURN.SUCCESS == retcode) || (ODBC32.SQLRETURN.SUCCESS_WITH_INFO == retcode))
                 {
                     retval = BitConverter.ToInt32(buffer, 0);
                 }
                 else
                 {
-                    if (retcode == ODBC32.RetCode.ERROR)
+                    if (retcode == ODBC32.SQLRETURN.ERROR)
                     {
                         string sqlstate = GetDiagSqlState();
                         if (("HYC00" == sqlstate) || ("HY092" == sqlstate) || ("IM001" == sqlstate))
@@ -451,18 +451,18 @@ namespace System.Data.Odbc
             return sqlstate;
         }
 
-        internal ODBC32.RetCode GetInfoInt16Unhandled(ODBC32.SQL_INFO info, out short resultValue)
+        internal ODBC32.SQLRETURN GetInfoInt16Unhandled(ODBC32.SQL_INFO info, out short resultValue)
         {
             byte[] buffer = new byte[2];
-            ODBC32.RetCode retcode = ConnectionHandle!.GetInfo1(info, buffer);
+            ODBC32.SQLRETURN retcode = ConnectionHandle!.GetInfo1(info, buffer);
             resultValue = BitConverter.ToInt16(buffer, 0);
             return retcode;
         }
 
-        internal ODBC32.RetCode GetInfoInt32Unhandled(ODBC32.SQL_INFO info, out int resultValue)
+        internal ODBC32.SQLRETURN GetInfoInt32Unhandled(ODBC32.SQL_INFO info, out int resultValue)
         {
             byte[] buffer = new byte[4];
-            ODBC32.RetCode retcode = ConnectionHandle!.GetInfo1(info, buffer);
+            ODBC32.SQLRETURN retcode = ConnectionHandle!.GetInfo1(info, buffer);
             resultValue = BitConverter.ToInt32(buffer, 0);
             return retcode;
         }
@@ -488,7 +488,7 @@ namespace System.Data.Odbc
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
-                ODBC32.RetCode retcode = connectionHandle.GetInfo2(info, buffer, out cbActual);
+                ODBC32.SQLRETURN retcode = connectionHandle.GetInfo2(info, buffer, out cbActual);
                 if (buffer.Length < cbActual - 2)
                 {
                     // 2 bytes for unicode null-termination character
@@ -496,7 +496,7 @@ namespace System.Data.Odbc
                     buffer = new byte[cbActual + 2];
                     retcode = connectionHandle.GetInfo2(info, buffer, out cbActual);
                 }
-                if (retcode == ODBC32.RetCode.SUCCESS || retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
+                if (retcode == ODBC32.SQLRETURN.SUCCESS || retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO)
                 {
                     value = (BitConverter.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode).GetString(buffer, 0, Math.Min(cbActual, buffer.Length));
                 }
@@ -513,15 +513,15 @@ namespace System.Data.Odbc
         }
 
         // non-throwing HandleError
-        internal Exception? HandleErrorNoThrow(OdbcHandle hrHandle, ODBC32.RetCode retcode)
+        internal Exception? HandleErrorNoThrow(OdbcHandle hrHandle, ODBC32.SQLRETURN retcode)
         {
-            Debug.Assert(retcode != ODBC32.RetCode.INVALID_HANDLE, "retcode must never be ODBC32.RetCode.INVALID_HANDLE");
+            Debug.Assert(retcode != ODBC32.SQLRETURN.INVALID_HANDLE, "retcode must never be ODBC32.RetCode.INVALID_HANDLE");
 
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS:
                     break;
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     {
                         //Optimize to only create the event objects and obtain error info if
                         //the user is really interested in retriveing the events...
@@ -545,13 +545,13 @@ namespace System.Data.Odbc
             return null;
         }
 
-        internal void HandleError(OdbcHandle hrHandle, ODBC32.RetCode retcode)
+        internal void HandleError(OdbcHandle hrHandle, ODBC32.SQLRETURN retcode)
         {
             Exception? e = HandleErrorNoThrow(hrHandle, retcode);
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS:
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     Debug.Assert(null == e, "success exception");
                     break;
                 default:
@@ -778,7 +778,7 @@ namespace System.Data.Odbc
         internal bool SQLGetFunctions(ODBC32.SQL_API odbcFunction)
         {
             //SQLGetFunctions
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             short fExists;
             Debug.Assert((short)odbcFunction != 0, "SQL_API_ALL_FUNCTIONS is not supported");
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
@@ -792,7 +792,7 @@ namespace System.Data.Odbc
                 throw ODBC.ConnectionClosed();
             }
 
-            if (retcode != ODBC32.RetCode.SUCCESS)
+            if (retcode != ODBC32.SQLRETURN.SUCCESS)
                 this.HandleError(connectionHandle, retcode);
 
             if (fExists == 0)
@@ -925,8 +925,8 @@ namespace System.Data.Odbc
 
             //Start the transaction
             OdbcConnectionHandle connectionHandle = ConnectionHandle!;
-            ODBC32.RetCode retcode = connectionHandle.BeginTransaction(ref isolevel);
-            if (retcode == ODBC32.RetCode.ERROR)
+            ODBC32.SQLRETURN retcode = connectionHandle.BeginTransaction(ref isolevel);
+            if (retcode == ODBC32.SQLRETURN.ERROR)
             {
                 HandleError(connectionHandle, retcode);
             }
@@ -952,9 +952,9 @@ namespace System.Data.Odbc
 
             //Set the database
             OdbcConnectionHandle connectionHandle = ConnectionHandle!;
-            ODBC32.RetCode retcode = connectionHandle.SetConnectionAttribute3(ODBC32.SQL_ATTR.CURRENT_CATALOG, value, checked((int)value.Length * 2));
+            ODBC32.SQLRETURN retcode = connectionHandle.SetConnectionAttribute3(ODBC32.SQL_ATTR.CURRENT_CATALOG, value, checked((int)value.Length * 2));
 
-            if (retcode != ODBC32.RetCode.SUCCESS)
+            if (retcode != ODBC32.SQLRETURN.SUCCESS)
             {
                 HandleError(connectionHandle, retcode);
             }

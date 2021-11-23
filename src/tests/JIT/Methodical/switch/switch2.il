@@ -11,6 +11,7 @@
 
 
 }
+.assembly extern xunit.core {}
 .module 'switch2.exe'
 
 .class public auto ansi Test_switch2
@@ -76,6 +77,9 @@
 
   .method public hidebysig static void Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     IL_0000:  ldc.i4.1

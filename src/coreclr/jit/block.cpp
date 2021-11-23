@@ -1662,3 +1662,22 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
         bbsDstTab[i] = other->bbsDstTab[i];
     }
 }
+
+//------------------------------------------------------------------------
+// unmarkLoopAlign: Unmarks the LOOP_ALIGN flag from the block and reduce the
+//                  loop alignment count.
+//
+// Arguments:
+//    compiler - Compiler instance
+//    reason - Reason to print in JITDUMP
+//
+void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason))
+{
+    // Make sure we unmark and count just once.
+    if (isLoopAlign())
+    {
+        compiler->loopAlignCandidates--;
+        bbFlags &= ~BBF_LOOP_ALIGN;
+        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.", bbNum, reason);
+    }
+}

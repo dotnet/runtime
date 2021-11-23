@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -48,6 +49,8 @@ namespace Microsoft.Interop.Analyzers
                     if (generatedDllImportAttrType == null)
                         return;
 
+                    INamedTypeSymbol? marshalAsAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute);
+
                     var knownUnsupportedTypes = new List<ITypeSymbol>(s_unsupportedTypeNames.Length);
                     foreach (string typeName in s_unsupportedTypeNames)
                     {
@@ -58,11 +61,11 @@ namespace Microsoft.Interop.Analyzers
                         }
                     }
 
-                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, knownUnsupportedTypes), SymbolKind.Method);
+                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, knownUnsupportedTypes, marshalAsAttrType), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes, INamedTypeSymbol? marshalAsAttrType)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -81,24 +84,56 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            // Ignore QCalls
-            if (dllImportData.ModuleName == "QCall")
-                return;
-
             // Ignore methods with unsupported parameters
             foreach (IParameterSymbol parameter in method.Parameters)
             {
-                if (knownUnsupportedTypes.Contains(parameter.Type))
+                if (knownUnsupportedTypes.Contains(parameter.Type)
+                    || HasUnsupportedUnmanagedTypeValue(parameter.GetAttributes(), marshalAsAttrType))
                 {
                     return;
                 }
             }
 
             // Ignore methods with unsupported returns
-            if (method.ReturnsByRef || method.ReturnsByRefReadonly || knownUnsupportedTypes.Contains(method.ReturnType))
+            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
+                return;
+
+            if (knownUnsupportedTypes.Contains(method.ReturnType) || HasUnsupportedUnmanagedTypeValue(method.GetReturnTypeAttributes(), marshalAsAttrType))
                 return;
 
             context.ReportDiagnostic(method.CreateDiagnostic(ConvertToGeneratedDllImport, method.Name));
+        }
+
+        private static bool HasUnsupportedUnmanagedTypeValue(ImmutableArray<AttributeData> attributes, INamedTypeSymbol? marshalAsAttrType)
+        {
+            if (marshalAsAttrType == null)
+                return false;
+
+            AttributeData? marshalAsAttr = null;
+            foreach (AttributeData attr in attributes)
+            {
+                if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, marshalAsAttrType))
+                {
+                    marshalAsAttr = attr;
+                    break;
+                }
+            }
+
+            if (marshalAsAttr == null || marshalAsAttr.ConstructorArguments.IsEmpty)
+                return false;
+
+            object unmanagedTypeObj = marshalAsAttr.ConstructorArguments[0].Value!;
+            UnmanagedType unmanagedType = unmanagedTypeObj is short unmanagedTypeAsShort
+                ? (UnmanagedType)unmanagedTypeAsShort
+                : (UnmanagedType)unmanagedTypeObj;
+
+            return !System.Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
+                || unmanagedType == UnmanagedType.CustomMarshaler
+                || unmanagedType == UnmanagedType.Interface
+                || unmanagedType == UnmanagedType.IDispatch
+                || unmanagedType == UnmanagedType.IInspectable
+                || unmanagedType == UnmanagedType.IUnknown
+                || unmanagedType == UnmanagedType.SafeArray;
         }
     }
 }

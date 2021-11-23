@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly deep_value { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class public auto ansi sealed ValueClass
@@ -1231,6 +1232,9 @@
     .method private hidebysig static 
             int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       93 (0x5d)
       .maxstack  8

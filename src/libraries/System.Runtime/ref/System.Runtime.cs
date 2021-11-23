@@ -285,6 +285,8 @@ namespace System
         public ArgumentNullException(string? message, System.Exception? innerException) { }
         public ArgumentNullException(string? paramName, string? message) { }
         public static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] object? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
+        [System.CLSCompliant(false)]
+        public static unsafe void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] void* argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentOutOfRangeException : System.ArgumentException
     {
@@ -8655,6 +8657,77 @@ namespace System.Collections.ObjectModel
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
     }
+    public partial class ReadOnlyDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable where TKey : notnull
+    {
+        public ReadOnlyDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary) { }
+        public int Count { get { throw null; } }
+        protected System.Collections.Generic.IDictionary<TKey, TValue> Dictionary { get { throw null; } }
+        public TValue this[TKey key] { get { throw null; } }
+        public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.IsReadOnly { get { throw null; } }
+        TValue System.Collections.Generic.IDictionary<TKey, TValue>.this[TKey key] { get { throw null; } set { } }
+        System.Collections.Generic.ICollection<TKey> System.Collections.Generic.IDictionary<TKey, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<TKey, TValue>.Values { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values { get { throw null; } }
+        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        bool System.Collections.IDictionary.IsFixedSize { get { throw null; } }
+        bool System.Collections.IDictionary.IsReadOnly { get { throw null; } }
+        object? System.Collections.IDictionary.this[object key] { get { throw null; } set { } }
+        System.Collections.ICollection System.Collections.IDictionary.Keys { get { throw null; } }
+        System.Collections.ICollection System.Collections.IDictionary.Values { get { throw null; } }
+        public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.ValueCollection Values { get { throw null; } }
+        public bool ContainsKey(TKey key) { throw null; }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
+        void System.Collections.Generic.IDictionary<TKey, TValue>.Add(TKey key, TValue value) { }
+        bool System.Collections.Generic.IDictionary<TKey, TValue>.Remove(TKey key) { throw null; }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
+        void System.Collections.IDictionary.Clear() { }
+        bool System.Collections.IDictionary.Contains(object key) { throw null; }
+        System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
+        void System.Collections.IDictionary.Remove(object key) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public sealed partial class KeyCollection : System.Collections.Generic.ICollection<TKey>, System.Collections.Generic.IEnumerable<TKey>, System.Collections.Generic.IReadOnlyCollection<TKey>, System.Collections.ICollection, System.Collections.IEnumerable
+        {
+            internal KeyCollection() { }
+            public int Count { get { throw null; } }
+            bool System.Collections.Generic.ICollection<TKey>.IsReadOnly { get { throw null; } }
+            bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+            object System.Collections.ICollection.SyncRoot { get { throw null; } }
+            public void CopyTo(TKey[] array, int arrayIndex) { }
+            public System.Collections.Generic.IEnumerator<TKey> GetEnumerator() { throw null; }
+            void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
+            void System.Collections.Generic.ICollection<TKey>.Clear() { }
+            bool System.Collections.Generic.ICollection<TKey>.Contains(TKey item) { throw null; }
+            bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) { throw null; }
+            void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        }
+        public sealed partial class ValueCollection : System.Collections.Generic.ICollection<TValue>, System.Collections.Generic.IEnumerable<TValue>, System.Collections.Generic.IReadOnlyCollection<TValue>, System.Collections.ICollection, System.Collections.IEnumerable
+        {
+            internal ValueCollection() { }
+            public int Count { get { throw null; } }
+            bool System.Collections.Generic.ICollection<TValue>.IsReadOnly { get { throw null; } }
+            bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+            object System.Collections.ICollection.SyncRoot { get { throw null; } }
+            public void CopyTo(TValue[] array, int arrayIndex) { }
+            public System.Collections.Generic.IEnumerator<TValue> GetEnumerator() { throw null; }
+            void System.Collections.Generic.ICollection<TValue>.Add(TValue item) { }
+            void System.Collections.Generic.ICollection<TValue>.Clear() { }
+            bool System.Collections.Generic.ICollection<TValue>.Contains(TValue item) { throw null; }
+            bool System.Collections.Generic.ICollection<TValue>.Remove(TValue item) { throw null; }
+            void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        }
+    }
 }
 namespace System.ComponentModel
 {
@@ -11363,12 +11436,15 @@ namespace System.Reflection
         public string? EscapedCodeBase { get { throw null; } }
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { get { throw null; } }
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Configuration.Assemblies.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } set { } }
         [System.ObsoleteAttribute("Strong name signing is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0017", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Reflection.StrongNameKeyPair? KeyPair { get { throw null; } set { } }
         public string? Name { get { throw null; } set { } }
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Reflection.ProcessorArchitecture ProcessorArchitecture { get { throw null; } set { } }
         public System.Version? Version { get { throw null; } set { } }
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Configuration.Assemblies.AssemblyVersionCompatibility VersionCompatibility { get { throw null; } set { } }
         public object Clone() { throw null; }
         public static System.Reflection.AssemblyName GetAssemblyName(string assemblyFile) { throw null; }

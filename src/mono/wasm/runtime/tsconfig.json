@@ -4,7 +4,7 @@
     "noEmitOnError": true,
     "removeComments": false,
     "sourceMap": false,
-    "target": "ES5",
+    "target": "ES2018",
     "moduleResolution": "Node",
     "lib": [
       "esnext",

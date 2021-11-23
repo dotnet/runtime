@@ -454,4 +454,4 @@ FAIL:
 }
 }
 
-.assembly ceq_r4.exe{}
+.assembly ceq_r4{}

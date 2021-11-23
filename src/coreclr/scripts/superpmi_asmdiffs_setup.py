@@ -115,6 +115,9 @@ def main(main_args):
 
     Args:
         main_args ([type]): Arguments to the script
+
+    Returns:
+        0 on success, otherwise a failure code
     """
 
     # Set up logging.
@@ -152,6 +155,7 @@ def main(main_args):
     git_exe_tool = os.path.join(git_directory, "cmd", "git.exe")
     if not os.path.isfile(git_exe_tool):
         print('Error: `git` not found at {}'.format(git_exe_tool))
+        return 1
 
     ######## Get SuperPMI python scripts
 
@@ -167,18 +171,22 @@ def main(main_args):
         os.makedirs(base_jit_directory)
 
     print("Fetching history of `main` branch so we can find the baseline JIT")
-    run_command(["git", "fetch", "origin", "main"], source_directory, _exit_on_fail=True)
+    run_command(["git", "fetch", "--depth=500", "origin", "main"], source_directory, _exit_on_fail=True)
 
     # Note: we only support downloading Windows versions of the JIT currently. To support downloading
     # non-Windows JITs on a Windows machine, pass `-host_os <os>` to jitrollingbuild.py.
-    print("Running jitrollingbuild.py download to get baseline")
+    print("Running jitrollingbuild.py download to get baseline JIT")
+    jit_rolling_build_script = os.path.join(superpmi_scripts_directory, "jitrollingbuild.py")
     _, _, return_code = run_command([
         python_path,
-        os.path.join(superpmi_scripts_directory, "jitrollingbuild.py"),
+        jit_rolling_build_script,
         "download",
         "-arch", arch,
         "-target_dir", base_jit_directory],
         source_directory)
+    if return_code != 0:
+        print('{} failed with {}'.format(jit_rolling_build_script, return_code))
+        return return_code
 
     ######## Get diff JIT
 
@@ -238,6 +246,11 @@ def main(main_args):
         # Details: https://bugs.python.org/issue26660
         print('Ignoring PermissionError: {0}'.format(pe_error))
 
+    jit_analyze_tool = os.path.join(jit_analyze_build_directory, "jit-analyze.exe")
+    if not os.path.isfile(jit_analyze_tool):
+        print('Error: {} not found'.format(jit_analyze_tool))
+        return 1
+
     ######## Set pipeline variables
 
     helix_source_prefix = "official"
@@ -248,6 +261,8 @@ def main(main_args):
     set_pipeline_variable("Architecture", arch)
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
+
+    return 0
 
 
 if __name__ == "__main__":

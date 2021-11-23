@@ -4,6 +4,7 @@
 .assembly extern mscorlib { auto }
 .assembly extern System.Console {auto}
 .assembly UnusedValueBug { }
+.assembly extern xunit.core {}
 
 // This bug was found on desktop CLR using ILGEN.
 // The expression ending in the 'mul' below is all dead, but not all the dead code
@@ -36,6 +37,9 @@
 
     .method private hidebysig static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
       .vtentry 11 : 1
       // Code size       131 (0x83)

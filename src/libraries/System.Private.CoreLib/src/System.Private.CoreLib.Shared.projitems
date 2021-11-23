@@ -228,7 +228,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\KeyValuePairs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ListDictionaryInternal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\Collection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\CollectionHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\ReadOnlyCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableState.cs" />
@@ -414,11 +416,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EnumerationOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EndOfStreamException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.netcoreapp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileAccess.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileInfo.netcoreapp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileLoadException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileNotFoundException.cs" />
@@ -1840,7 +1840,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DisableMediaInsertionPrompt.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
@@ -1971,9 +1970,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDefaultTimeZone.Android.cs" Condition="'$(TargetsAndroid)' == 'true'">
       <Link>Common\Interop\Unix\System.Native\Interop.GetDefaultTimeZone.Android.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEGid.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetEGid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
@@ -2156,9 +2152,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetTimes.OtherUnix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
+             Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsMemberOfGroup.cs"
+             Link="Common\Interop\Unix\Interop.IsMemberOfGroup.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
     </Compile>

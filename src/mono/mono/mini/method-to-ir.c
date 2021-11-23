@@ -5680,12 +5680,17 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	gboolean constrained_is_generic_param =
 		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_VAR ||
 		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_MVAR;
+	MonoType *gshared_constraint = NULL;
 
 	if (constrained_is_generic_param && cfg->gshared) {
 		if (!mini_is_gsharedvt_klass (constrained_class)) {
 			g_assert (!m_class_is_valuetype (cmethod->klass));
 			if (!mini_type_is_reference (m_class_get_byval_arg (constrained_class)))
 				constrained_partial_call = TRUE;
+
+			MonoType *t = m_class_get_byval_arg (constrained_class);
+			MonoGenericParam *gparam = t->data.generic_param;
+			gshared_constraint = gparam->gshared_constraint;
 		}
 	}
 
@@ -5725,6 +5730,24 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 			 */
 			/* If the method is not abstract, it's a default interface method, and we need to box */
 			need_box = FALSE;
+		}
+
+		if (gshared_constraint && MONO_TYPE_IS_PRIMITIVE (gshared_constraint) && cmethod->klass == mono_defaults.object_class &&
+			!strcmp (cmethod->name, "GetHashCode")) {
+			/*
+			 * The receiver is constrained to a primitive type or an enum with the same basetype.
+			 * Enum.GetHashCode () returns the hash code of the underlying type (see comments in Enum.cs),
+			 * so the constrained call can be replaced with a normal call to the basetype GetHashCode ()
+			 * method.
+			 */
+			MonoClass *gshared_constraint_class = mono_class_from_mono_type_internal (gshared_constraint);
+			cmethod = get_method_nofail (gshared_constraint_class, cmethod->name, 0, 0);
+			g_assert (cmethod);
+			*ref_cmethod = cmethod;
+			*ref_virtual = FALSE;
+			if (cfg->verbose_level)
+				printf (" -> %s\n", mono_method_get_full_name (cmethod));
+			return NULL;
 		}
 
 		if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && (cmethod->klass == mono_defaults.object_class || cmethod->klass == m_class_get_parent (mono_defaults.enum_class) || cmethod->klass == mono_defaults.enum_class)) {

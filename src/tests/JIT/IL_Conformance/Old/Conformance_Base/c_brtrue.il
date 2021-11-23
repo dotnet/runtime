@@ -147,4 +147,4 @@ FAIL:
 
 }
 }
-.assembly c_brtrue.exe {}
+.assembly c_brtrue {}

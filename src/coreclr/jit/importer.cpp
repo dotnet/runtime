@@ -1733,7 +1733,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
         const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
 
         // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_CONTAINS_STACK_PTR)) == 0)
+        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
         {
             unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
@@ -5876,7 +5876,7 @@ bool Compiler::verIsByRefLike(const typeInfo& ti)
     {
         return false;
     }
-    return info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_CONTAINS_STACK_PTR;
+    return info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_BYREF_LIKE;
 }
 
 bool Compiler::verIsSafeToReturnByRef(const typeInfo& ti)
@@ -5897,7 +5897,7 @@ bool Compiler::verIsBoxable(const typeInfo& ti)
             || ti.IsUnboxedGenericTypeVar() ||
             (ti.IsType(TI_STRUCT) &&
              // exclude byreflike structs
-             !(info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_CONTAINS_STACK_PTR)));
+             !(info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_BYREF_LIKE)));
 }
 
 // Is it a boxed value type?
@@ -11591,21 +11591,38 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
     // Are there any places in the method where we might add a patchpoint?
+    //
     if (compHasBackwardJump)
     {
-        // Are patchpoints enabled?
+        // Is OSR enabled?
+        //
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            // We don't inline at Tier0, if we do, we may need rethink our approach.
-            // Could probably support inlines that don't introduce flow.
-            assert(!compIsForInlining());
-
-            // Is the start of this block a suitable patchpoint?
-            // Current strategy is blocks that are stack-empty and backwards branch targets
-            if (block->bbFlags & BBF_BACKWARD_JUMP_TARGET && (verCurrentState.esStackDepth == 0))
+            // OSR is not yet supported for methods with explicit tail calls.
+            //
+            // But we also may not switch methods to be optimized as we should be
+            // able to avoid getting trapped in Tier0 code by normal call counting.
+            // So instead, just suppress adding patchpoints.
+            //
+            if (!compTailPrefixSeen)
             {
-                block->bbFlags |= BBF_PATCHPOINT;
-                setMethodHasPatchpoint();
+                assert(compCanHavePatchpoints());
+
+                // We don't inline at Tier0, if we do, we may need rethink our approach.
+                // Could probably support inlines that don't introduce flow.
+                assert(!compIsForInlining());
+
+                // Is the start of this block a suitable patchpoint?
+                //
+                if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
+                {
+                    // We should have noted this earlier and bailed out of OSR.
+                    //
+                    assert(!block->hasHndIndex());
+
+                    block->bbFlags |= BBF_PATCHPOINT;
+                    setMethodHasPatchpoint();
+                }
             }
         }
     }
@@ -11625,14 +11642,37 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // propagate rareness back through flow and place the partial compilation patchpoints "earlier"
     // so there are fewer overall.
     //
+    // Note unlike OSR, it's ok to forgo these.
+    //
     // Todo: stress mode...
     //
-    if ((JitConfig.TC_PartialCompilation() > 0) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-        (block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
-        ((block->bbFlags & BBF_PATCHPOINT) == 0))
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
+        compCanHavePatchpoints() && !compTailPrefixSeen)
     {
-        block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
-        setMethodHasPartialCompilationPatchpoint();
+        // Is this block a good place for partial compilation?
+        //
+        if ((block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
+            ((block->bbFlags & BBF_PATCHPOINT) == 0) && !block->hasHndIndex())
+        {
+            JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
+            block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
+            setMethodHasPartialCompilationPatchpoint();
+
+            // Change block to BBJ_THROW so we won't trigger importation of successors.
+            //
+            block->bbJumpKind = BBJ_THROW;
+
+            // If this method has a explicit generic context, the only uses of it may be in
+            // the IL for this block. So assume it's used.
+            //
+            if (info.compMethodInfo->options &
+                (CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE))
+            {
+                lvaGenericsContextInUse = true;
+            }
+
+            return;
+        }
     }
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
@@ -12794,8 +12834,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                op1 = impCheckForNullPointer(op1);
-
                 /* Mark the block as containing an index expression */
 
                 if (op1->gtOper == GT_LCL_VAR)
@@ -13008,8 +13046,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op2->gtType = TYP_I_IMPL;
                 }
-
-                op3 = impCheckForNullPointer(op3);
 
                 // Mark the block as containing an index expression
 
@@ -14676,7 +14712,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         info.compCompHnd->getChildType(resolvedToken.hClass, &elemTypeHnd);
                         assert(!(elemTypeHnd == nullptr && corType == CORINFO_TYPE_VALUECLASS));
                         Verify(elemTypeHnd == nullptr ||
-                                   !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_CONTAINS_STACK_PTR),
+                                   !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_BYREF_LIKE),
                                "newarr of byref-like objects");
                         verVerifyCall(opcode, &resolvedToken, nullptr, ((prefixFlags & PREFIX_TAILCALL_EXPLICIT) != 0),
                                       ((prefixFlags & PREFIX_READONLY) != 0), delegateCreateStart, codeAddr - 1,
@@ -15220,8 +15256,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        obj = impCheckForNullPointer(obj);
-
                         // If the object is a struct, what we really want is
                         // for the field to operate on the address of the struct.
                         if (!varTypeGCtype(obj->TypeGet()) && impIsValueType(tiObj))
@@ -15550,8 +15584,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        obj = impCheckForNullPointer(obj);
-
                         /* Create the data member node */
                         op1             = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
                         DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
@@ -15798,7 +15830,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     CORINFO_CLASS_HANDLE elemTypeHnd;
                     info.compCompHnd->getChildType(resolvedToken.hClass, &elemTypeHnd);
                     Verify(elemTypeHnd == nullptr ||
-                               !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_CONTAINS_STACK_PTR),
+                               !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_BYREF_LIKE),
                            "array of byref-like type");
                 }
 
@@ -18837,7 +18869,7 @@ unsigned Compiler::impGetSpillTmpBase(BasicBlock* block)
     SetSpillTempsBase callback(baseTmp);
 
     // We do *NOT* need to reset the SpillClique*Members because a block can only be the predecessor
-    // to one spill clique, and similarly can only be the sucessor to one spill clique
+    // to one spill clique, and similarly can only be the successor to one spill clique
     impWalkSpillCliqueFromPred(block, &callback);
 
     return baseTmp;
@@ -20621,7 +20653,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                     // Enable for all parameterless (=invariant) hw intrinsics such as
                     // Vector128<>.Zero and Vector256<>.AllBitSets. We might consider
                     // doing that for Vector.Create(cns) as well.
-                    if ((argNode->gtGetOp1() == nullptr) && (argNode->gtGetOp2() == nullptr))
+                    if (argNode->AsHWIntrinsic()->GetOperandCount() == 0)
                     {
                         substitute = true;
                     }
@@ -20881,6 +20913,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->IsTailPrefixedCall())
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
+        return;
+    }
+
+    // Delegate Invoke method doesn't have a body and gets special cased instead.
+    // Don't even bother trying to inline it.
+    if (call->IsDelegateInvoke())
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
         return;
     }
 
@@ -21254,10 +21294,19 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     assert(call->IsVirtual());
 
-    // Possibly instrument, if not optimizing.
+    // Possibly instrument. Note for OSR+PGO we will instrument when
+    // optimizing and (currently) won't devirtualize. We may want
+    // to revisit -- if we can devirtualize we should be able to
+    // suppress the probe.
     //
-    if (opts.OptimizationDisabled())
+    // We strip BBINSTR from inlinees currently, so we'll only
+    // do this for the root method calls.
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
+        assert(opts.OptimizationDisabled() || opts.IsOSR());
+        assert(!compIsForInlining());
+
         // During importation, optionally flag this block as one that
         // contains calls requiring class profiling. Ideally perhaps
         // we'd just keep track of the calls themselves, so we don't
@@ -21287,7 +21336,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             //
             compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
         }
+        return;
+    }
 
+    // Bail if optimizations are disabled.
+    if (opts.OptimizationDisabled())
+    {
         return;
     }
 

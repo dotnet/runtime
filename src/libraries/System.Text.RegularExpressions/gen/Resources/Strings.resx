@@ -119,9 +119,11 @@
   </resheader>
   <data name="InvalidRegexGeneratorAttributeTitle" xml:space="preserve">
     <value>Invalid RegexGenerator usage</value>
+    <comment>{Locked="RegexGenerator"}</comment>
   </data>
   <data name="InvalidRegexGeneratorAttributeMessage" xml:space="preserve">
     <value>The RegexGeneratorAttribute is malformed</value>
+    <comment>{Locked="RegexGeneratorAttribute"}</comment>
   </data>
   <data name="MultipleRegexGeneratorAttributesMessage" xml:space="preserve">
     <value>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</value>
@@ -161,6 +163,7 @@
   </data>
   <data name="QuantifierOrCaptureGroupOutOfRange" xml:space="preserve">
     <value>Capture group numbers must be less than or equal to Int32.MaxValue.</value>
+    <comment>{Locked="Int32.MaxValue"}</comment>
   </data>
   <data name="CaptureGroupOfZero" xml:space="preserve">
     <value>Capture number cannot be zero.</value>
@@ -188,6 +191,7 @@
   </data>
   <data name="InternalError_ScanRegex" xml:space="preserve">
     <value>Internal error in ScanRegex.</value>
+    <comment>{Locked="ScanRegex"}</comment>
   </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
@@ -305,5 +309,6 @@
   </data>
   <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
     <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
 </root>
