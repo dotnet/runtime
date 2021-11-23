@@ -123,7 +123,7 @@ g_iconv_open (const char *to_charset, const char *from_charset)
 		return (GIConv) -1;
 	}
 
-	for (i = 0; i < ARRAY_SIZE (charsets); i++) {
+	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
 		if (!g_ascii_strcasecmp (charsets[i].name, from_charset))
 			decoder = charsets[i].decoder;
 

@@ -230,10 +230,10 @@ static const AMD64_Reg_No return_regs [] = { AMD64_RAX };
 
 static const AMD64_XMM_Reg_No float_return_regs [] = { AMD64_XMM0 };
 
-#define PARAM_REGS ARRAY_SIZE(param_regs)
-#define FLOAT_PARAM_REGS ARRAY_SIZE(float_param_regs)
-#define RETURN_REGS ARRAY_SIZE(return_regs)
-#define FLOAT_RETURN_REGS ARRAY_SIZE(float_return_regs)
+#define PARAM_REGS G_N_ELEMENTS(param_regs)
+#define FLOAT_PARAM_REGS G_N_ELEMENTS(float_param_regs)
+#define RETURN_REGS G_N_ELEMENTS(return_regs)
+#define FLOAT_RETURN_REGS G_N_ELEMENTS(float_return_regs)
 
 #else
 #define PARAM_REGS 6

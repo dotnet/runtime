@@ -7296,7 +7296,7 @@ mono_create_icall_signatures (void)
 		gsize_a *types = (gsize_a*)(sig + 1);
 		for (int i = 0; i < n; ++i) {
 			gsize index = *types++;
-			g_assert (index < ARRAY_SIZE (lookup));
+			g_assert (index < G_N_ELEMENTS (lookup));
 			// Casts on next line are attempt to follow strict aliasing rules,
 			// to ensure reading from *types precedes writing
 			// to params [].

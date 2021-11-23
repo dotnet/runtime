@@ -4712,7 +4712,7 @@ mono_llvm_emit_match_exception_call (EmitContext *ctx, LLVMBuilderRef builder, g
 	ctx->builder = builder;
 
 	LLVMValueRef args[5];
-	const int num_args = ARRAY_SIZE (args);
+	const int num_args = G_N_ELEMENTS (args);
 
 	args [0] = convert (ctx, get_aotconst (ctx, MONO_PATCH_INFO_AOT_JIT_INFO, GINT_TO_POINTER (ctx->cfg->method_index), LLVMPointerType (IntPtrType (), 0)), IntPtrType ());
 	args [1] = LLVMConstInt (LLVMInt32Type (), region_start, 0);
@@ -12482,7 +12482,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		codeview_option_args[1] = LLVMMDString ("CodeView", 8);
 		codeview_option_args[2] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
 
-		LLVMAddNamedMetadataOperand (module->lmodule, "llvm.module.flags", LLVMMDNode (codeview_option_args, ARRAY_SIZE (codeview_option_args)));
+		LLVMAddNamedMetadataOperand (module->lmodule, "llvm.module.flags", LLVMMDNode (codeview_option_args, G_N_ELEMENTS (codeview_option_args)));
 	}
 
 	if (!static_link) {
@@ -12491,17 +12491,17 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 								"/DEFAULTLIB:ucrt.lib",
 								"/DEFAULTLIB:vcruntime.lib" };
 
-		LLVMValueRef default_lib_args[ARRAY_SIZE (default_dynamic_lib_names)];
-		LLVMValueRef default_lib_nodes[ARRAY_SIZE(default_dynamic_lib_names)];
+		LLVMValueRef default_lib_args[G_N_ELEMENTS (default_dynamic_lib_names)];
+		LLVMValueRef default_lib_nodes[G_N_ELEMENTS(default_dynamic_lib_names)];
 
 		const char *default_lib_name = NULL;
-		for (int i = 0; i < ARRAY_SIZE (default_dynamic_lib_names); ++i) {
+		for (int i = 0; i < G_N_ELEMENTS (default_dynamic_lib_names); ++i) {
 			const char *default_lib_name = default_dynamic_lib_names[i];
 			default_lib_args[i] = LLVMMDString (default_lib_name, strlen (default_lib_name));
 			default_lib_nodes[i] = LLVMMDNode (default_lib_args + i, 1);
 		}
 
-		LLVMAddNamedMetadataOperand (module->lmodule, "llvm.linker.options", LLVMMDNode (default_lib_args, ARRAY_SIZE (default_lib_args)));
+		LLVMAddNamedMetadataOperand (module->lmodule, "llvm.linker.options", LLVMMDNode (default_lib_args, G_N_ELEMENTS (default_lib_args)));
 	}
 #endif
 
@@ -13680,7 +13680,7 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #endif
 	};
 	if (!cpu_features)
-		cpu_features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, ARRAY_SIZE (flags_map));
+		cpu_features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, G_N_ELEMENTS (flags_map));
 
 	return cpu_features;
 }

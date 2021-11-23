@@ -316,10 +316,10 @@ test_convert (void)
 	if (!(srcdir = getenv ("srcdir")) && !(srcdir = getenv ("PWD")))
 		return FAILED ("srcdir not defined!");
 
-	expected = g_malloc (sizeof (convert_result_t *) * ARRAY_SIZE (charsets));
+	expected = g_malloc (sizeof (convert_result_t *) * G_N_ELEMENTS (charsets));
 
 	/* first load all our test samples... */
-	for (i = 0; i < ARRAY_SIZE (charsets); i++) {
+	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
 		path = g_strdup_printf ("%s%c%s.txt", srcdir, G_DIR_SEPARATOR, charsets[i]);
 		loaded = g_file_get_contents (path, &content, &length, &err);
 		g_free (path);
@@ -341,13 +341,13 @@ test_convert (void)
 	}
 
 	/* test conversion from every charset to every other charset */
-	for (i = 0; i < ARRAY_SIZE (charsets); i++) {
-		for (j = 0; j < ARRAY_SIZE (charsets); j++) {
+	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
+		for (j = 0; j < G_N_ELEMENTS (charsets); j++) {
 			converted = g_convert (expected[i]->content, expected[i]->length, charsets[j],
 					       charsets[i], NULL, &converted_length, NULL);
 
 			if (converted == NULL) {
-				for (k = 0; k < ARRAY_SIZE (charsets); k++) {
+				for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
 					g_free (expected[k]->content);
 					g_free (expected[k]);
 				}
@@ -360,7 +360,7 @@ test_convert (void)
 			if (converted_length != expected[j]->length) {
 				length = expected[j]->length;
 
-				for (k = 0; k < ARRAY_SIZE (charsets); k++) {
+				for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
 					g_free (expected[k]->content);
 					g_free (expected[k]);
 				}
@@ -376,7 +376,7 @@ test_convert (void)
 				if (converted[n] != expected[j]->content[n]) {
 					c = expected[j]->content[n];
 
-					for (k = 0; k < ARRAY_SIZE (charsets); k++) {
+					for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
 						g_free (expected[k]->content);
 						g_free (expected[k]);
 					}
@@ -393,7 +393,7 @@ test_convert (void)
 		}
 	}
 
-	for (k = 0; k < ARRAY_SIZE (charsets); k++) {
+	for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
 		g_free (expected[k]->content);
 		g_free (expected[k]);
 	}

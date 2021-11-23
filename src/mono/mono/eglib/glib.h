@@ -207,6 +207,7 @@ typedef guint32 gunichar;
 /*
  * Macros
  */
+#define G_N_ELEMENTS(s)      ARRAY_SIZE(s)
 
 #define FALSE                0
 #define TRUE                 1

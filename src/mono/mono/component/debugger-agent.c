@@ -9952,63 +9952,63 @@ cmd_to_string (CommandSet set, int command)
 	switch (set) {
 	case CMD_SET_VM:
 		cmds = vm_cmds_str;
-		cmds_len = ARRAY_SIZE (vm_cmds_str);
+		cmds_len = G_N_ELEMENTS (vm_cmds_str);
 		break;
 	case CMD_SET_OBJECT_REF:
 		cmds = object_cmds_str;
-		cmds_len = ARRAY_SIZE (object_cmds_str);
+		cmds_len = G_N_ELEMENTS (object_cmds_str);
 		break;
 	case CMD_SET_STRING_REF:
 		cmds = string_cmds_str;
-		cmds_len = ARRAY_SIZE (string_cmds_str);
+		cmds_len = G_N_ELEMENTS (string_cmds_str);
 		break;
 	case CMD_SET_THREAD:
 		cmds = thread_cmds_str;
-		cmds_len = ARRAY_SIZE (thread_cmds_str);
+		cmds_len = G_N_ELEMENTS (thread_cmds_str);
 		break;
 	case CMD_SET_ARRAY_REF:
 		cmds = array_cmds_str;
-		cmds_len = ARRAY_SIZE (array_cmds_str);
+		cmds_len = G_N_ELEMENTS (array_cmds_str);
 		break;
 	case CMD_SET_EVENT_REQUEST:
 		cmds = event_cmds_str;
-		cmds_len = ARRAY_SIZE (event_cmds_str);
+		cmds_len = G_N_ELEMENTS (event_cmds_str);
 		break;
 	case CMD_SET_STACK_FRAME:
 		cmds = stack_frame_cmds_str;
-		cmds_len = ARRAY_SIZE (stack_frame_cmds_str);
+		cmds_len = G_N_ELEMENTS (stack_frame_cmds_str);
 		break;
 	case CMD_SET_APPDOMAIN:
 		cmds = appdomain_cmds_str;
-		cmds_len = ARRAY_SIZE (appdomain_cmds_str);
+		cmds_len = G_N_ELEMENTS (appdomain_cmds_str);
 		break;
 	case CMD_SET_ASSEMBLY:
 		cmds = assembly_cmds_str;
-		cmds_len = ARRAY_SIZE (assembly_cmds_str);
+		cmds_len = G_N_ELEMENTS (assembly_cmds_str);
 		break;
 	case CMD_SET_METHOD:
 		cmds = method_cmds_str;
-		cmds_len = ARRAY_SIZE (method_cmds_str);
+		cmds_len = G_N_ELEMENTS (method_cmds_str);
 		break;
 	case CMD_SET_TYPE:
 		cmds = type_cmds_str;
-		cmds_len = ARRAY_SIZE (type_cmds_str);
+		cmds_len = G_N_ELEMENTS (type_cmds_str);
 		break;
 	case CMD_SET_MODULE:
 		cmds = module_cmds_str;
-		cmds_len = ARRAY_SIZE (module_cmds_str);
+		cmds_len = G_N_ELEMENTS (module_cmds_str);
 		break;
 	case CMD_SET_FIELD:
 		cmds = field_cmds_str;
-		cmds_len = ARRAY_SIZE (field_cmds_str);
+		cmds_len = G_N_ELEMENTS (field_cmds_str);
 		break;
 	case CMD_SET_EVENT:
 		cmds = event_cmds_str;
-		cmds_len = ARRAY_SIZE (event_cmds_str);
+		cmds_len = G_N_ELEMENTS (event_cmds_str);
 		break;
 	case CMD_SET_POINTER:
 		cmds = pointer_cmds_str;
-		cmds_len = ARRAY_SIZE (pointer_cmds_str);
+		cmds_len = G_N_ELEMENTS (pointer_cmds_str);
 		break;
 	default:
 		return NULL;

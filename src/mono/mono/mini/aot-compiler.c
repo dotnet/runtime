@@ -5867,7 +5867,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			const char *enum_names [] = { "I8Enum", "I16Enum", "I32Enum", "I64Enum", "UI8Enum", "UI16Enum", "UI32Enum", "UI64Enum" };
 
 			ninsts = 0;
-			for (int i = 0; i < ARRAY_SIZE (enum_names); ++i) {
+			for (int i = 0; i < G_N_ELEMENTS (enum_names); ++i) {
 				k = mono_class_try_load_from_name (acfg->image, "Mono", enum_names [i]);
 				g_assert (k);
 				insts [ninsts ++] = m_class_get_byval_arg (k);
@@ -6621,7 +6621,7 @@ get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 
 #if defined(TARGET_WIN32) && defined(TARGET_X86)
 	char adjustedPrefix [MAX_SYMBOL_SIZE];
-	prefix = mangle_symbol (prefix, adjustedPrefix, ARRAY_SIZE (adjustedPrefix));
+	prefix = mangle_symbol (prefix, adjustedPrefix, G_N_ELEMENTS (adjustedPrefix));
 #endif
 
 	len = strlen (name1);
@@ -11892,7 +11892,7 @@ codeview_parse_compiler_version (gchar *version, CodeViewCompilerVersion *data)
 	gint values[4] = { 0 };
 	gint *value = values;
 
-	while (*version && (value < values + ARRAY_SIZE (values))) {
+	while (*version && (value < values + G_N_ELEMENTS (values))) {
 		if (isdigit (*version)) {
 			*value *= 10;
 			*value += *version - '0';
@@ -12070,8 +12070,8 @@ emit_codeview_info (MonoAotCompile *acfg)
 		if (!cfg || COMPILE_LLVM (cfg))
 			continue;
 
-		int ret = g_snprintf (symbol_buffer, ARRAY_SIZE (symbol_buffer), "%sme_%x", acfg->temp_prefix, i);
-		if (ret > 0 && ret < ARRAY_SIZE (symbol_buffer))
+		int ret = g_snprintf (symbol_buffer, G_N_ELEMENTS (symbol_buffer), "%sme_%x", acfg->temp_prefix, i);
+		if (ret > 0 && ret < G_N_ELEMENTS (symbol_buffer))
 			emit_codeview_function_info (acfg, cfg->method, &section_id, cfg->asm_debug_symbol, cfg->asm_symbol, symbol_buffer);
 	}
 }
@@ -13512,7 +13512,7 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	ji->data.jit_icall_id = MONO_JIT_ICALL_mono_threads_attach_coop;
 	add_preinit_slot (acfg, ji);
 
-	for (i = 0; i < ARRAY_SIZE (preinited_jit_icalls); ++i) {
+	for (i = 0; i < G_N_ELEMENTS (preinited_jit_icalls); ++i) {
 		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_JIT_ICALL_ID;
 		ji->data.jit_icall_id = preinited_jit_icalls [i];
@@ -14190,10 +14190,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		add_method (acfg, wrapper);
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
-		for (int i = 0; i < ARRAY_SIZE (interp_in_static_sigs); i++)
+		for (int i = 0; i < G_N_ELEMENTS (interp_in_static_sigs); i++)
 			add_interp_in_wrapper_for_sig (acfg, *interp_in_static_sigs [i]);
 #else
-		for (int i = 0; i < ARRAY_SIZE (interp_in_static_common_sigs); i++)
+		for (int i = 0; i < G_N_ELEMENTS (interp_in_static_common_sigs); i++)
 			add_interp_in_wrapper_for_sig (acfg, *interp_in_static_common_sigs [i]);
 #endif
 

@@ -153,7 +153,7 @@ parse_arg (const char *arg, ProfilerConfig *config)
 	} else {
 		int i;
 
-		for (i = 0; i < ARRAY_SIZE (event_list); ++i){
+		for (i = 0; i < G_N_ELEMENTS (event_list); ++i){
 			int mask = event_list [i].mask;
 			if (compat_args_parsing && event_list [i].compat_mask)
 				mask = event_list [i].compat_mask;
@@ -166,7 +166,7 @@ parse_arg (const char *arg, ProfilerConfig *config)
 			}
 		}
 
-		if (i == ARRAY_SIZE (event_list))
+		if (i == G_N_ELEMENTS (event_list))
 			mono_profiler_printf_err ("Could not parse argument '%s'", arg);
 	}
 }
@@ -320,7 +320,7 @@ usage (void)
 	mono_profiler_printf ("\t[no]'EVENT'          enable/disable an individual profiling event");
 	mono_profiler_printf ("\t                     valid EVENT values:");
 
-	for (int i = 0; i < ARRAY_SIZE (event_list); i++)
+	for (int i = 0; i < G_N_ELEMENTS (event_list); i++)
 		mono_profiler_printf ("\t                         %s", event_list [i].event_name);
 
 	mono_profiler_printf ("\tnodefaults           disable legacy rules for enabling extra events");

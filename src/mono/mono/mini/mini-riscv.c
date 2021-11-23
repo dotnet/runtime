@@ -192,7 +192,7 @@ mono_arch_regname (int reg)
 		"s8",   "s9", "s10", "s11", "t3", "t4", "t5", "t6",
     };
 
-    if (reg >= 0 && reg < ARRAY_SIZE (names))
+    if (reg >= 0 && reg < G_N_ELEMENTS (names))
         return names [reg];
 
     return "x?";
@@ -208,7 +208,7 @@ mono_arch_fregname (int reg)
 		"fs8", "fs9", "fs10", "fs11", "ft8", "ft9", "ft10", "ft11",
     };
 
-    if (reg >= 0 && reg < ARRAY_SIZE (names))
+    if (reg >= 0 && reg < G_N_ELEMENTS (names))
         return names [reg];
 
     return "f?";
