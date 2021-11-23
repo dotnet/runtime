@@ -8,7 +8,12 @@ internal static partial class Interop
 {
     internal static partial class WinMM
     {
+        /// <summary>
+        /// This function restarts a paused waveform output device.
+        /// </summary>
+        /// <param name="hwo">Handle to the waveform-audio output device.</param>
+        /// <returns>MMSYSERR</returns>
         [GeneratedDllImport(Libraries.WinMM)]
-        internal static unsafe partial int mmioAscend(IntPtr hMIO, MMCKINFO* lpck, int flags);
+        internal static partial MMSYSERR waveOutRestart(IntPtr hwo);
     }
 }

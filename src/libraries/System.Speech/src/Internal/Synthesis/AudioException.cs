@@ -12,7 +12,7 @@ namespace System.Speech.Internal.Synthesis
         internal AudioException()
         {
         }
-        internal AudioException(MMSYSERR errorCode) : base(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} - Error Code: 0x{1:x}", SR.Get(SRID.AudioDeviceError), (int)errorCode))
+        internal AudioException(Interop.WinMM.MMSYSERR errorCode) : base(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} - Error Code: 0x{1:x}", SR.Get(SRID.AudioDeviceError), (int)errorCode))
         {
         }
         protected AudioException(SerializationInfo info, StreamingContext context) : base(info, context)
