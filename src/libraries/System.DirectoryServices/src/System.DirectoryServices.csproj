@@ -3,6 +3,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
+    <!-- Suppressions to avoid ifdefs:
+        CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'
+        CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
+    <NoWarn>$(NoWarn);CA1845;CA1846</NoWarn>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
@@ -246,6 +250,7 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.AccessControl" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
@@ -253,6 +258,7 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Claims" />

@@ -558,7 +558,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             string? domainName = null;
 
-            NegotiateCallerNameRequest requestBuffer = new NegotiateCallerNameRequest();
+            NegotiateCallerNameRequest requestBuffer = default;
             int requestBufferLength = (int)Marshal.SizeOf(requestBuffer);
 
             IntPtr pResponseBuffer = IntPtr.Zero;

@@ -103,7 +103,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     Debug.Assert(buffer != (IntPtr)0);
 
-                    TRUSTED_DOMAIN_INFORMATION_EX domainInfo = new TRUSTED_DOMAIN_INFORMATION_EX();
+                    TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                     Marshal.PtrToStructure(buffer, domainInfo);
 
                     // validate this is the trust that the user refers to
@@ -200,7 +200,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     Debug.Assert(buffer != (IntPtr)0);
 
                     // get the managed structre representation
-                    TRUSTED_DOMAIN_INFORMATION_EX domainInfo = new TRUSTED_DOMAIN_INFORMATION_EX();
+                    TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                     Marshal.PtrToStructure(buffer, domainInfo);
 
                     // validate this is the trust that the user refers to
@@ -330,7 +330,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     try
                     {
-                        TRUSTED_DOMAIN_INFORMATION_EX domainInfo = new TRUSTED_DOMAIN_INFORMATION_EX();
+                        TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                         Marshal.PtrToStructure(buffer, domainInfo);
 
                         // validate this is the trust that the user refers to
@@ -479,8 +479,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static void CreateTrust(DirectoryContext sourceContext, string? sourceName, DirectoryContext targetContext, string? targetName, bool isForest, TrustDirection direction, string password)
         {
             LSA_AUTH_INFORMATION? AuthData = null;
-            TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInfoEx = null;
-            TRUSTED_DOMAIN_INFORMATION_EX? tdi = null;
             IntPtr fileTime = (IntPtr)0;
             IntPtr unmanagedPassword = (IntPtr)0;
             IntPtr info = (IntPtr)0;
@@ -519,7 +517,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
-                    AuthInfoEx = new TRUSTED_DOMAIN_AUTH_INFORMATION();
+                    TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = default;
                     if ((direction & TrustDirection.Inbound) != 0)
                     {
                         AuthInfoEx.IncomingAuthInfos = 1;
@@ -534,12 +532,14 @@ namespace System.DirectoryServices.ActiveDirectory
                         AuthInfoEx.OutgoingPreviousAuthenticationInformation = (IntPtr)0;
                     }
 
-                    tdi = new TRUSTED_DOMAIN_INFORMATION_EX();
-                    tdi.FlatName = domainInfo.Name;
-                    tdi.Name = domainInfo.DnsDomainName;
-                    tdi.Sid = domainInfo.Sid;
-                    tdi.TrustType = TRUST_TYPE_UPLEVEL;
-                    tdi.TrustDirection = (int)direction;
+                    TRUSTED_DOMAIN_INFORMATION_EX tdi = new TRUSTED_DOMAIN_INFORMATION_EX()
+                    {
+                        FlatName = domainInfo.Name,
+                        Name = domainInfo.DnsDomainName,
+                        Sid = domainInfo.Sid,
+                        TrustType = TRUST_TYPE_UPLEVEL,
+                        TrustDirection = (int)direction
+                    };
                     if (isForest)
                     {
                         tdi.TrustAttributes = TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
@@ -605,7 +605,6 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr fileTime = (IntPtr)0;
             IntPtr unmanagedPassword = (IntPtr)0;
             IntPtr unmanagedAuthData = (IntPtr)0;
-            TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInfoEx = null;
             TrustDirection direction;
             IntPtr target = (IntPtr)0;
             string? serverName = null;
@@ -673,7 +672,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
-                    AuthInfoEx = new TRUSTED_DOMAIN_AUTH_INFORMATION();
+                    TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = default;
                     if ((direction & TrustDirection.Inbound) != 0)
                     {
                         AuthInfoEx.IncomingAuthInfos = 1;
@@ -738,7 +737,6 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr fileTime = (IntPtr)0;
             IntPtr unmanagedPassword = (IntPtr)0;
             IntPtr unmanagedAuthData = (IntPtr)0;
-            TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInfoEx = null;
             IntPtr target = (IntPtr)0;
             string? serverName = null;
 
@@ -802,7 +800,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
-                    AuthInfoEx = new TRUSTED_DOMAIN_AUTH_INFORMATION();
+                    TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx;
                     if ((newTrustDirection & TrustDirection.Inbound) != 0)
                     {
                         AuthInfoEx.IncomingAuthInfos = 1;
@@ -897,7 +895,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                TRUSTED_DOMAIN_INFORMATION_EX domainInfo = new TRUSTED_DOMAIN_INFORMATION_EX();
+                TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                 Marshal.PtrToStructure(buffer, domainInfo);
 
                 // validate this is the trust that the user refers to
