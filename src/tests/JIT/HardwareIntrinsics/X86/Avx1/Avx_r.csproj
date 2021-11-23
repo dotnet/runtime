@@ -156,7 +156,7 @@
     <Compile Include="TestZ.UInt64.cs" />
     <Compile Include="Xor.Double.cs" />
     <Compile Include="Xor.Single.cs" />
-    <Compile Include="Program.Avx.cs" />
+    <Compile Include="Program.Avx1.cs" />
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
