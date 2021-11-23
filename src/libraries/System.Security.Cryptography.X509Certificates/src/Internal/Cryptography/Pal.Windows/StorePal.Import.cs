@@ -54,7 +54,7 @@ namespace Internal.Cryptography.Pal
                             IntPtr.Zero,
                             out certStore,
                             IntPtr.Zero,
-                            IntPtr.Zero
+                            out IntPtr ppvContext
                             ))
                         {
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
