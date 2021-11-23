@@ -314,8 +314,7 @@
                                    $(TestBinDir)JIT\superpmi\*.XUnitWrapper.dll">
       <PayloadGroup>JIT.1</PayloadGroup>
     </XUnitWrapperGrouping>
-    <XUnitWrapperGrouping Include="$(TestBinDir)JIT\HardwareIntrinsics\*.XUnitWrapper.dll;
-                                   $(TestBinDir)JIT\Intrinsics\*.XUnitWrapper.dll;
+    <XUnitWrapperGrouping Include="$(TestBinDir)JIT\Intrinsics\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\SIMD\*.XUnitWrapper.dll">
       <PayloadGroup>JIT.2</PayloadGroup>
     </XUnitWrapperGrouping>
