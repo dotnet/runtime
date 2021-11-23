@@ -783,7 +783,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Emit failure
             writer.WriteLine("// No match");
-            MarkLabel(originalDoneLabel);
+            MarkLabel(originalDoneLabel, emitSemicolon: !expressionHasCaptures);
             if (expressionHasCaptures)
             {
                 EmitUncaptureUntil("0");
@@ -1156,7 +1156,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Emit the no branch, first uncapturing any captures from the expression condition that failed
                     // to match and emit the branch.
-                    MarkLabel(no);
+                    MarkLabel(no, emitSemicolon: startingCrawlPos is null);
                     if (startingCrawlPos is not null)
                     {
                         EmitUncaptureUntil(startingCrawlPos);
@@ -1252,7 +1252,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"goto {originalDoneLabel};");
 
                 // Failures (success for a negative lookahead) jump here.
-                MarkLabel(negativeLookaheadDoneLabel);
+                MarkLabel(negativeLookaheadDoneLabel, emitSemicolon: false);
                 Debug.Assert(doneLabel == negativeLookaheadDoneLabel);
                 doneLabel = originalDoneLabel;
 

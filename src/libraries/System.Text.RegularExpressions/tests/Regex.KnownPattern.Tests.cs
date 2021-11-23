@@ -1159,14 +1159,14 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"^\(
-	                                                                 (?>
-		                                                                 [^()]+
-	                                                                 |
-		                                                                 \( (?<Depth>)
-	                                                                 |
-		                                                                 \) (?<-Depth>)
-	                                                                 )*
-	                                                                 (?(Depth)(?!))
+                                                                     (?>
+                                                                         [^()]+
+                                                                     |
+                                                                         \( (?<Depth>)
+                                                                     |
+                                                                         \) (?<-Depth>)
+                                                                     )*
+                                                                     (?(Depth)(?!))
                                                                  \)$", RegexOptions.IgnorePatternWhitespace);
 
             Assert.True(r.IsMatch("()"));
@@ -1190,15 +1190,15 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(?:
-	                                                                 (?(A)\s|)
-	                                                                 (?<B>)
-	                                                                 (?<C-B>\w)+ (?(B)(?!))
-	                                                                 (?:
-		                                                                 \s
-		                                                                 (?<C>)
-		                                                                 (?<B-C>\w)+ (?(C)(?!))
-		                                                                 (?<A>)
-	                                                                 )?
+                                                                     (?(A)\s|)
+                                                                     (?<B>)
+                                                                     (?<C-B>\w)+ (?(B)(?!))
+                                                                     (?:
+                                                                         \s
+                                                                         (?<C>)
+                                                                         (?<B-C>\w)+ (?(C)(?!))
+                                                                         (?<A>)
+                                                                     )?
                                                                  )+ \b$", RegexOptions.IgnorePatternWhitespace);
 
             Assert.True(r.IsMatch("a bc def ghij klmni"));
