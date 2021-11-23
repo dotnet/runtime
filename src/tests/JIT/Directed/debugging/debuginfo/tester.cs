@@ -79,7 +79,7 @@ public unsafe class DebugInfoTest
             int result = 100;
             foreach ((long methodID, OptimizationTier tier, (int ILOffset, int NativeOffset)[] mappings) in methodsWithMappings)
             {
-                MethodBase meth = s_getMethodBaseByHandle(null, (IntPtr)methodID);
+                MethodBase meth = s_getMethodBaseByHandle(null, (IntPtr)(void*)methodID);
                 ExpectedILMappings attrib = meth.GetCustomAttribute<ExpectedILMappings>();
                 if (attrib == null)
                 {
