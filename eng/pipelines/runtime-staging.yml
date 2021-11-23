@@ -464,7 +464,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: Windows_wasm
-      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows
+      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
       condition: >-
         or(
