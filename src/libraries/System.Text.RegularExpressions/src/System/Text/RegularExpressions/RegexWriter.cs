@@ -215,17 +215,6 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// When generating code on a regex that uses a sparse set
-        /// of capture slots, we hash them to a dense set of indices
-        /// for an array of capture slots. Instead of doing the hash
-        /// at match time, it's done at compile time, here.
-        /// </summary>
-        private int MapCapnum(int capnum) =>
-            capnum == -1 ? -1 :
-            _caps != null ? (int)_caps[capnum]! :
-            capnum;
-
-        /// <summary>
         /// The main RegexCode generator. It does a depth-first walk
         /// through the tree and calls EmitFragment to emits code before
         /// and after each child of an interior node, and at each leaf.
@@ -283,7 +272,7 @@ namespace System.Text.RegularExpressions
                             Emit(RegexCode.Setjump);
                             _intStack.Append(_emitted.Length);
                             Emit(RegexCode.Lazybranch, 0);
-                            Emit(RegexCode.Testref, MapCapnum(node.M));
+                            Emit(RegexCode.Testref, RegexParser.MapCaptureNumber(node.M, _caps));
                             Emit(RegexCode.Forejump);
                             break;
                     }
@@ -391,7 +380,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Capture | AfterChild:
-                    Emit(RegexCode.Capturemark, MapCapnum(node.M), MapCapnum(node.N));
+                    Emit(RegexCode.Capturemark, RegexParser.MapCaptureNumber(node.M, _caps), RegexParser.MapCaptureNumber(node.N, _caps));
                     break;
 
                 case RegexNode.Require | BeforeChild:
@@ -471,7 +460,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Ref:
-                    Emit(node.Type | bits, MapCapnum(node.M));
+                    Emit(node.Type | bits, RegexParser.MapCaptureNumber(node.M, _caps));
                     break;
 
                 case RegexNode.Nothing:
