@@ -11498,7 +11498,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             break;
     }
 
-    // Perform strength reduction prior to preorder op1, op2 operand processing
     if (opts.OptimizationEnabled() && fgGlobalMorph)
     {
         GenTree* morphed = fgMorphReduceAddOps(tree);
@@ -18095,9 +18094,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
     GenTree* consTree   = tree->AsOp()->gtOp1;
     consTree->BashToConst(foldCount, lclVarTree->TypeGet());
 
-    // GT_MUL operators can later be transformed into 'GT_CALL'.
-    GenTree* morphed =
-        new (this, GT_CALL) GenTreeOp(GT_MUL, tree->TypeGet(), lclVarTree, consTree DEBUGARG(/*largeNode*/ true));
+    GenTree* morphed = gtNewOperNode(GT_MUL, tree->TypeGet(), lclVarTree, consTree);
     DEBUG_DESTROY_NODE(tree);
 
     return morphed;

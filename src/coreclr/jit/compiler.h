@@ -6417,7 +6417,6 @@ private:
     GenTree* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
-    // Reduce successive add operations to a single multiply, i + i + i + i => i * 4
     GenTree* fgMorphReduceAddOps(GenTree* tree);
 
 public:
