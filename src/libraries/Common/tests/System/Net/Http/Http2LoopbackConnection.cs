@@ -921,7 +921,7 @@ namespace System.Net.Test.Common
 
         public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            int streamId =  _lastStreamId;
+            int streamId = _lastStreamId;
             return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: true, headers);
         }
 
