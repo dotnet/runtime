@@ -94,6 +94,11 @@ namespace System.Net.Http
 
                     if (buffer.Length == 0)
                     {
+                        // User requested a zero-byte read, and we have no data available in the buffer for processing.
+                        // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
+                        // for reduced memory consumption when data is not immediately available.
+                        // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
+                        // until data is actually available from the underlying stream.
                         _connection.Read(buffer);
                     }
 
@@ -205,6 +210,11 @@ namespace System.Net.Http
 
                         if (buffer.Length == 0)
                         {
+                            // User requested a zero-byte read, and we have no data available in the buffer for processing.
+                            // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
+                            // for reduced memory consumption when data is not immediately available.
+                            // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
+                            // until data is actually available from the underlying stream.
                             await _connection.ReadAsync(buffer).ConfigureAwait(false);
                         }
 
