@@ -262,7 +262,7 @@ function set_exit_code(exit_code, reason) {
         const stop_when_ws_buffer_empty = () => {
             if (consoleWebSocket.bufferedAmount == 0) {
                 // tell xharness WasmTestMessagesProcessor we are done. 
-                // note this sends last we bytes into the same WS
+                // note this sends last few bytes into the same WS
                 console.log("WASM EXIT " + exit_code);
             }
             else {
