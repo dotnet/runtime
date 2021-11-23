@@ -457,10 +457,6 @@ namespace System.DirectoryServices.ActiveDirectory
             [In] IntPtr dsHandle,
             [Out] out IntPtr roles);
 
-        /*DWORD GetLastError(VOID)*/
-        [DllImport(global::Interop.Libraries.Kernel32)]
-        internal static extern int GetLastError();
-
         internal const int DnsSrvData = 33;
         internal const int DnsQueryBypassCache = 8;
 
@@ -490,13 +486,6 @@ namespace System.DirectoryServices.ActiveDirectory
             [In] IntPtr dnsResultList,
             [In] bool dnsFreeType);
 
-        /*BOOL GetVersionEx(
-              LPOSVERSIONINFO lpVersionInfo
-            );*/
-        [DllImport(global::Interop.Libraries.Kernel32, EntryPoint = "GetVersionExW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool GetVersionEx(
-                [In, Out] OSVersionInfoEx ver);
-
         /*DWORD DsCrackNames(
             HANDLE hDS,
             DS_NAME_FLAGS flags,
@@ -519,7 +508,7 @@ namespace System.DirectoryServices.ActiveDirectory
               PHANDLE LsaHandle
             );*/
         [DllImport(global::Interop.Libraries.Secur32)]
-        internal static extern int LsaConnectUntrusted(
+        internal static extern uint LsaConnectUntrusted(
              [Out] out LsaLogonProcessSafeHandle lsaHandle);
 
         internal const int NegGetCallerName = 1;
@@ -534,14 +523,14 @@ namespace System.DirectoryServices.ActiveDirectory
               PNTSTATUS ProtocolStatus
             );*/
         [DllImport(global::Interop.Libraries.Secur32)]
-        internal static extern int LsaCallAuthenticationPackage(
+        internal static extern uint LsaCallAuthenticationPackage(
             [In] LsaLogonProcessSafeHandle lsaHandle,
             [In] int authenticationPackage,
             [In] NegotiateCallerNameRequest protocolSubmitBuffer,
             [In] int submitBufferLength,
             [Out] out IntPtr protocolReturnBuffer,
             [Out] out int returnBufferLength,
-            [Out] out int protocolStatus);
+            [Out] out uint protocolStatus);
 
         /*NTSTATUS LsaFreeReturnBuffer(
               PVOID Buffer
@@ -572,9 +561,6 @@ namespace System.DirectoryServices.ActiveDirectory
             [In] int cchCount1,
             [In] IntPtr lpString2,
             [In] int cchCount2);
-
-        [DllImport(global::Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaNtStatusToWinError", CharSet = CharSet.Unicode)]
-        internal static extern int LsaNtStatusToWinError(int ntStatus);
     }
 
     internal sealed class NativeComInterfaces

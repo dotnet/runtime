@@ -8,6 +8,8 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
+using Kernel32 = Interop.Kernel32;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
     public enum ForestMode : int
@@ -884,7 +886,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // Get the sites within the forest
                 // call DsListSites
-                IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
+                IntPtr functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -921,7 +923,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (sitesPtr != IntPtr.Zero)
                         {
                             // call DsFreeNameResultW
-                            functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                            functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                             if (functionPtr == (IntPtr)0)
                             {
                                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());

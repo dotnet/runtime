@@ -9,6 +9,11 @@ using System.ComponentModel;
 using System.IO;
 using System.Diagnostics.CodeAnalysis;
 
+using Microsoft.Win32.SafeHandles;
+
+using Advapi32 = Interop.Advapi32;
+using Kernel32 = Interop.Kernel32;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
     public enum DirectoryContextType
@@ -31,8 +36,8 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _validated;
         private bool _contextIsValid;
 
-        internal static LoadLibrarySafeHandle ADHandle;
-        internal static LoadLibrarySafeHandle ADAMHandle;
+        internal static Microsoft.Win32.SafeHandles.SafeLibraryHandle ADHandle;
+        internal static Microsoft.Win32.SafeHandles.SafeLibraryHandle ADAMHandle;
 
         #region constructors
 
@@ -559,8 +564,8 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr pResponseBuffer = IntPtr.Zero;
             NegotiateCallerNameResponse responseBuffer = new NegotiateCallerNameResponse();
             int responseBufferLength;
-            int protocolStatus;
-            int result;
+            uint protocolStatus;
+            uint result;
 
             LsaLogonProcessSafeHandle lsaHandle;
 
@@ -594,11 +599,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        if (result == NativeMethods.STATUS_QUOTA_EXCEEDED)
+                        if (result == global::Interop.StatusOptions.STATUS_QUOTA_EXCEEDED)
                         {
                             throw new OutOfMemoryException();
                         }
-                        else if ((result == 0) && (UnsafeNativeMethods.LsaNtStatusToWinError(protocolStatus) == NativeMethods.ERROR_NO_SUCH_LOGON_SESSION))
+                        else if ((result == 0) && (Advapi32.LsaNtStatusToWinError(protocolStatus) == NativeMethods.ERROR_NO_SUCH_LOGON_SESSION))
                         {
                             // If this is a directory user, extract domain info from username
                             if (!Utils.IsSamUser())
@@ -612,7 +617,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                         else
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(UnsafeNativeMethods.LsaNtStatusToWinError((result != 0) ? result : protocolStatus));
+                            throw ExceptionHelper.GetExceptionFromErrorCode((int)Advapi32.LsaNtStatusToWinError((result != 0) ? result : protocolStatus));
                         }
                     }
                 }
@@ -624,13 +629,13 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                 }
             }
-            else if (result == NativeMethods.STATUS_QUOTA_EXCEEDED)
+            else if (result == global::Interop.StatusOptions.STATUS_QUOTA_EXCEEDED)
             {
                 throw new OutOfMemoryException();
             }
             else
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(UnsafeNativeMethods.LsaNtStatusToWinError(result));
+                throw ExceptionHelper.GetExceptionFromErrorCode((int)Advapi32.LsaNtStatusToWinError(result));
             }
 
             // If we're running as a local user (i.e. NT AUTHORITY\LOCAL SYSTEM, IIS APPPOOL\APPPoolIdentity, etc.),
@@ -688,27 +693,27 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             // first get AD handle
             string systemPath = Environment.SystemDirectory;
-            IntPtr tempHandle = UnsafeNativeMethods.LoadLibrary(systemPath + "\\ntdsapi.dll");
+            IntPtr tempHandle = Kernel32.LoadLibrary(systemPath + "\\ntdsapi.dll");
             if (tempHandle == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
             else
             {
-                ADHandle = new LoadLibrarySafeHandle(tempHandle);
+                ADHandle = new SafeLibraryHandle(tempHandle);
             }
 
             // not get the ADAM handle
             // got to the windows\adam directory
             DirectoryInfo windowsDirectory = Directory.GetParent(systemPath)!;
-            tempHandle = UnsafeNativeMethods.LoadLibrary(windowsDirectory.FullName + "\\ADAM\\ntdsapi.dll");
+            tempHandle = Kernel32.LoadLibrary(windowsDirectory.FullName + "\\ADAM\\ntdsapi.dll");
             if (tempHandle == (IntPtr)0)
             {
                 ADAMHandle = ADHandle;
             }
             else
             {
-                ADAMHandle = new LoadLibrarySafeHandle(tempHandle);
+                ADAMHandle = new SafeLibraryHandle(tempHandle);
             }
         }
 

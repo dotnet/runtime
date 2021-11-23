@@ -8,6 +8,8 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
+using Kernel32 = Interop.Kernel32;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
     [Flags]
@@ -1087,7 +1089,7 @@ namespace System.DirectoryServices.ActiveDirectory
             GetDSHandle();
 
             // call DsGetDomainControllerInfo
-            IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsGetDomainControllerInfoW");
+            IntPtr functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsGetDomainControllerInfoW");
             if (functionPtr == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -1164,7 +1166,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (dcInfoPtr != IntPtr.Zero)
                     {
                         // call DsFreeDomainControllerInfo
-                        functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeDomainControllerInfoW");
+                        functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeDomainControllerInfoW");
                         if (functionPtr == (IntPtr)0)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -1249,7 +1251,7 @@ namespace System.DirectoryServices.ActiveDirectory
             GetDSHandle();
             // Get the roles
             // call DsListRoles
-            IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsListRolesW");
+            IntPtr functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListRolesW");
             if (functionPtr == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -1289,7 +1291,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (rolesPtr != IntPtr.Zero)
                     {
                         // call DsFreeNameResult
-                        functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                        functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                         if (functionPtr == (IntPtr)0)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());

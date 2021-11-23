@@ -4,6 +4,9 @@
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 
+using Advapi32 = Interop.Advapi32;
+using BOOL = Interop.BOOL;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
     public enum ForestTrustDomainStatus
@@ -25,22 +28,15 @@ namespace System.DirectoryServices.ActiveDirectory
             _status = (ForestTrustDomainStatus)flag;
             DnsName = Marshal.PtrToStringUni(domainInfo.DNSNameBuffer, domainInfo.DNSNameLength / 2);
             NetBiosName = Marshal.PtrToStringUni(domainInfo.NetBIOSNameBuffer, domainInfo.NetBIOSNameLength / 2);
-            IntPtr ptr = (IntPtr)0;
-            int result = UnsafeNativeMethods.ConvertSidToStringSidW(domainInfo.sid, ref ptr);
-            if (result == 0)
+
+            string sidLocal;
+            BOOL result = Advapi32.ConvertSidToStringSid(domainInfo.sid, out sidLocal);
+            if (result == BOOL.FALSE)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
 
-            try
-            {
-                DomainSid = Marshal.PtrToStringUni(ptr)!;
-            }
-            finally
-            {
-                UnsafeNativeMethods.LocalFree(ptr);
-            }
-
+            DomainSid = sidLocal;
             this.time = time;
         }
 

@@ -9,9 +9,6 @@ namespace System.DirectoryServices.Interop
 {
     internal static class SafeNativeMethods
     {
-        [DllImport(global::Interop.Libraries.OleAut32, PreserveSig = false)]
-        public static extern void VariantClear(IntPtr pObject);
-
         [DllImport(global::Interop.Libraries.OleAut32)]
         public static extern void VariantInit(IntPtr pObject);
 
@@ -99,7 +96,7 @@ namespace System.DirectoryServices.Interop
                     }
                     finally
                     {
-                        VariantClear(addr);
+                        global::Interop.OleAut32.VariantClear(addr);
                     }
                 }
                 finally

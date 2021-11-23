@@ -115,8 +115,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static string ConvertSidToSDDL(byte[] sid)
         {
-            string sddlSid = null;
-
             // To put the byte[] SID into SDDL, we use ConvertSidToStringSid.
             // Calling that requires we first copy the SID into native memory.
             IntPtr pSid = IntPtr.Zero;
@@ -125,7 +123,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 pSid = ConvertByteArrayToIntPtr(sid);
 
-                if (Interop.Advapi32.ConvertSidToStringSid(pSid, ref sddlSid) != Interop.BOOL.FALSE)
+                if (Interop.Advapi32.ConvertSidToStringSid(pSid, out string sddlSid) != Interop.BOOL.FALSE)
                 {
                     return sddlSid;
                 }

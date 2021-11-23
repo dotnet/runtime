@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Text;
 using System.Diagnostics.CodeAnalysis;
 
+using Kernel32 = Interop.Kernel32;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
     [Flags]
@@ -1306,7 +1308,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 IntPtr info = (IntPtr)0;
                 // call DsReplicaSyncAllW
-                IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
+                IntPtr functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -1348,7 +1350,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 finally
                 {
                     // call DsFreeNameResultW
-                    functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                    functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                     if (functionPtr == (IntPtr)0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
