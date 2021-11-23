@@ -2029,7 +2029,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     }
 
 #if defined(DAC_HASHTABLE)
-    for (int i = MINIPAL_STRLEN(m_hash); i >= 0; i--)
+    for (int i = STRING_LENGTH(m_hash); i >= 0; i--)
     {
         HashInstanceKeyBlock* block = m_hash[i];
         HashInstanceKeyBlock* next;

@@ -12,11 +12,11 @@
 // Config prefixes
 #define COMPLUS_PREFIX_A "COMPlus_"
 #define COMPLUS_PREFIX W("COMPlus_")
-#define LEN_OF_COMPLUS_PREFIX MINIPAL_STRLEN(COMPLUS_PREFIX_A)
+#define LEN_OF_COMPLUS_PREFIX STRING_LENGTH(COMPLUS_PREFIX_A)
 
 #define DOTNET_PREFIX_A "DOTNET_"
 #define DOTNET_PREFIX W("DOTNET_")
-#define LEN_OF_DOTNET_PREFIX MINIPAL_STRLEN(DOTNET_PREFIX_A)
+#define LEN_OF_DOTNET_PREFIX STRING_LENGTH(DOTNET_PREFIX_A)
 
 class CLRConfigNoCache
 {
@@ -64,8 +64,8 @@ public:
         }
         else
         {
-            bool dotnetValid = namelen < (size_t)(MINIPAL_STRLEN(nameBuffer) - LEN_OF_DOTNET_PREFIX);
-            bool complusValid = namelen < (size_t)(MINIPAL_STRLEN(nameBuffer) - LEN_OF_COMPLUS_PREFIX);
+            bool dotnetValid = namelen < (size_t)(STRING_LENGTH(nameBuffer) - LEN_OF_DOTNET_PREFIX);
+            bool complusValid = namelen < (size_t)(STRING_LENGTH(nameBuffer) - LEN_OF_COMPLUS_PREFIX);
             if (!dotnetValid || !complusValid)
             {
                 _ASSERTE(!"Environment variable name too long.");

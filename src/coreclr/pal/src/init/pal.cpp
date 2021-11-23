@@ -1371,5 +1371,5 @@ static BOOL INIT_SharedFilesPath(void)
     return gSharedFilesPath->Set(TEMP_DIRECTORY_PATH);
 
     // We can verify statically the non sandboxed case, since the size is known during compile time
-    static_assert_no_msg(MINIPAL_STRLEN(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
+    static_assert_no_msg(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
 }

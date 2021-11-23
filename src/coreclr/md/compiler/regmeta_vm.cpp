@@ -212,7 +212,7 @@ RegMeta::ResolveTypeRef(
     {
         _ASSERTE(hr == CLDB_S_TRUNCATION);
         // Truncate the namespace string
-        wzNameSpace[MINIPAL_STRLEN(wzNameSpace)] = 0;
+        wzNameSpace[STRING_LENGTH(wzNameSpace)] = 0;
     }
 
     //***********************

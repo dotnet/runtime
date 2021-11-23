@@ -221,7 +221,7 @@ g_module_error (void)
 #else
 	WCHAR local_buf [1024];
 	if (!FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, MINIPAL_STRLEN (local_buf), NULL) )
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, STRING_LENGTH (local_buf), NULL) )
 		local_buf [0] = TEXT('\0');
 
 	ret = u16to8 (local_buf);

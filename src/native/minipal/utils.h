@@ -7,6 +7,6 @@
 #define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 // Number of characters in a string literal. Excludes terminating NULL.
-#define MINIPAL_STRLEN(str) (ARRAY_SIZE(str) - 1)
+#define STRING_LENGTH(str) (ARRAY_SIZE(str) - 1)
 
 #endif // HAVE_MINIPAL_UTILS_H

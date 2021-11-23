@@ -261,7 +261,7 @@ mono_thread_set_name (MonoInternalThread *thread,
 		      MonoSetThreadNameFlags flags, MonoError *error);
 
 #define mono_thread_set_name_constant_ignore_error(thread, name, flags) \
-	mono_thread_set_name ((thread), name, MINIPAL_STRLEN (name),  \
+	mono_thread_set_name ((thread), name, STRING_LENGTH (name),  \
 		MONO_THREAD_NAME_WINDOWS_CONSTANT (name),               \
 		(flags) | MonoSetThreadNameFlag_Constant, NULL)
 

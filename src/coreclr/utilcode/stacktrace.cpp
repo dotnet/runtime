@@ -537,7 +537,7 @@ DWORD_PTR dwAddr
         {
             pszSymbol = sym.Name;
 
-            if (_SymUnDName(&sym, rgchUndec, MINIPAL_STRLEN(rgchUndec)))
+            if (_SymUnDName(&sym, rgchUndec, STRING_LENGTH(rgchUndec)))
             {
                 pszSymbol = rgchUndec;
             }

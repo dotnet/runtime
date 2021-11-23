@@ -25,7 +25,7 @@
 //     {gSharedFilesPath}/.dotnet/lockfiles/session<sessionId>/<fileName>
 
 #define SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT (_MAX_FNAME - 1)
-#define SHARED_MEMORY_MAX_NAME_CHAR_COUNT (MINIPAL_STRLEN("Global\\") + SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT)
+#define SHARED_MEMORY_MAX_NAME_CHAR_COUNT (STRING_LENGTH("Global\\") + SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT)
 
 #define SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_NAME ".dotnet"
 #define SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME ".dotnet/shm"
@@ -43,9 +43,9 @@ static_assert_no_msg(ARRAY_SIZE(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) >= 
 // Note that this Max size does not include the prefix folder path size which is unknown (in the case of sandbox) until runtime
 #define SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT \
     ( \
-        MINIPAL_STRLEN(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) + \
+        STRING_LENGTH(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) + \
         1 /* path separator */ + \
-        MINIPAL_STRLEN(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) + \
+        STRING_LENGTH(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) + \
         SHARED_MEMORY_MAX_SESSION_ID_CHAR_COUNT + \
         1 /* path separator */ + \
         SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT \

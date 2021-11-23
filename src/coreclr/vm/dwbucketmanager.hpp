@@ -199,7 +199,7 @@ WCHAR BytesToBase32::GetNextChar()
 
     // If out of data, return signal value, > any valid char.
     if (pData == pEnd)
-        return base32[MINIPAL_STRLEN(base32)];
+        return base32[STRING_LENGTH(base32)];
 
 #if defined(_DEBUG)
     if (decoder[nWhich].l1)
