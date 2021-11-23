@@ -37,17 +37,17 @@ internal static partial class Interop
             internal string szExeFile;
         }
 
-        // https://docs.microsoft.com/en-us/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
+        // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial IntPtr CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
 
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
-        // https://docs.microsoft.com/en-us/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
+        // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
         [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         internal static extern bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 
-        // https://docs.microsoft.com/en-us/windows/desktop/api/tlhelp32/nf-tlhelp32-process32next
+        // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32next
         [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         internal static extern bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 #pragma warning restore DLLIMPORTGENANALYZER015

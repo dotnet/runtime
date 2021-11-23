@@ -12,7 +12,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptProtectData(
-            ref DATA_BLOB pDataIn,
+            in DATA_BLOB pDataIn,
             string? szDataDescr,
             ref DATA_BLOB pOptionalEntropy,
             IntPtr pvReserved,
