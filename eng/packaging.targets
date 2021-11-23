@@ -29,12 +29,10 @@
     <GeneratePackageOnBuild Condition="('$(BuildAllConfigurations)' == 'true' or
                                        '$(IsRIDSpecificProject)' == 'true') and
                                        '$(PreReleaseVersionLabel)' != 'servicing' and
-                                       '$(PreReleaseVersionLabel)' != 'mauipreview' and
                                        '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
     <GeneratePackageOnBuild Condition="'$(BuildAllConfigurations)' != 'true' and
                                        '$(IsRIDSpecificProject)' != 'true' and
-                                       ('$(PreReleaseVersionLabel)' == 'servicing' or
-                                       '$(PreReleaseVersionLabel)' == 'mauipreview') and
+                                       '$(PreReleaseVersionLabel)' == 'servicing' and
                                        '$(GitHubRepositoryName)' != 'runtimelab'">false</GeneratePackageOnBuild>
     <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
     <LibIntellisenseDocumentationFilePath>$(XmlDocFileRoot)1033\$(AssemblyName).xml</LibIntellisenseDocumentationFilePath>
