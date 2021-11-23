@@ -19,9 +19,14 @@ namespace System.Dynamic.Utils
         private static class DynamicDelegateLightup
         {
             public static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegate { get; }
-                = Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
-                  .GetMethod("CreateObjectArrayDelegate")!
-                  .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
+                = CreateObjectArrayDelegateInternal();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification = "Works around https://github.com/dotnet/linker/issues/2392")]
+            private static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegateInternal()
+                => Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
+                    .GetMethod("CreateObjectArrayDelegate")!
+                    .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
         }
 
         internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> handler)
