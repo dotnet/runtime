@@ -370,7 +370,7 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb)
 				rename_stack = g_realloc(rename_stack, sizeof(RenameStackInfo)*rename_stack_size);
 			}
 
-			RenameStackInfo* info = (RenameStackInfo*)rename_stack + rename_stack_idx;
+			RenameStackInfo* info = rename_stack + rename_stack_idx;
 			rename_stack_idx++;
 			info->blocks = blocks;
 			info->history = stack_history;
@@ -384,8 +384,8 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb)
 			blocks = blocks->next;
 
 			while (!blocks && rename_stack_idx > 0) {
-				RenameStackInfo* info = (RenameStackInfo*)rename_stack + rename_stack_idx - 1;
 				rename_stack_idx--;
+				RenameStackInfo* info = rename_stack + rename_stack_idx;
 				blocks = info->blocks ? info->blocks->next : NULL;
 				stack_history = info->history;
 				stack_history_size = info->size;
