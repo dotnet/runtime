@@ -256,17 +256,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public byte reserved;
     }
 
-    /*typedef struct _LUID {
-            DWORD LowPart;
-            LONG HighPart;
-    } LUID, *PLUID;*/
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class LUID
-    {
-        public int LowPart;
-        public int HighPart;
-    }
-
     /*typedef struct _NEGOTIATE_CALLER_NAME_REQUEST {
             ULONG       MessageType ;
             LUID        LogonId ;
@@ -275,7 +264,7 @@ namespace System.DirectoryServices.ActiveDirectory
     internal sealed class NegotiateCallerNameRequest
     {
         public int messageType;
-        public LUID? logonId;
+        public global::Interop.LUID? logonId;
     }
 
     /*typedef struct _NEGOTIATE_CALLER_NAME_RESPONSE {

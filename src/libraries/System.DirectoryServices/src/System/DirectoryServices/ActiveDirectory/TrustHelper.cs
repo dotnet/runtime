@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 using Advapi32 = Interop.Advapi32;
+using UNICODE_STRING = Interop.UNICODE_STRING;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -63,7 +64,6 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
-            LSA_UNICODE_STRING? trustedDomainName = null;
             bool impersonated = false;
             IntPtr target = (IntPtr)0;
             string? serverName = null;
@@ -81,9 +81,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    trustedDomainName = new LSA_UNICODE_STRING();
+                    UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
@@ -161,7 +161,6 @@ namespace System.DirectoryServices.ActiveDirectory
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
             IntPtr newInfo = (IntPtr)0;
-            LSA_UNICODE_STRING? trustedDomainName = null;
             bool impersonated = false;
             IntPtr target = (IntPtr)0;
             string? serverName = null;
@@ -178,9 +177,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    trustedDomainName = new LSA_UNICODE_STRING();
+                    UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
@@ -289,7 +288,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static void DeleteTrust(DirectoryContext sourceContext, string? sourceName, string? targetName, bool isForest)
         {
             SafeLsaPolicyHandle? policyHandle = null;
-            LSA_UNICODE_STRING? trustedDomainName = null;
             bool impersonated = false;
             IntPtr target = (IntPtr)0;
             string? serverName = null;
@@ -307,9 +305,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     policyHandle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    trustedDomainName = new LSA_UNICODE_STRING();
+                    UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get trust information
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(policyHandle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
@@ -367,7 +365,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static void VerifyTrust(DirectoryContext context, string? sourceName, string? targetName, bool isForest, TrustDirection direction, bool forceSecureChannelReset, string? preferredTargetServer)
         {
             SafeLsaPolicyHandle? policyHandle = null;
-            LSA_UNICODE_STRING? trustedDomainName = null;
             int win32Error = 0;
             IntPtr data = (IntPtr)0;
             IntPtr ptr = (IntPtr)0;
@@ -389,9 +386,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     policyHandle = Utils.GetPolicyHandle(policyServerName);
 
                     // get the target name
-                    trustedDomainName = new LSA_UNICODE_STRING();
+                    UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // validate the trust existence
                     ValidateTrust(policyHandle, trustedDomainName, sourceName, targetName, isForest, (int)direction, policyServerName);  // need to verify direction
@@ -602,7 +599,6 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
-            LSA_UNICODE_STRING? trustedDomainName = null;
             IntPtr newBuffer = (IntPtr)0;
             bool impersonated = false;
             LSA_AUTH_INFORMATION? AuthData = null;
@@ -626,9 +622,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    trustedDomainName = new LSA_UNICODE_STRING();
+                    UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
@@ -736,7 +732,6 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
-            LSA_UNICODE_STRING? trustedDomainName = null;
             IntPtr newBuffer = (IntPtr)0;
             bool impersonated = false;
             LSA_AUTH_INFORMATION? AuthData = null;
@@ -759,9 +754,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    trustedDomainName = new LSA_UNICODE_STRING();
+                    UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
@@ -877,7 +872,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        private static void ValidateTrust(SafeLsaPolicyHandle handle, LSA_UNICODE_STRING trustedDomainName, string? sourceName, string? targetName, bool isForest, int direction, string serverName)
+        private static void ValidateTrust(SafeLsaPolicyHandle handle, UNICODE_STRING trustedDomainName, string? sourceName, string? targetName, bool isForest, int direction, string serverName)
         {
             IntPtr buffer = (IntPtr)0;
 

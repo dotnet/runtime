@@ -500,12 +500,12 @@ namespace System.DirectoryServices.AccountManagement
                 UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO info = (UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO)
                                     Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO));
 
-                Debug.Assert(Interop.Advapi32.IsValidSid(info.domainSid));
+                Debug.Assert(Interop.Advapi32.IsValidSid(info.DomainSid));
 
                 // Now we make a copy of the SID to return
-                int sidLength = Interop.Advapi32.GetLengthSid(info.domainSid);
+                int sidLength = Interop.Advapi32.GetLengthSid(info.DomainSid);
                 IntPtr pCopyOfSid = Marshal.AllocHGlobal(sidLength);
-                bool success = Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.domainSid);
+                bool success = Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.DomainSid);
                 if (!success)
                 {
                     int lastError = Marshal.GetLastWin32Error();

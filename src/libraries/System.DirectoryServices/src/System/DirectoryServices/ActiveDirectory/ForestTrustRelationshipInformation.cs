@@ -10,6 +10,7 @@ using Microsoft.Win32.SafeHandles;
 using Advapi32 = Interop.Advapi32;
 using BOOL = Interop.BOOL;
 using Kernel32 = Interop.Kernel32;
+using UNICODE_STRING = Interop.UNICODE_STRING;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -89,7 +90,6 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr tmpPtr = (IntPtr)0;
             IntPtr forestInfo = (IntPtr)0;
             SafeLsaPolicyHandle? handle = null;
-            LSA_UNICODE_STRING trustedDomainName;
             IntPtr collisionInfo = (IntPtr)0;
             ArrayList ptrList = new ArrayList();
             ArrayList sidList = new ArrayList();
@@ -141,10 +141,9 @@ namespace System.DirectoryServices.ActiveDirectory
                         record.ForestTrustType = LSA_FOREST_TRUST_RECORD_TYPE.ForestTrustTopLevelName;
                         TopLevelName TLN = _topLevelNames[i];
                         record.Time = TLN.time;
-                        record.TopLevelName = new LSA_UNICODE_STRING();
                         ptr = Marshal.StringToHGlobalUni(TLN.Name);
                         ptrList.Add(ptr);
-                        UnsafeNativeMethods.RtlInitUnicodeString(record.TopLevelName, ptr);
+                        UnsafeNativeMethods.RtlInitUnicodeString(out record.TopLevelName, ptr);
 
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
@@ -171,10 +170,10 @@ namespace System.DirectoryServices.ActiveDirectory
                             record.Time.lowPart = currentTime.lower;
                             record.Time.highPart = currentTime.higher;
                         }
-                        record.TopLevelName = new LSA_UNICODE_STRING();
+
                         ptr = Marshal.StringToHGlobalUni(_excludedNames[i]);
                         ptrList.Add(ptr);
-                        UnsafeNativeMethods.RtlInitUnicodeString(record.TopLevelName, ptr);
+                        UnsafeNativeMethods.RtlInitUnicodeString(out record.TopLevelName, ptr);
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
@@ -274,9 +273,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    trustedDomainName = new LSA_UNICODE_STRING();
+                    UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(TargetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // call the unmanaged function
                     uint error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 1, out collisionInfo);
@@ -344,7 +343,6 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             IntPtr forestTrustInfo = (IntPtr)0;
             SafeLsaPolicyHandle? handle = null;
-            LSA_UNICODE_STRING? tmpName = null;
             bool impersonated = false;
             IntPtr targetPtr = (IntPtr)0;
             string? serverName = null;
@@ -363,9 +361,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     // get the target name
-                    tmpName = new LSA_UNICODE_STRING();
+                    UNICODE_STRING tmpName;
                     targetPtr = Marshal.StringToHGlobalUni(TargetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(tmpName, targetPtr);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out tmpName, targetPtr);
 
                     serverName = Utils.GetPolicyServerName(context, true, false, source);
 

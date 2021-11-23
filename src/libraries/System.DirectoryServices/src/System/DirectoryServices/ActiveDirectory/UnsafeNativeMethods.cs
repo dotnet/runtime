@@ -28,6 +28,8 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
+using UNICODE_STRING = Interop.UNICODE_STRING;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
 
@@ -412,7 +414,7 @@ namespace System.DirectoryServices.ActiveDirectory
         [FieldOffset(8)]
         public LARGE_INTEGER Time = null!;
         [FieldOffset(16)]
-        public LSA_UNICODE_STRING TopLevelName = null!;
+        public UNICODE_STRING TopLevelName;
         [FieldOffset(16)]
         public LSA_FOREST_TRUST_BINARY_DATA Data = null!;
         [FieldOffset(16)]
@@ -430,14 +432,6 @@ namespace System.DirectoryServices.ActiveDirectory
             lowPart = 0;
             highPart = 0;
         }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class LSA_UNICODE_STRING
-    {
-        public short Length;
-        public short MaximumLength;
-        public IntPtr Buffer;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -460,31 +454,10 @@ namespace System.DirectoryServices.ActiveDirectory
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class LSA_OBJECT_ATTRIBUTES
-    {
-        internal int Length;
-        private readonly IntPtr _rootDirectory;
-        private readonly IntPtr _objectName;
-        internal int Attributes;
-        private readonly IntPtr _securityDescriptor;
-        private readonly IntPtr _securityQualityOfService;
-
-        public LSA_OBJECT_ATTRIBUTES()
-        {
-            Length = 0;
-            _rootDirectory = (IntPtr)0;
-            _objectName = (IntPtr)0;
-            Attributes = 0;
-            _securityDescriptor = (IntPtr)0;
-            _securityQualityOfService = (IntPtr)0;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal sealed class TRUSTED_DOMAIN_INFORMATION_EX
     {
-        public LSA_UNICODE_STRING? Name;
-        public LSA_UNICODE_STRING? FlatName;
+        public UNICODE_STRING Name;
+        public UNICODE_STRING FlatName;
         public IntPtr Sid;
         public int TrustDirection;
         public int TrustType;
@@ -504,7 +477,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int Index;
         public ForestTrustCollisionType Type;
         public int Flags;
-        public LSA_UNICODE_STRING Name = null!;
+        public UNICODE_STRING Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -548,9 +521,9 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class POLICY_DNS_DOMAIN_INFO
     {
-        public LSA_UNICODE_STRING? Name;
-        public LSA_UNICODE_STRING? DnsDomainName;
-        public LSA_UNICODE_STRING? DnsForestName;
+        public UNICODE_STRING Name;
+        public UNICODE_STRING DnsDomainName;
+        public UNICODE_STRING DnsForestName;
         public Guid DomainGuid;
         public IntPtr Sid;
     }
@@ -595,10 +568,10 @@ namespace System.DirectoryServices.ActiveDirectory
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal sealed class POLICY_ACCOUNT_DOMAIN_INFO
+    internal struct POLICY_ACCOUNT_DOMAIN_INFO
     {
-        public LSA_UNICODE_STRING domainName = new LSA_UNICODE_STRING();
-        public IntPtr domainSid = IntPtr.Zero;
+        public UNICODE_STRING DomainName;
+        public IntPtr DomainSid;
     }
 
     internal static class UnsafeNativeMethods
@@ -635,19 +608,16 @@ namespace System.DirectoryServices.ActiveDirectory
         public static extern int NetApiBufferFree(IntPtr buffer);
 
         [DllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaSetForestTrustInformation")]
-        public static extern uint LsaSetForestTrustInformation(SafeLsaPolicyHandle handle, LSA_UNICODE_STRING target, IntPtr forestTrustInfo, int checkOnly, out IntPtr collisionInfo);
+        public static extern uint LsaSetForestTrustInformation(SafeLsaPolicyHandle handle, in UNICODE_STRING target, IntPtr forestTrustInfo, int checkOnly, out IntPtr collisionInfo);
 
         [DllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaQueryForestTrustInformation")]
-        public static extern uint LsaQueryForestTrustInformation(SafeLsaPolicyHandle handle, LSA_UNICODE_STRING target, ref IntPtr ForestTrustInfo);
+        public static extern uint LsaQueryForestTrustInformation(SafeLsaPolicyHandle handle, in UNICODE_STRING target, ref IntPtr ForestTrustInfo);
 
         [DllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaQueryTrustedDomainInfoByName")]
-        public static extern uint LsaQueryTrustedDomainInfoByName(SafeLsaPolicyHandle handle, LSA_UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, ref IntPtr buffer);
+        public static extern uint LsaQueryTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, ref IntPtr buffer);
 
         [DllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaSetTrustedDomainInfoByName")]
-        public static extern uint LsaSetTrustedDomainInfoByName(SafeLsaPolicyHandle handle, LSA_UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, IntPtr buffer);
-
-        [DllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaOpenTrustedDomainByName")]
-        public static extern int LsaOpenTrustedDomainByName(SafeLsaPolicyHandle policyHandle, LSA_UNICODE_STRING trustedDomain, int access, ref IntPtr trustedDomainHandle);
+        public static extern uint LsaSetTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, IntPtr buffer);
 
         [DllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaDeleteTrustedDomain")]
         public static extern uint LsaDeleteTrustedDomain(SafeLsaPolicyHandle handle, IntPtr pSid);
@@ -668,7 +638,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static extern int ImpersonateAnonymousToken(IntPtr token);
 
         [DllImport(global::Interop.Libraries.NtDll, EntryPoint = "RtlInitUnicodeString")]
-        public static extern int RtlInitUnicodeString(LSA_UNICODE_STRING result, IntPtr s);
+        public static extern int RtlInitUnicodeString(out UNICODE_STRING result, IntPtr s);
 
         /*
         DWORD DsRoleGetPrimaryDomainInformation(
