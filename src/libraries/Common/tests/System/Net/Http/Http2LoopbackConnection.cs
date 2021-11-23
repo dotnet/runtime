@@ -916,52 +916,7 @@ namespace System.Net.Test.Common
 
         public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
-            if (headers != null)
-            {
-                bool hasDate = false;
-                bool stripContentLength = false;
-                foreach (HttpHeaderData headerData in headers)
-                {
-                    // Check if we should inject Date header to match HTTP/1.
-                    if (headerData.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
-                    {
-                        hasDate = true;
-                    }
-                    else if (headerData.Name.Equals("Content-Length") && headerData.Value == null)
-                    {
-                        // Hack used for Http/1 to avoid sending content-length header.
-                        stripContentLength = true;
-                    }
-                }
-
-                if (!hasDate || stripContentLength)
-                {
-                    var newHeaders = new List<HttpHeaderData>();
-                    foreach (HttpHeaderData headerData in headers)
-                    {
-                        if (headerData.Name.Equals("Content-Length") && headerData.Value == null)
-                        {
-                            continue;
-                        }
-
-                        newHeaders.Add(headerData);
-                    }
-                    newHeaders.Add(new HttpHeaderData("Date", $"{DateTimeOffset.UtcNow:R}"));
-                    headers = newHeaders;
-                }
-            }
-
-            int streamId =  _lastStreamId;
-
-            if (string.IsNullOrEmpty(content))
-            {
-                await SendResponseHeadersAsync(streamId, endStream: isFinal, (HttpStatusCode)statusCode, endHeaders: true, headers: headers);
-            }
-            else
-            {
-                await SendResponseHeadersAsync(streamId, endStream: false, (HttpStatusCode)statusCode, endHeaders: true, headers: headers);
-                await SendResponseBodyAsync(content, isFinal: isFinal);
-            }
+            return SendResponseAsync(statusCode, headers, content, isFinal, requestId: 0);
         }
 
         public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
