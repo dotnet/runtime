@@ -478,7 +478,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=windows
+        extraHelixArguments: /p:BrowserHost=windows $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         - wasmtestonbrowser
