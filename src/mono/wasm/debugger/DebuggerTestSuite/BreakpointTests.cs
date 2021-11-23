@@ -673,14 +673,14 @@ namespace DebuggerTests
             var pause_location = await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1,
-                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                8,
                 "RunDebuggerBreak");
             Assert.Equal(init_location["callFrames"][0]["functionName"], pause_location["callFrames"][0]["functionName"]);
             var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
             await EvaluateOnCallFrame(id, "local_var", false);
             await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
-                834,
+                835,
                 8,
                 "VisibleMethodDebuggerBreak");
         }
