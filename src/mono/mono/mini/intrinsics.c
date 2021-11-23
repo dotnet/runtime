@@ -1933,6 +1933,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if ((cfg->backend->have_objc_get_selector || cfg->compile_llvm) &&
 			!strcmp (cmethod->name, "GetHandle") && fsig->param_count == 1 &&
 		    (args [0]->opcode == OP_GOT_ENTRY || args [0]->opcode == OP_AOTCONST) &&
+		    args [0]->klass == mono_defaults.int_class &&
 		    cfg->compile_aot) {
 			MonoInst *pi;
 			MonoJumpInfoToken *ji;
