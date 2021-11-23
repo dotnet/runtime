@@ -11467,7 +11467,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // it. As such, leave it as is, the "0xD43E0000" bytecode will be seen
                     // next to the nop instruction in disasm.
                     // e.g. D43E0000          align   [4 bytes for IG07]
-                    ins = INS_BREAKPOINT;
+                    // ins = INS_bkpt;
                 }
 #endif
             }
