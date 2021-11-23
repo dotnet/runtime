@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -57,7 +58,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 				message += $@"Expected warnings were not generated:{Environment.NewLine}{missingLines}{Environment.NewLine}";
 			}
 			if (_unmatched.Any ()) {
-
 				message += $"Unexpected warnings were generated:{Environment.NewLine}{string.Join (Environment.NewLine, _unmatched)}";
 			}
 
@@ -111,6 +111,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			base.VisitAccessorDeclaration (node);
 			ValidateDiagnostics (node, node.AttributeLists);
+		}
+
+		public override void VisitConstructorDeclaration (ConstructorDeclarationSyntax node)
+		{
+			base.VisitConstructorDeclaration (node);
+			ValidateDiagnostics(node, node.AttributeLists);
 		}
 
 		private void ValidateDiagnostics (CSharpSyntaxNode memberSyntax, SyntaxList<AttributeListSyntax> attrLists)

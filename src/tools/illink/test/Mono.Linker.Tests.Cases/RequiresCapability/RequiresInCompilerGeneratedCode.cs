@@ -1003,7 +1003,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				Action _ = () => unknownType.RequiresNonPublicMethods ();
 			}
 
-			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true)]
+			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
+			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			[RequiresAssemblyFiles ("Suppress in body")]
 			static void TestGenericMethodParameterRequirement<TUnknown> ()
