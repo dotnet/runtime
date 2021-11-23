@@ -429,7 +429,7 @@
   </Target>
 
 
-  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' "/>
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.targets"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' "/>
   <!-- TODO: I don't know why some of these conditions are required/a more principled way-->
   <Target Name="WasmSetPublishProperties" BeforeTargets="ProcessFrameworkReferences"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
 
@@ -443,7 +443,9 @@
       <PropertyGroup>
         <TrimmerSingleWarn>false</TrimmerSingleWarn>
         <SelfContained>true</SelfContained>
-        <UseAppHost>true</UseAppHost>
+        <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+        <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
+        <!--<UseAppHost>true</UseAppHost>-->
         <OutputType>Exe</OutputType>
         <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
         <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
