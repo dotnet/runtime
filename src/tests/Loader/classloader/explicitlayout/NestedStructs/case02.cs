@@ -50,24 +50,39 @@ public struct ThirdLevel
 }
 
 public class Test_NestedStructsWithExplicitLayout_Case02 {
+    private int Run(int value)
+    {
+        var x = new FirstLevel();
+        x.Low = value;
+        return x.SecondLevel.ThirdLevel.Low;
+    }
+
     public static int Main ()
     {
-        // Console.WriteLine($"FirstLevel: {sizeof(FirstLevel)}");
-        // Console.WriteLine($"SecondLevel: {sizeof(SecondLevel)}");
-        // Console.WriteLine($"ThirdLevel: {sizeof(ThirdLevel)}");
-
         try
         {
-            var x = new FirstLevel();
-            x.Low = 13;
-            return 87 + x.SecondLevel.ThirdLevel.Low;
+            var expectedResult = 13;
+
+            var testInstance = new Test_NestedStructsWithExplicitLayout_Case02();
+            var result = testInstance.Run(expectedResult);
+
+            if (result == expectedResult)
+            {
+                Console.WriteLine("PASS: types were loaded correctly");
+                return 100;
+            }
+
+            Console.WriteLine("FAIL: invalid value");
+            return 103;
         }
         catch (TypeLoadException e)
         {
+            Console.WriteLine("FAIL: type was not loaded correctly");
             return 101;
         }
         catch (Exception e)
         {
+            Console.WriteLine("FAIL: unknown error");
             return 102;
         }
     }

@@ -29,20 +29,30 @@ public struct SecondLevel
 }
 
 public class Test_NestedStructsWithExplicitLayout_Case04 {
+    private int Run(int value)
+    {
+        var x = new FirstLevel();
+        x.Low = value;
+        return x.SecondLevel.Low;
+    }
+
     public static int Main ()
     {
         try
         {
-            var x = new FirstLevel();
-            x.Low = 3;
-            var result = 97 + x.SecondLevel.Low;
+            var expectedResult = 3;
 
-            if (result == 100)
+            var testInstance = new Test_NestedStructsWithExplicitLayout_Case04();
+            var result = testInstance.Run(expectedResult);
+
+            if (result == expectedResult)
             {
-                Console.WriteLine("PASS: union of Explict + Auto works correctly");
+                Console.WriteLine("PASS: types were loaded correctly");
+                return 100;
             }
 
-            return result;
+            Console.WriteLine("FAIL: invalid value");
+            return 103;
         }
         catch (TypeLoadException e)
         {
