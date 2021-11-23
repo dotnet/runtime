@@ -1494,14 +1494,18 @@ void Compiler::fgPostImportationCleanup()
 
                 // We'll need a state variable to control the branching.
                 //
-                // It will be zero when the OSR method is entered and set to one
+                // It will be initialized to zero when the OSR method is entered and set to one
                 // once flow reaches the osrEntry.
                 //
-                unsigned const entryStateVar       = lvaGrabTemp(false DEBUGARG("OSR entry state var"));
-                lvaTable[entryStateVar].lvType     = TYP_INT;
-                lvaTable[entryStateVar].lvMustInit = true;
+                unsigned const entryStateVar   = lvaGrabTemp(false DEBUGARG("OSR entry state var"));
+                lvaTable[entryStateVar].lvType = TYP_INT;
 
-                // Set the state variable when we reach the entry.
+                // Zero the entry state at method entry.
+                //
+                GenTree* const initEntryState = gtNewTempAssign(entryStateVar, gtNewZeroConNode(TYP_INT));
+                fgNewStmtAtBeg(fgFirstBB, initEntryState);
+
+                // Set the state variable once control flow reaches the OSR entry.
                 //
                 GenTree* const setEntryState = gtNewTempAssign(entryStateVar, gtNewOneConNode(TYP_INT));
                 fgNewStmtAtBeg(osrEntry, setEntryState);
@@ -3409,6 +3413,11 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     JITDUMP("Considering uncond to cond " FMT_BB " -> " FMT_BB "\n", block->bbNum, target->bbNum);
 
     if (!BasicBlock::sameEHRegion(block, target))
+    {
+        return false;
+    }
+
+    if (fgBBisScratch(block))
     {
         return false;
     }
