@@ -1721,6 +1721,18 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) Trace("Cleaning pool.");
                 Monitor.Enter(SyncObj, ref tookLock);
 
+                // If there are now no connections associated with this pool, we can dispose of it. We
+                // avoid aggressively cleaning up pools that have recently been used but currently aren't;
+                // if a pool was used since the last time we cleaned up, give it another chance. New pools
+                // start out saying they've recently been used, to give them a bit of breathing room and time
+                // for the initial collection to be added to it.
+                if (_associatedConnectionCount == 0 && !_usedSinceLastCleanup && _http2Connections == null)
+                {
+                    Debug.Assert(list.Count == 0, $"Expected {nameof(list)}.{nameof(list.Count)} == 0");
+                    _disposed = true;
+                    return true; // Pool is disposed of.  It should be removed.
+                }
+
                 // Get the current time.  This is compared against each connection's last returned
                 // time to determine whether a connection is too old and should be closed.
                 long nowTicks = Environment.TickCount64;
@@ -1811,18 +1823,6 @@ namespace System.Net.Http
                     // At this point, good connections have been moved below freeIndex, and garbage connections have
                     // been added to the dispose list, so clear the end of the list past freeIndex.
                     list.RemoveRange(freeIndex, list.Count - freeIndex);
-
-                    // If there are now no connections associated with this pool, we can dispose of it. We
-                    // avoid aggressively cleaning up pools that have recently been used but currently aren't;
-                    // if a pool was used since the last time we cleaned up, give it another chance. New pools
-                    // start out saying they've recently been used, to give them a bit of breathing room and time
-                    // for the initial collection to be added to it.
-                    if (_associatedConnectionCount == 0 && !_usedSinceLastCleanup && _http2Connections == null)
-                    {
-                        Debug.Assert(list.Count == 0, $"Expected {nameof(list)}.{nameof(list.Count)} == 0");
-                        _disposed = true;
-                        return true; // Pool is disposed of.  It should be removed.
-                    }
                 }
 
                 // Reset the cleanup flag.  Any pools that are empty and not used since the last cleanup
