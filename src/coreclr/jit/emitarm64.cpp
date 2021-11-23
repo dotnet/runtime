@@ -11457,18 +11457,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef DEBUG
                 // Under STRESS_EMITTER, if this is the 'align' before the 'jmp' instruction,
                 // then add "bkpt" instruction.
-                instrDescAlign* alignInstr = (instrDescAlign*)id;
+                // instrDescAlign* alignInstr = (instrDescAlign*)id;
 
-                if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
-                    (alignInstr->idaIG != alignInstr->idaLoopHeadPredIG) && !skipIns)
-                {
-                    // There is no good way to squeeze in "bkpt" as well as display it
-                    // in the disassembly because there is no corresponding instrDesc for
-                    // it. As such, leave it as is, the "0xD43E0000" bytecode will be seen
-                    // next to the nop instruction in disasm.
-                    // e.g. D43E0000          align   [4 bytes for IG07]
-                    ins = INS_BREAKPOINT;
-                }
+                // if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
+                //     (alignInstr->idaIG != alignInstr->idaLoopHeadPredIG) && !skipIns)
+                // {
+                //     // There is no good way to squeeze in "bkpt" as well as display it
+                //     // in the disassembly because there is no corresponding instrDesc for
+                //     // it. As such, leave it as is, the "0xD43E0000" bytecode will be seen
+                //     // next to the nop instruction in disasm.
+                //     // e.g. D43E0000          align   [4 bytes for IG07]
+                //     ins = INS_bkpt;
+                // }
 #endif
             }
 #endif // FEATURE_LOOP_ALIGN
