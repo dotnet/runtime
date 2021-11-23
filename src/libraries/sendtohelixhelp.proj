@@ -367,9 +367,12 @@
 
     <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ and find the closest one in
          https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/
+         and https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Win_x64/
 
          Eg. latest stable version is 96.0.4664.45 with revision 929512.
-         but the closest one available in the snapshosts is 929513
+         but the closest one available in the snapshosts is 929513.
+         Please make sure to check both platforms as sometime
+         the same snapshot might not be available in one of them.
     -->
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
       <ChromiumRevision>929513</ChromiumRevision>
