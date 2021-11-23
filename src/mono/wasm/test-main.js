@@ -246,7 +246,7 @@ function set_exit_code(exit_code, reason) {
     }
     if (is_browser) {
         const stack = (new Error()).stack.replace(/\n/g, "").replace(/[ ]*at/g, " at").replace(/https?:\/\/[0-9.:]*/g, "").replace("Error", "");
-        const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} isXmlDoneCheck=${isXmlDoneCheck} ${stack}.`;
+        const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} isXmlDoneCheck=${isXmlDoneCheck} WS.bufferedAmount=${consoleWebSocket.bufferedAmount} ${stack}.`;
 
         // Notify the selenium script
         Module.exit_code = exit_code;
@@ -257,9 +257,8 @@ function set_exit_code(exit_code, reason) {
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        console.log('1 ' + messsage);
-        originalConsole.log('2 ' + messsage);
-        console.log("1 consoleWebSocket.bufferedAmount: " + consoleWebSocket.bufferedAmount);
+        console.log('WS: ' + messsage);
+        originalConsole.log('CDP: ' + messsage);
         const stop_when_ws_buffer_empty = () => {
             if (consoleWebSocket.bufferedAmount == 0) {
                 // tell xharness WasmTestMessagesProcessor we are done. 
