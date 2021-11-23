@@ -18068,7 +18068,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
     while (true)
     {
         // ADD(lclNum, lclNum), end of tree
-        if (op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->GetLclNum() == lclNum && op1->OperIs(GT_LCL_VAR) &&
+        if (op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->GetLclNum() == lclNum && op2->OperIs(GT_LCL_VAR) &&
             op2->AsLclVarCommon()->GetLclNum() == lclNum)
         {
             foldCount += 2;
