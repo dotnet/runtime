@@ -39,7 +39,7 @@
 .class public auto ansi beforefieldinit DebugInfoMethods
   extends [System.Runtime]System.Object
 {
-  .method public hidebysig static void  TestUninlined() cil managed aggressiveoptimization
+  .method public hidebysig static void  TestUninlined() cil managed
   {
     .custom instance void [attribute]ExpectedILMappings::.ctor() = {
       property int32[] Debug = int32[2]( 0 6 )
@@ -53,7 +53,7 @@
     IL_000c:  ret
   }
 
-  .method public hidebysig static int32 TestLateFailingInlineCandidate() cil managed aggressiveoptimization
+  .method public hidebysig static int32 TestLateFailingInlineCandidate() cil managed
   {
     .custom instance void [attribute]ExpectedILMappings::.ctor() = {
       property int32[] Debug = int32[2]( 0 6 )
@@ -71,7 +71,7 @@
     IL_000f:  ret
   }
 
-  .method public hidebysig static int32 TestSucceedingInlineCandidate() cil managed aggressiveoptimization
+  .method public hidebysig static int32 TestSucceedingInlineCandidate() cil managed
   {
     // We still expect a mapping where the call was inlined.
     .custom instance void [attribute]ExpectedILMappings::.ctor() = {
@@ -90,7 +90,7 @@
     IL_000f:  ret
   }
 
-  .method public hidebysig static int32  TestControlFlow(int32 arg) cil managed aggressiveoptimization
+  .method public hidebysig static int32  TestControlFlow(int32 arg) cil managed
   {
     .custom instance void [attribute]ExpectedILMappings::.ctor() = {
       // Note: We really would want to validate that we are generating mappings for every call instruction in debug,
