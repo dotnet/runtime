@@ -173,7 +173,7 @@ if(CLR_CMAKE_TARGET_OSX)
     )
 
     # Additional requirements for System.Security.Cryptography.Native.Apple
-    include(${CLR_SRC_NATIVE_DIR}/System.Security.Cryptography.Native.Apple/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native.Apple/extra_libs.cmake)
     append_extra_cryptography_apple_libs(NATIVE_LIBS)
 endif()
 
