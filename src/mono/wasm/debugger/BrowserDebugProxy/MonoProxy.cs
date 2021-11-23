@@ -754,9 +754,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (context.IsSkippingHiddenMethod == true)
                 {
                     context.IsSkippingHiddenMethod = false;
-                    await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
-                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                    return true;
+                    if (event_kind != EventKind.UserBreak)
+                    {
+                        await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
+                    }
                 }
 
                 if (j == 0 && method?.Info.IsHiddenFromDebugger == true)
