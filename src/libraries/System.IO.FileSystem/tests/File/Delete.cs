@@ -88,7 +88,7 @@ namespace System.IO.Tests
             var linkPath = GetTestFilePath();
 
             File.Create(path).Dispose();
-            Assert.NotNull(Directory.CreateSymbolicLink(linkPath, path));
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
 
             // Both the symlink and the target exist
             Assert.True(File.Exists(path), "path should exist");

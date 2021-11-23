@@ -308,7 +308,7 @@ namespace System.IO.Tests
 
             // Both the symlink and the target exist
             Assert.True(Directory.Exists(target), "target should exist");
-            Assert.True(Directory.Exists(linkPath) || File.Exists(linkPath), "linkPath should exist");
+            Assert.True(Directory.Exists(linkPath), "linkPath should exist");
             Assert.True(File.Exists(fileInTarget), "fileInTarget should exist");
 
             // Delete the parent folder of the symlink.
@@ -316,7 +316,7 @@ namespace System.IO.Tests
 
             // Target should still exist
             Assert.True(Directory.Exists(target), "target should still exist");
-            Assert.False(Directory.Exists(linkPath) || File.Exists(linkPath), "linkPath should no longer exist");
+            Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
             Assert.True(File.Exists(fileInTarget), "fileInTarget should exist");
         }
     }
