@@ -85,7 +85,7 @@ namespace System.Diagnostics.Eventing.Reader
         {
             bool status = UnsafeNativeMethods.EvtNext(queryHandle, eventSize, events, timeout, flags, ref returned);
             int win32Error = Marshal.GetLastWin32Error();
-            if (!status && win32Error != UnsafeNativeMethods.ERROR_NO_MORE_ITEMS)
+            if (!status && win32Error != Interop.Errors.ERROR_NO_MORE_ITEMS)
                 EventLogException.Throw(win32Error);
             return win32Error == 0;
         }
@@ -153,7 +153,7 @@ namespace System.Diagnostics.Eventing.Reader
 
             if (emHandle.IsInvalid)
             {
-                if (win32Error != UnsafeNativeMethods.ERROR_NO_MORE_ITEMS)
+                if (win32Error != Interop.Errors.ERROR_NO_MORE_ITEMS)
                     EventLogException.Throw(win32Error);
                 return null;
             }
@@ -270,7 +270,7 @@ namespace System.Diagnostics.Eventing.Reader
 
             if (!status)
             {
-                if (win32Error == UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                if (win32Error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Reallocate the new RenderBuffer with the right size.
                     buffer.Capacity = buffUsed;
@@ -321,10 +321,10 @@ namespace System.Diagnostics.Eventing.Reader
                 int error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (error == UnsafeNativeMethods.ERROR_SUCCESS)
+                    if (error == Interop.Errors.ERROR_SUCCESS)
                     { }
                     else
-                        if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                        if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
@@ -353,7 +353,7 @@ namespace System.Diagnostics.Eventing.Reader
                 int error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
@@ -383,7 +383,7 @@ namespace System.Diagnostics.Eventing.Reader
                 int error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
@@ -412,7 +412,7 @@ namespace System.Diagnostics.Eventing.Reader
                 int error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
@@ -456,7 +456,7 @@ namespace System.Diagnostics.Eventing.Reader
                 {
                     return null;
                 }
-                if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     EventLogException.Throw(error);
             }
 
@@ -489,7 +489,7 @@ namespace System.Diagnostics.Eventing.Reader
 
                 if (!status)
                 {
-                    if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
@@ -519,7 +519,7 @@ namespace System.Diagnostics.Eventing.Reader
                 int win32Error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (win32Error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(win32Error);
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
@@ -549,7 +549,7 @@ namespace System.Diagnostics.Eventing.Reader
                 int win32Error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (win32Error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(win32Error);
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
@@ -670,13 +670,13 @@ namespace System.Diagnostics.Eventing.Reader
             int win32Error = Marshal.GetLastWin32Error();
             if (!status)
             {
-                if (win32Error == UnsafeNativeMethods.ERROR_NO_MORE_ITEMS)
+                if (win32Error == Interop.Errors.ERROR_NO_MORE_ITEMS)
                 {
                     finish = true;
                     return null;
                 }
 
-                if (win32Error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     EventLogException.Throw(win32Error);
             }
 
@@ -698,13 +698,13 @@ namespace System.Diagnostics.Eventing.Reader
             int win32Error = Marshal.GetLastWin32Error();
             if (!status)
             {
-                if (win32Error == UnsafeNativeMethods.ERROR_NO_MORE_ITEMS)
+                if (win32Error == Interop.Errors.ERROR_NO_MORE_ITEMS)
                 {
                     finish = true;
                     return null;
                 }
 
-                if (win32Error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     EventLogException.Throw(win32Error);
             }
 
@@ -728,7 +728,7 @@ namespace System.Diagnostics.Eventing.Reader
                 int win32Error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (win32Error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(win32Error);
                 }
                 buffer = Marshal.AllocHGlobal((int)bufferNeeded);
@@ -760,7 +760,7 @@ namespace System.Diagnostics.Eventing.Reader
                 if (!status)
                 {
                     int error = Marshal.GetLastWin32Error();
-                    if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
 
@@ -861,7 +861,7 @@ namespace System.Diagnostics.Eventing.Reader
                 if (!status)
                 {
                     int error = Marshal.GetLastWin32Error();
-                    if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
 
@@ -912,7 +912,7 @@ namespace System.Diagnostics.Eventing.Reader
                 {
                     return null;
                 }
-                if (error != (int)UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                if (error != (int)Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     EventLogException.Throw(error);
             }
 
@@ -950,7 +950,7 @@ namespace System.Diagnostics.Eventing.Reader
                     {
                         return keywordsList.AsReadOnly();
                     }
-                    if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
 
@@ -1000,7 +1000,7 @@ namespace System.Diagnostics.Eventing.Reader
                 int error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
                 }
 
@@ -1048,7 +1048,7 @@ namespace System.Diagnostics.Eventing.Reader
                 {
                     return null;
                 }
-                if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
+                if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     EventLogException.Throw(error);
             }
 
@@ -1327,9 +1327,9 @@ namespace System.Diagnostics.Eventing.Reader
                 case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
                 case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
                 case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
+                case Interop.Errors.ERROR_RESOURCE_LANG_NOT_FOUND:
                 case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
+                case Interop.Errors.ERROR_RESOURCE_TYPE_NOT_FOUND:
                     return true;
             }
             return false;
