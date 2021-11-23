@@ -296,7 +296,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			var arg = Assert.Single (LinkerTestBase.GetAttributeArguments (attribute));
 			var text = LinkerTestBase.GetStringFromExpression (arg.Value);
-			foreach (var diagnostic in _diagnostics)
+			foreach (var diagnostic in diagnosticMessages)
 				Assert.DoesNotContain (text, diagnostic.GetMessage ());
 		}
 
