@@ -990,15 +990,8 @@ namespace DebuggerTests
             var step_into2 = await SendCommandAndCheck(null, $"Debugger.stepInto", null, -1, -1, null);
 
             Assert.Equal(
-                pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
-                step_into2["callFrames"][0]["location"]["lineNumber"].Value<int>()
-                );
-
-            var step_into3 = await SendCommandAndCheck(null, $"Debugger.stepInto", null, -1, -1, null);
-
-            Assert.Equal(
                 pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1,
-                step_into3["callFrames"][0]["location"]["lineNumber"].Value<int>()
+                step_into2["callFrames"][0]["location"]["lineNumber"].Value<int>()
                 );
             
         }
@@ -1023,17 +1016,9 @@ namespace DebuggerTests
             var step_over2 = await SendCommandAndCheck(null, $"Debugger.stepOver", null, -1, -1, null);
 
             Assert.Equal(
-                pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1,
                 step_over2["callFrames"][0]["location"]["lineNumber"].Value<int>()
                 );
-
-            var step_over3 = await SendCommandAndCheck(null, $"Debugger.stepOver", null, -1, -1, null);
-
-            Assert.Equal(
-                pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1,
-                step_over3["callFrames"][0]["location"]["lineNumber"].Value<int>()
-                );
-            
         }
     }
 }
