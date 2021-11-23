@@ -663,20 +663,21 @@ namespace DebuggerTests
         public async Task DebuggerAttributeStopOnDebuggerHiddenCallWithDebuggerBreakCall()
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 0);
-            await EvaluateAndCheck(
+            var init_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunDebuggerBreak'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
                 "RunDebuggerBreak"
             );
-            Console.WriteLine(bp_init.Value["locations"][0]["lineNumber"].Value<int>());
             var pause_location = await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1,
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
                 "RunDebuggerBreak");
-            Console.WriteLine(pause_location["callFrames"][0]["location"]["lineNumber"]);
+            Assert.Equal(init_location["callFrames"][0]["functionName"], pause_location["callFrames"][0]["functionName"]);
+            var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            await EvaluateOnCallFrame(id, "local_var", false);
             await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 834,

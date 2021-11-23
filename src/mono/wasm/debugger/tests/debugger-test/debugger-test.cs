@@ -821,6 +821,7 @@ public class DebuggerAttribute
     [System.Diagnostics.DebuggerHidden]
     public static void HiddenMethodDebuggerBreak()
     {
+        var local_var = 12;
         System.Diagnostics.Debugger.Break();
         currentCount++;
     }
