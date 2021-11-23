@@ -3,28 +3,38 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-
-#if !FEATURE_DYNAMIC_DELEGATE
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
-#endif
 
 namespace System.Dynamic.Utils
 {
     internal static class DelegateHelpers
     {
-        internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> handler)
+        // This can be flipped to true using feature switches at publishing time
+        internal static bool CanEmitObjectArrayDelegate => string.Empty != null; // HACK: complex enough so that ILLink doesn't constprop at library build
+
+        // Separate class so that the it can be trimmed away and doesn't get conflated
+        // with the Reflection.Emit statics below.
+        private static class DynamicDelegateLightup
         {
-#if !FEATURE_DYNAMIC_DELEGATE
-            return CreateObjectArrayDelegateRefEmit(delegateType, handler);
-#else
-            return Internal.Runtime.Augments.DynamicDelegateAugments.CreateObjectArrayDelegate(delegateType, handler);
-#endif
+            public static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegate { get; }
+                = Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
+                  .GetMethod("CreateObjectArrayDelegate")!
+                  .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
         }
 
-
-#if !FEATURE_DYNAMIC_DELEGATE
+        internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> handler)
+        {
+            if (CanEmitObjectArrayDelegate)
+            {
+                return CreateObjectArrayDelegateRefEmit(delegateType, handler);
+            }
+            else
+            {
+                return DynamicDelegateLightup.CreateObjectArrayDelegate(delegateType, handler);
+            }
+        }
 
         private static readonly CacheDict<Type, MethodInfo> s_thunks = new CacheDict<Type, MethodInfo>(256);
         private static readonly MethodInfo s_FuncInvoke = typeof(Func<object?[], object?>).GetMethod("Invoke")!;
@@ -290,7 +300,5 @@ namespace System.Dynamic.Utils
         {
             return (t.IsPointer) ? typeof(IntPtr) : t;
         }
-
-#endif
     }
 }
