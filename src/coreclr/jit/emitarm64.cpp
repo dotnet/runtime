@@ -11457,7 +11457,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef DEBUG
                 // Under STRESS_EMITTER, if this is the 'align' before the 'jmp' instruction,
                 // then add "bkpt" instruction.
-                // instrDescAlign* alignInstr = (instrDescAlign*)id;
+                instrDescAlign* alignInstr = (instrDescAlign*)id;
 
                 if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
                     (alignInstr->idaIG != alignInstr->idaLoopHeadPredIG) && !skipIns)
