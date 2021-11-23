@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObject, t_RuntimeHelpers } from './types';
-import { ArgsMarshalString } from './method-binding';
-import { _create_primitive_converters } from './method-binding';
-import { PromiseControl } from './cancelable-promise';
+import { JSHandle, GCHandle, MonoObject } from "./types";
+import { ArgsMarshalString } from "./method-binding";
+import { PromiseControl } from "./cancelable-promise";
+import { runtimeHelpers } from "./imports";
 
 const fn_signatures: [jsname: string, csname: string, signature: ArgsMarshalString][] = [
     ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],
-    ["_get_cs_owned_object_js_handle", "GetCSOwnedObjectJSHandle", 'mi'],
+    ["_get_cs_owned_object_js_handle", "GetCSOwnedObjectJSHandle", "mi"],
     ["_try_get_cs_owned_object_js_handle", "TryGetCSOwnedObjectJSHandle", "mi"],
     ["_create_cs_owned_proxy", "CreateCSOwnedProxy", "iii!"],
 
@@ -28,7 +28,7 @@ const fn_signatures: [jsname: string, csname: string, signature: ArgsMarshalStri
     ["_create_date_time", "CreateDateTime", "d!"],
     ["_create_uri", "CreateUri", "s!"],
     ["_is_simple_array", "IsSimpleArray", "m"],
-]
+];
 
 export interface t_CSwraps {
     // BINDING
@@ -55,20 +55,15 @@ export interface t_CSwraps {
     _is_simple_array(obj: MonoObject): boolean;
 }
 
-const wrapped_cs_functions: t_CSwraps = <any>{}
-for (let sig of fn_signatures) {
+const wrapped_cs_functions: t_CSwraps = <any>{};
+for (const sig of fn_signatures) {
     const wf: any = wrapped_cs_functions;
     // lazy init on first run
-    wf[sig[0]] = function () {
-        const fce = bind_runtime_method(sig[1], sig[2])
+    wf[sig[0]] = function (...args: any[]) {
+        const fce = runtimeHelpers.bind_runtime_method(sig[1], sig[2]);
         wf[sig[0]] = fce;
-        return fce.apply(undefined, arguments);
+        return fce(...args);
     };
 }
 
 export default wrapped_cs_functions;
-
-let bind_runtime_method: Function
-export function set_bind_runtime_method(method: Function) {
-    bind_runtime_method = method;
-}

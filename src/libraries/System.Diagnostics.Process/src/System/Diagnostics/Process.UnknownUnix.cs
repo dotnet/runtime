@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Diagnostics
 {
     public partial class Process : IDisposable
@@ -9,12 +11,16 @@ namespace System.Diagnostics
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
-        public static Process[] GetProcessesByName(string processName, string machineName)
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             throw new PlatformNotSupportedException();
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -31,6 +37,8 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public TimeSpan TotalProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -40,6 +48,8 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public TimeSpan UserProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -82,5 +92,6 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException();
         }
 
+        private int ParentProcessId => throw new PlatformNotSupportedException();
     }
 }

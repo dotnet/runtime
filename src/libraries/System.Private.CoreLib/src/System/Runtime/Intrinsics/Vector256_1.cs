@@ -105,6 +105,8 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        public T this[int index] => this.GetElement(index);
+
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
@@ -341,8 +343,9 @@ namespace System.Runtime.Intrinsics
                 // bytes are exactly the same.
 
                 Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
-                Vector256<byte> result = Avx2.CompareEqual(this.AsByte(), other.AsByte());
-                return Avx2.MoveMask(result) == unchecked((int)(0b1111_1111_1111_1111_1111_1111_1111_1111)); // We have one bit per element
+
+                Vector256<byte> xored = Avx2.Xor(this.AsByte(), other.AsByte());
+                return Avx.TestZ(xored, xored);
             }
 
             return SoftwareFallback(in this, other);

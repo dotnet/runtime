@@ -44,7 +44,7 @@ namespace System.Numerics.Tests
             // Again, with lower threshold
             BigIntTools.Utils.RunWithFakeThreshold("SquareThreshold", 8, () =>
                 BigIntTools.Utils.RunWithFakeThreshold("MultiplyThreshold", 8, () =>
-                    BigIntTools.Utils.RunWithFakeThreshold("AllocationThreshold", 8, RunMultiply_TwoLargeBigIntegers)
+                    BigIntTools.Utils.RunWithFakeThreshold("StackAllocThreshold", 8, RunMultiply_TwoLargeBigIntegers)
                 )
             );
         }

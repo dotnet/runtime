@@ -13,22 +13,22 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidatePropertyNameAndDepth(ReadOnlySpan<char> propertyName)
         {
-            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || CurrentDepth >= JsonConstants.MaxWriterDepth)
-                ThrowHelper.ThrowInvalidOperationOrArgumentException(propertyName, _currentDepth);
+            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || CurrentDepth >= _options.MaxDepth)
+                ThrowHelper.ThrowInvalidOperationOrArgumentException(propertyName, _currentDepth, _options.MaxDepth);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidatePropertyNameAndDepth(ReadOnlySpan<byte> utf8PropertyName)
         {
-            if (utf8PropertyName.Length > JsonConstants.MaxUnescapedTokenSize || CurrentDepth >= JsonConstants.MaxWriterDepth)
-                ThrowHelper.ThrowInvalidOperationOrArgumentException(utf8PropertyName, _currentDepth);
+            if (utf8PropertyName.Length > JsonConstants.MaxUnescapedTokenSize || CurrentDepth >= _options.MaxDepth)
+                ThrowHelper.ThrowInvalidOperationOrArgumentException(utf8PropertyName, _currentDepth, _options.MaxDepth);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateDepth()
         {
-            if (CurrentDepth >= JsonConstants.MaxWriterDepth)
-                ThrowHelper.ThrowInvalidOperationException(_currentDepth);
+            if (CurrentDepth >= _options.MaxDepth)
+                ThrowHelper.ThrowInvalidOperationException(_currentDepth, _options.MaxDepth);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -39,7 +39,7 @@ namespace System.Text.Json
                 if (!_inObject || _tokenType == JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, currentDepth: default, token: default, _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
                 }
             }
         }
@@ -52,7 +52,7 @@ namespace System.Text.Json
                 if (!_inObject || _tokenType == JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, currentDepth: default, token: default, _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
                 }
                 UpdateBitStackOnStart(token);
             }
@@ -89,7 +89,7 @@ namespace System.Text.Json
         private void WritePropertyNameIndented(ReadOnlySpan<byte> escapedPropertyName, byte token)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - 6 - s_newLineLength);
 
@@ -161,7 +161,7 @@ namespace System.Text.Json
         private void WritePropertyNameIndented(ReadOnlySpan<char> escapedPropertyName, byte token)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - 6 - s_newLineLength);
 

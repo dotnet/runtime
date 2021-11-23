@@ -326,7 +326,7 @@ public class PInvokeTableGenerator : Task
             sb.Append($" (*WasmInterpEntrySig_{cb_index}) (");
             int pindex = 0;
             if (method.ReturnType.Name != "Void") {
-                sb.Append("int");
+                sb.Append("int*");
                 pindex++;
             }
             foreach (var p in method.GetParameters()) {
@@ -415,7 +415,7 @@ public class PInvokeTableGenerator : Task
 
     private static bool IsBlittable (Type type)
     {
-        if (type.IsPrimitive || type.IsByRef || type.IsPointer)
+        if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
             return true;
         else
             return false;
@@ -424,7 +424,7 @@ public class PInvokeTableGenerator : Task
     private static void Error (string msg) => throw new LogAsErrorException(msg);
 }
 
-internal class PInvoke : IEquatable<PInvoke>
+internal sealed class PInvoke : IEquatable<PInvoke>
 {
     public PInvoke(string entryPoint, string module, MethodInfo method)
     {
@@ -447,7 +447,7 @@ internal class PInvoke : IEquatable<PInvoke>
     public override string ToString() => $"{{ EntryPoint: {EntryPoint}, Module: {Module}, Method: {Method}, Skip: {Skip} }}";
 }
 
-internal class PInvokeComparer : IEqualityComparer<PInvoke>
+internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
 {
     public bool Equals(PInvoke? x, PInvoke? y)
     {
@@ -463,7 +463,7 @@ internal class PInvokeComparer : IEqualityComparer<PInvoke>
         => $"{pinvoke.EntryPoint}{pinvoke.Module}{pinvoke.Method}".GetHashCode();
 }
 
-internal class PInvokeCallback
+internal sealed class PInvokeCallback
 {
     public PInvokeCallback(MethodInfo method)
     {

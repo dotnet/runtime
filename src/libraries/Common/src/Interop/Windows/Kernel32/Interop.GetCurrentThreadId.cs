@@ -8,8 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
         [SuppressGCTransition]
-        public static extern int GetCurrentThreadId();
+        public static partial int GetCurrentThreadId();
     }
 }

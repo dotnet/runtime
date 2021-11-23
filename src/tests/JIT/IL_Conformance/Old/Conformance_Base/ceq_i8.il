@@ -296,4 +296,4 @@ FAIL:
 	ret
 }
 }
-.assembly ceq_i8.exe{}
+.assembly ceq_i8{}

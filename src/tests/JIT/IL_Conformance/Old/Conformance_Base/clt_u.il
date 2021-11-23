@@ -43,4 +43,4 @@ FAIL:
 	ret
 }
 }
-.assembly clt_u.exe{}
+.assembly clt_u{}

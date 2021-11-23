@@ -44,4 +44,4 @@ FAIL:
 	ret
 }
 }
-.assembly ceq_i.exe{}
+.assembly ceq_i{}

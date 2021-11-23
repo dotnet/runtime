@@ -3,7 +3,7 @@
 
 namespace System.Buffers
 {
-    internal unsafe class PointerMemoryManager<T> : MemoryManager<T> where T : struct
+    internal sealed unsafe class PointerMemoryManager<T> : MemoryManager<T> where T : struct
     {
         private readonly void* _pointer;
         private readonly int _length;

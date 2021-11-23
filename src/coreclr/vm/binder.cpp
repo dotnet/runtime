@@ -8,6 +8,7 @@
 
 #include "binder.h"
 #include "ecall.h"
+#include "qcall.h"
 
 #include "field.h"
 #include "excep.h"
@@ -1030,19 +1031,25 @@ void CoreLibBinder::CheckExtended()
         else
         if (pMD->IsNDirect())
         {
-            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc *)pMD);
+            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
+            NDirect::PopulateNDirectMethodDesc(pNMD);
 
-            if (pMD->IsQCall())
+            if (pNMD->IsQCall() && QCallResolveDllImport(pNMD->GetEntrypointName()) == nullptr)
             {
-                id = ((NDirectMethodDesc *)pMD)->GetECallID();
-                if (id == 0) {
-                    id = ECall::GetIDForMethod(pMD);
+                LPCUTF8 pszClassName;
+                LPCUTF8 pszNameSpace;
+                if (FAILED(pInternalImport->GetNameOfTypeDef(tdClass, &pszClassName, &pszNameSpace)))
+                {
+                    pszClassName = pszNameSpace = "Invalid TypeDef record";
                 }
+                LPCUTF8 pszName;
+                if (FAILED(pInternalImport->GetNameOfMethodDef(td, &pszName)))
+                {
+                    pszName = "Invalid method name";
+                }
+                printf("CheckExtended: Unable to find qcall implementation: %s.%s::%s (EntryPoint name: %s)\n", pszNameSpace, pszClassName, pszName, pNMD->GetEntrypointName());
             }
-            else
-            {
-                continue;
-            }
+            continue;
         }
         else
         {

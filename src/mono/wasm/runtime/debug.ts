@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from './modules'
-import { toBase64StringImpl, _base64_to_uint8 } from './base64'
-import cwraps from './cwraps'
+import { Module, MONO, runtimeHelpers } from "./imports";
+import { toBase64StringImpl } from "./base64";
+import cwraps from "./cwraps";
+import { VoidPtr } from "./types";
 
-var commands_received: any;
-var _call_function_res_cache: any = {}
-var _next_call_function_res_id = 0;
-var _debugger_buffer_len = -1;
-var _debugger_buffer: VoidPtr;
-var _debugger_heap_bytes: Uint8Array;
+let commands_received: CommandResponse;
+let _call_function_res_cache: any = {};
+let _next_call_function_res_id = 0;
+let _debugger_buffer_len = -1;
+let _debugger_buffer: VoidPtr;
 
-export function mono_wasm_runtime_ready() {
+export function mono_wasm_runtime_ready(): void {
     runtimeHelpers.mono_wasm_runtime_is_ready = true;
 
     // FIXME: where should this go?
@@ -22,17 +22,18 @@ export function mono_wasm_runtime_ready() {
 
     // DO NOT REMOVE - magic debugger init function
     if ((<any>globalThis).dotnetDebugger)
+        // eslint-disable-next-line no-debugger
         debugger;
     else
         console.debug("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 }
 
-export function mono_wasm_fire_debugger_agent_message() {
+export function mono_wasm_fire_debugger_agent_message(): void {
     // eslint-disable-next-line no-debugger
     debugger;
 }
 
-export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, buffer: number, buffer_len: number) {
+export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
     const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
     const base64String = toBase64StringImpl(assembly_data);
     const buffer_obj = {
@@ -41,7 +42,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
             id,
             value: base64String
         }
-    }
+    };
     commands_received = buffer_obj;
 }
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
@@ -51,77 +52,83 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
         _debugger_buffer_len = Math.max(command_parameters.length, _debugger_buffer_len, 256);
         _debugger_buffer = Module._malloc(_debugger_buffer_len);
     }
-    //reset _debugger_heap_bytes because Module.HEAPU8.buffer can be reallocated 
-    _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, <any>_debugger_buffer, _debugger_buffer_len);
-    _debugger_heap_bytes.set(_base64_to_uint8(command_parameters));
+    const byteCharacters = atob(command_parameters);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        Module.HEAPU8[<any>_debugger_buffer + i] = byteCharacters.charCodeAt(i);
+    }
 }
 
-export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, command_parameters: any, length: number, valtype: number, newvalue: number) {
+export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, command_parameters: string, length: number, valtype: number, newvalue: number): CommandResponseResult {
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command_with_parms(id, command_set, command, _debugger_buffer, length, valtype, newvalue.toString());
 
     const { res_ok, res } = commands_received;
     if (!res_ok)
-        throw new Error(`Failed on mono_wasm_invoke_method_debugger_agent_with_parms`);
+        throw new Error("Failed on mono_wasm_invoke_method_debugger_agent_with_parms");
     return res;
 }
 
-export function mono_wasm_send_dbg_command(id: number, command_set: number, command: number, command_parameters: any) {
+export function mono_wasm_send_dbg_command(id: number, command_set: number, command: number, command_parameters: string): CommandResponseResult {
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command(id, command_set, command, _debugger_buffer, command_parameters.length);
 
     const { res_ok, res } = commands_received;
     if (!res_ok)
-        throw new Error(`Failed on mono_wasm_send_dbg_command`);
+        throw new Error("Failed on mono_wasm_send_dbg_command");
     return res;
 
 }
 
-export function mono_wasm_get_dbg_command_info() {
+export function mono_wasm_get_dbg_command_info(): CommandResponseResult {
     const { res_ok, res } = commands_received;
     if (!res_ok)
-        throw new Error(`Failed on mono_wasm_get_dbg_command_info`);
+        throw new Error("Failed on mono_wasm_get_dbg_command_info");
     return res;
 }
 
-export function mono_wasm_debugger_resume() {
+export function mono_wasm_debugger_resume(): void {
+    //nothing
 }
 
-export function mono_wasm_detach_debugger() {
+export function mono_wasm_detach_debugger(): void {
     cwraps.mono_wasm_set_is_debugger_attached(false);
 }
 
 /**
  * Raises an event for the debug proxy
  */
-export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}) {
-    if (typeof event !== 'object')
+export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}): void {
+    if (typeof event !== "object")
         throw new Error(`event must be an object, but got ${JSON.stringify(event)}`);
 
     if (event.eventName === undefined)
         throw new Error(`event.eventName is a required parameter, in event: ${JSON.stringify(event)}`);
 
-    if (typeof args !== 'object')
+    if (typeof args !== "object")
         throw new Error(`args must be an object, but got ${JSON.stringify(args)}`);
 
-    console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
+    console.debug("mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae", JSON.stringify(event), JSON.stringify(args));
 }
 
 // Used by the debugger to enumerate loaded dlls and pdbs
-export function mono_wasm_get_loaded_files() {
+export function mono_wasm_get_loaded_files(): string[] {
     cwraps.mono_wasm_set_is_debugger_attached(true);
-    return runtimeHelpers.loaded_files;
+    return MONO.loaded_files;
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
-    if (objectId.startsWith('dotnet:array:')) {
-        const ret = details.map((p: any) => p.value);
-        return ret;
+    if (objectId.startsWith("dotnet:array:")) {
+        let ret : Array<any>;
+        if (details.dimensionsDetails == undefined || details.dimensionsDetails.length == 1)
+        {
+            ret = details.items.map((p: any) => p.value);
+            return ret;
+        }
     }
 
     const proxy: any = {};
     Object.keys(details).forEach(p => {
-        var prop = details[p];
+        const prop = details[p];
         if (prop.get !== undefined) {
             Object.defineProperty(proxy,
                 prop.name,
@@ -153,7 +160,7 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
     return proxy;
 }
 
-export function mono_wasm_call_function_on(request: CallRequest) {
+export function mono_wasm_call_function_on(request: CallRequest): CFOResponse {
     if (request.arguments != undefined && !Array.isArray(request.arguments))
         throw new Error(`"arguments" should be an array, but was ${request.arguments}`);
 
@@ -161,7 +168,7 @@ export function mono_wasm_call_function_on(request: CallRequest) {
     const details = request.details;
     let proxy: any = {};
 
-    if (objId.startsWith('dotnet:cfo_res:')) {
+    if (objId.startsWith("dotnet:cfo_res:")) {
         if (objId in _call_function_res_cache)
             proxy = _call_function_res_cache[objId];
         else
@@ -173,7 +180,7 @@ export function mono_wasm_call_function_on(request: CallRequest) {
     const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
 
     const fn_body_template = `var fn = ${request.functionDeclaration}; return fn.apply(proxy, [${fn_args}]);`;
-    const fn_defn = new Function('proxy', fn_body_template);
+    const fn_defn = new Function("proxy", fn_body_template);
     const fn_res = fn_defn(proxy);
 
     if (fn_res === undefined)
@@ -210,8 +217,7 @@ export function mono_wasm_call_function_on(request: CallRequest) {
     return { type: "object", className: "Object", description: "Object", objectId: fn_res_id };
 }
 
-
-function _get_cfo_res_details(objectId: string, args: any) {
+function _get_cfo_res_details(objectId: string, args: any): ValueAsJsonString {
     if (!(objectId in _call_function_res_cache))
         throw new Error(`Could not find any object with id ${objectId}`);
 
@@ -225,10 +231,10 @@ function _get_cfo_res_details(objectId: string, args: any) {
         });
     }
 
-    let res_details: any[] = [];
+    const res_details: any[] = [];
     Object.keys(descriptors).forEach(k => {
         let new_obj;
-        let prop_desc = descriptors[k];
+        const prop_desc = descriptors[k];
         if (typeof prop_desc.value == "object") {
             // convert `{value: { type='object', ... }}`
             // to      `{ name: 'foo', value: { type='object', ... }}
@@ -243,7 +249,7 @@ function _get_cfo_res_details(objectId: string, args: any) {
             new_obj = {
                 name: k,
                 // merge/add `type` and `description` to `d.value`
-                value: Object.assign({ type: (typeof prop_desc.value), description: '' + prop_desc.value },
+                value: Object.assign({ type: (typeof prop_desc.value), description: "" + prop_desc.value },
                     prop_desc)
             };
         } else if (prop_desc.get !== undefined) {
@@ -269,7 +275,11 @@ function _get_cfo_res_details(objectId: string, args: any) {
     return { __value_as_json_string__: JSON.stringify(res_details) };
 }
 
-export function mono_wasm_get_details(objectId: string, args = {}) {
+type ValueAsJsonString = {
+    __value_as_json_string__: string;
+}
+
+export function mono_wasm_get_details(objectId: string, args = {}): ValueAsJsonString {
     return _get_cfo_res_details(`dotnet:cfo_res:${objectId}`, args);
 }
 
@@ -279,7 +289,7 @@ function _cache_call_function_res(obj: any) {
     return id;
 }
 
-export function mono_wasm_release_object(objectId: string) {
+export function mono_wasm_release_object(objectId: string): void {
     if (objectId in _call_function_res_cache)
         delete _call_function_res_cache[objectId];
 }
@@ -303,4 +313,22 @@ type CallRequest = {
 type WasmEvent = {
     eventName: string, // - name of the event being raised
     [i: string]: any, // - arguments for the event itself
+}
+
+type CommandResponseResult = {
+    id: number,
+    value: string
+}
+type CommandResponse = {
+    res_ok: boolean,
+    res: CommandResponseResult
+};
+
+type CFOResponse = {
+    type: string,
+    subtype?: string,
+    value?: string | null,
+    className?: string,
+    description?: string,
+    objectId?: string
 }

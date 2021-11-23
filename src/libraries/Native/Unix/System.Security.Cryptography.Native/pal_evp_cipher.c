@@ -9,7 +9,7 @@
 #define KEEP_CURRENT_DIRECTION -1
 
 EVP_CIPHER_CTX*
-CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc)
+CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, unsigned char* iv, int32_t enc)
 {
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     if (ctx == NULL)
@@ -43,15 +43,22 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
         }
     }
 
-    if (effectiveKeyLength > 0)
+    int nid = EVP_CIPHER_get_nid(type);
+
+    switch (nid)
     {
-        // Necessary for RC2
-        ret = EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_RC2_KEY_BITS, effectiveKeyLength, NULL);
-        if (ret <= 0)
-        {
-            EVP_CIPHER_CTX_free(ctx);
-            return NULL;
-        }
+        case NID_rc2_ecb:
+        case NID_rc2_cbc:
+            // Necessary for RC2
+            ret = EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_RC2_KEY_BITS, keyLength, NULL);
+            if (ret <= 0)
+            {
+                EVP_CIPHER_CTX_free(ctx);
+                return NULL;
+            }
+            break;
+        default:
+            break;
     }
 
     // Perform final initialization specifying the remaining arguments

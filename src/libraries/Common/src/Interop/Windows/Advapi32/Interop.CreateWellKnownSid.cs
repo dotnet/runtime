@@ -8,7 +8,11 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int CreateWellKnownSid(int sidType, byte[]? domainSid, byte[] resultSid, ref uint resultSidLength);
+        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true)]
+        internal static partial int CreateWellKnownSid(
+            int sidType,
+            byte[]? domainSid,
+            byte[] resultSid,
+            ref uint resultSidLength);
     }
 }

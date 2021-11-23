@@ -30,8 +30,8 @@ jobs:
   variables:
     DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
   pool:
-    name: NetCorePublic-Pool
-    queue: BuildPool.Ubuntu.1804.Amd64.Open
+    name: NetCore1ESPool-Public
+    demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
   steps:
   - checkout: self
@@ -54,7 +54,7 @@ jobs:
       cd '$(httpStressProject)'
       export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
       export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
-      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -xops 10"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 3.0
@@ -90,8 +90,8 @@ jobs:
   variables:
     DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
   pool:
-    name: NetCorePublic-Pool
-    queue: BuildPool.Server.Amd64.VS2019.Open
+    name: NetCore1ESPool-Public
+    demands: ImageOverride -equals Build.Server.Amd64.VS2019.Open
 
   steps:
   - checkout: self

@@ -5,15 +5,15 @@
 // https://github.com/sq/JSIL/blob/1d57d5427c87ab92ffa3ca4b82429cd7509796ba/JSIL.Libraries/Includes/Bootstrap/Core/Classes/System.Convert.js#L149
 // Thanks to Katelyn Gadd @kg
 
-export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?: number) {
-    var reader = _makeByteReader(inArray, offset, length);
-    var result = "";
-    var ch1: number | null = 0, ch2: number | null = 0, ch3: number | null = 0
-    var bits = 0, equalsCount = 0, sum = 0;
-    var mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
-    var shift1 = 18, shift2 = 12, shift3 = 6, shift4 = 0;
+export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?: number) :                 string{
+    const reader = _makeByteReader(inArray, offset, length);
+    let result = "";
+    let ch1: number | null = 0, ch2: number | null = 0, ch3: number | null = 0;
+    let bits = 0, equalsCount = 0, sum = 0;
+    const mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
+    const shift1 = 18, shift2 = 12, shift3 = 6, shift4 = 0;
 
-    while (true) {
+    for (;;) {
         ch1 = reader.read();
         ch2 = reader.read();
         ch3 = reader.read();
@@ -56,43 +56,43 @@ export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?
 }
 
 const _base64Table = [
-    'A', 'B', 'C', 'D',
-    'E', 'F', 'G', 'H',
-    'I', 'J', 'K', 'L',
-    'M', 'N', 'O', 'P',
-    'Q', 'R', 'S', 'T',
-    'U', 'V', 'W', 'X',
-    'Y', 'Z',
-    'a', 'b', 'c', 'd',
-    'e', 'f', 'g', 'h',
-    'i', 'j', 'k', 'l',
-    'm', 'n', 'o', 'p',
-    'q', 'r', 's', 't',
-    'u', 'v', 'w', 'x',
-    'y', 'z',
-    '0', '1', '2', '3',
-    '4', '5', '6', '7',
-    '8', '9',
-    '+', '/'
-]
+    "A", "B", "C", "D",
+    "E", "F", "G", "H",
+    "I", "J", "K", "L",
+    "M", "N", "O", "P",
+    "Q", "R", "S", "T",
+    "U", "V", "W", "X",
+    "Y", "Z",
+    "a", "b", "c", "d",
+    "e", "f", "g", "h",
+    "i", "j", "k", "l",
+    "m", "n", "o", "p",
+    "q", "r", "s", "t",
+    "u", "v", "w", "x",
+    "y", "z",
+    "0", "1", "2", "3",
+    "4", "5", "6", "7",
+    "8", "9",
+    "+", "/"
+];
 
 function _makeByteReader(bytes: Uint8Array, index?: number, count?: number): {
     read: () => number | null
 } {
-    var position = (typeof (index) === "number") ? index : 0;
-    var endpoint: number;
+    let position = (typeof (index) === "number") ? index : 0;
+    let endpoint: number;
 
     if (typeof (count) === "number")
         endpoint = (position + count);
     else
         endpoint = (bytes.length - position);
 
-    var result = {
+    const result = {
         read: function () {
             if (position >= endpoint)
                 return null;
 
-            var nextByte = bytes[position];
+            const nextByte = bytes[position];
             position += 1;
             return nextByte;
         }
@@ -107,15 +107,4 @@ function _makeByteReader(bytes: Uint8Array, index?: number, count?: number): {
     });
 
     return result;
-}
-
-// FIXME: improve
-export function _base64_to_uint8(base64String: string) {
-    const byteCharacters = atob(base64String);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-
-    return new Uint8Array(byteNumbers);
 }

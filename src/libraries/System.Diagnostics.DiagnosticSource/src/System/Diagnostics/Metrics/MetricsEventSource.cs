@@ -374,11 +374,11 @@ namespace System.Diagnostics.Metrics
                 {
                     if (!MetricSpec.TryParse(specString, out MetricSpec spec))
                     {
-                        Log.Message("Failed to parse metric spec: {specString}");
+                        Log.Message($"Failed to parse metric spec: {specString}");
                     }
                     else
                     {
-                        Log.Message("Parsed metric: {spec}");
+                        Log.Message($"Parsed metric: {spec}");
                         if (spec.InstrumentName != null)
                         {
                             _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
@@ -438,7 +438,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        private class MetricSpec
+        private sealed class MetricSpec
         {
             private const char MeterInstrumentSeparator = '\\';
             public string MeterName { get; private set; }

@@ -36,10 +36,10 @@ namespace System.Net.NetworkInformation
         private readonly long _timeExceededMessagesReceived;
         private readonly long _timeExceededMessagesSent;
 
-        public BsdIcmpV6Statistics()
+        public unsafe BsdIcmpV6Statistics()
         {
             Interop.Sys.Icmpv6GlobalStatistics statistics;
-            if (Interop.Sys.GetIcmpv6GlobalStatistics(out statistics) != 0)
+            if (Interop.Sys.GetIcmpv6GlobalStatistics(&statistics) != 0)
             {
                 throw new NetworkInformationException(SR.net_PInvokeError);
             }

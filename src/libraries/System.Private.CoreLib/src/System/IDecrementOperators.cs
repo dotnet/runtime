@@ -11,7 +11,7 @@ namespace System
 {
     /// <summary>Defines a mechanism for decrementing a given value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
-    [RequiresPreviewFeatures]
+    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IDecrementOperators<TSelf>
         where TSelf : IDecrementOperators<TSelf>
     {

@@ -1632,7 +1632,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 }
             }
 
-            // Add regions for the loops. Note that loops are assumed to be contiguous from `lpFirst` to `lpBottom`.
+            // Add regions for the loops. Note that loops are assumed to be contiguous from `lpTop` to `lpBottom`.
 
             if (includeLoops)
             {
@@ -1645,7 +1645,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         continue;
                     }
                     sprintf_s(name, sizeof(name), FMT_LP, loopNum);
-                    rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpFirst, loop.lpBottom);
+                    rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpTop, loop.lpBottom);
                 }
             }
 
@@ -2419,12 +2419,6 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    // For OSR, we allow the firstBB to branch to the middle of a try.
-    if (comp->opts.IsOSR() && (blockPred == comp->fgFirstBB))
-    {
-        return true;
-    }
-
     printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
@@ -2857,6 +2851,11 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         chkFlags |= GTF_EXCEPT;
     }
 
+    if (tree->OperRequiresAsgFlag())
+    {
+        chkFlags |= GTF_ASG;
+    }
+
     if (tree->OperRequiresCallFlag(this))
     {
         chkFlags |= GTF_CALL;
@@ -2937,31 +2936,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 }
                 break;
 
-            case GT_LIST:
-                if ((op2 != nullptr) && op2->OperIsAnyList())
-                {
-                    ArrayStack<GenTree*> stack(getAllocator(CMK_DebugOnly));
-                    while ((tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->OperIsAnyList())
-                    {
-                        stack.Push(tree);
-                        tree = tree->gtGetOp2();
-                    }
-
-                    fgDebugCheckFlags(tree);
-
-                    while (!stack.Empty())
-                    {
-                        tree = stack.Pop();
-                        assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-                        fgDebugCheckFlags(tree->AsOp()->gtOp1);
-                        chkFlags |= (tree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
-                        chkFlags |= (tree->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
-                        fgDebugCheckFlagsHelper(tree, (tree->gtFlags & GTF_ALL_EFFECT), chkFlags);
-                    }
-
-                    return;
-                }
-                break;
             case GT_ADDR:
                 assert(!op1->CanCSE());
                 break;
@@ -2973,7 +2947,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 {
                     // Is this constant a handle of some kind?
                     //
-                    unsigned handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
+                    GenTreeFlags handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
                     if (handleKind != 0)
                     {
                         // Is the GTF_IND_INVARIANT flag set or unset?
@@ -3103,11 +3077,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             */
         }
 
-        if (tree->OperRequiresAsgFlag())
-        {
-            chkFlags |= GTF_ASG;
-        }
-
         if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
                                 (op1->gtOper == GT_IND && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
         {
@@ -3136,6 +3105,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
                 }
@@ -3148,6 +3119,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
                 }
@@ -3197,6 +3170,23 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 }
                 break;
 
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+            case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_HWINTRINSIC:
+#endif
+                // TODO-List-Cleanup: consider using the general Operands() iterator
+                // here for the "special" nodes to reduce code duplication.
+                for (GenTree* operand : tree->AsMultiOp()->Operands())
+                {
+                    fgDebugCheckFlags(operand);
+                    chkFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+                }
+                break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
             case GT_ARR_ELEM:
 
                 GenTree* arrObj;
@@ -3221,22 +3211,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 chkFlags |= (tree->AsArrOffs()->gtIndex->gtFlags & GTF_ALL_EFFECT);
                 fgDebugCheckFlags(tree->AsArrOffs()->gtArrObj);
                 chkFlags |= (tree->AsArrOffs()->gtArrObj->gtFlags & GTF_ALL_EFFECT);
-                break;
-
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-
-                GenTreeBoundsChk* bndsChk;
-                bndsChk = tree->AsBoundsChk();
-                fgDebugCheckFlags(bndsChk->gtIndex);
-                chkFlags |= (bndsChk->gtIndex->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(bndsChk->gtArrLen);
-                chkFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
                 break;
 
             case GT_PHI:

@@ -60,4 +60,4 @@ FAIL:
 }
 
 
-.assembly refs.exe{}
+.assembly refs{}

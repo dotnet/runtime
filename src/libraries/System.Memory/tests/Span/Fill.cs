@@ -105,7 +105,6 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/59444", typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         public static unsafe void FillNativeBytes()
         {
             // Arrange

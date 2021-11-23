@@ -24,18 +24,5 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             FilePatternMatch matchCase2 = new FilePatternMatch("sub/sub2/bar/baz/three.txt", "Sub2/bar/baz/thrEE.txt");
             Assert.Equal(matchCase1.GetHashCode(), matchCase2.GetHashCode());
         }
-
-        [Fact]
-        public void TestGetHashCodeWithNull()
-        {
-            FilePatternMatch match = new FilePatternMatch(null, null);
-            Assert.Equal(0, match.GetHashCode());
-
-            int hash1 = new FilePatternMatch("non null", null).GetHashCode();
-            int hash2 = new FilePatternMatch(null, "non null").GetHashCode();
-            Assert.NotEqual(0, hash1);
-            Assert.NotEqual(0, hash2);
-            Assert.NotEqual(hash1, hash2);
-        }
     }
 }

@@ -33,7 +33,7 @@ namespace System.Net
             }
         }
 
-        private class ThreadContext
+        private sealed class ThreadContext
         {
             internal int _nestedIOCount;
         }

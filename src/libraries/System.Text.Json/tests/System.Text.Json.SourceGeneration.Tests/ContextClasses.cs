@@ -31,6 +31,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass> MyNestedClass { get; }
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
         public JsonTypeInfo<object[]> ObjectArray { get; }
+        public JsonTypeInfo<byte[]> ByteArray { get; }
         public JsonTypeInfo<string> String { get; }
         public JsonTypeInfo<(string Label1, int Label2, bool)> ValueTupleStringInt32Boolean { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
@@ -45,6 +46,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<StructWithCustomConverterPropertyFactory> StructWithCustomConverterPropertyFactory { get; }
         public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
         public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
+        public JsonTypeInfo<PersonStruct?> NullablePersonStruct { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

@@ -81,6 +81,16 @@ void CommandLine::DumpHelp(const char* program)
     printf("         t - method throughput time\n");
     printf("         * - all available method stats\n");
     printf("\n");
+    printf(" -metricsSummary <file name>, -baseMetricsSummary <file name.csv>\n");
+    printf("     Emit a summary of metrics to the specified file\n");
+    printf("     Currently includes:\n");
+    printf("       Total number of successful SPMI compiles\n");
+    printf("       Total number of failing SPMI compiles\n");
+    printf("       Total amount of ASM code in bytes\n");
+    printf("\n");
+    printf(" -diffMetricsSummary <file name>\n");
+    printf("     Same as above, but emit for the diff/second JIT");
+    printf("\n");
     printf(" -a[pplyDiff]\n");
     printf("     Compare the compile result generated from the provided JIT with the\n");
     printf("     compile result stored with the MC. If two JITs are provided, this\n");
@@ -373,6 +383,26 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 }
 
                 o->methodStatsTypes = argv[i];
+            }
+            else if ((_strnicmp(&argv[i][1], "metricsSummary", argLen) == 0) || (_strnicmp(&argv[i][1], "baseMetricsSummary", argLen) == 0))
+            {
+                if (++i >= argc)
+                {
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                o->baseMetricsSummaryFile = argv[i];
+            }
+            else if ((_strnicmp(&argv[i][1], "diffMetricsSummary", argLen) == 0))
+            {
+                if (++i >= argc)
+                {
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                o->diffMetricsSummaryFile = argv[i];
             }
             else if ((_strnicmp(&argv[i][1], "applyDiff", argLen) == 0))
             {

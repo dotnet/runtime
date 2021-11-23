@@ -142,7 +142,6 @@ stages:
         - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
         jobParameters:
           testGroup: innerloop
-          liveLibrariesBuildConfig: Release
           dependsOn:
           - build_Linux_x64_Checked_
           - build_Linux_x64_Release_

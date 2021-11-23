@@ -395,7 +395,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                             (args, state) => PrecompileLibraryParallel(args, state));
 
-            Log.LogMessage(MessageImportance.High, $"result: {result.IsCompleted}");
             if (result.IsCompleted)
             {
                 int numUnchanged = _totalNumAssemblies - _numCompiled;
@@ -933,7 +932,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return outItems;
     }
 
-    internal class PrecompileArguments
+    internal sealed class PrecompileArguments
     {
         public PrecompileArguments(string ResponseFilePath, IDictionary<string, string> EnvironmentVariables, string WorkingDir, ITaskItem AOTAssembly, IList<ProxyFile> ProxyFiles)
         {
@@ -952,7 +951,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     }
 }
 
-internal class FileCache
+internal sealed class FileCache
 {
     private CompilerCache? _newCache;
     private CompilerCache? _oldCache;
@@ -1020,7 +1019,7 @@ internal class FileCache
     public ProxyFile NewFile(string targetFile) => new ProxyFile(targetFile, this);
 }
 
-internal class ProxyFile
+internal sealed class ProxyFile
 {
     public string TargetFile { get; }
     public string TempFile   { get; }
@@ -1093,7 +1092,7 @@ public enum MonoAotModulesTableLanguage
     ObjC
 }
 
-internal class CompilerCache
+internal sealed class CompilerCache
 {
     public CompilerCache() => FileHashes = new();
     public CompilerCache(IDictionary<string, string> oldHashes)

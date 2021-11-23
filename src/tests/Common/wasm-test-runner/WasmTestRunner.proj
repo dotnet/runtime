@@ -23,7 +23,7 @@
     <PropertyGroup>
       <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
+      <WasmMainJSPath>$(CORE_ROOT)\runtime-test\test-main.js</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
       <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>

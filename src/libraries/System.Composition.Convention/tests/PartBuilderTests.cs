@@ -485,8 +485,7 @@ namespace System.Composition.Convention.Tests
             Assert.NotNull(importer.MyToBeIncludedClass);
         }
 
-
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedAttributeAlreadyApplied_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -503,7 +502,7 @@ namespace System.Composition.Convention.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedAttributeAppliedToBaseClass_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -520,7 +519,7 @@ namespace System.Composition.Convention.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedMultipleNotifications_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -536,7 +535,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(2, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedTwice_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -552,8 +551,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(6, test.OnImportsSatisfiedInvoked);
         }
 
-
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedInvalidMethod_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -569,7 +567,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(0, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedPropertiesAndFields_ShouldSucceed()
         {
             var builder = new ConventionBuilder();

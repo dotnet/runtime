@@ -79,4 +79,4 @@ END:
 }
 }
 
-.assembly neg_i8.exe{}
+.assembly neg_i8{}

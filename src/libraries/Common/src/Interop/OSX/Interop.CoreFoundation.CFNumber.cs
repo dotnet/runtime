@@ -16,7 +16,7 @@ internal static partial class Interop
             kCFNumberIntType = 9,
         }
 
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern int CFNumberGetValue(IntPtr handle, CFNumberType type, out int value);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static unsafe partial int CFNumberGetValue(IntPtr handle, CFNumberType type, int* value);
     }
 }

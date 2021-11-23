@@ -2414,15 +2414,18 @@ T GetUnsignedMagic(T d, bool* increment /*out*/, int* preShift /*out*/, int* pos
     }
 }
 
-uint32_t GetUnsigned32Magic(uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/)
+uint32_t GetUnsigned32Magic(
+    uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits)
 {
-    return GetUnsignedMagic<uint32_t>(d, increment, preShift, postShift, 32);
+    assert(bits <= 32);
+    return GetUnsignedMagic<uint32_t>(d, increment, preShift, postShift, bits);
 }
 
 #ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(
     uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits)
 {
+    assert(bits <= 64);
     return GetUnsignedMagic<uint64_t>(d, increment, preShift, postShift, bits);
 }
 #endif

@@ -6608,6 +6608,41 @@ bool MethodContext::repGetTailCallHelpers(
     return true;
 }
 
+void MethodContext::recUpdateEntryPointForTailCall(
+    const CORINFO_CONST_LOOKUP& origEntryPoint,
+    const CORINFO_CONST_LOOKUP& newEntryPoint)
+{
+    if (UpdateEntryPointForTailCall == nullptr)
+        UpdateEntryPointForTailCall = new LightWeightMap<Agnostic_CORINFO_CONST_LOOKUP, Agnostic_CORINFO_CONST_LOOKUP>();
+
+    Agnostic_CORINFO_CONST_LOOKUP key = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&origEntryPoint);
+    Agnostic_CORINFO_CONST_LOOKUP value = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&newEntryPoint);
+    UpdateEntryPointForTailCall->Add(key, value);
+    DEBUG_REC(dmpUpdateEntryPointForTailCall(key, value));
+}
+
+void MethodContext::dmpUpdateEntryPointForTailCall(
+    const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint,
+    const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint)
+{
+    printf("UpdateEntryPointForTailcall orig=%s new=%s",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(origEntryPoint).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(newEntryPoint).c_str());
+}
+
+void MethodContext::repUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+{
+    AssertMapExistsNoMessage(UpdateEntryPointForTailCall);
+
+    Agnostic_CORINFO_CONST_LOOKUP key = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(entryPoint);
+    AssertKeyExistsNoMessage(UpdateEntryPointForTailCall, key);
+
+    Agnostic_CORINFO_CONST_LOOKUP value = UpdateEntryPointForTailCall->Get(key);
+    DEBUG_REP(dmpUpdateEntryPointForTailCall(key, value));
+
+    *entryPoint = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value);
+}
+
 void MethodContext::recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result)
 {
     if (GetMethodDefFromMethod == nullptr)

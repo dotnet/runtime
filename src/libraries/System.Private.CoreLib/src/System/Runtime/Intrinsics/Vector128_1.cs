@@ -103,6 +103,8 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        public T this[int index] => this.GetElement(index);
+
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
@@ -325,6 +327,12 @@ namespace System.Runtime.Intrinsics
                 {
                     Vector128<double> result = Sse2.CompareEqual(this.AsDouble(), other.AsDouble());
                     return Sse2.MoveMask(result) == 0b11; // We have one bit per element
+                }
+                else if (Sse41.IsSupported)
+                {
+                    // xor + testz is slightly better for integer types
+                    Vector128<byte> xored = Sse2.Xor(this.AsByte(), other.AsByte());
+                    return Sse41.TestZ(xored, xored);
                 }
                 else
                 {
