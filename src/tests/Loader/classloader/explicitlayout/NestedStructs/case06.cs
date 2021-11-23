@@ -18,10 +18,20 @@ public struct FirstLevel
 public struct SecondLevel
 {
     [FieldOffset(0)]
+    public ThirdLevel ThirdLevel;
+
+    [FieldOffset(8)]
+    public long Value;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct ThirdLevel
+{
+    [FieldOffset(0)]
     public long ConflictingValueTypeField;
 }
 
-public class Test_NestedStructsWithExplicitLayout_Case05 {
+public class Test_NestedStructsWithExplicitLayout_Case06 {
     private void Run()
     {
         var x = new FirstLevel();
@@ -32,7 +42,7 @@ public class Test_NestedStructsWithExplicitLayout_Case05 {
     {
         try
         {
-            var test = new Test_NestedStructsWithExplicitLayout_Case05();
+            var test = new Test_NestedStructsWithExplicitLayout_Case06();
             test.Run();
         }
         catch (TypeLoadException e)
