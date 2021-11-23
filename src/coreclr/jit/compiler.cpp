@@ -1847,6 +1847,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         impSpillCliquePredMembers = JitExpandArray<BYTE>(getAllocator());
         impSpillCliqueSuccMembers = JitExpandArray<BYTE>(getAllocator());
 
+        new (&genIPmappings, jitstd::placement_t()) jitstd::list<IPmappingDsc>(getAllocator(CMK_DebugInfo));
+#ifdef DEBUG
+        new (&genPreciseIPmappings, jitstd::placement_t()) jitstd::list<PreciseIPMapping>(getAllocator(CMK_DebugOnly));
+#endif
+
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();
 
         //
@@ -1873,6 +1878,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compJmpOpUsed         = false;
     compLongUsed          = false;
     compTailCallUsed      = false;
+    compLocallocSeen      = false;
     compLocallocUsed      = false;
     compLocallocOptimized = false;
     compQmarkRationalized = false;
@@ -2547,11 +2553,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
     opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
 #else
     opts.compJitAlignLoopAdaptive       = true;
     opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
     opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp      = true;
 #endif
 
 #ifdef TARGET_XARCH
@@ -2775,6 +2783,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
     {
         verboseDump = (JitConfig.JitDumpTier0() > 0);
+    }
+
+    // Optionally suppress dumping some OSR jit requests.
+    //
+    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        const int desiredOffset = JitConfig.JitDumpAtOSROffset();
+
+        if (desiredOffset != -1)
+        {
+            verboseDump = (((IL_OFFSET)desiredOffset) == info.compILEntry);
+        }
     }
 
     if (verboseDump)
@@ -4447,6 +4467,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
+    // Expand any patchpoints
+    //
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -4457,10 +4481,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform indirect calls that require control flow expansion.
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
-
-    // Expand any patchpoints
-    //
-    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
 
     // PostImportPhase: cleanup inlinees
     //
@@ -4877,14 +4897,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
-        // Discover and classify natural loops
-        // (e.g. mark iterative loops as such). Also marks loop blocks
-        // and sets bbWeight to the loop nesting levels
+        // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
+        // and sets bbWeight to the loop nesting levels.
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
-        // Clone loops with optimization opportunities, and
-        // choose one based on dynamic condition evaluation.
+        // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
         DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
@@ -5142,6 +5160,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks();
 #endif
 
+#if FEATURE_LOOP_ALIGN
+    // Place loop alignment instructions
+    DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
+#endif
+
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
@@ -5197,6 +5220,82 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // FUNC_INFO_LOGGING
 }
+
+#if FEATURE_LOOP_ALIGN
+
+//------------------------------------------------------------------------
+// placeLoopAlignInstructions: Iterate over all the blocks and determine
+//      the best position to place the 'align' instruction. Inserting 'align'
+//      instructions after an unconditional branch is preferred over inserting
+//      in the block before the loop. In case there are multiple blocks
+//      having 'jmp', the one that has lower weight is preferred.
+//      If the block having 'jmp' is hotter than the block before the loop,
+//      the align will still be placed after 'jmp' because the processor should
+//      be smart enough to not fetch extra instruction beyond jmp.
+//
+void Compiler::placeLoopAlignInstructions()
+{
+    if (loopAlignCandidates == 0)
+    {
+        return;
+    }
+
+    int loopsToProcess = loopAlignCandidates;
+
+    // Add align only if there were any loops that needed alignment
+    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
+    BasicBlock* bbHavingAlign = nullptr;
+    for (BasicBlock* const block : Blocks())
+    {
+        if ((block == fgFirstBB) && block->isLoopAlign())
+        {
+            // Adding align instruction in prolog is not supported
+            // hence skip the align block if it is the first block.
+            loopsToProcess--;
+            continue;
+        }
+
+        // If there is a unconditional jump
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
+        {
+            if (block->bbWeight < minBlockSoFar)
+            {
+                minBlockSoFar = block->bbWeight;
+                bbHavingAlign = block;
+                JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+            }
+        }
+
+        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        {
+            // If jmp was not found, then block before the loop start is where align instruction will be added.
+            if (bbHavingAlign == nullptr)
+            {
+                bbHavingAlign = block;
+                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
+                        block->bbNext->bbNum);
+            }
+            else
+            {
+                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
+                        "\n",
+                        bbHavingAlign->bbNum, block->bbNext->bbNum);
+            }
+
+            bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            minBlockSoFar = BB_MAX_WEIGHT;
+            bbHavingAlign = nullptr;
+
+            if (--loopsToProcess == 0)
+            {
+                break;
+            }
+        }
+    }
+
+    assert(loopsToProcess == 0);
+}
+#endif
 
 //------------------------------------------------------------------------
 // generatePatchpointInfo: allocate and fill in patchpoint info data,
@@ -5272,6 +5371,14 @@ void Compiler::generatePatchpointInfo()
         patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
         JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
+    }
+
+    if (lvaMonAcquired != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaMonAcquired);
+        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset());
+        JITDUMP("--OSR-- monitor acquired V%02u offset is FP %d\n", lvaMonAcquired,
+                patchpointInfo->MonitorAcquiredOffset());
     }
 
     // Register this with the runtime.
@@ -6375,9 +6482,21 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
     {
+        enum
+        {
+            BUFSIZE = 20
+        };
+        char osrBuffer[BUFSIZE] = {0};
+        if (opts.IsOSR())
+        {
+            // Tiering name already includes "OSR", we just want the IL offset
+            //
+            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
+        }
+
         printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
                info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), opts.IsOSR() ? " OSR" : "", compGetStressMessage());
+               compGetTieringName(), osrBuffer, compGetStressMessage());
     }
     if (compIsForInlining())
     {
@@ -8675,7 +8794,6 @@ void cLoop(Compiler* comp, Compiler::LoopDsc* loop)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== Loop %u\n", sequenceNumber++);
     printf("HEAD   " FMT_BB "\n", loop->lpHead->bbNum);
-    printf("FIRST  " FMT_BB "\n", loop->lpFirst->bbNum);
     printf("TOP    " FMT_BB "\n", loop->lpTop->bbNum);
     printf("ENTRY  " FMT_BB "\n", loop->lpEntry->bbNum);
     if (loop->lpExitCnt == 1)
@@ -9126,10 +9244,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_RELOP_JMP_USED)
                 {
                     chars += printf("[RELOP_JMP_USED]");
-                }
-                if (tree->gtFlags & GTF_RELOP_QMARK)
-                {
-                    chars += printf("[RELOP_QMARK]");
                 }
                 break;
 

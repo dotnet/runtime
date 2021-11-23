@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -11,6 +12,21 @@ namespace ILCompiler
 {
     internal static class DisplayNameHelpers
     {
+        public static string GetDisplayName(this TypeSystemEntity entity)
+        {
+            return entity switch
+            {
+                MethodDesc method => method.GetDisplayName(),
+                FieldDesc field => field.GetDisplayName(),
+                TypeDesc type => type.GetDisplayName(),
+#if !READYTORUN
+                PropertyPseudoDesc property => property.GetDisplayName(),
+                EventPseudoDesc @event => @event.GetDisplayName(),
+#endif
+                _ => throw new InvalidOperationException(),
+            };
+        }
+
         public static string GetDisplayName(this MethodDesc method)
         {
             var sb = new StringBuilder();

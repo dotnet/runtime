@@ -11,6 +11,7 @@
 }
 .assembly 'test'
 { }
+.assembly extern xunit.core {}
 .class private auto ansi Test_u_seq extends [mscorlib]System.Object
 {
 .method private hidebysig static native unsigned int calc(native unsigned int, native unsigned int) il managed
@@ -47,6 +48,9 @@ stop:
 
 .method private hidebysig static int32 Main() il managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack  5
 	ldc.i4.s 6

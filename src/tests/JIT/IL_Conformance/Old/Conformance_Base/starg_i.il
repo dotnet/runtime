@@ -47,4 +47,4 @@ FAIL:
 	ret
 }
 }
-.assembly starg_i.exe{}
+.assembly starg_i{}

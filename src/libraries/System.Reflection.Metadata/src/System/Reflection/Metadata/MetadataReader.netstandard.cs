@@ -16,7 +16,9 @@ namespace System.Reflection.Metadata
             {
                 Version = version,
                 CultureName = cultureName,
+#pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
                 HashAlgorithm = hashAlgorithm,
+#pragma warning restore
                 Flags = GetAssemblyNameFlags(flags),
                 ContentType = GetContentTypeFromAssemblyFlags(flags)
             };

@@ -265,4 +265,4 @@ FAIL:
 	ret
 }
 }
-.assembly rem_u4.exe{}
+.assembly rem_u4{}

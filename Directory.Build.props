@@ -295,9 +295,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <!-- We have very special projects that don't always contain default references. We also build MSBuild Tasks
-    and there are some implicit namespaces that clash, i.e System.Threading.Tasks. -->
-    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
   </PropertyGroup>
 
   <PropertyGroup>

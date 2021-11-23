@@ -27,4 +27,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldloc_i.exe{}
+.assembly ldloc_i{}

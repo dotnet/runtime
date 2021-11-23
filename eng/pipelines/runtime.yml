@@ -193,7 +193,7 @@ jobs:
             eq(variables['Build.SourceBranchName'], 'main'),
             eq(variables['System.PullRequest.TargetBranch'], 'main')),
           or(
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
             eq(variables['isFullMatrix'], true)))
 
 # Build and test clr tools

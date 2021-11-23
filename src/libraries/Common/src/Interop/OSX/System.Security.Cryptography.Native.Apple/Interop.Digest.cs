@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFree")]
-        internal static extern void DigestFree(IntPtr handle);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFree")]
+        internal static partial void DigestFree(IntPtr handle);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCreate")]
         internal static partial SafeDigestCtxHandle DigestCreate(PAL_HashAlgorithm algorithm, out int cbDigest);
@@ -33,8 +33,8 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCurrent")]
         private static partial int DigestCurrent(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestOneShot")]
-        internal static unsafe extern int DigestOneShot(PAL_HashAlgorithm algorithm, byte* pbData, int cbData, byte* pbOutput, int cbOutput, int* cbDigest);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestOneShot")]
+        internal static unsafe partial int DigestOneShot(PAL_HashAlgorithm algorithm, byte* pbData, int cbData, byte* pbOutput, int cbOutput, int* cbDigest);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestReset")]
         internal static partial int DigestReset(SafeDigestCtxHandle ctx);

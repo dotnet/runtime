@@ -122,9 +122,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     compiler->compVSQuirkStackPaddingNeeded = 0;
 #endif // TARGET_AMD64
 
-    //  Initialize the IP-mapping logic.
-    compiler->genIPmappingList         = nullptr;
-    compiler->genIPmappingLast         = nullptr;
     compiler->genCallSite2DebugInfoMap = nullptr;
 
     /* Assume that we not fully interruptible */
@@ -2445,6 +2442,8 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     /* Finalize the line # tracking logic after we know the exact block sizes/offsets */
 
     genIPmappingGen();
+
+    INDEBUG(genDumpPreciseDebugInfo());
 
     /* Finalize the Local Var info in terms of generated code */
 
@@ -10451,12 +10450,11 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
 
 void CodeGen::genIPmappingListDisp()
 {
-    unsigned      mappingNum = 0;
-    IPmappingDsc* ipMapping;
+    unsigned mappingNum = 0;
 
-    for (ipMapping = compiler->genIPmappingList; ipMapping != nullptr; ipMapping = ipMapping->ipmdNext)
+    for (IPmappingDsc& dsc : compiler->genIPmappings)
     {
-        genIPmappingDisp(mappingNum, ipMapping);
+        genIPmappingDisp(mappingNum, &dsc);
         ++mappingNum;
     }
 }
@@ -10495,8 +10493,8 @@ void CodeGen::genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool i
             // Ignore this one if it's the same IL location as the last one we saw.
             // Note that we'll let through two identical IL offsets if the flag bits
             // differ, or two identical "special" mappings (e.g., PROLOG).
-            if ((compiler->genIPmappingLast != nullptr) && (kind == compiler->genIPmappingLast->ipmdKind) &&
-                (di.GetLocation() == compiler->genIPmappingLast->ipmdLoc))
+            if ((compiler->genIPmappings.size() > 0) && (kind == compiler->genIPmappings.back().ipmdKind) &&
+                (di.GetLocation() == compiler->genIPmappings.back().ipmdLoc))
             {
                 JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", di.GetLocation().GetOffset());
                 return;
@@ -10504,36 +10502,20 @@ void CodeGen::genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool i
             break;
     }
 
-    /* Create a mapping entry and append it to the list */
+    IPmappingDsc addMapping;
+    addMapping.ipmdNativeLoc.CaptureLocation(GetEmitter());
+    addMapping.ipmdKind    = kind;
+    addMapping.ipmdLoc     = di.GetLocation();
+    addMapping.ipmdIsLabel = isLabel;
 
-    IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<IPmappingDsc>(1);
-    addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdKind    = kind;
-    addMapping->ipmdLoc     = di.GetLocation();
-    addMapping->ipmdIsLabel = isLabel;
-    addMapping->ipmdNext    = nullptr;
-
-    assert((kind == IPmappingDscKind::Normal) == addMapping->ipmdLoc.IsValid());
-
-    if (compiler->genIPmappingList != nullptr)
-    {
-        assert(compiler->genIPmappingLast != nullptr);
-        assert(compiler->genIPmappingLast->ipmdNext == nullptr);
-        compiler->genIPmappingLast->ipmdNext = addMapping;
-    }
-    else
-    {
-        assert(compiler->genIPmappingLast == nullptr);
-        compiler->genIPmappingList = addMapping;
-    }
-
-    compiler->genIPmappingLast = addMapping;
+    assert((kind == IPmappingDscKind::Normal) == addMapping.ipmdLoc.IsValid());
+    compiler->genIPmappings.push_back(addMapping);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Added IP mapping: ");
-        genIPmappingDisp(unsigned(-1), addMapping);
+        genIPmappingDisp(unsigned(-1), &addMapping);
     }
 #endif // DEBUG
 }
@@ -10555,25 +10537,18 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
 
     /* Create a mapping entry and prepend it to the list */
 
-    IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<IPmappingDsc>(1);
-    addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdKind    = kind;
-    addMapping->ipmdLoc     = di.GetLocation();
-    addMapping->ipmdIsLabel = isLabel;
-
-    addMapping->ipmdNext       = compiler->genIPmappingList;
-    compiler->genIPmappingList = addMapping;
-
-    if (compiler->genIPmappingLast == nullptr)
-    {
-        compiler->genIPmappingLast = addMapping;
-    }
+    IPmappingDsc addMapping;
+    addMapping.ipmdNativeLoc.CaptureLocation(GetEmitter());
+    addMapping.ipmdKind    = kind;
+    addMapping.ipmdLoc     = di.GetLocation();
+    addMapping.ipmdIsLabel = isLabel;
+    compiler->genIPmappings.push_front(addMapping);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Added IP mapping to front: ");
-        genIPmappingDisp(unsigned(-1), addMapping);
+        genIPmappingDisp(unsigned(-1), &addMapping);
     }
 #endif // DEBUG
 }
@@ -10592,31 +10567,30 @@ void CodeGen::genEnsureCodeEmitted(const DebugInfo& di)
         return;
     }
 
-    /* If other IL were offsets reported, skip */
+    // If other IL were offsets reported, skip
 
-    if (compiler->genIPmappingLast == nullptr)
+    if (compiler->genIPmappings.size() <= 0)
     {
         return;
     }
 
-    if (compiler->genIPmappingLast->ipmdLoc != di.GetLocation())
+    const IPmappingDsc& prev = compiler->genIPmappings.back();
+    if (prev.ipmdLoc != di.GetLocation())
     {
         return;
     }
 
-    /* offsx was the last reported offset. Make sure that we generated native code */
+    // di represents the last reported offset. Make sure that we generated native code
 
-    if (compiler->genIPmappingLast->ipmdNativeLoc.IsCurrentLocation(GetEmitter()))
+    if (prev.ipmdNativeLoc.IsCurrentLocation(GetEmitter()))
     {
         instGen(INS_nop);
     }
 }
 
-/*****************************************************************************
- *
- *  Shut down the IP-mapping logic, report the info to the EE.
- */
-
+//------------------------------------------------------------------------
+// genIPmappingGen: Shut down the IP-mapping logic, report the info to the EE.
+//
 void CodeGen::genIPmappingGen()
 {
     if (!compiler->opts.compDbgInfo)
@@ -10631,133 +10605,99 @@ void CodeGen::genIPmappingGen()
     }
 #endif
 
-    if (compiler->genIPmappingList == nullptr)
+    if (compiler->genIPmappings.size() <= 0)
     {
         compiler->eeSetLIcount(0);
         compiler->eeSetLIdone();
         return;
     }
 
-    IPmappingDsc*  tmpMapping;
-    IPmappingDsc*  prevMapping;
-    unsigned       mappingCnt;
-    UNATIVE_OFFSET lastNativeOfs;
-
-    /* First count the number of distinct mapping records */
-
-    mappingCnt    = 0;
-    lastNativeOfs = UNATIVE_OFFSET(~0);
-
-    for (prevMapping = nullptr, tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr;
-         tmpMapping = tmpMapping->ipmdNext)
+    UNATIVE_OFFSET prevNativeOfs = UNATIVE_OFFSET(~0);
+    for (jitstd::list<IPmappingDsc>::iterator it = compiler->genIPmappings.begin();
+         it != compiler->genIPmappings.end();)
     {
-        // Managed RetVal - since new sequence points are emitted to identify IL calls,
-        // make sure that those are not filtered and do not interfere with filtering of
-        // other sequence points.
-        if (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.IsCall())
+        UNATIVE_OFFSET dscNativeOfs = it->ipmdNativeLoc.CodeOffset(GetEmitter());
+        if (dscNativeOfs != prevNativeOfs)
         {
-            mappingCnt++;
+            prevNativeOfs = dscNativeOfs;
+            ++it;
             continue;
         }
 
-        UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
+        // If we have a previous offset we should have a previous mapping.
+        assert(it != compiler->genIPmappings.begin());
+        jitstd::list<IPmappingDsc>::iterator prev = it;
+        --prev;
 
-        if (nextNativeOfs != lastNativeOfs)
+        // Prev and current mappings have same native offset.
+        // If one does not map to IL then remove that one.
+        if (prev->ipmdKind == IPmappingDscKind::NoMapping)
         {
-            mappingCnt++;
-            lastNativeOfs = nextNativeOfs;
-            prevMapping   = tmpMapping;
+            compiler->genIPmappings.erase(prev);
+            ++it;
             continue;
         }
 
-        /* If there are mappings with the same native offset, then:
-           o If one of them is NO_MAPPING, ignore it
-           o If one of them is a label, report that and ignore the other one
-           o Else report the higher IL offset
-         */
+        if (it->ipmdKind == IPmappingDscKind::NoMapping)
+        {
+            it = compiler->genIPmappings.erase(it);
+            continue;
+        }
 
-        PREFIX_ASSUME(prevMapping != nullptr); // We would exit before if this was true
-        if (prevMapping->ipmdKind == IPmappingDscKind::NoMapping)
+        // Both have mappings.
+        // If previous is the prolog, keep both if this one is at IL offset 0.
+        // (TODO: Why? Debugger has no problem breaking on the prolog mapping
+        // it seems.)
+        if ((prev->ipmdKind == IPmappingDscKind::Prolog) && (it->ipmdKind == IPmappingDscKind::Normal) &&
+            (it->ipmdLoc.GetOffset() == 0))
         {
-            // If the previous entry was NO_MAPPING, ignore it
-            prevMapping->ipmdNativeLoc.Init();
-            prevMapping = tmpMapping;
+            ++it;
+            continue;
         }
-        else if (tmpMapping->ipmdKind == IPmappingDscKind::NoMapping)
+
+        // For the special case of an IL instruction with no body followed by
+        // the epilog (say ret void immediately preceding the method end), we
+        // leave both entries in, so that we'll stop at the (empty) ret
+        // statement if the user tries to put a breakpoint there, and then have
+        // the option of seeing the epilog or not based on SetUnmappedStopMask
+        // for the stepper.
+        if (it->ipmdKind == IPmappingDscKind::Epilog)
         {
-            // If the current entry is NO_MAPPING, ignore it
-            // Leave prevMapping unchanged as tmpMapping is no longer valid
-            tmpMapping->ipmdNativeLoc.Init();
+            ++it;
+            continue;
         }
-        else if ((tmpMapping->ipmdKind == IPmappingDscKind::Epilog) ||
-                 (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
+
+        // For managed return values we store all calls. Keep both in this case
+        // too.
+        if (((prev->ipmdKind == IPmappingDscKind::Normal) && (prev->ipmdLoc.IsCall())) ||
+            ((it->ipmdKind == IPmappingDscKind::Normal) && (it->ipmdLoc.IsCall())))
         {
-            // counting for special cases: see below
-            mappingCnt++;
-            prevMapping = tmpMapping;
+            ++it;
+            continue;
+        }
+
+        // Otherwise report the higher offset unless the previous mapping is a
+        // label.
+        if (prev->ipmdIsLabel)
+        {
+            it = compiler->genIPmappings.erase(it);
         }
         else
         {
-            noway_assert(prevMapping != nullptr);
-            noway_assert(!prevMapping->ipmdNativeLoc.Valid() ||
-                         lastNativeOfs == prevMapping->ipmdNativeLoc.CodeOffset(GetEmitter()));
-
-            /* The previous block had the same native offset. We have to
-               discard one of the mappings. Simply reinitialize ipmdNativeLoc
-               and prevMapping will be ignored later. */
-
-            if (prevMapping->ipmdIsLabel)
-            {
-                // Leave prevMapping unchanged as tmpMapping is no longer valid
-                tmpMapping->ipmdNativeLoc.Init();
-            }
-            else
-            {
-                prevMapping->ipmdNativeLoc.Init();
-                prevMapping = tmpMapping;
-            }
+            compiler->genIPmappings.erase(prev);
+            ++it;
         }
     }
 
-    /* Tell them how many mapping records we've got */
+    // Tell them how many mapping records we've got
 
-    compiler->eeSetLIcount(mappingCnt);
+    compiler->eeSetLIcount(static_cast<unsigned int>(compiler->genIPmappings.size()));
 
-    /* Now tell them about the mappings */
-
-    mappingCnt    = 0;
-    lastNativeOfs = UNATIVE_OFFSET(~0);
-
-    for (tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr; tmpMapping = tmpMapping->ipmdNext)
+    // Now tell them about the mappings
+    unsigned int mappingIdx = 0;
+    for (const IPmappingDsc& dsc : compiler->genIPmappings)
     {
-        // Do we have to skip this record ?
-        if (!tmpMapping->ipmdNativeLoc.Valid())
-        {
-            continue;
-        }
-
-        UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
-
-        if (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.IsCall())
-        {
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, IPmappingDscKind::Normal, tmpMapping->ipmdLoc);
-        }
-        else if (nextNativeOfs != lastNativeOfs)
-        {
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, tmpMapping->ipmdKind, tmpMapping->ipmdLoc);
-            lastNativeOfs = nextNativeOfs;
-        }
-        else if (tmpMapping->ipmdKind == IPmappingDscKind::Epilog ||
-                 (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
-        {
-            // For the special case of an IL instruction with no body
-            // followed by the epilog (say ret void immediately preceding
-            // the method end), we put two entries in, so that we'll stop
-            // at the (empty) ret statement if the user tries to put a
-            // breakpoint there, and then have the option of seeing the
-            // epilog or not based on SetUnmappedStopMask for the stepper.
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, tmpMapping->ipmdKind, tmpMapping->ipmdLoc);
-        }
+        compiler->eeSetLIinfo(mappingIdx++, dsc.ipmdNativeLoc.CodeOffset(GetEmitter()), dsc.ipmdKind, dsc.ipmdLoc);
     }
 
 #if 0
@@ -10800,6 +10740,87 @@ void CodeGen::genIPmappingGen()
 
     compiler->eeSetLIdone();
 }
+
+#ifdef DEBUG
+void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first)
+{
+    if (context->GetSibling() != nullptr)
+    {
+        genDumpPreciseDebugInfoInlineTree(file, context->GetSibling(), first);
+    }
+
+    if (context->IsSuccess())
+    {
+        if (!*first)
+        {
+            fprintf(file, ",");
+        }
+
+        *first = false;
+
+        fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
+        fprintf(file, "\"MethodID\":%lld,", (INT64)context->GetCallee());
+        const char* className;
+        const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
+        fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        fprintf(file, "\"Inlinees\":[");
+        if (context->GetChild() != nullptr)
+        {
+            bool childFirst = true;
+            genDumpPreciseDebugInfoInlineTree(file, context->GetChild(), &childFirst);
+        }
+        fprintf(file, "]}");
+    }
+}
+
+void CodeGen::genDumpPreciseDebugInfo()
+{
+    if (JitConfig.JitDumpPreciseDebugInfoFile() == nullptr)
+        return;
+
+    static CritSecObject s_critSect;
+    CritSecHolder        holder(s_critSect);
+
+    FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
+    if (file == nullptr)
+        return;
+
+    // MethodID in ETW events are the method handles.
+    fprintf(file, "{\"MethodID\":%lld,", (INT64)compiler->info.compMethodHnd);
+    // Print inline tree.
+    fprintf(file, "\"InlineTree\":");
+
+    bool first = true;
+    genDumpPreciseDebugInfoInlineTree(file, compiler->compInlineContext, &first);
+    fprintf(file, ",\"Mappings\":[");
+    first = true;
+    for (PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
+    {
+        if (!first)
+        {
+            fprintf(file, ",");
+        }
+
+        first = false;
+
+        fprintf(file, "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
+                mapping.nativeLoc.CodeOffset(GetEmitter()), mapping.debugInfo.GetInlineContext()->GetOrdinal(),
+                mapping.debugInfo.GetLocation().GetOffset());
+    }
+
+    fprintf(file, "]}\n");
+
+    fclose(file);
+}
+
+void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
+{
+    PreciseIPMapping mapping;
+    mapping.nativeLoc.CaptureLocation(GetEmitter());
+    mapping.debugInfo = di;
+    compiler->genPreciseIPmappings.push_back(mapping);
+}
+#endif
 
 /*============================================================================
  *
@@ -12446,7 +12467,19 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 {
     assert(compiler->compShouldPoisonFrame());
-    assert((regLiveIn & genRegMask(REG_SCRATCH)) == 0);
+#if defined(TARGET_XARCH)
+    regNumber poisonValReg = REG_EAX;
+    assert((regLiveIn & (RBM_EDI | RBM_ECX | RBM_EAX)) == 0);
+#else
+    regNumber poisonValReg = REG_SCRATCH;
+    assert((regLiveIn & (genRegMask(REG_SCRATCH) | RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2)) == 0);
+#endif
+
+#ifdef TARGET_64BIT
+    const ssize_t poisonVal = (ssize_t)0xcdcdcdcdcdcdcdcd;
+#else
+    const ssize_t poisonVal = (ssize_t)0xcdcdcdcd;
+#endif
 
     // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that
     // we can fit.
@@ -12461,39 +12494,63 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 
         assert(varDsc->lvOnFrame);
 
-        if (!hasPoisonImm)
+        unsigned int size = compiler->lvaLclSize(varNum);
+        if ((size / TARGET_POINTER_SIZE) > 16)
         {
-#ifdef TARGET_64BIT
-            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd);
+            // This will require more than 16 instructions, switch to rep stosd/memset call.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_XARCH)
+            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_EDI, (int)varNum, 0);
+            assert(size % 4 == 0);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ECX, size / 4);
+            // On xarch we can leave the value in eax and only set eax once
+            // since rep stosd does not kill eax.
+            if (!hasPoisonImm)
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_EAX, poisonVal);
+                hasPoisonImm = true;
+            }
+            instGen(INS_r_stosd);
 #else
-            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_SCRATCH, (ssize_t)0xcdcdcdcd);
+            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_2, size);
+            genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
+            // May kill REG_SCRATCH, so we need to reload it.
+            hasPoisonImm = false;
 #endif
-            hasPoisonImm = true;
         }
+        else
+        {
+            if (!hasPoisonImm)
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, poisonValReg, poisonVal);
+                hasPoisonImm = true;
+            }
 
 // For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
 #ifdef TARGET_64BIT
-        bool fpBased;
-        int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
+            bool fpBased;
+            int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
 #else
-        int addr = 0;
+            int addr     = 0;
 #endif
-        int size = (int)compiler->lvaLclSize(varNum);
-        int end  = addr + size;
-        for (int offs = addr; offs < end;)
-        {
-#ifdef TARGET_64BIT
-            if ((offs % 8) == 0 && end - offs >= 8)
+            int end = addr + (int)size;
+            for (int offs = addr; offs < end;)
             {
-                GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
-                offs += 8;
-                continue;
-            }
+#ifdef TARGET_64BIT
+                if ((offs % 8) == 0 && end - offs >= 8)
+                {
+                    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                    offs += 8;
+                    continue;
+                }
 #endif
 
-            assert((offs % 4) == 0 && end - offs >= 4);
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
-            offs += 4;
+                assert((offs % 4) == 0 && end - offs >= 4);
+                GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                offs += 4;
+            }
         }
     }
 }

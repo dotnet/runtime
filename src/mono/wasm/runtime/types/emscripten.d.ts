@@ -22,20 +22,6 @@ declare interface CharPtrPtr extends NativePointer {
     __brand: "CharPtrPtr"
 }
 
-declare let ENVIRONMENT_IS_WEB: boolean;
-declare let ENVIRONMENT_IS_SHELL: boolean;
-declare let ENVIRONMENT_IS_NODE: boolean;
-declare let ENVIRONMENT_IS_WORKER: boolean;
-declare let LibraryManager: any;
-
-declare function autoAddDeps(a: object, b: string): void;
-declare function mergeInto(a: object, b: object): void;
-
-// TODO, what's wrong with EXPORTED_RUNTIME_METHODS ?
-declare function locateFile(path: string, prefix?: string): string;
-
-declare let Module: EmscriptenModule;
-
 declare interface EmscriptenModule {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
@@ -59,14 +45,14 @@ declare interface EmscriptenModule {
     setValue(ptr: VoidPtr, value: number, type: string, noSafe?: number | boolean): void;
     setValue(ptr: Int32Ptr, value: number, type: string, noSafe?: number | boolean): void;
     getValue(ptr: number, type: string, noSafe?: number | boolean): number;
-    UTF8ToString(arg: CharPtr): string;
-    UTF8ArrayToString(str: TypedArray, heap: number[] | number, outIdx: number, maxBytesToWrite?: number): string;
+    UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
+    UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
 
-    preInit?: () => Promise<void>;
+    preInit?: (() => Promise<void>)[];
     onRuntimeInitialized?: () => void;
 }
 

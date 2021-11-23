@@ -8,6 +8,7 @@
 }
 .assembly extern mscorlib {}
 .assembly Negative001 {}
+.assembly extern xunit.core {}
 .class public auto ansi beforefieldinit GenBase<([mscorlib]System.Object) T>
        extends [mscorlib]System.Object
 {
@@ -171,6 +172,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     .locals init (int32 V_0)

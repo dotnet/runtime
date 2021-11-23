@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly callsuper.exe{}
+.assembly callsuper{}
 
 
 .class public Super {

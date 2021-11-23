@@ -116,6 +116,7 @@ static bool IsJmpInstruction(instruction ins);
 bool AreUpper32BitsZero(regNumber reg);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
+bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* tree);
 
 bool hasRexPrefix(code_t code)
 {
@@ -190,6 +191,7 @@ void SetContains256bitAVX(bool value)
 bool IsDstDstSrcAVXInstruction(instruction ins);
 bool IsDstSrcSrcAVXInstruction(instruction ins);
 bool DoesWriteZeroFlag(instruction ins);
+bool DoesWriteSignFlag(instruction ins);
 bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool IsFlagsAlwaysModified(instrDesc* id);
 
@@ -219,15 +221,6 @@ bool isPrefetch(instruction ins)
 void emitDispReloc(ssize_t value);
 void emitDispAddrMode(instrDesc* id, bool noDetail = false);
 void emitDispShift(instruction ins, int cnt = 0);
-
-void emitDispIns(instrDesc* id,
-                 bool       isNew,
-                 bool       doffs,
-                 bool       asmfm,
-                 unsigned   offs = 0,
-                 BYTE*      code = nullptr,
-                 size_t     sz   = 0,
-                 insGroup*  ig   = nullptr);
 
 const char* emitXMMregName(unsigned reg);
 const char* emitYMMregName(unsigned reg);

@@ -618,7 +618,7 @@ inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
     // Once we set the current offset as debug info in an appended tree, we are
     // ready to report the following offsets. Note that we need to compare
     // offsets here instead of debug info, since we do not set the "is call"
-    // debug in impCurStmtDI.
+    // bit in impCurStmtDI.
 
     if (impLastStmt->GetDebugInfo().GetLocation().GetOffset() == impCurStmtDI.GetLocation().GetOffset())
     {
@@ -3017,11 +3017,6 @@ unsigned Compiler::impInitBlockLineInfo()
     IL_OFFSET blockOffs = compCurBB->bbCodeOffs;
 
     if ((verCurrentState.esStackDepth == 0) && (info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES))
-    {
-        impCurStmtOffsSet(blockOffs);
-    }
-
-    if (false && (info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES))
     {
         impCurStmtOffsSet(blockOffs);
     }
@@ -11598,16 +11593,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // Are there any places in the method where we might add a patchpoint?
     if (compHasBackwardJump)
     {
-        // Are patchpoints enabled?
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+        // Are patchpoints enabled and supported?
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0) &&
+            compCanHavePatchpoints())
         {
             // We don't inline at Tier0, if we do, we may need rethink our approach.
             // Could probably support inlines that don't introduce flow.
             assert(!compIsForInlining());
 
             // Is the start of this block a suitable patchpoint?
-            // Current strategy is blocks that are stack-empty and backwards branch targets
-            if (block->bbFlags & BBF_BACKWARD_JUMP_TARGET && (verCurrentState.esStackDepth == 0))
+            // Current strategy is blocks that are stack-empty and backwards branch targets and not in a handler
+            //
+            // Todo (perhaps): bail out of OSR and jit this method with optimization.
+            //
+            if (!block->hasHndIndex() && ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) &&
+                (verCurrentState.esStackDepth == 0))
             {
                 block->bbFlags |= BBF_PATCHPOINT;
                 setMethodHasPatchpoint();
@@ -11632,12 +11632,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     //
     // Todo: stress mode...
     //
-    if ((JitConfig.TC_PartialCompilation() > 0) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-        (block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
-        ((block->bbFlags & BBF_PATCHPOINT) == 0))
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
+        compCanHavePatchpoints())
     {
-        block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
-        setMethodHasPartialCompilationPatchpoint();
+        // Is this block a good place for partial compilation?
+        //
+        if ((block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
+            ((block->bbFlags & BBF_PATCHPOINT) == 0) && !block->hasHndIndex())
+        {
+            JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
+            block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
+            setMethodHasPartialCompilationPatchpoint();
+
+            // Change block to BBJ_THROW so we won't trigger importation of successors.
+            //
+            block->bbJumpKind = BBJ_THROW;
+
+            // If this method has a explicit generic context, the only uses of it may be in
+            // the IL for this block. So assume it's used.
+            //
+            if (info.compMethodInfo->options &
+                (CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE))
+            {
+                lvaGenericsContextInUse = true;
+            }
+
+            return;
+        }
     }
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
@@ -11721,111 +11742,108 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         if (opts.compDbgInfo)
 #endif
         {
-            if (!compIsForInlining())
+            nxtStmtOffs =
+                (nxtStmtIndex < info.compStmtOffsetsCount) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
+
+            /* Have we reached the next stmt boundary ? */
+
+            if (nxtStmtOffs != BAD_IL_OFFSET && opcodeOffs >= nxtStmtOffs)
             {
-                nxtStmtOffs =
-                    (nxtStmtIndex < info.compStmtOffsetsCount) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
+                assert(nxtStmtOffs == info.compStmtOffsets[nxtStmtIndex]);
 
-                /* Have we reached the next stmt boundary ? */
-
-                if (nxtStmtOffs != BAD_IL_OFFSET && opcodeOffs >= nxtStmtOffs)
+                if (verCurrentState.esStackDepth != 0 && opts.compDbgCode)
                 {
-                    assert(nxtStmtOffs == info.compStmtOffsets[nxtStmtIndex]);
+                    /* We need to provide accurate IP-mapping at this point.
+                       So spill anything on the stack so that it will form
+                       gtStmts with the correct stmt offset noted */
 
-                    if (verCurrentState.esStackDepth != 0 && opts.compDbgCode)
+                    impSpillStackEnsure(true);
+                }
+
+                // Have we reported debug info for any tree?
+
+                if (impCurStmtDI.IsValid() && opts.compDbgCode)
+                {
+                    GenTree* placeHolder = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
+                    impAppendTree(placeHolder, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
+
+                    assert(!impCurStmtDI.IsValid());
+                }
+
+                if (!impCurStmtDI.IsValid())
+                {
+                    /* Make sure that nxtStmtIndex is in sync with opcodeOffs.
+                       If opcodeOffs has gone past nxtStmtIndex, catch up */
+
+                    while ((nxtStmtIndex + 1) < info.compStmtOffsetsCount &&
+                           info.compStmtOffsets[nxtStmtIndex + 1] <= opcodeOffs)
                     {
-                        /* We need to provide accurate IP-mapping at this point.
-                           So spill anything on the stack so that it will form
-                           gtStmts with the correct stmt offset noted */
-
-                        impSpillStackEnsure(true);
-                    }
-
-                    // Have we reported debug info for any tree?
-
-                    if (impCurStmtDI.IsValid() && opts.compDbgCode)
-                    {
-                        GenTree* placeHolder = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
-                        impAppendTree(placeHolder, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
-
-                        assert(!impCurStmtDI.IsValid());
-                    }
-
-                    if (!impCurStmtDI.IsValid())
-                    {
-                        /* Make sure that nxtStmtIndex is in sync with opcodeOffs.
-                           If opcodeOffs has gone past nxtStmtIndex, catch up */
-
-                        while ((nxtStmtIndex + 1) < info.compStmtOffsetsCount &&
-                               info.compStmtOffsets[nxtStmtIndex + 1] <= opcodeOffs)
-                        {
-                            nxtStmtIndex++;
-                        }
-
-                        /* Go to the new stmt */
-
-                        impCurStmtOffsSet(info.compStmtOffsets[nxtStmtIndex]);
-
-                        /* Update the stmt boundary index */
-
                         nxtStmtIndex++;
-                        assert(nxtStmtIndex <= info.compStmtOffsetsCount);
-
-                        /* Are there any more line# entries after this one? */
-
-                        if (nxtStmtIndex < info.compStmtOffsetsCount)
-                        {
-                            /* Remember where the next line# starts */
-
-                            nxtStmtOffs = info.compStmtOffsets[nxtStmtIndex];
-                        }
-                        else
-                        {
-                            /* No more line# entries */
-
-                            nxtStmtOffs = BAD_IL_OFFSET;
-                        }
                     }
-                }
-                else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES) &&
-                         (verCurrentState.esStackDepth == 0))
-                {
-                    /* At stack-empty locations, we have already added the tree to
-                       the stmt list with the last offset. We just need to update
-                       impCurStmtDI
-                     */
 
-                    impCurStmtOffsSet(opcodeOffs);
-                }
-                else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES) &&
-                         impOpcodeIsCallSiteBoundary(prevOpcode))
-                {
-                    /* Make sure we have a type cached */
-                    assert(callTyp != TYP_COUNT);
+                    /* Go to the new stmt */
 
-                    if (callTyp == TYP_VOID)
+                    impCurStmtOffsSet(info.compStmtOffsets[nxtStmtIndex]);
+
+                    /* Update the stmt boundary index */
+
+                    nxtStmtIndex++;
+                    assert(nxtStmtIndex <= info.compStmtOffsetsCount);
+
+                    /* Are there any more line# entries after this one? */
+
+                    if (nxtStmtIndex < info.compStmtOffsetsCount)
                     {
-                        impCurStmtOffsSet(opcodeOffs);
+                        /* Remember where the next line# starts */
+
+                        nxtStmtOffs = info.compStmtOffsets[nxtStmtIndex];
                     }
-                    else if (opts.compDbgCode)
+                    else
                     {
-                        impSpillStackEnsure(true);
-                        impCurStmtOffsSet(opcodeOffs);
+                        /* No more line# entries */
+
+                        nxtStmtOffs = BAD_IL_OFFSET;
                     }
                 }
-                else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::NOP_BOUNDARIES) && (prevOpcode == CEE_NOP))
-                {
-                    if (opts.compDbgCode)
-                    {
-                        impSpillStackEnsure(true);
-                    }
-
-                    impCurStmtOffsSet(opcodeOffs);
-                }
-
-                assert(!impCurStmtDI.IsValid() || (nxtStmtOffs == BAD_IL_OFFSET) ||
-                       (impCurStmtDI.GetLocation().GetOffset() <= nxtStmtOffs));
             }
+            else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES) &&
+                     (verCurrentState.esStackDepth == 0))
+            {
+                /* At stack-empty locations, we have already added the tree to
+                   the stmt list with the last offset. We just need to update
+                   impCurStmtDI
+                 */
+
+                impCurStmtOffsSet(opcodeOffs);
+            }
+            else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES) &&
+                     impOpcodeIsCallSiteBoundary(prevOpcode))
+            {
+                /* Make sure we have a type cached */
+                assert(callTyp != TYP_COUNT);
+
+                if (callTyp == TYP_VOID)
+                {
+                    impCurStmtOffsSet(opcodeOffs);
+                }
+                else if (opts.compDbgCode)
+                {
+                    impSpillStackEnsure(true);
+                    impCurStmtOffsSet(opcodeOffs);
+                }
+            }
+            else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::NOP_BOUNDARIES) && (prevOpcode == CEE_NOP))
+            {
+                if (opts.compDbgCode)
+                {
+                    impSpillStackEnsure(true);
+                }
+
+                impCurStmtOffsSet(opcodeOffs);
+            }
+
+            assert(!impCurStmtDI.IsValid() || (nxtStmtOffs == BAD_IL_OFFSET) ||
+                   (impCurStmtDI.GetLocation().GetOffset() <= nxtStmtOffs));
         }
 
         CORINFO_CLASS_HANDLE clsHnd       = DUMMY_INIT(NULL);
@@ -12802,8 +12820,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                op1 = impCheckForNullPointer(op1);
-
                 /* Mark the block as containing an index expression */
 
                 if (op1->gtOper == GT_LCL_VAR)
@@ -13016,8 +13032,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op2->gtType = TYP_I_IMPL;
                 }
-
-                op3 = impCheckForNullPointer(op3);
 
                 // Mark the block as containing an index expression
 
@@ -15228,8 +15242,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        obj = impCheckForNullPointer(obj);
-
                         // If the object is a struct, what we really want is
                         // for the field to operate on the address of the struct.
                         if (!varTypeGCtype(obj->TypeGet()) && impIsValueType(tiObj))
@@ -15558,8 +15570,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        obj = impCheckForNullPointer(obj);
-
                         /* Create the data member node */
                         op1             = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
                         DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
@@ -18845,7 +18855,7 @@ unsigned Compiler::impGetSpillTmpBase(BasicBlock* block)
     SetSpillTempsBase callback(baseTmp);
 
     // We do *NOT* need to reset the SpillClique*Members because a block can only be the predecessor
-    // to one spill clique, and similarly can only be the sucessor to one spill clique
+    // to one spill clique, and similarly can only be the successor to one spill clique
     impWalkSpillCliqueFromPred(block, &callback);
 
     return baseTmp;
@@ -20892,6 +20902,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
+    // Delegate Invoke method doesn't have a body and gets special cased instead.
+    // Don't even bother trying to inline it.
+    if (call->IsDelegateInvoke())
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
+        return;
+    }
+
     // Tail recursion elimination takes precedence over inlining.
     // TODO: We may want to do some of the additional checks from fgMorphCall
     // here to reduce the chance we don't inline a call that won't be optimized
@@ -21262,10 +21280,19 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     assert(call->IsVirtual());
 
-    // Possibly instrument, if not optimizing.
+    // Possibly instrument. Note for OSR+PGO we will instrument when
+    // optimizing and (currently) won't devirtualize. We may want
+    // to revisit -- if we can devirtualize we should be able to
+    // suppress the probe.
     //
-    if (opts.OptimizationDisabled())
+    // We strip BBINSTR from inlinees currently, so we'll only
+    // do this for the root method calls.
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
+        assert(opts.OptimizationDisabled() || opts.IsOSR());
+        assert(!compIsForInlining());
+
         // During importation, optionally flag this block as one that
         // contains calls requiring class profiling. Ideally perhaps
         // we'd just keep track of the calls themselves, so we don't
@@ -21295,7 +21322,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             //
             compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
         }
-
         return;
     }
 
