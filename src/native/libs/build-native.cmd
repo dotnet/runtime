@@ -59,7 +59,7 @@ set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYP
 if /i "%__BuildArch%" == "wasm" (
     set __sourceDir=%__sourceRootDir%\Unix
 ) else (
-    set __sourceDir=%__sourceRootDir%\Windows
+    set __sourceDir=%__sourceRootDir%
 )
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%

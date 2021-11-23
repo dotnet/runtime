@@ -9,8 +9,8 @@ jobs:
     - subset: coreclr
       include:
       - src/libraries/System.Private.CoreLib/*
-      - src/libraries/Native/Unix/System.Globalization.Native/*
-      - src/libraries/Native/Unix/Common/*
+      - src/native/libs/System.Globalization.Native/*
+      - src/native/libs/Common/*
       - src/native/*
       exclude:
       - eng/Version.Details.xml
@@ -29,8 +29,8 @@ jobs:
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
-      - src/libraries/Native/Unix/System.Globalization.Native/*
-      - src/libraries/Native/Unix/Common/*
+      - src/native/libs/System.Globalization.Native/*
+      - src/native/libs/Common/*
       - src/native/*
       exclude:
       - eng/Version.Details.xml
