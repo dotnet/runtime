@@ -26,7 +26,7 @@ namespace System.Linq.Expressions
         private readonly Expression _body;
 
         // This can be flipped to false using feature switches at publishing time
-        public static bool CanCompileToIL => string.Empty != null; // HACK: something that is complicated enough that IL Linker won't constprop it at library build
+        public static bool CanCompileToIL => true;
 
         // This could be flipped to false using feature switches at publishing time
         public static bool CanInterpret => true;

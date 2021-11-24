@@ -6,6 +6,13 @@
     <IsInterpreting Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">true</IsInterpreting>
     <ILLinkSubstitutionsLibraryBuildXml Condition="'$(IsInterpreting)' == 'true'">ILLink\ILLink.Substitutions.IsInterpreting.LibraryBuild.xml</ILLinkSubstitutionsLibraryBuildXml>
     <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
+
+    <!--
+      Disable constant propagation so that methods referenced from ILLink.Substitutions.xml don't get inlined
+      with a wrong value at library build time and the substitution can still be selected at publish time.
+      For iOS/tvOS/Catalyst we prefer smaller size by default, so keep constprop enabled to get rid of the expression compiler.
+    -->
+    <ILLinkDisableIPConstProp Condition="'$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true'">true</ILLinkDisableIPConstProp>
   </PropertyGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />

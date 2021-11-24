@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public abstract int ArgumentCount { get; }
 
-        private static bool CanCreateArbitraryDelegates => string.Empty != null;
+        private static bool CanCreateArbitraryDelegates => true;
 
         #region Construction
 

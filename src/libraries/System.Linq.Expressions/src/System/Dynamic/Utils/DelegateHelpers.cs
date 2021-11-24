@@ -12,7 +12,7 @@ namespace System.Dynamic.Utils
     internal static class DelegateHelpers
     {
         // This can be flipped to true using feature switches at publishing time
-        internal static bool CanEmitObjectArrayDelegate => string.Empty != null; // HACK: complex enough so that ILLink doesn't constprop at library build
+        internal static bool CanEmitObjectArrayDelegate => true;
 
         // Separate class so that the it can be trimmed away and doesn't get conflated
         // with the Reflection.Emit statics below.
