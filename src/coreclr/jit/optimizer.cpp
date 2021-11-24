@@ -7271,7 +7271,7 @@ void Compiler::optComputeLoopSideEffects()
 
     for (unsigned i = 0; i < lvaCount; i++)
     {
-        LclVarDsc* varDsc = &lvaTable[i];
+        LclVarDsc* varDsc = lvaGetDesc(i);
         if (varDsc->lvTracked)
         {
             if (varTypeIsFloating(varDsc->lvType))
