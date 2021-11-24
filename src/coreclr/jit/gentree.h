@@ -1770,19 +1770,19 @@ public:
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
 
-    bool TryGetUse(GenTree* def, GenTree*** pUse);
+    bool TryGetUse(GenTree* operand, GenTree*** pUse);
 
-    bool TryGetUse(GenTree* def)
+    bool TryGetUse(GenTree* operand)
     {
         GenTree** unusedUse = nullptr;
         return TryGetUse(def, &unusedUse);
     }
 
 private:
-    bool TryGetUseBinOp(GenTree* def, GenTree*** pUse);
+    bool TryGetUseBinOp(GenTree* operand, GenTree*** pUse);
 
 public:
-    GenTree* gtGetParent(GenTree*** use);
+    GenTree* gtGetParent(GenTree*** pUse);
 
     void ReplaceOperand(GenTree** useEdge, GenTree* replacement);
 

@@ -4986,19 +4986,19 @@ unsigned GenTree::GetScaledIndex()
 }
 
 //------------------------------------------------------------------------
-// TryGetUse: Get the def -> def edge for a child of this tree.
+// TryGetUse: Get the use edge for an operand of this tree.
 //
 // Arguments:
-//    def  - the node to find the use for
-//    pUse - [out] parameter for the use
+//    operand - the node to find the use for
+//    pUse    - [out] parameter for the use
 //
 // Return Value:
-//    Whether "def" is a child of this node. If it is, "*pUse" is set,
-//    allowing for the replacement of "def" with some other node.
+//    Whether "operand" is a child of this node. If it is, "*pUse" is set,
+//    allowing for the replacement of "operand" with some other node.
 //
-bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
+bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 {
-    assert(def != nullptr);
+    assert(operand != nullptr);
     assert(pUse != nullptr);
 
     switch (OperGet())
@@ -5073,7 +5073,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-            if (def == this->AsUnOp()->gtOp1)
+            if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
                 return true;
@@ -5117,7 +5117,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_PHI:
             for (GenTreePhi::Use& phiUse : AsPhi()->Uses())
             {
-                if (phiUse.GetNode() == def)
+                if (phiUse.GetNode() == operand)
                 {
                     *pUse = &phiUse.NodeRef();
                     return true;
@@ -5128,7 +5128,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_FIELD_LIST:
             for (GenTreeFieldList::Use& fieldUse : AsFieldList()->Uses())
             {
-                if (fieldUse.GetNode() == def)
+                if (fieldUse.GetNode() == operand)
                 {
                     *pUse = &fieldUse.NodeRef();
                     return true;
@@ -5139,17 +5139,17 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            if (def == cmpXchg->gtOpLocation)
+            if (operand == cmpXchg->gtOpLocation)
             {
                 *pUse = &cmpXchg->gtOpLocation;
                 return true;
             }
-            if (def == cmpXchg->gtOpValue)
+            if (operand == cmpXchg->gtOpValue)
             {
                 *pUse = &cmpXchg->gtOpValue;
                 return true;
             }
-            if (def == cmpXchg->gtOpComparand)
+            if (operand == cmpXchg->gtOpComparand)
             {
                 *pUse = &cmpXchg->gtOpComparand;
                 return true;
@@ -5160,14 +5160,14 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_ARR_ELEM:
         {
             GenTreeArrElem* const arrElem = this->AsArrElem();
-            if (def == arrElem->gtArrObj)
+            if (operand == arrElem->gtArrObj)
             {
                 *pUse = &arrElem->gtArrObj;
                 return true;
             }
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
-                if (def == arrElem->gtArrInds[i])
+                if (operand == arrElem->gtArrInds[i])
                 {
                     *pUse = &arrElem->gtArrInds[i];
                     return true;
@@ -5179,17 +5179,17 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_ARR_OFFSET:
         {
             GenTreeArrOffs* const arrOffs = this->AsArrOffs();
-            if (def == arrOffs->gtOffset)
+            if (operand == arrOffs->gtOffset)
             {
                 *pUse = &arrOffs->gtOffset;
                 return true;
             }
-            if (def == arrOffs->gtIndex)
+            if (operand == arrOffs->gtIndex)
             {
                 *pUse = &arrOffs->gtIndex;
                 return true;
             }
-            if (def == arrOffs->gtArrObj)
+            if (operand == arrOffs->gtArrObj)
             {
                 *pUse = &arrOffs->gtArrObj;
                 return true;
@@ -5200,12 +5200,12 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_DYN_BLK:
         {
             GenTreeDynBlk* const dynBlock = this->AsDynBlk();
-            if (def == dynBlock->gtOp1)
+            if (operand == dynBlock->gtOp1)
             {
                 *pUse = &dynBlock->gtOp1;
                 return true;
             }
-            if (def == dynBlock->gtDynamicSize)
+            if (operand == dynBlock->gtDynamicSize)
             {
                 *pUse = &dynBlock->gtDynamicSize;
                 return true;
@@ -5216,17 +5216,17 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_STORE_DYN_BLK:
         {
             GenTreeDynBlk* const dynBlock = this->AsDynBlk();
-            if (def == dynBlock->gtOp1)
+            if (operand == dynBlock->gtOp1)
             {
                 *pUse = &dynBlock->gtOp1;
                 return true;
             }
-            if (def == dynBlock->gtOp2)
+            if (operand == dynBlock->gtOp2)
             {
                 *pUse = &dynBlock->gtOp2;
                 return true;
             }
-            if (def == dynBlock->gtDynamicSize)
+            if (operand == dynBlock->gtDynamicSize)
             {
                 *pUse = &dynBlock->gtDynamicSize;
                 return true;
@@ -5237,24 +5237,24 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         case GT_CALL:
         {
             GenTreeCall* const call = this->AsCall();
-            if ((call->gtCallThisArg != nullptr) && (def == call->gtCallThisArg->GetNode()))
+            if ((call->gtCallThisArg != nullptr) && (operand == call->gtCallThisArg->GetNode()))
             {
                 *pUse = &call->gtCallThisArg->NodeRef();
                 return true;
             }
-            if (def == call->gtControlExpr)
+            if (operand == call->gtControlExpr)
             {
                 *pUse = &call->gtControlExpr;
                 return true;
             }
             if (call->gtCallType == CT_INDIRECT)
             {
-                if (def == call->gtCallCookie)
+                if (operand == call->gtCallCookie)
                 {
                     *pUse = &call->gtCallCookie;
                     return true;
                 }
-                if (def == call->gtCallAddr)
+                if (operand == call->gtCallAddr)
                 {
                     *pUse = &call->gtCallAddr;
                     return true;
@@ -5262,7 +5262,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
             }
             for (GenTreeCall::Use& argUse : call->Args())
             {
-                if (argUse.GetNode() == def)
+                if (argUse.GetNode() == operand)
                 {
                     *pUse = &argUse.NodeRef();
                     return true;
@@ -5270,7 +5270,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
             }
             for (GenTreeCall::Use& argUse : call->LateArgs())
             {
-                if (argUse.GetNode() == def)
+                if (argUse.GetNode() == operand)
                 {
                     *pUse = &argUse.NodeRef();
                     return true;
@@ -5282,23 +5282,23 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** pUse)
         // Binary nodes
         default:
             assert(this->OperIsBinary());
-            return TryGetUseBinOp(def, pUse);
+            return TryGetUseBinOp(operand, pUse);
     }
 }
 
-bool GenTree::TryGetUseBinOp(GenTree* def, GenTree*** pUse)
+bool GenTree::TryGetUseBinOp(GenTree* operand, GenTree*** pUse)
 {
-    assert(def != nullptr);
+    assert(operand != nullptr);
     assert(pUse != nullptr);
     assert(this->OperIsBinary());
 
     GenTreeOp* const binOp = this->AsOp();
-    if (def == binOp->gtOp1)
+    if (operand == binOp->gtOp1)
     {
         *pUse = &binOp->gtOp1;
         return true;
     }
-    if (def == binOp->gtOp2)
+    if (operand == binOp->gtOp2)
     {
         *pUse = &binOp->gtOp2;
         return true;
