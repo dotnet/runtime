@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 
 // Include System.Security.Cryptography.Native headers
 #include "openssl.h"
@@ -28,7 +28,6 @@
 #include "pal_x509ext.h"
 #include "pal_x509_name.h"
 #include "pal_x509_root.h"
-
 
 static const Entry s_cryptoNative[] =
 {
@@ -336,5 +335,5 @@ EXTERN_C const void* CryptoResolveDllImport(const char* name);
 
 EXTERN_C const void* CryptoResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_cryptoNative, lengthof(s_cryptoNative), name);
+    return minipal_resolve_dllimport(s_cryptoNative, ARRAY_SIZE(s_cryptoNative), name);
 }

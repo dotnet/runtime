@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 
 typedef uint16_t UChar;
 
@@ -64,5 +64,5 @@ EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_globalizationNative, lengthof(s_globalizationNative), name);
+    return minipal_resolve_dllimport(s_globalizationNative, ARRAY_SIZE(s_globalizationNative), name);
 }

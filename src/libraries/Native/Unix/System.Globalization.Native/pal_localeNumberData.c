@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <minipal/utils.h>
+
 #include "pal_locale_internal.h"
 #include "pal_localeNumberData.h"
 
@@ -20,8 +22,6 @@
 #define UCHAR_OPENPAREN ((UChar)0x0028)  // '('
 #define UCHAR_CLOSEPAREN ((UChar)0x0029) // ')'
 #define UCHAR_ZERO ((UChar)0x0030)       // '0'
-
-#define ARRAY_LENGTH(array) (sizeof(array) / sizeof(array[0]))
 
 /*
 Function:
@@ -239,7 +239,7 @@ static int GetCurrencyNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), true);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -270,7 +270,7 @@ static int GetCurrencyPositivePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), false);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), false);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -301,7 +301,7 @@ static int GetNumberNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), true);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -333,7 +333,7 @@ static int GetPercentNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), true);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -364,7 +364,7 @@ static int GetPercentPositivePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), false);
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_SIZE(Patterns), false);
         if (value >= 0)
         {
             unum_close(pFormat);

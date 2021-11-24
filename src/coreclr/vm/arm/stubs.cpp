@@ -755,7 +755,7 @@ void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator
     m_rgCode[n++] = 0xf8df; // ldr pc, [pc, #0]
     m_rgCode[n++] = 0xf000;
 
-    _ASSERTE(n == _countof(m_rgCode));
+    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
 
     m_pTarget = GetPreStubEntryPoint();
     m_pMethodDesc = (TADDR)pMD;
@@ -772,7 +772,7 @@ void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pM
     m_rgCode[n++] = 0xf8df; // ldr pc, [pc, #4]
     m_rgCode[n++] = 0xf004;
 
-    _ASSERTE(n == _countof(m_rgCode));
+    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
 
     m_pMethodDesc = (TADDR)pMD;
     m_pTarget = GetEEFuncEntryPoint(NDirectImportThunk);
@@ -826,7 +826,7 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     m_rgCode[n++] = 0xf8df; // ldr pc, [pc, #0]
     m_rgCode[n++] = 0xf000;
 
-    _ASSERTE(n == _countof(m_rgCode));
+    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
 
     m_pTarget = GetPreStubEntryPoint();
     m_pMethodDesc = (TADDR)pMD;

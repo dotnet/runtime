@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma once
+#ifndef HAVE_MINIPAL_ENTRYPOINTS_H
+#define HAVE_MINIPAL_ENTRYPOINTS_H
 
 #include <stdint.h>
 #include <string.h>
-
-#ifndef lengthof
-#define lengthof(rg) (sizeof(rg)/sizeof(rg[0]))
-#endif
+#include <minipal/utils.h>
 
 typedef struct
 {
@@ -32,3 +30,5 @@ static const void* minipal_resolve_dllimport(const Entry* resolutionTable, size_
 
     return NULL;
 }
+
+#endif // HAVE_MINIPAL_ENTRYPOINTS_H

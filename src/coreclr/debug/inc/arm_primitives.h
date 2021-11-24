@@ -20,7 +20,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(reg >= 0);
-    _ASSERTE(static_cast<size_t>(reg) < _countof(g_JITToCorDbgReg));
+    _ASSERTE(static_cast<size_t>(reg) < ARRAY_SIZE(g_JITToCorDbgReg));
     return g_JITToCorDbgReg[reg];
 }
 

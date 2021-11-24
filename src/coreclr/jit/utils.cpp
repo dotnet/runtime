@@ -110,7 +110,7 @@ const char* varTypeName(var_types vt)
 #undef DEF_TP
     };
 
-    assert((unsigned)vt < _countof(varTypeNames));
+    assert((unsigned)vt < ArrLen(varTypeNames));
 
     return varTypeNames[vt];
 }
@@ -601,7 +601,7 @@ void dumpILRange(const BYTE* const codeAddr, unsigned codeSize) // in bytes
     for (IL_OFFSET offs = 0; offs < codeSize;)
     {
         char prefix[100];
-        sprintf_s(prefix, _countof(prefix), "IL_%04x ", offs);
+        sprintf_s(prefix, ArrLen(prefix), "IL_%04x ", offs);
         unsigned codeBytesDumped = dumpSingleInstr(codeAddr, offs, prefix);
         offs += codeBytesDumped;
     }

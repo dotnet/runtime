@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 
 // Include System.Net.Security.Native headers
 #include "pal_gssapi.h"
@@ -33,5 +33,5 @@ EXTERN_C const void* SecurityResolveDllImport(const char* name);
 
 EXTERN_C const void* SecurityResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_securityNative, lengthof(s_securityNative), name);
+    return minipal_resolve_dllimport(s_securityNative, ARRAY_SIZE(s_securityNative), name);
 }

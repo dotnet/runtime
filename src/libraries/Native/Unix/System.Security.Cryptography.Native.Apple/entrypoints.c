@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 
 // Include System.Security.Cryptography.Native.Apple headers
 #include "pal_digest.h"
@@ -131,5 +131,5 @@ EXTERN_C const void* CryptoAppleResolveDllImport(const char* name);
 
 EXTERN_C const void* CryptoAppleResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_cryptoAppleNative, lengthof(s_cryptoAppleNative), name);
+    return minipal_resolve_dllimport(s_cryptoAppleNative, ARRAY_SIZE(s_cryptoAppleNative), name);
 }
