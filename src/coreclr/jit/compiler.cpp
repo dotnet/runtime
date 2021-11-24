@@ -4436,8 +4436,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         if (info.compPublishStubParam)
         {
             assert(lvaStubArgumentVar == BAD_VAR_NUM);
-            lvaStubArgumentVar                  = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-            lvaTable[lvaStubArgumentVar].lvType = TYP_I_IMPL;
+            lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
+            lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
             // TODO-CQ: there is no need to mark it as doNotEnreg. There are no stores for this local
             // before codegen so liveness and LSRA mark it as "liveIn" and always allocate a stack slot for it.
             // However, it would be better to process it like other argument locals and keep it in
@@ -4592,7 +4592,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         {
             for (unsigned i = 0; i < info.compArgsCount; i++)
             {
-                if (lvaTable[i].TypeGet() == TYP_REF)
+                if (lvaGetDesc(i)->TypeGet() == TYP_REF)
                 {
                     // confirm that the argument is a GC pointer (for debugging (GC stress))
                     GenTree*          op   = gtNewLclvNode(i, TYP_REF);
@@ -4617,15 +4617,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         {
             lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
             lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason::ReturnSpCheck);
-            lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
+            lvaGetDesc(lvaReturnSpCheck)->lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #if defined(DEBUG) && defined(TARGET_X86)
         if (opts.compStackCheckOnCall)
         {
-            lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
-            lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
+            lvaCallSpCheck                     = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+            lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
@@ -8763,7 +8763,7 @@ void cVarDsc(Compiler* comp, LclVarDsc* varDsc)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *VarDsc %u\n", sequenceNumber++);
-    unsigned lclNum = (unsigned)(varDsc - comp->lvaTable);
+    unsigned lclNum = comp->lvaGetLclNum(varDsc);
     comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
 }
 
