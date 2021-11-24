@@ -29,6 +29,14 @@ namespace System.IO.Compression
         [OuterLoop("Test takes ~6 seconds to run")]
         public override void FlushAsync_DuringWriteAsync() { base.FlushAsync_DuringWriteAsync(); }
 
+        [Theory]
+        [InlineData((CompressionLevel)(-1))]
+        [InlineData((CompressionLevel)4)]
+        public void Ctor_ArgumentValidation_InvalidCompressionLevel(CompressionLevel compressionLevel)
+        {
+            Assert.Throws<ArgumentException>(() => new BrotliStream(new MemoryStream(), compressionLevel));
+        }
+
         [Fact]
         public void InvalidQuality()
         {

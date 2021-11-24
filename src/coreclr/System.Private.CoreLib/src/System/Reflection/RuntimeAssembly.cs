@@ -68,7 +68,7 @@ namespace System.Reflection
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetCodeBase")]
         private static extern bool GetCodeBase(QCallAssembly assembly,
                                                StringHandleOnStack retString);
 
@@ -126,7 +126,7 @@ namespace System.Reflection
             return an;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetFullName")]
         private static extern void GetFullName(QCallAssembly assembly, StringHandleOnStack retString);
 
         public override string? FullName
@@ -146,7 +146,7 @@ namespace System.Reflection
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryPoint")]
         private static extern void GetEntryPoint(QCallAssembly assembly, ObjectHandleOnStack retMethod);
 
         public override MethodInfo? EntryPoint
@@ -164,7 +164,7 @@ namespace System.Reflection
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetType", CharSet = CharSet.Unicode)]
         private static extern void GetType(QCallAssembly assembly,
                                             string name,
                                             bool throwOnError,
@@ -197,7 +197,7 @@ namespace System.Reflection
             return type;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExportedTypes")]
         private static extern void GetExportedTypes(QCallAssembly assembly, ObjectHandleOnStack retTypes);
 
         [RequiresUnreferencedCode("Types might be removed")]
@@ -231,7 +231,7 @@ namespace System.Reflection
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetIsCollectible")]
         internal static extern Interop.BOOL GetIsCollectible(QCallAssembly assembly);
 
         public override bool IsCollectible
@@ -244,7 +244,7 @@ namespace System.Reflection
         }
 
         // GetResource will return a pointer to the resources in memory.
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetResource", CharSet = CharSet.Unicode)]
         private static extern unsafe byte* GetResource(QCallAssembly assembly,
                                                        string resourceName,
                                                        out uint length);
@@ -343,7 +343,7 @@ namespace System.Reflection
             return retAssembly!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalLoad")]
         private static extern void InternalLoad(ObjectHandleOnStack assemblyName,
                                                 ObjectHandleOnStack requestingAssembly,
                                                 StackCrawlMarkHandle stackMark,
@@ -355,7 +355,7 @@ namespace System.Reflection
 
         // Returns the module in this assembly with name 'name'
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetModule", CharSet = CharSet.Unicode)]
         private static extern void GetModule(QCallAssembly assembly, string name, ObjectHandleOnStack retModule);
 
         public override Module? GetModule(string name)
@@ -428,7 +428,7 @@ namespace System.Reflection
             return GetReferencedAssemblies(GetNativeHandle());
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceInfo", CharSet = CharSet.Unicode)]
         private static extern int GetManifestResourceInfo(QCallAssembly assembly,
                                                           string resourceName,
                                                           ObjectHandleOnStack assemblyRef,
@@ -450,7 +450,7 @@ namespace System.Reflection
                                                 (ResourceLocation)location);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLocation")]
         private static extern void GetLocation(QCallAssembly assembly, StringHandleOnStack retString);
 
         public override string Location
@@ -466,7 +466,7 @@ namespace System.Reflection
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetImageRuntimeVersion")]
         private static extern void GetImageRuntimeVersion(QCallAssembly assembly, StringHandleOnStack retString);
 
         public override string ImageRuntimeVersion
@@ -485,7 +485,7 @@ namespace System.Reflection
 
         public override long HostContext => 0;
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetVersion")]
         private static extern void GetVersion(QCallAssembly assembly,
                                               out int majVer,
                                               out int minVer,
@@ -499,7 +499,7 @@ namespace System.Reflection
             return new Version(majorVer, minorVer, build, revision);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLocale")]
         private static extern void GetLocale(QCallAssembly assembly, StringHandleOnStack retString);
 
         internal CultureInfo GetLocale()
@@ -520,7 +520,7 @@ namespace System.Reflection
 
         public override bool IsDynamic => FCallIsDynamic(GetNativeHandle());
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetSimpleName")]
         private static extern void GetSimpleName(QCallAssembly assembly, StringHandleOnStack retSimpleName);
 
         internal string? GetSimpleName()
@@ -531,7 +531,7 @@ namespace System.Reflection
             return name;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetHashAlgorithm")]
         private static extern AssemblyHashAlgorithm GetHashAlgorithm(QCallAssembly assembly);
 
         private AssemblyHashAlgorithm GetHashAlgorithm()
@@ -540,7 +540,7 @@ namespace System.Reflection
             return GetHashAlgorithm(new QCallAssembly(ref runtimeAssembly));
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetFlags")]
         private static extern AssemblyNameFlags GetFlags(QCallAssembly assembly);
 
         private AssemblyNameFlags GetFlags()
@@ -549,7 +549,7 @@ namespace System.Reflection
             return GetFlags(new QCallAssembly(ref runtimeAssembly));
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetPublicKey")]
         private static extern void GetPublicKey(QCallAssembly assembly, ObjectHandleOnStack retPublicKey);
 
         internal byte[]? GetPublicKey()
@@ -604,7 +604,7 @@ namespace System.Reflection
             return retAssembly;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetModules")]
         private static extern void GetModules(QCallAssembly assembly,
                                               bool loadIfNotFound,
                                               bool getResourceModules,
@@ -709,7 +709,7 @@ namespace System.Reflection
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetForwardedType")]
         private static extern void GetForwardedType(QCallAssembly assembly, MetadataToken mdtExternalType, ObjectHandleOnStack type);
     }
 }

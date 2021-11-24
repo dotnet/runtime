@@ -82,7 +82,7 @@ CordbModule::CordbModule(
 
     m_fDynamic  = modInfo.fIsDynamic;
     m_fInMemory = modInfo.fInMemory;
-    m_vmPEFile = modInfo.vmPEFile;
+    m_vmPEFile = modInfo.vmPEAssembly;
 
     if (!vmDomainFile.IsNull())
     {
@@ -268,13 +268,13 @@ IDacDbiInterface::SymbolFormat CordbModule::GetInMemorySymbolStream(IStream ** p
 // Accessor for PE file.
 //
 // Returns:
-//    VMPTR_PEFile for this module. Should always be non-null
+//    VMPTR_PEAssembly for this module. Should always be non-null
 //
 // Notes:
 //    A main usage of this is to find the proper internal MetaData importer.
-//    DACized code needs to map from PEFile --> IMDInternalImport.
+//    DACized code needs to map from PEAssembly --> IMDInternalImport.
 //
-VMPTR_PEFile CordbModule::GetPEFile()
+VMPTR_PEAssembly CordbModule::GetPEFile()
 {
     return m_vmPEFile;
 }

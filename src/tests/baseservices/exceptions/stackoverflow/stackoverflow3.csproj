@@ -4,7 +4,6 @@
     <Optimize>false</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="stackoverflow3.cs" />

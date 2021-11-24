@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "hostpolicy_context.h"
+#include "hostpolicy.h"
 
 #include "deps_resolver.h"
 #include <error_codes.h>
@@ -55,11 +56,15 @@ namespace
     const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
     {
 #if defined(_WIN32)
+        const char* hostPolicyLib = "hostpolicy.dll";
+
         if (strcmp(libraryName, "System.IO.Compression.Native") == 0)
         {
             return CompressionResolveDllImport(entrypointName);
         }
 #else
+        const char* hostPolicyLib = "libhostpolicy";
+
         if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
         {
             return CompressionResolveDllImport(entrypointName);
@@ -80,6 +85,19 @@ namespace
             return CryptoResolveDllImport(entrypointName);
         }
 #endif
+        // there are two PInvokes in the hostpolicy itself, redirect them here.
+        if (strcmp(libraryName, hostPolicyLib) == 0)
+        {
+            if (strcmp(entrypointName, "corehost_resolve_component_dependencies") == 0)
+            {
+                return (void*)corehost_resolve_component_dependencies;
+            }
+
+            if (strcmp(entrypointName, "corehost_set_error_writer") == 0)
+            {
+                return (void*)corehost_set_error_writer;
+            }
+        }
 
 #if defined(TARGET_OSX)
         if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.Apple") == 0)
@@ -263,11 +281,16 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     pal::string_t startup_hooks;
     if (pal::getenv(_X("DOTNET_STARTUP_HOOKS"), &startup_hooks))
     {
-        if (!coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str()))
+        const pal::char_t *config_startup_hooks;
+        if (coreclr_properties.try_get(common_property::StartUpHooks, &config_startup_hooks))
         {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
-            return StatusCode::LibHostDuplicateProperty;
+            // env startup hooks shoold have precedence over config startup hooks
+            // therefore append config_startup_hooks AFTER startup_hooks
+            startup_hooks.push_back(PATH_SEPARATOR);
+            startup_hooks.append(config_startup_hooks);
         }
+        
+        coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str());
     }
 
     // Single-File Bundle Probe
@@ -279,7 +302,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
         if (!coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str()))
         {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::BundleProbe));
             return StatusCode::LibHostDuplicateProperty;
         }
     }
@@ -294,7 +317,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
         if (!coreclr_properties.add(common_property::PInvokeOverride, ptr_stream.str().c_str()))
         {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::PInvokeOverride));
             return StatusCode::LibHostDuplicateProperty;
         }
     }
@@ -303,7 +326,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 #if defined(HOSTPOLICY_EMBEDDED)
     if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))
     {
-        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::HostPolicyEmbedded));
         return StatusCode::LibHostDuplicateProperty;
     }
 #endif

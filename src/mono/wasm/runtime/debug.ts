@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from "./modules";
-import { toBase64StringImpl, _base64_to_uint8 } from "./base64";
+import { Module, MONO, runtimeHelpers } from "./imports";
+import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
+import { VoidPtr } from "./types";
 
 let commands_received: CommandResponse;
 let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
 let _debugger_buffer: VoidPtr;
-let _debugger_heap_bytes: Uint8Array;
 
 export function mono_wasm_runtime_ready(): void {
     runtimeHelpers.mono_wasm_runtime_is_ready = true;
@@ -52,9 +52,10 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
         _debugger_buffer_len = Math.max(command_parameters.length, _debugger_buffer_len, 256);
         _debugger_buffer = Module._malloc(_debugger_buffer_len);
     }
-    //reset _debugger_heap_bytes because Module.HEAPU8.buffer can be reallocated 
-    _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, <any>_debugger_buffer, _debugger_buffer_len);
-    _debugger_heap_bytes.set(_base64_to_uint8(command_parameters));
+    const byteCharacters = atob(command_parameters);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        Module.HEAPU8[<any>_debugger_buffer + i] = byteCharacters.charCodeAt(i);
+    }
 }
 
 export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, command_parameters: string, length: number, valtype: number, newvalue: number): CommandResponseResult {
@@ -112,13 +113,17 @@ export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}): void {
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
     cwraps.mono_wasm_set_is_debugger_attached(true);
-    return runtimeHelpers.loaded_files;
+    return MONO.loaded_files;
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
     if (objectId.startsWith("dotnet:array:")) {
-        const ret = details.map((p: any) => p.value);
-        return ret;
+        let ret : Array<any>;
+        if (details.dimensionsDetails == undefined || details.dimensionsDetails.length == 1)
+        {
+            ret = details.items.map((p: any) => p.value);
+            return ret;
+        }
     }
 
     const proxy: any = {};

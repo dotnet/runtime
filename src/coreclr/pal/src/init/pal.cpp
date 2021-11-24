@@ -39,7 +39,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/numa.h"
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
-#include <getexepath.h>
+#include <common/getexepath.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -1272,7 +1272,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
     LPWSTR return_value;
     INT return_size;
 
-    char* path = getexepath();
+    char* path = minipal_getexepath();
     if (!path)
     {
         ERROR( "Cannot get current exe path\n" );

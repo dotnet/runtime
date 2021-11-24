@@ -123,7 +123,7 @@ namespace Internal.Cryptography.Pal.Windows
                         delegate (CMSG_KEY_AGREE_RECIPIENT_INFO* recipient)
                         {
                             CMSG_RECIPIENT_ENCRYPTED_KEY_INFO* pEncryptedKeyInfo = recipient->rgpRecipientEncryptedKeys[SubIndex];
-                            long date = (((long)(uint)(pEncryptedKeyInfo->Date.dwHighDateTime)) << 32) | ((long)(uint)(pEncryptedKeyInfo->Date.dwLowDateTime));
+                            long date = (((long)pEncryptedKeyInfo->Date.ftTimeHigh) << 32) | ((long)pEncryptedKeyInfo->Date.ftTimeLow);
                             DateTime dateTime = DateTime.FromFileTimeUtc(date);
                             return dateTime;
                         });

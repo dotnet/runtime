@@ -10,9 +10,9 @@ Wasm app build can run in two scenarios:
 A dotnet wasm app has some native wasm files (`dotnet.wasm`, and `dotnet.js`). How these files are obtained, or generated:
 
 1. Build
-    a. with no native libraries referenced (AOT setting is ignored here)
+    - a. with no native libraries referenced (AOT setting is ignored here)
         - files from the runtime pack are used as-is
-    b. with native libraries referenced
+    - b. with native libraries referenced
         - dotnet.wasm is relinked with the native libraries
 2. Publish
     - dotnet.wasm is relinked with the native libraries, and updated pinvoke/icalls from the trimmed assemblies

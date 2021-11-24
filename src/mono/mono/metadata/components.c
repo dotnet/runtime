@@ -43,12 +43,12 @@ typedef struct _MonoComponentEntry {
 #define DEBUGGER_LIBRARY_NAME "debugger"
 #define DEBUGGER_COMPONENT_NAME DEBUGGER_LIBRARY_NAME
 
-MonoComponentHotReload *hot_reload = NULL;
+MonoComponentHotReload *mono_component_hot_reload_private_ptr = NULL;
 
-MonoComponentDebugger *debugger = NULL;
+MonoComponentDebugger *mono_component_debugger_private_ptr = NULL;
 
-MonoComponentEventPipe *event_pipe = NULL;
-MonoComponentDiagnosticsServer *diagnostics_server = NULL;
+MonoComponentEventPipe *mono_component_event_pipe_private_ptr = NULL;
+MonoComponentDiagnosticsServer *mono_component_diagnostics_server_private_ptr = NULL;
 
 // DiagnosticsServer/EventPipe components currently hosted by diagnostics_tracing library.
 #define DIAGNOSTICS_TRACING_LIBRARY_NAME "diagnostics_tracing"
@@ -57,10 +57,10 @@ MonoComponentDiagnosticsServer *diagnostics_server = NULL;
 
 /* One per component */
 MonoComponentEntry components[] = {
-	{ DEBUGGER_LIBRARY_NAME, DEBUGGER_COMPONENT_NAME, COMPONENT_INIT_FUNC (debugger), (MonoComponent**)&debugger, NULL },
-	{ HOT_RELOAD_LIBRARY_NAME, HOT_RELOAD_COMPONENT_NAME, COMPONENT_INIT_FUNC (hot_reload), (MonoComponent**)&hot_reload, NULL },
-	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, EVENT_PIPE_COMPONENT_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&event_pipe, NULL },
-	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, DIAGNOSTICS_SERVER_COMPONENT_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&diagnostics_server, NULL },
+	{ DEBUGGER_LIBRARY_NAME, DEBUGGER_COMPONENT_NAME, COMPONENT_INIT_FUNC (debugger), (MonoComponent**)&mono_component_debugger_private_ptr, NULL },
+	{ HOT_RELOAD_LIBRARY_NAME, HOT_RELOAD_COMPONENT_NAME, COMPONENT_INIT_FUNC (hot_reload), (MonoComponent**)&mono_component_hot_reload_private_ptr, NULL },
+	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, EVENT_PIPE_COMPONENT_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&mono_component_event_pipe_private_ptr, NULL },
+	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, DIAGNOSTICS_SERVER_COMPONENT_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&mono_component_diagnostics_server_private_ptr, NULL },
 };
 
 #ifndef STATIC_COMPONENTS

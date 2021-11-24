@@ -14,6 +14,7 @@
 .assembly 'deep'// as "deep"
 {
 }
+.assembly extern xunit.core {}
 .module 'deep.exe'
 // MVID: {AA806490-3696-4693-BEEE-68E449C58639}
 .namespace JitTest
@@ -231,6 +232,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       958 (0x3be)
       .maxstack  46

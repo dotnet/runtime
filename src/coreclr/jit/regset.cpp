@@ -320,9 +320,8 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 #endif // TARGET_ARM
     else if (tree->IsMultiRegLclVar())
     {
-        GenTreeLclVar* lcl    = tree->AsLclVar();
-        LclVarDsc*     varDsc = m_rsCompiler->lvaGetDesc(lcl->GetLclNum());
-        treeType              = varDsc->TypeGet();
+        LclVarDsc* varDsc = m_rsCompiler->lvaGetDesc(tree->AsLclVar());
+        treeType          = varDsc->TypeGet();
     }
     else
     {

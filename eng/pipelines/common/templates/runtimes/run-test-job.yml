@@ -64,9 +64,10 @@ jobs:
       - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'))  }}:
+        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'), eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))  }}:
           # This is needed for creating a CORE_ROOT in the current design.
           - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }} :
           # minijit and mono interpreter runtimevariants do not require any special build of the runtime
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
@@ -284,19 +285,19 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
       displayName: Copy native test components to test output folder
 
 
     # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(runtimeVariantArg) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(runtimeVariantArg) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate test wrappers
 
 
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests. This step also compiles the framework using Crossgen / Crossgen2
     # in ReadyToRun jobs.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
 
     # Overwrite coreclr runtime binaries with mono ones
@@ -324,10 +325,10 @@ jobs:
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
       - ${{ if eq(parameters.archType, 'x64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(monoAotBuildshCommand) $(buildConfig) $(archType) $(runtimeVariantArg)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) $(runtimeVariantArg)
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.archType, 'arm64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(monoAotBuildshCommand) $(buildConfig) $(archType) cross $(runtimeVariantArg)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) cross $(runtimeVariantArg)
           displayName: "LLVM AOT cross-compile CoreCLR tests"
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
@@ -553,6 +554,10 @@ jobs:
           scenarios:
           - jitosr
           - jitosr_stress
+          - jitosr_pgo
+          - jitpartialcompilation
+          - jitpartialcompilation_osr
+          - jitpartialcompilation_osr_pgo
           - jitobjectstackallocation
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:

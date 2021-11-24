@@ -2,6 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkMinimum)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"

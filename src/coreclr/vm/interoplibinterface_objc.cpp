@@ -23,10 +23,10 @@ namespace
     ObjCMarshalNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
 }
 
-BOOL QCALLTYPE ObjCMarshalNative::TryInitializeReferenceTracker(
-    _In_ BeginEndCallback beginEndCallback,
-    _In_ IsReferencedCallback isReferencedCallback,
-    _In_ EnteredFinalizationCallback trackedObjectEnteredFinalization)
+extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
+    _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
+    _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
+    _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization)
 {
     QCALL_CONTRACT;
     _ASSERTE(beginEndCallback != NULL
@@ -57,7 +57,7 @@ BOOL QCALLTYPE ObjCMarshalNative::TryInitializeReferenceTracker(
     return success;
 }
 
-void* QCALLTYPE ObjCMarshalNative::CreateReferenceTrackingHandle(
+extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
         _In_ QCall::ObjectHandleOnStack obj,
         _Out_ int* memInSizeT,
         _Outptr_ void** mem)
@@ -153,8 +153,8 @@ namespace
     }
 }
 
-BOOL QCALLTYPE ObjCMarshalNative::TrySetGlobalMessageSendCallback(
-    _In_ MessageSendFunction msgSendFunction,
+extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
+    _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
     _In_ void* fptr)
 {
     QCALL_CONTRACT;

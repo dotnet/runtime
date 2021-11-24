@@ -7,13 +7,45 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class Vector3Tests
+    public sealed class Vector3Tests
     {
         [Fact]
         public void Vector3MarshalSizeTest()
         {
             Assert.Equal(12, Marshal.SizeOf<Vector3>());
             Assert.Equal(12, Marshal.SizeOf<Vector3>(new Vector3()));
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f)]
+        public void Vector3IndexerGetTest(float x, float y, float z)
+        {
+            var vector = new Vector3(x, y, z);
+
+            Assert.Equal(x, vector[0]);
+            Assert.Equal(y, vector[1]);
+            Assert.Equal(z, vector[2]);
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f)]
+        public void Vector3IndexerSetTest(float x, float y, float z)
+        {
+            var vector = new Vector3(0.0f, 0.0f, 0.0f);
+
+            vector[0] = x;
+            vector[1] = y;
+            vector[2] = z;
+
+            Assert.Equal(x, vector[0]);
+            Assert.Equal(y, vector[1]);
+            Assert.Equal(z, vector[2]);
         }
 
         [Fact]

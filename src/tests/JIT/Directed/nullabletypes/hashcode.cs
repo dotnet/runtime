@@ -30,11 +30,11 @@ class NullableTest1
 
     public static void Run()
     {
-        Test.Eval(i.GetHashCode(), 1.GetHashCode());
-        Test.Eval(s.GetHashCode(), default(Struct).GetHashCode());
-        Test.Eval(imps.GetHashCode(), default(ImplStruct).GetHashCode());
-        Test.Eval(genfoo.GetHashCode(), default(OpenGenImplStruct<Foo>).GetHashCode());
-        Test.Eval(genint.GetHashCode(), default(CloseGenImplStruct).GetHashCode());
+        Test_nullabletypes.Eval(i.GetHashCode(), 1.GetHashCode());
+        Test_nullabletypes.Eval(s.GetHashCode(), default(Struct).GetHashCode());
+        Test_nullabletypes.Eval(imps.GetHashCode(), default(ImplStruct).GetHashCode());
+        Test_nullabletypes.Eval(genfoo.GetHashCode(), default(OpenGenImplStruct<Foo>).GetHashCode());
+        Test_nullabletypes.Eval(genint.GetHashCode(), default(CloseGenImplStruct).GetHashCode());
     }
 }
 
@@ -49,11 +49,11 @@ class NullableTest2
 
     public static void Run()
     {
-        Test.Eval(i.GetHashCode(), 0);
-        Test.Eval(s.GetHashCode(), 0);
-        Test.Eval(imps.GetHashCode(), 0);
-        Test.Eval(genfoo.GetHashCode(), 0);
-        Test.Eval(genint.GetHashCode(), 0);
+        Test_nullabletypes.Eval(i.GetHashCode(), 0);
+        Test_nullabletypes.Eval(s.GetHashCode(), 0);
+        Test_nullabletypes.Eval(imps.GetHashCode(), 0);
+        Test_nullabletypes.Eval(genfoo.GetHashCode(), 0);
+        Test_nullabletypes.Eval(genint.GetHashCode(), 0);
     }
 }
 

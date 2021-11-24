@@ -11,6 +11,7 @@ jobs:
       - src/libraries/System.Private.CoreLib/*
       - src/libraries/Native/Unix/System.Globalization.Native/*
       - src/libraries/Native/Unix/Common/*
+      - src/native/*
       exclude:
       - eng/Version.Details.xml
       - '*.md'
@@ -30,7 +31,7 @@ jobs:
       - src/libraries/System.Private.CoreLib/*
       - src/libraries/Native/Unix/System.Globalization.Native/*
       - src/libraries/Native/Unix/Common/*
-      - src/tests/BuildWasmApps/*
+      - src/native/*
       exclude:
       - eng/Version.Details.xml
       - '*.md'
@@ -97,6 +98,22 @@ jobs:
       - src/coreclr/vm/*
       exclude:
       - '*'
+    - subset: coreclr_jit
+      include:
+      - src/coreclr/jit/*
+    - subset: wasmbuildtests
+      include:
+      - src/tasks/*
+      - src/tests/BuildWasmApps/*
+      - src/mono/wasm/build/*
+      - src/mono/wasm/runtime/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
+      - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
+      - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
+      - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
+      - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
+      - src/mono/mono/*
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}

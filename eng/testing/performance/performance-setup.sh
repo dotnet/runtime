@@ -31,24 +31,6 @@ use_latest_dotnet=false
 logical_machine=
 javascript_engine="v8"
 
-verified_mv()
-{
-	mv $1 $2
-	if [ "$?" -ne "0" ]; then
-		echo "Failed to move $1 to $2"
-		exit 1
-	fi
-}
-
-verified_rsync()
-{
-	rsync -a --progress $1 $2
-	if [ "$?" -ne "0" ]; then
-		echo "Failed to sync $1 to $2"
-		exit 1
-	fi
-}
-
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
   case $lowerI in
@@ -273,7 +255,11 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
 fi
 
-common_setup_arguments="--channel main --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
+cleaned_branch_name="main"
+if [[ $branch == *"refs/heads/release"* ]]; then
+    cleaned_branch_name=${branch/refs\/heads\//}
+fi
+common_setup_arguments="--channel $cleaned_branch_name --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
 if [[ "$run_from_perf_repo" = true ]]; then
@@ -285,27 +271,24 @@ else
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
-	if [ "$?" -ne "0" ]; then
-		echo "git clone failed with code $?"
-		exit 1
 
     docs_directory=$performance_directory/docs
-    verified_mv $docs_directory $workitem_directory
+    mv $docs_directory $workitem_directory
 fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
-    verified_mv $wasm_runtime_loc $wasm_dotnet_path
+    mv $wasm_runtime_loc $wasm_dotnet_path
     # install emsdk, $source_directory/src/mono/wasm/ has the nuget.config with require feed. EMSDK may be available in the payload in a different directory, should visit this install to avoid deplicated payload.
     pushd $source_directory/src/mono/wasm/
     make provision-wasm
     EMSDK_PATH = $source_directory/src/mono/wasm/emsdk
     popd
     # wasm aot and interpreter need some source code from dotnet\runtime repo
-    verified_rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests --exclude __download__
+    rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests --exclude __download__
     # copy wasm build drop to the location that aot and interpreter build expects
-    verified_rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
+    rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
     rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600" 
@@ -317,23 +300,23 @@ fi
 if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then
     using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
-    verified_mv $mono_dotnet $mono_dotnet_path
+    mv $mono_dotnet $mono_dotnet_path
 fi
 
 if [[ "$monoaot" == "true" ]]; then
     monoaot_dotnet_path=$payload_directory/monoaot
-    verified_mv $monoaot_path $monoaot_dotnet_path
+    mv $monoaot_path $monoaot_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
 fi
 
 if [[ "$use_core_run" = true ]]; then
     new_core_root=$payload_directory/Core_Root
-    verified_mv $core_root_directory $new_core_root
+    mv $core_root_directory $new_core_root
 fi
 
 if [[ "$use_baseline_core_run" = true ]]; then
-	new_baseline_core_root=$payload_directory/Baseline_Core_Root
-	verified_mv $baseline_core_root_directory $new_baseline_core_root
+  new_baseline_core_root=$payload_directory/Baseline_Core_Root
+  mv $baseline_core_root_directory $new_baseline_core_root
 fi
 
 ci=true

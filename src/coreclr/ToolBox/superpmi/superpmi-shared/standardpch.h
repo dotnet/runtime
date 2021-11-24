@@ -68,12 +68,14 @@
 #ifdef TARGET_UNIX
 #include "clr_std/string"
 #include "clr_std/algorithm"
+#include "clr_std/vector"
 #else // !TARGET_UNIX
 #ifndef USE_STL
 #define USE_STL
 #endif // USE_STL
 #include <string>
 #include <algorithm>
+#include <vector>
 #endif // !TARGET_UNIX
 
 #ifdef USE_MSVCDIS

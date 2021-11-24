@@ -2719,7 +2719,7 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 		sgen_restart_world (oldest_generation_collected, forced_serial || !sgen_major_collector.is_concurrent);
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 typedef struct {
 	size_t requested_size;
@@ -2737,16 +2737,14 @@ gc_pump_callback (void)
 	sgen_perform_collection_inner (gc_request.requested_size, gc_request.generation_to_collect, gc_request.reason, TRUE, TRUE);
 	gc_request.generation_to_collect = 0;
 }
-#endif
 
-#ifdef HOST_WASM
 extern gboolean mono_wasm_enable_gc;
 #endif
 
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 	if (!mono_wasm_enable_gc) {
 		g_assert (stw); //can't handle non-stw mode (IE, domain unload)
 		//we ignore forced_serial

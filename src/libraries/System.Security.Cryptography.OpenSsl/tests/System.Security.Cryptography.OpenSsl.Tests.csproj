@@ -6,6 +6,8 @@
     <IgnoreForCI Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' ">true</IgnoreForCI>
     <!-- The library is not supported on mobile platforms (PNSE) -->
     <IgnoreForCI Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IgnoreForCI>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EcDsaOpenSslTests.cs" />

@@ -21,13 +21,13 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         protected ConfigurationProvider()
         {
-            Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
         /// The configuration key value pairs for this provider.
         /// </summary>
-        protected IDictionary<string, string> Data { get; set; }
+        protected IDictionary<string, string?> Data { get; set; }
 
         /// <summary>
         /// Attempts to find a value with the given key, returns true if one is found, false otherwise.
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key to lookup.</param>
         /// <param name="value">The value found at key if one is found.</param>
         /// <returns>True if key has a value, false otherwise.</returns>
-        public virtual bool TryGet(string key, out string value)
+        public virtual bool TryGet(string key, out string? value)
             => Data.TryGetValue(key, out value);
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The configuration key to set.</param>
         /// <param name="value">The value to set.</param>
-        public virtual void Set(string key, string value)
+        public virtual void Set(string key, string? value)
             => Data[key] = value;
 
         /// <summary>
@@ -60,13 +60,13 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The list of keys for this provider.</returns>
         public virtual IEnumerable<string> GetChildKeys(
             IEnumerable<string> earlierKeys,
-            string parentPath)
+            string? parentPath)
         {
             var results = new List<string>();
 
             if (parentPath is null)
             {
-                foreach (KeyValuePair<string, string> kv in Data)
+                foreach (KeyValuePair<string, string?> kv in Data)
                 {
                     results.Add(Segment(kv.Key, 0));
                 }
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
 
-                foreach (KeyValuePair<string, string> kv in Data)
+                foreach (KeyValuePair<string, string?> kv in Data)
                 {
                     if (kv.Key.Length > parentPath.Length &&
                         kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&

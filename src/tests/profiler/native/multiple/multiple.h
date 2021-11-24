@@ -15,7 +15,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void* pvClientData, UINT cbClientData);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
-    virtual HRESULT STDMETHODCALLTYPE LoadAsNotficationOnly(BOOL *pbNotificationOnly);
+    virtual HRESULT STDMETHODCALLTYPE LoadAsNotificationOnly(BOOL *pbNotificationOnly);
 
     virtual HRESULT STDMETHODCALLTYPE ProfilerDetachSucceeded();
     virtual HRESULT STDMETHODCALLTYPE ExceptionThrown(ObjectID thrownObjectId);

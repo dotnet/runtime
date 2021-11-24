@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/58707", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserOnWindows), nameof(PlatformDetection.IsMonoAOT))]
     public class FileInfo_CopyTo_str : File_Copy_str_str
     {
         protected override void Copy(string source, string dest)

@@ -140,7 +140,7 @@ namespace System.Net.Http
             {
                 StreamId = streamId;
                 _availableCredit = initialWindowSize;
-                if (NetEventSource.Log.IsEnabled()) Trace($"{_request}, {nameof(initialWindowSize)}={initialWindowSize}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(initialWindowSize)}={initialWindowSize}");
             }
 
             public int StreamId { get; private set; }
@@ -1029,6 +1029,7 @@ namespace System.Net.Http
                 {
                     responseContent.SetStream(new Http2ReadStream(this));
                 }
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received response: {_response}");
 
                 // Process Set-Cookie headers.
                 if (_connection._pool.Settings._useCookies)

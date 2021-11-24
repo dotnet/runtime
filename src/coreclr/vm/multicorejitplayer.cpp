@@ -396,11 +396,6 @@ bool MulticoreJitManager::ModuleHasNoCode(Module * pModule)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (pModule->IsResource())
-    {
-        return true;
-    }
-
     IMDInternalImport * pImport = pModule->GetMDImport();
 
     if (pImport != NULL)
@@ -434,15 +429,15 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
         return false;
     }
 
-    PEFile * pFile = pModule->GetFile();
+    PEAssembly * pPEAssembly = pModule->GetPEAssembly();
 
     // dynamic module.
-    if (pFile->IsDynamic()) // Ignore dynamic modules
+    if (pPEAssembly->IsDynamic()) // Ignore dynamic modules
     {
         return false;
     }
 
-    if (pFile->GetPath().IsEmpty()) // Ignore in-memory modules
+    if (pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
     {
         return false;
     }

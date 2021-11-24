@@ -297,6 +297,9 @@ System.Configuration.ConfigurationManager</PackageDescription>
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.ProtectedData\src\System.Security.Cryptography.ProtectedData.csproj" />

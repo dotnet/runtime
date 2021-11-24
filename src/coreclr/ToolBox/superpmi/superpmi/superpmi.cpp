@@ -18,6 +18,7 @@
 #include "mclist.h"
 #include "methodstatsemitter.h"
 #include "spmiutil.h"
+#include "metricssummary.h"
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
 
@@ -264,6 +265,9 @@ int __cdecl main(int argc, char* argv[])
         }
     }
 
+    MetricsSummary totalBaseMetrics;
+    MetricsSummary totalDiffMetrics;
+
     while (true)
     {
         MethodContextBuffer mcb = reader->GetNextMethodContext();
@@ -358,16 +362,21 @@ int __cdecl main(int argc, char* argv[])
             }
         }
 
+        MetricsSummary baseMetrics;
         jittedCount++;
         st3.Start();
-        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput);
+        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics);
         st3.Stop();
         LogDebug("Method %d compiled in %fms, result %d", reader->GetMethodContextIndex(), st3.GetMilliseconds(), res);
+
+        totalBaseMetrics.AggregateFrom(baseMetrics);
 
         if ((res == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
         {
             mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
         }
+
+        MetricsSummary diffMetrics;
 
         if (o.nameOfJit2 != nullptr)
         {
@@ -378,10 +387,12 @@ int __cdecl main(int argc, char* argv[])
             mc->cr = new CompileResult();
 
             st4.Start();
-            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput);
+            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics);
             st4.Stop();
             LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
                      st4.GetMilliseconds(), res2);
+
+            totalDiffMetrics.AggregateFrom(diffMetrics);
 
             if ((res2 == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
             {
@@ -525,6 +536,9 @@ int __cdecl main(int argc, char* argv[])
                 else
                 {
                     InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &matchCount, &reader, &failingToReplayMCL, &diffMCL);
+
+                    totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
+                    totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
                 }
             }
         }
@@ -602,6 +616,16 @@ int __cdecl main(int argc, char* argv[])
 
     st2.Stop();
     LogVerbose("Total time: %fms", st2.GetMilliseconds());
+
+    if (o.baseMetricsSummaryFile != nullptr)
+    {
+        totalBaseMetrics.SaveToFile(o.baseMetricsSummaryFile);
+    }
+
+    if (o.diffMetricsSummaryFile != nullptr)
+    {
+        totalDiffMetrics.SaveToFile(o.diffMetricsSummaryFile);
+    }
 
     if (methodStatsEmitter != nullptr)
     {
