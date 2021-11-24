@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 
 // Include System.Native headers
 #include "pal_autoreleasepool.h"
@@ -268,5 +268,5 @@ EXTERN_C const void* SystemResolveDllImport(const char* name);
 
 EXTERN_C const void* SystemResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_sysNative, lengthof(s_sysNative), name);
+    return minipal_resolve_dllimport(s_sysNative, ARRAY_SIZE(s_sysNative), name);
 }

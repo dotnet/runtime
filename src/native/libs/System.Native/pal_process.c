@@ -39,7 +39,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#include <common/getexepath.h>
+#include <minipal/getexepath.h>
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);

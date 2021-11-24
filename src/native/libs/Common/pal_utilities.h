@@ -43,8 +43,6 @@
 #define CONST_CAST2(TOTYPE, FROMTYPE, X) ((union { FROMTYPE _q; TOTYPE _nq; }){ ._q = (X) }._nq)
 #define CONST_CAST(TYPE, X) CONST_CAST2(TYPE, const TYPE, (X))
 
-#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
-
 #if __has_attribute(fallthrough)
 #define FALLTHROUGH __attribute__((fallthrough))
 #else
