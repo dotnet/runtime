@@ -49,6 +49,7 @@ public class ILRewriter
     private void RewriteFile(string ilSource)
     {
         List<string> lines = new List<string>(File.ReadAllLines(ilSource));
+        bool isILTest = Path.GetExtension(ilSource).ToLower() == ".il";
         bool rewritten = false;
 
         if (_testProject.MainMethodLine >= 0)
@@ -69,22 +70,39 @@ public class ILRewriter
                     }
                 }
 
-                if (_addILFactAttributes && !_testProject.HasFactAttribute && Path.GetExtension(_testProject.TestClassSourceFile).ToLower() == ".il")
+                if (_addILFactAttributes && !_testProject.HasFactAttribute)
                 {
-                    string firstMainBodyLine = lines[lineInBody + 1];
-                    int indent = 0;
-                    while (indent < firstMainBodyLine.Length && firstMainBodyLine[indent] <= ' ')
-                    {
-                        indent++;
-                    }
+                    int indentLine = (isILTest ? lineInBody + 1 : lineIndex);
+                    string firstMainBodyLine = lines[indentLine];
+                    int indent = TestProject.GetIndent(firstMainBodyLine);
                     string indentString = firstMainBodyLine.Substring(0, indent);
-                    string[] indentedFactLines = new string[s_factLines.Length];
-                    for (int i = 0; i < s_factLines.Length; i++)
+                    if (isILTest)
                     {
-                        indentedFactLines[i] = indentString + s_factLines[i];
+                        string[] indentedFactLines = new string[s_factLines.Length];
+                        for (int i = 0; i < s_factLines.Length; i++)
+                        {
+                            indentedFactLines[i] = indentString + s_factLines[i];
+                        }
+                        lines.InsertRange(lineInBody + 1, indentedFactLines);
+                        rewritten = true;
                     }
-                    lines.InsertRange(lineInBody + 1, indentedFactLines);
-                    rewritten = true;
+                    else
+                    {
+                        if (!line.Contains("public "))
+                        {
+                            if (line.Contains("private "))
+                            {
+                                line = line.Replace("private ", "public ");
+                            }
+                            else
+                            {
+                                line = TestProject.AddAfterIndent(line, "public ");
+                            }
+                        }
+                        lines[lineIndex] = ReplaceIdent(line, "Main", "Test");
+                        lines.Insert(lineIndex, indentString + "[Fact]");
+                        rewritten = true;
+                    }
                 }
 
                 /*
@@ -124,26 +142,31 @@ public class ILRewriter
             }
         }
 
-        /*
         if (_testProject.TestClassLine >= 0)
         {
             string line = lines[_testProject.TestClassLine];
             if (line.IndexOf("public") < 0)
             {
+                if (line.IndexOf("private ") >= 0)
+                {
+                    line = line.Replace("private ", "public ");
+                }
+                else if (!isILTest)
+                {
+                    line = TestProject.AddAfterIndent(line, "public ");
+                }
                 if (!_deduplicateClassNames)
                 {
-                    lines[_testProject.TestClassLine] = line.Replace(" private ", " public ");
+                    lines[_testProject.TestClassLine] = line;
                     rewritten = true;
                 }
             }
         }
-        */
 
         if (!_deduplicateClassNames)
         {
             bool hasXunitReference = false;
             string testName = _testProject.TestProjectAlias!;
-            bool isILTest = Path.GetExtension(_testProject.TestClassSourceFile).ToLower() == ".il";
             bool addFactAttribute = _addILFactAttributes && !_testProject.HasFactAttribute && isILTest;
             if (isILTest)
             {
@@ -245,6 +268,27 @@ public class ILRewriter
                     */
                 }
             }
+            else
+            {
+                int lastUsingLine = 0;
+                bool usingXUnit = false;
+                for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+                {
+                    string line = lines[lineIndex];
+                    if (line.StartsWith("using"))
+                    {
+                        lastUsingLine = lineIndex;
+                        if (line.IndexOf("Xunit") >= 0)
+                        {
+                            usingXUnit = true;
+                        }
+                    }
+                }
+                if (!usingXUnit)
+                {
+                    lines.Insert(lastUsingLine + 1, "using Xunit;");
+                }
+            }
         }
 
         /*
@@ -281,18 +325,18 @@ public class ILRewriter
     {
         List<string> lines = new List<string>(File.ReadAllLines(path));
         bool rewritten = false;
-        /*
-        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+        for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
         {
             string line = lines[lineIndex];
             const string outputTypeTag = "<OutputType>Exe</OutputType>";
             int outputTypeIndex = line.IndexOf(outputTypeTag);
-            if (outputTypeIndex >= 0)
+            if (_addILFactAttributes && outputTypeIndex >= 0)
             {
                 lines.RemoveAt(lineIndex--);
                 rewritten = true;
                 continue;
             }
+            /*
             const string testKindTag = "<CLRTestKind>BuildAndRun</CLRTestKind>";
             int testKindIndex = line.IndexOf(testKindTag);
             if (testKindIndex >= 0)
@@ -301,8 +345,8 @@ public class ILRewriter
                 rewritten = true;
                 continue;
             }
+            */
         }
-        */
         if (rewritten)
         {
             File.WriteAllLines(path, lines);

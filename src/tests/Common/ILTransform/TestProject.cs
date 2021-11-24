@@ -137,6 +137,22 @@ public class TestProject
         return output.ToString();
     }
 
+    public static int GetIndent(string line)
+    {
+        int indentIndex = 0;
+        while (indentIndex < line.Length && line[indentIndex] <= ' ')
+        {
+            indentIndex++;
+        }
+        return indentIndex;
+    }
+
+    public static string AddAfterIndent(string line, string add)
+    {
+        int indentIndex = GetIndent(line);
+        return line.Substring(0, indentIndex) + add + line.Substring(indentIndex);
+    }
+
     public static string ReplaceIdentifier(string line, string originalIdent, string targetIdent)
     {
         int index = line.IndexOf(originalIdent);
@@ -237,7 +253,7 @@ class TestProjectStore
     {
         for (int level = 1; level <= 2; level++)
         {
-            string title = string.Format("COUNT |  PRI0  |  PRI1  |  FACT  | ILPROJ | PARTITIONING: {0}", level);
+            string title = string.Format("COUNT |  PRI0  |  PRI1  |  FACT  | ILPROJ | TO FIX | PARTITIONING: {0}", level);
             writer.WriteLine(title);
             writer.WriteLine(new string('-', title.Length));
             Dictionary<string, TestCount> folderCounts = new Dictionary<string, TestCount>();
@@ -273,7 +289,15 @@ class TestProjectStore
             }
             foreach (KeyValuePair<string, TestCount> kvp in folderCounts.OrderBy(kvp => kvp.Key))
             {
-                writer.WriteLine("{0,5} | {1,6} | {2,6} | {3,6} | {4,6} | {5}", kvp.Value.Total, kvp.Value.Pri0, kvp.Value.Pri1, kvp.Value.Fact, kvp.Value.ILProj, kvp.Key);
+                writer.WriteLine(
+                    "{0,5} | {1,6} | {2,6} | {3,6} | {4,6} | {5,6} | {6}",
+                    kvp.Value.Total,
+                    kvp.Value.Pri0,
+                    kvp.Value.Pri1,
+                    kvp.Value.Fact,
+                    kvp.Value.ILProj,
+                    kvp.Value.Pri1 - kvp.Value.Fact,
+                    kvp.Key);
             }
             writer.WriteLine();
         }
@@ -768,13 +792,20 @@ class TestProjectStore
         bool hasFactAttribute = false;
         foreach (string compileFile in compileFiles)
         {
-            AnalyzeSource(
-                compileFile,
-                testClassName: ref testClassName,
-                testClassSourceFile: ref testClassSourceFile,
-                testClassLine: ref testClassLine,
-                mainMethodLine: ref mainMethodLine,
-                hasFactAttribute: ref hasFactAttribute);
+            try
+            {
+                AnalyzeSource(
+                    compileFile,
+                    testClassName: ref testClassName,
+                    testClassSourceFile: ref testClassSourceFile,
+                    testClassLine: ref testClassLine,
+                    mainMethodLine: ref mainMethodLine,
+                    hasFactAttribute: ref hasFactAttribute);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("Error analyzing '{0}': {1}", compileFile, ex);
+            }
         }
 
         _projects.Add(new TestProject(
