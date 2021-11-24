@@ -3727,7 +3727,7 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 				*exc = (MonoObject*)mono_error_convert_to_exception (error);
 		}
 	} else {
-		MonoObject *result = mono_runtime_delegate_invoke_checked (delegate, params, error);
+		result = mono_runtime_delegate_invoke_checked (delegate, params, error);
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
 
 	}
