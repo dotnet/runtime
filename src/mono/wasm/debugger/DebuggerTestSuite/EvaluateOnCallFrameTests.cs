@@ -708,7 +708,7 @@ namespace DebuggerTests
 
         [Theory]
         [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
-        [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "EvaluateMethodTestsClass")]
+        // [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "EvaluateMethodTestsClass")]
         public async Task EvaluateStaticClassFromStaticMethod(string type, string method, string bp_function_name, bool is_async)
         => await CheckInspectLocalsAtBreakpointSite(
             type, method, 1, bp_function_name,
