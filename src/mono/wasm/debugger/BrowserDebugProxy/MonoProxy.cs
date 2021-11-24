@@ -500,8 +500,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             // Maybe this is an async method, in which case the debug info is attached
                             // to the async method implementation, in class named:
-                            //      `{type_name}/<method_name>::MoveNext`
-                            methodInfo = assembly.TypesByName.Values.SingleOrDefault(t => t.FullName.StartsWith($"{typeName}/<{methodName}>"))?
+                            //      `{type_name}.<method_name>::MoveNext`
+                            methodInfo = assembly.TypesByName.Values.SingleOrDefault(t => t.FullName.StartsWith($"{typeName}.<{methodName}>"))?
                                 .Methods.FirstOrDefault(mi => mi.Name == "MoveNext");
                         }
 
