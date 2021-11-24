@@ -11421,11 +11421,6 @@ public:
                 GenTree** op1Use = &dynBlock->gtOp1;
                 GenTree** op2Use = &dynBlock->gtDynamicSize;
 
-                if (TVisitor::UseExecutionOrder && dynBlock->gtEvalSizeFirst)
-                {
-                    std::swap(op1Use, op2Use);
-                }
-
                 result = WalkTree(op1Use, dynBlock);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
@@ -11452,11 +11447,6 @@ public:
                     if (dynBlock->IsReverseOp())
                     {
                         std::swap(op1Use, op2Use);
-                    }
-                    if (dynBlock->gtEvalSizeFirst)
-                    {
-                        std::swap(op3Use, op2Use);
-                        std::swap(op2Use, op1Use);
                     }
                 }
 

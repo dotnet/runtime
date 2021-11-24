@@ -2271,9 +2271,8 @@ public:
     // hot code, as it affords better opportunities for inlining and acheives shorter dynamic path lengths when
     // deciding how operands need to be accessed.
     //
-    // Note that this function does not respect `GTF_REVERSE_OPS` and `gtEvalSizeFirst`. This is always safe in LIR,
-    // but may be dangerous in HIR if for some reason you need to visit operands in the order in which they will
-    // execute.
+    // Note that this function does not respect `GTF_REVERSE_OPS`. This is always safe in LIR, but may be dangerous
+    // in HIR if for some reason you need to visit operands in the order in which they will execute.
     template <typename TVisitor>
     void VisitOperands(TVisitor visitor);
 
@@ -6253,10 +6252,9 @@ struct GenTreeDynBlk : public GenTreeBlk
 {
 public:
     GenTree* gtDynamicSize;
-    bool     gtEvalSizeFirst;
 
     GenTreeDynBlk(GenTree* addr, GenTree* dynamicSize)
-        : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, nullptr), gtDynamicSize(dynamicSize), gtEvalSizeFirst(false)
+        : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, nullptr), gtDynamicSize(dynamicSize)
     {
         // Conservatively the 'addr' could be null or point into the global heap.
         gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
