@@ -188,14 +188,14 @@
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/modularize-cjs/dotnet.pre.js;
-                       runtime/modularize-cjs/dotnet.post.js;
-                       runtime/modularize-cjs/dotnet.extpost.js;"
+    <Copy SourceFiles="runtime/modularize-cjs/dotnet.cjs.pre.js;
+                       runtime/modularize-cjs/dotnet.cjs.post.js;
+                       runtime/modularize-cjs/dotnet.cjs.extpost.js;"
           DestinationFolder="$(NativeBinDir)src/cjs"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/modularize-es6/dotnet.pre.js;
-                       runtime/modularize-es6/dotnet.post.js;"
+    <Copy SourceFiles="runtime/modularize-es6/dotnet.es6.pre.js;
+                       runtime/modularize-es6/dotnet.es6.post.js;"
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
 

@@ -221,13 +221,13 @@
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="pal_random.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="cjs/dotnet.pre.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="cjs/runtime.iffe.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="cjs/dotnet.post.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="cjs/dotnet.extpost.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="es6/dotnet.pre.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="es6/runtime.iffe.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="es6/dotnet.post.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.cjs.pre.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.cjs.iffe.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.cjs.post.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.cjs.extpost.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.es6.iffe.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.es6.post.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />

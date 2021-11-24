@@ -9,29 +9,29 @@ In `src\mono\wasm\build\WasmApp.Native.targets` we apply them by file naming con
 
 In `src\mono\wasm\runtime\CMakeLists.txt` which links only in-tree, we use same mapping explicitly. Right now CommonJS is default.
 
-# cjs/modularize-dotnet.extpost.js
+# dotnet.cjs.extpost.js
 - Is at the end of file but is executed first (1)
 - Applied only when linking CommonJS
 - If `globalThis.Module` exist it takes it and start runtime with it.
 - Otherwise user could still use the `createDotnetRuntime` export or `globalThis.createDotnetRuntime` if it was loaded into global namespace.
 
-# cjs/modularize-dotnet.pre.js
+# dotnet.cjs.pre.js
 - Executed second (2)
 - Applied only when linking CommonJS
 - Will try to see if it was executed with `globalThis.Module` and if so, it would use it's instance as `Module`. It would preserve emscriptens `Module.ready`
 - Otherwise it would load it would assume it was called via `createDotnetRuntime` export same as described for `modularize-dotnet.prees6.js` below.
 
-# es6/modularize-dotnet.pre.js
+# dotnet.es6.pre.js
 - Executed second (2)
 - Applied only when linking ES6
 - Will check that it was passed `moduleFactory` callback. Because of emscripten reasons it has confusing `createDotnetRuntime` name here.
 - Will validate `Module.ready` is left un-overriden.
 
-# runtime.iffe.js
+# runtime.*.iffe.js
 - Executed third (3)
 - this is produced from `*.ts` files in this directory by rollupJS.
 
-# modularize-dotnet.post.js
+# dotnet.*.post.js
 - Executed last (4)
 - When `onRuntimeInitialized` is overriden it would wait for emscriptens `Module.ready`
 - Otherwise it would wait for for MonoVM to load all assets and assemblies.

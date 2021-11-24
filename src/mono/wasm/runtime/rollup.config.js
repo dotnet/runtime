@@ -6,7 +6,6 @@ import * as fs from "fs";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
 
-const outputFileName = "runtime.iffe.js";
 const isDebug = process.env.Configuration !== "Release";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const terserConfig = {
@@ -47,17 +46,15 @@ export default defineConfig([
         treeshake: !isDebug,
         input: "exports.ts",
         output: [
-            // cjs/runtime.iffe.js
             {
-                file: nativeBinDir + "/src/cjs/" + outputFileName,
+                file: nativeBinDir + "/src/cjs/runtime.cjs.iffe.js",
                 name,
                 banner,
                 format,
                 plugins,
             },
-            // es6/runtime.iffe.js
             {
-                file: nativeBinDir + "/src/es6/" + outputFileName,
+                file: nativeBinDir + "/src/es6/runtime.es6.iffe.js",
                 name,
                 banner,
                 format,
@@ -89,7 +86,8 @@ function writeOnChangePlugin() {
 
 async function writeWhenChanged(options, bundle) {
     try {
-        const asset = bundle[outputFileName];
+        const name = Object.keys(bundle)[0];
+        const asset = bundle[name];
         const code = asset.code;
         const hashFileName = options.file + ".sha256";
         const oldHashExists = await checkFileExists(hashFileName);
@@ -112,7 +110,7 @@ async function writeWhenChanged(options, bundle) {
             await writeFile(hashFileName, newHash);
         } else {
             // this.warn('No change in ' + options.file)
-            delete bundle[outputFileName];
+            delete bundle[name];
         }
     } catch (ex) {
         this.warn(ex.toString());
