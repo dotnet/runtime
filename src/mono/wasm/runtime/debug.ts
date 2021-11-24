@@ -120,7 +120,7 @@ export function mono_wasm_get_loaded_files(): string[] {
 function _create_proxy_from_object_id(objectId: string, details: any) {
     if (objectId.startsWith("dotnet:array:")) {
         let ret: Array<any>;
-        if (details.dimensionsDetails == undefined || details.dimensionsDetails.length == 1) {
+        if (details.dimensionsDetails === undefined || details.dimensionsDetails.length === 1) {
             ret = details.items.map((p: any) => p.value);
             return ret;
         }
@@ -297,7 +297,7 @@ export function mono_wasm_release_object(objectId: string): void {
 export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): void {
     const message = Module.UTF8ToString(message_ptr);
 
-    if (INTERNAL["logging"] && INTERNAL.logging["debugger"]) {
+    if (INTERNAL["logging"] && typeof INTERNAL.logging["debugger"] === "function") {
         INTERNAL.logging.debugger(level, message);
         return;
     }
@@ -312,7 +312,7 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     const dataPtr = user_data;
     const log_level = Module.UTF8ToString(log_level_ptr);
 
-    if (INTERNAL["logging"] && INTERNAL.logging["trace"]) {
+    if (INTERNAL["logging"] && typeof INTERNAL.logging["trace"] === "function") {
         INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
         return;
     }

@@ -211,21 +211,15 @@ function initializeImportsAndExports(
         warnWrap("addRunDependency", () => module.addRunDependency);
         warnWrap("removeRunDependency", () => module.removeRunDependency);
     }
-    let list: WeakRef<DotNetPublicAPI>[] = [];
+    let list: RuntimeList;
     if (!globalThisAny.getDotnetRuntime) {
-        globalThisAny.getDotnetRuntime = (runtimeId: number) => {
-            if (runtimeId < 0 || list.length < runtimeId) {
-                return undefined;
-            }
-            return list[runtimeId].deref();
-        };
-        globalThisAny.getDotnetRuntime.list = list;
+        globalThisAny.getDotnetRuntime = (runtimeId: string) => globalThisAny.getDotnetRuntime.__list.getRuntime(runtimeId);
+        globalThisAny.getDotnetRuntime.__list = list = new RuntimeList();
     }
     else {
-        list = globalThisAny.getDotnetRuntime.list;
+        list = globalThisAny.getDotnetRuntime.__list;
     }
-    api.RuntimeId = globalThisAny.getDotnetRuntime.list.length;
-    list.push(create_weak_ref(api));
+    list.registerRuntime(api);
 
     return api;
 }
@@ -377,5 +371,20 @@ export interface DotNetPublicAPI {
     RuntimeBuildInfo: {
         productVersion: string,
         configuration: string,
+    }
+}
+
+class RuntimeList {
+    private list: { [runtimeId: number]: WeakRef<DotNetPublicAPI> } = {};
+
+    public registerRuntime(api: DotNetPublicAPI): number {
+        api.RuntimeId = Object.keys(this.list).length;
+        this.list[api.RuntimeId] = create_weak_ref(api);
+        return api.RuntimeId;
+    }
+
+    public getRuntime(runtimeId: number): DotNetPublicAPI | undefined {
+        const wr = this.list[runtimeId];
+        return wr ? wr.deref() : undefined;
     }
 }
