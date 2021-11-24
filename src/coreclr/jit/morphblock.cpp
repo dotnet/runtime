@@ -1551,3 +1551,48 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
 {
     return MorphInitBlockHelper::MorphInitBlock(this, tree);
 }
+
+//------------------------------------------------------------------------
+// fgMorphStoreDynBlock: Morph a dynamic block store (GT_STORE_DYN_BLK).
+//
+// Performs full (pre-order and post-order) morphing for a STORE_DYN_BLK.
+//
+// Arguments:
+//    tree - The GT_STORE_DYN_BLK tree to morph.
+//
+// Return Value:
+//    In case the size turns into a constant - the store, transformed
+//    into an "ordinary" ASG(BLK, Data()) one, and further morphed by
+//    "fgMorphInitBlock"/"fgMorphCopyBlock". Otherwise, the original
+//    tree (fully morphed).
+//
+GenTree* Compiler::fgMorphStoreDynBlock(GenTreeDynBlk* tree)
+{
+    tree->Addr()        = fgMorphTree(tree->Addr());
+    tree->Data()        = fgMorphTree(tree->Data());
+    tree->gtDynamicSize = fgMorphTree(tree->gtDynamicSize);
+
+    if (tree->gtDynamicSize->IsIntegralConst())
+    {
+        int64_t size = tree->gtDynamicSize->AsIntConCommon()->IntegralValue();
+        assert(FitsIn<int32_t>(size));
+
+        if (size != 0)
+        {
+            GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
+            lhs->ChangeType(TYP_BLK);
+            GenTree* asg = gtNewAssignNode(lhs, tree->Data());
+            asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
+
+            JITDUMP("MorphStoreDynBlock: trasformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+
+            return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
+        }
+    }
+
+    tree->SetAllEffectsFlags(tree->Addr(), tree->Data(), tree->gtDynamicSize);
+    tree->SetIndirExceptionFlags(this);
+    tree->gtFlags |= GTF_ASG;
+
+    return tree;
+}

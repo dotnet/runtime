@@ -2078,9 +2078,14 @@ public:
         SetAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);
     }
 
-    void SetAllEffectsFlags(GenTree* source, GenTree* otherSource)
+    void SetAllEffectsFlags(GenTree* firstSource, GenTree* secondSource)
     {
-        SetAllEffectsFlags((source->gtFlags | otherSource->gtFlags) & GTF_ALL_EFFECT);
+        SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags) & GTF_ALL_EFFECT);
+    }
+
+    void SetAllEffectsFlags(GenTree* firstSource, GenTree* secondSource, GenTree* thirdSouce)
+    {
+        SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags | thirdSouce->gtFlags) & GTF_ALL_EFFECT);
     }
 
     void SetAllEffectsFlags(GenTreeFlags sourceFlags)
@@ -5985,8 +5990,6 @@ protected:
 struct GenTreeIndir : public GenTreeOp
 {
     // The address for the indirection.
-    // Since GenTreeDynBlk derives from this, but is an "EXOP" (i.e. it has extra fields),
-    // we can't access Op1 and Op2 in the normal manner if we may have a DynBlk.
     GenTree*& Addr()
     {
         return gtOp1;
@@ -6170,21 +6173,26 @@ struct GenTreeObj : public GenTreeBlk
 #endif
 };
 
-// gtDynBlk  -- 'dynamic block' (GT_DYN_BLK).
+// GenTreeDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).
 //
-// This node is used for block values that have a dynamic size.
-// Note that such a value can never have GC pointers.
-
+// This node is used to represent stores that have a dynamic size - the "cpblk" and "initblk"
+// IL instructions are implemented with it. Note that such stores assume the input has no GC
+// pointers in it, and as such do not ever use write barriers.
+//
+// The "Data()" member of this node will either be a "dummy" IND(struct) node, for "cpblk", or
+// the zero constant/INIT_VAL for "initblk".
+//
 struct GenTreeDynBlk : public GenTreeBlk
 {
 public:
     GenTree* gtDynamicSize;
 
-    GenTreeDynBlk(GenTree* addr, GenTree* dynamicSize)
-        : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, nullptr), gtDynamicSize(dynamicSize)
+    GenTreeDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
+        : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
     {
-        // Conservatively the 'addr' could be null or point into the global heap.
-        gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
+        // Conservatively the 'dstAddr' could be null or point into the global heap.
+        // Likewise, this is a store and so must be marked with the GTF_ASG flag.
+        gtFlags |= (GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
         gtFlags |= (dynamicSize->gtFlags & GTF_ALL_EFFECT);
     }
 
