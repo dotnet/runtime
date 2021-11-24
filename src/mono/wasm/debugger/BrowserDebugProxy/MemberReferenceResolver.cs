@@ -84,6 +84,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             var store = await proxy.LoadStore(sessionId, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
+            if (methodInfo == null)
+                return (null, null);
+
             int typeId = -1;
             for (int i = 0; i < parts.Length; i++)
             {
