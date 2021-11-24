@@ -12,7 +12,7 @@ jobs:
   compare_repos:
     # Comment out this line to test the scripts in a fork
     if: github.repository == 'dotnet/runtime'
-    name: Compare the shared code in the AspNetCore and Runtime repos and send a PR to Runtime if they're out of sync.
+    name: Sync Code
     runs-on: windows-latest
     steps:
     - name: Checkout aspnetcore
@@ -20,7 +20,6 @@ jobs:
       with:
         # Test this script using changes in a fork
         repository: 'dotnet/aspnetcore'
-        # repository: 'tratcher/aspnetcore'
         path: aspnetcore
         ref: main
     - name: Checkout runtime
@@ -28,7 +27,6 @@ jobs:
       with:
         # Test this script using changes in a fork
         repository: 'dotnet/runtime'
-        # repository: 'tratcher/runtime'
         path: runtime
         ref: main
     - name: Copy
