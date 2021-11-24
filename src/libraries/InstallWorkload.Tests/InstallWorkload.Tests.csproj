@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!-- This is a dummy project to enable installing worklods from artifacts -->
+
+  <PropertyGroup>
+    <EnableCoverageSupport>false</EnableCoverageSupport>
+    <EnableRunSettingsSupport>false</EnableRunSettingsSupport>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+    <InstallWorkloadForTesting Condition="'$(InstallWorkloadForTesting)' == ''">true</InstallWorkloadForTesting>
+
+    <IsWasmProject Condition="'$(TargetOS)' == 'Browser'">false</IsWasmProject>
+  </PropertyGroup>
+
+  <Target Name="TriggerInstall"
+          AfterTargets="Build"
+          DependsOnTargets="InstallWorkloadUsingArtifacts"
+          Condition="$(InstallWorkloadForTesting) == 'true'"
+          />
+</Project>

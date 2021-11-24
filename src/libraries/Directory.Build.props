@@ -21,6 +21,7 @@
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
     <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
     <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
+    <InstallWorkloadForTesting Condition="'$(InstallWorkloadForTesting)' == ''">$(TestUsingWorkloads)</InstallWorkloadForTesting>
   </PropertyGroup>
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" Condition="'$(UseTargetFrameworkSDK)' != 'false'" />

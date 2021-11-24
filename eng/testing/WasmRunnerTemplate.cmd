@@ -26,6 +26,11 @@ if [%SCENARIO%]==[WasmTestOnBrowser] (
     )
 )
 
+:: xharness targets override PATH that might have been
+:: set in the helix commands, so setting it here
+:: ensure that the commands have it
+set PATH=%SDK_FOR_WORKLOAD_TESTING_PATH%;%PATH%
+
 :: ========================= BEGIN Test Execution ============================= 
 echo ----- start %DATE% %TIME% ===============  To repro directly: ===================================================== 
 echo pushd %EXECUTION_DIR%

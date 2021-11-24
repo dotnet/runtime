@@ -56,6 +56,8 @@ function _buildAOTFunc()
 	return 0
 }
 
+export PATH=${SDK_FOR_WORKLOAD_TESTING_PATH}:$PATH
+
 # RunCommands defined in tests.mobile.targets
 [[RunCommands]]
 

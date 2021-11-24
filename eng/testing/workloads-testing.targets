@@ -1,8 +1,9 @@
 <Project>
 
-  <PropertyGroup Condition="'$(TestUsingWorkloads)' == 'true'">
+  <PropertyGroup Condition="'$(TestUsingWorkloads)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true'">
     <!-- for non-ci builds, we install the sdk when tests are run -->
-    <InstallWorkloadForTesting Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
+    <InstallWorkloadForTesting Condition="'$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
+    <InstallWorkloadForTesting Condition="'$(BuildAOTTestsOnHelix)' == 'true' and '$(TargetOS)' == 'Browser'">true</InstallWorkloadForTesting>
   </PropertyGroup>
 
   <Target Name="ProvisionSdkForWorkloadTesting"
@@ -66,7 +67,6 @@
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
   <Target Name="InstallWorkloadUsingArtifacts"
-          AfterTargets="ArchiveTests"
           DependsOnTargets="ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 

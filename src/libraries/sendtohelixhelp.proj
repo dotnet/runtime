@@ -58,13 +58,13 @@
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
     <NeedsToBuildAppsOnHelix Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(NeedsToBuildAppsOnHelix)' == '' and '$(Scenario)' == 'BuildiOSApps'">true</NeedsToBuildAppsOnHelix>
-    
+
     <NeedsiOSSDK Condition="'$(NeedsToBuildAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsiOSSDK>
 
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
 
-    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
-    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or ('$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true')">true</NeedsEMSDK>
+    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps' or '$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsWorkload>
+    <NeedsEMSDK Condition="('$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true')">true</NeedsEMSDK>
     <NeedsToRunOnBrowser Condition="'$(TargetOS)' == 'Browser' and ('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps')">true</NeedsToRunOnBrowser>
 
     <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-workload</SdkForWorkloadTestingDirName>
@@ -87,7 +87,7 @@
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true' and ('$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows')">
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
   </ItemGroup>
@@ -186,25 +186,29 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName):$PATH" />
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)%3B%PATH%" />
+    <HelixEnvironmentVariables Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName):$PATH" />
+    <HelixEnvironmentVariables Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)%3B%PATH%" />
 
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
-    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
+    <HelixEnvironmentVariables Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
+    <HelixEnvironmentVariables Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />
 
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
-    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
+    <HelixEnvironmentVariables Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
+    <HelixEnvironmentVariables Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />
 
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%24{HELIX_CORRELATION_PAYLOAD}/$(SdkForWorkloadTestingDirName)" />
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />
+    <HelixEnvironmentVariables Condition="'$(WindowsShell)' != 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%24{HELIX_CORRELATION_PAYLOAD}/$(SdkForWorkloadTestingDirName)" />
+    <HelixEnvironmentVariables Condition="'$(WindowsShell)' == 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />
 
-    <HelixCommandPrefixItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <HelixCommandPrefixItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
+    <HelixEnvironmentVariables Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
+    <HelixEnvironmentVariables Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <HelixEnvironmentVariables Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(NeedsDotNetSdk)' != 'true'">
+    <IncludeDotNetCli>false</IncludeDotNetCli>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
@@ -243,11 +247,13 @@
   -->
 
   <Target Name="BuildHelixWorkItems" DependsOnTargets="StageEmSdkForHelix">
+    <ItemGroup Condition="@(HelixEnvironmentVariables->Count()) > 0">
+      <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;%(HelixEnvironmentVariables.Identity)&quot;" />
+      <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;%(HelixEnvironmentVariables.Identity)&quot;" />
+    </ItemGroup>
 
     <PropertyGroup>
       <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
-      <HelixCommandPrefix Condition="'$(WindowsShell)' == 'true' and @(HelixCommandPrefixItem->Count()) > 0" >$(HelixCommandPrefix) @(HelixCommandPrefixItem -> 'set &quot;%(Identity)&quot;', ' &amp; ')</HelixCommandPrefix>
-      <HelixCommandPrefix Condition="'$(WindowsShell)' != 'true' and @(HelixCommandPrefixItem->Count()) > 0 ">$(HelixCommandPrefix) @(HelixCommandPrefixItem, ' ')</HelixCommandPrefix>
       <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator'">true</IncludeHelixCorrelationPayload>
     </PropertyGroup>
 

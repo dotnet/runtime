@@ -26,6 +26,7 @@
 
     <!-- needed to test workloads for wasm -->
     <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" Pack="true" Condition="'$(TargetOS)' == 'Browser'" />
+    <ProjectReference Include="$(RepoRoot)src\libraries\InstallWorkload.Tests\InstallWorkload.Tests.csproj" Condition="'$(InstallWorkloadForTesting)' == 'true'" />
   </ItemGroup>
 
   <Target Name="BuildExternalsProject"

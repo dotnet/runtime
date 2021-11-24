@@ -74,4 +74,6 @@
       <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>
     </PropertyGroup>
   </Target>
+
+  <Target Name="TriggerWorkloadInstall" AfterTargets="ArchiveTests" DependsOnTargets="InstallWorkloadUsingArtifacts" />
 </Project>
