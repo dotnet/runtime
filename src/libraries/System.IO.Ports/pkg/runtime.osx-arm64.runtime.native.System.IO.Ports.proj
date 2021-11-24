@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="runtime.native.System.IO.Ports.props" />
+  <PropertyGroup>
+    <!-- TODO: Remove when the package shipped. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+</Project>

@@ -1405,7 +1405,12 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     if (compHndBBtabCount == 0)
     {
         // No more entries remaining.
-        compHndBBtab = nullptr;
+        //
+        // We used to null out compHndBBtab here, but with OSR + Synch method
+        // we may remove all the initial EH entries if not reachable in the
+        // OSR portion, then need to add one for the synchronous exit.
+        //
+        // So now we just leave it be.
     }
     else
     {

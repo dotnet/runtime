@@ -17,7 +17,7 @@ namespace System.Text.Json
         {
             Debug.Assert(runtimeType != null);
 
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            options ??= JsonSerializerOptions.Default;
             if (!options.IsInitializedForReflectionSerializer)
             {
                 options.InitializeForReflectionSerializer();

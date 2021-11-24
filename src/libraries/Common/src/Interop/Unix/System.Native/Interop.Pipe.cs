@@ -24,7 +24,7 @@ internal static partial class Interop
         /// </summary>
         internal const int WriteEndOfPipe = 1;
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Pipe", SetLastError = true)]
-        internal static extern unsafe int Pipe(int* pipefd, PipeFlags flags = 0); // pipefd is an array of two ints
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Pipe", SetLastError = true)]
+        internal static unsafe partial int Pipe(int* pipefd, PipeFlags flags = 0); // pipefd is an array of two ints
     }
 }

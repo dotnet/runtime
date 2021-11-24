@@ -453,4 +453,4 @@ FAIL:
 	ret
 }
 }
-.assembly cgt_r4.exe{}
+.assembly cgt_r4{}

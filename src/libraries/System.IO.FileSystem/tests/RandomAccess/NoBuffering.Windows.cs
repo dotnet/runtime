@@ -180,18 +180,17 @@ namespace System.IO.Tests
             Assert.Equal(content, File.ReadAllBytes(filePath));
         }
 
-        [Fact]
-        public async Task ReadWriteAsyncUsingNonPageSizedMultipleBuffers()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadWriteAsyncUsingMultipleBuffers(bool memoryPageSized)
         {
             string filePath = GetTestFilePath();
-            // The Windows scatter/gather APIs accept segments that are exactly one page long.
-            // Combined with the FILE_FLAG_NO_BUFFERING's requirements, the segments must also
-            // be aligned at page size boundaries and have a size of a multiple of the page size.
-            // Using segments with a length of twice the page size adheres to the second requirement
-            // but not the first. The RandomAccess implementation will see it and issue sequential
-            // read/write syscalls per segment, instead of one scatter/gather syscall.
-            // This test verifies that fallback behavior.
-            int bufferSize = Environment.SystemPageSize * 2;
+            // We test with buffers both one and two memory pages long. In the former case,
+            // the I/O operations will issue one scatter/gather API call, and in the latter
+            // case they will issue multiple calls; one per buffer. The buffers must still
+            // be aligned to comply with FILE_FLAG_NO_BUFFERING's requirements.
+            int bufferSize = Environment.SystemPageSize * (memoryPageSized ? 1 : 2);
             int fileSize = bufferSize * 2;
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
@@ -205,10 +204,22 @@ namespace System.IO.Tests
                 await RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { firstHalf, secondHalf }, 0);
 
                 buffer.GetSpan().Clear();
-                await RandomAccess.ReadAsync(handle, new Memory<byte>[] { firstHalf, secondHalf }, 0);
-            }
+                long nRead = await RandomAccess.ReadAsync(handle, new Memory<byte>[] { firstHalf, secondHalf }, 0);
 
-            Assert.Equal(content, await File.ReadAllBytesAsync(filePath));
+                Assert.Equal(buffer.GetSpan().Length, nRead);
+                AssertExtensions.SequenceEqual(buffer.GetSpan(), content.AsSpan());
+            }
+        }
+
+        [Fact]
+        public async Task ReadWriteAsyncUsingEmptyBuffers()
+        {
+            string filePath = GetTestFilePath();
+            using SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, FileOptions.Asynchronous | NoBuffering);
+
+            long nRead = await RandomAccess.ReadAsync(handle, Array.Empty<Memory<byte>>(), 0);
+            Assert.Equal(0, nRead);
+            await RandomAccess.WriteAsync(handle, Array.Empty<ReadOnlyMemory<byte>>(), 0);
         }
 
         // when using FileOptions.Asynchronous we are testing Scatter&Gather APIs on Windows (FILE_FLAG_OVERLAPPED requirement)

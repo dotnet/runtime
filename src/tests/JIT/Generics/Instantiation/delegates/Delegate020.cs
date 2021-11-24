@@ -20,7 +20,7 @@ internal class Foo<T> : IFoo<T>
     }
 }
 
-internal class Test
+internal class Test_Delegate020
 {
     public static int Main()
     {

@@ -28,51 +28,6 @@ Param(
     [switch] $iOSLlvmBuild
 )
 
-function Verified-Move-Item {
-    [CmdletBinding()]
-    param(
-        [Parameter(mandatory=$true)]
-        [string]$Path,
-        [Parameter(mandatory=$true)]
-        [string]$Destination
-    )
-    
-    Move-Item -Path $Path -Destination $Destination
-    if (!$?) {
-        Write-Output "Failed to move $Path to $Destination"
-        exit 1
-    }
-}
-
-function Verified-Copy-Item {
-    [CmdletBinding()]
-    param(
-        [Parameter(mandatory=$true)]
-        [string]$Path,
-        [Parameter(mandatory=$true)]
-        [string]$Destination
-    )
-    
-    Copy-Item -path $Path $Destination
-    if (!$?) {
-        Write-Output "Failed to copy $Path to $Destination"
-        exit 1
-    }
-}
-
-function Verify-Robocopy {
-    [CmdletBinding()]
-    param(
-        [Parameter(mandatory=$true)]
-        [string]$Source
-    )
-    
-    if ($LASTEXITCODE -ne 0 -or !$?) {
-        Write-Output "Failed to copy ${Source}: exit code $LASTEXITCODE"
-        exit $LASTEXITCODE
-    }
-}
-
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
 $UseCoreRun = ($CoreRootDirectory -ne [string]::Empty)
 $UseBaselineCoreRun = ($BaselineCoreRootDirectory -ne [string]::Empty)
@@ -167,30 +122,25 @@ if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
     
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
-	Verify-Robocopy $SourceDirectory
 }
 else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
-	if ($LASTEXITCODE -ne 0) {
-		Write-Output "git clone failed with code $LASTEXITCODE"
-		exit 1
-	}
 }
 
 if($MonoDotnet -ne "")
 {
     $UsingMono = "true"
     $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
-    Verified-Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
+    Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
 }
 
 if ($UseCoreRun) {
     $NewCoreRoot = (Join-Path $PayloadDirectory "Core_Root")
-    Verified-Move-Item -Path $CoreRootDirectory -Destination $NewCoreRoot
+    Move-Item -Path $CoreRootDirectory -Destination $NewCoreRoot
 }
 if ($UseBaselineCoreRun) {
     $NewBaselineCoreRoot = (Join-Path $PayloadDirectory "Baseline_Core_Root")
-    Verified-Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
+    Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
 }
 
 if ($AndroidMono) {
@@ -198,7 +148,8 @@ if ($AndroidMono) {
     {
         mkdir $WorkItemDirectory
     }
-    Verified-Copy-Item -Path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+    Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -208,9 +159,11 @@ if ($iOSMono) {
         mkdir $WorkItemDirectory
     }
     if($iOSLlvmBuild) {
-        Verified-Copy-Item -Path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
+        Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
     } else {
-        Verified-Copy-Item -Path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
+        Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
+        Copy-Item -path "$SourceDirectory\MauiiOSDefault" $PayloadDirectory\MauiiOSDefault -Recurse
+        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault" $PayloadDirectory\MauiMacCatalystDefault -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
@@ -218,7 +171,6 @@ if ($iOSMono) {
 
 $DocsDir = (Join-Path $PerformanceDirectory "docs")
 robocopy $DocsDir $WorkItemDirectory
-Verify-Robocopy $DocsDir
 
 # Set variables that we will need to have in future steps
 $ci = $true

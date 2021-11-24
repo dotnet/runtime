@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+include_directories(${CLR_SRC_NATIVE_DIR})
 
 # needed when zLib compression is used
 include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
@@ -36,12 +37,7 @@ if(FEATURE_JIT_PITCHING)
 endif(FEATURE_JIT_PITCHING)
 
 if(FEATURE_PERFTRACING)
-    set(SHARED_EVENTPIPE_DIR ${CLR_SRC_NATIVE_DIR}/eventpipe)
     set(CORECLR_EVENTPIPE_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/eventpipe)
-endif(FEATURE_PERFTRACING)
-
-if(FEATURE_PERFTRACING)
-    include_directories(${SHARED_EVENTPIPE_DIR})
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
 
@@ -106,7 +102,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     nativeimage.cpp
     object.cpp
     onstackreplacement.cpp
-    pefile.cpp
+    peassembly.cpp
     peimage.cpp
     perfmap.cpp
     perfinfo.cpp
@@ -207,8 +203,8 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     object.h
     object.inl
     onstackreplacement.h
-    pefile.h
-    pefile.inl
+    peassembly.h
+    peassembly.inl
     peimage.h
     peimage.inl
     peimagelayout.h
@@ -368,6 +364,7 @@ set(VM_SOURCES_WKS
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
     qcall.cpp
+    qcallentrypoints.cpp
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
@@ -940,9 +937,11 @@ list(APPEND VM_SOURCES_DAC
 # gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
 # treat it in a special way when statically linking with both VM and JIT
 if(CLR_CMAKE_TARGET_ARCH_I386)
-    list(APPEND VM_SOURCES_DAC
-        gcdecode.cpp
-    )
+    if(CLR_CMAKE_TARGET_WIN32)
+        list(APPEND VM_SOURCES_DAC
+            gcdecode.cpp
+        )
+    endif()
     list(APPEND VM_SOURCES_WKS_SPECIAL
         gcdecode.cpp
     )

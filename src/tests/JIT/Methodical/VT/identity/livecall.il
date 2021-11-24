@@ -15,6 +15,7 @@
 .assembly livecall // as "livecall"
 {
 }
+.assembly extern xunit.core {}
 .module livecall.exe
 // MVID: {6300FB9B-B24E-45DA-9A61-2556746FEEEF}
 .namespace MS
@@ -37,6 +38,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       74 (0x4a)
       .maxstack  2

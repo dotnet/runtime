@@ -28,7 +28,10 @@ namespace System.Text.Json.Serialization.Metadata
         private bool _propertyTypeEqualsTypeToConvert;
 
         internal Func<object, T>? Get { get; set; }
+
         internal Action<object, T>? Set { get; set; }
+
+        internal override object? DefaultValue => default(T);
 
         public JsonConverter<T> Converter { get; internal set; } = null!;
 

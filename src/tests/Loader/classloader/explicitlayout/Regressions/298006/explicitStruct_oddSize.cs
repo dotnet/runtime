@@ -18,7 +18,7 @@ public struct S
 }
 #pragma warning restore 618
 
-public class Test
+public class Test_explicitStruct_oddSize
 {
     public static void Run()
     {

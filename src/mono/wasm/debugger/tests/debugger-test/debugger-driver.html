@@ -1,19 +1,19 @@
 <!doctype html>
 <html lang="en-us">
-  <head>
-  </head>
-  <body>
+	<head>
+	</head>
+	<body>
 	<script type='text/javascript'>
 		var App = {
 			init: function () {
-				this.int_add = Module.mono_bind_static_method ("[debugger-test] Math:IntAdd");
-				this.use_complex = Module.mono_bind_static_method ("[debugger-test] Math:UseComplex");
-				this.delegates_test = Module.mono_bind_static_method ("[debugger-test] Math:DelegatesTest");
-				this.generic_types_test = Module.mono_bind_static_method ("[debugger-test] Math:GenericTypesTest");
-				this.outer_method = Module.mono_bind_static_method ("[debugger-test] Math:OuterMethod");
-				this.async_method = Module.mono_bind_static_method ("[debugger-test] Math/NestedInMath:AsyncTest");
-				this.method_with_structs = Module.mono_bind_static_method ("[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructs");
-				this.run_all = Module.mono_bind_static_method ("[debugger-test] DebuggerTest:run_all");
+				this.int_add = INTERNAL.mono_bind_static_method ("[debugger-test] Math:IntAdd");
+				this.use_complex = INTERNAL.mono_bind_static_method ("[debugger-test] Math:UseComplex");
+				this.delegates_test = INTERNAL.mono_bind_static_method ("[debugger-test] Math:DelegatesTest");
+				this.generic_types_test = INTERNAL.mono_bind_static_method ("[debugger-test] Math:GenericTypesTest");
+				this.outer_method = INTERNAL.mono_bind_static_method ("[debugger-test] Math:OuterMethod");
+				this.async_method = INTERNAL.mono_bind_static_method ("[debugger-test] Math/NestedInMath:AsyncTest");
+				this.method_with_structs = INTERNAL.mono_bind_static_method ("[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructs");
+				this.run_all = INTERNAL.mono_bind_static_method ("[debugger-test] DebuggerTest:run_all");
 				this.static_method_table = {};
 				console.log ("ready");
 			},
@@ -21,7 +21,7 @@
 		function invoke_static_method (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined)
-				method = App.static_method_table [method_name] = Module.mono_bind_static_method (method_name);
+				method = App.static_method_table [method_name] = INTERNAL.mono_bind_static_method (method_name);
 
 			return method (...args);
 		}
@@ -29,7 +29,7 @@
 		async function invoke_static_method_async (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined) {
-				method = App.static_method_table [method_name] = Module.mono_bind_static_method (method_name);
+				method = App.static_method_table [method_name] = INTERNAL.mono_bind_static_method (method_name);
 			}
 
 			return await method (...args);
@@ -82,10 +82,15 @@
 		function invoke_add_with_parms (a, b) {
 			return App.int_add (a, b);
 		}
-      </script>
-      <script type="text/javascript" src="runtime-debugger.js"></script>
-      <script type="text/javascript" src="other.js"></script>
-      <script async type="text/javascript" src="dotnet.js"></script>
-	  Stuff goes here
-  </body>
-  </html>
+				
+		function load_non_wasm_page () {
+			console.log("load_non_wasm_page")
+			window.location.replace("http://localhost:9400/non-wasm-page.html");
+		}
+		</script>
+		<script type="text/javascript" src="debugger-main.js"></script>
+		<script type="text/javascript" src="other.js"></script>
+		<script async type="text/javascript" src="dotnet.js"></script>
+		Stuff goes here
+</body>
+</html>

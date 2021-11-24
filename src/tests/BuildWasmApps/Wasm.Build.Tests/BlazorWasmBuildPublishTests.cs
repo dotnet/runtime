@@ -3,9 +3,11 @@
 
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 #nullable enable
 
@@ -223,6 +225,56 @@ namespace Wasm.Build.Tests
                 Assert.True(Regex.IsMatch(pinvokeTableHContents, pattern),
                                 $"Could not find {pattern} in {pinvokeTableHPath}");
             }
+        }
+
+        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        public void BugRegression_60479_WithRazorClassLib()
+        {
+            string id = "blz_razor_lib_top";
+            InitBlazorWasmProjectDir(id);
+
+            string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
+            string wasmProjectFile = Path.Combine(wasmProjectDir, "wasm.csproj");
+            Directory.CreateDirectory(wasmProjectDir);
+            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+                    .WithWorkingDirectory(wasmProjectDir)
+                    .ExecuteWithCapturedOutput("new blazorwasm")
+                    .EnsureSuccessful();
+
+
+            string razorProjectDir = Path.Combine(_projectDir!, "RazorClassLibrary");
+            Directory.CreateDirectory(razorProjectDir);
+            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+                    .WithWorkingDirectory(razorProjectDir)
+                    .ExecuteWithCapturedOutput("new razorclasslib")
+                    .EnsureSuccessful();
+
+            AddItemsPropertiesToProject(wasmProjectFile, extraItems:@"
+                <ProjectReference Include=""..\RazorClassLibrary\RazorClassLibrary.csproj"" />
+                <BlazorWebAssemblyLazyLoad Include=""RazorClassLibrary.dll"" />
+            ");
+
+            _projectDir = wasmProjectDir;
+            string config = "Release";
+            // No relinking, no AOT
+            BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
+
+            // will relink
+            BlazorPublish(id, config, NativeFilesType.Relinked);
+
+            // publish/wwwroot/_framework/blazor.boot.json
+            string frameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true);
+            string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
+
+            Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");
+            var jdoc = JsonDocument.Parse(File.ReadAllText(bootJson));
+            if (!jdoc.RootElement.TryGetProperty("resources", out JsonElement resValue) ||
+                !resValue.TryGetProperty("lazyAssembly", out JsonElement lazyVal))
+            {
+                throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
+            }
+
+            Assert.Contains("RazorClassLibrary.dll", lazyVal.EnumerateObject().Select(jp => jp.Name));
         }
 
         private string CreateProjectWithNativeReference(string id)

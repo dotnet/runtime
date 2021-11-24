@@ -36,7 +36,7 @@ public class Gen<T>
 
 }
 
-public class Test
+public class Test_box_unbox01
 {
     public static int counter = 0;
     public static bool result = true;

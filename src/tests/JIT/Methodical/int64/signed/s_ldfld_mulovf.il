@@ -16,6 +16,7 @@
 .assembly 'ldfld_mulovf'// as "ldfld_mulovf"
 {
 }
+.assembly extern xunit.core {}
 .module 'ldfld_mulovf.exe'
 // MVID: {8D78994E-61A5-4A50-98EF-B8CD04CD82A0}
 .namespace JitTest
@@ -81,6 +82,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       424 (0x1a8)
       .maxstack  3

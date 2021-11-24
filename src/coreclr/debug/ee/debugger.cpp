@@ -9537,21 +9537,6 @@ void Debugger::LoadModule(Module* pRuntimeModule,
 
     SENDIPCEVENT_END;
 
-    // need to update pdb stream for SQL passed in pdb stream
-    // regardless attach or not.
-    //
-    if (pRuntimeModule->IsIStream())
-    {
-        // Just ignore failures. Caller was just sending a debug event and we don't
-        // want that to interop non-debugging functionality.
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            SendUpdateModuleSymsEventAndBlock(pRuntimeModule, pAppDomain);
-        }
-        EX_CATCH_HRESULT(hr);
-    }
-
     // Now that we're done with the load module event, can no longer change Jit flags.
     module->SetCanChangeJitFlags(false);
 }
@@ -9710,7 +9695,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
 
         STRESS_LOG6(LF_CORDB, LL_INFO10000,
             "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
-            pRuntimeModule, pRuntimeModule->GetDomainFile(), pRuntimeModule->IsIStream(),
+            pRuntimeModule, pRuntimeModule->GetDomainFile(), false,
             module, module->GetRuntimeModule(), module->GetDomainFile());
 
         // Note: the appdomain the module was loaded in must match the appdomain we're unloading it from. If it doesn't,

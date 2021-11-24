@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly conv.exe{}
+.assembly conv{}
 
 .class public conv {
 

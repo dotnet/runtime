@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using TestLibrary;
+using Xunit;
 
 class LCIDNative
 {
@@ -34,13 +34,13 @@ class LCIDTest
         {
             string testString = "Test string";
             LCIDNative.ReverseString(testString, out string reversed);
-            Assert.AreEqual(Reverse(testString), reversed);
+            Assert.Equal(Reverse(testString), reversed);
             CultureInfo originalCulture = CultureInfo.CurrentCulture;
             try
             {
                 CultureInfo spanishCulture = new CultureInfo("es-ES", false);
                 CultureInfo.CurrentCulture = spanishCulture;
-                Assert.IsTrue(LCIDNative.VerifyValidLCIDPassed(CultureInfo.CurrentCulture.LCID));
+                Assert.True(LCIDNative.VerifyValidLCIDPassed(CultureInfo.CurrentCulture.LCID));
             }
             finally
             {

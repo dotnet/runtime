@@ -432,7 +432,7 @@ namespace System.Net.Quic.Tests
             listenerOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
-            await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
+            await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
             serverConnection.Dispose();
             clientConnection.Dispose();
         }

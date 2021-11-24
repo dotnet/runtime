@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int CertGetPublicKeyLength(MsgEncodingType dwCertEncodingType, [In] ref CERT_PUBLIC_KEY_INFO pPublicKey);
+        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial int CertGetPublicKeyLength(MsgEncodingType dwCertEncodingType, ref CERT_PUBLIC_KEY_INFO pPublicKey);
     }
 }

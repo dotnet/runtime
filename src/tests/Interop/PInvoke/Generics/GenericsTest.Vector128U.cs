@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -44,18 +44,18 @@ unsafe partial class GenericsTest
 
         Vector128<uint> value2;
         GenericsNative.GetVector128UOut(1u, 2u, 3u, 4u, &value2);
-        Assert.AreEqual(value2.GetElement(0), 1u);
-        Assert.AreEqual(value2.GetElement(1), 2u);
-        Assert.AreEqual(value2.GetElement(2), 3u);
-        Assert.AreEqual(value2.GetElement(3), 4u);
+        Assert.Equal(value2.GetElement(0), 1u);
+        Assert.Equal(value2.GetElement(1), 2u);
+        Assert.Equal(value2.GetElement(2), 3u);
+        Assert.Equal(value2.GetElement(3), 4u);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128UOut(1u, 2u, 3u, 4u, out Vector128<uint> value3));
 
         Vector128<uint>* value4 = GenericsNative.GetVector128UPtr(1u, 2u, 3u, 4u);
-        Assert.AreEqual(value4->GetElement(0), 1u);
-        Assert.AreEqual(value4->GetElement(1), 2u);
-        Assert.AreEqual(value4->GetElement(2), 3u);
-        Assert.AreEqual(value4->GetElement(3), 4u);
+        Assert.Equal(value4->GetElement(0), 1u);
+        Assert.Equal(value4->GetElement(1), 2u);
+        Assert.Equal(value4->GetElement(2), 3u);
+        Assert.Equal(value4->GetElement(3), 4u);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128URef(1u, 2u, 3u, 4u));
 

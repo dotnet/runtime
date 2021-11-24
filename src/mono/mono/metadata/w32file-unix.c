@@ -277,93 +277,6 @@ _wapi_dirname (const gchar *filename)
 	return ret;
 }
 
-static gboolean
-_wapi_lock_file_region (gint fd, off_t offset, off_t length)
-{
-	struct flock lock_data;
-	gint ret;
-
-	if (offset < 0 || length < 0) {
-		mono_w32error_set_last (ERROR_INVALID_PARAMETER);
-		return FALSE;
-	}
-
-	lock_data.l_type = F_WRLCK;
-	lock_data.l_whence = SEEK_SET;
-	lock_data.l_start = offset;
-	lock_data.l_len = length;
-
-	do {
-		ret = fcntl (fd, F_SETLK, &lock_data);
-	} while(ret == -1 && errno == EINTR);
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fcntl returns %d", __func__, ret);
-
-	if (ret == -1) {
-		/*
-		 * if locks are not available (NFS for example),
-		 * ignore the error
-		 */
-		if (errno == ENOLCK
-#ifdef EOPNOTSUPP
-		    || errno == EOPNOTSUPP
-#endif
-#ifdef ENOTSUP
-		    || errno == ENOTSUP
-#endif
-		   ) {
-			return TRUE;
-		}
-
-		mono_w32error_set_last (ERROR_LOCK_VIOLATION);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-static gboolean
-_wapi_unlock_file_region (gint fd, off_t offset, off_t length)
-{
-	struct flock lock_data;
-	gint ret;
-
-	lock_data.l_type = F_UNLCK;
-	lock_data.l_whence = SEEK_SET;
-	lock_data.l_start = offset;
-	lock_data.l_len = length;
-
-	do {
-		ret = fcntl (fd, F_SETLK, &lock_data);
-	} while(ret == -1 && errno == EINTR);
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fcntl returns %d", __func__, ret);
-
-	if (ret == -1) {
-		/*
-		 * if locks are not available (NFS for example),
-		 * ignore the error
-		 */
-		if (errno == ENOLCK
-#ifdef EOPNOTSUPP
-		    || errno == EOPNOTSUPP
-#endif
-#ifdef ENOTSUP
-		    || errno == ENOTSUP
-#endif
-		   ) {
-			return TRUE;
-		}
-
-		mono_w32error_set_last (ERROR_LOCK_VIOLATION);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-static gboolean lock_while_writing = FALSE;
-
 static void
 _wapi_set_last_error_from_errno (void)
 {
@@ -402,7 +315,6 @@ static gboolean
 file_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *byteswritten)
 {
 	gint ret;
-	off_t current_pos = 0;
 	MonoThreadInfo *info = mono_thread_info_current ();
 	
 	if(byteswritten!=NULL) {
@@ -415,26 +327,6 @@ file_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *
 		mono_w32error_set_last (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
-	
-	if (lock_while_writing) {
-		/* Need to lock the region we're about to write to,
-		 * because we only do advisory locking on POSIX
-		 * systems
-		 */
-		MONO_ENTER_GC_SAFE;
-		current_pos = lseek (((MonoFDHandle*) filehandle)->fd, (off_t)0, SEEK_CUR);
-		MONO_EXIT_GC_SAFE;
-		if (current_pos == -1) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fd %d lseek failed: %s", __func__, ((MonoFDHandle*) filehandle)->fd, g_strerror (errno));
-			_wapi_set_last_error_from_errno ();
-			return(FALSE);
-		}
-		
-		if (_wapi_lock_file_region (((MonoFDHandle*) filehandle)->fd, current_pos, numbytes) == FALSE) {
-			/* The error has already been set */
-			return(FALSE);
-		}
-	}
 		
 	do {
 		MONO_ENTER_GC_SAFE;
@@ -442,10 +334,6 @@ file_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *
 		MONO_EXIT_GC_SAFE;
 	} while (ret == -1 && errno == EINTR &&
 		 !mono_thread_info_is_interrupt_state (info));
-	
-	if (lock_while_writing) {
-		_wapi_unlock_file_region (((MonoFDHandle*) filehandle)->fd, current_pos, numbytes);
-	}
 
 	if (ret == -1) {
 		if (errno == EINTR) {
@@ -650,9 +538,6 @@ mono_w32file_init (void)
 	mono_fdhandle_register (MONO_FDTYPE_PIPE, &file_data_callbacks);
 
 	mono_coop_mutex_init (&file_share_mutex);
-
-	if (g_hasenv ("MONO_STRICT_IO_EMULATION"))
-		lock_while_writing = TRUE;
 }
 
 gpointer

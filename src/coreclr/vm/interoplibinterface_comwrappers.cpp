@@ -53,6 +53,9 @@ namespace
             // The EOC is "detached" and no longer used to map between identity and a managed object.
             // This will only be set if the EOC was inserted into the cache.
             Flags_Detached = 8,
+
+            // This EOC is an aggregated instance
+            Flags_Aggregated = 16
         };
         DWORD Flags;
 
@@ -900,7 +903,11 @@ namespace
                                 : ExternalObjectContext::Flags_None) |
                             (uniqueInstance
                                 ? ExternalObjectContext::Flags_None
-                                : ExternalObjectContext::Flags_InCache);
+                                : ExternalObjectContext::Flags_InCache) |
+                            ((flags & CreateObjectFlags::CreateObjectFlags_Aggregated) != 0
+                                ? ExternalObjectContext::Flags_Aggregated
+                                : ExternalObjectContext::Flags_None);
+
                 ExternalObjectContext::Construct(
                     resultHolder.GetContext(),
                     identity,
@@ -1418,7 +1425,7 @@ namespace InteropLibImports
     }
 }
 
-BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ INT64 wrapperId,
     _In_ QCall::ObjectHandleOnStack instance,
@@ -1449,7 +1456,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
     return (success ? TRUE : FALSE);
 }
 
-BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateObjectForComInstance(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ INT64 wrapperId,
     _In_ void* ext,
@@ -1505,7 +1512,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
     return (success ? TRUE : FALSE);
 }
 
-void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
+extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
         _Out_ void** fpQueryInterface,
         _Out_ void** fpAddRef,
         _Out_ void** fpRelease)
@@ -1608,7 +1615,7 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
     _ASSERTE(SUCCEEDED(hr) || hr == E_INVALIDARG);
 }
 
-void QCALLTYPE GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling(INT64 id)
+extern "C" void QCALLTYPE ComWrappers_SetGlobalInstanceRegisteredForMarshalling(INT64 id)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
@@ -1701,7 +1708,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     }
 }
 
-void QCALLTYPE GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport(INT64 id)
+extern "C" void QCALLTYPE ComWrappers_SetGlobalInstanceRegisteredForTrackerSupport(INT64 id)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
@@ -1774,7 +1781,7 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
         objRef);
 }
 
-IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId)
+IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId, _Out_ bool* isAggregated)
 {
     CONTRACTL
     {
@@ -1807,6 +1814,7 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
     {
         ExternalObjectContext* context = reinterpret_cast<ExternalObjectContext*>(contextMaybe);
         *wrapperId = context->WrapperId;
+        *isAggregated = context->IsSet(ExternalObjectContext::Flags_Aggregated);
 
         IUnknown* identity = reinterpret_cast<IUnknown*>(context->Identity);
         GCX_PREEMP();
