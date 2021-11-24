@@ -44,9 +44,11 @@ PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
 
 PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
-    abort_if_invalid_pointer_argument (from);
     abort_if_invalid_pointer_argument (to);
     abort_if_invalid_pointer_argument (rsa);
+
+    if ((flen > 0 && !from) || flen < 0)
+        return RSA_FAIL;
 
     JNIEnv* env = GetJNIEnv();
 
