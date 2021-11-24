@@ -5085,7 +5085,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PUTARG_SPLIT:
             if (this->AsUnOp()->gtOp1->gtOper == GT_FIELD_LIST)
             {
-                return this->AsUnOp()->gtOp1->TryGetUse(def, pUse);
+                return this->AsUnOp()->gtOp1->TryGetUse(operand, pUse);
             }
             if (operand == this->AsUnOp()->gtOp1)
             {
