@@ -247,11 +247,7 @@ namespace System.Xml
 
             Span<char> span = stackalloc char[12];
             int charsWritten = WriteCharToSpan(span, surrogateChar);
-
-            for (int i = 0; i < charsWritten; i++)
-            {
-                _textWriter.Write(span[i]);
-            }
+            _textWriter.Write(span.Slice(0, charsWritten));
         }
 
         internal void Write(string text)
@@ -492,17 +488,15 @@ namespace System.Xml
 
             Span<char> span = stackalloc char[12];
             int charsWritten = WriteCharToSpan(span, ch);
+            ReadOnlySpan<char> ros = span.Slice(0, charsWritten);
 
             if (_cacheAttrValue)
             {
                 Debug.Assert(_attrValue != null);
-                _attrValue.Append(span[..charsWritten]);
+                _attrValue.Append(ros);
             }
 
-            for (int i = 0; i < charsWritten; i++)
-            {
-                _textWriter.Write(span[i]);
-            }
+            _textWriter.Write(ros);
         }
 
         internal void WriteEntityRef(string name)
@@ -547,23 +541,15 @@ namespace System.Xml
         {
             Span<char> span = stackalloc char[12];
             int charsWritten = WriteCharToSpan(span, ch);
-
-            for (int i = 0; i < charsWritten; i++)
-            {
-                _textWriter.Write(span[i]);
-            }
+            _textWriter.Write(span.Slice(0, charsWritten));
         }
 
         private static int WriteCharToSpan(Span<char> destination, int ch)
         {
             Debug.Assert(destination.Length >= 12);
-            destination[0] = '&';
-            destination[1] = '#';
-            destination[2] = 'x';
-            bool result = ch.TryFormat(destination[3..], out int charsWritten, "X", NumberFormatInfo.InvariantInfo);
+            bool result = destination.TryWrite(NumberFormatInfo.InvariantInfo, $"&#x{ch:X};", out int charsWritten);
             Debug.Assert(result);
-            destination[charsWritten + 3] = ';';
-            return charsWritten + 4;
+            return charsWritten;
         }
 
         private void WriteEntityRefImpl(string name)
