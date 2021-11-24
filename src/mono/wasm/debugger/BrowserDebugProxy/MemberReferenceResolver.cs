@@ -243,7 +243,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return null;
 
                     var resolvedResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                    var objRet = resolvedResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
+                    var objRet = resolvedResObj.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
                     if (objRet == null)
                         return null;
 
