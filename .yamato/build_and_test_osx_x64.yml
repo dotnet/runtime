@@ -5,19 +5,12 @@ agent:
   image: platform-foundation/mac-bokken:latest
   flavor: m1.mac
 
-variables:
-  LD_LIBRARY_PATH: /usr/local/opt/openssl/lib
-
 commands:
-  - brew bundle --no-lock --file eng/Brewfile
-  - brew install mono-libgdiplus
-  - echo $LD_LIBRARY_PATH
-  - ls /usr/local/opt/openssl/lib
   - ./build.sh -subset clr -a x64 -c release
   - ./build.sh libs -c release
   - ./src/tests/build.sh Release x64
   - ./src/tests/run.sh Release x64
-  - ./build.sh -subset libs.tests -test -c Release
+  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset libs.tests -test -c Release
 
 triggers:
   pull_requests:
