@@ -25,6 +25,7 @@ namespace Wasm.Build.Tests
             ).WithRunHosts(host).UnwrapItemsAsArrays();
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         public void AsyncMainWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
@@ -39,6 +40,7 @@ namespace Wasm.Build.Tests
                 buildArgs, args, host, id);
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         public void TopLevelWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
