@@ -344,8 +344,8 @@ void CodeGen::genCodeForBBlist()
 #if FEATURE_LOOP_ALIGN
         if (GetEmitter()->emitEndsWithAlignInstr())
         {
-            // we had better be planning on starting a new IG
-            assert(needLabel);
+            // Force new label if current IG ends with an align instruction.
+            needLabel = true;
         }
 #endif
 
