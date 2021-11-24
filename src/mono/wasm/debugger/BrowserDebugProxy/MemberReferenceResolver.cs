@@ -92,20 +92,28 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string part = parts[i];
 
+                if (typeId != -1)
+                {
+                    JObject memberObject = await FindStaticMemberInType(part, typeId);
+                    if (memberObject != null)
+                    {
+                        string remaining = null;
+                        if (i < parts.Length - 1)
+                            remaining = string.Join('.', parts[(i + 1)..]);
+
+                        return (memberObject, remaining);
+                    }
+
+                    // Didn't find a member named `part` in `typeId`.
+                    // Could be a nested type. Let's continue the search
+                    // with `part` added to the type name
+
+                    typeId = -1;
+                }
+
                 if (classNameToFind.Length > 0)
                     classNameToFind += ".";
                 classNameToFind += part;
-
-                if (typeId != -1)
-                {
-                    string remaining = null;
-                    JObject memberObject = await FindStaticMemberInType(part, typeId);
-                    if (memberObject != null && i < parts.Length - 1)
-                        remaining = string.Join('.', parts[(i + 1)..]);
-
-                    if (memberObject != null || remaining != null)
-                        return (memberObject, remaining);
-                }
 
                 if (!string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace))
                 {
