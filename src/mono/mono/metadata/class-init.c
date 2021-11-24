@@ -1900,8 +1900,7 @@ validate_struct_fields_overlaps (guint8 *layout_check, MonoClass *klass, const i
 			// recursively check the layout of the embedded struct
 			MonoClass *embedded_class = ftype->data.klass;
 			g_assert (embedded_class);
-
-			mono_class_setup_fields (embedded_class);
+			g_assert (embedded_class->fields_inited);
 
 			const int embedded_fields_count = mono_class_get_field_count (embedded_class);
 			int *embedded_offsets = g_new0 (int, embedded_fields_count);
