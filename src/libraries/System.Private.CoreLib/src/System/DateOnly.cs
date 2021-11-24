@@ -39,6 +39,11 @@ namespace System
         }
 
         /// <summary>
+        /// Returns today's date
+        /// </summary>
+        public static DateOnly Today => FromDateTime(DateTime.Today);
+
+        /// <summary>
         /// Gets the earliest possible date that can be created.
         /// </summary>
         public static DateOnly MinValue => new DateOnly(MinDayNumber);
