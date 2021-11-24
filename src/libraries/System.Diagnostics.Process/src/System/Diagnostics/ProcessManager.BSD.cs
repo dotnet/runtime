@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -12,6 +13,7 @@ namespace System.Diagnostics
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
+        [SupportedOSPlatform("maccatalyst")]
         public static ProcessInfo[] GetProcessInfos(string machineName)
         {
             ThrowIfRemoteMachine(machineName);
@@ -34,6 +36,7 @@ namespace System.Diagnostics
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
+        [SupportedOSPlatform("maccatalyst")]
         internal static ProcessModuleCollection GetModules(int processId)
         {
             // We don't have a good way of getting all of the modules of the particular process,

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -13,6 +14,7 @@ namespace System.Diagnostics
         private const int MicrosecondsToSecondsFactor = 1_000_000;
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get
@@ -24,6 +26,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        [SupportedOSPlatform("maccatalyst")]
         internal DateTime StartTimeCore
         {
             get
@@ -52,6 +55,7 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get
@@ -66,6 +70,7 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get
