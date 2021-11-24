@@ -1,8 +1,8 @@
 DOTNET := ../../dotnet.sh
 
-LIBRARIES_TESTS_CONFIG=Release
-CORECLR_TESTS_CONFIG=Release
-MONO_RUNTIME_CONFIG=Release
+LIBRARIES_TESTS_CONFIG=Debug
+CORECLR_TESTS_CONFIG=Debug
+MONO_RUNTIME_CONFIG=Debug
 
 # auto detect configurations for mono runtime and coreclr tests
 ifeq ($(words $(wildcard ../../artifacts/bin/mono/*.*.*)), 1)
