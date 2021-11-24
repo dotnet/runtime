@@ -13,23 +13,42 @@ internal static partial class Interop
         {
             SslInitializer.Initialize();
         }
+
+        // access for static properties that may be called before static constructor.
+        internal static void EsureInitialized()
+        {
+            SslInitializer.Initialize();
+        }
     }
 
     internal static class SslInitializer
     {
 #if !SYSNETSECURITY_NO_OPENSSL
+        private static readonly object _initLock = new object();
+        private static bool _initialized;
+
+#pragma warning disable CA1810
         static SslInitializer()
         {
-            CryptoInitializer.Initialize();
-
-            //Call ssl specific initializer
-            Ssl.EnsureLibSslInitialized();
-            if (Interop.Crypto.ErrPeekLastError() != 0)
+            lock (_initLock)
             {
-                // It is going to be wrapped in a type load exception but will have the error information
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                if (!_initialized)
+                {
+                    CryptoInitializer.Initialize();
+
+                    //Call ssl specific initializer
+                    Ssl.EnsureLibSslInitialized();
+                    if (Interop.Crypto.ErrPeekLastError() != 0)
+                    {
+                        // It is going to be wrapped in a type load exception but will have the error information
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    _initialized = true;
+                }
             }
         }
+#pragma warning restore CA1810
 #endif
 
         internal static void Initialize()
