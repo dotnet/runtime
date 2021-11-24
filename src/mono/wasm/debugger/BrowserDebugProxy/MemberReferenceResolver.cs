@@ -80,7 +80,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<(JObject containerObject, string remaining)> ResolveStaticMembersInStaticTypes(string varName, CancellationToken token)
         {
             string classNameToFind = "";
-            string[] parts = varName.Split(".");
+            string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
             var store = await proxy.LoadStore(sessionId, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
@@ -90,7 +90,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             int typeId = -1;
             for (int i = 0; i < parts.Length; i++)
             {
-                string part = parts[i].Trim();
+                string part = parts[i];
 
                 if (classNameToFind.Length > 0)
                     classNameToFind += ".";
