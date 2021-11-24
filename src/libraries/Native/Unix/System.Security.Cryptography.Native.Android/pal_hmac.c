@@ -82,10 +82,10 @@ int32_t CryptoNative_HmacReset(jobject ctx)
 
 int32_t CryptoNative_HmacUpdate(jobject ctx, uint8_t* data, int32_t len)
 {
-    if (!ctx)
+    // Callers are expected to skip update calls with no data.
+    if (!ctx || !data || len <= 0)
         return FAIL;
 
-    abort_if_invalid_pointer_argument (data);
     JNIEnv* env = GetJNIEnv();
     jbyteArray dataBytes = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, dataBytes, 0, len, (jbyte*)data);
