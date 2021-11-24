@@ -479,7 +479,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TextInfo.ToString());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [InlineData("es-ES")]
         [InlineData("es-ES_tradnl")]
         public void TestAsciiCodePageWithCulturesWithAlternativeSortNames(string cultureName)
