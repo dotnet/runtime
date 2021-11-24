@@ -103,7 +103,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (memberObject != null && i < parts.Length - 1)
                         remaining = string.Join('.', parts[(i + 1)..]);
 
-                    return (memberObject, remaining);
+                    if (memberObject != null || remaining != null)
+                        return (memberObject, remaining);
                 }
 
                 if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
