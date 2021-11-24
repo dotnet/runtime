@@ -1775,7 +1775,7 @@ public:
     bool TryGetUse(GenTree* operand)
     {
         GenTree** unusedUse = nullptr;
-        return TryGetUse(def, &unusedUse);
+        return TryGetUse(operand, &unusedUse);
     }
 
 private:

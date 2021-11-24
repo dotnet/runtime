@@ -5087,7 +5087,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             {
                 return this->AsUnOp()->gtOp1->TryGetUse(def, pUse);
             }
-            if (def == this->AsUnOp()->gtOp1)
+            if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
                 return true;
@@ -5104,7 +5104,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 #endif
             for (GenTree** opUse : this->AsMultiOp()->UseEdges())
             {
-                if (*opUse == def)
+                if (*opUse == operand)
                 {
                     *pUse = opUse;
                     return true;
