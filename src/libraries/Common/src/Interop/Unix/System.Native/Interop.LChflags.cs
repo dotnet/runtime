@@ -19,8 +19,8 @@ internal static partial class Interop
 
         internal static readonly bool CanSetHiddenFlag = (LChflagsCanSetHiddenFlag() != 0);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LChflagsCanSetHiddenFlag")]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LChflagsCanSetHiddenFlag")]
         [SuppressGCTransition]
-        private static extern int LChflagsCanSetHiddenFlag();
+        private static partial int LChflagsCanSetHiddenFlag();
     }
 }

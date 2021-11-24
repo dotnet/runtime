@@ -349,6 +349,24 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The use cases for &apos;GetPinnableReference&apos; are not applicable in any scenarios where a &apos;Value&apos; property is not also required..
+        /// </summary>
+        internal static string MarshallerGetPinnableReferenceRequiresValuePropertyDescription {
+            get {
+                return ResourceManager.GetString("MarshallerGetPinnableReferenceRequiresValuePropertyDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;GetPinnableReference&apos; method cannot be provided on the native type &apos;{0}&apos; unless a &apos;Value&apos; property is also provided.
+        /// </summary>
+        internal static string MarshallerGetPinnableReferenceRequiresValuePropertyMessage {
+            get {
+                return ResourceManager.GetString("MarshallerGetPinnableReferenceRequiresValuePropertyMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a closed generic so the emitted code can use a specific instantiation..
         /// </summary>
         internal static string NativeGenericTypeMustBeClosedDescription {
@@ -511,7 +529,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to P/Invoke source generation is only supported on .NET {0} or above. The generated source will not be compatible with other frameworks..
+        ///   Looks up a localized string similar to P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks..
         /// </summary>
         internal static string TargetFrameworkNotSupportedDescription {
             get {
@@ -520,7 +538,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;GeneratedDllImportAttribute&apos; cannot be used for source-generated P/Invokes on the current target framework. Source-generated P/Invokes require .NET {0} or above..
+        ///   Looks up a localized string similar to &apos;GeneratedDllImportAttribute&apos; cannot be used for source-generated P/Invokes on an unknown target framework v{0}..
         /// </summary>
         internal static string TargetFrameworkNotSupportedMessage {
             get {

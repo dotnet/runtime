@@ -66,7 +66,7 @@
       <_EmccCommonFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccCommonFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccCommonFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccCommonFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency']&quot;" />
+      <_EmccCommonFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['DOTNET','MONO','BINDING','INTERNAL','FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency']&quot;" />
       <_EmccCommonFlags Include="-s EXPORTED_FUNCTIONS=&quot;['_free','_malloc']&quot;" />
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
 
@@ -173,7 +173,7 @@
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <!-- code style check -->
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <!-- compile typescript -->
     <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>

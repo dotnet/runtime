@@ -4678,7 +4678,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
                            regMaskTP        byrefRegs,
-                           IL_OFFSETX       ilOffset /* = BAD_IL_OFFSET */,
+                           const DebugInfo& di /* = DebugInfo() */,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
@@ -4719,9 +4719,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
+    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -4801,7 +4801,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(callType == EC_FUNC_TOKEN);
 
         // if addr is nullptr then this call is treated as a recursive call.
-        assert(addr == nullptr || codeGen->arm_Valid_Imm_For_BL((ssize_t)addr));
+        assert(addr == nullptr || codeGen->validImmForBL((ssize_t)addr));
 
         if (isJump)
         {
@@ -7670,6 +7670,22 @@ void emitter::emitDispInsHelp(
     printf("\n");
 }
 
+//--------------------------------------------------------------------
+// emitDispIns: Dump the given instruction to jitstdout.
+//
+// Arguments:
+//   id - The instruction
+//   isNew - Whether the instruction is newly generated (before encoding).
+//   doffs - If true, always display the passed-in offset.
+//   asmfm - Whether the instruction should be displayed in assembly format.
+//           If false some additional information may be printed for the instruction.
+//   offset - The offset of the instruction. Only displayed if doffs is true or if
+//            !isNew && !asmfm.
+//   code - Pointer to the actual code, used for displaying the address and encoded bytes
+//          if turned on.
+//   sz - The size of the instruction, used to display the encoded bytes.
+//   ig - The instruction group containing the instruction.
+//
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
 {
@@ -7767,12 +7783,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     if (varx >= 0 && emitComp->opts.varNames)
     {
-        LclVarDsc*  varDsc;
-        const char* varName;
-
-        assert((unsigned)varx < emitComp->lvaCount);
-        varDsc  = emitComp->lvaTable + varx;
-        varName = emitComp->compLocalVarName(varx, offs);
+        const char* varName = emitComp->compLocalVarName(varx, offs);
 
         if (varName)
         {
@@ -7973,9 +7984,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             // no logic here to track local variable lifetime changes, like we do in the contained case
             // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
             // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
-            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-            unsigned             lclNum  = varNode->GetLclNum();
-            LclVarDsc*           varDsc  = emitComp->lvaGetDesc(lclNum);
+            LclVarDsc* varDsc = emitComp->lvaGetDesc(addr->AsLclVarCommon());
             assert(!varDsc->lvTracked);
         }
 #endif // DEBUG
@@ -8095,7 +8104,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     if (dst->gtSetFlags())
     {
         assert((ins == INS_add) || (ins == INS_adc) || (ins == INS_sub) || (ins == INS_sbc) || (ins == INS_and) ||
-               (ins == INS_orr) || (ins == INS_eor) || (ins == INS_orn));
+               (ins == INS_orr) || (ins == INS_eor) || (ins == INS_orn) || (ins == INS_bic));
         flags = INS_FLAGS_SET;
     }
 

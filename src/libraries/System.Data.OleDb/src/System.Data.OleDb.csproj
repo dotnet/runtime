@@ -34,6 +34,24 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetUserDefaultLCID.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetUserDefaultLCID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs"
+             Link="Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SetErrorInfo.cs"
+             Link="Common\Interop\Windows\OleAut32\Interop.SetErrorInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs"
+             Link="Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"
+             Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.PropVariantClear.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.PropVariantClear.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
              Link="Common\System\Data\Common\MultipartIdentifier.cs" />
     <Compile Include="AdapterSwitches.cs" />
@@ -143,6 +161,7 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
     <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Security.Principal.Windows" />

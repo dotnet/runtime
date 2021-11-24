@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // DESCRIPTION:
 // 
 // This tests that a generic class that implements an abstract interface cannot 
@@ -100,7 +101,7 @@
   } // end of method GenTest::IndirectTest
 
   .method public hidebysig instance bool 
-          Test() cil managed
+          Test_abstract05() cil managed
   {
     // Code size       48 (0x30)
     .maxstack  2
@@ -154,7 +155,7 @@
 
 } // end of class GenTest
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_abstract05
        extends [mscorlib]System.Object
 {
   .field public static int32 counter
@@ -163,17 +164,17 @@
   {
     // Code size       47 (0x2f)
     .maxstack  2
-    IL_0000:  ldsfld     int32 Test::counter
+    IL_0000:  ldsfld     int32 Test_abstract05::counter
     IL_0005:  ldc.i4.1
     IL_0006:  add
-    IL_0007:  stsfld     int32 Test::counter
+    IL_0007:  stsfld     int32 Test_abstract05::counter
     IL_000c:  ldarg.0
     IL_000d:  brtrue.s   IL_002e
 
     IL_000f:  ldarg.0
-    IL_0010:  stsfld     bool Test::result
+    IL_0010:  stsfld     bool Test_abstract05::result
     IL_0015:  ldstr      "Test Failed at location: "
-    IL_001a:  ldsfld     int32 Test::counter
+    IL_001a:  ldsfld     int32 Test_abstract05::counter
     IL_001f:  box        [mscorlib]System.Int32
     IL_0024:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
@@ -183,26 +184,29 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       113 (0x71)
     .maxstack  1
     .locals init (int32 V_0)
     IL_0000:  newobj     instance void class GenTest<int32>::.ctor()
-    IL_0005:  call       instance bool class GenTest<int32>::Test()
-    IL_000a:  call       void Test::Eval(bool)
+    IL_0005:  call       instance bool class GenTest<int32>::Test_abstract05()
+    IL_000a:  call       void Test_abstract05::Eval(bool)
     IL_000f:  newobj     instance void class GenTest<float64>::.ctor()
-    IL_0014:  call       instance bool class GenTest<float64>::Test()
-    IL_0019:  call       void Test::Eval(bool)
+    IL_0014:  call       instance bool class GenTest<float64>::Test_abstract05()
+    IL_0019:  call       void Test_abstract05::Eval(bool)
     IL_001e:  newobj     instance void class GenTest<valuetype [mscorlib]System.Guid>::.ctor()
-    IL_0023:  call       instance bool class GenTest<valuetype [mscorlib]System.Guid>::Test()
-    IL_0028:  call       void Test::Eval(bool)
+    IL_0023:  call       instance bool class GenTest<valuetype [mscorlib]System.Guid>::Test_abstract05()
+    IL_0028:  call       void Test_abstract05::Eval(bool)
     IL_002d:  newobj     instance void class GenTest<object>::.ctor()
-    IL_0032:  call       instance bool class GenTest<object>::Test()
-    IL_0037:  call       void Test::Eval(bool)
+    IL_0032:  call       instance bool class GenTest<object>::Test_abstract05()
+    IL_0037:  call       void Test_abstract05::Eval(bool)
     IL_003c:  newobj     instance void class GenTest<string>::.ctor()
-    IL_0041:  call       instance bool class GenTest<string>::Test()
-    IL_0046:  call       void Test::Eval(bool)
-    IL_004b:  ldsfld     bool Test::result
+    IL_0041:  call       instance bool class GenTest<string>::Test_abstract05()
+    IL_0046:  call       void Test_abstract05::Eval(bool)
+    IL_004b:  ldsfld     bool Test_abstract05::result
     IL_0050:  brfalse.s  IL_0061
 
     IL_0052:  ldstr      "Test Passed"
@@ -227,9 +231,9 @@
     // Code size       13 (0xd)
     .maxstack  1
     IL_0000:  ldc.i4.0
-    IL_0001:  stsfld     int32 Test::counter
+    IL_0001:  stsfld     int32 Test_abstract05::counter
     IL_0006:  ldc.i4.1
-    IL_0007:  stsfld     bool Test::result
+    IL_0007:  stsfld     bool Test_abstract05::result
     IL_000c:  ret
   } // end of method Test::.cctor
 

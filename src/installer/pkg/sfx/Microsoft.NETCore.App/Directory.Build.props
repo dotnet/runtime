@@ -173,7 +173,7 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <!-- Mono-specific files -->
-    <PlatformManifestFileEntry Include="libmonosgen-2.0.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="monosgen-2.0.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.dylib" IsNative="true" />

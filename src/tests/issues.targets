@@ -18,15 +18,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/misc/waitone2/*">
-            <Issue>https://github.com/dotnet/runtime/issues/6372</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/unregister/unregister01/*">
-            <Issue>https://github.com/dotnet/runtime/issues/44054</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/unregister/unregister03/*">
-            <Issue>https://github.com/dotnet/runtime/issues/44054</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
@@ -193,6 +184,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/13241</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
+            <Issue>TraceEvent can't parse unaligned floats on arm32</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe_readevents/*">
             <Issue>TraceEvent can't parse unaligned floats on arm32</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
@@ -491,6 +485,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
+            <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->
@@ -517,6 +514,9 @@
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetArchitecture)' == 'x64' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashWorkerThreads/*">
+            <Issue>https://github.com/dotnet/runtime/issues/57621</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_dbgseq/*">
             <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
         </ExcludeList>
@@ -874,6 +874,9 @@
         </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTestWithMcj/*">
+            <Issue>Tests features specific to coreclr</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/*">
             <Issue>Tests features specific to coreclr</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/ByRefLocals/**">
@@ -1814,9 +1817,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/div_r8/**">
             <Issue>https://github.com/dotnet/runtime/issues/54375</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/tailcall/tailcall/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54374</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/deep/_il_reldeep1/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2515,17 +2515,11 @@
             <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
         </ExcludeList>
 
-        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41193</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/DeadThreads/DeadThreads/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/coverage/OSThreadId/osthreadid/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41193</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
@@ -2836,9 +2830,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/**">
             <Issue>No crossgen folder under Core_Root</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3118,13 +3109,6 @@
 
         <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**">
             <Issue>Environment variable is not set: 'CORE_ROOT'</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool/**">
-            <Issue>USAGE: ThreadStartBool bool</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool_1/**">
-            <Issue>USAGE: ThreadStartBool bool</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/GC/LargeMemory/API/gc/gettotalmemory/**">

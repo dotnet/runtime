@@ -145,6 +145,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void SingleProducerConsumer_ConcurrentReadWrite_Success()
         {
             Channel<int> c = CreateChannel();
@@ -168,6 +169,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void SingleProducerConsumer_PingPong_Success()
         {
             Channel<int> c1 = CreateChannel();
@@ -597,6 +599,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task ReadAsync_ThenWriteAsync_Succeeds()
         {
             Channel<int> c = CreateChannel();
@@ -639,6 +642,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task ReadAsync_Canceled_CanceledAsynchronously()
         {
             Channel<int> c = CreateChannel();
@@ -746,6 +750,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task ReadAsync_Canceled_WriteAsyncCompletesNextReader()
         {
             Channel<int> c = CreateChannel();
@@ -767,6 +772,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task ReadAsync_ConsecutiveReadsSucceed()
         {
             Channel<int> c = CreateChannel();
@@ -877,6 +883,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task WaitToReadAsync_AwaitThenGetResult_Throws()
         {
             Channel<int> c = CreateChannel();
@@ -890,6 +897,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task ReadAsync_AwaitThenGetResult_Throws()
         {
             Channel<int> c = CreateChannel();

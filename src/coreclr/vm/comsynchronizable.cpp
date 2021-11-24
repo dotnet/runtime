@@ -239,13 +239,19 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
     return 0;
 }
 
-void QCALLTYPE ThreadNative::Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName)
+extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    Thread * pNewThread = thread;
+    ThreadNative::Start(thread, threadStackSize, priority, pThreadName);
+
+    END_QCALL;
+}
+
+void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, PCWSTR pThreadName)
+{
     _ASSERTE(pNewThread != NULL);
 
     // Is the thread already started?  You can't restart a thread.
@@ -318,8 +324,6 @@ void QCALLTYPE ThreadNative::Start(QCall::ThreadHandle thread, int threadStackSi
         PulseAllHelper(pNewThread);
         pNewThread->HandleThreadStartupFailure();
     }
-
-    END_QCALL;
 }
 
 // Note that you can manipulate the priority of a thread that hasn't started yet,
@@ -474,7 +478,7 @@ FCIMPLEND
 
 #define Sleep(dwMilliseconds) Dont_Use_Sleep(dwMilliseconds)
 
-void QCALLTYPE ThreadNative::UninterruptibleSleep0()
+extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0()
 {
     QCALL_CONTRACT;
 
@@ -523,7 +527,7 @@ FCIMPL0(Object*, ThreadNative::GetCurrentThread)
 }
 FCIMPLEND
 
-UINT64 QCALLTYPE ThreadNative::GetCurrentOSThreadId()
+extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId()
 {
     QCALL_CONTRACT;
 
@@ -991,14 +995,19 @@ FCIMPL1(void, ThreadNative::DisableComObjectEagerCleanup, ThreadBaseObject* pThi
 FCIMPLEND
 #endif //FEATURE_COMINTEROP
 
-void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len)
+extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    Thread* pThread = thread;
+    ThreadNative::InformThreadNameChange(thread, name, len);
 
+    END_QCALL;
+}
+
+void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 len)
+{
     // Set on Windows 10 Creators Update and later machines the unmanaged thread name as well. That will show up in ETW traces and debuggers which is very helpful
     // if more and more threads get a meaningful name
     // Will also show up in Linux in gdb and such.
@@ -1030,11 +1039,9 @@ void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, 
         g_pDebugInterface->NameChangeEvent(NULL, pThread);
     }
 #endif // DEBUGGING_SUPPORTED
-
-    END_QCALL;
 }
 
-UINT64 QCALLTYPE ThreadNative::GetProcessDefaultStackSize()
+extern "C" UINT64 QCALLTYPE ThreadNative_GetProcessDefaultStackSize()
 {
     QCALL_CONTRACT;
 
@@ -1130,7 +1137,7 @@ FCIMPL1(void, ThreadNative::SpinWait, int iterations)
 }
 FCIMPLEND
 
-BOOL QCALLTYPE ThreadNative::YieldThread()
+extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 {
     QCALL_CONTRACT;
 

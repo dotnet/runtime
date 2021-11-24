@@ -295,4 +295,4 @@ FAIL:
 	ret
 }
 }
-.assembly ceq_i4.exe{}
+.assembly ceq_i4{}

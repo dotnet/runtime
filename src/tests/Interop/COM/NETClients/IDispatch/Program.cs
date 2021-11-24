@@ -9,6 +9,7 @@ namespace NetClient
     using System.Runtime.InteropServices;
 
     using TestLibrary;
+    using Xunit;
     using Server.Contract;
     using Server.Contract.Servers;
 
@@ -44,13 +45,13 @@ namespace NetClient
                 ul1, ref ul2);
             Console.WriteLine($"Call to {nameof(DispatchTesting.DoubleNumeric_ReturnByRef)} complete");
 
-            Assert.AreEqual(b1 * 2, b2);
-            Assert.AreEqual(s1 * 2, s2);
-            Assert.AreEqual(us1 * 2, us2);
-            Assert.AreEqual(i1 * 2, i2);
-            Assert.AreEqual(ui1 * 2, ui2);
-            Assert.AreEqual(l1 * 2, l2);
-            Assert.AreEqual(ul1 * 2, ul2);
+            Assert.Equal(b1 * 2, b2);
+            Assert.Equal(s1 * 2, s2);
+            Assert.Equal(us1 * 2, us2);
+            Assert.Equal(i1 * 2, i2);
+            Assert.Equal(ui1 * 2, ui2);
+            Assert.Equal(l1 * 2, l2);
+            Assert.Equal(ul1 * 2, ul2);
         }
 
         static private bool EqualByBound(float expected, float actual)
@@ -82,8 +83,8 @@ namespace NetClient
             float d = dispatchTesting.Add_Float_ReturnAndUpdateByRef (a, ref c);
 
             Console.WriteLine($"Call to {nameof(DispatchTesting.Add_Float_ReturnAndUpdateByRef)} complete: {a} + {b} = {d}; {c} == {d}");
-            Assert.IsTrue(EqualByBound(expected, c));
-            Assert.IsTrue(EqualByBound(expected, d));
+            Assert.True(EqualByBound(expected, c));
+            Assert.True(EqualByBound(expected, d));
         }
 
         static void Validate_Double_In_ReturnAndUpdateByRef()
@@ -99,8 +100,8 @@ namespace NetClient
             double d = dispatchTesting.Add_Double_ReturnAndUpdateByRef (a, ref c);
 
             Console.WriteLine($"Call to {nameof(DispatchTesting.Add_Double_ReturnAndUpdateByRef)} complete: {a} + {b} = {d}; {c} == {d}");
-            Assert.IsTrue(EqualByBound(expected, c));
-            Assert.IsTrue(EqualByBound(expected, d));
+            Assert.True(EqualByBound(expected, c));
+            Assert.True(EqualByBound(expected, d));
         }
 
         static int GetErrorCodeFromHResult(int hresult)
@@ -119,23 +120,23 @@ namespace NetClient
             {
                 Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} with {nameof(IDispatchTesting_Exception.Disp)} {errorCode}...");
                 dispatchTesting.TriggerException(IDispatchTesting_Exception.Disp, errorCode);
-                Assert.Fail("DISP exception not thrown properly");
+                Assert.True(false, "DISP exception not thrown properly");
             }
             catch (COMException e)
             {
-                Assert.AreEqual(GetErrorCodeFromHResult(e.HResult), errorCode);
-                Assert.AreEqual(e.Message, resultString);
+                Assert.Equal(GetErrorCodeFromHResult(e.HResult), errorCode);
+                Assert.Equal(e.Message, resultString);
             }
 
             try
             {
                 Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} with {nameof(IDispatchTesting_Exception.HResult)} {errorCode}...");
                 dispatchTesting.TriggerException(IDispatchTesting_Exception.HResult, errorCode);
-                Assert.Fail("HRESULT exception not thrown properly");
+                Assert.True(false, "HRESULT exception not thrown properly");
             }
             catch (COMException e)
             {
-                Assert.AreEqual(GetErrorCodeFromHResult(e.HResult), errorCode);
+                Assert.Equal(GetErrorCodeFromHResult(e.HResult), errorCode);
                 // Failing HRESULT exceptions contain CLR generated messages
             }
         }
@@ -159,7 +160,7 @@ namespace NetClient
                 CultureInfo englishCulture = new CultureInfo("en-US", false);
                 CultureInfo.CurrentCulture = newCulture;
                 int lcid = dispatchTesting.PassThroughLCID();
-                Assert.AreEqual(englishCulture.LCID, lcid);  // CLR->Dispatch LCID marshalling is explicitly hardcoded to en-US instead of passing the current culture.
+                Assert.Equal(englishCulture.LCID, lcid);  // CLR->Dispatch LCID marshalling is explicitly hardcoded to en-US instead of passing the current culture.
             }
             finally
             {
@@ -173,18 +174,18 @@ namespace NetClient
             var expected = System.Linq.Enumerable.Range(0, 10);
 
             Console.WriteLine($"Calling {nameof(DispatchTesting.GetEnumerator)} ...");
-            var enumerator = dispatchTesting.GetEnumerator(); 
-            Assert.AreAllEqual(expected, GetEnumerable(enumerator));
+            var enumerator = dispatchTesting.GetEnumerator();
+            AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
 
             enumerator.Reset();
-            Assert.AreAllEqual(expected, GetEnumerable(enumerator));
+            AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
 
             Console.WriteLine($"Calling {nameof(DispatchTesting.ExplicitGetEnumerator)} ...");
             var enumeratorExplicit = dispatchTesting.ExplicitGetEnumerator();
-            Assert.AreAllEqual(expected, GetEnumerable(enumeratorExplicit));
+            AssertExtensions.CollectionEqual(expected, GetEnumerable(enumeratorExplicit));
 
             enumeratorExplicit.Reset();
-            Assert.AreAllEqual(expected, GetEnumerable(enumeratorExplicit));
+            AssertExtensions.CollectionEqual(expected, GetEnumerable(enumeratorExplicit));
 
             System.Collections.Generic.IEnumerable<int> GetEnumerable(System.Collections.IEnumerator e)
             {

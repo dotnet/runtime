@@ -9,7 +9,9 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "LsaLookupNames2", SetLastError = true, CharSet = CharSet.Unicode)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "LsaLookupNames2", CharSet = CharSet.Unicode, SetLastError = true)]
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         internal static extern uint LsaLookupNames2(
             SafeLsaPolicyHandle handle,
             int flags,
@@ -18,6 +20,7 @@ internal static partial class Interop
             out SafeLsaMemoryHandle referencedDomains,
             out SafeLsaMemoryHandle sids
         );
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct MARSHALLED_UNICODE_STRING

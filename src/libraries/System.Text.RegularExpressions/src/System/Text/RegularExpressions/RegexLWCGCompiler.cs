@@ -39,9 +39,6 @@ namespace System.Text.RegularExpressions
             _code = code;
             _codes = code.Codes;
             _strings = code.Strings;
-            _leadingCharClasses = code.LeadingCharClasses;
-            _boyerMoorePrefix = code.BoyerMoorePrefix;
-            _leadingAnchor = code.LeadingAnchor;
             _trackcount = code.TrackCount;
             _options = options;
             _hasTimeout = hasTimeout;

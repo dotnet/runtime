@@ -257,7 +257,7 @@ namespace System.Data.OleDb
                 { }
                 finally
                 {
-                    ptr = SafeNativeMethods.SysAllocStringLen(value, value.Length);
+                    ptr = Interop.OleAut32.SysAllocStringLen(value, (uint)value.Length);
 
                     // safe to copy ptr, even if SysAllocStringLen failed
                     Marshal.WriteIntPtr(base.handle, offset, ptr);
@@ -499,11 +499,11 @@ namespace System.Data.OleDb
 
                 if ((ADP.PtrZero != currentValue) && (currentValue != originalValue))
                 {
-                    SafeNativeMethods.SysFreeString(currentValue);
+                    Interop.OleAut32.SysFreeString(currentValue);
                 }
                 if (ADP.PtrZero != originalValue)
                 {
-                    SafeNativeMethods.SysFreeString(originalValue);
+                    Interop.OleAut32.SysFreeString(originalValue);
                 }
 
                 // for debugability - delay clearing memory until after FreeBSTR
@@ -529,7 +529,7 @@ namespace System.Data.OleDb
                 // originalValue is pinned managed memory or pointer to emptyStringOffset
                 if ((ADP.PtrZero != currentValue) && (currentValue != originalValue))
                 {
-                    SafeNativeMethods.CoTaskMemFree(currentValue);
+                    Interop.Ole32.CoTaskMemFree(currentValue);
                 }
 
                 // for debugability - delay clearing memory until after CoTaskMemFree
@@ -556,11 +556,11 @@ namespace System.Data.OleDb
             finally
             {
                 // always clear the first structure
-                SafeNativeMethods.VariantClear(currentHandle);
+                Interop.OleAut32.VariantClear(currentHandle);
                 if (different)
                 {
                     // second structure different from the first
-                    SafeNativeMethods.VariantClear(originalHandle);
+                    Interop.OleAut32.VariantClear(originalHandle);
                 }
                 else
                 {
@@ -587,11 +587,11 @@ namespace System.Data.OleDb
             finally
             {
                 // always clear the first structure
-                SafeNativeMethods.PropVariantClear(currentHandle);
+                Interop.Ole32.PropVariantClear(currentHandle);
                 if (different)
                 {
                     // second structure different from the first
-                    SafeNativeMethods.PropVariantClear(originalHandle);
+                    Interop.Ole32.PropVariantClear(originalHandle);
                 }
                 else
                 {

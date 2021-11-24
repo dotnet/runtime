@@ -213,7 +213,6 @@ public:
         return TypeKey::Equals(this, pKey);
     }
 
-    // Comparison and hashing
     static BOOL Equals(const TypeKey *pKey1, const TypeKey *pKey2)
     {
         WRAPPER_NO_CONTRACT;
@@ -256,33 +255,6 @@ public:
             }
             return TRUE;
         }
-    }
-
-    DWORD ComputeHash() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        DWORD_PTR hashLarge;
-
-        if (m_kind == ELEMENT_TYPE_CLASS)
-        {
-            hashLarge = ((DWORD_PTR)u.asClass.m_pModule ^ (DWORD_PTR)u.asClass.m_numGenericArgs ^ (DWORD_PTR)u.asClass.m_typeDef);
-        }
-        else if (CorTypeInfo::IsModifier_NoThrow(m_kind) || m_kind == ELEMENT_TYPE_VALUETYPE)
-        {
-            hashLarge = (u.asParamType.m_paramType ^ (DWORD_PTR) u.asParamType.m_rank);
-        }
-        else hashLarge = 0;
-
-#if POINTER_BITS == 32
-        return hashLarge;
-#else
-        DWORD hash = *(DWORD *)&hashLarge;
-        for (unsigned i = 1; i < POINTER_BITS / 32; i++)
-        {
-            hash ^= ((DWORD *)&hashLarge)[i];
-        }
-        return hash;
-#endif
     }
 };
 

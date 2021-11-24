@@ -80,13 +80,13 @@ static char* unquote (const char *str);
 static mono_mutex_t assemblies_mutex;
 
 static inline void
-mono_assemblies_lock ()
+mono_assemblies_lock (void)
 {
 	mono_os_mutex_lock (&assemblies_mutex);
 }
 
 static inline void
-mono_assemblies_unlock ()
+mono_assemblies_unlock (void)
 {
 	mono_os_mutex_unlock (&assemblies_mutex);
 }

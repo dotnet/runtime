@@ -29,6 +29,7 @@ namespace Wasm.Build.Tests
                     .UnwrapItemsAsArrays();
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
@@ -66,6 +67,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
@@ -148,7 +150,7 @@ namespace Wasm.Build.Tests
                 <TargetFramework>{s_targetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
+                <WasmMainJSPath>test-main.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>

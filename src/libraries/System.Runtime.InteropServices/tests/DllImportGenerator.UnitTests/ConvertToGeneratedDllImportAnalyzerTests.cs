@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+
+using Microsoft.CodeAnalysis;
 using Xunit;
+
 using static Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportAnalyzer;
 
 using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportAnalyzer>;
@@ -37,9 +41,17 @@ namespace DllImportGenerator.UnitTests
             new object[] { typeof(ConsoleKey) }, // enum
         };
 
+        public static IEnumerable<object[]> UnsupportedTypes() => new[]
+        {
+            new object[] { typeof(System.Runtime.InteropServices.CriticalHandle) },
+            new object[] { typeof(System.Runtime.InteropServices.HandleRef) },
+            new object[] { typeof(System.Text.StringBuilder) },
+        };
+
         [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60909", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
@@ -132,6 +144,71 @@ partial class Test
                 VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
                     .WithLocation(1)
                     .WithArguments("Method2"));
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(UnsupportedTypes))]
+        public async Task UnsupportedType_NoDiagnostic(Type type)
+        {
+            string source = DllImportWithType(type.FullName!);
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [ConditionalTheory]
+        [InlineData(UnmanagedType.Interface)]
+        [InlineData(UnmanagedType.IDispatch)]
+        [InlineData(UnmanagedType.IInspectable)]
+        [InlineData(UnmanagedType.IUnknown)]
+        [InlineData(UnmanagedType.SafeArray)]
+        public async Task UnsupportedUnmanagedType_NoDiagnostic(UnmanagedType unmanagedType)
+        {
+            string source = $@"
+using System.Runtime.InteropServices;
+unsafe partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern void Method_Parameter([MarshalAs(UnmanagedType.{unmanagedType}, MarshalType = ""DNE"")]int p);
+
+    [DllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.{unmanagedType}, MarshalType = ""DNE"")]
+    public static extern int Method_Return();
+}}
+";
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [ConditionalFact]
+        public async Task GeneratedDllImport_NoDiagnostic()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method();
+}}
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern partial void Method();
+}}
+";
+            // Only this test case needs the ancillary reference, so it creates/runs the test directly
+            // instead of going through VerifyAnalyzerAsync
+            (_, MetadataReference ancillary) = TestUtils.GetReferenceAssemblies();
+            var test = new VerifyCS.Test()
+            {
+                TestCode = source
+            };
+            test.SolutionTransforms.Add((solution, projectId) =>
+            {
+                Project project = solution.GetProject(projectId)!;
+                var refs = new List<MetadataReference>(project.MetadataReferences.Count + 1);
+                refs.AddRange(project.MetadataReferences);
+                refs.Add(ancillary);
+                return solution.WithProjectMetadataReferences(projectId, refs);
+            });
+            await test.RunAsync(default);
         }
 
         [ConditionalFact]

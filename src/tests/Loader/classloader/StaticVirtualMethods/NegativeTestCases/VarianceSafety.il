@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
 .assembly extern TypeHierarchyCommonCs {}
@@ -42,6 +43,9 @@
 
   .method public static int32 Main() cil managed noinlining
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (class [System.Runtime]System.Exception V_0)
     .try {

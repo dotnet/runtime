@@ -2304,7 +2304,7 @@ namespace System.Xml.Schema
                     {
                         // selector selects new node, activate a new set of fields
                         Debug.WriteLine("Selector Match!");
-                        Debug.WriteLine("Name: " + localName + "\t|\tURI: " + namespaceUri + "\n");
+                        Debug.WriteLine($"Name: {localName}\t|\tURI: {namespaceUri}\n");
 
                         // in which axisFields got updated
                         constraintStructures[j].axisSelector.PushKS(_positionInfo.LineNumber, _positionInfo.LinePosition);
@@ -2366,7 +2366,7 @@ namespace System.Xml.Schema
                             //attribute is only simpletype, so needn't checking...
                             // can fill value here, yeah!!
                             Debug.WriteLine("Attribute Field Filling Value!");
-                            Debug.WriteLine("Name: " + name + "\t|\tURI: " + ns + "\t|\tValue: " + obj + "\n");
+                            Debug.WriteLine($"Name: {name}\t|\tURI: {ns}\t|\tValue: {obj}\n");
                             if (laxis.Ks[laxis.Column] != null)
                             {
                                 // should be evaluated to either an empty node-set or a node-set with exactly one member
@@ -2411,7 +2411,7 @@ namespace System.Xml.Schema
                         if (laxis.isMatched)
                         {
                             Debug.WriteLine("Element Field Filling Value!");
-                            Debug.WriteLine("Name: " + localName + "\t|\tURI: " + namespaceUri + "\t|\tValue: " + typedValue + "\n");
+                            Debug.WriteLine($"Name: {localName}\t|\tURI: {namespaceUri}\t|\tValue: {typedValue}\n");
                             // fill value
                             laxis.isMatched = false;
                             if (laxis.Ks[laxis.Column] != null)
@@ -2821,7 +2821,7 @@ namespace System.Xml.Schema
 
         internal static string QNameString(string localName, string ns)
         {
-            return (ns.Length != 0) ? string.Concat(ns, ":", localName) : localName;
+            return (ns.Length != 0) ? $"{ns}:{localName}" : localName;
         }
 
         internal static string BuildElementName(XmlQualifiedName qname)
