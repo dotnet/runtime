@@ -4,14 +4,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
-        [SupportedOSPlatform("maccatalyst")]
         public static int[] GetProcessIds()
         {
             return Interop.libproc.proc_listallpids();

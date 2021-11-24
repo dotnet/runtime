@@ -265,7 +265,6 @@ namespace System.Diagnostics
         {
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
-            [SupportedOSPlatform("maccatalyst")]
             get
             {
                 EnsureWorkingSetLimits();
@@ -273,7 +272,6 @@ namespace System.Diagnostics
             }
             [SupportedOSPlatform("windows")]
             [SupportedOSPlatform("macos")]
-            [SupportedOSPlatform("maccatalyst")]
             [SupportedOSPlatform("freebsd")]
             set
             {
@@ -289,7 +287,6 @@ namespace System.Diagnostics
         {
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
-            [SupportedOSPlatform("maccatalyst")]
             get
             {
                 EnsureWorkingSetLimits();
@@ -297,7 +294,6 @@ namespace System.Diagnostics
             }
             [SupportedOSPlatform("windows")]
             [SupportedOSPlatform("macos")]
-            [SupportedOSPlatform("maccatalyst")]
             [SupportedOSPlatform("freebsd")]
             set
             {
