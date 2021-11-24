@@ -381,12 +381,10 @@ if [[ -z "$HOME" ]]; then
 fi
 
 if [[ "$__RebuildTests" -ne 0 ]]; then
-    if [[ -d "${__TestBinDir}" ]]; then
-        echo "Removing test build dir: ${__TestBinDir}"
-        rm -rf "${__TestBinDir}"
-        echo "Removing test intermediate dir: ${__TestIntermediatesDir}"
-        rm -rf "${__TestIntermediatesDir}" 
-    fi
+    echo "Removing test build dir: ${__TestBinDir}"
+    rm -rf "${__TestBinDir}"
+    echo "Removing test intermediate dir: ${__TestIntermediatesDir}"
+    rm -rf "${__TestIntermediatesDir}" 
 fi
 
 build_Tests
