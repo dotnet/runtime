@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="callback">The callback to invoke.</param>
         /// <param name="state">State to be passed into the callback.</param>
         /// <returns>The <see cref="CancellationToken"/> registration.</returns>
-        public IDisposable RegisterChangeCallback(Action<object> callback, object state) => _cts.Token.Register(callback, state);
+        public IDisposable RegisterChangeCallback(Action<object?> callback, object? state) => _cts.Token.Register(callback, state);
 
         /// <summary>
         /// Used to trigger the change token when a reload occurs.

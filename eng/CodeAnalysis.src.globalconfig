@@ -386,6 +386,12 @@ dotnet_diagnostic.CA1847.severity = warning
 # CA1848: Use the LoggerMessage delegates
 dotnet_diagnostic.CA1848.severity = none
 
+# CA1849: Call async methods when in an async method
+dotnet_diagnostic.CA1849.severity = suggestion
+
+# CA1850: Prefer static 'HashData' method over 'ComputeHash'
+dotnet_diagnostic.CA1850.severity = warning
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 

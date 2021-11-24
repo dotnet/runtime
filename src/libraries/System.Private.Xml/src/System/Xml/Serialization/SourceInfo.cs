@@ -49,7 +49,7 @@ namespace System.Xml.Serialization
 
         public SourceInfo CastTo(TypeDesc td)
         {
-            return new SourceInfo("((" + td.CSharpName + ")" + Source + ")", Arg, MemberInfo, td.Type!, ILG);
+            return new SourceInfo($"(({td.CSharpName}){Source})", Arg, MemberInfo, td.Type!, ILG);
         }
 
         [RequiresUnreferencedCode("calls InternalLoad")]

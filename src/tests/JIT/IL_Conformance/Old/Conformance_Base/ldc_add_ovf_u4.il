@@ -1535,5 +1535,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_add_ovf_u4.exe{}
+.assembly ldc_add_ovf_u4{}
 

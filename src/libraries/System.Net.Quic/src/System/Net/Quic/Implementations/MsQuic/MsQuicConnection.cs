@@ -283,6 +283,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 state.ConnectTcs = null;
             }
 
+            // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
+            // it wasn't our side who shutdown the connection.
+            // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
+            // See: https://github.com/dotnet/runtime/issues/60133
+            state.AbortErrorCode = 0;
             state.AcceptQueue.Writer.TryComplete();
             return MsQuicStatusCodes.Success;
         }

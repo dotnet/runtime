@@ -50,6 +50,7 @@
     <Compile Include="RegexCompilationInfoTests.cs" />
     <Compile Include="RegexGeneratorAttributeTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
+    <Compile Include="RegexExperiment.cs" />
     <Compile Include="RegexGeneratorHelper.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" Link="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />

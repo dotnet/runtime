@@ -18,8 +18,8 @@ struct Gen<T>
 		if(monitorU.Equals(monitorT))
 			throw new Exception("Invalid use of test case, T must not be equal to U - POSSIBLE TYPE SYSTEM BUG");
 				
-		TestHelper myHelper = new TestHelper(Test.nThreads);
-		TestHelper myHelper2 = new TestHelper(Test.nThreads);
+		TestHelper myHelper = new TestHelper(Test_EnterExit04.nThreads);
+		TestHelper myHelper2 = new TestHelper(Test_EnterExit04.nThreads);
 		WaitHandle[] myWaiter = new WaitHandle[2];
 		myWaiter[0] = myHelper.m_Event;
 		myWaiter[1] = myHelper2.m_Event;
@@ -30,7 +30,7 @@ struct Gen<T>
 		// 	new MonitorDelegate(myHelper2.Consumer).BeginInvoke(monitorU,null,null);
 		// }
 
-		for(int i=0; i<Test.nThreads; i++)
+		for(int i=0; i<Test_EnterExit04.nThreads; i++)
 		{
 			ThreadPool.QueueUserWorkItem(state =>
 			{
@@ -51,11 +51,11 @@ struct Gen<T>
 			if(myHelper.Error == true || myHelper2.Error == true)
 				break;
 		}
-		Test.Eval(!(myHelper.Error || myHelper2.Error));
+		Test_EnterExit04.Eval(!(myHelper.Error || myHelper2.Error));
 	}	
 }
 
-public class Test
+public class Test_EnterExit04
 {
 	public static int nThreads = 10;
 	public static int counter = 0;

@@ -6,7 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 unsafe static class SuppressGCTransitionNative
 {
@@ -115,7 +115,7 @@ unsafe class SuppressGCTransitionTest
         Console.WriteLine($"{nameof(Inline_NoGCTransition)} ({expected}) ...");
         int n;
         int ret = SuppressGCTransitionNative.NextUInt_Inline_NoGCTransition(&n);
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: true, ret);
         return n + 1;
     }
@@ -125,7 +125,7 @@ unsafe class SuppressGCTransitionTest
         Console.WriteLine($"{nameof(Inline_GCTransition)} ({expected}) ...");
         int n;
         int ret = SuppressGCTransitionNative.NextUInt_Inline_GCTransition(&n);
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: false, ret);
         return n + 1;
     }
@@ -135,7 +135,7 @@ unsafe class SuppressGCTransitionTest
         Console.WriteLine($"{nameof(NoInline_NoGCTransition)} ({expected}) ...");
         int n;
         bool ret = SuppressGCTransitionNative.NextUInt_NoInline_NoGCTransition(&n);
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: true, ret);
         return n + 1;
     }
@@ -145,7 +145,7 @@ unsafe class SuppressGCTransitionTest
         Console.WriteLine($"{nameof(NoInline_GCTransition)} ({expected}) ...");
         int n;
         bool ret = SuppressGCTransitionNative.NextUInt_NoInline_GCTransition(&n);
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: false, ret);
         return n + 1;
     }
@@ -157,18 +157,18 @@ unsafe class SuppressGCTransitionTest
 
         {
             bool ret = SuppressGCTransitionNative.NextUInt_NoInline_GCTransition(&n);
-            Assert.AreEqual(expected++, n);
+            Assert.Equal(expected++, n);
             CheckGCMode.Validate(transitionSuppressed: false, ret);
             ret = SuppressGCTransitionNative.NextUInt_NoInline_NoGCTransition(&n);
-            Assert.AreEqual(expected++, n);
+            Assert.Equal(expected++, n);
             CheckGCMode.Validate(transitionSuppressed: true, ret);
         }
         {
             int ret = SuppressGCTransitionNative.NextUInt_Inline_GCTransition(&n);
-            Assert.AreEqual(expected++, n);
+            Assert.Equal(expected++, n);
             CheckGCMode.Validate(transitionSuppressed: false, ret);
             ret = SuppressGCTransitionNative.NextUInt_Inline_NoGCTransition(&n);
-            Assert.AreEqual(expected++, n);
+            Assert.Equal(expected++, n);
             CheckGCMode.Validate(transitionSuppressed: true, ret);
         }
         return n + 1;
@@ -187,7 +187,7 @@ unsafe class SuppressGCTransitionTest
         // Use the non-optimized version at the end so a GC poll is not
         // inserted here as well.
         SuppressGCTransitionNative.NextUInt_NoInline_GCTransition(&n);
-        Assert.AreEqual(expected + count, n);
+        Assert.Equal(expected + count, n);
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -196,7 +196,7 @@ unsafe class SuppressGCTransitionTest
         Console.WriteLine($"{nameof(Inline_NoGCTransition)} ({expected}) ...");
         int n;
         int ret = SuppressGCTransitionNative.GetNextUIntFunctionPointer_Inline_NoGCTransition()(&n);
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: true, ret);
         return n + 1;
     }
@@ -206,7 +206,7 @@ unsafe class SuppressGCTransitionTest
         Console.WriteLine($"{nameof(Inline_GCTransition)} ({expected}) ...");
         int n;
         int ret = SuppressGCTransitionNative.GetNextUIntFunctionPointer_Inline_GCTransition()(&n);
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: false, ret);
         return n + 1;
     }
@@ -216,7 +216,7 @@ unsafe class SuppressGCTransitionTest
         Console.WriteLine($"{nameof(NoInline_NoGCTransition)} ({expected}) ...");
         int n;
         bool ret = SuppressGCTransitionNative.GetNextUIntFunctionPointer_NoInline_NoGCTransition()(&n);
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: true, ret);
         return n + 1;
     }
@@ -226,7 +226,7 @@ unsafe class SuppressGCTransitionTest
         Console.WriteLine($"{nameof(NoInline_GCTransition)} ({expected}) ...");
         int n;
         bool ret = SuppressGCTransitionNative.GetNextUIntFunctionPointer_NoInline_GCTransition()(&n);
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: false, ret);
         return n + 1;
     }
@@ -244,7 +244,7 @@ unsafe class SuppressGCTransitionTest
 
         MethodInfo callNextUInt = typeof(FunctionPointer).GetMethod("Call_NextUInt");
         int ret = (int)callNextUInt.Invoke(null, new object[] { fptr, boxedN });
-        Assert.AreEqual(expected, n);
+        Assert.Equal(expected, n);
         CheckGCMode.Validate(transitionSuppressed: false, ret);
         return n + 1;
     }
@@ -273,7 +273,7 @@ unsafe class SuppressGCTransitionTest
         // Call function with same (blittable) signature, but without SuppressGCTransition.
         // IL stub should not be re-used, GC transition should occur, and callback should be invoked.
         SuppressGCTransitionNative.InvokeCallbackFuncPtr_Inline_GCTransition(&ReturnInt, &n);
-        Assert.AreEqual(expected++, n);
+        Assert.Equal(expected++, n);
 
         // Call function that has SuppressGCTransition
         SuppressGCTransitionNative.InvokeCallbackFuncPtr_NoInline_NoGCTransition(null, null);
@@ -281,7 +281,7 @@ unsafe class SuppressGCTransitionTest
         // Call function with same (non-blittable) signature, but without SuppressGCTransition
         // IL stub should not be re-used, GC transition should occur, and callback should be invoked.
         SuppressGCTransitionNative.InvokeCallbackFuncPtr_NoInline_GCTransition(&ReturnInt, &n);
-        Assert.AreEqual(expected++, n);
+        Assert.Equal(expected++, n);
 
         return n + 1;
     }
@@ -301,22 +301,22 @@ unsafe class SuppressGCTransitionTest
 
         // Call function that does not have SuppressGCTransition
         SuppressGCTransitionNative.InvokeCallbackVoidPtr_Inline_GCTransition(cb, &n);
-        Assert.AreEqual(expected++, n);
+        Assert.Equal(expected++, n);
 
         // Call function with same (blittable) signature, but with SuppressGCTransition.
         // IL stub should not be re-used, GC transition not should occur, and callback invocation should fail.
         SuppressGCTransitionNative.InvokeCallbackVoidPtr_Inline_NoGCTransition(cb, &n);
-        Assert.AreEqual(expected++, n);
+        Assert.Equal(expected++, n);
 
         // Call function that does not have SuppressGCTransition
         SuppressGCTransitionNative.InvokeCallbackVoidPtr_NoInline_GCTransition(cb, &n);
-        Assert.AreEqual(expected++, n);
+        Assert.Equal(expected++, n);
 
         // Call function with same (non-blittable) signature, but with SuppressGCTransition
         // IL stub should not be re-used, GC transition not should occur, and callback invocation should fail.
         expected = n + 1;
         SuppressGCTransitionNative.InvokeCallbackVoidPtr_NoInline_NoGCTransition(cb, &n);
-        Assert.AreEqual(expected++, n);
+        Assert.Equal(expected++, n);
 
         return n + 1;
     }

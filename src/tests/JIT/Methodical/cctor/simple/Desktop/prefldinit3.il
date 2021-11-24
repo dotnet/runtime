@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly precise3 {}
+.assembly extern xunit.core {}
 .class private auto ansi beforefieldinit measure
        extends [mscorlib]System.Object
 {
@@ -175,6 +176,9 @@
       IL_0054:  beq.s      IL_0078
 
       IL_0056:  ldstr      "in Main() after f(ref b), measure.a is {0}"
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       IL_005b:  ldsfld     int32 measure::a
       IL_0060:  box        [mscorlib]System.Int32
       IL_0065:  call       void [System.Console]System.Console::WriteLine(string,

@@ -7,15 +7,24 @@ using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
+    internal sealed class UnvalidatedObjectCollection<T> : ObjectCollection<T> where T : class
+    {
+        public override void Validate(T item)
+        {
+            if (item is null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+        }
+    }
+
     /// <summary>An <see cref="ICollection{T}"/> list that prohibits null elements and that is optimized for a small number of elements.</summary>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ObjectCollection<>.DebugView))]
-    internal sealed class ObjectCollection<T> : ICollection<T> where T : class
+    internal abstract class ObjectCollection<T> : ICollection<T> where T : class
     {
         private const int DefaultSize = 4;
 
-        /// <summary>Optional delegate used to validate added items.</summary>
-        private readonly Action<T>? _validator;
         /// <summary>null, a T, or a T[].</summary>
         internal object? _items;
         /// <summary>Number of elements stored in the collection.</summary>
@@ -23,28 +32,16 @@ namespace System.Net.Http.Headers
 
         public ObjectCollection() { }
 
-        public ObjectCollection(Action<T> validator) => _validator = validator;
-
         public int Count => _size;
 
         public bool IsReadOnly => false;
 
+        public abstract void Validate(T item);
+
         public void Add(T item)
         {
-            // Validate the item, either just by checking it for null, or using a custom validator,
-            // which should also check for null.
-            if (_validator is null)
-            {
-                if (item is null)
-                {
-                    throw new ArgumentNullException(nameof(item));
-                }
-            }
-            else
-            {
-                _validator.Invoke(item);
-                Debug.Assert(item != null);
-            }
+            Validate(item);
+            Debug.Assert(item != null);
 
             if (_items is null)
             {

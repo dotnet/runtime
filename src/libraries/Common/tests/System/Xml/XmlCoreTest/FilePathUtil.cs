@@ -42,6 +42,11 @@ namespace XmlCoreTest.Common
             return Path.Combine(GetHttpDataPath(), "StandardTests");
         }
 
+        public static string GetWriteableTestRootPath()
+        {
+            return (PlatformDetection.IsiOS || PlatformDetection.IstvOS) ? Path.GetTempPath() : string.Empty;
+        }
+
         public static string GetTestDataPath()
         {
             return Path.Combine(GetDataPath(), "TestData");

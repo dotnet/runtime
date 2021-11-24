@@ -15,13 +15,13 @@ internal static partial class Interop
             public int Seconds; // Number of seconds to linger for
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetLingerOption")]
-        internal static extern unsafe Error GetLingerOption(SafeHandle socket, LingerOption* option);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetLingerOption")]
+        internal static unsafe partial Error GetLingerOption(SafeHandle socket, LingerOption* option);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetLingerOption")]
-        internal static extern unsafe Error SetLingerOption(SafeHandle socket, LingerOption* option);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetLingerOption")]
+        internal static unsafe partial Error SetLingerOption(SafeHandle socket, LingerOption* option);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetLingerOption")]
-        internal static extern unsafe Error SetLingerOption(IntPtr socket, LingerOption* option);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetLingerOption")]
+        internal static unsafe partial Error SetLingerOption(IntPtr socket, LingerOption* option);
     }
 }

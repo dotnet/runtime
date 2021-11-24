@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>0</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test is timing sensitive and JIT timing affects the results of the test -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>

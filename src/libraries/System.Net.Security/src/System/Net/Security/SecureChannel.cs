@@ -695,11 +695,13 @@ namespace System.Net.Security
                 _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
             }
 
+            Debug.Assert(_sslAuthenticationOptions.CertificateContext != null);
             //
             // Note selectedCert is a safe ref possibly cloned from the user passed Cert object
             //
             byte[] guessedThumbPrint = selectedCert.GetCertHash();
-            SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
+            bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
+            SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy, sendTrustedList);
 
             if (cachedCredentialHandle != null)
             {
@@ -763,6 +765,7 @@ namespace System.Net.Security
             byte[]? result = Array.Empty<byte>();
             SecurityStatusPal status = default;
             bool cachedCreds = false;
+            bool sendTrustList = false;
             byte[]? thumbPrint = null;
 
             //
@@ -779,6 +782,11 @@ namespace System.Net.Security
                         cachedCreds = _sslAuthenticationOptions.IsServer
                                         ? AcquireServerCredentials(ref thumbPrint)
                                         : AcquireClientCredentials(ref thumbPrint);
+
+                        if (cachedCreds && _sslAuthenticationOptions.IsServer)
+                        {
+                            sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
+                        }
                     }
 
                     if (_sslAuthenticationOptions.IsServer)
@@ -818,9 +826,9 @@ namespace System.Net.Security
                     // This call may bump up the credential reference count further.
                     // Note that thumbPrint is retrieved from a safe cert object that was possible cloned from the user passed cert.
                     //
-                    if (!cachedCreds && status.ErrorCode == SecurityStatusPalErrorCode.OK && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
+                    if (!cachedCreds && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
                     {
-                        SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
+                        SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy, sendTrustList);
                     }
                 }
             }

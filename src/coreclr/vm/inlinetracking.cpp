@@ -45,7 +45,7 @@ bool MethodInModule::operator <(const MethodInModule& other) const
             }
             else
             {
-                m_module->GetFile()->GetMVID(&thisGuid);
+                m_module->GetPEAssembly()->GetMVID(&thisGuid);
             }
 
             if (other.m_module == NULL)
@@ -54,7 +54,7 @@ bool MethodInModule::operator <(const MethodInModule& other) const
             }
             else
             {
-                other.m_module->GetFile()->GetMVID(&otherGuid);
+                other.m_module->GetPEAssembly()->GetMVID(&otherGuid);
             }
 
             return memcmp(&thisGuid, &otherGuid, sizeof(GUID)) < 0;

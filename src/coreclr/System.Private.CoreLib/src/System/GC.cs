@@ -78,10 +78,10 @@ namespace System
             return new GCMemoryInfo(data);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]
         internal static extern int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
         internal static extern int _EndNoGCRegion();
 
         // keep in sync with GC_ALLOC_FLAGS in gcinterface.h
@@ -98,10 +98,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetGenerationWR(IntPtr handle);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static extern long GetTotalMemory();
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
         private static extern void _Collect(int generation, int mode);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -119,10 +119,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern ulong GetGenerationSize(int gen);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
         private static extern void _AddMemoryPressure(ulong bytesAllocated);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
         private static extern void _RemoveMemoryPressure(ulong bytesAllocated);
 
         public static void AddMemoryPressure(long bytesAllocated)
@@ -289,7 +289,7 @@ namespace System
         //
         public static int MaxGeneration => GetMaxGeneration();
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static extern void _WaitForPendingFinalizers();
 
         public static void WaitForPendingFinalizers()
@@ -352,10 +352,10 @@ namespace System
             return newSize;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RegisterFrozenSegment")]
         private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UnregisterFrozenSegment")]
         private static extern void _UnregisterFrozenSegment(IntPtr segmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

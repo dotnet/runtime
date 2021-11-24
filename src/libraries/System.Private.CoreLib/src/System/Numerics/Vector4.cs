@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
@@ -29,6 +31,8 @@ namespace System.Numerics
 
         /// <summary>The W component of the vector.</summary>
         public float W;
+
+        internal const int Count = 4;
 
         /// <summary>Creates a new <see cref="System.Numerics.Vector4" /> object whose four elements have the same value.</summary>
         /// <param name="value">The value to assign to all four elements.</param>
@@ -123,6 +127,61 @@ namespace System.Numerics
         public static Vector4 UnitW
         {
             get => new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+
+        public float this[int index]
+        {
+            get => GetElement(this, index);
+            set => this = WithElement(this, index, value);
+        }
+
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <param name="vector">The vector of the element to get.</param>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        internal static float GetElement(Vector4 vector, int index)
+        {
+            if ((uint)index >= Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            var result = vector;
+            return GetElementUnsafe(ref result, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float GetElementUnsafe(ref Vector4 vector, int index)
+        {
+            Debug.Assert(index is >= 0 and < Count);
+            return Unsafe.Add(ref Unsafe.As<Vector4, float>(ref vector), index);
+        }
+
+        /// <summary>Sets the element at the specified index.</summary>
+        /// <param name="vector">The vector of the element to get.</param>
+        /// <param name="index">The index of the element to set.</param>
+        /// <param name="value">The value of the element to set.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        internal static Vector4 WithElement(Vector4 vector, int index, float value)
+        {
+            if ((uint)index >= Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            var newVector = vector;
+            SetElementUnsafe(ref newVector, index, value);
+            return newVector;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void SetElementUnsafe(ref Vector4 vector, int index, float value)
+        {
+            Debug.Assert(index is >= 0 and < Count);
+            Unsafe.Add(ref Unsafe.As<Vector4, float>(ref vector), index) = value;
         }
 
         /// <summary>Adds two vectors together.</summary>

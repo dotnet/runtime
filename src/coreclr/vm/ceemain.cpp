@@ -808,14 +808,16 @@ void EEStartupHelper()
 
         StubManager::InitializeStubManagers();
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_UNIX
+        ExecutableAllocator::InitPreferredRange();
+#else
         {
-            // Record mscorwks geometry
+            // Record coreclr.dll geometry
             PEDecoder pe(GetClrModuleBase());
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
-            ExecutableAllocator::InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
+            ExecutableAllocator::InitLazyPreferredRange(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
         }
 #endif // !TARGET_UNIX
 
@@ -848,7 +850,6 @@ void EEStartupHelper()
         // Setup the domains. Threads are started in a default domain.
 
         // Static initialization
-        PEAssembly::Attach();
         BaseDomain::Attach();
         SystemDomain::Attach();
 

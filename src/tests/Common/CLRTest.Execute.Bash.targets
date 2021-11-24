@@ -306,11 +306,20 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
+_DebuggerArgsSeparator=
+if [[ "$_DebuggerFullPath" == *lldb* ]];
+then
+  _DebuggerArgsSeparator=--
+elif [[ "$_DebuggerFullPath" == *gdb* ]]
+then
+  _DebuggerArgsSeparator=--args
+fi
+
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
 else
-    LAUNCHER="$_DebuggerFullPath $(CLRTestRunFile)"
+    LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
 
 $(BashIlrtTestLaunchCmds)
@@ -407,12 +416,7 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-xcode_path="%24(dirname "%24(dirname "%24(xcode-select -p)")")"
-simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
-open -a "$simulator_app"
-helix_runner_uid="%24(id -u)"
-
-sudo launchctl asuser "$helix_runner_uid" $__Command $HARNESS_RUNNER apple just-run %5c
+$__Command $HARNESS_RUNNER apple just-run %5c
   --app="net.dot.$__Category" %5c
   --output-directory="$__OutputDir" %5c
   --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=testdir-$(MsBuildProjectName)/$(MsBuildProjectName).dll" %5c

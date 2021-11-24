@@ -3,12 +3,16 @@
 
 .assembly extern mscorlib{}
 .assembly Recurse1 {}
+.assembly extern xunit.core {}
 .namespace Recurse1
 {
   .class public Recurse1
   {
     .method public static int32  Main(class System.String[] A_0)
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  8
       .locals (int32 V_0)

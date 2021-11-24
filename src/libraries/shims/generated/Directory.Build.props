@@ -14,15 +14,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 
-  <!-- Download the .NET Framework RefPack to build against the contract. -->
+  <!-- System.Data.SqlClient is not live built anymore, reference it manually. -->
   <ItemGroup>
-    <PackageDownload Include="NETStandard.Library.Ref"
-                     Condition="'$(MSBuildProjectName)' == 'netstandard'"
-                     Version="[$(NETStandardLibraryRefVersion)]" />
-    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.$(NETFrameworkReferenceAssemblyTFM)"
-                     Condition="'$(MSBuildProjectName)' != 'netstandard'"
-                     Version="[$(MicrosoftNetFrameworkReferenceAssembliesVersion)]" />
-    <!-- System.Data.SqlClient is not live built anymore, reference it manually. -->
     <PackageReference Include="System.Data.SqlClient"
                       Version="$(SystemDataSqlClientVersion)" />
   </ItemGroup>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 4.0.20529.0
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -350,12 +351,15 @@
 
 } // end of class Caller`4
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_MethodCalls
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       375 (0x177)
     .maxstack  2

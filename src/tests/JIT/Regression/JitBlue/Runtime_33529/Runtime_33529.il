@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly Runtime_33529 {}
+.assembly extern xunit.core {}
 
 // Test case where the jit finds a tail call to loop opportunity after
 // suppressing zero initialization for a struct.
@@ -111,6 +112,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       78 (0x4e)
     .maxstack  4

@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 .assembly init_int64 { }
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_init_int64
        extends [mscorlib]System.Object
 {
   .field private int64 m_ret
-  .field private static class Test global
+  .field private static class Test_init_int64 global
   .method private hidebysig static int64 
           noinline1(int64 'ret') cil managed
   {
@@ -77,7 +78,7 @@
     .locals init (int64 V_0,
              int64 V_1)
     IL_0002:  ldloc.0
-    IL_0003:  call       int64 Test::noinline1(int64)
+    IL_0003:  call       int64 Test_init_int64::noinline1(int64)
     IL_0008:  stloc.1
     IL_0009:  br.s       IL_000b
 
@@ -93,7 +94,7 @@
     .locals init (int64 V_0,
              int64 V_1)
     IL_0002:  ldloca.s   V_0
-    IL_0004:  call       int64 Test::noinline2(int64&)
+    IL_0004:  call       int64 Test_init_int64::noinline2(int64&)
     IL_0009:  stloc.1
     IL_000a:  br.s       IL_000c
 
@@ -108,7 +109,7 @@
     .locals init (int64 V_0)
     IL_0002:  ldarg.0
     IL_0003:  ldloc.0
-    IL_0004:  call       int64 Test::noinline1(int64)
+    IL_0004:  call       int64 Test_init_int64::noinline1(int64)
     IL_0009:  stind.i8
     IL_000a:  ret
   } // end of method Test::test5
@@ -120,7 +121,7 @@
     .locals init (int64 V_0)
     IL_0002:  ldarg.0
     IL_0003:  ldloca.s   V_0
-    IL_0005:  call       int64 Test::noinline2(int64&)
+    IL_0005:  call       int64 Test_init_int64::noinline2(int64&)
     IL_000a:  stind.i8
     IL_000b:  ret
   } // end of method Test::test6
@@ -130,9 +131,9 @@
     // Code size       14 (0xe)
     .maxstack  2
     .locals init (int64 V_0)
-    IL_0002:  ldsfld     class Test Test::global
+    IL_0002:  ldsfld     class Test_init_int64 Test_init_int64::global
     IL_0007:  ldloc.0
-    IL_0008:  stfld      int64 Test::m_ret
+    IL_0008:  stfld      int64 Test_init_int64::m_ret
     IL_000d:  ret
   } // end of method Test::test7
 
@@ -142,7 +143,7 @@
     .maxstack  4
     .locals init (int64 V_0,
              int64 V_1)
-    IL_0004:  ldsfld     class Test Test::global
+    IL_0004:  ldsfld     class Test_init_int64 Test_init_int64::global
     IL_0009:  ldloc.0
     IL_000a:  ldc.i4.1
     IL_000b:  shr
@@ -154,7 +155,7 @@
     IL_0011:  sub
     IL_0012:  ldc.i8   11
     IL_0014:  add
-    IL_0015:  stfld      int64 Test::m_ret
+    IL_0015:  stfld      int64 Test_init_int64::m_ret
     IL_001a:  ret
   } // end of method Test::test8
 
@@ -163,10 +164,10 @@
     // Code size       19 (0x13)
     .maxstack  2
     .locals init (int64 V_0)
-    IL_0002:  ldsfld     class Test Test::global
+    IL_0002:  ldsfld     class Test_init_int64 Test_init_int64::global
     IL_0007:  ldloc.0
-    IL_0008:  call       int64 Test::noinline1(int64)
-    IL_000d:  stfld      int64 Test::m_ret
+    IL_0008:  call       int64 Test_init_int64::noinline1(int64)
+    IL_000d:  stfld      int64 Test_init_int64::m_ret
     IL_0012:  ret
   } // end of method Test::test9
 
@@ -175,10 +176,10 @@
     // Code size       20 (0x14)
     .maxstack  2
     .locals init (int64 V_0)
-    IL_0002:  ldsfld     class Test Test::global
+    IL_0002:  ldsfld     class Test_init_int64 Test_init_int64::global
     IL_0007:  ldloca.s   V_0
-    IL_0009:  call       int64 Test::noinline2(int64&)
-    IL_000e:  stfld      int64 Test::m_ret
+    IL_0009:  call       int64 Test_init_int64::noinline2(int64&)
+    IL_000e:  stfld      int64 Test_init_int64::m_ret
     IL_0013:  ret
   } // end of method Test::test10
 
@@ -231,7 +232,7 @@
     IL_0003:  ldarg.1
               conv.i4
     IL_0004:  ldloc.0
-    IL_0005:  call       int64 Test::noinline1(int64)
+    IL_0005:  call       int64 Test_init_int64::noinline1(int64)
     IL_000a:  stelem.i8
     IL_000b:  ret
   } // end of method Test::test13
@@ -246,7 +247,7 @@
     IL_0003:  ldarg.1
               conv.i4
     IL_0004:  ldloca.s   V_0
-    IL_0006:  call       int64 Test::noinline2(int64&)
+    IL_0006:  call       int64 Test_init_int64::noinline2(int64&)
     IL_000b:  stelem.i8
     IL_000c:  ret
   } // end of method Test::test14
@@ -319,7 +320,7 @@
     IL_0005:  ldarg.2
               conv.i4
     IL_0006:  ldloc.0
-    IL_0007:  call       int64 Test::noinline1(int64)
+    IL_0007:  call       int64 Test_init_int64::noinline1(int64)
     IL_000c:  call       instance void int64[0...,0...,0...]::Set(int32,
                                                                   int32,
                                                                   int32,
@@ -342,7 +343,7 @@
     IL_0005:  ldarg.2
               conv.u4
     IL_0006:  ldloca.s   V_0
-    IL_0008:  call       int64 Test::noinline2(int64&)
+    IL_0008:  call       int64 Test_init_int64::noinline2(int64&)
     IL_000d:  call       instance void int64[0...,0...,0...]::Set(int32,
                                                                   int32,
                                                                   int32,
@@ -402,7 +403,7 @@
     .locals init (int64 V_0,
              unsigned int8 V_1)
     IL_0002:  ldloc.0
-    IL_0003:  call       int64 Test::noinline1(int64)
+    IL_0003:  call       int64 Test_init_int64::noinline1(int64)
     IL_0008:  conv.u1
     IL_0009:  stloc.1
     IL_000a:  br.s       IL_000c
@@ -419,7 +420,7 @@
     .locals init (int64 V_0,
              unsigned int16 V_1)
     IL_0002:  ldloca.s   V_0
-    IL_0004:  call       int64 Test::noinline2(int64&)
+    IL_0004:  call       int64 Test_init_int64::noinline2(int64&)
     IL_0009:  conv.ovf.u2
     IL_000a:  stloc.1
     IL_000b:  br.s       IL_000d
@@ -430,6 +431,9 @@
 
   .method private hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       709 (0x2c5)
     .maxstack  4
@@ -437,7 +441,7 @@
              int64[] V_1,
              int64[0...,0...,0...] V_2,
              int64 V_3)
-    IL_0000:  call       int64 Test::test1()
+    IL_0000:  call       int64 Test_init_int64::test1()
     IL_0005:  brfalse.s  IL_0019
 
     IL_0007:  ldstr      "Error 101"
@@ -446,7 +450,7 @@
     IL_0013:  stloc.3
     IL_0014:  br         IL_02c3
 
-    IL_0019:  call       int64 Test::test2()
+    IL_0019:  call       int64 Test_init_int64::test2()
     IL_001e:  ldc.i8   11
     IL_0020:  beq.s      IL_0034
 
@@ -456,7 +460,7 @@
     IL_002e:  stloc.3
     IL_002f:  br         IL_02c3
 
-    IL_0034:  call       int64 Test::test3()
+    IL_0034:  call       int64 Test_init_int64::test3()
     IL_0039:  brfalse.s  IL_004d
 
     IL_003b:  ldstr      "Error 103"
@@ -465,7 +469,7 @@
     IL_0047:  stloc.3
     IL_0048:  br         IL_02c3
 
-    IL_004d:  call       int64 Test::test4()
+    IL_004d:  call       int64 Test_init_int64::test4()
     IL_0052:  brfalse.s  IL_0066
 
     IL_0054:  ldstr      "Error 104"
@@ -477,7 +481,7 @@
     IL_0066:  ldc.i8 0
     IL_0067:  stloc.0
     IL_0068:  ldloca.s   V_0
-    IL_006a:  call       void Test::test5(int64&)
+    IL_006a:  call       void Test_init_int64::test5(int64&)
     IL_006f:  ldloc.0
     IL_0070:  brfalse.s  IL_0084
 
@@ -488,7 +492,7 @@
     IL_007f:  br         IL_02c3
 
     IL_0084:  ldloca.s   V_0
-    IL_0086:  call       void Test::test6(int64&)
+    IL_0086:  call       void Test_init_int64::test6(int64&)
     IL_008b:  ldloc.0
     IL_008c:  brfalse.s  IL_00a0
 
@@ -498,9 +502,9 @@
     IL_009a:  stloc.3
     IL_009b:  br         IL_02c3
 
-    IL_00a0:  call       void Test::test7()
-    IL_00a5:  ldsfld     class Test Test::global
-    IL_00aa:  ldfld      int64 Test::m_ret
+    IL_00a0:  call       void Test_init_int64::test7()
+    IL_00a5:  ldsfld     class Test_init_int64 Test_init_int64::global
+    IL_00aa:  ldfld      int64 Test_init_int64::m_ret
     IL_00af:  brfalse.s  IL_00c3
 
     IL_00b1:  ldstr      "Error 107"
@@ -509,9 +513,9 @@
     IL_00bd:  stloc.3
     IL_00be:  br         IL_02c3
 
-    IL_00c3:  call       void Test::test8()
-    IL_00c8:  ldsfld     class Test Test::global
-    IL_00cd:  ldfld      int64 Test::m_ret
+    IL_00c3:  call       void Test_init_int64::test8()
+    IL_00c8:  ldsfld     class Test_init_int64 Test_init_int64::global
+    IL_00cd:  ldfld      int64 Test_init_int64::m_ret
     IL_00d2:  ldc.i8   11
     IL_00d4:  beq.s      IL_00e8
 
@@ -521,9 +525,9 @@
     IL_00e2:  stloc.3
     IL_00e3:  br         IL_02c3
 
-    IL_00e8:  call       void Test::test9()
-    IL_00ed:  ldsfld     class Test Test::global
-    IL_00f2:  ldfld      int64 Test::m_ret
+    IL_00e8:  call       void Test_init_int64::test9()
+    IL_00ed:  ldsfld     class Test_init_int64 Test_init_int64::global
+    IL_00f2:  ldfld      int64 Test_init_int64::m_ret
     IL_00f7:  brfalse.s  IL_010b
 
     IL_00f9:  ldstr      "Error 109"
@@ -532,9 +536,9 @@
     IL_0105:  stloc.3
     IL_0106:  br         IL_02c3
 
-    IL_010b:  call       void Test::test10()
-    IL_0110:  ldsfld     class Test Test::global
-    IL_0115:  ldfld      int64 Test::m_ret
+    IL_010b:  call       void Test_init_int64::test10()
+    IL_0110:  ldsfld     class Test_init_int64 Test_init_int64::global
+    IL_0115:  ldfld      int64 Test_init_int64::m_ret
     IL_011a:  brfalse.s  IL_012e
 
     IL_011c:  ldstr      "Error 110"
@@ -548,7 +552,7 @@
     IL_013f:  stloc.1
     IL_0140:  ldloc.1
     IL_0141:  ldc.i8 1
-    IL_0142:  call       void Test::test11(int64[],
+    IL_0142:  call       void Test_init_int64::test11(int64[],
                                            int64)
     IL_0147:  ldloc.1
     IL_0148:  ldc.i4.1
@@ -563,7 +567,7 @@
 
     IL_015e:  ldloc.1
     IL_015f:  ldc.i8 2
-    IL_0160:  call       void Test::test12(int64[],
+    IL_0160:  call       void Test_init_int64::test12(int64[],
                                            int64)
     IL_0165:  ldloc.1
     IL_0166:  ldc.i4.2
@@ -579,7 +583,7 @@
 
     IL_017e:  ldloc.1
     IL_017f:  ldc.i8 3
-    IL_0180:  call       void Test::test13(int64[],
+    IL_0180:  call       void Test_init_int64::test13(int64[],
                                            int64)
     IL_0185:  ldloc.1
     IL_0186:  ldc.i4.3
@@ -594,7 +598,7 @@
 
     IL_019c:  ldloc.1
     IL_019d:  ldc.i8 4
-    IL_019e:  call       void Test::test14(int64[],
+    IL_019e:  call       void Test_init_int64::test14(int64[],
                                            int64)
     IL_01a3:  ldloc.1
     IL_01a4:  ldc.i4.4
@@ -617,7 +621,7 @@
     IL_01c3:  ldloc.2
     IL_01c4:  ldc.i8 1
     IL_01c5:  ldc.i8 1
-    IL_01c6:  call       void Test::test15(int64[0...,0...,0...],
+    IL_01c6:  call       void Test_init_int64::test15(int64[0...,0...,0...],
                                            int64,
                                            int64)
     IL_01cb:  ldloc.2
@@ -638,7 +642,7 @@
     IL_01e8:  ldloc.2
     IL_01e9:  ldc.i8 2
     IL_01ea:  ldc.i8 2
-    IL_01eb:  call       void Test::test16(int64[0...,0...,0...],
+    IL_01eb:  call       void Test_init_int64::test16(int64[0...,0...,0...],
                                            int64,
                                            int64)
     IL_01f0:  ldloc.2
@@ -660,7 +664,7 @@
     IL_020f:  ldloc.2
     IL_0210:  ldc.i8 3
     IL_0211:  ldc.i8 3
-    IL_0212:  call       void Test::test17(int64[0...,0...,0...],
+    IL_0212:  call       void Test_init_int64::test17(int64[0...,0...,0...],
                                            int64,
                                            int64)
     IL_0217:  ldloc.2
@@ -681,7 +685,7 @@
     IL_0234:  ldloc.2
     IL_0235:  ldc.i8 4
     IL_0236:  ldc.i8 4
-    IL_0237:  call       void Test::test18(int64[0...,0...,0...],
+    IL_0237:  call       void Test_init_int64::test18(int64[0...,0...,0...],
                                            int64,
                                            int64)
     IL_023c:  ldloc.2
@@ -699,7 +703,7 @@
     IL_0253:  stloc.3
     IL_0254:  br      IL_02c3
 
-    IL_0256:  call       int64 Test::test19()
+    IL_0256:  call       int64 Test_init_int64::test19()
     IL_025b:  ldc.i8 0
     IL_025c:  conv.i8
     IL_025d:  beq.s      IL_026e
@@ -710,7 +714,7 @@
     IL_026b:  stloc.3
     IL_026c:  br.s       IL_02c3
 
-    IL_026e:  call       unsigned int64 Test::test20()
+    IL_026e:  call       unsigned int64 Test_init_int64::test20()
     IL_0273:  ldc.i8   11
     IL_0275:  conv.i8
     IL_0276:  beq.s      IL_0287
@@ -721,7 +725,7 @@
     IL_0284:  stloc.3
     IL_0285:  br.s       IL_02c3
 
-    IL_0287:  call       unsigned int8 Test::test21()
+    IL_0287:  call       unsigned int8 Test_init_int64::test21()
     IL_028c:  brfalse.s  IL_029d
 
     IL_028e:  ldstr      "Error 121"
@@ -730,7 +734,7 @@
     IL_029a:  stloc.3
     IL_029b:  br.s       IL_02c3
 
-    IL_029d:  call       unsigned int16 Test::test22()
+    IL_029d:  call       unsigned int16 Test_init_int64::test22()
     IL_02a2:  conv.i8
     IL_02a3:  brfalse.s  IL_02b4
 
@@ -756,8 +760,8 @@
   {
     // Code size       11 (0xb)
     .maxstack  1
-    IL_0000:  newobj     instance void Test::.ctor()
-    IL_0005:  stsfld     class Test Test::global
+    IL_0000:  newobj     instance void Test_init_int64::.ctor()
+    IL_0005:  stsfld     class Test_init_int64 Test_init_int64::global
     IL_000a:  ret
   } // end of method Test::.cctor
 
@@ -768,7 +772,7 @@
     .maxstack  2
     IL_0000:  ldarg.0
     IL_0001:  ldc.i8 0
-    IL_0002:  stfld      int64 Test::m_ret
+    IL_0002:  stfld      int64 Test_init_int64::m_ret
     IL_0007:  ldarg.0
     IL_0008:  call       instance void [mscorlib]System.Object::.ctor()
     IL_000d:  ret

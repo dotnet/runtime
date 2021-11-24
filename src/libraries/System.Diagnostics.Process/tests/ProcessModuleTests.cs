@@ -10,6 +10,7 @@ namespace System.Diagnostics.Tests
     public partial class ProcessModuleTests : ProcessTestBase
     {
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestModuleProperties()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
@@ -29,6 +30,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void Modules_Get_ContainsHostFileName()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;

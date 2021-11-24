@@ -5,7 +5,7 @@
 
 using System;
 
-public class Test
+public class Test_ReRegisterForFinalize_null
 {
     public bool RunTest()
     {
@@ -28,7 +28,7 @@ public class Test
 
     public static int Main()
     {
-        Test t = new Test();
+        Test_ReRegisterForFinalize_null t = new Test_ReRegisterForFinalize_null();
         if (t.RunTest())
         {
             Console.WriteLine("Null Test for ReRegisterForFinalize() passed!");

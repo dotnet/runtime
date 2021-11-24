@@ -534,7 +534,6 @@ void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool
 
                 // Since this will force us to abort loop cloning, there is no need compute an accurate `allTrue`,
                 // so we can break out of the loop now.
-                // REVIEW: it appears we never hit this condition in any test.
                 break;
             }
         }
@@ -1009,7 +1008,7 @@ LC_Deref* LC_Deref::Find(JitExpandArrayStack<LC_Deref*>* children, unsigned lcl)
 // Operation:
 //     Inspect the loop cloning optimization candidates and populate the conditions necessary
 //     for each optimization candidate. Checks if the loop stride is "> 0" if the loop
-//     condition is "less than". If the initializer is "var" init then adds condition
+//     condition is `<` or `<=`. If the initializer is "var" init then adds condition
 //     "var >= 0", and if the loop is var limit then, "var >= 0" and "var <= a.len"
 //     are added to "context". These conditions are checked in the pre-header block
 //     and the cloning choice is made.
@@ -1026,7 +1025,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     LoopDsc*                         loop     = &optLoopTable[loopNum];
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
 
-    if (loop->lpTestOper() == GT_LT)
+    if (GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE))
     {
         // Stride conditions
         if (loop->lpIterConst() <= 0)
@@ -1112,6 +1111,21 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             return false;
         }
 
+        // GT_LT loop test: limit <= arrLen
+        // GT_LE loop test: limit < arrLen
+        genTreeOps opLimitCondition;
+        switch (loop->lpTestOper())
+        {
+            case GT_LT:
+                opLimitCondition = GT_LE;
+                break;
+            case GT_LE:
+                opLimitCondition = GT_LT;
+                break;
+            default:
+                unreached();
+        }
+
         for (unsigned i = 0; i < optInfos->Size(); ++i)
         {
             LcOptInfo* optInfo = optInfos->Get(i);
@@ -1119,11 +1133,10 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             {
                 case LcOptInfo::LcJaggedArray:
                 {
-                    // limit <= arrLen
                     LcJaggedArrayOptInfo* arrIndexInfo = optInfo->AsLcJaggedArrayOptInfo();
                     LC_Array     arrLen(LC_Array::Jagged, &arrIndexInfo->arrIndex, arrIndexInfo->dim, LC_Array::ArrLen);
                     LC_Ident     arrLenIdent = LC_Ident(arrLen);
-                    LC_Condition cond(GT_LE, LC_Expr(ident), LC_Expr(arrLenIdent));
+                    LC_Condition cond(opLimitCondition, LC_Expr(ident), LC_Expr(arrLenIdent));
                     context->EnsureConditions(loopNum)->Push(cond);
 
                     // Ensure that this array must be dereference-able, before executing the actual condition.
@@ -1133,13 +1146,15 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 break;
                 case LcOptInfo::LcMdArray:
                 {
-                    // limit <= mdArrLen
                     LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
-                    LC_Condition      cond(GT_LE, LC_Expr(ident),
-                                      LC_Expr(LC_Ident(LC_Array(LC_Array::MdArray, mdArrInfo->GetArrIndexForDim(
-                                                                                       getAllocator(CMK_LoopClone)),
-                                                                mdArrInfo->dim, LC_Array::None))));
+                    LC_Array          arrLen(LC_Array(LC_Array::MdArray,
+                                             mdArrInfo->GetArrIndexForDim(getAllocator(CMK_LoopClone)), mdArrInfo->dim,
+                                             LC_Array::None));
+                    LC_Ident     arrLenIdent = LC_Ident(arrLen);
+                    LC_Condition cond(opLimitCondition, LC_Expr(ident), LC_Expr(arrLenIdent));
                     context->EnsureConditions(loopNum)->Push(cond);
+
+                    // TODO: ensure array is dereference-able?
                 }
                 break;
 
@@ -1148,11 +1163,14 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                     return false;
             }
         }
+
         JITDUMP("Conditions: ");
         DBEXEC(verbose, context->PrintConditions(loopNum));
         JITDUMP("\n");
+
         return true;
     }
+
     return false;
 }
 
@@ -1398,6 +1416,7 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext* context DEBUGARG(bool dynamicPath))
 {
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
+    assert(optInfos != nullptr);
     for (unsigned i = 0; i < optInfos->Size(); ++i)
     {
         LcOptInfo* optInfo = optInfos->Get(i);
@@ -1771,10 +1790,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     LoopDsc& loop = optLoopTable[loopInd];
 
-    JITDUMP("\nCloning loop " FMT_LP ": [head: " FMT_BB ", first: " FMT_BB ", top: " FMT_BB ", entry: " FMT_BB
-            ", bottom: " FMT_BB ", child: " FMT_LP "].\n",
-            loopInd, loop.lpHead->bbNum, loop.lpFirst->bbNum, loop.lpTop->bbNum, loop.lpEntry->bbNum,
-            loop.lpBottom->bbNum, loop.lpChild);
+    JITDUMP("\nCloning loop " FMT_LP ": [head: " FMT_BB ", top: " FMT_BB ", entry: " FMT_BB ", bottom: " FMT_BB
+            ", child: " FMT_LP "].\n",
+            loopInd, loop.lpHead->bbNum, loop.lpTop->bbNum, loop.lpEntry->bbNum, loop.lpBottom->bbNum, loop.lpChild);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
     unsigned depth         = optLoopDepth(loopInd);
@@ -2204,28 +2222,28 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
         return false;
     }
     GenTreeBoundsChk* arrBndsChk = before->AsBoundsChk();
-    if (arrBndsChk->gtIndex->gtOper != GT_LCL_VAR)
+    if (arrBndsChk->GetIndex()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
 
-    // For span we may see gtArrLen is a local var or local field or constant.
+    // For span we may see the array length is a local var or local field or constant.
     // We won't try and extract those.
-    if (arrBndsChk->gtArrLen->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
+    if (arrBndsChk->GetArrayLength()->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
     {
         return false;
     }
-    if (arrBndsChk->gtArrLen->gtGetOp1()->gtOper != GT_LCL_VAR)
+    if (arrBndsChk->GetArrayLength()->gtGetOp1()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
-    unsigned arrLcl = arrBndsChk->gtArrLen->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+    unsigned arrLcl = arrBndsChk->GetArrayLength()->gtGetOp1()->AsLclVarCommon()->GetLclNum();
     if (lhsNum != BAD_VAR_NUM && arrLcl != lhsNum)
     {
         return false;
     }
 
-    unsigned indLcl = arrBndsChk->gtIndex->AsLclVarCommon()->GetLclNum();
+    unsigned indLcl = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
 
     if (lhsNum == BAD_VAR_NUM)
     {
@@ -2547,7 +2565,7 @@ PhaseStatus Compiler::optCloneLoops()
             {
                 context.CancelLoopOptInfo(i);
             }
-            if (allTrue)
+            else if (allTrue)
             {
                 // Perform static optimizations on the fast path since we always
                 // have to take the cloned path.

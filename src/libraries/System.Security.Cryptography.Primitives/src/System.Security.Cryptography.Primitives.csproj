@@ -6,39 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
-    <Compile Include="System\Security\Cryptography\CipherMode.cs" />
-    <Compile Include="System\Security\Cryptography\CryptoConfigForwarder.cs" />
-    <Compile Include="System\Security\Cryptography\CryptographicOperations.cs" />
-    <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
-    <Compile Include="System\Security\Cryptography\CryptoStream.cs" />
-    <Compile Include="System\Security\Cryptography\CryptoStreamMode.cs" />
-    <Compile Include="System\Security\Cryptography\HashAlgorithm.cs" />
-    <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
-    <Compile Include="System\Security\Cryptography\HMAC.cs" />
-    <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
-    <Compile Include="System\Security\Cryptography\KeyedHashAlgorithm.cs" />
-    <Compile Include="System\Security\Cryptography\KeySizes.cs" />
-    <Compile Include="System\Security\Cryptography\PaddingMode.cs" />
-    <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
-    <Compile Include="System\Security\Cryptography\PbeParameters.cs" />
-    <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
-             Link="Internal\Cryptography\Helpers.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
-             Link="Common\System\Security\Cryptography\CryptoPool.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
-             Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
-             Link="Common\System\Security\Cryptography\Oids.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
+    <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
 </Project>

@@ -1506,8 +1506,8 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out
     {
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
-        PEFile *pPEFile = mt->GetModule()->GetFile();
-        if (pPEFile->GetILimage() == NULL)
+        PEAssembly *pPEAssembly = mt->GetModule()->GetPEAssembly();
+        if (pPEAssembly->GetPEImage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -1645,14 +1645,14 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
     ModuleData->Address = addr;
-    ModuleData->File = HOST_CDADDR(pModule->GetFile());
+    ModuleData->PEAssembly = HOST_CDADDR(pModule->GetPEAssembly());
     COUNT_T metadataSize = 0;
-    if (!pModule->GetFile()->IsDynamic())
+    if (!pModule->GetPEAssembly()->IsDynamic())
     {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetFile()->GetIJWBase();
+        ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetPEAssembly()->GetIJWBase();
     }
 
-    ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetFile()->GetLoadedMetadata(&metadataSize));
+    ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
     ModuleData->metadataSize = (SIZE_T) metadataSize;
 
     ModuleData->bIsReflection = pModule->IsReflection();
@@ -1770,8 +1770,8 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_
     {
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
-        PEFile *pPEFile = pMT->GetModule()->GetFile();
-        if (pPEFile->GetILimage() == NULL)
+        PEAssembly *pPEAssembly = pMT->GetModule()->GetPEAssembly();
+        if (pPEAssembly->GetPEImage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -2053,19 +2053,18 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, __out_z _
         return E_INVALIDARG;
 
     SOSDacEnter();
-    PEFile* pPEFile = PTR_PEFile(TO_TADDR(addr));
+    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
 
     // Turn from bytes to wide characters
-    if (!pPEFile->GetPath().IsEmpty())
+    if (!pPEAssembly->GetPath().IsEmpty())
     {
-        if (!pPEFile->GetPath().DacGetUnicode(count, fileName, pNeeded))
+        if (!pPEAssembly->GetPath().DacGetUnicode(count, fileName, pNeeded))
             hr = E_FAIL;
     }
-    else if (!pPEFile->IsDynamic())
+    else if (!pPEAssembly->IsDynamic())
     {
-        PEAssembly *pAssembly = pPEFile->GetAssembly();
         StackSString displayName;
-        pAssembly->GetDisplayName(displayName, 0);
+        pPEAssembly->GetDisplayName(displayName, 0);
 
         if (displayName.IsEmpty())
         {
@@ -2112,11 +2111,11 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base)
 
     SOSDacEnter();
 
-    PEFile* pPEFile = PTR_PEFile(TO_TADDR(addr));
+    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
 
     // More fields later?
-    if (!pPEFile->IsDynamic())
-        *base = TO_CDADDR(pPEFile->GetIJWBase());
+    if (!pPEAssembly->IsDynamic())
+        *base = TO_CDADDR(pPEAssembly->GetIJWBase());
     else
         *base = NULL;
 
@@ -4157,12 +4156,18 @@ TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
     return managedObjectWrapperPtr;
 }
 
-HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+HRESULT ClrDataAccess::DACTryGetComWrappersHandleFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTHANDLE* objHandle)
 {
-    if (ccwPtr == 0 || objRef == NULL)
-        return E_INVALIDARG;
+    HRESULT hr = E_FAIL;
+    TADDR ccw, managedObjectWrapperPtr;
+    ULONG32 bytesRead = 0;
+    OBJECTHANDLE handle;
 
-    SOSDacEnter();
+    if (ccwPtr == 0 || objHandle == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto ErrExit;
+    }
 
     if (!DACIsComWrappersCCW(ccwPtr))
     {
@@ -4170,18 +4175,16 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    TADDR ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
+    ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
 
     // Return ManagedObjectWrapper as an OBJECTHANDLE. (The OBJECTHANDLE is guaranteed to live at offset 0).
-    TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccwPtr);
+    managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccwPtr);
     if (managedObjectWrapperPtr == NULL)
     {
         hr = E_FAIL;
         goto ErrExit;
     }
 
-    ULONG32 bytesRead = 0;
-    OBJECTHANDLE handle;
     IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtr, (PBYTE)&handle, sizeof(OBJECTHANDLE), &bytesRead));
     if (bytesRead != sizeof(OBJECTHANDLE))
     {
@@ -4189,9 +4192,31 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    *objRef = ObjectFromHandle(handle);
+    *objHandle = handle;
 
-    SOSDacLeave();
+    return S_OK;
+
+ErrExit: return hr;
+}
+
+HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+{
+    HRESULT hr = E_FAIL;
+
+    if (ccwPtr == 0 || objRef == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto ErrExit;
+    }
+
+    OBJECTHANDLE handle;
+    if (DACTryGetComWrappersHandleFromCCW(ccwPtr, &handle) != S_OK)
+    {
+        hr = E_FAIL;
+        goto ErrExit;
+    }
+
+    *objRef = ObjectFromHandle(handle);
 
     return S_OK;
 
@@ -4768,8 +4793,8 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
     PTR_MethodTable pMT = PTR_MethodTable(CLRDATA_ADDRESS_TO_TADDR(methodTable));
     PTR_Module pModule = pMT->GetModule();
 
-    PTR_PEFile pPEFile = pModule->GetFile();
-    PTR_AssemblyBinder pBinder = pPEFile->GetAssemblyBinder();
+    PTR_PEAssembly pPEAssembly = pModule->GetPEAssembly();
+    PTR_AssemblyBinder pBinder = pPEAssembly->GetAssemblyBinder();
 
     INT_PTR managedAssemblyLoadContextHandle = pBinder->GetManagedAssemblyLoadContext();
 

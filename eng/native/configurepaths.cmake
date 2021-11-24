@@ -2,3 +2,8 @@ get_filename_component(CLR_REPO_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../.. ABSOLUT
 set(CLR_ENG_NATIVE_DIR ${CMAKE_CURRENT_LIST_DIR})
 get_filename_component(CLR_SRC_NATIVE_DIR ${CMAKE_CURRENT_LIST_DIR}/../../src/native ABSOLUTE)
 get_filename_component(CLR_SRC_LIBS_NATIVE_DIR ${CMAKE_CURRENT_LIST_DIR}/../../src/libraries/Native ABSOLUTE)
+set (CLR_ARTIFACTS_OBJ_DIR "${CLR_REPO_ROOT_DIR}/artifacts/obj")
+set(VERSION_HEADER_PATH "${CLR_ARTIFACTS_OBJ_DIR}/_version.h")
+set(VERSION_FILE_PATH "${CLR_ARTIFACTS_OBJ_DIR}/_version.c")
+set(VERSION_FILE_RC_PATH "${CLR_ARTIFACTS_OBJ_DIR}/NativeVersion.rc")
+set(RUNTIME_VERSION_HEADER_PATH "${CLR_ARTIFACTS_OBJ_DIR}/runtime_version.h")

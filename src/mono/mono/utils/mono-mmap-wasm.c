@@ -233,7 +233,7 @@ void*
 mono_shared_area (void)
 {
 	if (!malloced_shared_area)
-		malloced_shared_area = mono_malloc_shared_area (getpid ());
+		malloced_shared_area = mono_malloc_shared_area (mono_process_current_pid ());
 	/* get the pid here */
 	return malloced_shared_area;
 }

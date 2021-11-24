@@ -367,6 +367,8 @@ if (CLR_CMAKE_HOST_UNIX)
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 
+  add_compile_options(-Wno-unused-but-set-variable)
+
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-unknown-warning-option)
 
@@ -376,8 +378,6 @@ if (CLR_CMAKE_HOST_UNIX)
 
     # Disabled warnings
     add_compile_options(-Wno-unused-private-field)
-    # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
-    add_compile_options(-Wno-microsoft)
     # There are constants of type BOOL used in a condition. But BOOL is defined as int
     # and so the compiler thinks that there is a mistake.
     add_compile_options(-Wno-constant-logical-operand)
@@ -390,8 +390,9 @@ if (CLR_CMAKE_HOST_UNIX)
     # to a struct or a class that has virtual members or a base class. In that case, clang
     # may not generate the same object layout as MSVC.
     add_compile_options(-Wno-incompatible-ms-struct)
+
+    add_compile_options(-Wno-reserved-identifier)
   else()
-    add_compile_options(-Wno-unused-but-set-variable)
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
     add_compile_options(-Wno-array-bounds)

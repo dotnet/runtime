@@ -180,7 +180,6 @@ set(metadata_common_sources
     native-library.h
     native-library.c
     native-library-qcall.c
-    qcall-def.h
     loaded-images-internals.h
     loaded-images.c
     abi-details.h
