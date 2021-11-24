@@ -1895,8 +1895,9 @@ validate_struct_fields_overlaps (guint8 *layout_check, MonoClass *klass, const i
 
 		ftype = mono_type_get_underlying_type (field->type);
 		ftype = mono_type_get_basic_type_from_generic (ftype);
+		gboolean is_embedded = ftype->type == MONO_TYPE_VALUETYPE && !m_class_is_enumtype (ftype->data.klass);
 
-		if (mono_type_is_struct (ftype)) {
+		if (is_embedded) {
 			// recursively check the layout of the embedded struct
 			MonoClass *embedded_class = ftype->data.klass;
 			g_assert (embedded_class);
