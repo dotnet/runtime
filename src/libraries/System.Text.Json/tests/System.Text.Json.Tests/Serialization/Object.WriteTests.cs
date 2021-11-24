@@ -139,7 +139,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("{\"name\":\"\u6D4B\u8A6611\"}", result);
         }
 
-        // Regressuib test fir https://github.com/dotnet/runtime/issues/61995
+        // Regression test for https://github.com/dotnet/runtime/issues/61995
         [Fact]
         public static void WriteObjectWithNumberHandling()
         {
