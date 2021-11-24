@@ -286,9 +286,22 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
-  <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' != 'true'" DependsOnTargets="_WasmSelectRuntimeComponentsForLinkingInTree" />
-  
+  <Target Name="_WasmSelectRuntimeComponentsForLinkingWorkload" Condition="'$(WasmNativeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
+  <!-- This is temporary solution for https://github.com/dotnet/runtime/issues/61294 -->
+  <Target Name="_WasmSelectRuntimeComponentsForLinkingInTree" Condition="'$(WasmNativeWorkload)' != 'true'" >
+    <ItemGroup>
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+      <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-static.a"/>
+      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-static.a"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+      <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a"/>
+      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a"/>
+    </ItemGroup>
+  </Target>
+
   <Target Name="_WasmCompileNativeFiles" DependsOnTargets="_CheckEmccIsExpectedVersion">
     <PropertyGroup>
       <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
@@ -390,7 +403,7 @@
   <Target Name="_WasmLinkDotNet"
           Inputs="@(_WasmLinkDependencies);$(_EmccDefaultFlagsRsp);$(_EmccLinkRsp)"
           Outputs="$(_WasmIntermediateOutputPath)dotnet.js;$(_WasmIntermediateOutputPath)dotnet.wasm"
-          DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
+          DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmSelectRuntimeComponentsForLinkingWorkload;_WasmSelectRuntimeComponentsForLinkingInTree;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
           Returns="@(FileWrites)" >
 
     <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />

@@ -283,8 +283,8 @@ function set_exit_code(exit_code, reason) {
         };
         stop_when_ws_buffer_empty();
 
-    } else if (INTERNAL) {
-        INTERNAL.mono_wasm_exit(exit_code);
+    } else if (App && App.INTERNAL) {
+        App.INTERNAL.mono_wasm_exit(exit_code);
     }
 }
 

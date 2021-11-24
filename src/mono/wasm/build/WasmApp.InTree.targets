@@ -52,18 +52,4 @@
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
 
-  <Target Name="_WasmSelectRuntimeComponentsForLinkingInTree">
-    <ItemGroup>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a"/>
-    </ItemGroup>
-    <ItemGroup Condition="'$(Configuration)' != 'Debug'">
-      <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-static.a"/>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-static.a"/>
-    </ItemGroup>
-    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-      <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a"/>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a"/>
-    </ItemGroup>
-  </Target>
-
 </Project>
