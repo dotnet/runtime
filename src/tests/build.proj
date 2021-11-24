@@ -329,6 +329,14 @@
         SourceFiles="%(ExtraDlls.Identity)"
         DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
 
+    <Message
+      Importance="high"
+      Text="TODO REMOVE: MACCATALYST Building App with TargetOS='$(TargetOS)', TargetsMacCatalyst='$(TargetsMacCatalyst)', TargetsiOS='$(TargetsiOS)', TargetsUnix='$(TargetsUnix)', TargetsUnknownUnix='$(TargetsUnknownUnix)'" />
+
+    <Message
+      Importance="high"
+      Text="Compile: @(Compile)" Condition="[System.Text.RegularExpressions.Regex]::IsMatch('%(Compile.FullPath)', 'System\\Diagnostics') and %(Compile.Identity) != ''" />
+
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
