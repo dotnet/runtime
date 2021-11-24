@@ -444,5 +444,19 @@ namespace Microsoft.Extensions.Caching.Memory
             // There should be 6 items in the cache
             Assert.Equal(6, cache.Count);
         }
+
+        [Fact]
+        public void ClearZeroesTheSize()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+            Assert.Equal(0, cache.Size);
+
+            cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 5 });
+            Assert.Equal(5, cache.Size);
+
+            cache.Clear();
+            Assert.Equal(0, cache.Size);
+            Assert.Equal(0, cache.Count);
+        }
     }
 }

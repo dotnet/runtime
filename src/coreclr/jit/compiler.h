@@ -2983,6 +2983,8 @@ public:
     bool fgNormalizeEHCase2();
     bool fgNormalizeEHCase3();
 
+    void fgCheckForLoopsInHandlers();
+
 #ifdef DEBUG
     void dispIncomingEHClause(unsigned num, const CORINFO_EH_CLAUSE& clause);
     void dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& clause);
@@ -3730,7 +3732,6 @@ public:
     unsigned lvaCount;        // total number of locals, which includes function arguments,
                               // special arguments, IL local variables, and JIT temporary variables
 
-    unsigned   lvaRefCount; // total number of references to locals
     LclVarDsc* lvaTable;    // variable descriptor table
     unsigned   lvaTableCnt; // lvaTable size (>= lvaCount)
 
@@ -3952,10 +3953,15 @@ public:
         return &lvaTable[lclNum];
     }
 
+    LclVarDsc* lvaGetDesc(unsigned lclNum) const
+    {
+        assert(lclNum < lvaCount);
+        return &lvaTable[lclNum];
+    }
+
     LclVarDsc* lvaGetDesc(const GenTreeLclVarCommon* lclVar)
     {
-        assert(lclVar->GetLclNum() < lvaCount);
-        return &lvaTable[lclVar->GetLclNum()];
+        return lvaGetDesc(lclVar->GetLclNum());
     }
 
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
@@ -3969,6 +3975,16 @@ public:
     LclVarDsc* lvaGetDescByTrackedIndex(unsigned trackedIndex)
     {
         return lvaGetDesc(lvaTrackedIndexToLclNum(trackedIndex));
+    }
+
+    unsigned lvaGetLclNum(const LclVarDsc* varDsc)
+    {
+        assert((lvaTable <= varDsc) && (varDsc < lvaTable + lvaCount)); // varDsc must point within the table
+        assert(((char*)varDsc - (char*)lvaTable) % sizeof(LclVarDsc) ==
+               0); // varDsc better not point in the middle of a variable
+        unsigned varNum = (unsigned)(varDsc - lvaTable);
+        assert(varDsc == &lvaTable[varNum]);
+        return varNum;
     }
 
     unsigned lvaLclSize(unsigned varNum);
@@ -4800,7 +4816,7 @@ private:
     void impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal);
     void impLoadVar(unsigned lclNum, IL_OFFSET offset)
     {
-        impLoadVar(lclNum, offset, lvaTable[lclNum].lvVerTypeInfo);
+        impLoadVar(lclNum, offset, lvaGetDesc(lclNum)->lvVerTypeInfo);
     }
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
@@ -6068,7 +6084,7 @@ protected:
     BasicBlock* fgLookupBB(unsigned addr);
 
     bool fgCanSwitchToOptimized();
-    void fgSwitchToOptimized();
+    void fgSwitchToOptimized(const char* reason);
 
     bool fgMayExplicitTailCall();
 
@@ -7264,7 +7280,7 @@ protected:
     //
     bool lclNumIsCSE(unsigned lclNum) const
     {
-        return lvaTable[lclNum].lvIsCSE;
+        return lvaGetDesc(lclNum)->lvIsCSE;
     }
 
 #ifdef DEBUG
@@ -7963,7 +7979,7 @@ private:
     {
 #ifdef TARGET_X86
 
-        LclVarDsc* varDsc = &lvaTable[lclNum];
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
         assert(varDsc->lvIsParam);
 
@@ -8868,7 +8884,7 @@ private:
     // type of an arg node is TYP_BYREF and a local node is TYP_SIMD or TYP_STRUCT.
     bool isSIMDTypeLocal(GenTree* tree)
     {
-        return tree->OperIsLocal() && lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvSIMDType;
+        return tree->OperIsLocal() && lvaGetDesc(tree->AsLclVarCommon())->lvSIMDType;
     }
 
     // Returns true if the lclVar is an opaque SIMD type.
@@ -8892,7 +8908,7 @@ private:
     {
         if (isSIMDTypeLocal(tree))
         {
-            return lvaTable[tree->AsLclVarCommon()->GetLclNum()].GetSimdBaseJitType();
+            return lvaGetDesc(tree->AsLclVarCommon())->GetSimdBaseJitType();
         }
 
         return CORINFO_TYPE_UNDEF;
@@ -9225,8 +9241,7 @@ private:
     // Is this var is of type simd struct?
     bool lclVarIsSIMDType(unsigned varNum)
     {
-        LclVarDsc* varDsc = lvaTable + varNum;
-        return varDsc->lvIsSIMDType();
+        return lvaGetDesc(varNum)->lvIsSIMDType();
     }
 
     // Is this Local node a SIMD local?
@@ -9385,21 +9400,23 @@ public:
 
     InlineResult* compInlineResult; // The result of importing the inlinee method.
 
-    bool compDoAggressiveInlining; // If true, mark every method as CORINFO_FLG_FORCEINLINE
-    bool compJmpOpUsed;            // Does the method do a JMP
-    bool compLongUsed;             // Does the method use TYP_LONG
-    bool compFloatingPointUsed;    // Does the method use TYP_FLOAT or TYP_DOUBLE
-    bool compTailCallUsed;         // Does the method do a tailcall
-    bool compLocallocSeen;         // Does the method IL have localloc opcode
-    bool compLocallocUsed;         // Does the method use localloc.
-    bool compLocallocOptimized;    // Does the method have an optimized localloc
-    bool compQmarkUsed;            // Does the method use GT_QMARK/GT_COLON
-    bool compQmarkRationalized;    // Is it allowed to use a GT_QMARK/GT_COLON node.
-    bool compUnsafeCastUsed;       // Does the method use LDIND/STIND to cast between scalar/refernce types
-    bool compHasBackwardJump;      // Does the method (or some inlinee) have a lexically backwards jump?
-    bool compSwitchedToOptimized;  // Codegen initially was Tier0 but jit switched to FullOpts
-    bool compSwitchedToMinOpts;    // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
-    bool compSuppressedZeroInit;   // There are vars with lvSuppressedZeroInit set
+    bool compDoAggressiveInlining;     // If true, mark every method as CORINFO_FLG_FORCEINLINE
+    bool compJmpOpUsed;                // Does the method do a JMP
+    bool compLongUsed;                 // Does the method use TYP_LONG
+    bool compFloatingPointUsed;        // Does the method use TYP_FLOAT or TYP_DOUBLE
+    bool compTailCallUsed;             // Does the method do a tailcall
+    bool compTailPrefixSeen;           // Does the method IL have tail. prefix
+    bool compLocallocSeen;             // Does the method IL have localloc opcode
+    bool compLocallocUsed;             // Does the method use localloc.
+    bool compLocallocOptimized;        // Does the method have an optimized localloc
+    bool compQmarkUsed;                // Does the method use GT_QMARK/GT_COLON
+    bool compQmarkRationalized;        // Is it allowed to use a GT_QMARK/GT_COLON node.
+    bool compUnsafeCastUsed;           // Does the method use LDIND/STIND to cast between scalar/refernce types
+    bool compHasBackwardJump;          // Does the method (or some inlinee) have a lexically backwards jump?
+    bool compHasBackwardJumpInHandler; // Does the method have a lexically backwards jump in a handler?
+    bool compSwitchedToOptimized;      // Codegen initially was Tier0 but jit switched to FullOpts
+    bool compSwitchedToMinOpts;        // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
+    bool compSuppressedZeroInit;       // There are vars with lvSuppressedZeroInit set
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.

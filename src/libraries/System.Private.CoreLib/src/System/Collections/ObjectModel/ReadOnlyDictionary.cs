@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Collections.ObjectModel
 {
     [Serializable]
-    [DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
+    [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue> where TKey : notnull
@@ -248,7 +248,7 @@ namespace System.Collections.ObjectModel
 
         IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
-        [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+        [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
@@ -302,7 +302,7 @@ namespace System.Collections.ObjectModel
             object ICollection.SyncRoot => (_collection is ICollection coll) ? coll.SyncRoot : this;
         }
 
-        [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+        [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {

@@ -1733,7 +1733,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
         const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
 
         // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_CONTAINS_STACK_PTR)) == 0)
+        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
         {
             unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
@@ -5876,7 +5876,7 @@ bool Compiler::verIsByRefLike(const typeInfo& ti)
     {
         return false;
     }
-    return info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_CONTAINS_STACK_PTR;
+    return info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_BYREF_LIKE;
 }
 
 bool Compiler::verIsSafeToReturnByRef(const typeInfo& ti)
@@ -5897,7 +5897,7 @@ bool Compiler::verIsBoxable(const typeInfo& ti)
             || ti.IsUnboxedGenericTypeVar() ||
             (ti.IsType(TI_STRUCT) &&
              // exclude byreflike structs
-             !(info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_CONTAINS_STACK_PTR)));
+             !(info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_BYREF_LIKE)));
 }
 
 // Is it a boxed value type?
@@ -9808,7 +9808,7 @@ DONE_CALL:
                     if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
                     {
                         unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
-                        LclVarDsc* varDsc     = &lvaTable[calliSlot];
+                        LclVarDsc* varDsc     = lvaGetDesc(calliSlot);
                         varDsc->lvVerTypeInfo = tiRetVal;
                         impAssignTempGen(calliSlot, call, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_NONE);
                         // impAssignTempGen can change src arg list and return type for call that returns struct.
@@ -11591,26 +11591,38 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
     // Are there any places in the method where we might add a patchpoint?
+    //
     if (compHasBackwardJump)
     {
-        // Are patchpoints enabled and supported?
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0) &&
-            compCanHavePatchpoints())
+        // Is OSR enabled?
+        //
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            // We don't inline at Tier0, if we do, we may need rethink our approach.
-            // Could probably support inlines that don't introduce flow.
-            assert(!compIsForInlining());
-
-            // Is the start of this block a suitable patchpoint?
-            // Current strategy is blocks that are stack-empty and backwards branch targets and not in a handler
+            // OSR is not yet supported for methods with explicit tail calls.
             //
-            // Todo (perhaps): bail out of OSR and jit this method with optimization.
+            // But we also may not switch methods to be optimized as we should be
+            // able to avoid getting trapped in Tier0 code by normal call counting.
+            // So instead, just suppress adding patchpoints.
             //
-            if (!block->hasHndIndex() && ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) &&
-                (verCurrentState.esStackDepth == 0))
+            if (!compTailPrefixSeen)
             {
-                block->bbFlags |= BBF_PATCHPOINT;
-                setMethodHasPatchpoint();
+                assert(compCanHavePatchpoints());
+
+                // We don't inline at Tier0, if we do, we may need rethink our approach.
+                // Could probably support inlines that don't introduce flow.
+                assert(!compIsForInlining());
+
+                // Is the start of this block a suitable patchpoint?
+                //
+                if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
+                {
+                    // We should have noted this earlier and bailed out of OSR.
+                    //
+                    assert(!block->hasHndIndex());
+
+                    block->bbFlags |= BBF_PATCHPOINT;
+                    setMethodHasPatchpoint();
+                }
             }
         }
     }
@@ -11630,10 +11642,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // propagate rareness back through flow and place the partial compilation patchpoints "earlier"
     // so there are fewer overall.
     //
+    // Note unlike OSR, it's ok to forgo these.
+    //
     // Todo: stress mode...
     //
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
-        compCanHavePatchpoints())
+        compCanHavePatchpoints() && !compTailPrefixSeen)
     {
         // Is this block a good place for partial compilation?
         //
@@ -14698,7 +14712,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         info.compCompHnd->getChildType(resolvedToken.hClass, &elemTypeHnd);
                         assert(!(elemTypeHnd == nullptr && corType == CORINFO_TYPE_VALUECLASS));
                         Verify(elemTypeHnd == nullptr ||
-                                   !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_CONTAINS_STACK_PTR),
+                                   !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_BYREF_LIKE),
                                "newarr of byref-like objects");
                         verVerifyCall(opcode, &resolvedToken, nullptr, ((prefixFlags & PREFIX_TAILCALL_EXPLICIT) != 0),
                                       ((prefixFlags & PREFIX_READONLY) != 0), delegateCreateStart, codeAddr - 1,
@@ -15816,7 +15830,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     CORINFO_CLASS_HANDLE elemTypeHnd;
                     info.compCompHnd->getChildType(resolvedToken.hClass, &elemTypeHnd);
                     Verify(elemTypeHnd == nullptr ||
-                               !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_CONTAINS_STACK_PTR),
+                               !(info.compCompHnd->getClassAttribs(elemTypeHnd) & CORINFO_FLG_BYREF_LIKE),
                            "array of byref-like type");
                 }
 
@@ -18826,10 +18840,7 @@ void Compiler::impRetypeEntryStateTemps(BasicBlock* blk)
             GenTree* tree = es->esStack[level].val;
             if ((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_LCL_FLD))
             {
-                unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-                noway_assert(lclNum < lvaCount);
-                LclVarDsc* varDsc              = lvaTable + lclNum;
-                es->esStack[level].val->gtType = varDsc->TypeGet();
+                es->esStack[level].val->gtType = lvaGetDesc(tree->AsLclVarCommon())->TypeGet();
             }
         }
     }
@@ -21322,6 +21333,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             //
             compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
         }
+        return;
+    }
+
+    // Bail if optimizations are disabled.
+    if (opts.OptimizationDisabled())
+    {
         return;
     }
 

@@ -364,15 +364,23 @@
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
     </PropertyGroup>
+
+    <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ and find the closest one in
+         https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/
+         and https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Win_x64/
+
+         Eg. latest stable version is 96.0.4664.45 with revision 929512.
+         but the closest one available in the snapshosts is 929513.
+         Please make sure to check both platforms as sometime
+         the same snapshot might not be available in one of them.
+    -->
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
-      <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
-      <!-- 84.0.4147.105 is 768962 for example -->
-      <ChromiumRevision>768968</ChromiumRevision>
+      <ChromiumRevision>929513</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
       <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
-      <ChromiumRevision>768983</ChromiumRevision>
+      <ChromiumRevision>929513</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
       <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</ChromeDriverUrl>
     </PropertyGroup>
@@ -431,9 +439,9 @@
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunSmokeTestsOnly)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">
-      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
-      <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
+      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
+      <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
     </ItemGroup>
 
     <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(Scenario)' == 'BuildWasmApps'">

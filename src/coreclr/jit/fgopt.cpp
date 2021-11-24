@@ -1523,6 +1523,7 @@ void Compiler::fgPostImportationCleanup()
 
                     BasicBlock* const newBlock = fgSplitBlockAtBeginning(fromBlock);
                     fromBlock->bbFlags |= BBF_INTERNAL;
+                    newBlock->bbFlags &= ~BBF_DONT_REMOVE;
 
                     GenTree* const entryStateLcl = gtNewLclvNode(entryStateVar, TYP_INT);
                     GenTree* const compareEntryStateToZero =

@@ -8,7 +8,7 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    public partial class ECDsa : AsymmetricAlgorithm
+    public partial class ECDsa : ECAlgorithm
     {
         /// <summary>
         /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.

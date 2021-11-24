@@ -3,7 +3,7 @@
 
 namespace System.Security.Cryptography
 {
-    public partial class ECDiffieHellman : AsymmetricAlgorithm
+    public partial class ECDiffieHellman : ECAlgorithm
     {
         public static new partial ECDiffieHellman Create()
         {

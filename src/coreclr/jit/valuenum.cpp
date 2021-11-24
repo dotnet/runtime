@@ -2200,7 +2200,6 @@ ValueNum ValueNumStore::VNForFunc(
 //
 //
 // Arguments:
-//    type  - Type for the new map
 //    map   - Map value number
 //    index - Index value number
 //    value - New value for map[index]
@@ -2208,17 +2207,17 @@ ValueNum ValueNumStore::VNForFunc(
 // Return Value:
 //    Value number for "map" with "map[index]" set to "value".
 //
-ValueNum ValueNumStore::VNForMapStore(var_types type, ValueNum map, ValueNum index, ValueNum value)
+ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum value)
 {
     BasicBlock* const            bb      = m_pComp->compCurBB;
     BasicBlock::loopNumber const loopNum = bb->bbNatLoopNum;
-    ValueNum const               result  = VNForFunc(type, VNF_MapStore, map, index, value, loopNum);
+    ValueNum const               result  = VNForFunc(TypeOfVN(map), VNF_MapStore, map, index, value, loopNum);
 
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
         printf("    VNForMapStore(" FMT_VN ", " FMT_VN ", " FMT_VN "):%s in " FMT_BB " returns ", map, index, value,
-               varTypeName(type), bb->bbNum);
+               varTypeName(TypeOfVN(result)), bb->bbNum);
         m_pComp->vnPrint(result, 1);
         printf("\n");
     }
@@ -4083,7 +4082,7 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
             valueAfter = VNApplySelectorsAssignTypeCoerce(value, dstIndType);
         }
 
-        return VNForMapStore(fieldType, map, fldHndVN, valueAfter);
+        return VNForMapStore(map, fldHndVN, valueAfter);
     }
 }
 
@@ -4289,16 +4288,10 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
         // This is the value that should be stored at "arr[inx]".
         newValAtInx = vnStore->VNApplySelectorsAssign(VNK_Liberal, hAtArrTypeAtArrAtInx, fldSeq, rhsVN, indType);
 
-        var_types arrElemFldType = arrElemType; // Uses arrElemType unless we has a non-null fldSeq
-        if (vnStore->IsVNFunc(newValAtInx))
-        {
-            VNFuncApp funcApp;
-            vnStore->GetVNFunc(newValAtInx, &funcApp);
-            if (funcApp.m_func == VNF_MapStore)
-            {
-                arrElemFldType = vnStore->TypeOfVN(newValAtInx);
-            }
-        }
+        // TODO-VNTypes: the validation below is a workaround for logic in ApplySelectorsAssignTypeCoerce
+        // not handling some cases correctly. Remove once ApplySelectorsAssignTypeCoerce has been fixed.
+        var_types arrElemFldType =
+            (fldSeq != nullptr) ? eeGetFieldType(fldSeq->GetTail()->GetFieldHandle()) : arrElemType;
 
         if (indType != arrElemFldType)
         {
@@ -4315,8 +4308,8 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
 
     if (!invalidateArray)
     {
-        newValAtArr     = vnStore->VNForMapStore(indType, hAtArrTypeAtArr, inxVN, newValAtInx);
-        newValAtArrType = vnStore->VNForMapStore(TYP_REF, hAtArrType, arrVN, newValAtArr);
+        newValAtArr     = vnStore->VNForMapStore(hAtArrTypeAtArr, inxVN, newValAtInx);
+        newValAtArrType = vnStore->VNForMapStore(hAtArrType, arrVN, newValAtArr);
     }
 
 #ifdef DEBUG
@@ -4354,7 +4347,7 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
     }
 #endif // DEBUG
 
-    return vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap], elemTypeEqVN, newValAtArrType);
+    return vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], elemTypeEqVN, newValAtArrType);
 }
 
 ValueNum Compiler::fgValueNumberArrIndexVal(GenTree* tree, VNFuncApp* pFuncApp, ValueNum addrXvn)
@@ -6678,7 +6671,7 @@ void Compiler::fgValueNumber()
             continue;
         }
 
-        LclVarDsc* varDsc = &lvaTable[lclNum];
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
         assert(varDsc->lvTracked);
 
         if (varDsc->lvIsParam)
@@ -7157,8 +7150,7 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                 // values. Static field maps, on the other hand, do, and so must be given proper types.
                 var_types fldMapType = eeIsFieldStatic(fldHnd) ? eeGetFieldType(fldHnd) : TYP_REF;
 
-                newMemoryVN =
-                    vnStore->VNForMapStore(TYP_REF, newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, fldMapType));
+                newMemoryVN = vnStore->VNForMapStore(newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, fldMapType));
             }
         }
         // Now do the array maps.
@@ -7190,7 +7182,7 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
 
                 ValueNum elemTypeVN = vnStore->VNForHandle(ssize_t(elemClsHnd), GTF_ICON_CLASS_HDL);
                 ValueNum uniqueVN   = vnStore->VNForExpr(entryBlock, TYP_REF);
-                newMemoryVN         = vnStore->VNForMapStore(TYP_REF, newMemoryVN, elemTypeVN, uniqueVN);
+                newMemoryVN         = vnStore->VNForMapStore(newMemoryVN, elemTypeVN, uniqueVN);
             }
         }
     }
@@ -7885,12 +7877,11 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
 
                             // Finally, construct the new field map...
                             ValueNum newFldMapVN =
-                                vnStore->VNForMapStore(vnStore->TypeOfVN(fldMapVN), fldMapVN, firstFieldValueSelectorVN,
-                                                       newFirstFieldValueVN);
+                                vnStore->VNForMapStore(fldMapVN, firstFieldValueSelectorVN, newFirstFieldValueVN);
 
                             // ...and a new value for the heap.
-                            newHeapVN = vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap], firstFieldSelectorVN,
-                                                               newFldMapVN);
+                            newHeapVN =
+                                vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], firstFieldSelectorVN, newFldMapVN);
                         }
                         else
                         {
@@ -8125,7 +8116,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     if (rhs->IsLocalExpr(this, &rhsLclVarTree, &rhsFldSeq))
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
-                        rhsVarDsc          = &lvaTable[rhsLclNum];
+                        rhsVarDsc          = lvaGetDesc(rhsLclNum);
                         if (!lvaInSsa(rhsLclNum) || !rhsLclVarTree->HasSsaName() ||
                             rhsFldSeq == FieldSeqStore::NotAField())
                         {
@@ -8152,7 +8143,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     if (srcAddr->IsLocalAddrExpr(this, &rhsLclVarTree, &rhsFldSeq))
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
-                        rhsVarDsc          = &lvaTable[rhsLclNum];
+                        rhsVarDsc          = lvaGetDesc(rhsLclNum);
                         if (!lvaInSsa(rhsLclNum) || !rhsLclVarTree->HasSsaName() ||
                             rhsFldSeq == FieldSeqStore::NotAField())
                         {
@@ -8419,12 +8410,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
                 unsigned             lclNum = lcl->GetLclNum();
-                LclVarDsc*           varDsc = &lvaTable[lclNum];
+                LclVarDsc*           varDsc = lvaGetDesc(lclNum);
 
                 if (varDsc->CanBeReplacedWithItsField(this))
                 {
                     lclNum = varDsc->lvFieldLclStart;
-                    varDsc = &lvaTable[lclNum];
+                    varDsc = lvaGetDesc(lclNum);
                 }
 
                 // Do we have a Use (read) of the LclVar?
@@ -8589,9 +8580,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // forms (assignment, or initBlk or copyBlk).
                 if (((lclFld->gtFlags & GTF_VAR_DEF) == 0) || (lclFld->gtFlags & GTF_VAR_USEASG))
                 {
-                    unsigned   lclNum = lclFld->GetLclNum();
                     unsigned   ssaNum = lclFld->GetSsaNum();
-                    LclVarDsc* varDsc = &lvaTable[lclNum];
+                    LclVarDsc* varDsc = lvaGetDesc(lclFld);
 
                     var_types indType = tree->TypeGet();
                     if ((lclFld->GetFieldSeq() == FieldSeqStore::NotAField()) || !lvaInSsa(lclFld->GetLclNum()) ||
@@ -8959,9 +8949,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq) && lvaInSsa(lclVarTree->GetLclNum()) &&
                     lclVarTree->HasSsaName())
                 {
-                    unsigned   lclNum = lclVarTree->GetLclNum();
                     unsigned   ssaNum = lclVarTree->GetSsaNum();
-                    LclVarDsc* varDsc = &lvaTable[lclNum];
+                    LclVarDsc* varDsc = lvaGetDesc(lclVarTree);
 
                     if ((localFldSeq == FieldSeqStore::NotAField()) || (localFldSeq == nullptr))
                     {
