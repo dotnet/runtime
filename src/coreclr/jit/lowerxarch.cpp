@@ -51,8 +51,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         GenTreeIntCon* con  = storeLoc->gtOp1->AsIntCon();
         ssize_t        ival = con->gtIconVal;
 
-        unsigned   varNum = storeLoc->GetLclNum();
-        LclVarDsc* varDsc = comp->lvaTable + varNum;
+        LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
 
         if (varDsc->lvIsSIMDType())
         {
@@ -490,7 +489,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             {
                 if (fieldNode->OperGet() == GT_LCL_VAR)
                 {
-                    LclVarDsc* varDsc = &(comp->lvaTable[fieldNode->AsLclVarCommon()->GetLclNum()]);
+                    const LclVarDsc* varDsc = comp->lvaGetDesc(fieldNode->AsLclVarCommon());
                     if (!varDsc->lvDoNotEnregister)
                     {
                         fieldNode->SetRegOptional();
@@ -4168,8 +4167,8 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
     // mark op1 as reg optional for the same reason as mentioned in (d) above.
     if (op1->OperGet() == GT_LCL_VAR && op2->OperGet() == GT_LCL_VAR)
     {
-        LclVarDsc* v1 = comp->lvaTable + op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* v2 = comp->lvaTable + op2->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* v1 = comp->lvaGetDesc(op1->AsLclVarCommon());
+        LclVarDsc* v2 = comp->lvaGetDesc(op2->AsLclVarCommon());
 
         bool v1IsRegCandidate = !v1->lvDoNotEnregister;
         bool v2IsRegCandidate = !v2->lvDoNotEnregister;

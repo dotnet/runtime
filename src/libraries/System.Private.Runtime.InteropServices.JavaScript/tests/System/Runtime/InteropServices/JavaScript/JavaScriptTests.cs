@@ -11,6 +11,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public static class JavaScriptTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         public static void CoreTypes()
         {
             var arr = new Uint8ClampedArray(50);
