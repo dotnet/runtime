@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import productVersion from "consts:productVersion";
-import configuration from "consts:configuration";
+import ProductVersion from "consts:productVersion";
+import Configuration from "consts:configuration";
 
 import {
     mono_wasm_new_root, mono_wasm_new_roots, mono_wasm_release_roots,
@@ -144,8 +144,8 @@ function initializeImportsAndExports(
         INTERNAL: exports.internal,
         Module: module,
         RuntimeBuildInfo: {
-            productVersion,
-            configuration
+            ProductVersion,
+            Configuration
         }
     };
 
@@ -369,8 +369,8 @@ export interface DotNetPublicAPI {
     Module: any,
     RuntimeId: number,
     RuntimeBuildInfo: {
-        productVersion: string,
-        configuration: string,
+        ProductVersion: string,
+        Configuration: string,
     }
 }
 
