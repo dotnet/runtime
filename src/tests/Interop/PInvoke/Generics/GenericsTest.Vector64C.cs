@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -45,19 +45,19 @@ unsafe partial class GenericsTest
         Vector64<char> value2;
         GenericsNative.GetVector64COut('0', '1', '2', '3', &value2);
         Vector64<short> tValue2 = *(Vector64<short>*)&value2;
-        Assert.AreEqual(tValue2.GetElement(0), (short)'0');
-        Assert.AreEqual(tValue2.GetElement(1), (short)'1');
-        Assert.AreEqual(tValue2.GetElement(2), (short)'2');
-        Assert.AreEqual(tValue2.GetElement(3), (short)'3');
+        Assert.Equal(tValue2.GetElement(0), (short)'0');
+        Assert.Equal(tValue2.GetElement(1), (short)'1');
+        Assert.Equal(tValue2.GetElement(2), (short)'2');
+        Assert.Equal(tValue2.GetElement(3), (short)'3');
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64COut('0', '1', '2', '3', out Vector64<char> value3));
 
         Vector64<char>* value4 = GenericsNative.GetVector64CPtr('0', '1', '2', '3');
         Vector64<short>* tValue4 = (Vector64<short>*)value4;
-        Assert.AreEqual(tValue4->GetElement(0), (short)'0');
-        Assert.AreEqual(tValue4->GetElement(1), (short)'1');
-        Assert.AreEqual(tValue4->GetElement(2), (short)'2');
-        Assert.AreEqual(tValue4->GetElement(3), (short)'3');
+        Assert.Equal(tValue4->GetElement(0), (short)'0');
+        Assert.Equal(tValue4->GetElement(1), (short)'1');
+        Assert.Equal(tValue4->GetElement(2), (short)'2');
+        Assert.Equal(tValue4->GetElement(3), (short)'3');
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64CRef('0', '1', '2', '3'));
 

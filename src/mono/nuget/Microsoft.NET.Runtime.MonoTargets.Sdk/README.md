@@ -36,3 +36,19 @@ To use the task in a project, reference the NuGet package, with the appropriate 
     </RuntimeConfigParserTask>
 </Target>
 ```
+
+## ILStrip
+
+This is a task that removes the IL methods bodies from assemblies.  Useful in conjunction with AOT compilation.
+
+```
+<Target>
+  <ItemGroup>
+    <AssembliesToStrip Include="A.dll" OutputPath="stripped\A.dll">
+  </ItemGroup>
+  </ItemGroup>
+  <ILStrip Assemblies="@(AssembliesToStrip)" />
+</Target>
+```
+
+The `OutputPath` metadata is optional. If it is not present, the items will be updated in place.

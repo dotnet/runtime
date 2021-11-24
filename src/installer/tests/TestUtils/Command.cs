@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -120,7 +121,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 }
                 else
                 {
-                    // Search the path to see if we can find it 
+                    // Search the path to see if we can find it
                     foreach (var path in System.Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
                     {
                         var candidate = Path.Combine(path, executable + ".exe");
@@ -196,7 +197,20 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             ReportExecBegin();
 
-            Process.Start();
+            // Retry if we hit ETXTBSY due to Linux race
+            // https://github.com/dotnet/runtime/issues/58964
+            for (int i = 0; ; i++)
+            {
+                try
+                {
+                    Process.Start();
+                    break;
+                }
+                catch (Win32Exception e) when (i < 4 && e.Message.Contains("Text file busy"))
+                {
+                    Thread.Sleep(i * 20);
+                }
+            }
 
             if (Process.StartInfo.RedirectStandardOutput)
             {

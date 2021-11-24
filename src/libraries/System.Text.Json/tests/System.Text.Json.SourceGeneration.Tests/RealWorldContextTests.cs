@@ -640,6 +640,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void SerializeByteArray()
+        {
+            byte[] value = new byte[] { 1, 2, 3 };
+            const string expectedJson = "\"AQID\"";
+
+            string actualJson = JsonSerializer.Serialize(value, DefaultContext.ByteArray);
+            Assert.Equal(expectedJson, actualJson);
+
+            byte[] arr = JsonSerializer.Deserialize(actualJson, DefaultContext.ByteArray);
+            Assert.Equal(value, arr);
+        }
+
+        [Fact]
         public virtual void HandlesNestedTypes()
         {
             string json = @"{""MyInt"":5}";
@@ -734,6 +747,62 @@ namespace System.Text.Json.SourceGeneration.Tests
             public DayOfWeek? NullableDay { get; set; }
         }
 
+        [Fact]
+        public virtual void ClassWithNullableProperties_Roundtrip()
+        {
+            RunTest(new ClassWithNullableProperties
+            {
+                Uri = new Uri("http://contoso.com"),
+                Array = new int[] { 42 },
+                Poco = new ClassWithNullableProperties.MyPoco(),
+
+                NullableUri = new Uri("http://contoso.com"),
+                NullableArray = new int[] { 42 },
+                NullablePoco = new ClassWithNullableProperties.MyPoco()
+            });
+
+            RunTest(new ClassWithNullableProperties());
+
+            void RunTest(ClassWithNullableProperties expected)
+            {
+                string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithNullableProperties);
+                ClassWithNullableProperties actual = JsonSerializer.Deserialize(json, DefaultContext.ClassWithNullableProperties);
+
+                Assert.Equal(expected.Uri, actual.Uri);
+                Assert.Equal(expected.Array, actual.Array);
+                Assert.Equal(expected.Poco, actual.Poco);
+
+                Assert.Equal(expected.NullableUri, actual.NullableUri);
+                Assert.Equal(expected.NullableArray, actual.NullableArray);
+                Assert.Equal(expected.NullablePoco, actual.NullablePoco);
+
+                Assert.Equal(expected.NullableUriParameter, actual.NullableUriParameter);
+                Assert.Equal(expected.NullableArrayParameter, actual.NullableArrayParameter);
+                Assert.Equal(expected.NullablePocoParameter, actual.NullablePocoParameter);
+            }
+        }
+
+        public class ClassWithNullableProperties
+        {
+            public Uri Uri { get; set; }
+            public int[] Array { get; set; }
+            public MyPoco Poco { get; set; }
+
+            public Uri? NullableUri { get; set; }
+            public int[]? NullableArray { get; set; }
+            public MyPoco? NullablePoco { get; set; }
+
+            // struct types containing nullable reference types as generic parameters
+            public GenericStruct<Uri?> NullableUriParameter { get; set; }
+            public GenericStruct<int[]?> NullableArrayParameter { get; set; }
+            public GenericStruct<MyPoco?> NullablePocoParameter { get; set; }
+
+            public (string? x, int y)? NullableArgumentOfNullableStruct { get; set; }
+
+            public record MyPoco { }
+            public struct GenericStruct<T> { }
+        }
+
         private const string ExceptionMessageFromCustomContext = "Exception thrown from custom context.";
 
         [Fact]
@@ -794,6 +863,23 @@ namespace System.Text.Json.SourceGeneration.Tests
             MyTypeWithPropertyOrdering obj = new();
             string json = JsonSerializer.Serialize(obj, DefaultContext.MyTypeWithPropertyOrdering);
             Assert.Equal("{\"C\":0,\"B\":0,\"A\":0}", json);
+        }
+
+        [Fact]
+        public virtual void NullableStruct()
+        {
+            PersonStruct? person = new()
+            {
+                FirstName = "Jane",
+                LastName = "Doe"
+            };
+
+            string json = JsonSerializer.Serialize(person, DefaultContext.NullablePersonStruct);
+            JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
+
+            person = JsonSerializer.Deserialize(json, DefaultContext.NullablePersonStruct);
+            Assert.Equal("Jane", person.Value.FirstName);
+            Assert.Equal("Doe", person.Value.LastName);
         }
     }
 }

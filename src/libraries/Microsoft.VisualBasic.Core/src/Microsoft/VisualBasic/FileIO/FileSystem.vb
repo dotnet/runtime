@@ -2022,7 +2022,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <summary>
         ''' A simple tree node to build up the directory structure used for a snapshot in Copy / Move Directory.
         ''' </summary>
-        Private Class DirectoryNode
+        Private NotInheritable Class DirectoryNode
             ''' <summary>
             ''' Given a DirectoryPath, create the node and add the sub-directory nodes.
             ''' </summary>
@@ -2083,7 +2083,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' This class will take care of text spanning byte arrays by caching a part of the array and use it in
         '''      the next IsTextFound() call.
         ''' </remarks>
-        Private Class TextSearchHelper
+        Private NotInheritable Class TextSearchHelper
             ''' <summary>
             ''' Constructs a new helper with a given encoding and a text to search for.
             ''' </summary>

@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <!-- Checked in test binaries for FileVersionInfoTest -->

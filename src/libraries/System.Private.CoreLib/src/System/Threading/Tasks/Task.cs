@@ -1863,6 +1863,12 @@ namespace System.Threading.Tasks
             return Volatile.Read(ref m_contingentProperties)?.m_exceptionsHolder?.GetCancellationExceptionDispatchInfo(); // may be null
         }
 
+        /// <summary>Marks any exceptions stored in the Task as having been handled.</summary>
+        internal void MarkExceptionsAsHandled()
+        {
+            Volatile.Read(ref m_contingentProperties)?.m_exceptionsHolder?.MarkAsHandled(calledFromFinalizer: false);
+        }
+
         /// <summary>
         /// Throws an aggregate exception if the task contains exceptions.
         /// </summary>
@@ -3553,9 +3559,6 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
-        /// </exception>
         public Task ContinueWith(Action<Task> continuationAction, CancellationToken cancellationToken)
         {
             return ContinueWith(continuationAction, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
@@ -3656,9 +3659,6 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
-        /// </exception>
         public Task ContinueWith(Action<Task> continuationAction, CancellationToken cancellationToken,
                                  TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
@@ -3737,9 +3737,6 @@ namespace System.Threading.Tasks
         /// </remarks>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
-        /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
         /// </exception>
         public Task ContinueWith(Action<Task, object?> continuationAction, object? state, CancellationToken cancellationToken)
         {
@@ -3843,9 +3840,6 @@ namespace System.Threading.Tasks
         /// </exception>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
-        /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
         /// </exception>
         public Task ContinueWith(Action<Task, object?> continuationAction, object? state, CancellationToken cancellationToken,
                                  TaskContinuationOptions continuationOptions, TaskScheduler scheduler)

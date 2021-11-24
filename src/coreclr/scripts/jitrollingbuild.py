@@ -32,10 +32,10 @@ locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.
 ################################################################################
 
 az_account_name = "clrjit2"
-az_container_name = "jitrollingbuild"
+az_jitrollingbuild_container_name = "jitrollingbuild"
 az_builds_root_folder = "builds"
 az_blob_storage_account_uri = "https://" + az_account_name + ".blob.core.windows.net/"
-az_blob_storage_container_uri = az_blob_storage_account_uri + az_container_name
+az_blob_storage_jitrollingbuild_container_uri = az_blob_storage_account_uri + az_jitrollingbuild_container_name
 
 ################################################################################
 # Argument Parser
@@ -50,18 +50,27 @@ Upload clrjit to SuperPMI Azure storage.
 """
 
 download_description = """\
-Download clrjit from SuperPMI Azure storage.
+Download clrjit from SuperPMI Azure storage. If -git_hash is given, download exactly
+that JIT. If -git_hash is not given, find the latest git hash from the main branch that
+corresponds to the current tree, and download that JIT. That is, find an appropriate
+"baseline" JIT for doing asm diffs.
 """
 
 list_description = """\
 List clrjit in SuperPMI Azure storage.
 """
 
-host_os_help = "OS (windows, OSX, Linux). Default: current OS."
-
 arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
+
+host_os_help = "OS (windows, OSX, Linux). Default: current OS."
+
+spmi_location_help = """\
+Directory in which to put SuperPMI files, such as downloaded MCH files, asm diffs, and repro .MC files.
+Optional. Default is 'spmi' within the repo 'artifacts' directory.
+If 'SUPERPMI_CACHE_DIRECTORY' environment variable is set to a path, it will use that directory.
+"""
 
 git_hash_help = "git hash"
 
@@ -82,6 +91,7 @@ common_parser = argparse.ArgumentParser(add_help=False)
 common_parser.add_argument("-arch", help=arch_help)
 common_parser.add_argument("-build_type", default="Checked", help=build_type_help)
 common_parser.add_argument("-host_os", help=host_os_help)
+common_parser.add_argument("-spmi_location", help=spmi_location_help)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[common_parser])
@@ -93,8 +103,8 @@ upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_clea
 # subparser for download
 download_parser = subparsers.add_parser("download", description=download_description, parents=[common_parser])
 
-download_parser.add_argument("-git_hash", required=True, help=git_hash_help)
-download_parser.add_argument("-target_dir", required=True, help=target_dir_help)
+download_parser.add_argument("-git_hash", help=git_hash_help)
+download_parser.add_argument("-target_dir", help=target_dir_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
 # subparser for list
@@ -172,6 +182,111 @@ def determine_jit_name(coreclr_args):
         raise RuntimeError("Unknown OS.")
 
 
+def process_git_hash_arg(coreclr_args):
+    """ Process the -git_hash argument.
+
+        If the argument is present, use that to download a JIT.
+        If not present, try to find and download a JIT based on the current environment:
+        1. Determine the current directory git hash using:
+             git rev-parse HEAD
+           Call the result `current_git_hash`.
+        2. Determine the baseline: where does this hash meet `main` using:
+             git merge-base `current_git_hash` main
+           Call the result `base_git_hash`.
+        3. Figure out the latest hash, starting with `base_git_hash`, that contains any changes to
+           the src/coreclr/jit directory. (We do this because the JIT rolling build only includes
+           builds for changes to this directory. So, this logic needs to stay in sync with the logic
+           that determines what causes the JIT rolling build to run. E.g., it should also get
+           rebuilt if the JIT-EE interface GUID changes. Alternatively, we can take the entire list
+           of changes, and probe the rolling build drop for all of them.)
+        4. Starting with `base_git_hash`, and possibly walking to older changes, look for matching builds
+           in the JIT rolling build drops.
+        5. If a JIT directory in Azure Storage is found, set coreclr_args.git_hash to that git hash to use
+           for downloading.
+
+    Args:
+        coreclr_args (CoreclrArguments) : parsed args
+
+    Returns:
+        Nothing
+
+        coreclr_args.git_hash is set to the git hash to use
+
+        An exception is thrown if the `-git_hash` argument is unspecified, and we don't find an appropriate
+        JIT to download.
+    """
+
+    if coreclr_args.git_hash is not None:
+        return
+
+    # Do all the remaining commands, including a number of 'git' commands including relative paths,
+    # from the root of the runtime repo.
+
+    with ChangeDir(coreclr_args.runtime_repo_location):
+        command = [ "git", "rev-parse", "HEAD" ]
+        print("Invoking: {}".format(" ".join(command)))
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+        stdout_git_rev_parse, _ = proc.communicate()
+        return_code = proc.returncode
+        if return_code == 0:
+            current_git_hash = stdout_git_rev_parse.decode('utf-8').strip()
+            print("Current hash: {}".format(current_git_hash))
+        else:
+            raise RuntimeError("Couldn't determine current git hash")
+
+        # We've got the current hash; figure out the baseline hash.
+        command = [ "git", "merge-base", current_git_hash, "origin/main" ]
+        print("Invoking: {}".format(" ".join(command)))
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+        stdout_git_merge_base, _ = proc.communicate()
+        return_code = proc.returncode
+        if return_code == 0:
+            base_git_hash = stdout_git_merge_base.decode('utf-8').strip()
+            print("Baseline hash: {}".format(base_git_hash))
+        else:
+            raise RuntimeError("Couldn't determine baseline git hash")
+
+        # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
+        command = [ "git", "log", "--pretty=format:%H", base_git_hash, "-20", "--", "src/coreclr/jit/*" ]
+        print("Invoking: {}".format(" ".join(command)))
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+        stdout_change_list, _ = proc.communicate()
+        return_code = proc.returncode
+        change_list_hashes = []
+        if return_code == 0:
+            change_list_hashes = stdout_change_list.decode('utf-8').strip().splitlines()
+        else:
+            raise RuntimeError("Couldn't determine list of JIT changes starting with baseline hash")
+
+        if len(change_list_hashes) == 0:
+            raise RuntimeError("No JIT changes found starting with baseline hash")
+
+        # For each hash, see if the rolling build contains the JIT.
+
+        hashnum = 1
+        for git_hash in change_list_hashes:
+            print("try {}: {}".format(hashnum, git_hash))
+
+            # Set the git hash to look for
+            # Note: there's a slight inefficiency here because this code searches for a JIT at this hash value, and
+            # then when we go to download, we do the same search again because we don't cache the result and pass it
+            # directly on to the downloader.
+            coreclr_args.git_hash = git_hash
+            urls = get_jit_urls(coreclr_args, find_all=False)
+            if len(urls) > 1:
+                if hashnum > 1:
+                    print("Warning: the baseline found is not built with the first git hash with JIT code changes; there may be extraneous diffs")
+                return
+
+            # We didn't find a baseline; keep looking
+            hashnum += 1
+
+        # We ran out of hashes of JIT changes, and didn't find a baseline. Give up.
+        print("Error: no baseline JIT found")
+
+    raise RuntimeError("No baseline JIT found")
+
+
 def list_az_jits(filter_func=lambda unused: True, prefix_string = None):
     """ List the JITs in Azure Storage using REST api
 
@@ -198,7 +313,7 @@ def list_az_jits(filter_func=lambda unused: True, prefix_string = None):
 
     urls = []
 
-    list_az_container_uri_root = az_blob_storage_container_uri + "?restype=container&comp=list&prefix=" + az_builds_root_folder + "/"
+    list_az_container_uri_root = az_blob_storage_jitrollingbuild_container_uri + "?restype=container&comp=list&prefix=" + az_builds_root_folder + "/"
     if prefix_string:
         list_az_container_uri_root += prefix_string
 
@@ -268,7 +383,7 @@ def upload_command(coreclr_args):
     print("JIT upload")
 
     def upload_blob(file, blob_name):
-        blob_client = blob_service_client.get_blob_client(container=az_container_name, blob=blob_name)
+        blob_client = blob_service_client.get_blob_client(container=az_jitrollingbuild_container_name, blob=blob_name)
 
         # Check if the blob already exists, and delete it if it does, before uploading / replacing it.
         try:
@@ -309,8 +424,8 @@ def upload_command(coreclr_args):
 
     # Next, look for any and all cross-compilation JITs. These are named, e.g.:
     #   clrjit_unix_x64_x64.dll
-    #   clrjit_win_arm_x64.dll
-    #   clrjit_win_arm64_x64.dll
+    #   clrjit_universal_arm_x64.dll
+    #   clrjit_universal_arm64_x64.dll
     # and so on, and live in the same product directory as the primary JIT.
     #
     # Note that the expression below explicitly filters out the primary JIT since we added that above.
@@ -382,14 +497,14 @@ def upload_command(coreclr_args):
                 total_bytes_uploaded += zip_stat_result.st_size
 
                 blob_name = "{}/{}".format(blob_folder_name, zip_name)
-                print("Uploading: {} ({}) -> {}".format(file, zip_path, az_blob_storage_container_uri + "/" + blob_name))
+                print("Uploading: {} ({}) -> {}".format(file, zip_path, az_blob_storage_jitrollingbuild_container_uri + "/" + blob_name))
                 upload_blob(zip_path, blob_name)
             else:
                 file_stat_result = os.stat(file)
                 total_bytes_uploaded += file_stat_result.st_size
                 file_name = os.path.basename(file)
                 blob_name = "{}/{}".format(blob_folder_name, file_name)
-                print("Uploading: {} -> {}".format(file, az_blob_storage_container_uri + "/" + blob_name))
+                print("Uploading: {} -> {}".format(file, az_blob_storage_jitrollingbuild_container_uri + "/" + blob_name))
                 upload_blob(file, blob_name)
 
     print("Uploaded {:n} bytes".format(total_bytes_uploaded))
@@ -466,7 +581,7 @@ def get_jit_urls(coreclr_args, find_all=False):
     """
 
     blob_filter_string = "{}/{}/{}/{}".format(coreclr_args.git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type)
-    blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_container_uri, az_builds_root_folder, blob_filter_string).lower()
+    blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_jitrollingbuild_container_uri, az_builds_root_folder, blob_filter_string).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The URL looks like:
     #   https://clrjit.blob.core.windows.net/jitrollingbuild/builds/git_hash/Linux/x64/Checked/clrjit.dll
@@ -480,17 +595,27 @@ def get_jit_urls(coreclr_args, find_all=False):
 
 
 def download_command(coreclr_args):
-    """ Download the JIT
+    """ Download the JITs
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
     """
 
     urls = get_jit_urls(coreclr_args, find_all=False)
-    if urls is None:
+    if len(urls) == 0:
+        print("Nothing to download")
         return
 
-    download_urls(urls, coreclr_args.target_dir)
+    if coreclr_args.target_dir is None:
+        # Use the same default download location for the JIT as superpmi.py uses for downloading a baseline JIT.
+        default_basejit_root_dir = os.path.join(coreclr_args.spmi_location, "basejit")
+        target_dir = os.path.join(default_basejit_root_dir, "{}.{}.{}.{}".format(coreclr_args.git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+        if not os.path.isdir(target_dir):
+            os.makedirs(target_dir)
+    else:
+        target_dir = coreclr_args.target_dir
+
+    download_urls(urls, target_dir)
 
 
 def list_command(coreclr_args):
@@ -501,7 +626,8 @@ def list_command(coreclr_args):
     """
 
     urls = get_jit_urls(coreclr_args, find_all=coreclr_args.all)
-    if urls is None:
+    if len(urls) == 0:
+        print("No JITs found")
         return
 
     count = len(urls)
@@ -535,6 +661,21 @@ def setup_args(args):
                         "mode",  # "mode" is from the `parser.add_subparsers(dest='mode')` call
                         lambda unused: True,
                         "Unable to set mode")
+
+    def setup_spmi_location_arg(spmi_location):
+        if spmi_location is None:
+            if "SUPERPMI_CACHE_DIRECTORY" in os.environ:
+                spmi_location = os.environ["SUPERPMI_CACHE_DIRECTORY"]
+                spmi_location = os.path.abspath(spmi_location)
+            else:
+                spmi_location = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi"))
+        return spmi_location
+
+    coreclr_args.verify(args,
+                        "spmi_location",
+                        lambda unused: True,
+                        "Unable to set spmi_location",
+                        modify_arg=setup_spmi_location_arg)
 
     if coreclr_args.mode == "upload":
 
@@ -575,9 +716,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set skip_cleanup")
 
-        if not os.path.isdir(coreclr_args.target_dir):
+        if coreclr_args.target_dir is not None and not os.path.isdir(coreclr_args.target_dir):
             print("--target_dir directory does not exist")
             raise RuntimeError("Error")
+
+        process_git_hash_arg(coreclr_args)
 
     elif coreclr_args.mode == "list":
 
@@ -607,7 +750,6 @@ def main(args):
         return 1
 
     coreclr_args = setup_args(args)
-    success = True
 
     if coreclr_args.mode == "upload":
         upload_command(coreclr_args)
@@ -621,7 +763,8 @@ def main(args):
     else:
         raise NotImplementedError(coreclr_args.mode)
 
-    return 0 if success else 1
+    # Note that if there is any failure, an exception is raised and the process exit code is then `1`
+    return 0
 
 ################################################################################
 # __main__

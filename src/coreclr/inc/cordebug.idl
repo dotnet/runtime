@@ -5219,7 +5219,12 @@ interface ICorDebugModule4 : IUnknown
                       format while FALSE represents flat format.
      * Return Value:
      *     S_OK in successful case.
+     *     S_FALSE if they layout could not be determined.
      * Notes:
+     *     The pIsMapped value set in pIsMapped should only be interpreted as valid
+     *     when this function returns S_OK. All other return values (including
+     *     S_FALSE) indicate that the layout could not be determined and pIsMapped
+     *     should be ignored.
      */
     HRESULT IsMappedLayout([out] BOOL *pIsMapped);
 }

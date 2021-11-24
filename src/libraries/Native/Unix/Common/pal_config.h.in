@@ -36,8 +36,7 @@
 #cmakedefine01 HAVE_STRLCAT
 #cmakedefine01 HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
 #cmakedefine01 HAVE_POSIX_ADVISE
-#cmakedefine01 HAVE_POSIX_FALLOCATE
-#cmakedefine01 HAVE_POSIX_FALLOCATE64
+#cmakedefine01 HAVE_FALLOCATE
 #cmakedefine01 HAVE_PREADV
 #cmakedefine01 HAVE_PWRITEV
 #cmakedefine01 PRIORITY_REQUIRES_INT_WHO
@@ -113,6 +112,7 @@
 #cmakedefine01 HAVE_GETDOMAINNAME
 #cmakedefine01 HAVE_UNAME
 #cmakedefine01 HAVE_UTIMENSAT
+#cmakedefine01 HAVE_LUTIMES
 #cmakedefine01 HAVE_FUTIMES
 #cmakedefine01 HAVE_FUTIMENS
 #cmakedefine01 HAVE_MKSTEMPS

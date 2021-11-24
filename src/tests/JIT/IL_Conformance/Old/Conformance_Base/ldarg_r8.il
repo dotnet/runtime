@@ -67,4 +67,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldarg_r8.exe{}
+.assembly ldarg_r8{}

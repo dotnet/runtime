@@ -32,10 +32,10 @@ namespace System
             if (activationAttributes?.Length > 0)
                 throw new PlatformNotSupportedException(SR.NotSupported_ActivAttr);
 
-            if (type.UnderlyingSystemType is RuntimeType rt)
-                return rt.CreateInstanceImpl(bindingAttr, binder, args, culture);
+            if (type.UnderlyingSystemType is not RuntimeType rt)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
-            throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            return rt.CreateInstanceImpl(bindingAttr, binder, args, culture);
         }
 
         [System.Security.DynamicSecurityMethod]

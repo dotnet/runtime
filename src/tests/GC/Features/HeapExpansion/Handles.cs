@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using TestLibrary;
 
-public class Test
+public class Test_Handles
 {
     public static List<GCHandle> list = new List<GCHandle>();
     public static List<GCHandle> pinnedList = new List<GCHandle>();

@@ -5,7 +5,7 @@ using System;
 
 enum MyEnum { One, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten };
 
-public class Test
+public class Test_enum
 {
     public static int Main()
     {

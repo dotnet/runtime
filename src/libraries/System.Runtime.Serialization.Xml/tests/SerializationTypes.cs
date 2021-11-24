@@ -47,6 +47,16 @@ namespace SerializationTypes
                 return (x.P1 == y.P1) && (x.P2 == y.P2);
             }
         }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is SimpleType st)
+                return AreEqual(this, st);
+
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode() => base.GetHashCode();
     }
 
     public class TypeWithGetSetArrayMembers

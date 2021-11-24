@@ -16,7 +16,7 @@ namespace Internal.Cryptography
         private SafeProvHandle _hProvider;
         private SafeKeyHandle _hKey;
 
-        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[]? iv, bool encrypting, int feedbackSize, int paddingSizeInBytes)
+        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, bool addNoSaltFlag, byte[]? iv, bool encrypting, int feedbackSize, int paddingSizeInBytes)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             _encrypting = encrypting;
@@ -36,9 +36,9 @@ namespace Internal.Cryptography
                 SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_IV, currentIv);
             }
 
-            if (effectiveKeyLength != 0)
+            if (algId == CapiHelper.CALG_RC2)
             {
-                SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_EFFECTIVE_KEYLEN, effectiveKeyLength);
+                SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_EFFECTIVE_KEYLEN, key.Length * 8);
             }
         }
 

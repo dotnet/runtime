@@ -123,7 +123,7 @@ static void* volatile s_gssLib = NULL;
 #define GSS_C_NT_HOSTBASED_SERVICE          (*GSS_C_NT_HOSTBASED_SERVICE_ptr)
 #define gss_mech_krb5                       (*gss_mech_krb5_ptr)
 
-#define gss_lib_name "libgssapi_krb5.so"
+#define gss_lib_name "libgssapi_krb5.so.2"
 
 static int32_t ensure_gss_shim_initialized()
 {

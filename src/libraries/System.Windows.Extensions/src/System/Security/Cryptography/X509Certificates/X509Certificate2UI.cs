@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -104,7 +105,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Interop.Crypt32.X509_ASN_ENCODING | Interop.Crypt32.PKCS_7_ASN_ENCODING,
                 IntPtr.Zero,
                 0,
-                null);
+                IntPtr.Zero);
 
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
                 throw new CryptographicException(Marshal.GetLastWin32Error());

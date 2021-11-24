@@ -6,7 +6,7 @@ using System.Security.Principal;
 
 namespace System.Net
 {
-    internal partial class ContextAwareResult
+    internal sealed partial class ContextAwareResult
     {
         private WindowsIdentity? _windowsIdentity;
 

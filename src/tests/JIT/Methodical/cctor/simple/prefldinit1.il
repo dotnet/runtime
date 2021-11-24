@@ -20,6 +20,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module precise1.exe
 // MVID: {D664E737-135B-4517-AFBA-875EBEA1C810}
 .imagebase 0x00400000
@@ -201,6 +202,9 @@
       IL_0061:  beq.s      IL_0085
 
       IL_0063:  ldstr      "in Main() after f(ref b), measure.a is {0}"
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       IL_0068:  ldsfld     int32 measure::a
       IL_006d:  box        [mscorlib]System.Int32
       IL_0072:  call       void [System.Console]System.Console::WriteLine(string,

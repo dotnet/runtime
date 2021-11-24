@@ -9,35 +9,35 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFree")]
-        internal static extern void DigestFree(IntPtr handle);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFree")]
+        internal static partial void DigestFree(IntPtr handle);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCreate")]
-        internal static extern SafeDigestCtxHandle DigestCreate(PAL_HashAlgorithm algorithm, out int cbDigest);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCreate")]
+        internal static partial SafeDigestCtxHandle DigestCreate(PAL_HashAlgorithm algorithm, out int cbDigest);
 
         internal static int DigestUpdate(SafeDigestCtxHandle ctx, ReadOnlySpan<byte> data) =>
             DigestUpdate(ctx, ref MemoryMarshal.GetReference(data), data.Length);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestUpdate")]
-        private static extern int DigestUpdate(SafeDigestCtxHandle ctx, ref byte pbData, int cbData);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestUpdate")]
+        private static partial int DigestUpdate(SafeDigestCtxHandle ctx, ref byte pbData, int cbData);
 
         internal static int DigestFinal(SafeDigestCtxHandle ctx, Span<byte> output) =>
             DigestFinal(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFinal")]
-        private static extern int DigestFinal(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFinal")]
+        private static partial int DigestFinal(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
 
         internal static int DigestCurrent(SafeDigestCtxHandle ctx, Span<byte> output) =>
             DigestCurrent(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCurrent")]
-        private static extern int DigestCurrent(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCurrent")]
+        private static partial int DigestCurrent(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestOneShot")]
-        internal static unsafe extern int DigestOneShot(PAL_HashAlgorithm algorithm, byte* pbData, int cbData, byte* pbOutput, int cbOutput, out int cbDigest);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestOneShot")]
+        internal static unsafe partial int DigestOneShot(PAL_HashAlgorithm algorithm, byte* pbData, int cbData, byte* pbOutput, int cbOutput, int* cbDigest);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestReset")]
-        internal static extern int DigestReset(SafeDigestCtxHandle ctx);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestReset")]
+        internal static partial int DigestReset(SafeDigestCtxHandle ctx);
     }
 }
 

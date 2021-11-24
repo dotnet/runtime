@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <Nullable>enable</Nullable>
+    <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
+    <NoWarn>$(NoWarn);xUnit2008</NoWarn>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\src\System.Text.RegularExpressions.csproj" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <ProjectReference Include="..\..\gen\System.Text.RegularExpressions.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+</Project>

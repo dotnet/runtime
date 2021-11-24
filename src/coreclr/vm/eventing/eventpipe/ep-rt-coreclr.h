@@ -2,13 +2,13 @@
 #ifndef __EVENTPIPE_RT_CORECLR_H__
 #define __EVENTPIPE_RT_CORECLR_H__
 
-#include "ep-rt-config.h"
+#include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-thread.h"
-#include "ep-types.h"
-#include "ep-provider.h"
-#include "ep-session-provider.h"
+#include <eventpipe/ep-thread.h>
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep-provider.h>
+#include <eventpipe/ep-session-provider.h>
 #include "fstream.h"
 #include "typestring.h"
 #include "win32threadpool.h"
@@ -1109,50 +1109,6 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 
 static
 inline
-char *
-diagnostics_command_line_get (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
-}
-
-static
-inline
-ep_char8_t **
-diagnostics_command_line_get_ref (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	extern ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
-	return &_ep_rt_coreclr_diagnostics_cmd_line;
-}
-
-static
-inline
-void
-diagnostics_command_line_lazy_init (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	//TODO: Real lazy init implementation.
-	if (!*diagnostics_command_line_get_ref ())
-		*diagnostics_command_line_get_ref () = diagnostics_command_line_get ();
-}
-
-static
-inline
-void
-diagnostics_command_line_lazy_clean (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	//TODO: Real lazy clean up implementation.
-	ep_rt_utf8_string_free (*diagnostics_command_line_get_ref ());
-	*diagnostics_command_line_get_ref () = NULL;
-}
-
-static
-inline
 ep_rt_lock_handle_t *
 ep_rt_coreclr_config_lock_get (void)
 {
@@ -1316,7 +1272,6 @@ void
 ep_rt_shutdown (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	diagnostics_command_line_lazy_clean ();
 }
 
 static
@@ -2565,7 +2520,7 @@ ep_rt_utf8_string_replace (
 	if (strFound != NULL)
 	{
 		size_t strSearchLen = strlen(strSearch);
-		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1;
 		ep_char8_t *newStr =  reinterpret_cast<ep_char8_t *>(malloc(newStrSize));
 		if (newStr == NULL)
 		{
@@ -2711,8 +2666,22 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	diagnostics_command_line_lazy_init ();
-	return *diagnostics_command_line_get_ref ();
+	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
+	// The host initalizes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
+	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
+	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
+	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
+	// As a result, we cannot actually cache this value. We need to return the _current_ value.
+	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
+	// To that end, we'll "cache" it here so we free the previous string when we get it again.
+	extern ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
+
+	if (_ep_rt_coreclr_diagnostics_cmd_line)
+		ep_rt_utf8_string_free(_ep_rt_coreclr_diagnostics_cmd_line);
+
+	_ep_rt_coreclr_diagnostics_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+
+	return _ep_rt_coreclr_diagnostics_cmd_line;
 }
 
 /*

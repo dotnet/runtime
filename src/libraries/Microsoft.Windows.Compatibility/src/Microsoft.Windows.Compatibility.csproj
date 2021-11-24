@@ -50,8 +50,9 @@
                                      System.ServiceModel.Duplex;
                                      System.ServiceModel.Http;
                                      System.ServiceModel.NetTcp;
-                                     System.ServiceModel.Security"
-                      Version="$(ServiceModelVersion)" />
+                                     System.ServiceModel.Security;
+                                     System.Web.Services.Description"
+                      Version="$(SystemServiceModelPrimitivesVersion)" />
   </ItemGroup>
 
   <!-- Packages which are inbox on frameworks newer than .NET Standard 2.0. -->

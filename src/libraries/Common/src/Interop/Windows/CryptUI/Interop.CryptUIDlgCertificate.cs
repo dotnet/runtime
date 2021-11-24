@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -53,10 +53,13 @@ internal static partial class Interop
             internal IntPtr hSelectedCertStore;
         }
 
-        [DllImport(Interop.Libraries.CryptUI, CharSet = CharSet.Unicode, SetLastError = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
+        [DllImport(Interop.Libraries.CryptUI, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern bool CryptUIDlgViewCertificateW([MarshalAs(UnmanagedType.LPStruct)] CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo, IntPtr pfPropertiesChanged);
 
-        [DllImport(Interop.Libraries.CryptUI, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Interop.Libraries.CryptUI, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern SafeCertContextHandle CryptUIDlgSelectCertificateW([In, Out, MarshalAs(UnmanagedType.LPStruct)] CRYPTUI_SELECTCERTIFICATE_STRUCTW csc);
+#pragma warning restore DLLIMPORTGENANALYZER015
     }
 }

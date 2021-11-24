@@ -5,7 +5,6 @@
 #define _WITH_GETLINE
 #endif
 
-#include <getexepath.h>
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"
@@ -20,6 +19,7 @@
 #include <locale>
 #include <pwd.h>
 #include "config.h"
+#include <common/getexepath.h>
 
 #if defined(TARGET_OSX)
 #include <mach-o/dyld.h>
@@ -418,12 +418,12 @@ pal::string_t pal::get_dotnet_self_registered_config_location()
 {
     //  ***Used only for testing***
     pal::string_t environment_install_location_override;
-    if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH"), &environment_install_location_override))
+    if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_PATH"), &environment_install_location_override))
     {
         return environment_install_location_override;
     }
 
-    return _X("/etc/dotnet/install_location");
+    return _X("/etc/dotnet");
 }
 
 namespace
@@ -449,6 +449,42 @@ namespace
     }
 }
 
+bool get_install_location_from_file(const pal::string_t& file_path, bool& file_found, pal::string_t& install_location)
+{
+    file_found = true;
+    bool install_location_found = false;
+    FILE* install_location_file = pal::file_open(file_path, "r");
+    if (install_location_file != nullptr)
+    {
+        if (!get_line_from_file(install_location_file, install_location))
+        {
+            trace::warning(_X("Did not find any install location in '%s'."), file_path.c_str());
+        }
+        else
+        {
+            install_location_found = true;
+        }
+
+        fclose(install_location_file);
+        if (install_location_found)
+            return true;
+    }
+    else
+    {
+        if (errno == ENOENT)
+        {
+            trace::verbose(_X("The install_location file ['%s'] does not exist - skipping."), file_path.c_str());
+            file_found = false;
+        }
+        else
+        {
+            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno));
+        }
+    }
+
+    return false;
+}
+
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
     recv->clear();
@@ -462,71 +498,31 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    pal::string_t install_location_file_path = get_dotnet_self_registered_config_location();
-    trace::verbose(_X("Looking for install_location file in '%s'."), install_location_file_path.c_str());
-    FILE* install_location_file = pal::file_open(install_location_file_path, "r");
-    if (install_location_file == nullptr)
-    {
-        if (errno == ENOENT)
-        {
-            trace::verbose(_X("The install_location file ['%s'] does not exist - skipping."), install_location_file_path.c_str());
-        }
-        else
-        {
-            trace::error(_X("The install_location file ['%s'] failed to open: %s."), install_location_file_path.c_str(), pal::strerror(errno));
-        }
-
-        return false;
-    }
+    pal::string_t install_location_path = get_dotnet_self_registered_config_location();
+    pal::string_t arch_specific_install_location_file_path = install_location_path;
+    append_path(&arch_specific_install_location_file_path, (_X("install_location_") + to_lower(get_arch())).c_str());
+    trace::verbose(_X("Looking for architecture specific install_location file in '%s'."), arch_specific_install_location_file_path.c_str());
 
     pal::string_t install_location;
-    int current_line = 0;
-    bool is_first_line = true, install_location_found = false;
-
-    while (get_line_from_file(install_location_file, install_location))
+    bool file_found = false;
+    if (!get_install_location_from_file(arch_specific_install_location_file_path, file_found, install_location))
     {
-        current_line++;
-        size_t arch_sep = install_location.find(_X('='));
-        if (arch_sep == pal::string_t::npos)
+        if (file_found)
         {
-            if (is_first_line)
-            {
-                recv->assign(install_location);
-                install_location_found = true;
-                trace::verbose(_X("Found install location path '%s'."), install_location.c_str());
-            }
-            else
-            {
-                trace::warning(_X("Found unprefixed install location path '%s' on line %d."), install_location.c_str(), current_line);
-                trace::warning(_X("Only the first line in '%s' may not have an architecture prefix."), install_location_file_path.c_str());
-            }
-
-            is_first_line = false;
-            continue;
+            return false;
         }
 
-        pal::string_t arch_prefix = install_location.substr(0, arch_sep);
-        pal::string_t path_to_location = install_location.substr(arch_sep + 1);
+        pal::string_t legacy_install_location_file_path = install_location_path;
+        append_path(&legacy_install_location_file_path, _X("install_location"));
+        trace::verbose(_X("Looking for install_location file in '%s'."), legacy_install_location_file_path.c_str());
 
-        trace::verbose(_X("Found architecture-specific install location path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
-        if (pal::strcasecmp(arch_prefix.c_str(), get_arch()) == 0)
+        if (!get_install_location_from_file(legacy_install_location_file_path, file_found, install_location))
         {
-            recv->assign(path_to_location);
-            install_location_found = true;
-            trace::verbose(_X("Found architecture-specific install location path matching the current host architecture ('%s'): '%s'."), arch_prefix.c_str(), path_to_location.c_str());
-            break;
+            return false;
         }
-
-        is_first_line = false;
     }
 
-    fclose(install_location_file);
-    if (!install_location_found)
-    {
-        trace::warning(_X("Did not find any install location in '%s'."), install_location_file_path.c_str());
-        return false;
-    }
-
+    recv->assign(install_location);
     trace::verbose(_X("Using install location '%s'."), recv->c_str());
     return true;
 }
@@ -544,6 +540,10 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
 
 #if defined(TARGET_OSX)
     recv->assign(_X("/usr/local/share/dotnet"));
+    if (pal::is_emulating_x64())
+    {
+        append_path(recv, _X("x64"));
+    }
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif
@@ -572,48 +572,47 @@ pal::string_t pal::get_current_os_rid_platform()
     pal::string_t ridOS;
 
     char str[256];
-
-    // There is no good way to get the visible version of OSX (i.e. something like 10.x.y) as
-    // certain APIs work till 10.9 and have been deprecated and others require linking against
-    // UI frameworks to get the data.
-    //
-    // We will, instead, use kern.osrelease and use its major version number
-    // as a means to formulate the OSX 10.X RID.
-    //
     size_t size = sizeof(str);
-    int ret = sysctlbyname("kern.osrelease", str, &size, nullptr, 0);
+
+    // returns something like 10.5.2 or 11.6
+    int ret = sysctlbyname("kern.osproductversion", str, &size, nullptr, 0);
     if (ret == 0)
     {
-        std::string release(str, size);
-        size_t pos = release.find('.');
-        if (pos != std::string::npos)
-        {
-            int majorVersion = stoi(release.substr(0, pos));
-            // compat path with 10.x
-            if (majorVersion < 20)
-            {
-                // Extract the major version and subtract 4 from it
-                // to get the Minor version used in OSX versioning scheme.
-                // That is, given a version 10.X.Y, we will get X below.
-                //
-                // macOS Cataline 10.15.5 has kernel 19.5.0
-                int minorVersion = majorVersion - 4;
-                if (minorVersion < 10)
-                {
-                    // On OSX, our minimum supported RID is 10.12.
-                    minorVersion = 12;
-                }
+        // the value _should_ be null terminated but let's make sure
+        str[size - 1] = 0;
 
-                ridOS.append(_X("osx.10."));
-                ridOS.append(pal::to_string(minorVersion));
+        char* pos = strchr(str, '.');
+        if (pos != NULL)
+        {
+            int major = atoi(str);
+            if (major > 11)
+            {
+                // starting with 12.0 we track only major release
+                *pos = 0;
+
+            }
+            else if (major == 11)
+            {
+                // for 11.x we publish RID as 11.0
+                // if we return anything else, it would break the RID graph processing
+                strcpy(str, "11.0");
             }
             else
             {
-                // 11.0 shipped with kernel 20.0
-                ridOS.append(_X("osx.11."));
-                ridOS.append(pal::to_string(majorVersion - 20));
+                // for 10.x the significant releases are actually the second digit
+                pos = strchr(pos + 1, '.');
+
+                if (pos != NULL)
+                {
+                    // strip anything after second dot and return something like 10.5
+                    *pos = 0;
+                }
             }
         }
+
+        std::string release(str, strlen(str));
+        ridOS.append(_X("osx."));
+        ridOS.append(release);
     }
 
     return ridOS;
@@ -720,6 +719,7 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
 {
     pal::string_t rhelPrefix(_X("rhel."));
     pal::string_t alpinePrefix(_X("alpine."));
+    pal::string_t rockyPrefix(_X("rocky."));
     size_t lastVersionSeparatorIndex = std::string::npos;
 
     if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
@@ -733,6 +733,10 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
         {
             lastVersionSeparatorIndex = rid.find(_X("."), secondVersionSeparatorIndex + 1);
         }
+    }
+    else if (rid.compare(0, rockyPrefix.length(), rockyPrefix) == 0)
+    {
+        lastVersionSeparatorIndex = rid.find(_X("."), rockyPrefix.length());
     }
 
     if (lastVersionSeparatorIndex != std::string::npos)
@@ -833,7 +837,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    char* path = getexepath();
+    char* path = minipal_getexepath();
     if (!path)
     {
         return false;
@@ -1017,6 +1021,26 @@ void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::st
 bool pal::is_running_in_wow64()
 {
     return false;
+}
+
+bool pal::is_emulating_x64()
+{
+    int is_translated_process = 0;
+#if defined(TARGET_OSX)
+    size_t size = sizeof(is_translated_process);
+    if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
+    {
+        trace::info(_X("Could not determine whether the current process is running under Rosetta."));
+        if (errno != ENOENT)
+        {
+            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno));
+        }
+
+        return false;
+    }
+#endif
+
+    return is_translated_process == 1;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

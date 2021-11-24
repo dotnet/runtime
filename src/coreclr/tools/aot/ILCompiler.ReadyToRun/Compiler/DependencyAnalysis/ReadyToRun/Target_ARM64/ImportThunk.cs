@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case Kind.DelayLoadHelper:
+                case Kind.DelayLoadHelperWithExistingIndirectionCell:
                 case Kind.VirtualStubDispatch:
                     // x11 contains indirection cell
                     // Do nothing x11 contains our first param

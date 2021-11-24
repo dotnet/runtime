@@ -11,8 +11,6 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal sealed class JsonParameterInfo<T> : JsonParameterInfo
     {
-        internal override object? ClrDefaultValue => default(T);
-
         public T TypedDefaultValue { get; private set; } = default!;
 
         public override void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
@@ -21,7 +19,7 @@ namespace System.Text.Json.Serialization.Metadata
             InitializeDefaultValue(matchingProperty);
         }
 
-        protected override void InitializeDefaultValue(JsonPropertyInfo matchingProperty)
+        private void InitializeDefaultValue(JsonPropertyInfo matchingProperty)
         {
             Debug.Assert(ClrInfo.ParameterType == matchingProperty.DeclaredPropertyType);
 

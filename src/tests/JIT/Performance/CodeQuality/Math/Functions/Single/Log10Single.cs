@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const float log10SingleDelta = 0.0004f;
         private const float log10SingleExpectedResult = -664.094971f;
-
-        [Benchmark(InnerIterationCount = Log10SingleIterations)]
-        public static void Log10SingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        Log10SingleTest();
-                    }
-                }
-            }
-        }
 
         public static void Log10SingleTest()
         {

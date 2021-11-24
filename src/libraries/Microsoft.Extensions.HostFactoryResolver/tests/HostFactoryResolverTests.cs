@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Extensions.Configuration;
 using MockHostTypes;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -250,6 +251,27 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             Assert.NotNull(factory);
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void TopLevelStatementsTestsTimeout()
+        {
+            var assembly = Assembly.Load("TopLevelStatementsTestsTimeout");
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
+
+            Assert.NotNull(factory);
+            Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ApplicationNameSetFromAgrument()
+        {
+            Assembly assembly = Assembly.Load("ApplicationNameSetFromAgrument");
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
+            IServiceProvider? serviceProvider = factory(Array.Empty<string>());
+
+            var configuration = (IConfiguration)serviceProvider.GetService(typeof(IConfiguration));
+            Assert.Contains("ApplicationNameSetFromAgrument", configuration["applicationName"]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

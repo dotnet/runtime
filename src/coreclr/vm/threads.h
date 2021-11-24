@@ -3451,6 +3451,16 @@ private:
     //---------------------------------------------------------------
     DWORD m_profilerCallbackState;
 
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+    //---------------------------------------------------------------
+    // m_dwProfilerEvacuationCounters keeps track of how many profiler
+    // callback calls remain on the stack
+    //---------------------------------------------------------------
+    // Why volatile?
+    // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
+    Volatile<DWORD> m_dwProfilerEvacuationCounters[MAX_NOTIFICATION_PROFILERS + 1];
+#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+
 private:
     UINT32 m_workerThreadPoolCompletionCount;
     static UINT64 s_workerThreadPoolCompletionCountOverflow;
@@ -3582,6 +3592,38 @@ public:
 
         m_pProfilerFilterContext = pContext;
     }
+
+#ifdef PROFILING_SUPPORTED
+    FORCEINLINE DWORD GetProfilerEvacuationCounter(size_t slot)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
+        return m_dwProfilerEvacuationCounters[slot];
+    }
+
+    FORCEINLINE void IncProfilerEvacuationCounter(size_t slot)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
+#ifdef _DEBUG
+        DWORD newValue = 
+#endif // _DEBUG
+        ++m_dwProfilerEvacuationCounters[slot];
+        _ASSERTE(newValue != 0U);
+    }
+
+    FORCEINLINE void DecProfilerEvacuationCounter(size_t slot)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
+#ifdef _DEBUG
+        DWORD newValue = 
+#endif // _DEBUG
+        --m_dwProfilerEvacuationCounters[slot];
+        _ASSERTE(newValue != (DWORD)-1);
+    }
+
+#endif // PROFILING_SUPPORTED
 
     // Used by the profiler API to find which flags have been set on the Thread object,
     // in order to authorize a profiler's call into ICorProfilerInfo(2).

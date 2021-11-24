@@ -74,4 +74,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldloc_i8.exe{}
+.assembly ldloc_i8{}

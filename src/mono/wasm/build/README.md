@@ -10,9 +10,9 @@ Wasm app build can run in two scenarios:
 A dotnet wasm app has some native wasm files (`dotnet.wasm`, and `dotnet.js`). How these files are obtained, or generated:
 
 1. Build
-    a. with no native libraries referenced (AOT setting is ignored here)
+    - a. with no native libraries referenced (AOT setting is ignored here)
         - files from the runtime pack are used as-is
-    b. with native libraries referenced
+    - b. with native libraries referenced
         - dotnet.wasm is relinked with the native libraries
 2. Publish
     - dotnet.wasm is relinked with the native libraries, and updated pinvoke/icalls from the trimmed assemblies
@@ -114,8 +114,8 @@ them for the new task assembly.
 
 1. The task assembly dir, and its path need to be in two properties:
     ```xml
-    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'JsonToItemsTaskFactory', 'Debug', '$(NetCoreAppToolCurrent)'))</JsonToItemsTaskFactoryDir>
-    <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
+    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
+    <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
     ```
 
     And this needs to be set in:

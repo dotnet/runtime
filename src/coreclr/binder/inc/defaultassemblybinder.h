@@ -38,9 +38,9 @@ public:
                               SString  &sPlatformResourceRoots,
                               SString  &sAppPaths);
 
-    HRESULT Bind(LPCWSTR      wszCodeBase,
-                 PEAssembly  *pParentAssembly,
-                 BINDER_SPACE::Assembly **ppAssembly);
+    HRESULT Bind(LPCWSTR wszCodeBase, BINDER_SPACE::Assembly **ppAssembly);
+
+    HRESULT BindToSystem(BINDER_SPACE::Assembly **ppSystemAssembly);
 
 private:
 

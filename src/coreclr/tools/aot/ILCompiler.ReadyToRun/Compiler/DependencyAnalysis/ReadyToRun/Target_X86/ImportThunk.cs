@@ -41,6 +41,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // mov edx, [module]
                     instructionEncoder.EmitMOV(Register.EDX, factory.ModuleImport);
                     break;
+
+                default:
+                    throw new NotSupportedException(_thunkKind.ToString() + " is not supported");
             }
             instructionEncoder.EmitJMP(_helperCell);
         }

@@ -45,4 +45,4 @@ FAIL:
 	ret
 }
 }
-.assembly bge_u.exe{}
+.assembly bge_u{}
