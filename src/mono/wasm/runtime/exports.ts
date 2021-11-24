@@ -143,8 +143,10 @@ function initializeImportsAndExports(
         BINDING: exports.binding,
         INTERNAL: exports.internal,
         Module: module,
-        productVersion,
-        configuration
+        RuntimeBuildInfo: {
+            productVersion,
+            configuration
+        }
     };
 
     if (module.configSrc) {
@@ -222,7 +224,7 @@ function initializeImportsAndExports(
     else {
         list = globalThisAny.getDotnetRuntime.list;
     }
-    api.runtimeId = globalThisAny.getDotnetRuntime.list.length;
+    api.RuntimeId = globalThisAny.getDotnetRuntime.list.length;
     list.push(create_weak_ref(api));
 
     return api;
@@ -371,7 +373,9 @@ export interface DotNetPublicAPI {
     MONO: MONO,
     BINDING: BINDING,
     Module: any,
-    runtimeId: number,
-    productVersion: string,
-    configuration: string,
+    RuntimeId: number,
+    RuntimeBuildInfo: {
+        productVersion: string,
+        configuration: string,
+    }
 }
