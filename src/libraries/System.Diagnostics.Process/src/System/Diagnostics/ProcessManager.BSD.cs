@@ -36,7 +36,6 @@ namespace System.Diagnostics
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
-        [SupportedOSPlatform("maccatalyst")]
         internal static ProcessModuleCollection GetModules(int processId)
         {
             // We don't have a good way of getting all of the modules of the particular process,
