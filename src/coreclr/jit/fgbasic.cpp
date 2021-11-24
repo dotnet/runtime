@@ -2738,15 +2738,9 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                         BADCODE3("tail call not followed by ret", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
                     }
 
-                    if (fgCanSwitchToOptimized() && fgMayExplicitTailCall())
+                    if (fgMayExplicitTailCall())
                     {
-                        // Method has an explicit tail call that may run like a loop or may not be generated as a tail
-                        // call in tier 0, switch to optimized to avoid spending too much time running slower code
-                        if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) ||
-                            ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
-                        {
-                            fgSwitchToOptimized();
-                        }
+                        compTailPrefixSeen = true;
                     }
                 }
                 else
@@ -3534,6 +3528,57 @@ void Compiler::fgFindBasicBlocks()
 #endif
 
     fgNormalizeEH();
+
+    fgCheckForLoopsInHandlers();
+}
+
+//------------------------------------------------------------------------
+// fgCheckForLoopsInHandlers: scan blocks seeing if any handler block
+//   is a backedge target.
+//
+// Notes:
+//    Sets compHasBackwardJumpInHandler if so. This will disable
+//    setting patchpoints in this method and prompt the jit to
+//    optimize the method instead.
+//
+//    We assume any late-added handler (say for synchronized methods) will
+//    not introduce any loops.
+//
+void Compiler::fgCheckForLoopsInHandlers()
+{
+    // We only care about this if we are going to set OSR patchpoints
+    // and the method has exception handling.
+    //
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+    {
+        return;
+    }
+
+    if (JitConfig.TC_OnStackReplacement() == 0)
+    {
+        return;
+    }
+
+    if (info.compXcptnsCount == 0)
+    {
+        return;
+    }
+
+    // Walk blocks in handlers and filters, looing for a backedge target.
+    //
+    assert(!compHasBackwardJumpInHandler);
+    for (BasicBlock* const blk : Blocks())
+    {
+        if (blk->hasHndIndex())
+        {
+            if (blk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
+            {
+                JITDUMP("\nHander block " FMT_BB "is backward jump target; can't have patchpoints in this method\n");
+                compHasBackwardJumpInHandler = true;
+                break;
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------

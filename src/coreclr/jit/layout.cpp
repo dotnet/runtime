@@ -370,7 +370,7 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
         unsigned gcPtrCount = compiler->info.compCompHnd->getClassGClayout(m_classHandle, gcPtrs);
 
         assert((gcPtrCount == 0) || ((compiler->info.compCompHnd->getClassAttribs(m_classHandle) &
-                                      (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_CONTAINS_STACK_PTR)) != 0));
+                                      (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) != 0));
 
         // Since class size is unsigned there's no way we could have more than 2^30 slots
         // so it should be safe to fit this into a 30 bits bit field.

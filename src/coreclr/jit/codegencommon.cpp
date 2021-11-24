@@ -1211,44 +1211,6 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
             alignment = TARGET_POINTER_SIZE;
         }
     }
-    else if (op->OperIsCopyBlkOp())
-    {
-        GenTree* op2 = op->AsOp()->gtOp2;
-
-        if (op2->OperGet() == GT_CNS_INT)
-        {
-            if (op2->IsIconHandle(GTF_ICON_CLASS_HDL))
-            {
-                CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtIconVal;
-                opSize = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-                alignment =
-                    roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                opSize       = (unsigned)op2->AsIntCon()->gtIconVal;
-                GenTree* op1 = op->AsOp()->gtOp1;
-                // TODO-List-Cleanup: this looks like some really old dead code.
-                // assert(op1->OperGet() == GT_LIST);
-                GenTree* dstAddr = op1->AsOp()->gtOp1;
-                if (dstAddr->OperGet() == GT_ADDR)
-                {
-                    InferStructOpSizeAlign(dstAddr->AsOp()->gtOp1, &alignment);
-                }
-                else
-                {
-                    assert(!"Unhandle dstAddr node");
-                    alignment = TARGET_POINTER_SIZE;
-                }
-            }
-        }
-        else
-        {
-            noway_assert(!"Variable sized COPYBLK register arg!");
-            opSize    = 0;
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
     else if (op->gtOper == GT_MKREFANY)
     {
         opSize    = TARGET_POINTER_SIZE * 2;

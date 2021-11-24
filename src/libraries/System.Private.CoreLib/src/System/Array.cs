@@ -1232,18 +1232,28 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
-                        Unsafe.As<T, int>(ref value),
-                        count);
+                    int result = typeof(T).IsValueType
+                        ? SpanHelpers.IndexOfValueType(
+                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
+                            Unsafe.As<T, int>(ref value),
+                            count)
+                        : SpanHelpers.IndexOf(
+                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
+                            Unsafe.As<T, int>(ref value),
+                            count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
-                    int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
-                        Unsafe.As<T, long>(ref value),
-                        count);
+                    int result = typeof(T).IsValueType
+                        ? SpanHelpers.IndexOfValueType(
+                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
+                            Unsafe.As<T, long>(ref value),
+                            count)
+                        : SpanHelpers.IndexOf(
+                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
+                            Unsafe.As<T, long>(ref value),
+                            count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
             }

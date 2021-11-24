@@ -1878,6 +1878,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compJmpOpUsed         = false;
     compLongUsed          = false;
     compTailCallUsed      = false;
+    compTailPrefixSeen    = false;
     compLocallocSeen      = false;
     compLocallocUsed      = false;
     compLocallocOptimized = false;
@@ -6277,7 +6278,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     info.compTotalColdCodeSize = 0;
     info.compClassProbeCount   = 0;
 
-    compHasBackwardJump = false;
+    compHasBackwardJump          = false;
+    compHasBackwardJumpInHandler = false;
 
 #ifdef DEBUG
     compCurBB = nullptr;
@@ -6431,10 +6433,51 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         goto _Next;
     }
 
-    if (compHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToOptimized())
+    // We may decide to optimize this method,
+    // to avoid spending a long time stuck in Tier0 code.
+    //
+    if (fgCanSwitchToOptimized())
     {
-        // Method likely has a loop, switch to the OptimizedTier to avoid spending too much time running slower code
-        fgSwitchToOptimized();
+        // We only expect to be able to do this at Tier0.
+        //
+        assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
+
+        // Normal tiering should bail us out of Tier0 tail call induced loops.
+        // So keep these methods in Tier0 if we're gathering PGO data.
+        // If we're not gathering PGO, then switch these to optimized to
+        // minimize the number of tail call helper stubs we might need.
+        // Reconsider this if/when we're able to share those stubs.
+        //
+        // Honor the config setting that tells the jit to
+        // always optimize methods with loops.
+        //
+        // If that's not set, and OSR is enabled, the jit may still
+        // decide to optimize, if there's something in the method that
+        // OSR currently cannot handle.
+        //
+        const char* reason = nullptr;
+
+        if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+        {
+            reason = "tail.call and not BBINSTR";
+        }
+        else if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
+        {
+            if (compHasBackwardJump)
+            {
+                reason = "loop";
+            }
+        }
+        else if (JitConfig.TC_OnStackReplacement() > 0)
+        {
+            const bool patchpointsOK = compCanHavePatchpoints(&reason);
+            assert(patchpointsOK || (reason != nullptr));
+        }
+
+        if (reason != nullptr)
+        {
+            fgSwitchToOptimized(reason);
+        }
     }
 
     compSetOptimizationLevel();
