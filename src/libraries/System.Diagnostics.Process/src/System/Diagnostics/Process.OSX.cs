@@ -14,7 +14,6 @@ namespace System.Diagnostics
         private const int MicrosecondsToSecondsFactor = 1_000_000;
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get
