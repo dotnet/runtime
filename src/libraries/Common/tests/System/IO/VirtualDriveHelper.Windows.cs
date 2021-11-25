@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Versioning;
 
-namespace System.IO.FileSystem
+namespace System.IO
 {
     // Adds test helper APIs to manipulate Windows virtual drives via SUBST.
     [SupportedOSPlatform("windows")]
