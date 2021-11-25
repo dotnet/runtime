@@ -5030,7 +5030,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 //
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
-    assert(node->OperIsBoundsCheck());
+    assert(node->OperIs(GT_BOUNDS_CHECK));
     GenTree* other;
     if (CheckImmedAndMakeContained(node, node->GetIndex()))
     {
