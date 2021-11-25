@@ -44,7 +44,7 @@ namespace System.DirectoryServices.AccountManagement
         public const string LDAP_CAP_ACTIVE_DIRECTORY_V61_OID = "1.2.840.113556.1.4.1935";
     }
 
-    internal sealed class CredentialValidator
+    internal sealed class CredentialValidator : IDisposable
     {
         private enum AuthMethod
         {
@@ -339,6 +339,14 @@ namespace System.DirectoryServices.AccountManagement
             else
             {
                 return (BindSam(_serverName, userName, password));
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach (LdapConnection connection in _connCache.Values)
+            {
+                connection.Dispose();
             }
         }
     }
@@ -1013,6 +1021,8 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (_queryCtx != null)
                     _queryCtx.Dispose();
+
+                _credValidate.Dispose();
 
                 _disposed = true;
                 GC.SuppressFinalize(this);
