@@ -360,8 +360,9 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
         // TODO move polyfills out into separate module
         const local_fetch = typeof (Module.imports.fetch) === "function"
             ? Module.imports.fetch
-            : typeof (args.fetch_file_cb) === "function"
-                ? args.fetch_file_cb
+            // legacy fallback
+            : typeof ((<any>args).fetch_file_cb) === "function"
+                ? (<any>args).fetch_file_cb
                 : _fetch_asset;
 
         const load_asset = async (asset: AllAssetEntryTypes): Promise<void> => {
