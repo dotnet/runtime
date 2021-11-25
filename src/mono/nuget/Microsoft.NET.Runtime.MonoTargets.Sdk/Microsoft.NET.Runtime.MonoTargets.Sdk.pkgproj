@@ -20,13 +20,11 @@
     <PackageFile Include="Sdk\RuntimeComponentManifest.targets" TargetPath="Sdk" />
   </ItemGroup>
 
-          <!--DestinationFiles="$(ArtifactsBinDir)MonoTargets.Sdk.ForTesting\%(PackageFile.TargetPath)\%(PackageFile.FileName)%(PackageFile.Extension)"-->
-  <Target Name="_PrepareForPack" AfterTargets="Build" BeforeTargets="Pack">
-    <Message Text="** _PrepareForPack OutpoutPath=$(OutputPath) **" Importance="High" />
+  <Target Name="_PrepareForPack" BeforeTargets="Pack">
+    <Message Text="** _PrepareForPack MonoTargetsSdkForTestingDir: $(MonoTargetsSdkForTestingDir)" Importance="High" />
     <Copy SourceFiles="@(PackageFile)"
           DestinationFiles="$(MonoTargetsSdkForTestingDir)\%(PackageFile.TargetPath)\%(PackageFile.FileName)%(PackageFile.Extension)"
           SkipUnchangedFiles="true"/>
-
   </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
