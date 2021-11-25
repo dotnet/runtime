@@ -333,7 +333,7 @@ namespace System
             return (IsLinux && File.Exists("/.dockerenv"));
         }
 
-        private static bool GetProtocolSupportFormWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
+        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
         {
             string registryProtocolName = protocol switch 
             {
@@ -383,7 +383,7 @@ namespace System
                 bool ssl3DefaultSupport = !IsWindows10Version2004OrGreater;
 
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
-                return GetProtocolSupportFormWindowsRegistry(SslProtocols.Ssl3, ssl3DefaultSupport);
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Ssl3, ssl3DefaultSupport);
 #pragma warning restore CS0618
                 
             }
@@ -415,7 +415,7 @@ namespace System
             } 
             if (IsWindows)
             {
-                return GetProtocolSupportFormWindowsRegistry(SslProtocols.Tls, true);
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
             }
 
             return OpenSslGetTlsSupport(SslProtocols.Tls);
@@ -428,7 +428,7 @@ namespace System
             {
                 // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
                 bool defaultProtocolSupport = !IsWindows7;
-                return GetProtocolSupportFormWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport);
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport);
             }
             else if (IsOSXLike || IsAndroid)
             {
@@ -442,7 +442,7 @@ namespace System
         {
             // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
             bool defaultProtocolSupport =  !IsWindows7;
-            return GetProtocolSupportFormWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport);
+            return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport);
         }
 
         private static bool GetTls13Support()
@@ -461,7 +461,7 @@ namespace System
 #if NETFRAMEWORK
                 return false;
 #else
-                return GetProtocolSupportFormWindowsRegistry(SslProtocols.Tls13, defaultProtocolSupport);
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls13, defaultProtocolSupport);
 #endif
 
             }
