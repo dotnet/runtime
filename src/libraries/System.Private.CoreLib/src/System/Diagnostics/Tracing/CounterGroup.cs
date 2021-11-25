@@ -274,7 +274,7 @@ namespace System.Diagnostics.Tracing
             // We cache these outside of the scope of s_counterGroupLock because
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
             // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
-            var onTimers = new List<CounterGroup>();
+            var onTimers = new List<(DateTime, CounterGroup)>();
             while (true)
             {
                 int sleepDurationInMilliseconds = int.MaxValue;
@@ -286,14 +286,12 @@ namespace System.Diagnostics.Tracing
                         DateTime now = DateTime.UtcNow;
                         if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
                         {
-                            onTimers.Add(counterGroup);
+                            onTimers.Add((now, counterGroup));
                         }
                     }
                 }
-                foreach (CounterGroup counterGroup in onTimers)
+                foreach ((DateTime now, CounterGroup counterGroup) in onTimers)
                 {
-                    DateTime now = DateTime.UtcNow;
-
                     counterGroup.OnTimer();
 
                     int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
