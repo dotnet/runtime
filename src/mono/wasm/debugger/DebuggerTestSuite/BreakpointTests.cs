@@ -36,7 +36,7 @@ namespace DebuggerTests
         {
             // Test that js breakpoints get set correctly
             // 13 24
-            // 13 33
+            // 13 53
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -48,7 +48,7 @@ namespace DebuggerTests
             Assert.Equal(13, (int)loc["lineNumber"]);
             Assert.Equal(24, (int)loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 53);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -57,14 +57,14 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(13, (int)loc2["lineNumber"]);
-            Assert.Equal(33, (int)loc2["columnNumber"]);
+            Assert.Equal(53, (int)loc2["columnNumber"]);
         }
 
         [Fact]
         public async Task CreateJS0Breakpoint()
         {
             // 13 24
-            // 13 33
+            // 13 53
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -74,9 +74,9 @@ namespace DebuggerTests
 
             Assert.NotNull(loc["scriptId"]);
             Assert.Equal(13, (int)loc["lineNumber"]);
-            Assert.Equal(24, (int)loc["columnNumber"]);
+            Assert.Equal(4, (int)loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 53);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -85,7 +85,7 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(13, (int)loc2["lineNumber"]);
-            Assert.Equal(33, (int)loc2["columnNumber"]);
+            Assert.Equal(53, (int)loc2["columnNumber"]);
         }
 
         [Theory]

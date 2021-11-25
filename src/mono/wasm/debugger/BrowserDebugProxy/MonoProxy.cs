@@ -24,10 +24,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
+        // index of the runtime in a same JS page/process
+        public int RuntimeId { get; private init; }
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList) : base(loggerFactory)
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0) : base(loggerFactory)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
+            RuntimeId = runtimeId;
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
@@ -223,7 +226,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Target.targetDestroyed":
                     {
-                        await SendMonoCommand(sessionId, MonoCommands.DetachDebugger(), token);
+                        await SendMonoCommand(sessionId, MonoCommands.DetachDebugger(RuntimeId), token);
                         break;
                     }
             }
@@ -236,7 +239,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
 
-            Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(), token);
+            Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
             return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
         }
 
@@ -434,7 +437,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!(DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId) && objectId.Scheme == "cfo_res"))
                             break;
 
-                        await SendMonoCommand(id, MonoCommands.ReleaseObject(objectId), token);
+                        await SendMonoCommand(id, MonoCommands.ReleaseObject(RuntimeId, objectId), token);
                         SendResponse(id, Result.OkFromObject(new { }), token);
                         return true;
                     }
@@ -558,7 +561,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     break;
                 case "cfo_res":
                 {
-                    Result cfo_res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                    Result cfo_res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(RuntimeId, args), token);
                     cfo_res = Result.OkFromObject(new { result = cfo_res.Value?["result"]?["value"]});
                     SendResponse(id, cfo_res, token);
                     return true;
@@ -574,7 +577,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 default:
                     return false;
             }
-            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(RuntimeId, args), token);
             if (res.IsErr)
             {
                 SendResponse(id, res, token);
@@ -652,7 +655,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return new JArray{await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token)};
                     case "cfo_res":
                     {
-                        Result res = await SendMonoCommand(id, MonoCommands.GetDetails(int.Parse(objectId.Value), args), token);
+                        Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, int.Parse(objectId.Value), args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
                         return value_json_str != null ? JArray.Parse(value_json_str) : null;
                     }
@@ -831,7 +834,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         private async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
-            Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(), token);
+            Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
             if (res.IsErr)
                 return false;
 
@@ -966,11 +969,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task OnResume(MessageId msg_id, CancellationToken token)
         {
-            ExecutionContext ctx = GetContext(msg_id);
-            if (ctx.CallStack != null)
+            ExecutionContext context = GetContext(msg_id);
+            if (context.CallStack != null)
             {
                 // Stopped on managed code
-                await SendMonoCommand(msg_id, MonoCommands.Resume(), token);
+                await SendMonoCommand(msg_id, MonoCommands.Resume(RuntimeId), token);
             }
 
             //discard managed frames
@@ -1187,7 +1190,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (loaded_files == null)
                 {
-                    Result loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(), token);
+                    Result loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(RuntimeId), token);
                     loaded_files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
                 }
 

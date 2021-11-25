@@ -5,8 +5,11 @@ import { readFile, writeFile, mkdir } from "fs/promises";
 import * as fs from "fs";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
+import consts from "rollup-plugin-consts";
 
-const isDebug = process.env.Configuration !== "Release";
+const configuration = process.env.Configuration;
+const isDebug = configuration !== "Release";
+const productVersion = process.env.ProductVersion || "7.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const terserConfig = {
     compress: {
@@ -61,7 +64,7 @@ export default defineConfig([
                 plugins,
             }
         ],
-        plugins: [typescript()]
+        plugins: [consts({ productVersion, configuration }), typescript()]
     },
     {
         input: "./export-types.ts",
