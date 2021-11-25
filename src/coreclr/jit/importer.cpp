@@ -1864,7 +1864,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_DYN_BLK:
         case GT_ASG:
             // These should already have the appropriate type.
             assert(structVal->gtType == structType);

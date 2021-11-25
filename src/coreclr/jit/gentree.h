@@ -1235,12 +1235,10 @@ public:
     bool OperIsBlkOp();
     bool OperIsCopyBlkOp();
     bool OperIsInitBlkOp();
-    bool OperIsDynBlkOp();
 
     static bool OperIsBlk(genTreeOps gtOper)
     {
-        return ((gtOper == GT_BLK) || (gtOper == GT_OBJ) || (gtOper == GT_DYN_BLK) || (gtOper == GT_STORE_BLK) ||
-                (gtOper == GT_STORE_OBJ) || (gtOper == GT_STORE_DYN_BLK));
+        return (gtOper == GT_BLK) || (gtOper == GT_OBJ) || OperIsStoreBlk(gtOper);
     }
 
     bool OperIsBlk() const
@@ -1248,19 +1246,9 @@ public:
         return OperIsBlk(OperGet());
     }
 
-    static bool OperIsDynBlk(genTreeOps gtOper)
-    {
-        return ((gtOper == GT_DYN_BLK) || (gtOper == GT_STORE_DYN_BLK));
-    }
-
-    bool OperIsDynBlk() const
-    {
-        return OperIsDynBlk(OperGet());
-    }
-
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
-        return ((gtOper == GT_STORE_BLK) || (gtOper == GT_STORE_OBJ) || (gtOper == GT_STORE_DYN_BLK));
+        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYN_BLK);
     }
 
     bool OperIsStoreBlk() const
@@ -2750,7 +2738,6 @@ class GenTreeUseEdgeIterator final
     void AdvanceCmpXchg();
     void AdvanceArrElem();
     void AdvanceArrOffset();
-    void AdvanceDynBlk();
     void AdvanceStoreDynBlk();
     void AdvanceFieldList();
     void AdvancePhi();
@@ -6056,7 +6043,7 @@ public:
 
     void SetLayout(ClassLayout* layout)
     {
-        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
+        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
         m_layout = layout;
     }
 
@@ -6073,7 +6060,7 @@ public:
     // The size of the buffer to be copied.
     unsigned Size() const
     {
-        assert((m_layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
+        assert((m_layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
         return (m_layout != nullptr) ? m_layout->GetSize() : 0;
     }
 
@@ -6111,7 +6098,7 @@ public:
 #endif
     {
         assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
+        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
         gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
     }
 
@@ -6124,7 +6111,7 @@ public:
 #endif
     {
         assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
+        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
         gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= (data->gtFlags & GTF_ALL_EFFECT);
     }
@@ -7499,19 +7486,6 @@ struct GenTreeCC final : public GenTree
 inline bool GenTree::OperIsBlkOp()
 {
     return ((gtOper == GT_ASG) && varTypeIsStruct(AsOp()->gtOp1)) || OperIsStoreBlk();
-}
-
-inline bool GenTree::OperIsDynBlkOp()
-{
-    if (gtOper == GT_ASG)
-    {
-        return gtGetOp1()->OperGet() == GT_DYN_BLK;
-    }
-    else if (gtOper == GT_STORE_DYN_BLK)
-    {
-        return true;
-    }
-    return false;
 }
 
 inline bool GenTree::OperIsInitBlkOp()

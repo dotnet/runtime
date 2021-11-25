@@ -496,7 +496,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_OBJ:
 #endif
         case GT_BLK:
-        case GT_DYN_BLK:
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");
             srcCount = 0;
