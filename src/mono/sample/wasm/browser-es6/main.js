@@ -10,7 +10,7 @@ const { MONO, BINDING, Module } = await createDotnetRuntime(() => ({
 
 const App = {
     init: function () {
-        const testMeaning = BINDING.bind_static_method("[Wasm.Browser.Sample] Sample.Test:TestMeaning");
+        const testMeaning = BINDING.bind_static_method("[Wasm.Browser.ES6.Sample] Sample.Test:TestMeaning");
         const ret = testMeaning();
         document.getElementById("out").innerHTML = ret;
 
