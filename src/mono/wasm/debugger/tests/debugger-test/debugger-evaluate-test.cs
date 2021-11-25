@@ -496,6 +496,48 @@ namespace DebuggerTests
         }
     }
 
+    public static class EvaluateBrowsableProperties
+    {
+        public class TestEvaluateNever
+        {
+            public List<int> list = new List<int>() { 1, 2 };
+            public string text = "text";
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public List<int> listNever = new List<int>() { 1, 2 };
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public string textNever = "textNever";
+        }
+
+        public class TestEvaluateCollapsed
+        {
+            public List<int> list = new List<int>() { 1, 2 };
+            public string text = "text";
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public List<int> listCollapsed = new List<int>() { 1, 2 };
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public string textCollapsed = "textCollapsed";
+        }
+
+        public class TestEvaluateRootHidden
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public List<int> listRootHidden = new List<int>() { 1, 2 };
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public string textRootHidden = "textRootHidden";
+        }
+
+        public static void Evaluate()
+        {
+            var testNever = new TestEvaluateNever();
+            var testCollapsed = new TestEvaluateCollapsed();
+            var testRootHidden = new TestEvaluateRootHidden();
+        }
+    }
 }
 
 namespace DebuggerTestsV2

@@ -841,6 +841,44 @@ namespace DebuggerTests
                 );
             });
 
+        [Fact]
+         public async Task EvaluateBrowsableProperties() => await CheckInspectLocalsAtBreakpointSite(
+             "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 4, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (testNever, _) = await EvaluateOnCallFrame(id, "testNever");
+                await CheckValue(testNever, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateNever"), nameof(testNever));
+                var testNeverProps = await GetProperties(testNever["objectId"]?.Value<string>());
+                await CheckProps(testNeverProps, new
+                {
+                    list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                    text = TString("text")
+                }, "testNeverProps#1");
+
+                var (testCollapsed, _) = await EvaluateOnCallFrame(id, "testCollapsed");
+                await CheckValue(testCollapsed, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateCollapsed"), nameof(testCollapsed));
+                var testCollapsedProps = await GetProperties(testCollapsed["objectId"]?.Value<string>());
+                await CheckProps(testCollapsedProps, new
+                {
+                    list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                    text = TString("text"),
+                    listCollapsed = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                    textCollapsed = TString("text")
+                }, "testCollapsedProps#1");                
+
+                var (testRootHidden, _) = await EvaluateOnCallFrame(id, "testRootHidden");
+                await CheckValue(testRootHidden, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateRootHidden"), nameof(testRootHidden));
+                var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
+                var (refList, _) = await EvaluateOnCallFrame(id, "testNever.list");
+                var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
+                var refListElementsProp = await GetProperties(refListProp[0]["value"]["objectId"]?.Value<string>());
+                Assert.Equal(refListElementsProp, testRootHiddenProps);
+
+                
+           });
     }
 
 }
