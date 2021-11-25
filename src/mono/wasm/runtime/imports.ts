@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable @typescript-eslint/triple-slash-reference */
-/// <reference path="./types/emscripten.d.ts" />
 /// <reference path="./types/v8.d.ts" />
 
-import { EmscriptenModuleMono, MonoConfig, RuntimeHelpers } from "./types";
+import { DotnetModuleMono, MonoConfig, RuntimeHelpers } from "./types";
+import { EmscriptenModule } from "./types/emscripten";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & EmscriptenModuleMono;
+export let Module: EmscriptenModule & DotnetModuleMono;
 export let MONO: any;
 export let BINDING: any;
 export let INTERNAL: any;

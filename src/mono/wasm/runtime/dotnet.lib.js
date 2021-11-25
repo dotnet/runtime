@@ -4,10 +4,10 @@
 
 "use strict";
 
-const DotNetSupportLib = {
+const DotnetSupportLib = {
     $DOTNET: {},
     // this line will be executed early on runtime, passing import and export objects into __dotnet_runtime IFFE
-    $DOTNET__postset: "let api = __dotnet_runtime.__initializeImportsAndExports({isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile}, {mono:MONO, binding:BINDING, internal:INTERNAL, module:Module});",
+    $DOTNET__postset: "let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports({isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile}, {mono:MONO, binding:BINDING, internal:INTERNAL, module:Module});",
 };
 
 // the methods would be visible to EMCC linker
@@ -62,8 +62,8 @@ const linked_functions = [
 // we generate simple proxy for each exported function so that emcc will include them in the final output
 for (let linked_function of linked_functions) {
     const fn_template = `return __dotnet_runtime.__linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
-    DotNetSupportLib[linked_function] = new Function(fn_template);
+    DotnetSupportLib[linked_function] = new Function(fn_template);
 }
 
-autoAddDeps(DotNetSupportLib, "$DOTNET");
-mergeInto(LibraryManager.library, DotNetSupportLib);
+autoAddDeps(DotnetSupportLib, "$DOTNET");
+mergeInto(LibraryManager.library, DotnetSupportLib);

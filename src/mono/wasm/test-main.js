@@ -124,7 +124,7 @@ if (typeof globalThis.performance === 'undefined') {
 }
 loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
     return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
-        disableDotNet6Compatibility: true,
+        disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
         onConfigLoaded: () => {
@@ -142,7 +142,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
                 INTERNAL.mono_wasm_enable_on_demand_gc(0);
             }
         },
-        onDotNetReady: () => {
+        onDotnetReady: () => {
             let wds = Module.FS.stat(processedArguments.working_dir);
             if (wds === undefined || !Module.FS.isDir(wds.mode)) {
                 set_exit_code(1, `Could not find working directory ${processedArguments.working_dir}`);

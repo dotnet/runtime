@@ -4,9 +4,9 @@
 "use strict";
 
 createDotnetRuntime(({ MONO, BINDING, Module }) => ({
-    disableDotNet6Compatibility: true,
+    disableDotnet6Compatibility: true,
     configSrc: "./mono-config.json",
-    onDotNetReady: () => {
+    onDotnetReady: () => {
         try {
             App.init({ MONO, BINDING, Module });
         } catch (error) {

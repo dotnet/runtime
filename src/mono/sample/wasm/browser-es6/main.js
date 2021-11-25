@@ -1,7 +1,7 @@
 import createDotnetRuntime from './dotnet.js'
 
-const { MONO, BINDING, Module } = await createDotnetRuntime(() => ({
-    disableDotNet6Compatibility: true,
+const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime((api) => ({
+    disableDotnet6Compatibility: true,
     configSrc: "./mono-config.json",
     onAbort: () => {
         wasm_exit(1);
@@ -12,7 +12,7 @@ const App = {
     init: function () {
         const testMeaning = BINDING.bind_static_method("[Wasm.Browser.ES6.Sample] Sample.Test:TestMeaning");
         const ret = testMeaning();
-        document.getElementById("out").innerHTML = ret;
+        document.getElementById("out").innerHTML = `${ret} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
 
         console.debug(`ret: ${ret}`);
         let exit_code = ret == 42 ? 0 : 1;

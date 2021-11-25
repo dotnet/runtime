@@ -176,6 +176,8 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)dotnet.d.ts;
+        $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
         $(LibrariesNativeArtifactsPath)*.dat;"
@@ -184,7 +186,6 @@
                              Include="
         $(LibrariesNativeArtifactsPath)src\*.c;
         $(LibrariesNativeArtifactsPath)src\*.js;
-        $(LibrariesNativeArtifactsPath)src\*.ts;
         $(LibrariesNativeArtifactsPath)src\emcc-default.rsp;
         $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
         NativeSubDirectory="src"

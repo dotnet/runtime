@@ -201,7 +201,9 @@
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(ICULibFiles);@(ICULibNativeFiles)"
+    <Copy SourceFiles="@(ICULibFiles);
+                       @(ICULibNativeFiles);
+                       runtime/package.json;"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
@@ -220,7 +222,8 @@
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
-                       $(NativeBinDir)src\dotnet.d.ts;
+                       $(NativeBinDir)dotnet.d.ts;
+                       $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.wasm;
                        $(NativeBinDir)dotnet.timezones.blat"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"

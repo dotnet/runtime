@@ -2,32 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { bind_runtime_method } from "./method-binding";
-
-export type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
-
-export interface ManagedPointer {
-    __brandManagedPointer: "ManagedPointer"
-}
-
-export interface NativePointer {
-    __brandNativePointer: "NativePointer"
-}
-
-export interface VoidPtr extends NativePointer {
-    __brand: "VoidPtr"
-}
-
-export interface CharPtr extends NativePointer {
-    __brand: "CharPtr"
-}
-
-export interface Int32Ptr extends NativePointer {
-    __brand: "Int32Ptr"
-}
-
-export interface CharPtrPtr extends NativePointer {
-    __brand: "CharPtrPtr"
-}
+import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./types/emscripten";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -178,33 +153,33 @@ export type CoverageProfilerOptions = {
 }
 
 // how we extended emscripten Module
-export type EmscriptenModuleMono = EmscriptenModule & EmscriptenModuleConfig;
-
-export type EmscriptenModuleConfig = {
-    disableDotNet6Compatibility?: boolean,
+export type DotnetModuleMono = EmscriptenModule & DotnetModuleConfig;
+export type DotnetModuleConfigImports = {
+    require: (name: string) => any;
+    fetch: (url: string) => Promise<Response>;
+    fs: {
+        promises: {
+            readFile: (path: string) => Promise<string>,
+            readFileSync: (path: string, options: string | undefined) => string,
+        }
+    };
+    crypto: {
+        randomBytes: (size: number) => Buffer
+    };
+    ws: WebSocket & { Server: any };
+    path: {
+        normalize: (path: string) => string,
+        dirname: (path: string) => string,
+    };
+    url: any;
+}
+export type DotnetModuleConfig = {
+    disableDotnet6Compatibility?: boolean,
 
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
     onConfigLoaded?: () => void;
-    onDotNetReady?: () => void;
+    onDotnetReady?: () => void;
 
-    imports: {
-        require: (name: string) => any;
-        fetch: (url: string) => Promise<Response>;
-        fs: {
-            promises: {
-                readFile: (path: string) => Promise<string>,
-                readFileSync: (path: string, options: string | undefined) => string,
-            }
-        };
-        crypto: {
-            randomBytes: (size: number) => Buffer
-        };
-        ws: WebSocket & { Server: any };
-        path: {
-            normalize: (path: string) => string,
-            dirname: (path: string) => string,
-        };
-        url: any;
-    }
+    imports?: DotnetModuleConfigImports;
 }

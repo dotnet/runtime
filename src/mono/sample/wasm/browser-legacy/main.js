@@ -4,7 +4,7 @@
 "use strict";
 var Module = {
     configSrc: "./mono-config.json",
-    onDotNetReady: () => {
+    onDotnetReady: () => {
         try {
             App.init();
         } catch (error) {

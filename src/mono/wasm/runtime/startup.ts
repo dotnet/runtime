@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, AssetEntry, CharPtr, CharPtrNull, EmscriptenModuleMono, GlobalizationMode, MonoConfig, VoidPtr, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, AssetEntry, CharPtrNull, DotnetModuleMono, GlobalizationMode, MonoConfig, wasm_type_symbol } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -11,6 +11,7 @@ import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from ".
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
+import { VoidPtr, CharPtr } from "./types/emscripten";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -21,7 +22,7 @@ export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) =>
 
 
 export async function mono_wasm_pre_init(): Promise<void> {
-    const moduleExt = Module as EmscriptenModuleMono;
+    const moduleExt = Module as DotnetModuleMono;
     if (moduleExt.configSrc) {
         try {
             // sets MONO.config implicitly
@@ -207,7 +208,7 @@ function _apply_configuration_from_args(args: MonoConfig) {
 }
 
 function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
-    const moduleExt = Module as EmscriptenModuleMono;
+    const moduleExt = Module as DotnetModuleMono;
 
     ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
     if (ctx.tracing) {
@@ -261,12 +262,12 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
         }
     }
 
-    if (moduleExt.onDotNetReady) {
+    if (moduleExt.onDotnetReady) {
         try {
-            moduleExt.onDotNetReady();
+            moduleExt.onDotnetReady();
         }
         catch (err: any) {
-            Module.printErr("MONO_WASM: onDotNetReady () failed: " + err);
+            Module.printErr("MONO_WASM: onDotnetReady () failed: " + err);
             Module.printErr("MONO_WASM: Stacktrace: \n");
             Module.printErr(err.stack);
             runtime_is_initialized_reject(err);
@@ -358,7 +359,7 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
         _apply_configuration_from_args(args);
 
         // TODO move polyfills out into separate module
-        const local_fetch = typeof (Module.imports.fetch) === "function"
+        const local_fetch = Module.imports && typeof (Module.imports.fetch) === "function"
             ? Module.imports.fetch
             // legacy fallback
             : typeof ((<any>args).fetch_file_cb) === "function"

@@ -26,7 +26,7 @@ import {
     mono_wasm_add_dbg_command_received,
 } from "./debug";
 import { runtimeHelpers, setImportsAndExports } from "./imports";
-import { EmscriptenModuleMono, MonoArray, MonoConfig, MonoConfigError, MonoObject } from "./types";
+import { DotnetModuleConfigImports, DotnetModuleMono, MonoArray, MonoConfig, MonoConfigError, MonoObject } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
@@ -69,6 +69,7 @@ import {
     getU8, getU16, getU32, getF32, getF64,
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
+import { VoidPtr } from "./types/emscripten";
 
 const MONO: MONO = <any>{
     // current "public" MONO API
@@ -119,7 +120,7 @@ const BINDING: BINDING = <any>{
     _teardown_after_call,
 };
 
-let api: DotNetPublicAPI;
+let exportedAPI: DotnetPublicAPI;
 
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
@@ -127,8 +128,8 @@ let api: DotNetPublicAPI;
 function initializeImportsAndExports(
     imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
-): DotNetPublicAPI {
-    const module = exports.module as EmscriptenModuleMono;
+): DotnetPublicAPI {
+    const module = exports.module as DotnetModuleMono;
     const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
@@ -139,7 +140,7 @@ function initializeImportsAndExports(
     Object.assign(exports.binding, BINDING);
     Object.assign(exports.internal, INTERNAL);
 
-    api = <any>{
+    exportedAPI = <any>{
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
@@ -172,9 +173,7 @@ function initializeImportsAndExports(
     if (!module.printErr) {
         module.printErr = console.error;
     }
-    if (!module.imports) {
-        module.imports = <any>{};
-    }
+    module.imports = module.imports || <DotnetModuleConfigImports>{};
     if (!module.imports.require) {
         module.imports.require = globalThis.require;
     }
@@ -187,8 +186,8 @@ function initializeImportsAndExports(
         };
     }
 
-    if (imports.isGlobal || !module.disableDotNet6Compatibility) {
-        Object.assign(module, api);
+    if (imports.isGlobal || !module.disableDotnet6Compatibility) {
+        Object.assign(module, exportedAPI);
 
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -237,9 +236,9 @@ function initializeImportsAndExports(
     else {
         list = globalThisAny.getDotnetRuntime.__list;
     }
-    list.registerRuntime(api);
+    list.registerRuntime(exportedAPI);
 
-    return api;
+    return exportedAPI;
 }
 
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
@@ -382,7 +381,7 @@ interface BINDING {
     unbox_mono_obj: typeof unbox_mono_obj
 }
 
-export interface DotNetPublicAPI {
+export interface DotnetPublicAPI {
     MONO: MONO,
     BINDING: BINDING,
     Module: any,
@@ -394,15 +393,15 @@ export interface DotNetPublicAPI {
 }
 
 class RuntimeList {
-    private list: { [runtimeId: number]: WeakRef<DotNetPublicAPI> } = {};
+    private list: { [runtimeId: number]: WeakRef<DotnetPublicAPI> } = {};
 
-    public registerRuntime(api: DotNetPublicAPI): number {
+    public registerRuntime(api: DotnetPublicAPI): number {
         api.RuntimeId = Object.keys(this.list).length;
         this.list[api.RuntimeId] = create_weak_ref(api);
         return api.RuntimeId;
     }
 
-    public getRuntime(runtimeId: number): DotNetPublicAPI | undefined {
+    public getRuntime(runtimeId: number): DotnetPublicAPI | undefined {
         const wr = this.list[runtimeId];
         return wr ? wr.deref() : undefined;
     }

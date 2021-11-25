@@ -40,7 +40,7 @@ In `src\mono\wasm\runtime\CMakeLists.txt` which links only in-tree, we use same 
 # About new API
 The signature is
 ```
-function createDotnetRuntime(moduleFactory: (api: DotNetExports) => EmscriptenModuleConfig): Promise<DotNetExports>
+function createDotnetRuntime(moduleFactory: (api: DotnetPublicAPI) => DotnetModuleConfig): Promise<DotNetExports>
 ```
 
 Simplest intended usage looks like this in ES6:
@@ -59,7 +59,7 @@ import createDotnetRuntime from './dotnet.js'
 export const { MONO, BINDING } = await createDotnetRuntime(({ MONO, BINDING, Module }) => 
 // this is callback with no statement, the APIs are only empty shells here and are populated later.
 ({
-    disableDotNet6Compatibility: true,
+    disableDotnet6Compatibility: true,
     configSrc: "./mono-config.json",
     onConfigLoaded: () => {
         // This is called during emscripten `preInit` event, after we fetched config.
@@ -71,7 +71,7 @@ export const { MONO, BINDING } = await createDotnetRuntime(({ MONO, BINDING, Mod
         // call some early available functions
         MONO.mono_wasm_setenv("HELLO", "WORLD);
     }
-    onDotNetReady: () => {
+    onDotnetReady: () => {
         // Only when there is no `onRuntimeInitialized` override.
         // This is called after all assets are loaded , mapping to legacy `config.loaded_cb`. 
         // It happens during emscripten `onRuntimeInitialized` after monoVm init + globalization + assemblies. 
