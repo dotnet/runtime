@@ -324,7 +324,11 @@ asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option t
 asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
+<<<<<<< HEAD
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
+=======
+asm_diff_parser.add_argument("-diff_with_release", help="Specify if this is asmdiff between checked binaries and release binaries.")
+>>>>>>> 8f34248d2ff (SuperPMI asmdiff: added -diff_with_release flag to asmdiffs)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1519,7 +1523,7 @@ class SuperPMIReplayAsmDiffs:
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
                 # a standalone .mc for easy iteration.
-                if is_nonzero_length_file(diff_mcl_file):
+                if self.coreclr_args.diff_with_release is not True and is_nonzero_length_file(diff_mcl_file):
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
@@ -1711,23 +1715,24 @@ class SuperPMIReplayAsmDiffs:
 
         # Construct an overall Markdown summary file.
 
-        if len(all_md_summary_files) > 0:
-            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
-            if not os.path.isdir(self.coreclr_args.spmi_location):
-                os.makedirs(self.coreclr_args.spmi_location)
-            if os.path.isfile(overall_md_summary_file):
-                os.remove(overall_md_summary_file)
+        if self.coreclr_args.diff_with_release is not True:
+            if len(all_md_summary_files) > 0:
+                overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
+                if not os.path.isdir(self.coreclr_args.spmi_location):
+                    os.makedirs(self.coreclr_args.spmi_location)
+                if os.path.isfile(overall_md_summary_file):
+                    os.remove(overall_md_summary_file)
 
-            with open(overall_md_summary_file, "w") as write_fh:
-                for summary_file_info in all_md_summary_files:
-                    summary_mch  = summary_file_info[0]
-                    summary_mch_filename = os.path.basename(summary_mch) # Display just the MCH filename, not the full path
-                    summary_file = summary_file_info[1]
-                    with open(summary_file, "r") as read_fh:
-                        write_fh.write("## " + summary_mch_filename + ":\n\n")
-                        shutil.copyfileobj(read_fh, write_fh)
+                with open(overall_md_summary_file, "w") as write_fh:
+                    for summary_file_info in all_md_summary_files:
+                        summary_mch  = summary_file_info[0]
+                        summary_mch_filename = os.path.basename(summary_mch) # Display just the MCH filename, not the full path
+                        summary_file = summary_file_info[1]
+                        with open(summary_file, "r") as read_fh:
+                            write_fh.write("## " + summary_mch_filename + ":\n\n")
+                            shutil.copyfileobj(read_fh, write_fh)
 
-            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
         # Report the set of MCH files with asm diffs and replay failures.
 
@@ -1736,12 +1741,13 @@ class SuperPMIReplayAsmDiffs:
             for file in files_with_replay_failures:
                 logging.info("    %s", file)
 
-        if len(files_with_asm_diffs) == 0:
-            logging.info("  No asm diffs")
-        else:
-            logging.info("  Asm diffs in %s MCH files:", len(files_with_asm_diffs))
-            for file in files_with_asm_diffs:
-                logging.info("    %s", file)
+        if self.coreclr_args.diff_with_release is not True:
+            if len(files_with_asm_diffs) == 0:
+                logging.info("  No asm diffs")
+            else:
+                logging.info("  Asm diffs in %s MCH files:", len(files_with_asm_diffs))
+                for file in files_with_asm_diffs:
+                    logging.info("    %s", file)
 
         return result
         ################################################################################################ end of replay_with_asm_diffs()
