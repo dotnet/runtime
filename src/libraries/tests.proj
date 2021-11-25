@@ -469,6 +469,46 @@
       <FunctionalTestCMakeEntries Include="add_subdirectory(%(FunctionalTestAppBundles.RootDir)%(FunctionalTestAppBundles.Directory) %(FunctionalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
     </ItemGroup>
 
+    <!-- Create an app.entitlements files if needed -->
+    <ItemGroup Condition=" '$(EnableAppSandbox)' == 'true' ">
+      <NormalTestAppEntitlements Include="&lt;key&gt;com.apple.security.app-sandbox&lt;/key&gt;&lt;true /&gt;" />
+
+      <FunctionalTestAppEntitlements Include="&lt;key&gt;com.apple.security.app-sandbox&lt;/key&gt;&lt;true /&gt;" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <NormalTestAppEntitlementsFilePath Condition=" '@(NormalTestAppEntitlements)' != '' ">$(NormalTestsAllAppBundlesRoot)/app.entitlements</NormalTestAppEntitlementsFilePath>
+      <FunctionalTestAppEntitlementsFilePath Condition=" '@(NormalTestAppEntitlements)' != '' ">$(FunctionalTestsAllAppBundlesRoot)/app.entitlements</FunctionalTestAppEntitlementsFilePath>
+    </PropertyGroup>
+
+    <ItemGroup Condition=" '@(NormalTestAppEntitlements)' != '' ">
+      <NormalTestCMakeEntries Include="set_target_properties(NormalTestAppBundles PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS $(NormalTestsAllAppBundlesRoot))" />
+
+      <NormalTestAppEntitlementsXml Include="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;" />
+      <NormalTestAppEntitlementsXml Include="&lt;!DOCTYPE plist PUBLIC &quot;-//Apple//DTD PLIST 1.0//EN&quot; &quot;http://www.apple.com/DTDs/PropertyList-1.0.dtd&quot;&gt;" />
+      <NormalTestAppEntitlementsXml Include="&lt;plist version=&quot;1.0&quot;&gt;" />
+      <NormalTestAppEntitlementsXml Include="&lt;dict&gt;" />
+      <NormalTestAppEntitlementsXml Include="@(NormalTestAppEntitlements)" />
+      <NormalTestAppEntitlementsXml Include="&lt;/dict&gt;" />
+      <NormalTestAppEntitlementsXml Include="&lt;/plist&gt;" />
+    </ItemGroup>
+
+    <ItemGroup Condition=" '@(FunctionalTestAppEntitlements)' != '' ">
+      <FunctionalTestCMakeEntries Include="set_target_properties(FunctionalTestAppBundles PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS $(FunctionalTestAppEntitlementsFilePath))"  />
+
+      <FunctionalTestAppEntitlementsXml Include="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;" />
+      <FunctionalTestAppEntitlementsXml Include="&lt;!DOCTYPE plist PUBLIC &quot;-//Apple//DTD PLIST 1.0//EN&quot; &quot;http://www.apple.com/DTDs/PropertyList-1.0.dtd&quot;&gt;" />
+      <FunctionalTestAppEntitlementsXml Include="&lt;plist version=&quot;1.0&quot;&gt;" />
+      <FunctionalTestAppEntitlementsXml Include="&lt;dict&gt;" />
+      <FunctionalTestAppEntitlementsXml Include="@(FunctionalTestAppEntitlements)" />
+      <FunctionalTestAppEntitlementsXml Include="&lt;/dict&gt;" />
+      <FunctionalTestAppEntitlementsXml Include="&lt;/plist&gt;" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(NormalTestAppEntitlementsFilePath)" Condition=" '$(NormalTestAppEntitlementsFilePath)' != '' " Lines="@(NormalTestAppEntitlementsXml)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(FunctionalTestAppEntitlementsFilePath)" Condition=" '$(FunctionalTestAppEntitlementsFilePath)' != '' " Lines="@(FunctionalTestAppEntitlementsXml)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <!-- Done assembling app.entitlements -->
+
     <WriteLinesToFile File="$(NormalTestsAllAppBundlesRoot)CMakeLists.txt" Lines="@(NormalTestCMakeEntries)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <WriteLinesToFile File="$(FunctionalTestsAllAppBundlesRoot)CMakeLists.txt" Lines="@(FunctionalTestCMakeEntries)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
