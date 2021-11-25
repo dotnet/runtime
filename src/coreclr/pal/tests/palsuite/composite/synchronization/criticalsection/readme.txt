@@ -1,4 +1,4 @@
-To compile: 
+To compile:
 
 1) create a dat file (say criticalsection.dat) with contents:
 PAL,Composite,palsuite\composite\synchronization\criticalsection,criticalsection=mainWrapper.c,criticalsection.c,<SUPPORTEXE>,<TESTLANGCPP>,<COMPILEONLY>
@@ -7,5 +7,5 @@ PAL,Composite,palsuite\composite\synchronization\criticalsection,criticalsection
 
 
 To execute:
-mainwrapper  [PROCESS_COUNT]  [WORKER_THREAD_MULTIPLIER_COUNT] [REPEAT_COUNT] 
+mainwrapper  [PROCESS_COUNT]  [WORKER_THREAD_MULTIPLIER_COUNT] [REPEAT_COUNT]
 

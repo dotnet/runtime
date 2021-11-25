@@ -21,8 +21,8 @@ namespace GitHub_24185
             {
                 // Each expression in this condition checks that `e` is not null and checks its type.
                 // This information should be calculated once and propagated by assertion propagation.
-                if (!(e is AggregateException) ||                    
-                    !((((AggregateException)e).InnerExceptions[0] is ArgumentException) 
+                if (!(e is AggregateException) ||
+                    !((((AggregateException)e).InnerExceptions[0] is ArgumentException)
                     || ((AggregateException)e).InnerExceptions[0] is AggregateException))
                 {
                     return 100;

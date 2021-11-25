@@ -3606,7 +3606,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
-        DWORD newValue = 
+        DWORD newValue =
 #endif // _DEBUG
         ++m_dwProfilerEvacuationCounters[slot];
         _ASSERTE(newValue != 0U);
@@ -3617,7 +3617,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
-        DWORD newValue = 
+        DWORD newValue =
 #endif // _DEBUG
         --m_dwProfilerEvacuationCounters[slot];
         _ASSERTE(newValue != (DWORD)-1);

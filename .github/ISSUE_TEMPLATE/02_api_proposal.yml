@@ -33,7 +33,7 @@ body:
                 public void Fancy(T item);
             }
         }
-        ```     
+        ```
     validations:
       required: true
   - type: textarea
@@ -52,7 +52,7 @@ body:
         // Getting the values out
         foreach (var v in c)
             Console.WriteLine(v);
-        ```     
+        ```
     validations:
       required: true
   - type: textarea
