@@ -17183,10 +17183,8 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
                 check_for_full_gc (gen_number, size);
             }
 
-            bool recheck_p = false;
-
 #ifdef BACKGROUND_GC
-            recheck_p = wait_for_bgc_high_memory (awr_gen0_alloc, loh_p);
+            bool recheck_p = wait_for_bgc_high_memory (awr_gen0_alloc, loh_p);
 #endif //BACKGROUND_GC
 
 #ifdef SYNCHRONIZATION_STATS
@@ -17195,7 +17193,11 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
             dprintf (2, ("h%d running out of budget on gen%d, gc", heap_number, gen_number));
 
 #ifdef BACKGROUND_GC
-            if (!recheck_p || !(new_allocation_allowed (gen_number)))
+            bool trigger_gc_p = true;
+            if (recheck_p)
+                trigger_gc_p = !(new_allocation_allowed (gen_number));
+
+            if (trigger_gc_p)
 #endif //BACKGROUND_GC
             {
                 if (!settings.concurrent || (gen_number == 0))
