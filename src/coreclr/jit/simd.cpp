@@ -298,7 +298,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             // TODO-Throughput: implement product shipping solution to query base type.
             WCHAR  className[256] = {0};
             WCHAR* pbuf           = &className[0];
-            int    len            = _countof(className);
+            int    len            = ArrLen(className);
             info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
             noway_assert(pbuf < &className[256]);
             JITDUMP("SIMD Candidate Type %S\n", className);

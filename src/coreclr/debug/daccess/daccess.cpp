@@ -1570,7 +1570,7 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
             // use only one block, so improving data locality across blocks (i.e. keeping the buckets of the
             // hash table together) should help.
             newBlock = (HashInstanceKeyBlock*)
-                ClrVirtualAlloc(NULL, HASH_INSTANCE_BLOCK_ALLOC_SIZE*NumItems(m_hash), MEM_COMMIT, PAGE_READWRITE);
+                ClrVirtualAlloc(NULL, HASH_INSTANCE_BLOCK_ALLOC_SIZE*ARRAY_SIZE(m_hash), MEM_COMMIT, PAGE_READWRITE);
         }
         if (!newBlock)
         {
@@ -1587,7 +1587,7 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
         }
         else
         {
-            for (DWORD j = 0; j < NumItems(m_hash); j++)
+            for (DWORD j = 0; j < ARRAY_SIZE(m_hash); j++)
             {
                 m_hash[j] = newBlock;
                 newBlock->next = NULL; // The previously allocated block
@@ -2029,7 +2029,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     }
 
 #if defined(DAC_HASHTABLE)
-    for (int i = NumItems(m_hash) - 1; i >= 0; i--)
+    for (int i = STRING_LENGTH(m_hash); i >= 0; i--)
     {
         HashInstanceKeyBlock* block = m_hash[i];
         HashInstanceKeyBlock* next;
@@ -2061,7 +2061,7 @@ DacInstanceManager::ClearEnumMemMarker(void)
     ULONG i;
     DAC_INSTANCE* inst;
 
-    for (i = 0; i < NumItems(m_hash); i++)
+    for (i = 0; i < ARRAY_SIZE(m_hash); i++)
     {
         HashInstanceKeyBlock* block = m_hash[i];
         while (block)
@@ -2131,7 +2131,7 @@ DacInstanceManager::DumpAllInstances(
    int total = 0;
 #endif // #if defined(DAC_MEASURE_PERF)
 
-    for (i = 0; i < NumItems(m_hash); i++)
+    for (i = 0; i < ARRAY_SIZE(m_hash); i++)
     {
 
 #if defined(DAC_MEASURE_PERF)
@@ -6636,7 +6636,7 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             ulRvaHint,
             isNGEN,
             uniPath,
-            NumItems(uniPath)))
+            ARRAY_SIZE(uniPath)))
     {
         return NULL;
     }
@@ -6700,7 +6700,7 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
                 imageTimestamp,
                 imageSize,
                 uniPath,
-                NumItems(uniPath)))
+                ARRAY_SIZE(uniPath)))
         {
             goto ErrExit;
         }
@@ -6708,16 +6708,16 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
 #if defined(FEATURE_CORESYSTEM)
         const WCHAR* ilExtension = W("dll");
         WCHAR ngenImageName[MAX_LONGPATH] = {0};
-        if (wcscpy_s(ngenImageName, NumItems(ngenImageName), uniPath) != 0)
+        if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
         {
             goto ErrExit;
         }
-        if (wcscpy_s(uniPath, NumItems(uniPath), ngenImageName) != 0)
+        if (wcscpy_s(uniPath, ARRAY_SIZE(uniPath), ngenImageName) != 0)
         {
             goto ErrExit;
         }
         // Transform NGEN image name into IL Image name
-        if (!GetILImageNameFromNgenImage(ilExtension, uniPath, NumItems(uniPath)))
+        if (!GetILImageNameFromNgenImage(ilExtension, uniPath, ARRAY_SIZE(uniPath)))
         {
             goto ErrExit;
         }
