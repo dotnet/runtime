@@ -42,7 +42,8 @@ namespace System.Numerics
             19, 27, 23, 06, 26, 05, 04, 31
         };
 
-        private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
+        private static readonly uint[] s_crcTable = Sse42.IsSupported || Crc32.IsSupported ?
+            Array.Empty<uint>() : Crc32ReflectedTable.Generate(0x82F63B78u);
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
