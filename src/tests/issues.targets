@@ -829,7 +829,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/Runtime_34170/*">
             <Issue>https://github.com/dotnet/runtime/issues/53560</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/poison/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/poison/*">
             <Issue>https://github.com/dotnet/runtime/issues/56148</Issue>
         </ExcludeList>
     </ItemGroup>
@@ -1516,7 +1516,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/debugging/poison/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/poison/**">
             <Issue>Tests coreclr JIT's debug poisoning of address taken variables</Issue>
         </ExcludeList>
     </ItemGroup>
