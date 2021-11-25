@@ -547,7 +547,7 @@ namespace System.Xml
         private static int WriteCharToSpan(Span<char> destination, int ch)
         {
             Debug.Assert(destination.Length >= 12);
-            bool result = destination.TryWrite(NumberFormatInfo.InvariantInfo, $"&#x{ch:X};", out int charsWritten);
+            bool result = destination.TryWrite($"&#x{(uint)ch:X};", out int charsWritten);
             Debug.Assert(result);
             return charsWritten;
         }
