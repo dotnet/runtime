@@ -25,9 +25,12 @@ namespace WebAssemblyInfo
 
         public UInt32[] IdxArray;
 
+        public long Offset;
+
         public string ToString(WasmReader? reader)
         {
-            var opStr = Opcode.ToString().ToLower().Replace("_", ".");
+            var prefix = Program.PrintOffsets ? $"0x{Offset:x8}: " : null;
+            var opStr = prefix + Opcode.ToString().ToLower().Replace("_", ".");
             switch (Opcode)
             {
                 case Opcode.Block:

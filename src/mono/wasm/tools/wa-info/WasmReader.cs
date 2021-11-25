@@ -188,7 +188,7 @@ namespace WebAssemblyInfo
 
         Instruction ReadInstruction(Opcode opcode)
         {
-            Instruction instruction = new();
+            Instruction instruction = new() { Offset = Reader.BaseStream.Position - 1 };
             instruction.Opcode = opcode;
             Opcode op;
 

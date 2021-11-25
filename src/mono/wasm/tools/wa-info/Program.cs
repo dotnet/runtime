@@ -19,6 +19,7 @@ namespace WebAssemblyInfo
         static internal Regex? TypeFilter;
         public static bool AotStats;
         public static bool Disassemble;
+        public static bool PrintOffsets;
 
         readonly static Dictionary<string, AssemblyReader> assemblies = new();
 
@@ -104,6 +105,9 @@ namespace WebAssemblyInfo
                 { "h|help|?",
                     "Show this message and exit",
                     v => help = v != null },
+                { "o|instruction-offsets",
+                    "Show instruction offsets",
+                    v => PrintOffsets = true },
                 { "t|type-filter=",
                     "Filter types and process only those matching {REGEX}",
                     v => TypeFilter = new Regex (v) },

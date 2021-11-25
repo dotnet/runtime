@@ -28,6 +28,7 @@ Options:
   -f, --function-filter=REGEX
                              Filter wasm functions REGEX
   -h, --help, -?             Show this message and exit
+  -o, --instruction-offsets  Show instruction offsets
   -t, --type-filter=REGEX    Filter types and process only those matching REGEX
   -v, --verbose              Output information about progress during the run
                                of the tool
