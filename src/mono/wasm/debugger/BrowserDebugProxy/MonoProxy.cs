@@ -25,7 +25,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
         // index of the runtime in a same JS page/process
-        public int RuntimeId { get; private set; }
+        public int RuntimeId { get; private init; }
 
         public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0) : base(loggerFactory)
         {

@@ -152,11 +152,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path}");
                     int runtimeId = 0;
-                    if (context.Request.Query.TryGetValue("RuntimeId", out var runtimeIdValue))
+                    if (context.Request.Query.TryGetValue("RuntimeId", out StringValues runtimeIdValue) &&
+                                            int.TryParse(runtimeIdValue.FirstOrDefault(), out int parsedId))
                     {
-                        int.TryParse(runtimeIdValue.First(), out runtimeId);
+                        runtimeId = parsedId;
                     }
-
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
