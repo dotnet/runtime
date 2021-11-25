@@ -2,6 +2,9 @@
   <!-- This is a dummy project to enable installing worklods from artifacts -->
 
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
+
+    <IsPublishable>false</IsPublishable>
     <EnableCoverageSupport>false</EnableCoverageSupport>
     <EnableRunSettingsSupport>false</EnableRunSettingsSupport>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>

@@ -6,6 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="Sdk\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Sdk" />
+    <None Include="build\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="build" />
+
     <ProjectReference Include="$(RepoTasksDir)MonoTargetsTasks\MonoTargetsTasks.csproj" />
   </ItemGroup>
 
@@ -16,6 +19,15 @@
     <PackageFile Include="Sdk\MonoTargetsTasks.props" TargetPath="Sdk" />
     <PackageFile Include="Sdk\RuntimeComponentManifest.targets" TargetPath="Sdk" />
   </ItemGroup>
+
+          <!--DestinationFiles="$(ArtifactsBinDir)MonoTargets.Sdk.ForTesting\%(PackageFile.TargetPath)\%(PackageFile.FileName)%(PackageFile.Extension)"-->
+  <Target Name="_PrepareForPack" AfterTargets="Build" BeforeTargets="Pack">
+    <Message Text="** _PrepareForPack OutpoutPath=$(OutputPath) **" Importance="High" />
+    <Copy SourceFiles="@(PackageFile)"
+          DestinationFiles="$(MonoTargetsSdkForTestingDir)\%(PackageFile.TargetPath)\%(PackageFile.FileName)%(PackageFile.Extension)"
+          SkipUnchangedFiles="true"/>
+
+  </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

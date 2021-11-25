@@ -1,7 +1,13 @@
 <Project>
   <!-- This depends on the root Directory.Build.targets imported this file -->
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+
+  <PropertyGroup>
+    <MonoTargetsSdkForTestingDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargets.Sdk.ForTesting', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsSdkForTestingDir>
+  </PropertyGroup>
+
+  <Import Project="$(MonoTargetsSdkForTestingDir)Sdk\Sdk.props" />
+  <Import Project="$(MonoTargetsSdkForTestingDir)Sdk\Sdk.targets" />
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->

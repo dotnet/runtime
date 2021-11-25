@@ -442,7 +442,7 @@
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
-      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+      <HelixCorrelationPayload Include="$(MonoTargetsSdkForTestingDir)"          Destination="build/MonoTargetsSdk" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">

@@ -22,7 +22,10 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <!--<UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />-->
+  <!--<Import Project="$(MonoTargetsSdkBaseDir)Sdk\Sdk.targets" />-->
+
+  <Import Project="$(MonoTargetsSdkBaseDir)Sdk\Sdk.targets" />
 
   <PropertyGroup>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
@@ -65,7 +68,7 @@
       <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
       <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
       <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
-      <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
+      <!--<MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetSdkTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>-->
     </PropertyGroup>
 
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')"
