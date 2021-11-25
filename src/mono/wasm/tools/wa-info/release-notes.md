@@ -1,3 +1,9 @@
+### Release version 0.0.4
+
+Changes:
+
+ * new -o option to display instructions offsets
+
 ### Release version 0.0.3
 
 Changes:
