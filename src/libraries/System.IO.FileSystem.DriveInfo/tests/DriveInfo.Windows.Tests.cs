@@ -9,27 +9,9 @@ using System.Security;
 using System.Text;
 using Xunit;
 
-namespace System.IO.FileSystem.DriveInfoTests
+namespace System.IO.FileSystem.Tests
 {
-    // Separate class from the rest of the DriveInfo tests to prevent adding an extra virtual drive to GetDrives().
-    public class DriveInfoVirtualDriveTests : IDisposable
-    {
-        private VirtualDriveHelper VirtualDrive { get; } = new VirtualDriveHelper();
-
-        public void Dispose() => VirtualDrive.Dispose();
-
-        // Cannot set the volume label on a SUBST'ed folder
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSubstAvailable))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void SetVolumeLabel_OnVirtualDrive_Throws()
-        {
-            char letter = VirtualDrive.VirtualDriveLetter; // Trigger calling subst
-            DriveInfo drive = DriveInfo.GetDrives().Where(d => d.RootDirectory.FullName[0] == letter).FirstOrDefault();
-            Assert.NotNull(drive);
-            Assert.Throws<IOException>(() => drive.VolumeLabel = "impossible");
-        }
-    }
-
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class DriveInfoWindowsTests
     {
         [Theory]
@@ -52,7 +34,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestConstructor()
         {
             string[] variableInput = { "{0}", "{0}", "{0}:", "{0}:", @"{0}:\", @"{0}:\\", "{0}://" };
@@ -71,7 +52,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestGetDrives()
         {
             var validExpectedDrives = GetValidDriveLettersOnMachine();
@@ -114,7 +94,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestDriveFormat()
         {
             DriveInfo validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -141,7 +120,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestDriveType()
         {
             var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -154,7 +132,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestValidDiskSpaceProperties()
         {
             bool win32Result;
@@ -186,7 +163,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestInvalidDiskProperties()
         {
             string invalidDriveName = GetInvalidDriveLettersOnMachine().First().ToString();
@@ -206,7 +182,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetVolumeLabel_Returns_CorrectLabel()
         {
             void DoDriveCheck()
@@ -242,7 +217,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetVolumeLabel_Roundtrips()
         {
             DriveInfo drive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -263,7 +237,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void VolumeLabelOnNetworkOrCdRom_Throws()
         {
             // Test setting the volume label on a Network or CD-ROM
