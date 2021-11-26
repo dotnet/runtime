@@ -119,12 +119,10 @@ arm_exidx_apply_cmd (struct arm_exbuf_data *edata, struct dwarf_cursor *c)
       dwarf_get (c, c->loc[UNW_ARM_R13], &c->cfa);
       break;
     case ARM_EXIDX_CMD_VFP_POP:
+      /* Skip VFP registers, but be sure to adjust stack */
       for (i = ARM_EXBUF_START (edata->data); i <= ARM_EXBUF_END (edata->data);
            i++)
-      {
-        c->loc[UNW_ARM_S0 + i] = DWARF_LOC (c->cfa, 0);
         c->cfa += 8;
-      }
       if (!(edata->data & ARM_EXIDX_VFP_DOUBLE))
         c->cfa += 4;
       break;
@@ -383,7 +381,7 @@ arm_exidx_extract (struct dwarf_cursor *c, uint8_t *buf)
   return nbuf;
 }
 
-int
+static int
 arm_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
 			 unw_dyn_info_t *di, unw_proc_info_t *pi,
 			 int need_unwind_info, void *arg)
