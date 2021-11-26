@@ -102,7 +102,7 @@ namespace System.IO.Tests
         public void DeletingSymLinkDoesntDeleteTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
+            var linkPath = GetRandomLinkPath();
 
             Directory.CreateDirectory(path);
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));

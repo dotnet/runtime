@@ -134,7 +134,7 @@ namespace System.IO.Tests
             using (var watcher = new FileSystemWatcher(dir.Path, "*"))
             {
                 // Make the symlink in our path (to the temp file) and make sure an event is raised
-                string symLinkPath = Path.Combine(dir.Path, Path.ChangeExtension(Path.GetFileName(temp.Path), ".link"));
+                string symLinkPath = Path.Combine(dir.Path, GetRandomLinkName());
                 Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp.Path, false));
                 Action cleanup = () => File.Delete(symLinkPath);
 

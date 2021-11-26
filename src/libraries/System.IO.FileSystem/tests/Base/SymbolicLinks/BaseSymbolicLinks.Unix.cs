@@ -14,6 +14,5 @@ namespace System.IO.Tests
 {
     public abstract partial class BaseSymbolicLinks : FileSystemTest
     {
-        private string GetTestDirectoryActualCasing() => TestDirectory;
     }
 }

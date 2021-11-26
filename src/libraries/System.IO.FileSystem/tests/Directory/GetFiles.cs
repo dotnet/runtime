@@ -25,7 +25,7 @@ namespace System.IO.Tests
             FileInfo targetFile = new FileInfo(GetTestFilePath());
             targetFile.Create().Dispose();
 
-            string linkPath = Path.Combine(containingFolder.FullName, Path.ChangeExtension(Path.GetRandomFileName(), ".link"));
+            string linkPath = Path.Combine(containingFolder.FullName, GetRandomLinkName());
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetFile.FullName, isDirectory: false));
 
             Assert.True(File.Exists(linkPath));

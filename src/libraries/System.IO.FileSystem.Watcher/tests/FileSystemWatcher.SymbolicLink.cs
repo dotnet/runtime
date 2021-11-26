@@ -11,7 +11,7 @@ namespace System.IO.Tests
     {
         private string CreateSymbolicLinkToTarget(string targetPath, bool isDirectory, string linkPath = null)
         {
-            linkPath ??= Path.ChangeExtension(GetTestFilePath(), ".link");
+            linkPath ??= GetRandomLinkPath();
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetPath, isDirectory));
 
             return linkPath;
@@ -48,7 +48,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_DirectorySymbolicLink_TargetsSelf_Fails()
         {
             // Arrange
-            string linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
+            string linkPath = GetRandomLinkPath();
             CreateSymbolicLinkToTarget(targetPath: linkPath, isDirectory: true, linkPath: linkPath);
             using var watcher = new FileSystemWatcher(linkPath);
 

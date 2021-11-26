@@ -125,7 +125,7 @@ namespace System.IO.Tests
             string path = GetTestFilePath();
             new DirectoryInfo(path).Create();
 
-            string linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
+            string linkPath = GetRandomLinkPath();
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             Assert.True(new DirectoryInfo(path).Exists);
@@ -136,7 +136,7 @@ namespace System.IO.Tests
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
+            var linkPath = GetRandomLinkPath();
 
             var pathFI = new DirectoryInfo(path);
             var linkPathFI = new DirectoryInfo(linkPath);

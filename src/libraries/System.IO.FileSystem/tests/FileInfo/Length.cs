@@ -67,7 +67,7 @@ namespace System.IO.Tests
         public void SymLinkLength()
         {
             string path = GetTestFilePath();
-            string linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
+            string linkPath = GetRandomLinkPath();
 
             const int FileSize = 2000;
             using (var tempFile = new TempFile(path, FileSize))
