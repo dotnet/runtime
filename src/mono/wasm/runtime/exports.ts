@@ -261,7 +261,7 @@ function initializeImportsAndExports(
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 
 // the methods would be visible to EMCC linker
-// --- keep in sync with dotnet.lib.js ---
+// --- keep in sync with dotnet.cjs.lib.js ---
 export const __linker_exports: any = {
     // mini-wasm.c
     mono_set_timeout,
