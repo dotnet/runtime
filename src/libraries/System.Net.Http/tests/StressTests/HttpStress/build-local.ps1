@@ -17,7 +17,18 @@ if (-not ([string]::IsNullOrEmpty($args[1]))) {
     $LibrariesConfiguration = $args[0]
 }
 
-Write-Host "StressConfiguration: $StressConfiguration, LibrariesConfiguration: $LibrariesConfiguration"
+$TestHostRoot="$RepoRoot/artifacts/bin/testhost/net$Version-windows-$LibrariesConfiguration-x64"
+
+Write-Host "StressConfiguration: $StressConfiguration, LibrariesConfiguration: $LibrariesConfiguration, testhost: $TestHostRoot"
+
+if (-not (Test-Path -Path $TestHostRoot)) {
+    Write-Host "Cannot find testhost in: $TestHostRoot"
+    Write-Host "Make sure libraries with the requested configuration are built!"
+    Write-Host "Usage:"
+    Write-Host "./build-local.sh [StressConfiguration] [LibrariesConfiguration]"
+    Write-Host "StressConfiguration and LibrariesConfiguration default to Release!"
+    exit 1
+}
 
 if (-not (Test-Path -Path $DailyDotnetRoot)) {
     Write-Host "Downloading daily SDK to: $DailyDotnetRoot"
@@ -27,8 +38,6 @@ if (-not (Test-Path -Path $DailyDotnetRoot)) {
 } else {
     Write-Host "Daily SDK found in $DailyDotnetRoot"
 }
-
-$TestHostRoot="$RepoRoot/artifacts/bin/testhost/net$Version-windows-$LibrariesConfiguration-x64"
 
 $env:DOTNET_ROOT=$DailyDotnetRoot
 $env:PATH="$DailyDotnetRoot;$env:PATH"

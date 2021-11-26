@@ -21,9 +21,18 @@ if (-not ([string]::IsNullOrEmpty($args[1]))) {
     $LibrariesConfiguration = $args[0]
 }
 
-Write-Host "StressConfiguration: $StressConfiguration, LibrariesConfiguration: $LibrariesConfiguration"
-
 $TestHostRoot="$RepoRoot/artifacts/bin/testhost/net$Version-windows-$LibrariesConfiguration-x64"
+
+Write-Host "StressConfiguration: $StressConfiguration, LibrariesConfiguration: $LibrariesConfiguration, testhost: $TestHostRoot"
+
+if (-not (Test-Path -Path $TestHostRoot)) {
+    Write-Host "Cannot find testhost in: $TestHostRoot"
+    Write-Host "Make sure libraries with the requested configuration are built!"
+    Write-Host "Usage:"
+    Write-Host "./build-local.sh [StressConfiguration] [LibrariesConfiguration]"
+    Write-Host "StressConfiguration and LibrariesConfiguration default to Release!"
+    exit 1
+}
 
 Write-Host "Building solution."
 dotnet build -c $StressConfiguration

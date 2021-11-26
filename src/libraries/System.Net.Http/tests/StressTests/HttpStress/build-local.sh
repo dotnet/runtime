@@ -30,7 +30,7 @@ if [[ ! -d $testhost_root ]]; then
     echo "Usage:"
     echo "./build-local.sh [StressConfiguration] [LibrariesConfiguration]"
     echo "StressConfiguration and LibrariesConfiguration default to Release!"
-    exit 2
+    exit 1
 fi
 
 if [[ ! -d $daily_dotnet_root ]]; then
