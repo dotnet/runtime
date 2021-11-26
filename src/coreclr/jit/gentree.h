@@ -579,7 +579,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
 
-    GTF_ARR_BOUND_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proved this check is always in-bounds
+    GTF_CHK_INDEX_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proved this check is always in-bounds
 
     GTF_ARRLEN_ARR_IDX          = 0x80000000, // GT_ARR_LENGTH -- Length which feeds into an array index expression
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
