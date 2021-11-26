@@ -295,8 +295,6 @@ if [[ ! "$tieringtest" -eq 0 ]]; then
    runtestPyArguments+=("--tieringtest")
 fi
 
-runtestPyArguments+=("-core_root=/home/tamas/Code/runtime/artifacts/tests/coreclr/Linux.x64.Debug/Tests/Core_Root")
-
 # Default to python3 if it is installed
 __Python=python
  if command -v python3 &>/dev/null; then
