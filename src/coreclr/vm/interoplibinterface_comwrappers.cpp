@@ -1169,7 +1169,7 @@ namespace InteropLibImports
         bool isValid = false;
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
-        isValid = ObjectHandleIsNull(objectHandle) == TRUE;
+        isValid = ObjectHandleIsNull(objectHandle) != FALSE;
 
         return isValid;
     }
