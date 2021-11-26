@@ -248,6 +248,11 @@
      <Copy SourceFiles="$(AssemblyName).reflect.xml"
            DestinationFolder="$(OutputPath)"
        Condition="Exists('$(AssemblyName).reflect.xml')"/>
+
+    <WriteLinesToFile
+        Condition="'$(IsMergedTestAssembly)' == 'true'"
+        File="$(OutputPath)\$(MSBuildProjectName).MergedTestAssembly"
+        Lines="MergedTestAssembly" />
   </Target>
 
   <PropertyGroup>
