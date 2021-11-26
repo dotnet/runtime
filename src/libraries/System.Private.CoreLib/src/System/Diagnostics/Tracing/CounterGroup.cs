@@ -35,9 +35,9 @@ namespace System.Diagnostics.Tracing
         {
             lock (s_counterGroupLock) // Lock the CounterGroup
                 _counters.Add(eventCounter);
-             // If the polling thread was started without any counters at that time,
-             // then it started an infinite sleep - we must wake the thread up or it will be stuck
-             s_pollingThreadSleepEvent?.Set();
+            // If the polling thread was started without any counters at that time,
+            // then it started an infinite sleep - we must wake the thread up or it will be stuck
+            s_pollingThreadSleepEvent?.Set();
         }
 
         internal void Remove(DiagnosticCounter eventCounter)
@@ -161,16 +161,30 @@ namespace System.Diagnostics.Tracing
                             IsBackground = true,
                             Name = ".NET Counter Poller"
                         };
+
+                        // Must add this before starting the thread,
+                        // because the polling thread would end up sleeping
+                        // indefinitely if it saw an empty list on start
+                        if (!s_counterGroupEnabledList!.Contains(this))
+                        {
+                            s_counterGroupEnabledList.Add(this);
+                        }
+
 #if ES_BUILD_STANDALONE
                         s_pollingThread.Start();
 #else
                         s_pollingThread.UnsafeStart();
 #endif
                     }
-
-                    if (!s_counterGroupEnabledList!.Contains(this))
+                    else
                     {
-                        s_counterGroupEnabledList.Add(this);
+                        lock (s_counterGroupLock)
+                        {
+                            if (!s_counterGroupEnabledList!.Contains(this))
+                            {
+                                s_counterGroupEnabledList.Add(this);
+                            }
+                        }
                     }
 
                     // notify the polling thread that the polling interval may have changed and the sleep should

@@ -81,7 +81,7 @@ parser.add_argument("-os", dest="host_os", nargs='?', default=None)
 parser.add_argument("-arch", dest="arch", nargs='?', default="x64")
 parser.add_argument("-build_type", dest="build_type", nargs='?', default="Debug")
 parser.add_argument("-test_location", dest="test_location", nargs="?", default=None)
-parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
+parser.add_argument("-core_root", dest="core_root", nargs='?', default="")
 parser.add_argument("-runtime_repo_location", dest="runtime_repo_location", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 parser.add_argument("-test_env", dest="test_env", default=None)
 
