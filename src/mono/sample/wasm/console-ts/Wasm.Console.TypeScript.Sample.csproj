@@ -9,7 +9,9 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <WasmDebugLevel>1</WasmDebugLevel>
+    <!-- TODO solve the location of re-linked js file relative to package.json
     <WasmEnableES6>true</WasmEnableES6>
+    -->
     <WasmBuildAppDependsOn>
       CompileTypeScript;
       $(WasmBuildAppDependsOn)
