@@ -181,19 +181,20 @@
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
-                       runtime/dotnet.lib.js;
                        $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/modularize-cjs/dotnet.cjs.pre.js;
-                       runtime/modularize-cjs/dotnet.cjs.post.js;
-                       runtime/modularize-cjs/dotnet.cjs.extpost.js;"
+    <Copy SourceFiles="runtime/cjs/dotnet.cjs.pre.js;
+                       runtime/cjs/dotnet.cjs.lib.js;
+                       runtime/cjs/dotnet.cjs.post.js;
+                       runtime/cjs/dotnet.cjs.extpost.js;"
           DestinationFolder="$(NativeBinDir)src/cjs"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/modularize-es6/dotnet.es6.pre.js;
-                       runtime/modularize-es6/dotnet.es6.post.js;"
+    <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
+                       runtime/es6/dotnet.es6.lib.js;
+                       runtime/es6/dotnet.es6.post.js;"
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
 

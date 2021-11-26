@@ -19,8 +19,8 @@ module.exports = {
     "ignorePatterns": [
         "node_modules/**/*.*",
         "bin/**/*.*",
-        "modularize-cjs/*.js",
-        "modularize-es6/*.js",
+        "cjs/*.js",
+        "es6/*.js",
     ],
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",
