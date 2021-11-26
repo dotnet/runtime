@@ -1,77 +1,167 @@
 using System;
 
-namespace CallingEnviromentStackTraceFromDim
+public interface IPublisher<out TData>
 {
-    public interface IPublisher<out TData>
+    event Action<TData> OnPublish;
+}
+
+public interface TestItf1<TT>
+{
+    void TestMethod1(IPublisher<TT> publisher, StackFrame[] expectedFrames)
     {
-        event Action<TData> OnPublish;
+        StackFrame.Validate (Environment.StackTrace, expectedFrames);
     }
 
-    public interface ISubscriber<T>
+    void TestMethod2(IPublisher<TT> publisher, StackFrame[] expectedFrames)
     {
-        void OnReceiveSubscription(T data);
-
-        void Subscribe(IPublisher<T> publisher)
-        {
-            InternalSubscribe(this, publisher);
-        }
-
-        void Unsubscribe(IPublisher<T> publisher)
-        {
-            InternalUnsubscribe(this, publisher);
-        }
-
-        protected static void InternalSubscribe(ISubscriber<T> subscriber, IPublisher<T> publisher)
-        {
-            publisher.OnPublish += subscriber.OnReceiveSubscription;
-            Console.WriteLine(Environment.StackTrace.ToString());
-        }
-
-        protected static void InternalUnsubscribe(ISubscriber<T> subscriber, IPublisher<T> publisher)
-        {
-            publisher.OnPublish -= subscriber.OnReceiveSubscription;
-            Console.WriteLine(Environment.StackTrace.ToString());
-        }
+        TestMethod3 (this, publisher, expectedFrames);
     }
 
-    public class PubTest :IPublisher<InputData>
+    protected static void TestMethod3(TestItf1<TT> subscriber, IPublisher<TT> publisher, StackFrame[] expectedFrames)
     {
-        public event Action<InputData> OnPublish;
-
-        public void Call() => OnPublish?.Invoke(new InputData());
+        StackFrame.Validate (Environment.StackTrace, expectedFrames);
     }
 
-    public class InputData
+    void TestMethod4(IPublisher<TT> publisher, StackFrame[] expectedFrames)
     {
-        public int i;
+        TestMethod3 (this, publisher, expectedFrames);
     }
 
-    public class Program : ISubscriber<InputData>
+    void TestMethod5(IPublisher<TT> publisher, StackFrame[] expectedFrames)
     {
-        static int Main()
-        {
-            new Program().Start();
-            return 100;
-        }
-        
-        // Start is called before the first frame update
-        public void Start()
-        {
-            var pub = new PubTest();
-            var sub = (ISubscriber<InputData>)this;
-            sub.Subscribe(pub);
-            pub.Call();
-            sub.Unsubscribe(pub);
-        }
+        TestMethod3 (this, publisher, expectedFrames);
+    }
 
-        public void Subscribe(IPublisher<InputData> publisher)
-        {
-            ISubscriber<InputData>.InternalSubscribe(this, publisher);
-        }
+    void TestMethod10(IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        TestMethod3 (this, publisher, expectedFrames);
+    }
 
-        public void OnReceiveSubscription(InputData data)
+    void TestMethod11(IPublisher<TT> publisher, StackFrame[] expectedFrames);
+}
+
+public interface TestItf2<TT> : TestItf1<TT>
+{
+    void TestItf1<TT>.TestMethod5(IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        TestMethod3 (this, publisher, expectedFrames);
+    }
+
+    void TestItf1<TT>.TestMethod10(IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        TestMethod3 (this, publisher, expectedFrames);
+    }
+}
+
+public interface TestItf3<TT> : TestItf1<TT>
+{
+    void TestMethod6(IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        TestMethod3 (this, publisher, expectedFrames);
+    }
+
+    void TestMethod7(IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        TestMethod8 (this, publisher, expectedFrames);
+    }
+
+    protected static void TestMethod8(TestItf1<TT> subscriber, IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        StackFrame.Validate (Environment.StackTrace, expectedFrames);
+    }
+
+    void TestMethod9(IPublisher<TT> publisher, StackFrame[] expectedFrames);
+}
+
+public interface TestItf4<TT> : TestItf3<TT>
+{
+    void TestItf3<TT>.TestMethod9(IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        TestMethod8 (this, publisher, expectedFrames);
+    }
+}
+
+public class ProgramBase<TT> : TestItf4<TT>
+{
+    public void TestMethod10(IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        TestItf1<TT>.TestMethod3 (this, publisher, expectedFrames);
+    }
+
+    public void TestMethod11(IPublisher<TT> publisher, StackFrame[] expectedFrames)
+    {
+        TestItf1<TT>.TestMethod3 (this, publisher, expectedFrames);
+    }
+}
+
+public class Program : ProgramBase<InputData>, TestItf2<InputData>
+{
+    static int Main(string[] args)
+    {
+        new Program().Start();
+        return 100;
+    }
+
+    public void Start()
+    {
+        var t1 = this as TestItf1<InputData>;
+        t1.TestMethod1(null, new [] {new StackFrame ("TestItf1`1", "TestMethod1")});
+        t1.TestMethod2(null, new [] {new StackFrame ("TestItf1`1", "TestMethod3"), new StackFrame ("TestItf1`1", "TestMethod2")});
+        t1.TestMethod4(null, new [] {new StackFrame ("TestItf1`1", "TestMethod3"), new StackFrame ("Program", "TestMethod4")});
+        t1.TestMethod5(null, new [] {new StackFrame ("TestItf1`1", "TestMethod3"), new StackFrame ("TestItf2`1.TestItf1", "TestMethod5")});
+
+        var t3 = this as TestItf3<InputData>;
+        t3.TestMethod6(null, new [] {new StackFrame ("TestItf1`1", "TestMethod3"), new StackFrame ("TestItf3`1", "TestMethod6")});
+        t3.TestMethod7(null, new [] {new StackFrame ("TestItf3`1", "TestMethod8"), new StackFrame ("TestItf3`1", "TestMethod7")});
+        t3.TestMethod9(null, new [] {new StackFrame ("TestItf3`1", "TestMethod8"), new StackFrame ("TestItf4`1.TestItf3", "TestMethod9")});
+
+        t1.TestMethod10(null, new [] {new StackFrame ("TestItf1`1", "TestMethod3"), new StackFrame ("ProgramBase`1", "TestMethod10")});
+        t1.TestMethod11(null, new [] {new StackFrame ("TestItf1`1", "TestMethod3"), new StackFrame ("ProgramBase`1", "TestMethod11")});
+    }
+
+    public void TestMethod4(IPublisher<InputData> publisher, StackFrame[] expectedFrames)
+    {
+        TestItf1<InputData>.TestMethod3 (this, publisher, expectedFrames);
+    }
+}
+
+public class InputData
+{
+    public int i;
+}
+
+public class StackFrame
+{
+    public string ClassName {get; set;} = string.Empty;
+    public string MethodName {get; set;} = string.Empty;
+
+    public StackFrame (string className, string methodName)
+    {
+        ClassName = className;
+        MethodName = methodName;
+    }
+
+    public static void Validate (string testStack, StackFrame[] expectedFrames)
+    {
+        int index = 1;
+
+        string[] lines = testStack.Split(
+            new string[] { Environment.NewLine },
+            StringSplitOptions.None
+        );
+
+        //Console.WriteLine(testStack);
+
+        foreach (var frame in expectedFrames)
         {
-            Console.WriteLine($"do something");
+            var line = lines[index++].Trim();
+
+            if (!line.StartsWith ($"at {frame.ClassName}") || !line.Contains ($".{frame.MethodName}"))
+            {
+                Console.WriteLine ($"Expected {frame.ClassName}.{frame.MethodName} but got {line}");
+                Console.WriteLine(testStack);
+                Environment.Exit (1);
+            }
         }
     }
 }
