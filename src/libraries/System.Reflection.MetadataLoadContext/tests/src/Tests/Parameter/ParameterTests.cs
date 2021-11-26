@@ -67,6 +67,32 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void TestRawDefaultValue7()
+        {
+            var parameters = typeof(ParametersWithDefaultValues).Project().GetTypeInfo().GetDeclaredMethod("Foo7").GetParameters();
+            ParameterInfo p1 = parameters[0];
+            Assert.True(p1.HasDefaultValue);
+            object dv1 = p1.RawDefaultValue;
+            Assert.Equal("foo", dv1);
+            ParameterInfo p2 = parameters[1];
+            Assert.True(p2.HasDefaultValue);
+            object dv2 = p2.RawDefaultValue;
+            Assert.Equal("", dv2);
+            ParameterInfo p3 = parameters[2];
+            Assert.True(p3.HasDefaultValue);
+            Assert.Null(p3.RawDefaultValue);
+        }
+
+        [Fact]
+        public static void TestRawDefaultValue8()
+        {
+            ParameterInfo p = typeof(ParametersWithDefaultValues).Project().GetTypeInfo().GetDeclaredMethod("Foo8").GetParameters()[0];
+            Assert.True(p.HasDefaultValue);
+            object dv = p.RawDefaultValue;
+            Assert.Null(dv);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15340", TestRuntimes.Mono)]
         public static void TestPseudoCustomAttributes()
         {

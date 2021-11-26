@@ -136,47 +136,12 @@ static MonoDomain *root_domain;
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
 
+extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
+
 static void
 wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	EM_ASM({
-		var log_level = $0;
-		var message = Module.UTF8ToString ($1);
-		var isFatal = $2;
-		var domain = Module.UTF8ToString ($3); // is this always Mono?
-		var dataPtr = $4;
-
-		if (INTERNAL["logging"] && INTERNAL.logging["trace"]) {
-			INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
-			return;
-		}
-
-		if (isFatal)
-			console.trace (message);
-
-		switch (Module.UTF8ToString ($0)) {
-			case "critical":
-			case "error":
-				console.error (message);
-				break;
-			case "warning":
-				console.warn (message);
-				break;
-			case "message":
-				console.log (message);
-				break;
-			case "info":
-				console.info (message);
-				break;
-			case "debug":
-				console.debug (message);
-				break;
-			default:
-				console.log (message);
-				break;
-		}
-	}, log_level, message, fatal, log_domain, user_data);
-
+	mono_wasm_trace_logger(log_domain, log_level, message, fatal, user_data);
 	if (fatal)
 		exit (1);
 }
@@ -485,12 +450,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 
 #ifdef DEBUG
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+	// monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
-	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in WasmApp.targets file

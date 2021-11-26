@@ -714,7 +714,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
     {
         unsigned lclNum = tgtAddr->AsLclVar()->GetLclNum();
 
-        LclVarDsc* varDsc = &compiler->lvaTable[lclNum];
+        LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
         // Instead of marking LclVar with 'lvStackByref',
         // Consider decomposing the Value Number given to this LclVar to see if it was

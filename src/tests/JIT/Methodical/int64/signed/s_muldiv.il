@@ -16,13 +16,7 @@
 .assembly 'muldiv'// as "muldiv"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'muldiv.exe'
 // MVID: {BF2F71BF-B5EC-4C96-8B9A-70A2AFBE37F8}
 .namespace JitTest

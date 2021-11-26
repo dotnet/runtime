@@ -146,8 +146,10 @@ set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
 set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
 
 if "%__RebuildTests%" == "1" (
-    echo Removing tests build dir^: !__TestBinDir!
+    echo Removing test build dir^: !__TestBinDir!
     rmdir /s /q !__TestBinDir!
+    echo Removing test intermediate dir^: !__TestIntermediatesDir!
+    rmdir /s /q !__TestIntermediatesDir!
 )
 
 REM We have different managed and native intermediate dirs because the managed bits will include

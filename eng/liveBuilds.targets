@@ -139,13 +139,20 @@
            Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesNativeArtifactsPath). Configuration: '$(LibrariesConfiguration)'. To use a different configuration, specify the 'LibrariesConfiguration' property." />
   </Target>
 
-  <Target Name="ResolveLibrariesFromLocalBuild"
+  <Target Name="ResolveLibrariesRefAssembliesFromLocalBuild"
+          DependsOnTargets="EnsureLocalArtifactsExist">
+    <ItemGroup>
+      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' != 'true'" Include="$(LibrariesSharedFrameworkRefArtifactsPath)*.dll;$(LibrariesSharedFrameworkRefArtifactsPath)*.pdb" />
+      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' == 'true'" Include="$(LibrariesAllRefArtifactsPath)*.dll;$(LibrariesAllRefArtifactsPath)*.pdb" />
+    </ItemGroup>
+    <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The 'libs' subset must be built before building this project." />
+  </Target>
+
+  <Target Name="ResolveLibrariesRuntimeFilesFromLocalBuild"
           DependsOnTargets="
             EnsureLocalArtifactsExist;
             EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist">
     <ItemGroup>
-      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' != 'true'" Include="$(LibrariesSharedFrameworkRefArtifactsPath)*.dll;$(LibrariesSharedFrameworkRefArtifactsPath)*.pdb" />
-      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' == 'true'" Include="$(LibrariesAllRefArtifactsPath)*.dll;$(LibrariesAllRefArtifactsPath)*.pdb" />
       <LibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'" Include="
         $(LibrariesSharedFrameworkBinArtifactsPath)*.dll;
         $(LibrariesSharedFrameworkBinArtifactsPath)*.pdb"
@@ -188,9 +195,13 @@
         IsNative="true" />
     </ItemGroup>
 
-    <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The 'libs' subset must be built before building this project." />
     <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The 'libs' subset must be built before building this project." />
   </Target>
+
+  <Target Name="ResolveLibrariesFromLocalBuild"
+          DependsOnTargets="
+            ResolveLibrariesRefAssembliesFromLocalBuild;
+            ResolveLibrariesRuntimeFilesFromLocalBuild" />
 
   <PropertyGroup>
     <BundledRuntimeIdentifierGraphFile>$(RuntimeIdGraphDefinitionFile)</BundledRuntimeIdentifierGraphFile>

@@ -20,16 +20,16 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::optInit()
 {
-    optLoopsMarked = false;
-    fgHasLoops     = false;
+    optLoopsMarked      = false;
+    fgHasLoops          = false;
+    loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
     optLoopCount = 0;
     optLoopTable = nullptr;
 
 #ifdef DEBUG
-    loopAlignCandidates = 0;
-    loopsAligned        = 0;
+    loopsAligned = 0;
 #endif
 
     /* Keep track of the number of calls and indirect calls made by this method */
@@ -379,14 +379,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 
     JITDUMP("\n");
 
-#if FEATURE_LOOP_ALIGN
-    if (begBlk->isLoopAlign())
-    {
-        // Clear the loop alignment bit on the head of a loop, since it's no longer a loop.
-        begBlk->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Removing LOOP_ALIGN flag from removed loop in " FMT_BB "\n", begBlk->bbNum);
-    }
-#endif
+    begBlk->unmarkLoopAlign(this DEBUG_ARG("Removed loop"));
 }
 
 /*****************************************************************************************************
@@ -2516,9 +2509,15 @@ void Compiler::optIdentifyLoopsForAlignment()
                 weight_t    topWeight = top->getBBWeight(this);
                 if (topWeight >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
                 {
-                    top->bbFlags |= BBF_LOOP_ALIGN;
-                    JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
-                            top->bbNum, topWeight);
+                    // Sometimes with JitOptRepeat > 1, we might end up finding the loops twice. In such
+                    // cases, make sure to count them just once.
+                    if (!top->isLoopAlign())
+                    {
+                        loopAlignCandidates++;
+                        top->bbFlags |= BBF_LOOP_ALIGN;
+                        JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
+                                top->bbNum, top->getBBWeight(this));
+                    }
                 }
                 else
                 {
@@ -3779,11 +3778,7 @@ PhaseStatus Compiler::optUnrollLoops()
 #if FEATURE_LOOP_ALIGN
         for (block = head->bbNext;; block = block->bbNext)
         {
-            if (block->isLoopAlign())
-            {
-                block->bbFlags &= ~BBF_LOOP_ALIGN;
-                JITDUMP("Removing LOOP_ALIGN flag from unrolled loop in " FMT_BB "\n", block->bbNum);
-            }
+            block->unmarkLoopAlign(this DEBUG_ARG("Unrolled loop"));
 
             if (block == bottom)
             {
@@ -7276,7 +7271,7 @@ void Compiler::optComputeLoopSideEffects()
 
     for (unsigned i = 0; i < lvaCount; i++)
     {
-        LclVarDsc* varDsc = &lvaTable[i];
+        LclVarDsc* varDsc = lvaGetDesc(i);
         if (varDsc->lvTracked)
         {
             if (varTypeIsFloating(varDsc->lvType))
@@ -7617,9 +7612,8 @@ void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
     if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
     {
         BasicBlock* top = optLoopTable[lnum].lpTop;
-        top->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Removing LOOP_ALIGN flag for " FMT_LP " that starts at " FMT_BB " because loop has a call.\n", lnum,
-                top->bbNum);
+
+        top->unmarkLoopAlign(this DEBUG_ARG("Loop with call"));
     }
 #endif
 

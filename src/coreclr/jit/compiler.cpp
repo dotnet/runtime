@@ -1847,6 +1847,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         impSpillCliquePredMembers = JitExpandArray<BYTE>(getAllocator());
         impSpillCliqueSuccMembers = JitExpandArray<BYTE>(getAllocator());
 
+        new (&genIPmappings, jitstd::placement_t()) jitstd::list<IPmappingDsc>(getAllocator(CMK_DebugInfo));
+#ifdef DEBUG
+        new (&genPreciseIPmappings, jitstd::placement_t()) jitstd::list<PreciseIPMapping>(getAllocator(CMK_DebugOnly));
+#endif
+
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();
 
         //
@@ -1873,6 +1878,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compJmpOpUsed         = false;
     compLongUsed          = false;
     compTailCallUsed      = false;
+    compTailPrefixSeen    = false;
+    compLocallocSeen      = false;
     compLocallocUsed      = false;
     compLocallocOptimized = false;
     compQmarkRationalized = false;
@@ -2547,11 +2554,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
     opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
 #else
     opts.compJitAlignLoopAdaptive       = true;
     opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
     opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp      = true;
 #endif
 
 #ifdef TARGET_XARCH
@@ -4427,8 +4436,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         if (info.compPublishStubParam)
         {
             assert(lvaStubArgumentVar == BAD_VAR_NUM);
-            lvaStubArgumentVar                  = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-            lvaTable[lvaStubArgumentVar].lvType = TYP_I_IMPL;
+            lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
+            lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
             // TODO-CQ: there is no need to mark it as doNotEnreg. There are no stores for this local
             // before codegen so liveness and LSRA mark it as "liveIn" and always allocate a stack slot for it.
             // However, it would be better to process it like other argument locals and keep it in
@@ -4583,7 +4592,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         {
             for (unsigned i = 0; i < info.compArgsCount; i++)
             {
-                if (lvaTable[i].TypeGet() == TYP_REF)
+                if (lvaGetDesc(i)->TypeGet() == TYP_REF)
                 {
                     // confirm that the argument is a GC pointer (for debugging (GC stress))
                     GenTree*          op   = gtNewLclvNode(i, TYP_REF);
@@ -4608,15 +4617,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         {
             lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
             lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason::ReturnSpCheck);
-            lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
+            lvaGetDesc(lvaReturnSpCheck)->lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #if defined(DEBUG) && defined(TARGET_X86)
         if (opts.compStackCheckOnCall)
         {
-            lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
-            lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
+            lvaCallSpCheck                     = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+            lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
@@ -5152,6 +5161,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks();
 #endif
 
+#if FEATURE_LOOP_ALIGN
+    // Place loop alignment instructions
+    DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
+#endif
+
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
@@ -5207,6 +5221,82 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // FUNC_INFO_LOGGING
 }
+
+#if FEATURE_LOOP_ALIGN
+
+//------------------------------------------------------------------------
+// placeLoopAlignInstructions: Iterate over all the blocks and determine
+//      the best position to place the 'align' instruction. Inserting 'align'
+//      instructions after an unconditional branch is preferred over inserting
+//      in the block before the loop. In case there are multiple blocks
+//      having 'jmp', the one that has lower weight is preferred.
+//      If the block having 'jmp' is hotter than the block before the loop,
+//      the align will still be placed after 'jmp' because the processor should
+//      be smart enough to not fetch extra instruction beyond jmp.
+//
+void Compiler::placeLoopAlignInstructions()
+{
+    if (loopAlignCandidates == 0)
+    {
+        return;
+    }
+
+    int loopsToProcess = loopAlignCandidates;
+
+    // Add align only if there were any loops that needed alignment
+    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
+    BasicBlock* bbHavingAlign = nullptr;
+    for (BasicBlock* const block : Blocks())
+    {
+        if ((block == fgFirstBB) && block->isLoopAlign())
+        {
+            // Adding align instruction in prolog is not supported
+            // hence skip the align block if it is the first block.
+            loopsToProcess--;
+            continue;
+        }
+
+        // If there is a unconditional jump
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
+        {
+            if (block->bbWeight < minBlockSoFar)
+            {
+                minBlockSoFar = block->bbWeight;
+                bbHavingAlign = block;
+                JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+            }
+        }
+
+        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        {
+            // If jmp was not found, then block before the loop start is where align instruction will be added.
+            if (bbHavingAlign == nullptr)
+            {
+                bbHavingAlign = block;
+                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
+                        block->bbNext->bbNum);
+            }
+            else
+            {
+                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
+                        "\n",
+                        bbHavingAlign->bbNum, block->bbNext->bbNum);
+            }
+
+            bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            minBlockSoFar = BB_MAX_WEIGHT;
+            bbHavingAlign = nullptr;
+
+            if (--loopsToProcess == 0)
+            {
+                break;
+            }
+        }
+    }
+
+    assert(loopsToProcess == 0);
+}
+#endif
 
 //------------------------------------------------------------------------
 // generatePatchpointInfo: allocate and fill in patchpoint info data,
@@ -5282,6 +5372,14 @@ void Compiler::generatePatchpointInfo()
         patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
         JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
+    }
+
+    if (lvaMonAcquired != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaMonAcquired);
+        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset());
+        JITDUMP("--OSR-- monitor acquired V%02u offset is FP %d\n", lvaMonAcquired,
+                patchpointInfo->MonitorAcquiredOffset());
     }
 
     // Register this with the runtime.
@@ -6180,7 +6278,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     info.compTotalColdCodeSize = 0;
     info.compClassProbeCount   = 0;
 
-    compHasBackwardJump = false;
+    compHasBackwardJump          = false;
+    compHasBackwardJumpInHandler = false;
 
 #ifdef DEBUG
     compCurBB = nullptr;
@@ -6334,10 +6433,51 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         goto _Next;
     }
 
-    if (compHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToOptimized())
+    // We may decide to optimize this method,
+    // to avoid spending a long time stuck in Tier0 code.
+    //
+    if (fgCanSwitchToOptimized())
     {
-        // Method likely has a loop, switch to the OptimizedTier to avoid spending too much time running slower code
-        fgSwitchToOptimized();
+        // We only expect to be able to do this at Tier0.
+        //
+        assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
+
+        // Normal tiering should bail us out of Tier0 tail call induced loops.
+        // So keep these methods in Tier0 if we're gathering PGO data.
+        // If we're not gathering PGO, then switch these to optimized to
+        // minimize the number of tail call helper stubs we might need.
+        // Reconsider this if/when we're able to share those stubs.
+        //
+        // Honor the config setting that tells the jit to
+        // always optimize methods with loops.
+        //
+        // If that's not set, and OSR is enabled, the jit may still
+        // decide to optimize, if there's something in the method that
+        // OSR currently cannot handle.
+        //
+        const char* reason = nullptr;
+
+        if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+        {
+            reason = "tail.call and not BBINSTR";
+        }
+        else if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
+        {
+            if (compHasBackwardJump)
+            {
+                reason = "loop";
+            }
+        }
+        else if (JitConfig.TC_OnStackReplacement() > 0)
+        {
+            const bool patchpointsOK = compCanHavePatchpoints(&reason);
+            assert(patchpointsOK || (reason != nullptr));
+        }
+
+        if (reason != nullptr)
+        {
+            fgSwitchToOptimized(reason);
+        }
     }
 
     compSetOptimizationLevel();
@@ -7650,9 +7790,9 @@ CompTimeInfo::CompTimeInfo(unsigned byteCodeBytes)
     }
 
 #if MEASURE_CLRAPI_CALLS
-    assert(ARRAYSIZE(m_perClrAPIcalls) == API_ICorJitInfo_Names::API_COUNT);
-    assert(ARRAYSIZE(m_perClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
-    assert(ARRAYSIZE(m_maxClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
+    assert(ArrLen(m_perClrAPIcalls) == API_ICorJitInfo_Names::API_COUNT);
+    assert(ArrLen(m_perClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
+    assert(ArrLen(m_maxClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
     for (int i = 0; i < API_ICorJitInfo_Names::API_COUNT; i++)
     {
         m_perClrAPIcalls[i]  = 0;
@@ -7828,7 +7968,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
                 extraHdr2);
 
         // Ensure that at least the names array and the Phases enum have the same number of entries:
-        assert(_countof(PhaseNames) == PHASE_NUMBER_OF);
+        assert(ArrLen(PhaseNames) == PHASE_NUMBER_OF);
         for (int i = 0; i < PHASE_NUMBER_OF; i++)
         {
             double phase_tot_ms = (((double)m_total.m_cyclesByPhase[i]) / countsPerSec) * 1000.0;
@@ -7891,7 +8031,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
         fprintf(f, "     PHASE                            inv/meth Mcycles    time (ms)  %% of total\n");
         fprintf(f, "     --------------------------------------------------------------------------------------\n");
         // Ensure that at least the names array and the Phases enum have the same number of entries:
-        assert(_countof(PhaseNames) == PHASE_NUMBER_OF);
+        assert(ArrLen(PhaseNames) == PHASE_NUMBER_OF);
         for (int i = 0; i < PHASE_NUMBER_OF; i++)
         {
             double phase_tot_ms = (((double)m_filtered.m_cyclesByPhase[i]) / countsPerSec) * 1000.0;
@@ -8623,7 +8763,7 @@ void cVarDsc(Compiler* comp, LclVarDsc* varDsc)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *VarDsc %u\n", sequenceNumber++);
-    unsigned lclNum = (unsigned)(varDsc - comp->lvaTable);
+    unsigned lclNum = comp->lvaGetLclNum(varDsc);
     comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
 }
 

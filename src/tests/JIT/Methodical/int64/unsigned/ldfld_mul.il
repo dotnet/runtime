@@ -16,13 +16,7 @@
 .assembly 'ldfld_mul'// as "ldfld_mul"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'ldfld_mul.exe'
 // MVID: {11B90F3C-E0C0-43E5-9E78-65FA3DCAAEF2}
 .namespace JitTest

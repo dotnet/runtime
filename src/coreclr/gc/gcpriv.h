@@ -504,7 +504,6 @@ public:
 #ifdef BACKGROUND_GC
     BOOL background_p;
     bgc_state b_state;
-    BOOL allocations_allowed;
 #endif //BACKGROUND_GC
 
 #ifdef STRESS_HEAP
@@ -1791,7 +1790,7 @@ protected:
     void wait_for_background (alloc_wait_reason awr, bool loh_p);
 
     PER_HEAP
-    void wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p);
+    bool wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p);
 
     PER_HEAP
     void bgc_uoh_alloc_clr (uint8_t* alloc_start,

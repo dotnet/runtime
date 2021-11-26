@@ -2709,15 +2709,15 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
         if (SUCCEEDED(hr))
         {
             DacGcReference dacRefs[32];
-            ULONG toFetch = _countof(dacRefs);
+            ULONG toFetch = ARRAY_SIZE(dacRefs);
             ULONG total = 0;
 
-            for (ULONG c = 0; SUCCEEDED(hr) && c < (celt/_countof(dacRefs) + 1); ++c)
+            for (ULONG c = 0; SUCCEEDED(hr) && c < (celt/ARRAY_SIZE(dacRefs) + 1); ++c)
             {
                 // Fetch 32 references at a time, the last time, only fetch the remainder (that is, if
                 // the user didn't fetch a multiple of 32).
-                if (c == celt/_countof(dacRefs))
-                    toFetch = celt % _countof(dacRefs);
+                if (c == celt/ARRAY_SIZE(dacRefs))
+                    toFetch = celt % ARRAY_SIZE(dacRefs);
 
                 ULONG fetched = 0;
                 hr = process->GetDAC()->WalkRefs(mRefHandle, toFetch, dacRefs, &fetched);
@@ -7739,7 +7739,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
             m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr,
         };
 
-        const int NumFlares = NumItems(flares);
+        const int NumFlares = ARRAY_SIZE(flares);
 
         // Ensure that all of the flares are unique.
         for(int i = 0; i < NumFlares; i++)
@@ -10135,7 +10135,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
             // Note that in case of a tie (multiple handles signaled), WaitForMultipleObjects gives
             // priority to the handle earlier in the array.
             HANDLE waitSet[] = { process->GetEventChannel()->GetRightSideEventAckHandle(), hLSProcess, hHelperThread};
-            DWORD cWaitSet = NumItems(waitSet);
+            DWORD cWaitSet = ARRAY_SIZE(waitSet);
             if (hHelperThread == NULL)
             {
                 cWaitSet--;

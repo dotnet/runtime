@@ -1093,7 +1093,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
 
         while ((varScope = compiler->compGetNextEnterScope(beginOffs)) != nullptr)
         {
-            LclVarDsc* lclVarDsc = &compiler->lvaTable[varScope->vsdVarNum];
+            LclVarDsc* lclVarDsc = compiler->lvaGetDesc(varScope->vsdVarNum);
 
             // Only report locals that were referenced, if we're not doing debug codegen
             if (compiler->opts.compDbgCode || (lclVarDsc->lvRefCnt() > 0))
@@ -1179,10 +1179,8 @@ void CodeGen::siEndBlock(BasicBlock* block)
         JITDUMP("Scope info: ending scope, LVnum=%u [%03X..%03X)\n", varScope->vsdLVnum, varScope->vsdLifeBeg,
                 varScope->vsdLifeEnd);
 
-        unsigned   varNum     = varScope->vsdVarNum;
-        LclVarDsc* lclVarDsc1 = &compiler->lvaTable[varNum];
-
-        assert(lclVarDsc1);
+        unsigned         varNum     = varScope->vsdVarNum;
+        const LclVarDsc* lclVarDsc1 = compiler->lvaGetDesc(varNum);
 
         if (lclVarDsc1->lvTracked)
         {
@@ -1278,7 +1276,7 @@ void CodeGen::siCheckVarScope(unsigned varNum, IL_OFFSET offs)
     }
 
     siScope*   scope;
-    LclVarDsc* lclVarDsc1 = &compiler->lvaTable[varNum];
+    LclVarDsc* lclVarDsc1 = compiler->lvaGetDesc(varNum);
 
     // If there is an open scope corresponding to varNum, find it
 
@@ -1525,7 +1523,7 @@ void CodeGen::psiBegProlog()
     VarScopeDsc* varScope;
     while ((varScope = compiler->compGetNextEnterScope(0)) != nullptr)
     {
-        LclVarDsc* lclVarDsc = &compiler->lvaTable[varScope->vsdVarNum];
+        LclVarDsc* lclVarDsc = compiler->lvaGetDesc(varScope->vsdVarNum);
 
         if (!lclVarDsc->lvIsParam)
         {

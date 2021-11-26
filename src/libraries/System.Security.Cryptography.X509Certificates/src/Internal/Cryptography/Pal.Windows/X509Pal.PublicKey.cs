@@ -134,7 +134,7 @@ namespace Internal.Cryptography.Pal
                 {
                     unsafe
                     {
-                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
+                        bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
                         if (!success)
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         return bCryptKeyHandle;

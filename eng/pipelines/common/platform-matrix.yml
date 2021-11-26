@@ -65,7 +65,10 @@ jobs:
       targetRid: linux-arm64
       platform: Linux_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-20210719121212-8a8d3be
+        ${{ if eq(parameters.container, '') }}:
+          image: ubuntu-16.04-cross-arm64-20210719121212-8a8d3be
+        ${{ if ne(parameters.container, '') }}:
+          image: ${{ parameters.container }}
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
