@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, AssetEntry, CharPtrNull, DotnetModuleMono, GlobalizationMode, MonoConfig, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, wasm_type_symbol } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -22,7 +22,7 @@ export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) =>
 
 
 export async function mono_wasm_pre_init(): Promise<void> {
-    const moduleExt = Module as DotnetModuleMono;
+    const moduleExt = Module as DotnetModule;
     if (moduleExt.configSrc) {
         try {
             // sets MONO.config implicitly
@@ -159,7 +159,7 @@ function _apply_configuration_from_args(args: MonoConfig) {
 }
 
 function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
-    const moduleExt = Module as DotnetModuleMono;
+    const moduleExt = Module as DotnetModule;
 
     ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
     if (ctx.tracing) {
@@ -167,24 +167,22 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
         console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
     }
 
-    console.debug("MONO_WASM: Initializing mono runtime");
+    try {
+        if (ctx.tracing) {
+            console.debug("MONO_WASM: Initializing mono runtime");
+        }
+        mono_wasm_globalization_init(args.globalization_mode!, ctx);
+        cwraps.mono_wasm_load_runtime("unused", args.debug_level || 0);
+    } catch (err: any) {
+        Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
+        Module.printErr("MONO_WASM: Stacktrace: \n");
+        Module.printErr(err.stack);
 
-    mono_wasm_globalization_init(args.globalization_mode!);
-
-    if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
-        try {
-            cwraps.mono_wasm_load_runtime("unused", args.debug_level || 0);
-        } catch (err: any) {
-            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
-            Module.printErr("MONO_WASM: Stacktrace: \n");
-            Module.printErr(err.stack);
-
-            runtime_is_initialized_reject(err);
+        runtime_is_initialized_reject(err);
+        if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
             const wasm_exit = cwraps.mono_wasm_exit;
             wasm_exit(1);
         }
-    } else {
-        cwraps.mono_wasm_load_runtime("unused", args.debug_level || 0);
     }
 
     bindings_lazy_init();
@@ -309,6 +307,7 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
 
         _apply_configuration_from_args(args);
 
+        // fetch_file_cb is legacy do we really want to support it ?
         if (!Module.imports!.fetch && typeof ((<any>args).fetch_file_cb) === "function") {
             runtimeHelpers.fetch = (<any>args).fetch_file_cb;
         }
@@ -509,7 +508,7 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
     cwraps.mono_wasm_set_main_args(main_argc, main_argv);
 }
 
-type MonoInitContext = {
+export type MonoInitContext = {
     tracing: boolean,
     pending_count: number,
     loaded_files: { url: string, file: string }[],

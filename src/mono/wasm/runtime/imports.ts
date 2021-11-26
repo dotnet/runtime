@@ -4,11 +4,11 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
 
-import { DotnetModuleMono, MonoConfig, RuntimeHelpers } from "./types";
+import { DotnetModule, MonoConfig, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & DotnetModuleMono;
+export let Module: EmscriptenModule & DotnetModule;
 export let MONO: any;
 export let BINDING: any;
 export let INTERNAL: any;

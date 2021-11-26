@@ -4,12 +4,12 @@
   <PropertyGroup>
     <WasmMainJSPath>bin/main.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-    <Configuration>Debug</Configuration>
-    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <Configuration>Release</Configuration>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <WasmDebugLevel>1</WasmDebugLevel>
     <!-- TODO solve the location of re-linked js file relative to package.json
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmEnableES6>true</WasmEnableES6>
     -->
     <WasmBuildAppDependsOn>

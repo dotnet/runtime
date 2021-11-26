@@ -154,7 +154,20 @@ export type CoverageProfilerOptions = {
 }
 
 // how we extended emscripten Module
-export type DotnetModuleMono = EmscriptenModule & DotnetModuleConfig;
+export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
+
+export type DotnetModuleConfig = {
+    disableDotnet6Compatibility?: boolean,
+
+    config?: MonoConfig | MonoConfigError,
+    configSrc?: string,
+    scriptDirectory?: string,
+    onConfigLoaded?: () => void;
+    onDotnetReady?: () => void;
+
+    imports?: DotnetModuleConfigImports;
+}
+
 export type DotnetModuleConfigImports = {
     require?: (name: string) => any;
     fetch?: (url: string) => Promise<Response>;
@@ -173,15 +186,4 @@ export type DotnetModuleConfigImports = {
         dirname?: (path: string) => string,
     };
     url?: any;
-}
-export type DotnetModuleConfig = {
-    disableDotnet6Compatibility?: boolean,
-
-    config?: MonoConfig | MonoConfigError,
-    configSrc?: string,
-    scriptDirectory?: string,
-    onConfigLoaded?: () => void;
-    onDotnetReady?: () => void;
-
-    imports?: DotnetModuleConfigImports;
 }

@@ -72,8 +72,6 @@ declare class WasmRoot<T extends ManagedPointer | NativePointer> {
     toString(): string;
 }
 
-declare function mono_wasm_runtime_ready(): void;
-
 declare const enum ArgsMarshal {
     Int32 = "i",
     Int32Enum = "j",
@@ -164,6 +162,15 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+declare type DotnetModuleConfig = {
+    disableDotnet6Compatibility?: boolean;
+    config?: MonoConfig | MonoConfigError;
+    configSrc?: string;
+    scriptDirectory?: string;
+    onConfigLoaded?: () => void;
+    onDotnetReady?: () => void;
+    imports?: DotnetModuleConfigImports;
+};
 declare type DotnetModuleConfigImports = {
     require?: (name: string) => any;
     fetch?: (url: string) => Promise<Response>;
@@ -185,15 +192,8 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
-declare type DotnetModuleConfig = {
-    disableDotnet6Compatibility?: boolean;
-    config?: MonoConfig | MonoConfigError;
-    configSrc?: string;
-    scriptDirectory?: string;
-    onConfigLoaded?: () => void;
-    onDotnetReady?: () => void;
-    imports?: DotnetModuleConfigImports;
-};
+
+declare function mono_wasm_runtime_ready(): void;
 
 declare function mono_wasm_setenv(name: string, value: string): void;
 declare function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<void>;
@@ -223,13 +223,32 @@ declare function mono_call_assembly_entry_point(assembly: string, args: any[], s
 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
-declare const MONO: MONO;
-interface MONO {
-    mono_wasm_runtime_ready: typeof mono_wasm_runtime_ready;
+declare type _MemOffset = number | VoidPtr | NativePointer;
+declare function setU8(offset: _MemOffset, value: number): void;
+declare function setU16(offset: _MemOffset, value: number): void;
+declare function setU32(offset: _MemOffset, value: number): void;
+declare function setI8(offset: _MemOffset, value: number): void;
+declare function setI16(offset: _MemOffset, value: number): void;
+declare function setI32(offset: _MemOffset, value: number): void;
+declare function setI64(offset: _MemOffset, value: number): void;
+declare function setF32(offset: _MemOffset, value: number): void;
+declare function setF64(offset: _MemOffset, value: number): void;
+declare function getU8(offset: _MemOffset): number;
+declare function getU16(offset: _MemOffset): number;
+declare function getU32(offset: _MemOffset): number;
+declare function getI8(offset: _MemOffset): number;
+declare function getI16(offset: _MemOffset): number;
+declare function getI32(offset: _MemOffset): number;
+declare function getI64(offset: _MemOffset): number;
+declare function getF32(offset: _MemOffset): number;
+declare function getF64(offset: _MemOffset): number;
+
+declare const MONO: {
     mono_wasm_setenv: typeof mono_wasm_setenv;
-    mono_wasm_load_data_archive: typeof mono_wasm_load_data_archive;
     mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
     mono_wasm_load_icu_data: typeof mono_wasm_load_icu_data;
+    mono_wasm_runtime_ready: typeof mono_wasm_runtime_ready;
+    mono_wasm_load_data_archive: typeof mono_wasm_load_data_archive;
     mono_wasm_load_config: typeof mono_wasm_load_config;
     mono_load_runtime_and_bcl_args: typeof mono_load_runtime_and_bcl_args;
     mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
@@ -237,11 +256,28 @@ interface MONO {
     mono_wasm_release_roots: typeof mono_wasm_release_roots;
     mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
-    loaded_files: string[];
     config: MonoConfig | MonoConfigError;
-}
-declare const BINDING: BINDING;
-interface BINDING {
+    loaded_files: never[];
+    setI8: typeof setI8;
+    setI16: typeof setI16;
+    setI32: typeof setI32;
+    setI64: typeof setI64;
+    setU8: typeof setU8;
+    setU16: typeof setU16;
+    setU32: typeof setU32;
+    setF32: typeof setF32;
+    setF64: typeof setF64;
+    getI8: typeof getI8;
+    getI16: typeof getI16;
+    getI32: typeof getI32;
+    getI64: typeof getI64;
+    getU8: typeof getU8;
+    getU16: typeof getU16;
+    getU32: typeof getU32;
+    getF32: typeof getF32;
+    getF64: typeof getF64;
+};
+declare const BINDING: {
     mono_obj_array_new: (size: number) => MonoArray;
     mono_obj_array_set: (array: MonoArray, idx: number, obj: MonoObject) => void;
     js_string_to_mono_string: typeof js_string_to_mono_string;
@@ -252,10 +288,10 @@ interface BINDING {
     bind_static_method: typeof mono_bind_static_method;
     call_assembly_entry_point: typeof mono_call_assembly_entry_point;
     unbox_mono_obj: typeof unbox_mono_obj;
-}
+};
 interface DotnetPublicAPI {
-    MONO: MONO;
-    BINDING: BINDING;
+    MONO: typeof MONO;
+    BINDING: typeof BINDING;
     INTERNAL: any;
     Module: any;
     RuntimeId: number;
