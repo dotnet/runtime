@@ -102,7 +102,7 @@ namespace RuntimeEventCounterTests
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
             {
-                Thread.Sleep(3000);
+                Thread.Sleep(10000);
                 if (myListener.Verify())
                 {
                     Console.WriteLine("Test passed");

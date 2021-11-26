@@ -155,20 +155,15 @@ namespace System.Diagnostics.Tracing
                     if (s_pollingThread == null)
                     {
                         s_pollingThreadSleepEvent = new AutoResetEvent(false);
-                        s_counterGroupEnabledList = new List<CounterGroup>();
+                        // Must add 'this' into the list before starting the thread,
+                        // because the polling thread would otherwise end up sleeping
+                        // indefinitely if it saw an empty list on start
+                        s_counterGroupEnabledList = new List<CounterGroup>(this);
                         s_pollingThread = new Thread(PollForValues)
                         {
                             IsBackground = true,
                             Name = ".NET Counter Poller"
                         };
-
-                        // Must add this before starting the thread,
-                        // because the polling thread would end up sleeping
-                        // indefinitely if it saw an empty list on start
-                        if (!s_counterGroupEnabledList!.Contains(this))
-                        {
-                            s_counterGroupEnabledList.Add(this);
-                        }
 
 #if ES_BUILD_STANDALONE
                         s_pollingThread.Start();
