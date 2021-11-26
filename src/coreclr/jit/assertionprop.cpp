@@ -1261,7 +1261,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     AssertionDsc assertion = {OAK_INVALID};
     assert(assertion.assertionKind == OAK_INVALID);
 
-    if (op1->OperIs(GT_BOUNDS_CHECK) && op1->AsBoundsChk()->IsArrayBoundsCheck())
+    if (op1->OperIs(GT_BOUNDS_CHECK))
     {
         if (assertionKind == OAK_NO_THROW)
         {
@@ -2584,7 +2584,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
 
         case GT_BOUNDS_CHECK:
-            if (!optLocalAssertionProp && tree->AsBoundsChk()->IsArrayBoundsCheck())
+            if (!optLocalAssertionProp)
             {
                 assertionInfo = optCreateAssertion(tree, nullptr, OAK_NO_THROW);
             }
@@ -4053,8 +4053,7 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 {
     // Remove the bounds check as part of the GT_COMMA node since we need parent pointer to remove nodes.
     // When processing visits the bounds check, it sets the throw kind to None if the check is redundant.
-    if (tree->gtGetOp1()->OperIs(GT_BOUNDS_CHECK) && tree->gtGetOp1()->AsBoundsChk()->IsArrayBoundsCheck() &&
-        ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
+    if (tree->gtGetOp1()->OperIs(GT_BOUNDS_CHECK) && ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
     {
         optRemoveCommaBasedRangeCheck(tree, stmt);
         return optAssertionProp_Update(tree, tree, stmt);
@@ -4392,11 +4391,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     }
 
     assert(tree->OperIs(GT_BOUNDS_CHECK));
-
-    if (!tree->AsBoundsChk()->IsArrayBoundsCheck())
-    {
-        return nullptr;
-    }
 
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
     if (JitConfig.JitNoRangeChks())

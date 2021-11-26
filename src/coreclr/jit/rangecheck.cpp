@@ -221,7 +221,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             arrSize = (int)constVal;
         }
     }
-    else if (bndsChk->IsArrayBoundsCheck())
+    else
     {
         arrSize = GetArrLength(arrLenVn);
 

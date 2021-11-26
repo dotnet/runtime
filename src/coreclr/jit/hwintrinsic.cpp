@@ -540,7 +540,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
     }
 
     GenTreeBoundsChk* hwIntrinsicChk = new (this, GT_BOUNDS_CHECK)
-        GenTreeBoundsChk(immOpDup, adjustedUpperBoundNode, SCK_ARG_RNG_EXCPN, /* isArrayBoundsCheck */ false);
+        GenTreeBoundsChk(immOpDup, adjustedUpperBoundNode, SCK_ARG_RNG_EXCPN);
 
     return gtNewOperNode(GT_COMMA, immOp->TypeGet(), hwIntrinsicChk, immOp);
 }

@@ -2217,7 +2217,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
         return false;
     }
     GenTree* before = tree->gtGetOp1();
-    if (!before->OperIs(GT_BOUNDS_CHECK) || !before->AsBoundsChk()->IsArrayBoundsCheck())
+    if (!before->OperIs(GT_BOUNDS_CHECK))
     {
         return false;
     }

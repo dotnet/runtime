@@ -5738,13 +5738,11 @@ struct GenTreeBoundsChk : public GenTreeOp
 {
     BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
-    bool            gtIsArrayBoundsCheck;
 
-    GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind, bool isArrayBoundsCheck = true)
+    GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
         : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length)
         , gtIndRngFailBB(nullptr)
         , gtThrowKind(kind)
-        , gtIsArrayBoundsCheck(isArrayBoundsCheck)
     {
         gtFlags |= GTF_EXCEPT;
     }
@@ -5770,12 +5768,6 @@ struct GenTreeBoundsChk : public GenTreeOp
     GenTree* GetArrayLength() const
     {
         return gtOp2;
-    }
-
-    // Is this a check originating from an array/span/SIMD, as opposed to HWINTRINSIC?
-    bool IsArrayBoundsCheck() const
-    {
-        return gtIsArrayBoundsCheck;
     }
 };
 
