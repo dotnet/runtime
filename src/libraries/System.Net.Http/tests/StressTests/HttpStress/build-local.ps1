@@ -24,8 +24,7 @@ if (-not (Test-Path -Path $DailyDotnetRoot)) {
     New-Item -ItemType Directory -Path $DailyDotnetRoot
     Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile "$DailyDotnetRoot\dotnet-install.ps1"
     & "$DailyDotnetRoot\dotnet-install.ps1" -NoPath -Channel "$Version.1xx" -Quality daily -InstallDir $DailyDotnetRoot
-}
-else {
+} else {
     Write-Host "Daily SDK found in $DailyDotnetRoot"
 }
 
@@ -38,8 +37,7 @@ $env:DOTNET_MULTILEVEL_LOOKUP=0
 if (-not (Test-Path -Path "$TestHostRoot/shared/Microsoft.AspNetCore.App")) {
     Write-Host "Copying Microsoft.AspNetCore.App bits from daily SDK to testhost: $TestHostRoot"
     Copy-Item -Recurse -Path "$DailyDotnetRoot/shared/Microsoft.AspNetCore.App" -Destination "$TestHostRoot/shared"
-}
-else {
+} else {
     Write-Host "Microsoft.AspNetCore.App found in testhost: $TestHostRoot"
 }
 

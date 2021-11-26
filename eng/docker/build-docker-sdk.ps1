@@ -33,7 +33,7 @@ if ($buildWindowsContainers)
   # Collect the following artifacts to folder, that will be used as build context for the container,
   # so projects can build and test against the live-built runtime:
   # 1. Reference assembly pack (microsoft.netcore.app.ref)
-  # 2. Runtime pack (microsoft.netcore.app.runtime.linux-x64)
+  # 2. Runtime pack (microsoft.netcore.app.runtime.win-x64)
   # 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
   # 4. testhost
   $binArtifacts = "$REPO_ROOT_DIR\artifacts\bin"
@@ -43,12 +43,16 @@ if ($buildWindowsContainers)
       Remove-Item -Recurse -Force $dockerContext
   }
 
-  Copy-Item -Recurse -Destination $dockerContext\microsoft.netcore.app.ref -Path $binArtifacts\microsoft.netcore.app.ref
-  Copy-Item -Recurse -Destination $dockerContext\microsoft.netcore.app.runtime.win-x64 -Path $binArtifacts\microsoft.netcore.app.runtime.win-x64
-  Copy-Item -Recurse -Destination $dockerContext\testhost -Path $binArtifacts\testhost
-  Copy-Item -Recurse -Destination $dockerContext\targetingpacks.targets -Path $REPO_ROOT_DIR\eng\targetingpacks.targets
+  Copy-Item -Recurse -Path $binArtifacts\microsoft.netcore.app.ref `
+                     -Destination $dockerContext\microsoft.netcore.app.ref
+  Copy-Item -Recurse -Path $binArtifacts\microsoft.netcore.app.runtime.win-x64 `
+                     -Destination $dockerContext\microsoft.netcore.app.runtime.win-x64
+  Copy-Item -Recurse -Path $binArtifacts\testhost `
+                     -Destination $dockerContext\testhost
+  Copy-Item -Recurse -Path $REPO_ROOT_DIR\eng\targetingpacks.targets `
+                     -Destination $dockerContext\targetingpacks.targets
   
-  # In case of non-CI builds, testhost may already contain Microsoft.AspNetCore.App (see Build-Local.ps1 in HttpStress):
+  # In case of non-CI builds, testhost may already contain Microsoft.AspNetCore.App (see build-local.ps1 in HttpStress):
   $testHostAspNetCorePath="$dockerContext\testhost\net$dotNetVersion-windows-$configuration-x64/shared/Microsoft.AspNetCore.App"
   if (Test-Path $testHostAspNetCorePath) {
     Remove-Item -Recurse -Force $testHostAspNetCorePath
