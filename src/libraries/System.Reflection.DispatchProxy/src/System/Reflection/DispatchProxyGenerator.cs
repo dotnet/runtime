@@ -49,16 +49,14 @@ namespace System.Reflection
         // This allows us to granularly unload generated proxy types.
         private static readonly ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly> s_alcProxyAssemblyMap = new();
         private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetRuntimeMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
+        private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "MakeGenericMethod is safe here because the user code invoking the generic method will reference " +
             "the GenericTypes being used, which will guarantee the requirements of the generic method.")]
-        private static MethodInfo GetGenericMethodMethodInfo()
-        {
-            return typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
-        }
+        private static MethodInfo GetGenericMethodMethodInfo() =>
+            typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
         internal static object CreateProxyInstance(
@@ -115,7 +113,7 @@ namespace System.Reflection
             private readonly ModuleBuilder _mb;
             private int _typeId;
 
-            private readonly HashSet<string?> _ignoresAccessAssemblyNames = new HashSet<string?>();
+            private readonly HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
             private ConstructorInfo? _ignoresAccessChecksToAttributeConstructor;
 
             public ProxyAssembly(AssemblyLoadContext alc)
@@ -244,10 +242,9 @@ namespace System.Reflection
                 if (!type.IsVisible)
                 {
                     string assemblyName = type.Assembly.GetName().Name!;
-                    if (!_ignoresAccessAssemblyNames.Contains(assemblyName))
+                    if (_ignoresAccessAssemblyNames.Add(assemblyName))
                     {
                         GenerateInstanceOfIgnoresAccessChecksToAttribute(assemblyName);
-                        _ignoresAccessAssemblyNames.Add(assemblyName);
                     }
                 }
             }
@@ -291,11 +288,11 @@ namespace System.Reflection
                 ILGenerator il = cb.GetILGenerator();
 
                 // chained ctor call
-                ConstructorInfo? baseCtor = _proxyBaseType.GetConstructor(Type.EmptyTypes);
+                ConstructorInfo baseCtor = _proxyBaseType.GetConstructor(Type.EmptyTypes)!;
                 Debug.Assert(baseCtor != null);
 
                 il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Call, baseCtor!);
+                il.Emit(OpCodes.Call, baseCtor);
 
                 // store all the fields
                 for (int i = 0; i < args.Length; i++)
@@ -533,64 +530,7 @@ namespace System.Reflection
                 return mdb;
             }
 
-            // TypeCode does not exist in ProjectK or ProjectN.
-            // This lookup method was copied from PortableLibraryThunks\Internal\PortableLibraryThunks\System\TypeThunks.cs
-            // but returns the integer value equivalent to its TypeCode enum.
-            private static int GetTypeCode(Type? type)
-            {
-                if (type == null)
-                    return 0;   // TypeCode.Empty;
-
-                if (type == typeof(bool))
-                    return 3;   // TypeCode.Boolean;
-
-                if (type == typeof(char))
-                    return 4;   // TypeCode.Char;
-
-                if (type == typeof(sbyte))
-                    return 5;   // TypeCode.SByte;
-
-                if (type == typeof(byte))
-                    return 6;   // TypeCode.Byte;
-
-                if (type == typeof(short))
-                    return 7;   // TypeCode.Int16;
-
-                if (type == typeof(ushort))
-                    return 8;   // TypeCode.UInt16;
-
-                if (type == typeof(int))
-                    return 9;   // TypeCode.Int32;
-
-                if (type == typeof(uint))
-                    return 10;  // TypeCode.UInt32;
-
-                if (type == typeof(long))
-                    return 11;  // TypeCode.Int64;
-
-                if (type == typeof(ulong))
-                    return 12;  // TypeCode.UInt64;
-
-                if (type == typeof(float))
-                    return 13;  // TypeCode.Single;
-
-                if (type == typeof(double))
-                    return 14;  // TypeCode.Double;
-
-                if (type == typeof(decimal))
-                    return 15;  // TypeCode.Decimal;
-
-                if (type == typeof(DateTime))
-                    return 16;  // TypeCode.DateTime;
-
-                if (type == typeof(string))
-                    return 18;  // TypeCode.String;
-
-                if (type.IsEnum)
-                    return GetTypeCode(Enum.GetUnderlyingType(type));
-
-                return 1;   // TypeCode.Object;
-            }
+            private static int GetTypeCode(Type type) => (int)Type.GetTypeCode(type);
 
             private static readonly OpCode[] s_convOpCodes = new OpCode[] {
                 OpCodes.Nop, //Empty = 0,
