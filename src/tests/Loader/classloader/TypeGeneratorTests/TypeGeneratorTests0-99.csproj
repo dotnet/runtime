@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestPriority>1</CLRTestPriority>
     <IsMergedTestAssembly>true</IsMergedTestAssembly>
   </PropertyGroup>
   <ItemGroup>
