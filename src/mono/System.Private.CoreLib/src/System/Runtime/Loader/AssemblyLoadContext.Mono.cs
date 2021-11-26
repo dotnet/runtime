@@ -12,6 +12,7 @@ using Mono;
 
 namespace System.Runtime.Loader
 {
+    [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyLoadContext
     {
         internal IntPtr NativeALC
