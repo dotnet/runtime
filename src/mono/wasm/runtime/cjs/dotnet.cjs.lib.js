@@ -6,7 +6,7 @@
 
 const DotnetSupportLib = {
     $DOTNET: {},
-    // this line will be early early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
     $DOTNET__postset: `
     let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
     let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
