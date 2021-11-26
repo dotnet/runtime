@@ -133,11 +133,13 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Type GetGenericTypeDefinition_impl(RuntimeType type);
+        private static extern void GetGenericTypeDefinition_impl(RuntimeType type, ObjectHandleOnStack res);
 
         internal static Type GetGenericTypeDefinition(RuntimeType type)
         {
-            return GetGenericTypeDefinition_impl(type);
+            Type? res = null;
+            GetGenericTypeDefinition_impl(type, ObjectHandleOnStack.Create (ref res));
+            return res!;
         }
 
         internal static bool IsPrimitive(RuntimeType type)
@@ -221,19 +223,47 @@ namespace System
         internal static extern int GetArrayRank(RuntimeType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeAssembly GetAssembly(RuntimeType type);
+        internal static extern void GetAssembly(RuntimeType type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetElementType(RuntimeType type);
+        internal static extern void GetElementType(RuntimeType type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeModule GetModule(RuntimeType type);
+        internal static extern void GetModule(RuntimeType type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsGenericVariable(RuntimeType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetBaseType(RuntimeType type);
+        internal static extern void GetBaseType(RuntimeType type, ObjectHandleOnStack res);
+
+        internal static RuntimeAssembly GetAssembly(RuntimeType type)
+        {
+            RuntimeAssembly? res = null;
+            GetAssembly(type, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
+
+        internal static RuntimeModule GetModule(RuntimeType type)
+        {
+            RuntimeModule? res = null;
+            GetModule(type, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
+
+        internal static RuntimeType GetElementType(RuntimeType type)
+        {
+            RuntimeType? res = null;
+            GetElementType(type, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
+
+        internal static RuntimeType GetBaseType(RuntimeType type)
+        {
+            RuntimeType? res = null;
+            GetBaseType(type, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
 
         internal static bool CanCastTo(RuntimeType type, RuntimeType target)
         {

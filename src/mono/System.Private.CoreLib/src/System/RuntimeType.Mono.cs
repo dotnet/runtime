@@ -1340,10 +1340,11 @@ namespace System
 
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);
 
-            Type? ret = MakeGenericType(this, instantiationRuntimeType);
+            Type? ret = null;
+            MakeGenericType(this, instantiationRuntimeType, ObjectHandleOnStack.Create(ref ret));
             if (ret == null)
                 throw new TypeLoadException();
-            return ret;
+            return ret!;
         }
 
         public override int GenericParameterPosition
@@ -1874,11 +1875,13 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Type make_array_type(int rank);
+        private static extern void make_array_type(Type type, int rank, ObjectHandleOnStack res);
 
         public override Type MakeArrayType()
         {
-            return make_array_type(0);
+            Type? type = null;
+            make_array_type(this, 0, ObjectHandleOnStack.Create(ref type));
+            return type!;
         }
 
         public override Type MakeArrayType(int rank)
@@ -1886,27 +1889,33 @@ namespace System
             if (rank < 1)
                 throw new IndexOutOfRangeException();
 
-            return make_array_type(rank);
+            Type? type = null;
+            make_array_type(this, rank, ObjectHandleOnStack.Create(ref type));
+            return type!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Type make_byref_type();
+        private static extern void make_byref_type(Type type, ObjectHandleOnStack res);
 
         public override Type MakeByRefType()
         {
             if (IsByRef)
                 throw new TypeLoadException("Can not call MakeByRefType on a ByRef type");
-            return make_byref_type();
+            Type? type = null;
+            make_byref_type(this, ObjectHandleOnStack.Create(ref type));
+            return type!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Type MakePointerType(Type type);
+        private static extern void make_pointer_type(Type type, ObjectHandleOnStack res);
 
         public override Type MakePointerType()
         {
             if (IsByRef)
                 throw new TypeLoadException($"Could not load type '{GetType()}' from assembly '{AssemblyQualifiedName}");
-            return MakePointerType(this);
+            Type? type = null;
+            make_pointer_type(this, ObjectHandleOnStack.Create(ref type));
+            return type!;
         }
 
         public override StructLayoutAttribute? StructLayoutAttribute
@@ -1953,18 +1962,19 @@ namespace System
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type genericType,
             RuntimeType genericArgument)
         {
-            var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
-            RuntimeConstructorInfo? ctor = gt.GetDefaultConstructor();
+            RuntimeType? gt = null;
+            MakeGenericType(genericType, new Type[] { genericArgument }, ObjectHandleOnStack.Create(ref gt));
+            RuntimeConstructorInfo? ctor = gt!.GetDefaultConstructor();
 
             // CreateInstanceForAnotherGenericParameter requires type to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.
             if (ctor is null || !ctor.IsPublic)
-                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt));
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt!));
 
             return ctor.InvokeCtorWorker(BindingFlags.Default, Span<object?>.Empty)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Type MakeGenericType(Type gt, Type[] types);
+        private static extern void MakeGenericType(Type gt, Type[] types, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern IntPtr GetMethodsByName_native(IntPtr namePtr, BindingFlags bindingAttr, MemberListType listType);
