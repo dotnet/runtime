@@ -134,6 +134,74 @@ namespace WebAssemblyInfo
         }
     }
 
+    struct TableType
+    {
+        public ReferenceType RefType;
+        public UInt32 Min;
+        public UInt32 Max;
+    }
+
+    struct Element
+    {
+        public ElementFlag Flags;
+        public UInt32 TableIdx;
+        public ReferenceType RefType;
+        public byte Kind;
+        public UInt32[] Indices;
+        public Instruction[] Expression;
+        public Instruction[][] Expressions;
+
+        public bool HasTableIdx
+        {
+            get
+            {
+                return (Flags & ElementFlag.ExplicitIndex) == ElementFlag.ExplicitIndex && (Flags & ElementFlag.PassiveOrDeclarative) != ElementFlag.PassiveOrDeclarative;
+            }
+        }
+
+        public bool HasExpression
+        {
+            get
+            {
+                return ((Flags & ElementFlag.PassiveOrDeclarative) != ElementFlag.PassiveOrDeclarative);
+            }
+        }
+
+        public bool HasExpressions
+        {
+            get
+            {
+                return (Flags & ElementFlag.TypeAndExpressions) == ElementFlag.TypeAndExpressions;
+            }
+        }
+
+        public bool HasRefType
+        {
+            get
+            {
+                return ((Flags & ElementFlag.PassiveOrDeclarative) == ElementFlag.PassiveOrDeclarative || (Flags & ElementFlag.ExplicitIndex) == ElementFlag.ExplicitIndex
+                    && (Flags & ElementFlag.TypeAndExpressions) == ElementFlag.TypeAndExpressions);
+            }
+        }
+
+        public bool HasElemKind
+        {
+            get
+            {
+                return ((Flags & ElementFlag.PassiveOrDeclarative) == ElementFlag.PassiveOrDeclarative || (Flags & ElementFlag.ExplicitIndex) == ElementFlag.ExplicitIndex
+                    && (Flags & ElementFlag.TypeAndExpressions) != ElementFlag.TypeAndExpressions);
+            }
+        }
+    }
+
+    [Flags]
+    enum ElementFlag
+    {
+        PassiveOrDeclarative = 1,
+        ExplicitIndex = 2,
+        TypeAndExpressions = 4
+    }
+
     struct MemArg
     {
         public UInt32 Align;

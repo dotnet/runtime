@@ -92,11 +92,17 @@ namespace WebAssemblyInfo
                 case SectionId.Function:
                     ReadFunctionSection();
                     break;
+                case SectionId.Table:
+                    ReadTableSection();
+                    break;
                 case SectionId.Export:
                     ReadExportSection();
                     break;
                 case SectionId.Import:
                     ReadImportSection();
+                    break;
+                case SectionId.Element:
+                    ReadElementSection();
                     break;
                 case SectionId.Code:
                     if (Program.AotStats || Program.Disassemble)
@@ -110,6 +116,95 @@ namespace WebAssemblyInfo
                 Console.WriteLine();
 
             Reader.BaseStream.Seek(begin + section.size, SeekOrigin.Begin);
+        }
+
+        TableType[]? tables;
+        void ReadTableSection()
+        {
+            UInt32 count = ReadU32();
+
+            if (Program.Verbose)
+                Console.Write($" count: {count}");
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            tables = new TableType[count];
+            for (uint i = 0; i < count; i++)
+            {
+                tables[i].RefType = (ReferenceType)Reader.ReadByte();
+                var limitsType = Reader.ReadByte();
+                tables[i].Min = ReadU32();
+                tables[i].Max = limitsType == 1 ? ReadU32() : UInt32.MaxValue;
+
+                if (Program.Verbose2)
+                    Console.WriteLine($"  table: {i} reftype: {tables[i].RefType} limits: {tables[i].Min}, {tables[i].Max} {limitsType}");
+            }
+        }
+
+        Element[]? elements;
+        void ReadElementSection()
+        {
+            UInt32 count = ReadU32();
+
+            if (Program.Verbose)
+                Console.Write($" count: {count}");
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            elements = new Element[count];
+            for (uint i = 0; i < count; i++)
+            {
+                elements[i].Flags = (ElementFlag)Reader.ReadByte();
+                if (Program.Verbose2)
+                    Console.WriteLine($"  element: {i} flags: {elements[i].Flags}");
+
+                if (elements[i].HasTableIdx)
+                    elements[i].TableIdx = ReadU32();
+
+                if (elements[i].HasExpression)
+                {
+                    (elements[i].Expression, _) = ReadBlock();
+                    if (Program.Verbose2)
+                    {
+                        Console.WriteLine("  expression:");
+                        foreach (var instruction in elements[i].Expression)
+                            Console.WriteLine(instruction.ToString(this).Indent("    "));
+                    }
+                }
+
+                if (elements[i].HasExpressions)
+                {
+                    if (elements[i].HasRefType)
+                        elements[i].RefType = (ReferenceType)Reader.ReadByte();
+
+                    var size = ReadU32();
+                    elements[i].Expressions = new Instruction[size][];
+                    for (uint j = 0; j < size; j++)
+                    {
+                        (elements[i].Expressions[j], _) = ReadBlock();
+                    }
+                }
+                else
+                {
+                    if (elements[i].HasElemKind)
+                        elements[i].Kind = Reader.ReadByte();
+
+                    var size = ReadU32();
+                    if (Program.Verbose2)
+                        Console.WriteLine($"  size: {size}");
+
+                    elements[i].Indices = new UInt32[size];
+                    for (uint j = 0; j < size; j++)
+                    {
+                        elements[i].Indices[j] = ReadU32();
+
+                        if (Program.Verbose2)
+                            Console.WriteLine($"    idx[{j}] = {elements[i].Indices[j]}");
+                    }
+                }
+            }
         }
 
         Code[]? funcsCode;
