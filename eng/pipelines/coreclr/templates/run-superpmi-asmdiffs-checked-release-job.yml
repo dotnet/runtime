@@ -80,7 +80,7 @@ jobs:
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-asmdiffs.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-asmdiffs-checked-release.proj'
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         archType: ${{ parameters.archType }}
