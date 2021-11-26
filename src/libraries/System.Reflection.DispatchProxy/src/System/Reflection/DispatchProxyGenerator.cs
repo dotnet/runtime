@@ -6,7 +6,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Emit;
-using System.Runtime.ExceptionServices;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Threading;
 
 namespace System.Reflection
@@ -44,21 +45,9 @@ namespace System.Reflection
         // It is the first field in the class and the first ctor parameter.
         private const int MethodInfosFieldAndCtorParameterIndex = 0;
 
-        // Proxies are requested for a pair of types: base type and interface type.
-        // The generated proxy will subclass the given base type and implement the interface type.
-        // We maintain a cache keyed by 'base type' containing a dictionary keyed by interface type,
-        // containing the generated proxy type for that pair.   There are likely to be few (maybe only 1)
-        // base type in use for many interface types.
-        // Note: this differs from Silverlight's RealProxy implementation which keys strictly off the
-        // interface type.  But this does not allow the same interface type to be used with more than a
-        // single base type.  The implementation here permits multiple interface types to be used with
-        // multiple base types, and the generated proxy types will be unique.
-        // This cache of generated types grows unbounded, one element per unique T/ProxyT pair.
-        // This approach is used to prevent regenerating identical proxy types for identical T/Proxy pairs,
-        // which would ultimately be a more expensive leak.
-        // Proxy instances are not cached.  Their lifetime is entirely owned by the caller of DispatchProxy.Create.
-        private static readonly Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>> s_baseTypeAndInterfaceToGeneratedProxyType = new Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>>();
-        private static readonly ProxyAssembly s_proxyAssembly = new ProxyAssembly();
+        // We group AssemblyBuilders by the ALC of the base type's assembly.
+        // This allows us to granularly unload generated proxy types.
+        private static readonly ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly> s_alcProxyAssemblyMap = new();
         private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetRuntimeMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
@@ -79,78 +68,15 @@ namespace System.Reflection
             Debug.Assert(baseType != null);
             Debug.Assert(interfaceType != null);
 
-            GeneratedTypeInfo proxiedType = GetProxyType(baseType, interfaceType);
+            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(baseType.Assembly);
+            if (alc == null)
+            {
+                throw new ArgumentException($"Impossible, the type is certainly provided by the runtime.", nameof(baseType));
+            }
+
+            ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap.GetValue(alc, static x => new ProxyAssembly(x));
+            GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType);
             return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
-        }
-
-        private static GeneratedTypeInfo GetProxyType(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
-        {
-            lock (s_baseTypeAndInterfaceToGeneratedProxyType)
-            {
-                if (!s_baseTypeAndInterfaceToGeneratedProxyType.TryGetValue(baseType, out Dictionary<Type, GeneratedTypeInfo>? interfaceToProxy))
-                {
-                    interfaceToProxy = new Dictionary<Type, GeneratedTypeInfo>();
-                    s_baseTypeAndInterfaceToGeneratedProxyType[baseType] = interfaceToProxy;
-                }
-
-                if (!interfaceToProxy.TryGetValue(interfaceType, out GeneratedTypeInfo? generatedProxy))
-                {
-                    generatedProxy = GenerateProxyType(baseType, interfaceType);
-                    interfaceToProxy[interfaceType] = generatedProxy;
-                }
-
-                return generatedProxy;
-            }
-        }
-
-        // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
-            Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
-        private static GeneratedTypeInfo GenerateProxyType(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
-        {
-            // Parameter validation is deferred until the point we need to create the proxy.
-            // This prevents unnecessary overhead revalidating cached proxy types.
-
-            // The interface type must be an interface, not a class
-            if (!interfaceType.IsInterface)
-            {
-                // "T" is the generic parameter seen via the public contract
-                throw new ArgumentException(SR.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), "T");
-            }
-
-            // The base type cannot be sealed because the proxy needs to subclass it.
-            if (baseType.IsSealed)
-            {
-                // "TProxy" is the generic parameter seen via the public contract
-                throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Sealed, baseType.FullName), "TProxy");
-            }
-
-            // The base type cannot be abstract
-            if (baseType.IsAbstract)
-            {
-                throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Abstract, baseType.FullName), "TProxy");
-            }
-
-            // The base type must have a public default ctor
-            if (baseType.GetConstructor(Type.EmptyTypes) == null)
-            {
-                throw new ArgumentException(SR.Format(SR.BaseType_Must_Have_Default_Ctor, baseType.FullName), "TProxy");
-            }
-
-            // Create a type that derives from 'baseType' provided by caller
-            ProxyBuilder pb = s_proxyAssembly.CreateProxy("generatedProxy", baseType);
-
-            foreach (Type t in interfaceType.GetInterfaces())
-                pb.AddInterfaceImpl(t);
-
-            pb.AddInterfaceImpl(interfaceType);
-
-            GeneratedTypeInfo generatedProxyType = pb.CreateType();
-            return generatedProxyType;
         }
 
         private sealed class GeneratedTypeInfo
@@ -170,6 +96,21 @@ namespace System.Reflection
 
         private sealed class ProxyAssembly
         {
+            // Proxies are requested for a pair of types: base type and interface type.
+            // The generated proxy will subclass the given base type and implement the interface type.
+            // We maintain a cache keyed by 'base type' containing a dictionary keyed by interface type,
+            // containing the generated proxy type for that pair. There are likely to be few (maybe only 1)
+            // base type in use for many interface types.
+            // Note: this differs from Silverlight's RealProxy implementation which keys strictly off the
+            // interface type. But this does not allow the same interface type to be used with more than a
+            // single base type. The implementation here permits multiple interface types to be used with
+            // multiple base types, and the generated proxy types will be unique.
+            // This cache of generated types grows unbounded, one element per unique T/ProxyT pair.
+            // This approach is used to prevent regenerating identical proxy types for identical T/Proxy pairs,
+            // which would ultimately be a more expensive leak.
+            // Proxy instances are not cached. Their lifetime is entirely owned by the caller of DispatchProxy.Create.
+            private readonly Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>> _baseTypeAndInterfaceToGeneratedProxyType = new Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>>();
+
             private readonly AssemblyBuilder _ab;
             private readonly ModuleBuilder _mb;
             private int _typeId;
@@ -177,10 +118,12 @@ namespace System.Reflection
             private readonly HashSet<string?> _ignoresAccessAssemblyNames = new HashSet<string?>();
             private ConstructorInfo? _ignoresAccessChecksToAttributeConstructor;
 
-            public ProxyAssembly()
+            public ProxyAssembly(AssemblyLoadContext alc)
             {
-                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ProxyBuilder"), AssemblyBuilderAccess.Run);
-                _mb = _ab.DefineDynamicModule("testmod");
+                string? alcName = alc.Name;
+                string name = alcName is null ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{alcName}";
+                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.RunAndCollect);
+                _mb = _ab.DefineDynamicModule("MainModule");
             }
 
             // Gets or creates the ConstructorInfo for the IgnoresAccessChecksAttribute.
@@ -199,9 +142,79 @@ namespace System.Reflection
                 }
             }
 
+            public GeneratedTypeInfo GetProxyType(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+            {
+                lock (_baseTypeAndInterfaceToGeneratedProxyType)
+                {
+                    if (!_baseTypeAndInterfaceToGeneratedProxyType.TryGetValue(baseType, out Dictionary<Type, GeneratedTypeInfo>? interfaceToProxy))
+                    {
+                        interfaceToProxy = new Dictionary<Type, GeneratedTypeInfo>();
+                        _baseTypeAndInterfaceToGeneratedProxyType[baseType] = interfaceToProxy;
+                    }
+
+                    if (!interfaceToProxy.TryGetValue(interfaceType, out GeneratedTypeInfo? generatedProxy))
+                    {
+                        generatedProxy = GenerateProxyType(baseType, interfaceType);
+                        interfaceToProxy[interfaceType] = generatedProxy;
+                    }
+
+                    return generatedProxy;
+                }
+            }
+
+            // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+                Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
+            private GeneratedTypeInfo GenerateProxyType(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+            {
+                // Parameter validation is deferred until the point we need to create the proxy.
+                // This prevents unnecessary overhead revalidating cached proxy types.
+
+                // The interface type must be an interface, not a class
+                if (!interfaceType.IsInterface)
+                {
+                    // "T" is the generic parameter seen via the public contract
+                    throw new ArgumentException(SR.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), "T");
+                }
+
+                // The base type cannot be sealed because the proxy needs to subclass it.
+                if (baseType.IsSealed)
+                {
+                    // "TProxy" is the generic parameter seen via the public contract
+                    throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Sealed, baseType.FullName), "TProxy");
+                }
+
+                // The base type cannot be abstract
+                if (baseType.IsAbstract)
+                {
+                    throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Abstract, baseType.FullName), "TProxy");
+                }
+
+                // The base type must have a public default ctor
+                if (baseType.GetConstructor(Type.EmptyTypes) == null)
+                {
+                    throw new ArgumentException(SR.Format(SR.BaseType_Must_Have_Default_Ctor, baseType.FullName), "TProxy");
+                }
+
+                // Create a type that derives from 'baseType' provided by caller
+                ProxyBuilder pb = CreateProxy("generatedProxy", baseType);
+
+                foreach (Type t in interfaceType.GetInterfaces())
+                    pb.AddInterfaceImpl(t);
+
+                pb.AddInterfaceImpl(interfaceType);
+
+                GeneratedTypeInfo generatedProxyType = pb.CreateType();
+                return generatedProxyType;
+            }
+
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
                 Justification = "Only the parameterless ctor is referenced on proxyBaseType. Other members can be trimmed if unused.")]
-            public ProxyBuilder CreateProxy(
+            private ProxyBuilder CreateProxy(
                 string name,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyBaseType)
             {
