@@ -167,7 +167,6 @@
     <Compile Include="PortedCommon\IOInputs.cs" />
     <Compile Include="PortedCommon\IOServices.cs" />
     <Compile Include="PortedCommon\PathInfo.cs" />
-    <Compile Include="PortedCommon\ReparsePointUtilities.cs" />
     <Compile Include="DirectoryInfo\EnumerableAPIs.cs" />
     <Compile Include="DirectoryInfo\GetDirectories.cs" />
     <Compile Include="DirectoryInfo\GetFiles.cs" />
@@ -217,6 +216,7 @@
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
     <Content Include="DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" Link="Common\System\IO\ReparsePointUtilities.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>

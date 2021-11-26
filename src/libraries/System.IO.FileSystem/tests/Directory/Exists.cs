@@ -106,7 +106,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
@@ -153,7 +153,7 @@ namespace System.IO.Tests
             Assert.False(File.Exists(linkPath), "linkPath should no longer exist as a file");
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymlinkToNewDirectory()
         {
             string path = GetTestFilePath();

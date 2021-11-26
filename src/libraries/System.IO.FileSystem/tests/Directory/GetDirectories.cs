@@ -16,7 +16,7 @@ namespace System.IO.Tests
             return Directory.GetDirectories(path);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void EnumerateWithSymLinkToDirectory()
         {
             DirectoryInfo containingFolder = Directory.CreateDirectory(GetTestFilePath());

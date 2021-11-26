@@ -35,7 +35,7 @@ namespace System.IO.Tests
         }
 
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksAreReparsePoints()
         {
             string path = CreateItem();
@@ -47,7 +47,7 @@ namespace System.IO.Tests
             Assert.Equal(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & GetAttributes(linkPath));
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksReflectSymLinkAttributes()
         {
             string path = CreateItem();

@@ -7,10 +7,14 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ConditionalClass(typeof(BaseSymbolicLinks), nameof(CanCreateSymbolicLinks))]
     // Contains helper methods that are shared by all symbolic link test classes.
     public abstract partial class BaseSymbolicLinks : FileSystemTest
     {
+        public BaseSymbolicLinks()
+        {
+            Assert.True(MountHelper.CanCreateSymbolicLinks);
+        }
+
         protected DirectoryInfo CreateDirectoryContainingSelfReferencingSymbolicLink()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetRandomDirPath());

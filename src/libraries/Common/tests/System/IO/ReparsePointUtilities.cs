@@ -28,11 +28,55 @@ public static class MountHelper
     [DllImport("kernel32.dll", EntryPoint = "DeleteVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
     private static extern bool DeleteVolumeMountPoint(string mountPoint);
 
+    // Helper for ConditionalClass attributes
+    internal static bool IsSubstAvailable => PlatformDetection.IsSubstAvailable;
+
+    /// <summary>
+    /// In some cases (such as when running without elevated privileges),
+    /// the symbolic link may fail to create. Only run this test if it creates
+    /// links successfully.
+    /// </summary>
+    internal static bool CanCreateSymbolicLinks => s_canCreateSymbolicLinks.Value;
+
+    private static readonly Lazy<bool> s_canCreateSymbolicLinks = new Lazy<bool>(() =>
+    {
+        bool success = true;
+
+        // Verify file symlink creation
+        string path = Path.GetTempFileName();
+        string linkPath = path + ".link";
+        success = CreateSymbolicLink(linkPath: linkPath, targetPath: path, isDirectory: false);
+        try { File.Delete(path); } catch { }
+        try { File.Delete(linkPath); } catch { }
+
+        // Verify directory symlink creation
+        path = Path.GetTempFileName();
+        linkPath = path + ".link";
+        success = success && CreateSymbolicLink(linkPath: linkPath, targetPath: path, isDirectory: true);
+        try { Directory.Delete(path); } catch { }
+        try { Directory.Delete(linkPath); } catch { }
+
+        if (!success && PlatformDetection.IsWindows)
+            Debug.Assert(!PlatformDetection.IsWindowsAndElevated);
+        System.Diagnostics.Debug.WriteLine("### " + success);
+        return success;
+    });
+
     /// <summary>Creates a symbolic link using command line tools.</summary>
     public static bool CreateSymbolicLink(string linkPath, string targetPath, bool isDirectory)
     {
+#if NETFRAMEWORK
+        bool isWindows = true;
+#else
+        if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsBrowser()) // OSes that don't support Process.Start()
+        {
+            return false;
+        }
+
+        bool isWindows = OperatingSystem.IsWindows();
+#endif
         Process symLinkProcess = new Process();
-        if (OperatingSystem.IsWindows())
+        if (isWindows)
         {
             symLinkProcess.StartInfo.FileName = "cmd";
             symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", linkPath, targetPath);
@@ -44,10 +88,20 @@ public static class MountHelper
         }
         symLinkProcess.StartInfo.UseShellExecute = false;
         symLinkProcess.StartInfo.RedirectStandardOutput = true;
+
+        // symLinkProcess.StartInfo.RedirectStandardError = true;
+        // string output = "";
+        // symLinkProcess.OutputDataReceived += new DataReceivedEventHandler((sender, e) => { output += e.Data; });
+
         symLinkProcess.Start();
 
+        // symLinkProcess.BeginOutputReadLine();
+        // string error = symLinkProcess.StandardError.ReadToEnd();
+        // Debug.WriteLine($"{error} \n {output}");
+
         symLinkProcess.WaitForExit();
-        return symLinkProcess.ExitCode == 0;
+
+        return (symLinkProcess.ExitCode == 0);
     }
 
     /// <summary>On Windows, creates a junction using command line tools.</summary>

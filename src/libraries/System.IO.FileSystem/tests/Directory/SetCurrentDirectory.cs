@@ -45,7 +45,7 @@ namespace System.IO.Tests
 
         public sealed class Directory_SetCurrentDirectory_SymLink : FileSystemTest
         {
-            private static bool CanCreateSymbolicLinksAndRemoteExecutorSupported => CanCreateSymbolicLinks && RemoteExecutor.IsSupported;
+            private static bool CanCreateSymbolicLinksAndRemoteExecutorSupported => MountHelper.CanCreateSymbolicLinks && RemoteExecutor.IsSupported;
 
             [ConditionalFact(nameof(CanCreateSymbolicLinksAndRemoteExecutorSupported))]
             public void SetToPathContainingSymLink()

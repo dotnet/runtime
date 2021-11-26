@@ -6,13 +6,13 @@ using Xunit;
 namespace System.IO.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [ConditionalClass(typeof(SymbolicLink_Changed_Tests), nameof(CanCreateSymbolicLinks))]
+    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class SymbolicLink_Changed_Tests : FileSystemWatcherTest
     {
         private string CreateSymbolicLinkToTarget(string targetPath, bool isDirectory, string linkPath = null)
         {
             linkPath ??= GetTestFilePath();
-            Assert.True(CreateSymLink(targetPath, linkPath, isDirectory));
+            Assert.True(MountHelper.CreateSymbolicLink(targetPath, linkPath, isDirectory));
 
             return linkPath;
         }
