@@ -21,10 +21,10 @@ extern "C"
 #endif
 
 #ifndef DACCESS_COMPILE
-PEImageLayout* PEImageLayout::CreateFlat(const void *flat, COUNT_T size,PEImage* pOwner)
+PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
-    return new RawImageLayout(flat,size,pOwner);
+    return new FlatImageLayout(pOwner, array, size); 
 }
 
 #ifndef TARGET_UNIX
@@ -346,50 +346,6 @@ void PEImageLayout::ApplyBaseRelocations()
     {
         ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
     }
-}
-
-
-RawImageLayout::RawImageLayout(const void *flat, COUNT_T size, PEImage* pOwner)
-{
-    CONTRACTL
-    {
-        CONSTRUCTOR_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-    m_pOwner=pOwner;
-
-    if (size)
-    {
-#if defined(TARGET_WINDOWS)
-        if (Amsi::IsBlockedByAmsiScan((void*)flat, size))
-        {
-            // This is required to throw a BadImageFormatException for compatibility, but
-            // use the message from ERROR_VIRUS_INFECTED to give better insight on what's wrong
-            SString virusHrString;
-            GetHRMsg(HRESULT_FROM_WIN32(ERROR_VIRUS_INFECTED), virusHrString);
-            ThrowHR(COR_E_BADIMAGEFORMAT, virusHrString);
-        }
-#endif // defined(TARGET_WINDOWS)
-
-        HandleHolder mapping(WszCreateFileMapping(INVALID_HANDLE_VALUE,
-                                                  NULL,
-                                                  PAGE_READWRITE,
-                                                  0,
-                                                  size,
-                                                  NULL));
-        if (mapping==NULL)
-            ThrowLastError();
-        m_DataCopy.Assign(CLRMapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 0));
-        if(m_DataCopy==NULL)
-            ThrowLastError();
-        memcpy(m_DataCopy,flat,size);
-        flat=m_DataCopy;
-    }
-    Init((void*)flat,size);
 }
 
 ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, BOOL isInBundle)
@@ -778,6 +734,49 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     }
 
     Init(addr, (COUNT_T)size);
+}
+
+FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size)
+{
+    CONTRACTL
+    {
+        CONSTRUCTOR_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+    m_pOwner = pOwner;
+
+    if (size == 0)
+    {
+        Init((void*)array, size);
+    }
+    else
+    {
+#if defined(TARGET_WINDOWS)
+        if (Amsi::IsBlockedByAmsiScan((void*)array, size))
+        {
+            // This is required to throw a BadImageFormatException for compatibility, but
+            // use the message from ERROR_VIRUS_INFECTED to give better insight on what's wrong
+            SString virusHrString;
+            GetHRMsg(HRESULT_FROM_WIN32(ERROR_VIRUS_INFECTED), virusHrString);
+            ThrowHR(COR_E_BADIMAGEFORMAT, virusHrString);
+        }
+#endif // defined(TARGET_WINDOWS)
+
+        m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, size, NULL));
+        if (m_FileMap == NULL)
+            ThrowLastError();
+
+        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0));
+        if (m_FileView == NULL)
+            ThrowLastError();
+
+        memcpy(m_FileView, array, size);
+        Init((void*)m_FileView, size);
+    }
 }
 
 NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)

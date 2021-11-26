@@ -44,7 +44,7 @@ public:
 
 public:
 #ifndef DACCESS_COMPILE
-    static PEImageLayout* CreateFlat(const void *flat, COUNT_T size,PEImage* pOwner);
+    static PEImageLayout* CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size);
 #ifndef TARGET_UNIX
     static PEImageLayout* CreateFromHMODULE(HMODULE hModule,PEImage* pOwner);
 #endif
@@ -76,20 +76,6 @@ public:
 };
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;
-
-//RawImageView is built on external data, does not need cleanup
-class RawImageLayout: public PEImageLayout
-{
-    VPTR_VTABLE_CLASS(RawImageLayout,PEImageLayout)
-protected:
-    CLRMapViewHolder m_DataCopy;
-#ifndef TARGET_UNIX
-    HModuleHolder m_LibraryHolder;
-#endif // !TARGET_UNIX
-
-public:
-    RawImageLayout(const void *flat, COUNT_T size,PEImage* pOwner);
-};
 
 class FlatImageLayout;
 
@@ -167,6 +153,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     FlatImageLayout(PEImage* pOwner);
+    FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
 #endif
 
 };

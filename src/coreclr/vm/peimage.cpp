@@ -916,7 +916,7 @@ PTR_PEImageLayout PEImage::CreateLayoutFlat()
 }
 
 /* static */
-PTR_PEImage PEImage::CreateFromByteArray(const BYTE* flat, COUNT_T size)
+PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 {
     CONTRACT(PTR_PEImage)
     {
@@ -925,7 +925,7 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* flat, COUNT_T size)
     CONTRACT_END;
 
     PEImageHolder pImage(new PEImage());
-    PTR_PEImageLayout pLayout = PEImageLayout::CreateFlat(flat,size,pImage);
+    PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
     _ASSERTE(!pLayout->IsMapped());
 
     SimpleWriteLockHolder lock(pImage->m_pLayoutLock);

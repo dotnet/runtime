@@ -73,7 +73,7 @@ public:
     ULONG Release();
 
 #ifndef DACCESS_COMPILE
-    static PTR_PEImage CreateFromByteArray(const BYTE* flat, COUNT_T size);
+    static PTR_PEImage CreateFromByteArray(const BYTE* array, COUNT_T size);
 #ifndef TARGET_UNIX
     static PTR_PEImage CreateFromHMODULE(HMODULE hMod);
 #endif // !TARGET_UNIX
