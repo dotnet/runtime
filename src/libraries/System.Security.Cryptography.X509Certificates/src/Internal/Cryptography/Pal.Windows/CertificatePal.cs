@@ -141,9 +141,9 @@ namespace Internal.Cryptography.Pal
                     int cbData = 0;
                     if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
                     {
-                        CERT_CHAIN_PARA chainPara = default;
-                        chainPara.cbSize = sizeof(CERT_CHAIN_PARA);
-                        if (!Interop.crypt32.CertGetCertificateChain((IntPtr)ChainEngine.HCCE_CURRENT_USER, _certContext, null, SafeCertStoreHandle.InvalidHandle, ref chainPara, CertChainFlags.None, IntPtr.Zero, out certChainContext))
+                        Interop.Crypt32.CERT_CHAIN_PARA chainPara = default;
+                        chainPara.cbSize = sizeof(Interop.Crypt32.CERT_CHAIN_PARA);
+                        if (!Interop.Crypt32.CertGetCertificateChain((IntPtr)Interop.Crypt32.ChainEngine.HCCE_CURRENT_USER, _certContext, null, SafeCertStoreHandle.InvalidHandle, ref chainPara, Interop.Crypt32.CertChainFlags.None, IntPtr.Zero, out certChainContext))
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();

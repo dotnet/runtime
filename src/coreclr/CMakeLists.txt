@@ -84,12 +84,7 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
     set(STATIC_LIBS_ONLY 1)
-
-    if(CLR_CMAKE_TARGET_WIN32)
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows Native.Windows)
-    else()
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix Native.Unix)
-    endif()
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 #-----------------------------------------

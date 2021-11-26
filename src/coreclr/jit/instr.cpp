@@ -72,7 +72,7 @@ const char* CodeGen::genInsName(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < _countof(insNames));
+    assert((unsigned)ins < ArrLen(insNames));
     assert(insNames[ins] != nullptr);
 
     return insNames[ins];
@@ -243,7 +243,7 @@ void CodeGen::instGen(instruction ins)
 // static inline
 bool CodeGenInterface::instIsFP(instruction ins)
 {
-    assert((unsigned)ins < _countof(instInfo));
+    assert((unsigned)ins < ArrLen(instInfo));
 
 #ifdef TARGET_XARCH
     return (instInfo[ins] & INS_FLAGS_x87Instr) != 0;
@@ -1100,8 +1100,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 
                 case GT_LCL_VAR:
                 {
-                    assert(rmOp->IsRegOptional() ||
-                           !compiler->lvaGetDesc(rmOp->AsLclVar()->GetLclNum())->lvIsRegCandidate());
+                    assert(rmOp->IsRegOptional() || !compiler->lvaGetDesc(rmOp->AsLclVar())->lvIsRegCandidate());
                     varNum = rmOp->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;
@@ -1231,8 +1230,7 @@ void CodeGen::inst_RV_RV_TT(
 
                 case GT_LCL_VAR:
                 {
-                    assert(op2->IsRegOptional() ||
-                           !compiler->lvaGetDesc(op2->AsLclVar()->GetLclNum())->lvIsRegCandidate());
+                    assert(op2->IsRegOptional() || !compiler->lvaGetDesc(op2->AsLclVar())->lvIsRegCandidate());
                     varNum = op2->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;

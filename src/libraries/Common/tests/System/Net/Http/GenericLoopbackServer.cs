@@ -124,24 +124,24 @@ namespace System.Net.Test.Common
 
         /// <summary>Sends Response back with provided statusCode, headers and content.
         /// If isFinal is false, the body is not completed and you can call SendResponseBodyAsync to send more.</summary>
-        public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0);
+        public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true);
         /// <summary>Sends response headers.</summary>
-        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
+        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
         /// <summary>Sends valid but incomplete headers. Once called, there is no way to continue the response past this point.</summary>
-        public abstract Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
+        public abstract Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
         /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>
-        public abstract Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0);
+        public abstract Task SendResponseBodyAsync(byte[] content, bool isFinal = true);
 
         /// <summary>Reads Request, sends Response and closes connection.</summary>
         public abstract Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "");
 
         /// <summary>Waits for the client to signal cancellation.</summary>
-        public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0);
+        public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true);
 
         /// <summary>Helper function to make it easier to convert old test with strings.</summary>
-        public async Task SendResponseBodyAsync(string content, bool isFinal = true, int requestId = 0)
+        public async Task SendResponseBodyAsync(string content, bool isFinal = true)
         {
-            await SendResponseBodyAsync(String.IsNullOrEmpty(content) ? new byte[0] : Encoding.ASCII.GetBytes(content), isFinal, requestId);
+            await SendResponseBodyAsync(String.IsNullOrEmpty(content) ? new byte[0] : Encoding.ASCII.GetBytes(content), isFinal);
         }
     }
 

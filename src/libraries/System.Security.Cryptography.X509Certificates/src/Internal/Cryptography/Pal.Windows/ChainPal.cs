@@ -36,12 +36,12 @@ namespace Internal.Cryptography.Pal
 
             unsafe
             {
-                CERT_CHAIN_POLICY_PARA para = default;
-                para.cbSize = sizeof(CERT_CHAIN_POLICY_PARA);
-                para.dwFlags = (int)flags;
+                Interop.Crypt32.CERT_CHAIN_POLICY_PARA para = default;
+                para.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_PARA);
+                para.dwFlags = (uint)flags;
 
-                CERT_CHAIN_POLICY_STATUS status = default;
-                status.cbSize = sizeof(CERT_CHAIN_POLICY_STATUS);
+                Interop.Crypt32.CERT_CHAIN_POLICY_STATUS status = default;
+                status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
 
                 if (!Interop.crypt32.CertVerifyCertificateChainPolicy(ChainPolicy.CERT_CHAIN_POLICY_BASE, _chain, ref para, ref status))
                 {
@@ -105,7 +105,7 @@ namespace Internal.Cryptography.Pal
 
         public static bool ReleaseSafeX509ChainHandle(IntPtr handle)
         {
-            Interop.crypt32.CertFreeCertificateChain(handle);
+            Interop.Crypt32.CertFreeCertificateChain(handle);
             return true;
         }
 

@@ -82,7 +82,7 @@ public:
 private:
     bool HasSmallCapacity() const
     {
-        return m_layoutCount <= _countof(m_layoutArray);
+        return m_layoutCount <= ArrLen(m_layoutArray);
     }
 
     ClassLayout* GetLayoutByIndex(unsigned index) const
@@ -157,7 +157,7 @@ private:
 
     unsigned AddBlkLayout(Compiler* compiler, ClassLayout* layout)
     {
-        if (m_layoutCount < _countof(m_layoutArray))
+        if (m_layoutCount < ArrLen(m_layoutArray))
         {
             m_layoutArray[m_layoutCount] = layout;
             return m_layoutCount++;
@@ -201,7 +201,7 @@ private:
 
     unsigned AddObjLayout(Compiler* compiler, ClassLayout* layout)
     {
-        if (m_layoutCount < _countof(m_layoutArray))
+        if (m_layoutCount < ArrLen(m_layoutArray))
         {
             m_layoutArray[m_layoutCount] = layout;
             return m_layoutCount++;
@@ -220,7 +220,7 @@ private:
             unsigned      newCapacity = m_layoutCount * 2;
             ClassLayout** newArray    = alloc.allocate<ClassLayout*>(newCapacity);
 
-            if (m_layoutCount <= _countof(m_layoutArray))
+            if (m_layoutCount <= ArrLen(m_layoutArray))
             {
                 BlkLayoutIndexMap* blkLayoutMap = new (alloc) BlkLayoutIndexMap(alloc);
                 ObjLayoutIndexMap* objLayoutMap = new (alloc) ObjLayoutIndexMap(alloc);

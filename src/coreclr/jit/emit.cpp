@@ -115,7 +115,7 @@ const char* emitter::emitIfName(unsigned f)
 
     static char errBuff[32];
 
-    if (f < _countof(ifNames))
+    if (f < ArrLen(ifNames))
     {
         return ifNames[f];
     }
@@ -3356,7 +3356,7 @@ const BYTE emitter::emitFmtToOps[] = {
 };
 
 #ifdef DEBUG
-const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
+const unsigned emitter::emitFmtCount = ArrLen(emitFmtToOps);
 #endif
 
 //------------------------------------------------------------------------
@@ -6073,7 +6073,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (emitComp->lvaKeepAliveAndReportThis())
     {
         assert(emitComp->lvaIsOriginalThisArg(0));
-        LclVarDsc* thisDsc = &emitComp->lvaTable[0];
+        LclVarDsc* thisDsc = emitComp->lvaGetDesc(0U);
 
         /* If "this" (which is passed in as a register argument in REG_ARG_0)
            is enregistered, we normally spot the "mov REG_ARG_0 -> thisReg"
@@ -7352,7 +7352,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
     {
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, _countof(label), "RWD%02u", offset);
+        sprintf_s(label, ArrLen(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
 
@@ -8370,8 +8370,8 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
                 if (varNum >= 0)
                 {
                     // This is NOT a spill temp
-                    LclVarDsc* varDsc = &emitComp->lvaTable[varNum];
-                    isTracked         = emitComp->lvaIsGCTracked(varDsc);
+                    const LclVarDsc* varDsc = emitComp->lvaGetDesc(varNum);
+                    isTracked               = emitComp->lvaIsGCTracked(varDsc);
                 }
 
                 if (!isTracked)

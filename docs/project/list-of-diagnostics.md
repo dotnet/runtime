@@ -130,16 +130,16 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1027`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1028`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1029`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1030`__ | [System.Text.Json.SourceGeneration] Did not generate serialization metadata for type. |
-|  __`SYSLIB1031`__ | [System.Text.Json.SourceGeneration] Duplicate type name. |
-|  __`SYSLIB1032`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1033`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1034`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1035`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1036`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1037`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1038`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1039`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
+|  __`SYSLIB1030`__ | JsonSourceGenerator did not generate serialization metadata for type |
+|  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
+|  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
+|  __`SYSLIB1033`__ | JsonSourceGenerator encountered a type that has multiple [JsonConstructor] annotations|
+|  __`SYSLIB1034`__ | *_`SYSLIB1034` reserved for System.Text.Json.SourceGeneration._* |
+|  __`SYSLIB1035`__ | JsonSourceGenerator encountered a type that has multiple [JsonExtensionData] annotations |
+|  __`SYSLIB1036`__ | JsonSourceGenerator encountered an invalid [JsonExtensionData] annotation |
+|  __`SYSLIB1037`__ | JsonSourceGenerator encountered a type with init-only properties for which deserialization is not supported |
+|  __`SYSLIB1038`__ | JsonSourceGenerator encountered a property annotated with [JsonInclude] that has inaccessible accessors |
+|  __`SYSLIB1039`__ | *_`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
 |  __`SYSLIB1040`__ | Invalid RegexGenerator attribute |
 |  __`SYSLIB1041`__ | Multiple RegexGenerator attribute |
 |  __`SYSLIB1042`__ | Invalid RegexGenerator arguments |

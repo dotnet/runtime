@@ -572,7 +572,7 @@ void DoAssertOnType(DebuggerIPCEventType event, int count)
         if (g_iDbgRuntimeCounter[event & 0x00ff] == count)
         {
             char        tmpStr[256];
-            _snprintf_s(tmpStr, _countof(tmpStr), _TRUNCATE, "%s == %d, break now!",
+            _snprintf_s(tmpStr, ARRAY_SIZE(tmpStr), _TRUNCATE, "%s == %d, break now!",
                         IPCENames::GetName(event), count);
 
             // fire the assertion
@@ -586,7 +586,7 @@ void DoAssertOnType(DebuggerIPCEventType event, int count)
         if (g_iDbgDebuggerCounter[event & 0x00ff] == count)
         {
             char        tmpStr[256];
-            _snprintf_s(tmpStr, _countof(tmpStr), _TRUNCATE, "%s == %d, break now!",
+            _snprintf_s(tmpStr, ARRAY_SIZE(tmpStr), _TRUNCATE, "%s == %d, break now!",
                         IPCENames::GetName(event), count);
 
             // fire the assertion
@@ -1660,7 +1660,7 @@ void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
     EX_TRY
     {
         const DWORD dwFlags = 0; // continuable (eg, Debugger can continue GH)
-        RaiseException(CLRDBG_NOTIFICATION_EXCEPTION_CODE, dwFlags, NumItems(rgData), rgData);
+        RaiseException(CLRDBG_NOTIFICATION_EXCEPTION_CODE, dwFlags, ARRAY_SIZE(rgData), rgData);
 
         // If debugger continues "GH" (DBG_CONTINUE), then we land here.
         // This is the expected path for a well-behaved ICorDebug debugger.
@@ -1841,7 +1841,7 @@ HRESULT Debugger::Startup(void)
         {
             for (i = 0; i < dwRegVal; i++)
             {
-                int iProc = GetRandomInt(NumItems(g_pStressProcs));
+                int iProc = GetRandomInt(ARRAY_SIZE(g_pStressProcs));
                 LPTHREAD_START_ROUTINE pStartRoutine = g_pStressProcs[iProc];
                 ::CreateThread(NULL, 0, pStartRoutine, NULL, 0, &dwId);
                 LOG((LF_CORDB, LL_INFO1000, "Created random thread (%d) with tid=0x%x\n", i, dwId));
