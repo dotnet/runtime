@@ -83,9 +83,9 @@ namespace System.IO
         protected string GetRandomLinkName() => GetTestFileName() + ".link";
         protected string GetRandomDirName()  => GetTestFileName() + "_dir";
 
-        protected string GetRandomFilePath() => Path.Join(ActualTestDirectory.Value, GetRandomFileName());
-        protected string GetRandomLinkPath() => Path.Join(ActualTestDirectory.Value, GetRandomLinkName());
-        protected string GetRandomDirPath()  => Path.Join(ActualTestDirectory.Value, GetRandomDirName());
+        protected string GetRandomFilePath() => Path.Combine(ActualTestDirectory.Value, GetRandomFileName());
+        protected string GetRandomLinkPath() => Path.Combine(ActualTestDirectory.Value, GetRandomLinkName());
+        protected string GetRandomDirPath()  => Path.Combine(ActualTestDirectory.Value, GetRandomDirName());
 
         private Lazy<string> ActualTestDirectory => new Lazy<string>(() => GetTestDirectoryActualCasing());
 
