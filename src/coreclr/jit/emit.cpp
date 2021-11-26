@@ -6413,7 +6413,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             size_t     curInstrAddr = (size_t)cp;
             instrDesc* curInstrDesc = id;
 
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0))
+            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
+                (id->idCodeSize() > 0))
             {
                 UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
                 while (nextMapping != emitComp->genPreciseIPmappings.end())
