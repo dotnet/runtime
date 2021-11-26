@@ -49,17 +49,6 @@ export async function mono_wasm_pre_init(): Promise<void> {
 }
 
 export async function mono_wasm_on_runtime_initialized(): Promise<void> {
-    /* TODO
-    if (ENVIRONMENT_IS_NODE) {
-        const importFn = new Function("module", "name", "return (async () => { if (!module.imports[name]) try { module.imports[name] = await import(name); } catch (err) { } })();");
-        await importFn(Module, "fs");
-        await importFn(Module, "path");
-        await importFn(Module, "fetch");
-        await importFn(Module, "crypto");
-        await importFn(Module, "ws");
-        await importFn(Module, "url");
-    }*/
-
     if (!Module.config || Module.config.isError) {
         return;
     }
@@ -80,44 +69,6 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
         aindex += 1;
     }
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
-}
-
-async function _fetch_asset(url: string): Promise<Response> {
-    try {
-        if (typeof (fetch) === "function") {
-            return fetch(url, { credentials: "same-origin" });
-        }
-        else if (ENVIRONMENT_IS_NODE) {
-            //const fs = (<any>globalThis).require("fs");
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const fs = require("fs");
-            const arrayBuffer = await fs.promises.readFile(url);
-            return <Response><any>{
-                ok: true,
-                url,
-                arrayBuffer: () => arrayBuffer,
-                json: () => JSON.parse(arrayBuffer)
-            };
-        }
-        else if (typeof (read) === "function") {
-            const arrayBuffer = new Uint8Array(read(url, "binary"));
-            return <Response><any>{
-                ok: true,
-                url,
-                arrayBuffer: () => arrayBuffer,
-                json: () => JSON.parse(Module.UTF8ArrayToString(arrayBuffer, 0, arrayBuffer.length))
-            };
-        }
-    }
-    catch (e: any) {
-        return <Response><any>{
-            ok: false,
-            url,
-            arrayBuffer: () => { throw e; },
-            json: () => { throw e; }
-        };
-    }
-    throw new Error("No fetch implementation available");
 }
 
 function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
@@ -358,13 +309,9 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
 
         _apply_configuration_from_args(args);
 
-        // TODO move polyfills out into separate module
-        const local_fetch = Module.imports && typeof (Module.imports.fetch) === "function"
-            ? Module.imports.fetch
-            // legacy fallback
-            : typeof ((<any>args).fetch_file_cb) === "function"
-                ? (<any>args).fetch_file_cb
-                : _fetch_asset;
+        if (!Module.imports!.fetch && typeof ((<any>args).fetch_file_cb) === "function") {
+            runtimeHelpers.fetch = (<any>args).fetch_file_cb;
+        }
 
         const load_asset = async (asset: AllAssetEntryTypes): Promise<void> => {
             //TODO we could do module.addRunDependency(asset.name) and delay emscripten run() after all assets are loaded
@@ -397,7 +344,7 @@ export async function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<
                         console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}' for ${asset.name}`);
                 }
                 try {
-                    const response = await local_fetch(attemptUrl);
+                    const response = await runtimeHelpers.fetch(attemptUrl);
                     if (!response.ok) {
                         error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${response.status} ${response.statusText}`);
                         continue;// next source
@@ -506,7 +453,7 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
     module.addRunDependency(configFilePath);
     try {
         // NOTE: when we add nodejs make sure to include the nodejs fetch package
-        const configRaw = await _fetch_asset(configFilePath);
+        const configRaw = await runtimeHelpers.fetch(configFilePath);
         const config = await configRaw.json();
 
         runtimeHelpers.config = config;

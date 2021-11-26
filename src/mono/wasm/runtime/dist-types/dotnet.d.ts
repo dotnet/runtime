@@ -165,30 +165,31 @@ declare type CoverageProfilerOptions = {
     send_to?: string;
 };
 declare type DotnetModuleConfigImports = {
-    require: (name: string) => any;
-    fetch: (url: string) => Promise<Response>;
-    fs: {
-        promises: {
-            readFile: (path: string) => Promise<string>;
-            readFileSync: (path: string, options: string | undefined) => string;
+    require?: (name: string) => any;
+    fetch?: (url: string) => Promise<Response>;
+    fs?: {
+        promises?: {
+            readFile?: (path: string) => Promise<string | Buffer>;
         };
+        readFileSync?: (path: string, options: any | undefined) => string;
     };
-    crypto: {
-        randomBytes: (size: number) => Buffer;
+    crypto?: {
+        randomBytes?: (size: number) => Buffer;
     };
-    ws: WebSocket & {
+    ws?: WebSocket & {
         Server: any;
     };
-    path: {
-        normalize: (path: string) => string;
-        dirname: (path: string) => string;
+    path?: {
+        normalize?: (path: string) => string;
+        dirname?: (path: string) => string;
     };
-    url: any;
+    url?: any;
 };
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
     configSrc?: string;
+    scriptDirectory?: string;
     onConfigLoaded?: () => void;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
@@ -255,6 +256,7 @@ interface BINDING {
 interface DotnetPublicAPI {
     MONO: MONO;
     BINDING: BINDING;
+    INTERNAL: any;
     Module: any;
     RuntimeId: number;
     RuntimeBuildInfo: {

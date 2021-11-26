@@ -132,6 +132,7 @@ export type RuntimeHelpers = {
 
     loaded_files: string[];
     config: MonoConfig | MonoConfigError;
+    fetch: (url: string) => Promise<Response>;
 }
 
 export const wasm_type_symbol = Symbol.for("wasm type");
@@ -155,29 +156,30 @@ export type CoverageProfilerOptions = {
 // how we extended emscripten Module
 export type DotnetModuleMono = EmscriptenModule & DotnetModuleConfig;
 export type DotnetModuleConfigImports = {
-    require: (name: string) => any;
-    fetch: (url: string) => Promise<Response>;
-    fs: {
-        promises: {
-            readFile: (path: string) => Promise<string>,
-            readFileSync: (path: string, options: string | undefined) => string,
+    require?: (name: string) => any;
+    fetch?: (url: string) => Promise<Response>;
+    fs?: {
+        promises?: {
+            readFile?: (path: string) => Promise<string | Buffer>,
         }
+        readFileSync?: (path: string, options: any | undefined) => string,
     };
-    crypto: {
-        randomBytes: (size: number) => Buffer
+    crypto?: {
+        randomBytes?: (size: number) => Buffer
     };
-    ws: WebSocket & { Server: any };
-    path: {
-        normalize: (path: string) => string,
-        dirname: (path: string) => string,
+    ws?: WebSocket & { Server: any };
+    path?: {
+        normalize?: (path: string) => string,
+        dirname?: (path: string) => string,
     };
-    url: any;
+    url?: any;
 }
 export type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean,
 
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
+    scriptDirectory?: string,
     onConfigLoaded?: () => void;
     onDotnetReady?: () => void;
 

@@ -70,6 +70,7 @@ import {
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
 import { VoidPtr } from "./types/emscripten";
+import { fetch_like, readAsync_like } from "./polyfills";
 
 const MONO: MONO = <any>{
     // current "public" MONO API
@@ -128,9 +129,14 @@ let exportedAPI: DotnetPublicAPI;
 function initializeImportsAndExports(
     imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
+    replacements: { scriptDirectory: any, fetch: any, readAsync: any },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModuleMono;
     const globalThisAny = globalThis as any;
+    if (module.scriptDirectory) {
+        replacements.scriptDirectory = module.scriptDirectory;
+    }
+
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     setImportsAndExports(imports, exports);
@@ -185,6 +191,17 @@ function initializeImportsAndExports(
             return resolve;
         };
     }
+
+    if (module.imports.fetch) {
+        runtimeHelpers.fetch = module.imports.fetch;
+    } else if (globalThisAny.fetch) {
+        runtimeHelpers.fetch = globalThisAny.fetch;
+    }
+    else {
+        runtimeHelpers.fetch = fetch_like;
+    }
+    replacements.fetch = runtimeHelpers.fetch;
+    replacements.readAsync = readAsync_like;
 
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
         Object.assign(module, exportedAPI);
@@ -384,6 +401,7 @@ interface BINDING {
 export interface DotnetPublicAPI {
     MONO: MONO,
     BINDING: BINDING,
+    INTERNAL: any,
     Module: any,
     RuntimeId: number,
     RuntimeBuildInfo: {

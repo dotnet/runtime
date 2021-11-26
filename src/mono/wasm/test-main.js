@@ -214,7 +214,7 @@ const App = {
 
                 const main_assembly_name = processedArguments.applicationArgs[1];
                 const app_args = processedArguments.applicationArgs.slice(2);
-                INTERNAL.mono_wasm_set_main_args(processedArguments.applicationArgs[1], app_args);
+                INTERNAL.mono_wasm_set_main_args(main_assembly_name, app_args);
 
                 // Automatic signature isn't working correctly
                 const result = await BINDING.call_assembly_entry_point(main_assembly_name, [app_args], "m");
