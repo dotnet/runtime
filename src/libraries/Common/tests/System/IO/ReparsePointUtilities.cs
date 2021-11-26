@@ -17,6 +17,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
 public static class MountHelper
 {
@@ -56,15 +57,22 @@ public static class MountHelper
         try { Directory.Delete(path); } catch { }
         try { Directory.Delete(linkPath); } catch { }
 
+        // Reduce the risk we accidentally stop running these altogether
+        // on Windows, due to a bug in CreateSymbolicLink
         if (!success && PlatformDetection.IsWindows)
-            Debug.Assert(!PlatformDetection.IsWindowsAndElevated);
-        System.Diagnostics.Debug.WriteLine("### " + success);
+            Assert.True(!PlatformDetection.IsWindowsAndElevated);
+
         return success;
     });
 
     /// <summary>Creates a symbolic link using command line tools.</summary>
     public static bool CreateSymbolicLink(string linkPath, string targetPath, bool isDirectory)
     {
+        // It's easy to get the parameters backwards.
+        Assert.EndsWith(".link", linkPath);
+        if (linkPath != targetPath) // testing loop
+            Assert.False(targetPath.EndsWith(".link"), $"{targetPath} should not end with .link");
+
 #if NETFRAMEWORK
         bool isWindows = true;
 #else

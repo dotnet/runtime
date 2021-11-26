@@ -11,8 +11,8 @@ namespace System.IO.Tests
     {
         private string CreateSymbolicLinkToTarget(string targetPath, bool isDirectory, string linkPath = null)
         {
-            linkPath ??= GetTestFilePath();
-            Assert.True(MountHelper.CreateSymbolicLink(targetPath, linkPath, isDirectory));
+            linkPath ??= Path.ChangeExtension(GetTestFilePath(), ".link");
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetPath, isDirectory));
 
             return linkPath;
         }
@@ -48,7 +48,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_DirectorySymbolicLink_TargetsSelf_Fails()
         {
             // Arrange
-            string linkPath = GetTestFilePath();
+            string linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
             CreateSymbolicLinkToTarget(targetPath: linkPath, isDirectory: true, linkPath: linkPath);
             using var watcher = new FileSystemWatcher(linkPath);
 
@@ -112,7 +112,7 @@ namespace System.IO.Tests
             using var dirA = new TempDirectory(GetTestFilePath());
             using var dirB = new TempDirectory(GetTestFilePath());
 
-            string linkPath = Path.Combine(dirA.Path, "linkToDirB");
+            string linkPath = Path.Combine(dirA.Path, Path.ChangeExtension("linkToDirB", ".link"));
             CreateSymbolicLinkToTarget(dirB.Path, isDirectory: true, linkPath);
 
             using var watcher = new FileSystemWatcher(dirA.Path);

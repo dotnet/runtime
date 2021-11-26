@@ -110,7 +110,7 @@ namespace System.IO.Tests
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
 
             Directory.CreateDirectory(path);
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
@@ -159,7 +159,7 @@ namespace System.IO.Tests
             string path = GetTestFilePath();
             Directory.CreateDirectory(path);
 
-            string linkPath = GetTestFilePath();
+            string linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             Assert.True(Directory.Exists(path));

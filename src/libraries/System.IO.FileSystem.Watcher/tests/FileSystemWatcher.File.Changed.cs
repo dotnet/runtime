@@ -74,7 +74,7 @@ namespace System.IO.Tests
             using (var watcher = new FileSystemWatcher(dir.Path, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
-                Assert.True(MountHelper.CreateSymbolicLink(file.Path, Path.Combine(dir.Path, "link"), false));
+                Assert.True(MountHelper.CreateSymbolicLink(Path.Combine(dir.Path, ".link"), file.Path, false));
 
                 Action action = () => File.AppendAllText(file.Path, "longtext");
                 Action cleanup = () => File.AppendAllText(file.Path, "short");

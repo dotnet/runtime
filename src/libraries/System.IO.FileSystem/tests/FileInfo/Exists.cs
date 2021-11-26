@@ -104,7 +104,7 @@ namespace System.IO.Tests
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
 
             var pathFI = new FileInfo(path);
             var linkPathFI = new FileInfo(linkPath);

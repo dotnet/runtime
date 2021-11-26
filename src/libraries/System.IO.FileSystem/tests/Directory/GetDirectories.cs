@@ -25,7 +25,7 @@ namespace System.IO.Tests
             DirectoryInfo targetDir = Directory.CreateDirectory(GetTestFilePath());
             {
                 // Create a symlink to a folder that exists
-                string linkPath = Path.Combine(containingFolder.FullName, Path.GetRandomFileName());
+                string linkPath = Path.Combine(containingFolder.FullName, Path.ChangeExtension(Path.GetRandomFileName(), ".link"));
                 Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetDir.FullName, isDirectory: true));
 
                 Assert.True(Directory.Exists(linkPath));

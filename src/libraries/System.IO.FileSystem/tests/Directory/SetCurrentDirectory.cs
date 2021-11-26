@@ -53,7 +53,7 @@ namespace System.IO.Tests
                 RemoteExecutor.Invoke(() =>
                 {
                     var path = GetTestFilePath();
-                    var linkPath = GetTestFilePath();
+                    var linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
 
                     Directory.CreateDirectory(path);
                     Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));

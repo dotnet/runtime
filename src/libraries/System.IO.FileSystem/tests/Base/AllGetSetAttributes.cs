@@ -39,7 +39,7 @@ namespace System.IO.Tests
         public void SymLinksAreReparsePoints()
         {
             string path = CreateItem();
-            string linkPath = GetTestFilePath();
+            string linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
 
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: IsDirectory));
 
@@ -51,7 +51,7 @@ namespace System.IO.Tests
         public void SymLinksReflectSymLinkAttributes()
         {
             string path = CreateItem();
-            string linkPath = GetTestFilePath();
+            string linkPath = Path.ChangeExtension(GetTestFilePath(), ".link");
 
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: IsDirectory));
 
