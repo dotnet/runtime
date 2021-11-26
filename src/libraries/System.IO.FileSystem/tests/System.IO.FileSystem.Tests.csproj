@@ -100,7 +100,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Browser.cs" />
     <Compile Include="FileStream\ctor_options.Browser.cs" />
   </ItemGroup>
