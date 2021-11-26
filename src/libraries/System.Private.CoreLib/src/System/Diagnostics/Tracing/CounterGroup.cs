@@ -35,6 +35,9 @@ namespace System.Diagnostics.Tracing
         {
             lock (s_counterGroupLock) // Lock the CounterGroup
                 _counters.Add(eventCounter);
+             // If the polling thread was started without any counters at that time,
+             // then it started an infinite sleep - we must wake the thread up or it will be stuck
+             s_pollingThreadSleepEvent?.Set();
         }
 
         internal void Remove(DiagnosticCounter eventCounter)
