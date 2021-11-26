@@ -69,13 +69,11 @@
     <Compile Include="RandomAccess\WriteGatherAsync.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="FileStream\ctor_options.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Windows.cs" />
     <Compile Include="Directory\Delete.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options.Windows.cs" />
