@@ -40,8 +40,8 @@ namespace System.IO.Compression
         // only apply to update mode
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
-        private string? _fileComment;
-        private byte[]? _fileCommentBytes;
+        private string? _fileCommentAsString;
+        private byte[]? _fileComment;
         private readonly CompressionLevel? _compressionLevel;
         private bool _hasUnicodeEntryName;
         private bool _hasUnicodeComment;
@@ -81,7 +81,19 @@ namespace System.IO.Compression
             // the cd should have this as null if we aren't in Update mode
             _cdUnknownExtraFields = cd.ExtraFields;
 
-            Comment = cd.FileComment != null ? DecodeBytesToString(cd.FileComment) : null;
+            if (cd.FileComment.Length > 0)
+            {
+                _fileComment = cd.FileComment;
+                _fileCommentAsString = ZipHelper.TruncateEncodedBytesAndReturnString(
+                    ref _fileComment,
+                    _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8,
+                    ushort.MaxValue);
+            }
+            else
+            {
+                _fileCommentAsString = null;
+                _fileComment = null;
+            }
 
             _compressionLevel = null;
 
@@ -132,8 +144,8 @@ namespace System.IO.Compression
             _cdUnknownExtraFields = null;
             _lhUnknownExtraFields = null;
 
+            _fileCommentAsString = null;
             _fileComment = null;
-            _fileCommentBytes = null;
 
             _compressionLevel = null;
 
@@ -192,33 +204,9 @@ namespace System.IO.Compression
         [AllowNull]
         public string Comment
         {
-            get
-            {
-                if (_fileComment == null)
-                {
-                    _fileComment = _fileCommentBytes != null ? DecodeBytesToString(_fileCommentBytes) : string.Empty;
-                }
-                return _fileComment;
-            }
-
-            set
-            {
-                // Reset it. Will re-acquire value in getter.
-                _fileComment = null;
-
-                if (value != null)
-                {
-                    _fileCommentBytes = ZipHelper.EncodeStringToBytes(value, _archive?.EntryNameAndCommentEncoding, out _hasUnicodeComment);
-                    if (_fileCommentBytes.Length > ushort.MaxValue)
-                    {
-                        _fileCommentBytes = _fileCommentBytes[0..ushort.MaxValue];
-                    }
-                }
-                else
-                {
-                    _fileCommentBytes = null;
-                }
-            }
+            get => _fileCommentAsString ?? string.Empty;
+            set => (_fileCommentAsString, _fileComment) =
+                    ZipHelper.EncodeAndTruncateStringToBytes(value, _archive?.EntryNameAndCommentEncoding, ushort.MaxValue, out _hasUnicodeComment);
         }
 
         /// <summary>
@@ -567,9 +555,9 @@ namespace System.IO.Compression
             writer.Write(extraFieldLength);                                     // Extra Field Length                       (2 bytes)
 
             // This should hold because of how we read it originally in ZipCentralDirectoryFileHeader:
-            Debug.Assert((_fileCommentBytes == null) || (_fileCommentBytes.Length <= ushort.MaxValue));
+            Debug.Assert((_fileComment == null) || (_fileComment.Length <= ushort.MaxValue));
 
-            writer.Write(_fileCommentBytes != null ? (ushort)_fileCommentBytes.Length : (ushort)0); // file comment length
+            writer.Write(_fileComment != null ? (ushort)_fileComment.Length : (ushort)0); // file comment length
             writer.Write((ushort)0); // disk number start
             writer.Write((ushort)0); // internal file attributes
             writer.Write(_externalFileAttr); // external file attributes
@@ -583,8 +571,8 @@ namespace System.IO.Compression
             if (_cdUnknownExtraFields != null)
                 ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
 
-            if (_fileCommentBytes != null)
-                writer.Write(_fileCommentBytes);
+            if (_fileComment != null)
+                writer.Write(_fileComment);
         }
 
         // returns false if fails, will get called on every entry before closing in update mode

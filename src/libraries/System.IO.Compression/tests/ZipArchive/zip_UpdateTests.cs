@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -358,12 +358,15 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TestComments))]
+        [MemberData(nameof(EncodingSpecificStrings_Data))]
         public static void Update_ZipArchive_Comment(string? comment, Encoding? encoding)
         {
-            string expectedComment = GetExpectedComment(comment);
-            string updatedComment = "Updated comment " + comment;
-            string expectedUpdatedComment = GetExpectedComment(updatedComment);
+            // The archive comment max size in bytes is determined by the internal
+            // ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength const field.
+            // The current value of that field is set to ushort.MaxValue.
+
+            (string expectedComment, string updatedComment, string expectedUpdatedComment) =
+                GetTestStringsForEncoding(comment, ushort.MaxValue, encoding);
 
             using var stream = new MemoryStream();
             var testStream = new WrappedStream(stream, true, true, true, null);
@@ -372,33 +375,38 @@ namespace System.IO.Compression.Tests
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true, encoding))
             {
                 zip.Comment = comment;
+                Assert.Equal(expectedComment.Length, zip.Comment.Length);
                 Assert.Equal(expectedComment, zip.Comment);
             }
             // Read (verify creation)
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true, encoding))
             {
+                Assert.Equal(expectedComment.Length, zip.Comment.Length);
                 Assert.Equal(expectedComment, zip.Comment);
             }
             // Update
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true, encoding))
             {
                 zip.Comment = updatedComment;
+                Assert.Equal(expectedUpdatedComment.Length, zip.Comment.Length);
                 Assert.Equal(expectedUpdatedComment, zip.Comment);
             }
-            // Read (verify update) and autoclose
+            // Read (verify update) and close stream
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false, encoding))
             {
+                Assert.Equal(expectedUpdatedComment.Length, zip.Comment.Length);
                 Assert.Equal(expectedUpdatedComment, zip.Comment);
             }
         }
 
         [Theory]
-        [MemberData(nameof(TestComments))]
+        [MemberData(nameof(EncodingSpecificStrings_Data))]
         public static void Update_ZipArchiveEntry_Comment(string? comment, Encoding? encoding)
         {
-            string expectedComment = GetExpectedComment(comment);
-            string updatedComment = "Updated comment " + comment;
-            string expectedUpdatedComment = GetExpectedComment(updatedComment);
+            // The entry comment max size in bytes is set to ushort.MaxValue internally.
+
+            (string expectedComment, string updatedComment, string expectedUpdatedComment) =
+                GetTestStringsForEncoding(comment, ushort.MaxValue, encoding);
 
             var stream = new MemoryStream();
             var testStream = new WrappedStream(stream, true, true, true, null);
@@ -409,49 +417,48 @@ namespace System.IO.Compression.Tests
                 ZipArchiveEntry entry = zip.CreateEntry("testfile.txt", CompressionLevel.NoCompression);
 
                 entry.Comment = comment;
+                Assert.Equal(expectedComment.Length, entry.Comment.Length);
                 Assert.Equal(expectedComment, entry.Comment);
             }
             // Read (verify creation)
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true, encoding))
             {
-                foreach (ZipArchiveEntry entry in zip.Entries)
-                {
-                    Assert.Equal(expectedComment, entry.Comment);
-                }
+                ZipArchiveEntry entry = zip.Entries.FirstOrDefault();
+
+                Assert.Equal(expectedComment.Length, entry.Comment.Length);
+                Assert.Equal(expectedComment, entry.Comment);
             }
             // Update
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true, encoding))
             {
-                foreach (ZipArchiveEntry entry in zip.Entries)
-                {
-                    entry.Comment = updatedComment;
-                    Assert.Equal(expectedUpdatedComment, entry.Comment);
-                }
+                ZipArchiveEntry entry = zip.Entries.FirstOrDefault();
+
+                entry.Comment = updatedComment;
+                Assert.Equal(expectedUpdatedComment.Length, entry.Comment.Length);
+                Assert.Equal(expectedUpdatedComment, entry.Comment);
             }
-            // Read (verify update) and autoclose
+            // Read (verify update) and close stream
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false, encoding))
             {
-                foreach (ZipArchiveEntry entry in zip.Entries)
-                {
-                    Assert.Equal(expectedUpdatedComment, entry.Comment);
-                }
+                ZipArchiveEntry entry = zip.Entries.FirstOrDefault();
+
+                Assert.Equal(expectedUpdatedComment.Length, entry.Comment.Length);
+                Assert.Equal(expectedUpdatedComment, entry.Comment);
             }
         }
 
-        [Theory]
+        [Fact]
         // General purpose bit flag must get the appropriate bit set if a file comment or an entry name is unicode
-        [InlineData("ascii", "ascii!!!", "utf-8", "Uƒ‰÷ˆ’ı‹¸")]
-        [InlineData("utf-8", "Uƒ‰÷ˆ’ı‹¸", "ascii", "ascii!!!")]
-        [InlineData("ascii", "ascii!!!", "latin1", "Lƒ‰÷ˆ’ı‹¸")]
-        [InlineData("latin1", "Lƒ‰÷ˆ’ı‹¸", "ascii", "ascii!!!")]
-        [InlineData("utf-8", "Uƒ‰÷ˆ’ı‹¸", "latin1", "Lƒ‰÷ˆ’ı‹¸")]
-        [InlineData("latin1", "Lƒ‰÷ˆ’ı‹¸", "utf-8", "Uƒ‰÷ˆ’ı‹¸")]
-        public static void Update_ZipArchiveEntry_DifferentEncodingsFullNameAndComment(string en1, string s1, string en2, string s2)
+        public static void Update_Comments_EntryName_DifferentEncodings()
         {
-            Encoding e1 = Encoding.GetEncoding(en1);
-            Encoding e2 = Encoding.GetEncoding(en2);
-            string entryName = e1.GetString(e1.GetBytes(s1));
-            string comment = e2.GetString(e2.GetBytes(s2));
+            (string expectedArchiveComment, string updatedArchiveComment, string expectedUpdatedArchiveComment) =
+                GetTestStringsForEncoding("utf8 archive comment: √∂√∂√∂", ushort.MaxValue, Encoding.UTF8);
+
+            (string expectedEntryComment, string updatedEntryComment, string expectedUpdatedEntryComment) =
+                GetTestStringsForEncoding("latin archive comment: √±√±√±", ushort.MaxValue, Encoding.Latin1);
+
+            // Only need one because the entry name cannot be updated
+            string expectedEntryName = GetEncodedStringOfExpectedByteLength(Encoding.ASCII, ushort.MaxValue, "ascii entry name");
 
             var stream = new MemoryStream();
             var testStream = new WrappedStream(stream, true, true, true, null);
@@ -459,97 +466,125 @@ namespace System.IO.Compression.Tests
             // Create with no encoding to autoselect it if one of the two strings is unicode
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true))
             {
-                ZipArchiveEntry entry = zip.CreateEntry(entryName, CompressionLevel.NoCompression);
-                entry.Comment = comment;
+                zip.Comment = expectedArchiveComment;
+                ZipArchiveEntry entry = zip.CreateEntry(expectedEntryName, CompressionLevel.NoCompression);
+                entry.Comment = expectedEntryComment;
 
-                Assert.Equal(entryName, entry.FullName);
-                Assert.Equal(comment, entry.Comment);
+                Assert.Equal(expectedArchiveComment, zip.Comment);
+                Assert.Equal(expectedEntryName, entry.FullName);
+                Assert.Equal(expectedEntryComment, entry.Comment);
             }
 
             // Open with no encoding to verify
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true))
             {
-                foreach (var entry in zip.Entries)
-                {
-                    Assert.Equal(entryName, entry.FullName);
-                    Assert.Equal(comment, entry.Comment);
-                }
+                ZipArchiveEntry entry = zip.Entries.FirstOrDefault();
+
+                Assert.Equal(expectedArchiveComment, zip.Comment);
+                Assert.Equal(expectedArchiveComment, zip.Comment);
+                Assert.Equal(expectedEntryName, entry.FullName);
+                Assert.Equal(expectedEntryComment, entry.Comment);
             }
 
             // Open with no encoding to update
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true))
             {
-                foreach (var entry in zip.Entries)
-                {
-                    entry.Comment = entryName; // Change it to the other string
-                }
+                zip.Comment = updatedArchiveComment;
+                ZipArchiveEntry entry = zip.Entries.FirstOrDefault();
+                entry.Comment = updatedEntryComment;
+
+                Assert.Equal(updatedArchiveComment, zip.Comment);
+                Assert.Equal(updatedEntryComment, entry.Comment);
             }
 
-            // Open with no encoding to verify
+            // Open with no encoding to verify, close stream
             using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false))
             {
-                foreach (var entry in zip.Entries)
-                {
-                    Assert.Equal(entryName, entry.FullName);
-                    Assert.Equal(comment, entry.Comment);
-                }
+                ZipArchiveEntry entry = zip.Entries.FirstOrDefault();
+
+                Assert.Equal(updatedArchiveComment, zip.Comment);
+                Assert.Equal(expectedEntryName, entry.FullName);
+                Assert.Equal(updatedEntryComment, entry.Comment);
             }
         }
 
-        private static Encoding[] s_encodings = new[] { Encoding.ASCII, Encoding.Latin1, Encoding.UTF8 };
-
-        // entryName, encoding
-        public static IEnumerable<object[]> TestEntryNames()
+        // For zip comments, entry comments.
+        public static IEnumerable<object[]> EncodingSpecificStrings_Data()
         {
-            var entryNames = new string[]
-            {
-                "entry.txt",
-                "ƒ‰÷ˆ’ı‹¸.txt",
-                new string('x', ushort.MaxValue),
-            };
-
-            foreach (string entryName in entryNames)
-            {
-                foreach (Encoding encoding in s_encodings)
-                {
-                    yield return new object[] { entryName, encoding };
-                }
-            }
-        }
-
-        // comment, encoding
-        public static IEnumerable<object[]> TestComments()
-        {
-            var comments = new string[] {
-                "",
-                "1",
-                new string('x', ushort.MaxValue),
-                new string('y', ushort.MaxValue + 1), // Should get truncated
-            };
-
             yield return new object[] { null, null }; // Should get saved as empty string.
 
-            foreach (string comment in comments)
+            foreach (Encoding encoding in new[] { null, Encoding.ASCII, Encoding.Latin1, Encoding.UTF8 })
             {
-                foreach (Encoding encoding in s_encodings)
+                yield return new object[] { string.Empty, encoding };
+                yield return new object[] { "1", encoding };
+                yield return new object[] { new string('x', ushort.MaxValue), encoding };
+                yield return new object[] { new string('y', ushort.MaxValue + 1), encoding };  // Should get truncated
+            }
+
+            foreach (Encoding encoding in new[] { Encoding.Latin1,Encoding.UTF8 }) // Exclude ASCII
+            {
+               yield return new object[] { "√º", encoding };
+               yield return new object[] { new string('√±', ushort.MaxValue), encoding }; // Should get truncated
+               yield return new object[] { new string('√∂', ushort.MaxValue + 1), encoding }; // Should get truncated
+            }
+        }
+
+        // For the specified text, returns 3 strings:
+        // - The specified text, but encoded in the specified encoding, and truncated to the specified max byte length (adjusted to encoding character size).
+        // - The specified text with an extra prefix, no encoding or length modifications.
+        // - The specified text with an extra prefix, but encoded and truncated.
+        private static (string, string, string) GetTestStringsForEncoding(string text, int maxByteLength, Encoding encoding)
+        {
+            string expectedText = GetEncodedStringOfExpectedByteLength(encoding, maxByteLength, text);
+            string updatedText = "Updated text: " + expectedText;
+            string expectedUpdatedText = GetEncodedStringOfExpectedByteLength(encoding, maxByteLength, updatedText);
+
+            return (expectedText, updatedText, expectedUpdatedText);
+        }
+
+        // Gets the specified string as a non-null string, in the specified encoding,
+        // and no longer than the specified byte length, adjusted for the encoding.
+        // If no encoding is specified, UTF8 is the fallback, just like ZipArchive does.
+        private static string GetEncodedStringOfExpectedByteLength(Encoding? encoding, int maxBytes, string? comment)
+        {
+            string nonNullComment = comment ?? string.Empty;
+
+            if (nonNullComment.Length > 0)
+            {
+                encoding ??= GetEncoding(comment);
+                byte[] bytes = encoding.GetBytes(nonNullComment);
+
+                if (bytes.Length > maxBytes)
                 {
-                    yield return new object[] { comment, encoding };
+                    int bytesPerChar = encoding.GetMaxByteCount(1);
+
+                    int encodedCharsThatFit = maxBytes / bytesPerChar;
+                    int totalBytesToTruncate = encodedCharsThatFit * bytesPerChar;
+
+                    bytes = bytes[0..totalBytesToTruncate];
+                }
+
+                return encoding.GetString(bytes);
+            }
+
+            return nonNullComment;
+        }
+
+        private static Encoding GetEncoding(string text)
+        {
+            if (!string.IsNullOrEmpty(text))
+            {
+                foreach (char c in text)
+                {
+                    // Same verification as in ZipHelper
+                    if (c > 126 || c < 32)
+                    {
+                        return Encoding.UTF8;
+                    }
                 }
             }
 
-            foreach (Encoding encoding in new[] { Encoding.Latin1, Encoding.UTF8 })
-            {
-                yield return new object[] { "ƒ‰÷ˆ’ı‹¸", encoding };
-            }
+            return Encoding.ASCII;
         }
-
-        // Ensures the specified comment is returned as a non-null string no longer than ushort.MaxValue.
-        private static string GetExpectedComment(string? comment)
-        {
-            string nonNullComment = comment ?? string.Empty;
-            int nonNullCommentMaxLength = nonNullComment.Length > ushort.MaxValue ? ushort.MaxValue : nonNullComment.Length;
-            return nonNullComment.Substring(0, nonNullCommentMaxLength);
-        }
-
     }
 }

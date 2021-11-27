@@ -221,28 +221,9 @@ namespace System.IO.Compression
         [AllowNull]
         public string Comment
         {
-            get
-            {
-                if (_archiveCommentAsString == null)
-                {
-                    _archiveCommentAsString = _archiveComment != null ? ZipHelper.DecodeBytesToString(EntryNameAndCommentEncoding, _archiveComment) : string.Empty;
-                }
-                return _archiveCommentAsString;
-            }
-            set
-            {
-                _archiveCommentAsString = null; // Will re-acquire value in getter if needed.
-                _archiveComment = null; // Gets refreshed below if needed.
-
-                if (value != null)
-                {
-                    _archiveComment = ZipHelper.EncodeStringToBytes(value, EntryNameAndCommentEncoding, out _);
-                    if (_archiveComment.Length > ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength)
-                    {
-                        _archiveComment = _archiveComment[0..ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength];
-                    }
-                }
-            }
+            get => _archiveCommentAsString ?? string.Empty;
+            set => (_archiveCommentAsString, _archiveComment) =
+                ZipHelper.EncodeAndTruncateStringToBytes(value, EntryNameAndCommentEncoding, ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength, out _);
         }
 
         /// <summary>
@@ -381,7 +362,7 @@ namespace System.IO.Compression
 
         internal Encoding? EntryNameAndCommentEncoding
         {
-            get { return _entryNameAndCommentEncoding; }
+            get => _entryNameAndCommentEncoding;
 
             private set
             {
@@ -582,7 +563,19 @@ namespace System.IO.Compression
 
                 _expectedNumberOfEntries = eocd.NumberOfEntriesInTheCentralDirectory;
 
-                _archiveComment = eocd.ArchiveComment;
+                if (eocd.ArchiveComment.Length > 0)
+                {
+                    _archiveComment = eocd.ArchiveComment;
+                    _archiveCommentAsString = ZipHelper.TruncateEncodedBytesAndReturnString(
+                        ref _archiveComment,
+                        EntryNameAndCommentEncoding ?? Encoding.UTF8,
+                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength);
+                }
+                else
+                {
+                    _archiveComment = null;
+                    _archiveCommentAsString = null;
+                }
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 

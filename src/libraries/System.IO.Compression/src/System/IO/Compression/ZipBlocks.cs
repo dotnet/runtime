@@ -453,7 +453,7 @@ namespace System.IO.Compression
         public long RelativeOffsetOfLocalHeader;
 
         public byte[] Filename;
-        public byte[]? FileComment;
+        public byte[] FileComment;
         public List<ZipGenericExtraField>? ExtraFields;
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null

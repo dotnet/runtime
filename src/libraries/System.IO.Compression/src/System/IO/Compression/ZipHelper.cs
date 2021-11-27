@@ -18,20 +18,22 @@ namespace System.IO.Compression
 
         private static readonly DateTime s_invalidDateIndicator = new DateTime(ValidZipDate_YearMin, 1, 1, 0, 0, 0);
 
-        internal static bool RequiresUnicode(string test)
+        internal static Encoding GetEncoding(string text)
         {
-            Debug.Assert(test != null);
-
-            foreach (char c in test)
+            if (!string.IsNullOrEmpty(text))
             {
-                // The Zip Format uses code page 437 when the Unicode bit is not set. This format
-                // is the same as ASCII for characters 32-126 but differs otherwise. If we can fit
-                // the string into CP437 then we treat ASCII as acceptable.
-                if (c > 126 || c < 32)
-                    return true;
+                foreach (char c in text)
+                {
+                    // The Zip Format uses code page 437 when the Unicode bit is not set. This format
+                    // is the same as ASCII for characters 32-126 but differs otherwise. If we can fit
+                    // the string into CP437 then we treat ASCII as acceptable.
+                    if (c > 126 || c < 32)
+                    {
+                        return Encoding.UTF8;
+                    }
+                }
             }
-
-            return false;
+            return Encoding.ASCII;
         }
 
         /// <summary>
@@ -196,21 +198,55 @@ namespace System.IO.Compression
         }
 
         // Converts the specified string into bytes using the optional specified encoding. If null, then the encoding is calculated from the string itself.
-        internal static byte[] EncodeStringToBytes(string text, Encoding? encoding, out bool isUTF8)
+        internal static byte[] EncodeStringToBytes(string? text, Encoding? encoding, out bool isUTF8)
         {
-            Debug.Assert(text != null);
-
+            if (text == null)
+            {
+                text = string.Empty;
+            }
             if (encoding == null)
-                encoding = RequiresUnicode(text) ? Encoding.UTF8 : Encoding.ASCII;
-
+            {
+                encoding = GetEncoding(text);
+            }
             isUTF8 = encoding.CodePage == 65001;
             return encoding.GetBytes(text);
         }
 
-        // Converts the specified bytes into a string of the proper encoding for this ZipArchive.
-        internal static string DecodeBytesToString(Encoding? encoding, byte[] bytes)
+        internal static (string, byte[]) EncodeAndTruncateStringToBytes(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
         {
-            return (encoding ?? Encoding.UTF8).GetString(bytes);
+            if (text == null)
+            {
+                text = string.Empty;
+            }
+            if (encoding == null)
+            {
+                encoding = GetEncoding(text);
+            }
+            byte[] bytes = EncodeStringToBytes(text, encoding, out isUTF8);
+            string truncatedString = TruncateEncodedBytesAndReturnString(ref bytes, encoding, maxBytes);
+            return (truncatedString, bytes);
+        }
+
+        internal static string TruncateEncodedBytesAndReturnString(ref byte[] bytes, Encoding encoding, int maxBytes)
+        {
+            TruncateCommentIfNeeded(ref bytes, encoding, maxBytes);
+            return encoding.GetString(bytes);
+        }
+
+        // Truncate the string if larger that max total bytes allowed.
+        // Ensure we cut whole chars, which depend on encoding.
+        // Returns true if it had to be truncated.
+        internal static void TruncateCommentIfNeeded(ref byte[] bytes, Encoding encoding, int maxBytes)
+        {
+            if (bytes.Length > maxBytes)
+            {
+                int bytesPerChar = encoding.GetMaxByteCount(1);
+
+                int encodedCharsThatFit = maxBytes / bytesPerChar;
+                int totalBytesToTruncate = encodedCharsThatFit * bytesPerChar;
+
+                bytes = bytes[0..totalBytesToTruncate];
+            }
         }
     }
 }
