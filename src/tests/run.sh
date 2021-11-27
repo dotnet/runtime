@@ -17,7 +17,7 @@ function print_usage {
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
     echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
-    echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2' 
+    echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
     echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
     echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
@@ -181,10 +181,10 @@ do
             ;;
         --test-env=*)
             testEnv=${i#*=}
-            ;;            
+            ;;
         --gcstresslevel=*)
             export COMPlus_GCStress=${i#*=}
-            ;;            
+            ;;
         --gcname=*)
             export COMPlus_GCName=${i#*=}
             ;;
@@ -236,7 +236,7 @@ fi
 if [ "$buildOS" = "Android" ]; then
     runtestPyArguments+=("-os" "Android")
 fi
-    
+
 if [[ -n "$testRootDir" ]]; then
     runtestPyArguments+=("-test_location" "$testRootDir")
     echo "Test Location                 : ${testRootDir}"

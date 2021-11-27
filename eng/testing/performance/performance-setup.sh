@@ -162,7 +162,7 @@ while (($# > 0)); do
       echo "  --internal                     If the benchmarks are running as an official job."
       echo "  --monodotnet                   Pass the path to the mono dotnet for mono performance testing."
       echo "  --wasm                         Path to the unpacked wasm runtime pack."
-      echo "  --wasmaot                      Indicate wasm aot"  
+      echo "  --wasmaot                      Indicate wasm aot"
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --alpine                       Set for runs on Alpine"
       echo ""
@@ -202,7 +202,7 @@ if [[ "$internal" == true ]]; then
     helix_source_prefix="official"
     creator=
     extra_benchmark_dotnet_arguments=
-    
+
     if [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
@@ -291,7 +291,7 @@ if [[ -n "$wasm_runtime_loc" ]]; then
     rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
     rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
     if [[ "$wasmaot" == "true" ]]; then
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600" 
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600"
     else
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
     fi

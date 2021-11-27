@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ] ; then
 	SED="gsed"
 fi
 
@@ -38,7 +38,7 @@ TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | $SED -e 's/ /_/g' -e 's/\./_/g' 
 echo $TEST_FILE
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/BYTE_0/${TEST_BYTE_0}/g" -e "s/BYTE_1/${TEST_BYTE_1}/g" > $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'

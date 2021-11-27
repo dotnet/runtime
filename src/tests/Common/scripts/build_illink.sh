@@ -25,19 +25,19 @@ do
             print_usage
             exit $EXIT_CODE_SUCCESS
             ;;
-	
+
         --clone)
             clone=1
             ;;
-	
+
         --arch=*)
             arch=${i#*=}
             ;;
-	
+
         --os=*)
             os=${i#*=}
             ;;
-	
+
         *)
             echo "Unknown switch: $i"
             print_usage

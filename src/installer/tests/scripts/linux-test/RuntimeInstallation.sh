@@ -20,7 +20,7 @@ if [[ "$ID" == "ol" ]]; then
 fi
 if [[ "$distro" == "oraclelinux" || "$distro" == "rhel" ||  "$distro" == "opensuse" ]]; then
 	version=$(echo $version | cut -d . -f 1)
-fi      
+fi
 
 echo $distro:$version
 
@@ -32,7 +32,7 @@ else
 fi
 
 install_curl(){
-	apt-get -y install curl 
+	apt-get -y install curl
 	if [ $? -ne 0 ]; then
 		apt-get update
 		apt-get -y install curl
@@ -40,9 +40,9 @@ install_curl(){
 }
 download_from_blob_deb(){
 	BLOB_PATH=$1
-	if curl --output /dev/null --head --fail $BLOB_PATH; then  
+	if curl --output /dev/null --head --fail $BLOB_PATH; then
 		curl -O -s $BLOB_PATH
-	else 
+	else
 		echo "Could not extract file from blob"
 		exit 1
 	fi
@@ -83,9 +83,9 @@ install_wget_zypper(){
 }
 download_from_blob_rpm(){
 	BLOB_PATH=$1
-	if wget --spider $BLOB_PATH; then  
-		wget -nv $BLOB_PATH 
-	else 
+	if wget --spider $BLOB_PATH; then
+		wget -nv $BLOB_PATH
+	else
 		echo "Could not extract file from blob"
 		exit 1
 	fi
@@ -148,10 +148,10 @@ test_result_install(){
         fi
 }
 uninstall_latest_runtime_warning(){
-	if [[ "$runtime_version" == "latest" ]]; then 
+	if [[ "$runtime_version" == "latest" ]]; then
 		echo "Specify runtime version to unistall. Type dotnet --list-runtimes to see runtimes versions installed"
 		exit 1
-	fi 
+	fi
 }
 test_result_uninstall(){
         if [[ -z "$runtime_installed_packages" ]]; then
@@ -170,8 +170,8 @@ test_result_uninstall(){
 
 if [[ "$distro" == "ubuntu" || "$distro" == "debian" ]]; then
 	if [[ "$2" == "install" ]]; then
-		install_curl 
-		
+		install_curl
+
 		download_runtime_packages_deb
 		install_runtime_packages_deb
 		dotnet --list-runtimes
@@ -179,10 +179,10 @@ if [[ "$distro" == "ubuntu" || "$distro" == "debian" ]]; then
 		determine_runtime_version_deb
 		determine_success_install
 		test_result_install
-	
+
 	elif [[ "$2" == "uninstall" ]]; then
 		uninstall_latest_runtime_warning
-	fi		
+	fi
 
 	if [[ "$3" == "uninstall" || "$2" == "uninstall" ]]; then
 		check_if_runtime_is_installed_deb
@@ -204,7 +204,7 @@ elif [[ "$distro" == "fedora" || "$distro" == "centos" || "$distro" == "oracleli
 		test_result_install
 
 	elif [[ "$2" == "uninstall" ]]; then
-		uninstall_latest_runtime_warning		
+		uninstall_latest_runtime_warning
 	fi
 	if [[ "$3" == "uninstall" || "$2" == "uninstall" ]]; then
 		check_if_runtime_is_installed_rpm
@@ -219,20 +219,20 @@ elif [[ "$distro" == "opensuse" || "$distro" == "sles" ]]; then
 		download_runtime_packages_rpm
 		install_runtime_packages_zypper
 		dotnet --list-runtimes
-		
+
 		determine_runtime_version_rpm
 		determine_success_install
 		test_result_install
-	
+
 	elif [[ "$2" == "uninstall" ]]; then
-		uninstall_latest_runtime_warning		
+		uninstall_latest_runtime_warning
 	fi
 
 	if [[ "$3" == "uninstall" || "$2" == "uninstall" ]]; then
 		check_if_runtime_is_installed_rpm
 		uninstall_runtime_zypper
 		test_result_uninstall
-	fi	
+	fi
 fi
 
 if [ -e $log_file ]; then

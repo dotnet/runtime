@@ -20,7 +20,7 @@ if [[ "$ID" == "ol" ]]; then
 fi
 if [[ "$distro" == "oraclelinux" || "$distro" == "rhel" || "$distro" == "opensuse" ]]; then
 	version=$(echo $version | cut -d . -f 1)
-fi      
+fi
 
 echo $distro:$version
 
@@ -31,7 +31,7 @@ BLOB_SDK_DIR="https://dotnetcli.blob.core.windows.net/dotnet/Sdk"
 BLOB_ASPNET_DIR="https://dotnetcli.blob.core.windows.net/dotnet/aspnetcore/Runtime"
 
 install_curl(){
-	apt-get -y install curl 
+	apt-get -y install curl
 	if [ $? -ne 0 ]; then
 		apt-get update
 		apt-get -y install curl
@@ -39,9 +39,9 @@ install_curl(){
 }
 download_from_blob_deb(){
 	BLOB_PATH=$1
-	if curl --output /dev/null --head --fail $BLOB_PATH; then  
+	if curl --output /dev/null --head --fail $BLOB_PATH; then
 		curl -O -s $BLOB_PATH
-	else 
+	else
 		echo "Could not extract file from blob"
 		exit 1
 	fi
@@ -117,9 +117,9 @@ install_wget_zypper(){
 }
 download_from_blob_rpm(){
 	BLOB_PATH=$1
-	if wget --spider $BLOB_PATH; then  
+	if wget --spider $BLOB_PATH; then
 		wget -nv $BLOB_PATH
-	else 
+	else
 		echo "Could not extract file from blob"
 		exit 1
 	fi
@@ -191,7 +191,7 @@ uninstall_dotnet_yum(){
 	dotnet_installed_packages=$(rpm -qa | grep -e dotnet -e aspnet)
 }
 uninstall_dotnet_zypper(){
-	zypper -n rm $(rpm -qa | grep -e dotnet -e aspnet) 
+	zypper -n rm $(rpm -qa | grep -e dotnet -e aspnet)
 	dotnet_installed_packages=$(rpm -qa | grep -e dotnet -e aspnet)
 }
 checkout_new_folder(){
@@ -207,7 +207,7 @@ run_app(){
 		cd dockerApp
 		dotnet restore -s https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
 		project_output=$(dotnet run)
-		if [[ "$project_output" == 'Hello World!' ]] ; 
+		if [[ "$project_output" == 'Hello World!' ]] ;
 		then
 			sucess_install=1;
 		else
@@ -225,7 +225,7 @@ test_result_install(){
 	fi
 }
 test_result_uninstall(){
-	
+
 	if [[ -z "$dotnet_installed_packages" ]]; then
 		sucess_uninstall=1;
 	else
@@ -241,53 +241,53 @@ test_result_uninstall(){
 	fi
 }
 uninstall_latest_sdk_warning(){
-	if [[ "$sdk_version" == "latest" ]]; then 
+	if [[ "$sdk_version" == "latest" ]]; then
 		echo "Specify sdk version to unistall. Type dotnet --list-sdks to see sdks versions installed"
 		exit 1
-	fi 
+	fi
 }
 
 if [[ "$distro" == "ubuntu" || "$distro" == "debian" ]]; then
 	if [[ "$2" == "install" ]]; then
-		install_curl 
-	
+		install_curl
+
 		download_sdk_package_deb
-				
+
 		determine_aspnet_version_install_deb
-		download_aspnet_package_deb 
+		download_aspnet_package_deb
 
 		determine_runtime_aspnet_install_deb
 		determine_runtime_sdk_install_deb
-		
+
 		runtime_version="$runtime_aspnet"
 		download_runtime_packages_deb
 		install_runtime_packages_deb
-	 
+
 		if [ "$runtime_aspnet" != "$runtime_sdk" ]; then
 			runtime_version="$runtime_sdk"
 			checkout_new_folder
 			download_runtime_packages_deb
 			install_runtime_packages_deb
 			checkout_previous_folder
-		fi 
+		fi
 
 		install_aspnet_and_sdk_deb
-	 
+
 		dotnet --list-runtimes
 		dotnet --list-sdks
 
 		run_app
 		test_result_install
-	
+
 	elif [[ "$2" == "uninstall" ]]; then
-		uninstall_latest_sdk_warning		
+		uninstall_latest_sdk_warning
 		check_if_sdk_is_installed_deb
-		
+
 		determine_runtime_sdk_uninstall_deb
 		determine_aspnet_package_name_uninstall_deb
 		determine_runtime_aspnet_uninstall_deb
-		
-	fi		
+
+	fi
 
 	if [[ "$3" == "uninstall" && "$sucess_install" == 1 || "$2" == "uninstall" ]]; then
 		uninstall_dotnet_deb
@@ -299,18 +299,18 @@ elif [[ "$distro" == "fedora" || "$distro" == "centos" || "$distro" == "oracleli
 		install_wget_yum
 
 		download_sdk_package_rpm
-		
+
 		determine_aspnet_version_install_rpm
 		download_aspnet_package_rpm
 
 		determine_runtime_aspnet_install_rpm
 		determine_runtime_sdk_install_rpm
-		
+
 		checkout_new_folder
 		runtime_version="$runtime_aspnet"
 		download_runtime_packages_rpm
 		install_runtime_deps_package_yum
-		
+
 		if [ "$runtime_aspnet" != "$runtime_sdk" ]; then
 			runtime_version="$runtime_sdk"
 			download_runtime_packages_rpm
@@ -328,13 +328,13 @@ elif [[ "$distro" == "fedora" || "$distro" == "centos" || "$distro" == "oracleli
 		test_result_install
 
 	elif [[ "$2" == "uninstall" ]]; then
-		uninstall_latest_sdk_warning		
+		uninstall_latest_sdk_warning
 		check_if_sdk_is_installed_rpm
-		
+
 		determine_runtime_sdk_uninstall_rpm
 		determine_aspnet_package_name_uninstall_rpm
 		determine_runtime_aspnet_uninstall_rpm
-                        
+
                 echo $runtime_sdk
                 echo $runtime_aspnet
 
@@ -350,18 +350,18 @@ elif [[ "$distro" == "opensuse" || "$distro" == "sles" ]]; then
 		install_wget_zypper
 
 		download_sdk_package_rpm
-		
+
 		determine_aspnet_version_install_rpm
 		download_aspnet_package_rpm
 
 		determine_runtime_aspnet_install_rpm
 		determine_runtime_sdk_install_rpm
-		
+
 		checkout_new_folder
 		runtime_version="$runtime_aspnet"
 		download_runtime_packages_rpm
 		install_runtime_deps_package_zypper
-		
+
 		if [ "$runtime_aspnet" != "$runtime_sdk" ]; then
 			runtime_version="$runtime_sdk"
 			download_runtime_packages_rpm
@@ -375,18 +375,18 @@ elif [[ "$distro" == "opensuse" || "$distro" == "sles" ]]; then
 
 		dotnet --list-runtimes
 		dotnet --list-sdks
-		
+
 		run_app
 		test_result_install
 
 	elif [[ "$2" == "uninstall" ]]; then
-		uninstall_latest_sdk_warning		
+		uninstall_latest_sdk_warning
 		check_if_sdk_is_installed_rpm
-		
+
 		determine_runtime_sdk_uninstall_rpm
 		determine_aspnet_package_name_uninstall_rpm
 		determine_runtime_aspnet_uninstall_rpm
-                        
+
 		echo $runtime_sdk
 		echo $runtime_aspnet
 
@@ -395,7 +395,7 @@ elif [[ "$distro" == "opensuse" || "$distro" == "sles" ]]; then
 	if [[ "$3" == "uninstall" && "$sucess_install" == 1 || "$2" == "uninstall" ]]; then
 		uninstall_dotnet_zypper
 		test_result_uninstall
-	fi	
+	fi
 fi
 
 if [ -e $log_file ]; then

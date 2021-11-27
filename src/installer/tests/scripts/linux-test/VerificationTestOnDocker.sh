@@ -25,6 +25,6 @@ fi
 while IFS='' read -r image || [[ -n "$image" ]]; do
 	echo $image
 	docker run --rm -v $(pwd):/docker -t $image /bin/bash /docker/$InstallationScript $2 $3 $4
-done <$ImagesFile 
+done <$ImagesFile
 
 cat $InstallationTestResult >> $InstallationTestLogFile

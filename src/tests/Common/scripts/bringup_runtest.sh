@@ -45,7 +45,7 @@ function print_usage {
     echo '  --test-env                       : Script to set environment variables for tests'
     echo '  --copyNativeTestBin              : Explicitly copy native test components into the test dir'
     echo '  --crossgen                       : Precompiles the framework managed assemblies'
-    echo '  --runcrossgentests               : Runs the ready to run tests' 
+    echo '  --runcrossgentests               : Runs the ready to run tests'
     echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
     echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
@@ -675,14 +675,14 @@ function print_info_from_core_file {
 function inspect_and_delete_core_files {
     # This function prints some basic information from core files in the current
     # directory and deletes them immediately.
-    
+
     # Depending on distro/configuration, the core files may either be named "core"
-    # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to 
+    # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to
     # determine which one it is.
     # On OS X/macOS, we checked the kern.corefile value before enabling core dump
     # generation, so we know it always includes the PID.
     local core_name_uses_pid=0
-    if [[ (( -e /proc/sys/kernel/core_uses_pid ) && ( "1" == $(cat /proc/sys/kernel/core_uses_pid) )) 
+    if [[ (( -e /proc/sys/kernel/core_uses_pid ) && ( "1" == $(cat /proc/sys/kernel/core_uses_pid) ))
           || ( "$(uname -s)" == "Darwin" ) ]]; then
         core_name_uses_pid=1
     fi
@@ -1136,10 +1136,10 @@ do
             ;;
         --test-env=*)
             testEnv=${i#*=}
-            ;;            
+            ;;
         --gcstresslevel=*)
             export COMPlus_GCStress=${i#*=}
-            ;;            
+            ;;
         --gcname=*)
             export COMPlus_GCName=${i#*=}
             ;;
