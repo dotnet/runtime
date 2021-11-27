@@ -714,7 +714,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (error != null)
             {
-                //Assert.InRange(offset, 0, int.MaxValue);
+                Assert.InRange(offset, 0, int.MaxValue);
                 Throws(pattern, options, error.Value, offset, () => new Regex(pattern, options));
                 return;
             }
