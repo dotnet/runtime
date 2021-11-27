@@ -177,7 +177,7 @@
     <value>The system limit on the number of inotify instances has been reached.</value>
   </data>
   <data name="IOException_INotifyInstanceUserLimitExceeded_Value" xml:space="preserve">
-    <value>The configured user limit ({0}) on the number of inotify instances has been reached, or the per-process limit on the number of open file descriptors has been reached.</value>
+    <value>The configured user limit ({0}) on the number of inotify instances has been reached (see {1}), or the per-process limit on the number of open file descriptors has been reached.</value>
   </data>
   <data name="IOException_INotifyWatchesUserLimitExceeded_Value" xml:space="preserve">
     <value>The configured user limit ({0}) on the number of inotify watches has been reached, or the operating system failed to allocate a required resource.</value>
