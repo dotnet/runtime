@@ -41,7 +41,7 @@ namespace System.IO
                     case Interop.Error.EMFILE:
                         string? maxValue = ReadMaxUserLimit(MaxUserInstancesPath);
                         string message = !string.IsNullOrEmpty(maxValue) ?
-                            SR.Format(SR.IOException_INotifyInstanceUserLimitExceeded_Value, maxValue) :
+                            SR.Format(SR.IOException_INotifyInstanceUserLimitExceeded_Value, maxValue, MaxUserInstancesPath) :
                             SR.IOException_INotifyInstanceUserLimitExceeded;
                         throw new IOException(message, error.RawErrno);
                     case Interop.Error.ENFILE:
