@@ -55,7 +55,7 @@
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadsDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePALTestArchive" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
 
     <ItemGroup>
@@ -124,7 +124,7 @@
 
   <Import Project="testgrouping.proj" />
 
-  <Target Name="DiscoverAllXUnitWrappers">
+  <Target Name="DiscoverLegacyXUnitWrappers">
     <ItemGroup>
       <_XUnitWrapperDll Include="%(TestGrouping.XUnitWrapperDll)" Condition="Exists('%(XUnitWrapperDll)')">
         <PayloadGroup>%(TestGroup)</PayloadGroup>
@@ -146,7 +146,14 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PreparePayloadDirectory" Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)" DependsOnTargets="DiscoverAllXUnitWrappers">
+  <Target Name="DiscoverMergedTestWrappers">
+    <ItemGroup>
+      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" />
+      <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareLegacyPayloadDirectory" Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)" DependsOnTargets="DiscoverLegacyXUnitWrappers">
     <PropertyGroup>
       <_FileDirectory>%(_XUnitWrapperDll.RootDir)%(Directory)</_FileDirectory>
       <_PayloadGroup>%(_XUnitWrapperDll.PayloadGroup)</_PayloadGroup>
@@ -184,6 +191,7 @@
 
       <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
       <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
+      <ReducedPayloadFilesFinal Remove="@(_MergedWrapperRunScript)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
@@ -222,7 +230,9 @@
           Command="tar -czvf $(PayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
   </Target>
 
-  <Target Name="PreparePayloadsDirectories" DependsOnTargets="PreparePayloadDirectory">
+  <Target Name="PreparePayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectories;PrepareLegacyPayloadDirectories" />
+
+  <Target Name="PrepareLegacyPayloadDirectories" DependsOnTargets="PrepareLegacyPayloadDirectory">
     <PropertyGroup>
       <_PayloadGroups>@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())</_PayloadGroups>
     </PropertyGroup>
@@ -237,12 +247,51 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
 
+  <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
+    <PropertyGroup>
+      <_MergedWrapperDirectory>%(_MergedWrapperRunScript.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperRelativeDir>%(_MergedWrapperRunScript.RelativeDir)</_MergedWrapperRelativeDir>
+      <_MergedWrapperFile>%(_MergedWrapperRunScript.FileName)</_MergedWrapperFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_Scenario Include="$(_Scenarios.Split(','))" />
+      <_ProjectsToBuild Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedWrapperRelativeDir)</AdditionalProperties>
+      </_ProjectsToBuild>
+    </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectory" Outputs="%(_MergedWrapperRunScript.FileName)" DependsOnTargets="DiscoverMergedTestWrappers">
+    <ItemGroup>
+      <_PayloadFiles Include="$(_MergedWrapperDirectory)**" />
+      <_PayloadFiles Update="@(_PayloadFiles)">
+        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
+             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </_PayloadFiles>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Remove the managed pdbs from our payloads.
+           This is for performance reasons to reduce our helix payload size  -->
+      <ReducedPayloadFiles Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
+
+      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
+      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
+  </Target>
+
   <PropertyGroup>
     <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
     <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
   </PropertyGroup>
 
-  <Target Name="ZipPayloadDirectory" AfterTargets="PreparePayloadsDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
+  <Target Name="ZipPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
     <ItemGroup>
       <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
       <Payloads Update="@(Payloads)">

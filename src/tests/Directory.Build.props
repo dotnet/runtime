@@ -167,6 +167,8 @@
   <PropertyGroup>
     <TestWrapperTargetsWindows>false</TestWrapperTargetsWindows>
     <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'Android' And '$(TargetArchitecture)' == 'arm64' )">true</TestWrapperTargetsWindows>
+    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
+    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
   </PropertyGroup>
 
   <PropertyGroup>

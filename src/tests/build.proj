@@ -7,8 +7,6 @@
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
-    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
-    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
     <Language>C#</Language>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
