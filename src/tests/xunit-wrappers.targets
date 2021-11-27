@@ -1,6 +1,10 @@
 <Project>
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <MSBuild
+      Projects="$(MSBuildProjectFile)"
+      Targets="CreateXunitWrapper;BuildXunitWrapper"
+      Properties="_CMDDIR=%(TestDirectories.Identity)"
+      Condition="'@(TestDirectories)' != ''" />
   </Target>
 
   <Target Name="CreateXunitWrapper" DependsOnTargets="CreateXunitFacts">
@@ -255,6 +259,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" />
       <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <AllCMDsPresent Remove="@(MergedRunnableTestPaths)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(AllCMDsPresent)' != ''">
       <TestGroupingDistinctWithCase Include="@(TestGrouping->Metadata('FullPath')->DistinctWithCase())" />
       <TestGroupingNotRelevant Include="@(TestGroupingDistinctWithCase)" Exclude="@(AllCMDsPresent)" />
       <GroupedCMDs Include="@(TestGroupingDistinctWithCase)" Exclude="@(TestGroupingNotRelevant)" />

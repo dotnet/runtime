@@ -278,9 +278,6 @@
       <!-- Remove the managed pdbs from our payloads.
            This is for performance reasons to reduce our helix payload size  -->
       <ReducedPayloadFiles Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
-
-      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
-      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
