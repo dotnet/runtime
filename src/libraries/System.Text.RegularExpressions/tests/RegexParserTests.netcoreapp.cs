@@ -110,7 +110,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?P<a>.)(?P<a>.)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData(@"[a-\A]", RegexOptions.None, RegexParseError.UnrecognizedEscape, 5)]
         [InlineData(@"[a-\z]", RegexOptions.None, RegexParseError.UnrecognizedEscape, 5)]
-        [InlineData(@"[a-\b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
+        [InlineData(@"[a-\b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)] // Nim: not an error
         [InlineData(@"[a-\-]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
         [InlineData(@"[a-\-b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
         [InlineData(@"[a-\-\-b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
@@ -132,7 +132,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"?", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
         [InlineData(@"?|?", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
         [InlineData(@"?abc", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
-        [InlineData(@"(?P<abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_>abc", RegexOptions.None, null)]
+        [InlineData(@"(?P<abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_>abc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)] // Nim: not an error
         [InlineData(@"(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData(@"(?u-q)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData(@"(?uq)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
@@ -142,7 +142,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(b(a)", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 5)]
         [InlineData(@"[-", RegexOptions.None, RegexParseError.UnterminatedBracket, 2)]
         [InlineData(@"[-a", RegexOptions.None, RegexParseError.UnterminatedBracket, 3)]
-        [InlineData(@"[[:abc:]]", RegexOptions.None, null)] // Nim:  "Invalid ascii set. `abc` is not a valid name"
+        [InlineData(@"[[:abc:]]", RegexOptions.None, null)] // Nim: "Invalid ascii set. `abc` is not a valid name"
         [InlineData(@"[[:alnum:", RegexOptions.None, RegexParseError.UnterminatedBracket, 9)]
         [InlineData(@"[[:alnum]]", RegexOptions.None, null)] // Nim: "Invalid ascii set. Expected [:name:]"
         [InlineData(@"[]", RegexOptions.None, RegexParseError.UnterminatedBracket, 2)]
@@ -151,12 +151,11 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[\\", RegexOptions.None, RegexParseError.UnterminatedBracket, 3)]
         [InlineData(@"[^]", RegexOptions.None, RegexParseError.UnterminatedBracket, 3)]
         [InlineData(@"[a-", RegexOptions.None, RegexParseError.UnterminatedBracket, 3)]
-        [InlineData(@"[a-\b]", RegexOptions.None, null)]
         [InlineData(@"[a-\w]", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 5)]
         [InlineData(@"[a", RegexOptions.None, RegexParseError.UnterminatedBracket, 2)]
         [InlineData(@"[abc", RegexOptions.None, RegexParseError.UnterminatedBracket, 4)]
         [InlineData(@"[d-c]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 4)]
-        [InlineData(@"[z-[:alnum:]]", RegexOptions.None, null)] // Nim:  "Invalid set range. Start must be lesser than end"
+        [InlineData(@"[z-[:alnum:]]", RegexOptions.None, null)] // Nim: "Invalid set range. Start must be lesser than end"
         [InlineData(@"{10}", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
         [InlineData(@"*abc", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
         [InlineData(@"\12", RegexOptions.None, null)] // Nim: "Invalid octal literal. Expected 3 octal digits, but found 2"
@@ -177,7 +176,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\x{00000000A}", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 3)]
         [InlineData(@"\x{2f894", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 3)]
         [InlineData(@"\x{61@}", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 3)]
-        [InlineData(@"\x{7fffffff}", RegexOptions.None, null)]
+        [InlineData(@"\x{7fffffff}", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 3)] // Nim: not an error (supports Unicode beyond basic multilingual plane)
         [InlineData(@"\x{FFFFFFFF}", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 3)]
         [InlineData(@"+", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
         [InlineData(@"+abc", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
@@ -202,8 +201,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"a{1,}*", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 6)]
         [InlineData(@"a{1,}+", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 6)]
         [InlineData(@"a{1,101}", RegexOptions.None, null)]
-        [InlineData(@"a{1,x}", RegexOptions.None, null) // Nim error
-        [InlineData(@"a{1", RegexOptions.None, null) // Nim error
+        [InlineData(@"a{1,x}", RegexOptions.None, null)] // Nim error
+        [InlineData(@"a{1", RegexOptions.None, null)] // Nim error
         [InlineData(@"a{1}??", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 6)]
         [InlineData(@"a{1}?", RegexOptions.None, null)]
         [InlineData(@"a{1}*", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 5)]
