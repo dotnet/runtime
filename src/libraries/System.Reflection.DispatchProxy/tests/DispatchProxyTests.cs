@@ -631,6 +631,9 @@ namespace DispatchProxyTests
         [Fact]
         public static void Test_Unloadability()
         {
+            if (typeof(DispatchProxyTests).Assembly.Location == "")
+                return;
+
             WeakReference wr = CreateProxyInUnloadableAlc();
 
             for (int i = 0; i < 10 && wr.IsAlive; i++)
@@ -656,6 +659,9 @@ namespace DispatchProxyTests
         [Fact]
         public static void Test_Multiple_AssemblyLoadContexts()
         {
+            if (typeof(DispatchProxyTests).Assembly.Location == "")
+                return;
+
             object proxyDefaultAlc = CreateTestDispatchProxy(typeof(TestDispatchProxy));
             Assert.True(proxyDefaultAlc.GetType().IsAssignableTo(typeof(TestDispatchProxy)));
 
