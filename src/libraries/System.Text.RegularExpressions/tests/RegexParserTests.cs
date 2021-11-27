@@ -709,21 +709,32 @@ namespace System.Text.RegularExpressions.Tests
             Parse(pattern, options, error, offset);
         }
 
+
         private static void Parse(string pattern, RegexOptions options, RegexParseError? error, int offset = -1)
         {
             if (error != null)
             {
                 Assert.InRange(offset, 0, int.MaxValue);
-                Throws(error.Value, offset, () => new Regex(pattern, options));
+                Throws(pattern, options, error.Value, offset, () => new Regex(pattern, options));
                 return;
             }
 
             Assert.Equal(-1, offset);
+            LogActual(pattern, options, RegexParseError.Unknown, -1);
 
             // Nothing to assert here without having access to internals.
             new Regex(pattern, options); // Does not throw
 
             ParsePatternFragments(pattern, options);
+        }
+
+        private static void LogActual(string pattern, RegexOptions options, RegexParseError error, int offset)
+        {         
+            string s = (error == RegexParseError.Unknown) ?
+                @$"        [InlineData(@""{pattern}"", RegexOptions.{options.ToString()}, null)]" :
+                @$"        [InlineData(@""{pattern}"", RegexOptions.{options.ToString()}, RegexParseError.{error.ToString()}, {offset})]";
+
+            // File.AppendAllText(@"/tmp/out.cs", s + "\n"); // for updating baseline
         }
 
         private static void ParsePatternFragments(string pattern, RegexOptions options)
@@ -755,7 +766,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         /// <param name="error">The expected parse error</param>
         /// <param name="action">The action to invoke.</param>
-        static partial void Throws(RegexParseError error, int offset, Action action);
+        static partial void Throws(string pattern, RegexOptions options, RegexParseError error, int offset, Action action);
 
         /// <summary>
         /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException depending on the
