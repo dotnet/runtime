@@ -42,7 +42,7 @@ namespace System.Numerics
             19, 27, 23, 06, 26, 05, 04, 31
         };
 
-        private static readonly uint[] s_crcTable = Sse42.IsSupported || Crc32.IsSupported ?
+        private static readonly uint[] s_crcTable = Sse42.X64.IsSupported || Crc32.Arm64.IsSupported ?
             Array.Empty<uint>() : Crc32ReflectedTable.Generate(0x82F63B78u);
 
         /// <summary>
