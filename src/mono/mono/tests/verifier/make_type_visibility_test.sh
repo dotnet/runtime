@@ -12,7 +12,7 @@ TEST_INIT=$4
 TEST_EXTRA_LOC=$5
 
 
-if [ "$TEST_EXTRA_LOC" != "" ]; then
+if [ -n "$TEST_EXTRA_LOC" ]; then
 	EXTRA_LOC=", $TEST_EXTRA_LOC V_1"
 fi
 

@@ -99,7 +99,7 @@ PAL_XUNIT_TEST_LIST=$PAL_TEST_OUTPUT_DIR/pal_tests.xml
 PAL_OUT_FILE=$PAL_TEST_OUTPUT_DIR/pal_test_out
 
 # Remove and recreate the temporary test output directory, and the directory where output files were requested to be copied.
-if [ "$COPY_TO_TEST_OUTPUT_DIR" == "$PAL_TEST_OUTPUT_DIR" ]; then
+if [[ "$COPY_TO_TEST_OUTPUT_DIR" == "$PAL_TEST_OUTPUT_DIR" ]]; then
   if [ -e $PAL_TEST_OUTPUT_DIR ]; then
     rm -f -r $PAL_TEST_OUTPUT_DIR
   fi

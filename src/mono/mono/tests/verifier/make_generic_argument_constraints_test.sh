@@ -12,11 +12,9 @@ TEST_DEST=$4
 TEST_INST_TYPE=$5
 
 INST_TYPE="DefaultArgument";
-if [ "$TEST_INST_TYPE" != "" ]; then
+if [ -n "$TEST_INST_TYPE" ]; then
 	INST_TYPE="$TEST_INST_TYPE";
 fi
-
-
 
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il

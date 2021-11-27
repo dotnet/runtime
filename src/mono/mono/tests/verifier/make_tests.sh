@@ -495,9 +495,9 @@ done
 
 
 function fix () {
-	if [ "$3" != "" ]; then
+	if [ -n "$3" ]; then
 		A=$3;
-	elif [ "$2" != "" ]; then
+	elif [ -n "$2" ]; then
 		A=$2;
 	else
 		A=$1;
@@ -2180,12 +2180,12 @@ done
 
 #ldobj tests
 function fix_ldobj () {
-	if [ "$3" != "" ]; then
-		A=$3;
-	elif [ "$2" != "" ]; then
-		A=$2;
+	if [ -n "$3" ]; then
+		A="$3";
+	elif [ -n "$2" ]; then
+		A="$2";
 	else
-		A=$1;
+		A="$1";
 	fi
 
 	if [ "$A" = "bool" ]; then

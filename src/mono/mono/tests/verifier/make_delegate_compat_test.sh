@@ -18,7 +18,7 @@ TEST_USE_NATIVE=$9
 TCONV_1="default"
 TCONV_2=""
 
-if [ "$TEST_CCONV1" != "" ]; then
+if [ -z "$TEST_CCONV1" ]; then
 	TCONV_1=$TEST_CCONV1
 	TCONV_2=$TEST_CCONV2
 fi
