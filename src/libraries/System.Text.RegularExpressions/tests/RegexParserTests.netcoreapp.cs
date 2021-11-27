@@ -151,13 +151,23 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(e.Message, e2.Message);
         }
 
+        static void LogActual(string pattern, RegexParseError error, int offset)
+        {
+            // [InlineData(@"[a-z-[b", RegexOptions.None, RegexParseError.UnterminatedBracket, 7)]                
+            string s = (error == RegexParseError.Unknown) ?
+                @$"        [InlineData(@""{pattern}"", RegexOptions.None, null)]\n" :
+                @$"        [InlineData(@""{pattern}"", RegexOptions.None, {error.ToString()}, {offset})]\n";
+
+            // File.AppendAllText(@"/tmp/out.cs", s); // for updating baseline
+        }
+
         /// <summary>
         /// Checks if action throws either a RegexParseException or an ArgumentException depending on the
         /// environment and the supplied error.
         /// </summary>
         /// <param name="error">The expected parse error</param>
         /// <param name="action">The action to invoke.</param>
-        static partial void Throws(RegexParseError error, int offset, Action action)
+        static partial void Throws(string pattern, RegexParseError error, int offset, Action action)
         {
             try
             {
@@ -171,16 +181,19 @@ namespace System.Text.RegularExpressions.Tests
                 if (error == regexParseError)
                 {
                     Assert.Equal(offset, e.Offset);
+                    LogActual(pattern, regexParseError, e.Offset);
                     return;
                 }
 
+                LogActual(pattern, regexParseError, e.Offset);
                 throw new XunitException($"Expected RegexParseException with error {error} offset {offset} -> Actual error: {regexParseError} offset {e.Offset})");
             }
             catch (Exception e)
             {
-                throw new XunitException($"Expected RegexParseException -> Actual: ({e})");
+                throw new XunitException($"Expected RegexParseException for pattern '{pattern}' -> Actual: ({e})");
             }
 
+            LogActual(pattern, RegexParseError.Unknown, -1);
             throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual: No exception thrown");
         }
 
