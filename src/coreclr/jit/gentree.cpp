@@ -16304,7 +16304,7 @@ GenTreeLclVarCommon* GenTree::IsLocalAddrExpr()
 //    Returns true if "this" represents the address of a local, or a field of a local.
 //
 // Notes:
-//    It is mostly used for optimizations but assertion propogation depends on it for correctness.
+//    It is mostly used for optimizations but assertion propagation depends on it for correctness.
 //    So if this function does not recognize a def of a LCL_VAR we can have an incorrect optimization.
 //
 bool GenTree::IsLocalAddrExpr(Compiler*             comp,
