@@ -838,13 +838,13 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
         if (bIsLoadedLayoutPreferred)
         {
             _ASSERTE(bIsLoadedLayoutSuitable);
-            pRetVal = PEImage::CreateLayoutMapped(!bIsFlatLayoutSuitable);
+            pRetVal = PEImage::CreateLoadedLayout(!bIsFlatLayoutSuitable);
         }
 
         if (pRetVal == NULL)
         {
             _ASSERTE(bIsFlatLayoutSuitable);
-            pRetVal = PEImage::CreateLayoutFlat();
+            pRetVal = PEImage::CreateFlatLayout();
             _ASSERTE(pRetVal != NULL);
         }
     }
@@ -854,7 +854,7 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
     return pRetVal;
 }
 
-PTR_PEImageLayout PEImage::CreateLayoutMapped(bool throwOnFailure)
+PTR_PEImageLayout PEImage::CreateLoadedLayout(bool throwOnFailure)
 {
     CONTRACTL
     {
@@ -889,7 +889,7 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped(bool throwOnFailure)
     return pLoadLayout;
 }
 
-PTR_PEImageLayout PEImage::CreateLayoutFlat()
+PTR_PEImageLayout PEImage::CreateFlatLayout()
 {
     CONTRACTL
     {

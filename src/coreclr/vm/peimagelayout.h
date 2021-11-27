@@ -50,9 +50,8 @@ public:
 #endif
     static PEImageLayout* Load(PEImage* pOwner, HRESULT* loadFailure);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
-    static PEImageLayout* LoadConverted(PEImage* pOwner, BOOL isInBundle = FALSE);
+    static PEImageLayout* LoadConverted(PEImage* pOwner);
     static PEImageLayout* LoadNative(LPCWSTR fullPath);
-    static PEImageLayout* Map(PEImage* pOwner);
 #endif
     PEImageLayout();
     virtual ~PEImageLayout();
@@ -88,59 +87,31 @@ protected:
     CLRMapViewHolder m_FileView;
 public:
 #ifndef DACCESS_COMPILE
-    ConvertedImageLayout(FlatImageLayout* source, BOOL isInBundle = FALSE);
+    ConvertedImageLayout(FlatImageLayout* source);
     virtual ~ConvertedImageLayout();
 #endif
 private:
     PT_RUNTIME_FUNCTION m_pExceptionDir;
 };
 
-class MappedImageLayout: public PEImageLayout
+class LoadedImageLayout: public PEImageLayout
 {
-    VPTR_VTABLE_CLASS(MappedImageLayout,PEImageLayout)
-    VPTR_UNIQUE(0x15)
+    VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
 protected:
 #ifndef TARGET_UNIX
-    HandleHolder m_FileMap;
-    CLRMapViewHolder m_FileView;
+    HINSTANCE m_Module;
 #else
     PALPEFileHolder m_LoadedFile;
 #endif
 public:
 #ifndef DACCESS_COMPILE
-    MappedImageLayout(PEImage* pOwner);
-    virtual ~MappedImageLayout();
-#endif
-private:
-    PT_RUNTIME_FUNCTION m_pExceptionDir;
-};
-
-#if !defined(TARGET_UNIX)
-class LoadedImageLayout: public PEImageLayout
-{
-    VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
-protected:
-    HINSTANCE m_Module;
-public:
-#ifndef DACCESS_COMPILE
     LoadedImageLayout(PEImage* pOwner, HRESULT* returnDontThrow);
+#if !defined(TARGET_UNIX)
     LoadedImageLayout(PEImage* pOwner, HMODULE hModule);
-
-    ~LoadedImageLayout()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-        if (m_Module)
-            CLRFreeLibrary(m_Module);
-    }
+#endif // !TARGET_UNIX
+    ~LoadedImageLayout();
 #endif // !DACCESS_COMPILE
 };
-#endif // !TARGET_UNIX
 
 class FlatImageLayout: public PEImageLayout
 {
@@ -154,6 +125,7 @@ public:
 #ifndef DACCESS_COMPILE
     FlatImageLayout(PEImage* pOwner);
     FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
+    void LayoutILOnly(void* base) const;
 #endif
 
 };

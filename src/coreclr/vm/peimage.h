@@ -156,10 +156,10 @@ private:
     PTR_PEImageLayout GetOrCreateLayoutInternal(DWORD imageLayoutMask);
 
     // Create the mapped layout
-    PTR_PEImageLayout CreateLayoutMapped(bool throwOnFailure);
+    PTR_PEImageLayout CreateLoadedLayout(bool throwOnFailure);
 
     // Create the flat layout
-    PTR_PEImageLayout CreateLayoutFlat();
+    PTR_PEImageLayout CreateFlatLayout();
 
     void   SetLayout(DWORD dwLayout, PTR_PEImageLayout pLayout);
 #endif
