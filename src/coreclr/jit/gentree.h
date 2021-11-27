@@ -5740,9 +5740,7 @@ struct GenTreeBoundsChk : public GenTreeOp
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
     GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
-        : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length)
-        , gtIndRngFailBB(nullptr)
-        , gtThrowKind(kind)
+        : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length), gtIndRngFailBB(nullptr), gtThrowKind(kind)
     {
         gtFlags |= GTF_EXCEPT;
     }
