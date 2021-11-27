@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -27,28 +29,9 @@ namespace System.Threading.Tasks
         public Task<T> GetTask(T result)
         {
             Task<T>? task;
-            // The BCL has its own task cache for common values. We will use it if we can.
-            if (result is null)
-            {
-                return Task.FromResult(result);
-            }
-            else if (typeof(T).IsValueType)
-            {
-                if (typeof(T) == typeof(bool))
-                {
-                    return Task.FromResult(result);
-                }
-                else if (typeof(T) == typeof(int))
-                {
-                    int value = (int)(object)result!;
-                    if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
-                    {
-                        return Unsafe.As<Task<TResult>>(Task.FromResult(value));
-                    }
-                }
-            }
-            // Because it is a mutable struct, we will read from it only once.
-            else if ((task = _task) is not null && task.Result == result)
+#pragma warning disable CA1849 // Call async methods when in an async method
+            if ((task = _task) is not null && EqualityComparer<T>.Default.Equals(task.Result, result))
+#pragma warning restore CA1849 // Call async methods when in an async method
             {
                 Debug.Assert(task.IsCompletedSuccessfully,
                     "Expected that a stored last task completed successfully");
