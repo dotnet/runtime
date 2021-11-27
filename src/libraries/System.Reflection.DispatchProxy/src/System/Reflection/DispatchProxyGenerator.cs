@@ -119,7 +119,7 @@ namespace System.Reflection
             public ProxyAssembly(AssemblyLoadContext alc)
             {
                 string? alcName = alc.Name;
-                string name = alcName is null ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{alcName}";
+                string name = string.IsNullOrEmpty(alcName) ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{alcName}";
                 _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.RunAndCollect);
                 _mb = _ab.DefineDynamicModule("MainModule");
             }
