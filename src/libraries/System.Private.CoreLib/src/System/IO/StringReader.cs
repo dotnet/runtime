@@ -284,6 +284,5 @@ namespace System.IO
         {
             throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
         }
-
     }
 }
