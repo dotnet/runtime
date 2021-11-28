@@ -1290,21 +1290,6 @@ namespace System.Xml.Tests
             CError.Compare(warningCount, 0, "Warning Count mismatch!");
             CError.Compare(errorCount, 1, "Error Count mismatch!");
             return;
-        }
-
-        [Fact]
-        public void Issue_60543()
-        {        
-            string xsd = Path.Combine(TestData._Root, "issue60543.xsd");
-            XmlSchemaSet s = new XmlSchemaSet();
-            s.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            s.XmlResolver = new XmlUrlResolver();
-            XmlReader r = XmlReader.Create(xsd);
-            s.Add(null, r);
-            s.Compile();
-            CError.Compare(warningCount, 0, "Warning Count mismatch!");
-            CError.Compare(errorCount, 0, "Error Count mismatch!");
-            return;
-        }
+        }        
     }
 }
