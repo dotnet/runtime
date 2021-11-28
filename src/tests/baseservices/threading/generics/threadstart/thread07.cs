@@ -7,30 +7,30 @@ struct Gen<T>
 {
 	public void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread07.Xcounter);
 	}
 	public static void ThreadPoolTest()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread07.nThreads];
 		Gen<T> obj = new Gen<T>();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread07.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread07.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread07.Eval(Test_thread07.Xcounter==Test_thread07.nThreads);
+		Test_thread07.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread07
 {
 	public static int nThreads = 50;
 	public static int counter = 0;

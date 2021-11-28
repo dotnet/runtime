@@ -5,11 +5,10 @@ build_Tests()
     echo "${__MsgPrefix}Building Tests..."
 
     __ProjectFilesDir="$__TestDir"
-    __TestBinDir="$__TestWorkingDir"
     __Exclude="$__RepoRootDir/src/tests/issues.targets"
 
-    if [[ -f  "${__TestWorkingDir}/build_info.json" ]]; then
-        rm  "${__TestWorkingDir}/build_info.json"
+    if [[ -f  "${__TestBinDir}/build_info.json" ]]; then
+        rm  "${__TestBinDir}/build_info.json"
     fi
 
     if [[ "$__RebuildTests" -ne 0 ]]; then
@@ -99,7 +98,6 @@ build_Tests()
     export __CopyNativeProjectsAfterCombinedTestBuild
     export __CopyNativeTestBinaries
     export __Priority
-    export __DoCrossgen2
     export __CreatePerfmap
     export __CompositeBuildMode
     export __BuildTestWrappersOnly
@@ -188,13 +186,11 @@ handle_arguments_local() {
             ;;
 
         crossgen2|-crossgen2)
-            __DoCrossgen2=1
             __TestBuildMode=crossgen2
             ;;
 
         composite|-composite)
             __CompositeBuildMode=1
-            __DoCrossgen2=1
             __TestBuildMode=crossgen2
             ;;
 
@@ -294,7 +290,6 @@ __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
 __DistroRid=""
-__DoCrossgen2=
 __CompositeBuildMode=
 __CreatePerfmap=
 __TestBuildMode=
@@ -303,7 +298,6 @@ __BuildTestDir="%3B"
 __BuildTestTree="%3B"
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=0
-__IsMSBuildOnNETCoreSupported=0
 __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
 __PortableBuild=1
@@ -312,7 +306,6 @@ __RootBinDir="$__RepoRootDir/artifacts"
 __RunTests=0
 __SkipConfigure=0
 __SkipGenerateLayout=0
-__SkipGenerateVersion=0
 __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
@@ -369,7 +362,7 @@ __OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
 __BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
+__TestBinDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
@@ -388,10 +381,10 @@ if [[ -z "$HOME" ]]; then
 fi
 
 if [[ "$__RebuildTests" -ne 0 ]]; then
-    if [[ -d "${__TestWorkingDir}" ]]; then
-        echo "Removing tests build dir: ${__TestWorkingDir}"
-        rm -rf "${__TestWorkingDir}"
-    fi
+    echo "Removing test build dir: ${__TestBinDir}"
+    rm -rf "${__TestBinDir}"
+    echo "Removing test intermediate dir: ${__TestIntermediatesDir}"
+    rm -rf "${__TestIntermediatesDir}" 
 fi
 
 build_Tests

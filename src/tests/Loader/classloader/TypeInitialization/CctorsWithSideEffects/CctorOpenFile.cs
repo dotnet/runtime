@@ -41,7 +41,7 @@ public struct MyStruct
 }
 
 
-public class Test
+public class Test_CctorOpenFile
 {
 	public static int Main()
 	{

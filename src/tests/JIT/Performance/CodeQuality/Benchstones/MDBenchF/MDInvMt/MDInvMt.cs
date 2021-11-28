@@ -3,12 +3,8 @@
 //
 // Solution of linear algebraic equations and matrix inversion.
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.MDBenchF
 {
@@ -97,18 +93,6 @@ public static class MDInvMt
                         t[i,j] = t[i,j] - t[k,j] * tik;
                     }
                 }
-            }
-        }
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                Bench();
             }
         }
     }

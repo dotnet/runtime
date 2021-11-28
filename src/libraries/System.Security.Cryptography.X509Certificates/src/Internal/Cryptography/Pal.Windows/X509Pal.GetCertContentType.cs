@@ -23,18 +23,18 @@ namespace Internal.Cryptography.Pal
     {
         public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
         {
-            ContentType contentType;
+            Interop.Crypt32.ContentType contentType;
 
             unsafe
             {
                 fixed (byte* pRawData = rawData)
                 {
-                    CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(rawData.Length, pRawData);
-                    if (!Interop.crypt32.CryptQueryObject(
-                        CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
+                    Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData), (uint)rawData.Length);
+                    if (!Interop.Crypt32.CryptQueryObject(
+                        Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
                         &certBlob,
-                        ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_ALL,
-                        ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL,
+                        Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_ALL,
+                        Interop.Crypt32.ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL,
                         0,
                         IntPtr.Zero,
                         out contentType,
@@ -53,17 +53,17 @@ namespace Internal.Cryptography.Pal
 
         public X509ContentType GetCertContentType(string fileName)
         {
-            ContentType contentType;
+            Interop.Crypt32.ContentType contentType;
 
             unsafe
             {
                 fixed (char* pFileName = fileName)
                 {
-                    if (!Interop.crypt32.CryptQueryObject(
-                        CertQueryObjectType.CERT_QUERY_OBJECT_FILE,
+                    if (!Interop.Crypt32.CryptQueryObject(
+                        Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_FILE,
                         pFileName,
-                        ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_ALL,
-                        ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL,
+                        Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_ALL,
+                        Interop.Crypt32.ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL,
                         0,
                         IntPtr.Zero,
                         out contentType,
@@ -84,22 +84,22 @@ namespace Internal.Cryptography.Pal
         // this method maps a cert content type returned from CryptQueryObject
         // to a value in the managed X509ContentType enum
         //
-        private static X509ContentType MapContentType(ContentType contentType)
+        private static X509ContentType MapContentType(Interop.Crypt32.ContentType contentType)
         {
             switch (contentType)
             {
-                case ContentType.CERT_QUERY_CONTENT_CERT:
+                case Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_CERT:
                     return X509ContentType.Cert;
-                case ContentType.CERT_QUERY_CONTENT_SERIALIZED_STORE:
+                case Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_SERIALIZED_STORE:
                     return X509ContentType.SerializedStore;
-                case ContentType.CERT_QUERY_CONTENT_SERIALIZED_CERT:
+                case Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_SERIALIZED_CERT:
                     return X509ContentType.SerializedCert;
-                case ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED:
-                case ContentType.CERT_QUERY_CONTENT_PKCS7_UNSIGNED:
+                case Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED:
+                case Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_UNSIGNED:
                     return X509ContentType.Pkcs7;
-                case ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED:
+                case Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED:
                     return X509ContentType.Authenticode;
-                case ContentType.CERT_QUERY_CONTENT_PFX:
+                case Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PFX:
                     return X509ContentType.Pkcs12;
                 default:
                     return X509ContentType.Unknown;

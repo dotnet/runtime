@@ -4,7 +4,7 @@
 import { JSHandle, GCHandle, MonoObject } from "./types";
 import { ArgsMarshalString } from "./method-binding";
 import { PromiseControl } from "./cancelable-promise";
-import { runtimeHelpers } from "./modules";
+import { runtimeHelpers } from "./imports";
 
 const fn_signatures: [jsname: string, csname: string, signature: ArgsMarshalString][] = [
     ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],

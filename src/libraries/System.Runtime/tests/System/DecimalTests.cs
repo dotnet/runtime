@@ -791,6 +791,11 @@ namespace System.Tests
             yield return new object[] { (-567.89m).ToString(), defaultStyle, null, -567.89m };
             yield return new object[] { "0.6666666666666666666666666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 0.6666666666666666666666666666m };
 
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, 0.234m };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 234.0m };
+            yield return new object[] { "7" + new string('0', 28) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 7E28m };
+            yield return new object[] { "07" + new string('0', 28) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 7E28m };
+
             yield return new object[] { "79228162514264337593543950335", defaultStyle, null, 79228162514264337593543950335m };
             yield return new object[] { "-79228162514264337593543950335", defaultStyle, null, -79228162514264337593543950335m };
             yield return new object[] { "79,228,162,514,264,337,593,543,950,335", NumberStyles.AllowThousands, customFormat3, 79228162514264337593543950335m };

@@ -71,6 +71,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hostin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Unit.Tests", "tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj", "{33C3D8F0-297F-4471-92B0-F4E8717F10E3}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj", "{1B235247-6666-4B62-95A4-AC043626FDEA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj", "{5F6EF6F2-A742-445B-9418-682188F61130}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{42E1BF94-6FE0-4017-9702-55913BD95EDE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{8845E6FF-94B2-4994-A8F4-DF30844A2168}"
@@ -132,6 +136,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "..\System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj", "{C595A27A-FA05-4BC8-9048-402338D7AF76}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "..\System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj", "{B41AA17B-5129-41CC-8EA4-250B80BABF87}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj", "{0A495D7B-44DE-4E59-8497-6CBF7C55CFA5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj", "{B69B7D59-6E7D-43FC-B83F-AA481B677B06}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json", "..\System.Text.Json\ref\System.Text.Json.csproj", "{1E3D79D4-51D6-46C6-BF0F-DF51A47C5952}"
 EndProject
@@ -295,6 +303,14 @@ Global
 		{33C3D8F0-297F-4471-92B0-F4E8717F10E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{33C3D8F0-297F-4471-92B0-F4E8717F10E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{33C3D8F0-297F-4471-92B0-F4E8717F10E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B235247-6666-4B62-95A4-AC043626FDEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B235247-6666-4B62-95A4-AC043626FDEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B235247-6666-4B62-95A4-AC043626FDEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B235247-6666-4B62-95A4-AC043626FDEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F6EF6F2-A742-445B-9418-682188F61130}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F6EF6F2-A742-445B-9418-682188F61130}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F6EF6F2-A742-445B-9418-682188F61130}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F6EF6F2-A742-445B-9418-682188F61130}.Release|Any CPU.Build.0 = Release|Any CPU
 		{42E1BF94-6FE0-4017-9702-55913BD95EDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{42E1BF94-6FE0-4017-9702-55913BD95EDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42E1BF94-6FE0-4017-9702-55913BD95EDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -419,6 +435,14 @@ Global
 		{B41AA17B-5129-41CC-8EA4-250B80BABF87}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B41AA17B-5129-41CC-8EA4-250B80BABF87}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B41AA17B-5129-41CC-8EA4-250B80BABF87}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A495D7B-44DE-4E59-8497-6CBF7C55CFA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A495D7B-44DE-4E59-8497-6CBF7C55CFA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A495D7B-44DE-4E59-8497-6CBF7C55CFA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A495D7B-44DE-4E59-8497-6CBF7C55CFA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B69B7D59-6E7D-43FC-B83F-AA481B677B06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B69B7D59-6E7D-43FC-B83F-AA481B677B06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B69B7D59-6E7D-43FC-B83F-AA481B677B06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B69B7D59-6E7D-43FC-B83F-AA481B677B06}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1E3D79D4-51D6-46C6-BF0F-DF51A47C5952}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1E3D79D4-51D6-46C6-BF0F-DF51A47C5952}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E3D79D4-51D6-46C6-BF0F-DF51A47C5952}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -490,6 +514,8 @@ Global
 		{9C06E60B-2D45-4284-B7C8-7AE6D8194CE0} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{973CE6DA-B55D-4E55-88D5-53BE69D44410} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{F5CF1FC4-8F56-49BD-BFC2-5AD42AE6302D} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
+		{1B235247-6666-4B62-95A4-AC043626FDEA} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
+		{5F6EF6F2-A742-445B-9418-682188F61130} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{8845E6FF-94B2-4994-A8F4-DF30844A2168} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{99C8FB58-8718-4E76-AEFA-3C42F2F729B1} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{F3230087-28E2-4ADF-A7D1-D48C5D9CFFE9} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
@@ -505,6 +531,8 @@ Global
 		{4ED9C0A9-C1EF-47ED-99F8-74B7411C971B} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{A9EFBE7D-6AE1-4F05-B9C5-2586835ADC4D} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{B41AA17B-5129-41CC-8EA4-250B80BABF87} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
+		{0A495D7B-44DE-4E59-8497-6CBF7C55CFA5} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
+		{B69B7D59-6E7D-43FC-B83F-AA481B677B06} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{0813853E-8C78-429A-B01A-3FB2EF1898F8} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

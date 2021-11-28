@@ -1649,7 +1649,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						/* this */
 						if (call->need_unbox_trampoline)
 							/* The unbox trampoline transforms this into a managed pointer */
-							emit_gc_param_slot_def (cfg, ainfo->offset, m_class_get_this_arg (mono_defaults.int_class));
+							emit_gc_param_slot_def (cfg, ainfo->offset, mono_class_get_byref_type (mono_defaults.int_class));
 						else
 							emit_gc_param_slot_def (cfg, ainfo->offset, mono_get_object_type ());
 					} else {

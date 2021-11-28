@@ -5,6 +5,7 @@
 .assembly extern System.Runtime { auto }
 
 .assembly CopyPropByrefToNativeInt { }
+.assembly extern xunit.core {}
 
 .typedef [System.Runtime]System.WeakReference as WeakRef
 .typedef [System.Runtime]System.GC as GC
@@ -16,6 +17,9 @@
 
   .method private static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals ( [0] int32 result, [1] int32[] arr )
 

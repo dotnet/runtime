@@ -68,5 +68,5 @@ END:
 }
 
 
-.assembly c_nop.exe {}
+.assembly c_nop {}
 

@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServ
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj", "{6C660B52-0FE3-43B9-838E-2F92B34E97D9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{C56036DA-810D-45AF-98AE-A982418CE234}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{C76222C7-F56E-44EA-9187-6A3A2DC72C44}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Cng", "..\System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj", "{12345E87-4C47-4857-B7E4-6673D6ECC05F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.OpenSsl", "ref\System.Security.Cryptography.OpenSsl.csproj", "{5AC30FC5-0E64-4C71-AD80-FE758709E22B}"
@@ -49,6 +53,14 @@ Global
 		{6C660B52-0FE3-43B9-838E-2F92B34E97D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C660B52-0FE3-43B9-838E-2F92B34E97D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6C660B52-0FE3-43B9-838E-2F92B34E97D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C56036DA-810D-45AF-98AE-A982418CE234}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C56036DA-810D-45AF-98AE-A982418CE234}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C56036DA-810D-45AF-98AE-A982418CE234}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C56036DA-810D-45AF-98AE-A982418CE234}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C76222C7-F56E-44EA-9187-6A3A2DC72C44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C76222C7-F56E-44EA-9187-6A3A2DC72C44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C76222C7-F56E-44EA-9187-6A3A2DC72C44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C76222C7-F56E-44EA-9187-6A3A2DC72C44}.Release|Any CPU.Build.0 = Release|Any CPU
 		{12345E87-4C47-4857-B7E4-6673D6ECC05F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{12345E87-4C47-4857-B7E4-6673D6ECC05F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12345E87-4C47-4857-B7E4-6673D6ECC05F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -77,6 +89,8 @@ Global
 		{5AC30FC5-0E64-4C71-AD80-FE758709E22B} = {8B6D53E6-8F7B-47D1-B6D7-890A783A9959}
 		{A84FF2B2-5272-4F02-AA2B-C0FA61586AA4} = {4562CA8C-1A07-4AFB-B5BC-977FD19605CB}
 		{6C660B52-0FE3-43B9-838E-2F92B34E97D9} = {4562CA8C-1A07-4AFB-B5BC-977FD19605CB}
+		{C56036DA-810D-45AF-98AE-A982418CE234} = {4562CA8C-1A07-4AFB-B5BC-977FD19605CB}
+		{C76222C7-F56E-44EA-9187-6A3A2DC72C44} = {4562CA8C-1A07-4AFB-B5BC-977FD19605CB}
 		{12345E87-4C47-4857-B7E4-6673D6ECC05F} = {4562CA8C-1A07-4AFB-B5BC-977FD19605CB}
 		{A0136D6F-CF53-42F8-9227-2FFF2A1841AA} = {4562CA8C-1A07-4AFB-B5BC-977FD19605CB}
 	EndGlobalSection

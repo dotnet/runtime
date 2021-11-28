@@ -235,6 +235,7 @@ namespace System.Net.Http
                     // A read stream is required to finish up the request.
                     responseContent.SetStream(new Http3ReadStream(this));
                 }
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received response: {_response}");
 
                 // Process any Set-Cookie headers.
                 if (_connection.Pool.Settings._useCookies)
@@ -838,8 +839,9 @@ namespace System.Net.Http
                 }
 
                 int processLength = (int)Math.Min(headersLength, _recvBuffer.ActiveLength);
+                bool endHeaders = headersLength == processLength;
 
-                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), this);
+                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), endHeaders, this);
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }

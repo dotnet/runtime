@@ -200,6 +200,7 @@ namespace System.Runtime.Intrinsics
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector128<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
+		public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> operator +(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> operator &(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> operator |(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
@@ -402,6 +403,7 @@ namespace System.Runtime.Intrinsics
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector256<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
+		public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> operator +(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> operator &(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> operator |(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
@@ -578,6 +580,7 @@ namespace System.Runtime.Intrinsics
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector64<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
+		public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> operator +(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> operator &(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> operator |(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
@@ -2837,6 +2840,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static int LeadingZeroCount(uint value) { throw null; }
         public static int ReverseElementBits(int value) { throw null; }
         public static uint ReverseElementBits(uint value) { throw null; }
+        public static void Yield() { throw null; }
         public abstract partial class Arm64
         {
             internal Arm64() { }
@@ -3650,7 +3654,6 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
-
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("AvxVnni is in preview.")]
     public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
@@ -3671,7 +3674,6 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
-
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Bmi1 : System.Runtime.Intrinsics.X86.X86Base
     {
@@ -4494,6 +4496,7 @@ namespace System.Runtime.Intrinsics.X86
         internal X86Base() { }
         public static bool IsSupported { get { throw null; } }
         public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw null; }
+        public static void Pause() { throw null; }
         public abstract partial class X64
         {
             internal X64() { }

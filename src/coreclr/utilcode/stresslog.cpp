@@ -140,6 +140,61 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
+#ifdef MEMORY_MAPPED_STRESSLOG
+static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
+{
+    if (maxBytesTotal < sizeof(StressLog::StressLogHeader))
+    {
+        return nullptr;
+    }
+    wchar_t fileName[MAX_PATH];
+
+    // if the string "{pid}" occurs in the logFilename,
+    // replace it by the PID of our process
+    // only the first occurrence will be replaced
+    const wchar_t* pidLit =  L"{pid}";
+    wchar_t* pidPtr = wcsstr(logFilename, pidLit);
+    if (pidPtr != nullptr)
+    {
+        // copy the file name up to the "{pid}" occurrence
+        ptrdiff_t pidInx = pidPtr - logFilename;
+        wcsncpy_s(fileName, MAX_PATH, logFilename, pidInx);
+
+        // append the string representation of the PID
+        DWORD pid = GetCurrentProcessId();
+        wchar_t pidStr[20];
+        _itow(pid, pidStr, 10);
+        wcscat_s(fileName, pidStr);
+
+        // append the rest of the filename
+        wcscat_s(fileName, logFilename + pidInx + wcslen(pidLit));
+
+        logFilename = fileName;
+    }
+    HandleHolder hFile = WszCreateFile(logFilename,
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ,
+        NULL,                 // default security descriptor
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        return nullptr;
+    }
+
+    size_t fileSize = maxBytesTotal;
+    HandleHolder hMap = WszCreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
+    if (hMap == NULL)
+    {
+        return nullptr;
+    }
+
+    return MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, (void*)0x400000000000);
+}
+#endif //MEMORY_MAPPED_STRESSLOG
+
 /*********************************************************************************/
 void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThreadArg,
     unsigned maxBytesTotalArg, void* moduleBase, LPWSTR logFilename)
@@ -188,8 +243,31 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 #endif // _DEBUG
 #endif // !HOST_UNIX
 
+#ifdef MEMORY_MAPPED_STRESSLOG
+    if (logFilename != nullptr)
+    {
+        theLog.hMapView = CreateMemoryMappedFile(logFilename, maxBytesTotal);
+        if (theLog.hMapView != nullptr)
+        {
+            StressLogHeader* hdr = (StressLogHeader*)(uint8_t*)(void*)theLog.hMapView;
+            hdr->headerSize = sizeof(StressLogHeader);
+            hdr->magic = 'STRL';
+            hdr->version = 0x00010001;
+            hdr->memoryBase = (uint8_t*)hdr;
+            hdr->memoryCur = hdr->memoryBase + sizeof(StressLogHeader);
+            hdr->memoryLimit = hdr->memoryBase + maxBytesTotal;
+            hdr->logs = nullptr;
+            hdr->tickFrequency = theLog.tickFrequency;
+            hdr->startTimeStamp = theLog.startTimeStamp;
+            theLog.stressLogHeader = hdr;
+        }
+    }
+#endif //MEMORY_MAPPED_STRESSLOG
+
 #if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
-    if (logFilename == nullptr)
+#ifdef MEMORY_MAPPED_STRESSLOG
+    if (theLog.hMapView == nullptr)
+#endif //MEMORY_MAPPED_STRESSLOG
     {
         StressLogChunk::s_LogChunkHeap = HeapCreate(0, STRESSLOG_CHUNK_SIZE * 128, 0);
         if (StressLogChunk::s_LogChunkHeap == NULL)
@@ -200,54 +278,6 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
     }
 #endif //!STRESS_LOG_READONLY
 
-#ifdef MEMORY_MAPPED_STRESSLOG
-    if (logFilename != nullptr)
-    {
-        if (maxBytesTotal < sizeof(StressLogHeader))
-        {
-            return;
-        }
-        HandleHolder hFile = WszCreateFile(logFilename,
-            GENERIC_READ | GENERIC_WRITE,
-            FILE_SHARE_READ,
-            NULL,                 // default security descriptor
-            CREATE_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL);
-
-        if (hFile == INVALID_HANDLE_VALUE)
-        {
-            return;
-        }
-
-        size_t fileSize = maxBytesTotal;
-        HandleHolder hMap = WszCreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
-        if (hMap == NULL)
-        {
-            return;
-        }
-
-        theLog.hMapView = MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, (void*)0x400000000000);
-        if (theLog.hMapView == NULL)
-        {
-            return;
-        }
-
-        StressLogHeader* hdr = (StressLogHeader*)(uint8_t*)(void*)theLog.hMapView;
-        hdr->headerSize = sizeof(StressLogHeader);
-        hdr->magic = 'STRL';
-        hdr->version = 0x00010001;
-        hdr->memoryBase = (uint8_t*)hdr;
-        hdr->memoryCur = hdr->memoryBase + sizeof(StressLogHeader);
-        hdr->memoryLimit = hdr->memoryBase + fileSize;
-        hdr->logs = nullptr;
-        hdr->tickFrequency = theLog.tickFrequency;
-        hdr->startTimeStamp = theLog.startTimeStamp;
-        theLog.stressLogHeader = hdr;
-
-        // copy coreclr image - just for the string literals
-    }
-#endif
     AddModule((uint8_t*)moduleBase);
 }
 

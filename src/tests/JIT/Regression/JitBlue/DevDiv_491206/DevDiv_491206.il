@@ -3,10 +3,11 @@
 
 .assembly extern mscorlib {}
 .assembly a {}
+.assembly extern xunit.core {}
 .module a.exe
 
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an asignment flag, when
-// its children was optimized in the assertion propogation. 
+// its children was optimized in the assertion propagation.
 
 .class ILGEN_CLASS
 {
@@ -56,9 +57,12 @@
       IL_006a:  conv.i8
       IL_006b:  ret
     } // end of method DoubleToInt64
-    
+
     .method public static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
           ldc.r8     9.2233720368547758e+018
           call       int64 ILGEN_CLASS::DoubleToInt64(float64)

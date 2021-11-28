@@ -16,6 +16,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public void NoInt32OverflowInTheBufferingLogic()
         {
@@ -30,24 +31,13 @@ namespace System.IO.Tests
             using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
                 stream.Seek(position1, SeekOrigin.Begin);
-                stream.Write(data1, 0, data1.Length);
+                stream.Write(data1);
 
                 stream.Seek(position2, SeekOrigin.Begin);
-                stream.Write(data2, 0, data2.Length);
+                stream.Write(data2);
             }
 
             using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-            {
-                stream.Seek(position1, SeekOrigin.Begin);
-                Assert.Equal(buffer.Length, stream.Read(buffer));
-                Assert.Equal(data1, buffer);
-
-                stream.Seek(position2, SeekOrigin.Begin);
-                Assert.Equal(buffer.Length, stream.Read(buffer));
-                Assert.Equal(data2, buffer);
-            }
-
-            using (var stream = new BufferedStream(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, bufferSize: 0)))
             {
                 stream.Seek(position1, SeekOrigin.Begin);
                 Assert.Equal(buffer.Length, stream.Read(buffer));

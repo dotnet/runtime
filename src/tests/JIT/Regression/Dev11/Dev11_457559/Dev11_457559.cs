@@ -9,7 +9,7 @@ using System;
 /// This is a bug in JIT-EE interface. The fix was to add call to 
 /// m_pOverride->classMustBeLoadedBeforeCodelsRun in CEEInfo::getUnBoxHelper
 /// </summary>
-public class Test
+public class Test_Dev11_457559
 {
     public static int Main()
     {

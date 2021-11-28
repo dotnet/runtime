@@ -21,7 +21,7 @@ namespace System
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
         private static extern unsafe void __ZeroMemory(void* b, nuint byteLength);
 
         // The maximum block size to for __BulkMoveWithWriteBarrier FCall. This is required to avoid GC starvation.
@@ -77,7 +77,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
         // Used by ilmarshalers.cpp

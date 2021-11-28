@@ -14,6 +14,7 @@ parameters:
   codeGenType: 'JIT'
   runJobTemplate: '/eng/pipelines/coreclr/templates/jit-run-exploratory-job.yml'
   additionalSetupParameters: ''
+  toolName: '' # Antigen or Fuzzlyn
 
 ### Exploratory job
 
@@ -38,6 +39,7 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     helixQueues: ${{ parameters.helixQueues }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
+    toolName: ${{ parameters.toolName }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

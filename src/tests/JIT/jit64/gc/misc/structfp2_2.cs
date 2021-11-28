@@ -85,7 +85,7 @@ struct S
     }
 }
 
-class Test
+class Test_structfp2_2
 {
     public static void c(float a1, float a2, float a3, S s1, S s2)
     {

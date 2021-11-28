@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly deep_gc { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class public auto ansi beforefieldinit TestClass
@@ -1151,6 +1152,9 @@
     .method private hidebysig static 
             int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       78 (0x4e)
       .maxstack  8

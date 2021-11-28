@@ -108,6 +108,9 @@ namespace System.Linq.Parallel
             FixedMaxHeap<TKey> sharedIndices = new FixedMaxHeap<TKey>(_count, inputStream.KeyComparer); // an array used to track the sequence of indices leading up to the Nth index
             CountdownEvent sharedBarrier = new CountdownEvent(partitionCount); // a barrier to synchronize before yielding
 
+            if (ParallelEnumerable.SinglePartitionMode)
+                Debug.Assert(partitionCount == 1);
+
             PartitionedStream<TResult, TKey> outputStream =
                 new PartitionedStream<TResult, TKey>(partitionCount, inputStream.KeyComparer, OrdinalIndexState);
             for (int i = 0; i < partitionCount; i++)
@@ -222,9 +225,11 @@ namespace System.Linq.Parallel
                         }
                     }
 
-                    // Before exiting the search phase, we will synchronize with others. This is a barrier.
-                    _sharedBarrier.Signal();
-                    _sharedBarrier.Wait(_cancellationToken);
+                    if (!ParallelEnumerable.SinglePartitionMode) {
+                        // Before exiting the search phase, we will synchronize with others. This is a barrier.
+                        _sharedBarrier.Signal();
+                        _sharedBarrier.Wait(_cancellationToken);
+                    }
 
                     // Publish the buffer and set the index to just before the 1st element.
                     _buffer = buffer;

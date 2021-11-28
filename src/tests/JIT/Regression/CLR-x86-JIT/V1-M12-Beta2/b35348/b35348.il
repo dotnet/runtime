@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly ILGEN_0x7c08a1ce {}
+.assembly extern xunit.core {}
 .class ILGEN_0x7c08a1ce {
 
 .method static int32 Method_0x4406(unsigned int32 Arg_0x0){
@@ -20,6 +21,9 @@
 ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	20
 

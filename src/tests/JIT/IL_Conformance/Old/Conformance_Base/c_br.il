@@ -93,4 +93,4 @@ FAIL:
         ret
 }
 }
-.assembly c_br.exe {}
+.assembly c_br {}

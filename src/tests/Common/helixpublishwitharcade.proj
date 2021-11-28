@@ -237,7 +237,12 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
 
-  <Target Name="ZipPayloadDirectory" AfterTargets="PreparePayloadsDirectories" Condition="'$(TargetOS)' == 'Android'">
+  <PropertyGroup>
+    <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
+    <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
+  </PropertyGroup>
+
+  <Target Name="ZipPayloadDirectory" AfterTargets="PreparePayloadsDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
     <ItemGroup>
       <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
       <Payloads Update="@(Payloads)">
@@ -325,11 +330,6 @@
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
-    <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
-  </PropertyGroup>
-
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
     <XUnitRunnerDll Condition=" '$(IsRunningOnMobileTargets)' == 'true' ">$Env:CORE_ROOT\xunit\xunit.console.dll</XUnitRunnerDll>
     <XUnitRunnerDll Condition=" '$(IsRunningOnMobileTargets)' != 'true' ">%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
@@ -368,6 +368,14 @@
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessApkToTest>
+    
+    <XHarnessAppBundleToTest Include="@(Payloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
+      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+      <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
+      <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
+    </XHarnessAppBundleToTest>
 
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" Include="PALTests">
       <PayloadArchive>$(PayloadsRootDirectory)paltests.tar.gz</PayloadArchive>

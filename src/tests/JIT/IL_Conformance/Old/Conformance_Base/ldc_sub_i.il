@@ -59,5 +59,5 @@ END:
 
 
 
-.assembly ldc_sub_i.exe{}
+.assembly ldc_sub_i{}
 

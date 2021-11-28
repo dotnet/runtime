@@ -14,7 +14,7 @@ internal static partial class Interop
             F_UNLCK = 2     // unlock
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LockFileRegion", SetLastError=true)]
-        internal static extern int LockFileRegion(SafeHandle fd, long offset, long length, LockType lockType);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LockFileRegion", SetLastError =true)]
+        internal static partial int LockFileRegion(SafeHandle fd, long offset, long length, LockType lockType);
     }
 }

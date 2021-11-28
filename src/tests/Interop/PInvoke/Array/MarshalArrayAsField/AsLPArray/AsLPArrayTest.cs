@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 class Test
 {
@@ -172,62 +172,62 @@ class Test
         Console.WriteLine(report);
         S_INTArray_Seq s1 = new S_INTArray_Seq();
         s1.arr = InitArray<int>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeIntArraySeqStructByVal(s1, ARRAY_SIZE), "TakeIntArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeIntArraySeqStructByVal(s1, ARRAY_SIZE));
 
         S_UINTArray_Seq s2 = new S_UINTArray_Seq();
         s2.arr = InitArray<uint>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeUIntArraySeqStructByVal(s2, ARRAY_SIZE), "TakeUIntArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeUIntArraySeqStructByVal(s2, ARRAY_SIZE));
 
         S_SHORTArray_Seq s3 = new S_SHORTArray_Seq();
         s3.arr = InitArray<short>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeShortArraySeqStructByVal(s3, ARRAY_SIZE), "TakeShortArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeShortArraySeqStructByVal(s3, ARRAY_SIZE));
 
         S_WORDArray_Seq s4 = new S_WORDArray_Seq();
         s4.arr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeWordArraySeqStructByVal(s4, ARRAY_SIZE), "TakeWordArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeWordArraySeqStructByVal(s4, ARRAY_SIZE));
 
         S_LONG64Array_Seq s5 = new S_LONG64Array_Seq();
         s5.arr = InitArray<long>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLong64ArraySeqStructByVal(s5, ARRAY_SIZE), "TakeLong64ArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLong64ArraySeqStructByVal(s5, ARRAY_SIZE));
 
         S_ULONG64Array_Seq s6 = new S_ULONG64Array_Seq();
         s6.arr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeULong64ArraySeqStructByVal(s6, ARRAY_SIZE), "TakeULong64ArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeULong64ArraySeqStructByVal(s6, ARRAY_SIZE));
 
         S_DOUBLEArray_Seq s7 = new S_DOUBLEArray_Seq();
         s7.arr = InitArray<double>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeDoubleArraySeqStructByVal(s7, ARRAY_SIZE), "TakeDoubleArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeDoubleArraySeqStructByVal(s7, ARRAY_SIZE));
 
         S_FLOATArray_Seq s8 = new S_FLOATArray_Seq();
         s8.arr = InitArray<float>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeFloatArraySeqStructByVal(s8, ARRAY_SIZE), "TakeFloatArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeFloatArraySeqStructByVal(s8, ARRAY_SIZE));
 
         S_BYTEArray_Seq s9 = new S_BYTEArray_Seq();
         s9.arr = InitArray<byte>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeByteArraySeqStructByVal(s9, ARRAY_SIZE), "TakeByteArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeByteArraySeqStructByVal(s9, ARRAY_SIZE));
 
         S_CHARArray_Seq s10 = new S_CHARArray_Seq();
         s10.arr = InitArray<char>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeCharArraySeqStructByVal(s10, ARRAY_SIZE), "TakeCharArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeCharArraySeqStructByVal(s10, ARRAY_SIZE));
 
         S_LPSTRArray_Seq s11 = new S_LPSTRArray_Seq();
         s11.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLPSTRArraySeqStructByVal(s11, ARRAY_SIZE), "TakeLPSTRArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLPSTRArraySeqStructByVal(s11, ARRAY_SIZE));
 
         S_LPCSTRArray_Seq s12 = new S_LPCSTRArray_Seq();
         s12.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLPCSTRArraySeqStructByVal(s12, ARRAY_SIZE), "TakeLPCSTRArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLPCSTRArraySeqStructByVal(s12, ARRAY_SIZE));
 
         if (OperatingSystem.IsWindows())
         {
             S_BSTRArray_Seq s13 = new S_BSTRArray_Seq();
             s13.arr = InitArray<string>(ARRAY_SIZE);
-            Assert.Throws<TypeLoadException>(() => TakeBSTRArraySeqStructByVal(s13, ARRAY_SIZE), "TakeBSTRArraySeqStructByVal"); 
+            Assert.Throws<TypeLoadException>(() => TakeBSTRArraySeqStructByVal(s13, ARRAY_SIZE));
         }
 
         S_StructArray_Seq s14 = new S_StructArray_Seq();
         s14.arr = InitStructArray(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeStructArraySeqStructByVal(s14, ARRAY_SIZE), "TakeStructArraySeqStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeStructArraySeqStructByVal(s14, ARRAY_SIZE));
     }
 
     static void RunTest2(string report)
@@ -235,62 +235,62 @@ class Test
         Console.WriteLine(report);
         C_INTArray_Seq c1 = new C_INTArray_Seq();
         c1.arr = InitArray<int>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeIntArraySeqClassByVal(c1, ARRAY_SIZE), "TakeIntArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeIntArraySeqClassByVal(c1, ARRAY_SIZE));
 
         C_UINTArray_Seq c2 = new C_UINTArray_Seq();
         c2.arr = InitArray<uint>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeUIntArraySeqClassByVal(c2, ARRAY_SIZE), "TakeUIntArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeUIntArraySeqClassByVal(c2, ARRAY_SIZE));
 
         C_SHORTArray_Seq c3 = new C_SHORTArray_Seq();
         c3.arr = InitArray<short>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeShortArraySeqClassByVal(c3, ARRAY_SIZE), "TakeShortArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeShortArraySeqClassByVal(c3, ARRAY_SIZE));
 
         C_WORDArray_Seq c4 = new C_WORDArray_Seq();
         c4.arr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeWordArraySeqClassByVal(c4, ARRAY_SIZE), "TakeWordArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeWordArraySeqClassByVal(c4, ARRAY_SIZE));
 
         C_LONG64Array_Seq c5 = new C_LONG64Array_Seq();
         c5.arr = InitArray<long>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLong64ArraySeqClassByVal(c5, ARRAY_SIZE), "TakeLong64ArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLong64ArraySeqClassByVal(c5, ARRAY_SIZE));
 
         C_ULONG64Array_Seq c6 = new C_ULONG64Array_Seq();
         c6.arr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeULong64ArraySeqClassByVal(c6, ARRAY_SIZE), "TakeULong64ArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeULong64ArraySeqClassByVal(c6, ARRAY_SIZE));
 
         C_DOUBLEArray_Seq c7 = new C_DOUBLEArray_Seq();
         c7.arr = InitArray<double>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeDoubleArraySeqClassByVal(c7, ARRAY_SIZE), "TakeDoubleArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeDoubleArraySeqClassByVal(c7, ARRAY_SIZE));
 
         C_FLOATArray_Seq c8 = new C_FLOATArray_Seq();
         c8.arr = InitArray<float>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeFloatArraySeqClassByVal(c8, ARRAY_SIZE), "TakeFloatArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeFloatArraySeqClassByVal(c8, ARRAY_SIZE));
 
         C_BYTEArray_Seq c9 = new C_BYTEArray_Seq();
         c9.arr = InitArray<byte>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeByteArraySeqClassByVal(c9, ARRAY_SIZE), "TakeByteArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeByteArraySeqClassByVal(c9, ARRAY_SIZE));
 
         C_CHARArray_Seq c10 = new C_CHARArray_Seq();
         c10.arr = InitArray<char>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeCharArraySeqClassByVal(c10, ARRAY_SIZE), "TakeCharArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeCharArraySeqClassByVal(c10, ARRAY_SIZE));
 
         C_LPSTRArray_Seq c11 = new C_LPSTRArray_Seq();
         c11.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLPSTRArraySeqClassByVal(c11, ARRAY_SIZE), "TakeLPSTRArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLPSTRArraySeqClassByVal(c11, ARRAY_SIZE));
 
         C_LPCSTRArray_Seq c12 = new C_LPCSTRArray_Seq();
         c12.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLPCSTRArraySeqClassByVal(c12, ARRAY_SIZE), "TakeLPCSTRArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLPCSTRArraySeqClassByVal(c12, ARRAY_SIZE));
 
         if (OperatingSystem.IsWindows())
         {
             C_BSTRArray_Seq c13 = new C_BSTRArray_Seq();
             c13.arr = InitArray<string>(ARRAY_SIZE);
-            Assert.Throws<TypeLoadException>(() => TakeBSTRArraySeqClassByVal(c13, ARRAY_SIZE), "TakeBSTRArraySeqClassByVal"); 
+            Assert.Throws<TypeLoadException>(() => TakeBSTRArraySeqClassByVal(c13, ARRAY_SIZE));
         }
 
         C_StructArray_Seq c14 = new C_StructArray_Seq();
         c14.arr = InitStructArray(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeStructArraySeqClassByVal(c14, ARRAY_SIZE), "TakeStructArraySeqClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeStructArraySeqClassByVal(c14, ARRAY_SIZE));
     }
 
     static void RunTest3(string report)
@@ -299,62 +299,62 @@ class Test
 
         S_INTArray_Exp s1 = new S_INTArray_Exp();
         s1.arr = InitArray<int>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeIntArrayExpStructByVal(s1, ARRAY_SIZE), "TakeIntArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeIntArrayExpStructByVal(s1, ARRAY_SIZE));
 
         S_UINTArray_Exp s2 = new S_UINTArray_Exp();
         s2.arr = InitArray<uint>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeUIntArrayExpStructByVal(s2, ARRAY_SIZE), "TakeUIntArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeUIntArrayExpStructByVal(s2, ARRAY_SIZE));
 
         S_SHORTArray_Exp s3 = new S_SHORTArray_Exp();
         s3.arr = InitArray<short>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeShortArrayExpStructByVal(s3, ARRAY_SIZE), "TakeShortArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeShortArrayExpStructByVal(s3, ARRAY_SIZE));
 
         S_WORDArray_Exp s4 = new S_WORDArray_Exp();
         s4.arr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeWordArrayExpStructByVal(s4, ARRAY_SIZE), "TakeWordArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeWordArrayExpStructByVal(s4, ARRAY_SIZE));
 
         S_LONG64Array_Exp s5 = new S_LONG64Array_Exp();
         s5.arr = InitArray<long>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLong64ArrayExpStructByVal(s5, ARRAY_SIZE), "TakeLong64ArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLong64ArrayExpStructByVal(s5, ARRAY_SIZE));
 
         S_ULONG64Array_Exp s6 = new S_ULONG64Array_Exp();
         s6.arr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeULong64ArrayExpStructByVal(s6, ARRAY_SIZE), "TakeULong64ArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeULong64ArrayExpStructByVal(s6, ARRAY_SIZE));
 
         S_DOUBLEArray_Exp s7 = new S_DOUBLEArray_Exp();
         s7.arr = InitArray<double>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeDoubleArrayExpStructByVal(s7, ARRAY_SIZE), "TakeDoubleArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeDoubleArrayExpStructByVal(s7, ARRAY_SIZE));
 
         S_FLOATArray_Exp s8 = new S_FLOATArray_Exp();
         s8.arr = InitArray<float>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeFloatArrayExpStructByVal(s8, ARRAY_SIZE), "TakeFloatArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeFloatArrayExpStructByVal(s8, ARRAY_SIZE));
 
         S_BYTEArray_Exp s9 = new S_BYTEArray_Exp();
         s9.arr = InitArray<byte>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeByteArrayExpStructByVal(s9, ARRAY_SIZE), "TakeByteArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeByteArrayExpStructByVal(s9, ARRAY_SIZE));
 
         S_CHARArray_Exp s10 = new S_CHARArray_Exp();
         s10.arr = InitArray<char>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeCharArrayExpStructByVal(s10, ARRAY_SIZE), "TakeCharArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeCharArrayExpStructByVal(s10, ARRAY_SIZE));
 
         S_LPSTRArray_Exp s11 = new S_LPSTRArray_Exp();
         s11.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLPSTRArrayExpStructByVal(s11, ARRAY_SIZE), "TakeLPSTRArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLPSTRArrayExpStructByVal(s11, ARRAY_SIZE));
 
         S_LPCSTRArray_Exp s12 = new S_LPCSTRArray_Exp();
         s12.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLPCSTRArrayExpStructByVal(s12, ARRAY_SIZE), "TakeLPCSTRArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLPCSTRArrayExpStructByVal(s12, ARRAY_SIZE));
 
         if (OperatingSystem.IsWindows())
         {
             S_BSTRArray_Exp s13 = new S_BSTRArray_Exp();
             s13.arr = InitArray<string>(ARRAY_SIZE);
-            Assert.Throws<TypeLoadException>(() => TakeBSTRArrayExpStructByVal(s13, ARRAY_SIZE), "TakeBSTRArrayExpStructByVal"); 
+            Assert.Throws<TypeLoadException>(() => TakeBSTRArrayExpStructByVal(s13, ARRAY_SIZE));
         }
 
         S_StructArray_Exp s14 = new S_StructArray_Exp();
         s14.arr = InitStructArray(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeStructArrayExpStructByVal(s14, ARRAY_SIZE), "TakeStructArrayExpStructByVal");
+        Assert.Throws<TypeLoadException>(() => TakeStructArrayExpStructByVal(s14, ARRAY_SIZE));
     }
 
     static void RunTest4(string report)
@@ -363,62 +363,62 @@ class Test
 
         C_INTArray_Exp c1 = new C_INTArray_Exp();
         c1.arr = InitArray<int>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeIntArrayExpClassByVal(c1, ARRAY_SIZE), "TakeIntArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeIntArrayExpClassByVal(c1, ARRAY_SIZE));
 
         C_UINTArray_Exp c2 = new C_UINTArray_Exp();
         c2.arr = InitArray<uint>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeUIntArrayExpClassByVal(c2, ARRAY_SIZE), "TakeUIntArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeUIntArrayExpClassByVal(c2, ARRAY_SIZE));
 
         C_SHORTArray_Exp c3 = new C_SHORTArray_Exp();
         c3.arr = InitArray<short>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeShortArrayExpClassByVal(c3, ARRAY_SIZE), "TakeShortArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeShortArrayExpClassByVal(c3, ARRAY_SIZE));
 
         C_WORDArray_Exp c4 = new C_WORDArray_Exp();
         c4.arr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeWordArrayExpClassByVal(c4, ARRAY_SIZE), "TakeWordArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeWordArrayExpClassByVal(c4, ARRAY_SIZE));
 
         C_LONG64Array_Exp c5 = new C_LONG64Array_Exp();
         c5.arr = InitArray<long>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLong64ArrayExpClassByVal(c5, ARRAY_SIZE), "TakeLong64ArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLong64ArrayExpClassByVal(c5, ARRAY_SIZE));
 
         C_ULONG64Array_Exp c6 = new C_ULONG64Array_Exp();
         c6.arr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeULong64ArrayExpClassByVal(c6, ARRAY_SIZE), "TakeULong64ArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeULong64ArrayExpClassByVal(c6, ARRAY_SIZE));
 
         C_DOUBLEArray_Exp c7 = new C_DOUBLEArray_Exp();
         c7.arr = InitArray<double>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeDoubleArrayExpClassByVal(c7, ARRAY_SIZE), "TakeDoubleArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeDoubleArrayExpClassByVal(c7, ARRAY_SIZE));
 
         C_FLOATArray_Exp c8 = new C_FLOATArray_Exp();
         c8.arr = InitArray<float>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeFloatArrayExpClassByVal(c8, ARRAY_SIZE), "TakeFloatArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeFloatArrayExpClassByVal(c8, ARRAY_SIZE));
 
         C_BYTEArray_Exp c9 = new C_BYTEArray_Exp();
         c9.arr = InitArray<byte>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeByteArrayExpClassByVal(c9, ARRAY_SIZE), "TakeByteArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeByteArrayExpClassByVal(c9, ARRAY_SIZE));
 
         C_CHARArray_Exp c10 = new C_CHARArray_Exp();
         c10.arr = InitArray<char>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeCharArrayExpClassByVal(c10, ARRAY_SIZE), "TakeCharArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeCharArrayExpClassByVal(c10, ARRAY_SIZE));
 
         C_LPSTRArray_Exp c11 = new C_LPSTRArray_Exp();
         c11.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLPSTRArrayExpClassByVal(c11, ARRAY_SIZE), "TakeLPSTRArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLPSTRArrayExpClassByVal(c11, ARRAY_SIZE));
 
         C_LPCSTRArray_Exp c12 = new C_LPCSTRArray_Exp();
         c12.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeLPCSTRArrayExpClassByVal(c12, ARRAY_SIZE), "TakeLPCSTRArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeLPCSTRArrayExpClassByVal(c12, ARRAY_SIZE));
 
         if (OperatingSystem.IsWindows())
         {
             C_BSTRArray_Exp c13 = new C_BSTRArray_Exp();
             c13.arr = InitArray<string>(ARRAY_SIZE);
-            Assert.Throws<TypeLoadException>(() => TakeBSTRArrayExpClassByVal(c13, ARRAY_SIZE), "TakeBSTRArrayExpClassByVal"); 
+            Assert.Throws<TypeLoadException>(() => TakeBSTRArrayExpClassByVal(c13, ARRAY_SIZE));
         }
 
         C_StructArray_Exp c14 = new C_StructArray_Exp();
         c14.arr = InitStructArray(ARRAY_SIZE);
-        Assert.Throws<TypeLoadException>(() => TakeStructArrayExpClassByVal(c14, ARRAY_SIZE), "TakeStructArrayExpClassByVal");
+        Assert.Throws<TypeLoadException>(() => TakeStructArrayExpClassByVal(c14, ARRAY_SIZE));
     }
 
     static int Main(string[] args)
@@ -429,7 +429,7 @@ class Test
             RunTest2("RunTest 2 : Marshal Array In Sequential Class As LPArray. ");
             if (OperatingSystem.IsWindows())
             {
-                RunTest3("RunTest 3 : Marshal Array In Explicit Struct As LPArray. "); 
+                RunTest3("RunTest 3 : Marshal Array In Explicit Struct As LPArray. ");
             }
             RunTest4("RunTest 4 : Marshal Array In Explicit Class As LPArray. ");
             Console.WriteLine("\nTest PASS.");

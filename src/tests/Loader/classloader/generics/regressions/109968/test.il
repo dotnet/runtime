@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
 .assembly extern mscorlib {}
 .assembly test {}
@@ -92,7 +93,7 @@
 
 } // end of class C1
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_test
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  Eval() cil managed
@@ -113,6 +114,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       60 (0x3c)
     .maxstack  3
@@ -121,7 +125,7 @@
              int32 V_2)
     .try
     {
-      call       void Test::Eval()
+      call       void Test_test::Eval()
       ldstr      "Test did not throw expected System.TypeLoadException"
       call       void [System.Console]System.Console::WriteLine(string)
       ldstr      "Test failed"
