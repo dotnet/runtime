@@ -948,5 +948,77 @@ namespace DebuggerTests
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 806, 8, "Increment");
             Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
         }
+
+        [Fact]
+        public async Task DebuggerAttributeIgnoreStepIntoDebuggerHidden()
+        {
+            var pause_location = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "Run", 1);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:Run'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
+                pause_location.Value["locations"][0]["columnNumber"].Value<int>(),
+                "Run"
+            );
+            var step_into = await SendCommandAndCheck(null, $"Debugger.stepInto", null, -1, -1, null);
+
+            Assert.Equal(
+                step_into["callFrames"][0]["location"]["lineNumber"].Value<int>(), 
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1
+                );
+            
+        }
+
+        [Fact]
+        public async Task DebuggerAttributeIgnoreStepIntoDebuggerHiddenWithDebuggerBreakCall()
+        {
+            var pause_location = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 1);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunDebuggerBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
+                pause_location.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunDebuggerBreak"
+            );
+            var step_into1 = await SendCommandAndCheck(null, $"Debugger.stepInto", null, -1, -1, null);
+
+            Assert.Equal( 
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
+                step_into1["callFrames"][0]["location"]["lineNumber"].Value<int>()
+                );
+
+            var step_into2 = await SendCommandAndCheck(null, $"Debugger.stepInto", null, -1, -1, null);
+
+            Assert.Equal(
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1,
+                step_into2["callFrames"][0]["location"]["lineNumber"].Value<int>()
+                );
+            
+        }
+
+        [Fact]
+        public async Task DebuggerAttributeIgnoreStepOverDebuggerHiddenWithDebuggerBreakCall()
+        {
+            var pause_location = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 1);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunDebuggerBreak'); 1});",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
+                pause_location.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunDebuggerBreak"
+            );
+            var step_over1 = await SendCommandAndCheck(null, $"Debugger.stepOver", null, -1, -1, null);
+            Assert.Equal(
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
+                step_over1["callFrames"][0]["location"]["lineNumber"].Value<int>()
+                );
+
+            var step_over2 = await SendCommandAndCheck(null, $"Debugger.stepOver", null, -1, -1, null);
+
+            Assert.Equal(
+                pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1,
+                step_over2["callFrames"][0]["location"]["lineNumber"].Value<int>()
+                );
+        }
     }
 }
