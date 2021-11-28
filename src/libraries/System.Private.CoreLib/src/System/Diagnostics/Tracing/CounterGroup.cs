@@ -170,6 +170,8 @@ namespace System.Diagnostics.Tracing
                         s_counterGroupEnabledList.Add(this);
                     }
 
+                    Thread.MemoryBarrier();
+
                     // notify the polling thread that the polling interval may have changed and the sleep should
                     // be recomputed
                     s_pollingThreadSleepEvent!.Set();
@@ -292,11 +294,8 @@ namespace System.Diagnostics.Tracing
                 }
                 foreach (CounterGroup counterGroup in onTimers)
                 {
-                    DateTime now = DateTime.UtcNow;
-
                     counterGroup.OnTimer();
-
-                    int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
+                    int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - DateTime.UtcNow).TotalMilliseconds);
                     millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
                     sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                 }
