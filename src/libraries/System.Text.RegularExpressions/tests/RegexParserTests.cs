@@ -709,7 +709,6 @@ namespace System.Text.RegularExpressions.Tests
             Parse(pattern, options, error, offset);
         }
 
-
         private static void Parse(string pattern, RegexOptions options, RegexParseError? error, int offset = -1)
         {
             if (error != null)
@@ -729,12 +728,24 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         private static void LogActual(string pattern, RegexOptions options, RegexParseError error, int offset)
-        {         
-            string s = (error == RegexParseError.Unknown) ?
-                @$"        [InlineData(@""{pattern}"", RegexOptions.{options.ToString()}, null)]" :
-                @$"        [InlineData(@""{pattern}"", RegexOptions.{options.ToString()}, RegexParseError.{error.ToString()}, {offset})]";
+        {   
+            // To conveniently add new interesting patterns to these tests, add them to the code in the format:
+            //
+            // [InlineData("SOMEREGEX1", RegexOptions.None, null)]
+            // [InlineData("SOMEREGEX2", RegexOptions.None, null)]
+            // ...
+            //
+            // then uncomment the lines below, and the correct baseline will be written to the file, eg
+            //
+            // [InlineData(@"SOMEREGEX1", RegexOptions.None, RegexParseError.UnrecognizedEscape, 3)]
+            // [InlineData(@"SOMEREGEX2", RegexOptions.None, InsufficientClosingParentheses, 2)]
+            // ...
+            // 
+            //string s = (error == RegexParseError.Unknown) ?
+            //    @$"        [InlineData(@""{pattern}"", RegexOptions.{options.ToString()}, null)]" :
+            //    @$"        [InlineData(@""{pattern}"", RegexOptions.{options.ToString()}, RegexParseError.{error.ToString()}, {offset})]";
 
-            // File.AppendAllText(@"/tmp/out.cs", s + "\n"); // for updating baseline
+            // File.AppendAllText(@"/tmp/out.cs", s + "\n");
         }
 
         private static void ParsePatternFragments(string pattern, RegexOptions options)

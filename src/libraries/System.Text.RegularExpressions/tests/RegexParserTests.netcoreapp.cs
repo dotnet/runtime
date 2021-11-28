@@ -231,9 +231,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"abc(?q)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 6)]
         [InlineData(@"abc[]", RegexOptions.None, RegexParseError.UnterminatedBracket, 5)]
         [InlineData(@"abc\A{10}", RegexOptions.None, null)] // Nim error:  "Invalid repetition range, either char, shorthand (i.e: \\w), group, or set expected before repetition range"
-        [InlineData(@"弢(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
-        [InlineData(@"弢aaa(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 8)]
-        [InlineData(@"弢弢弢(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 9)]
+        [InlineData(@"\uD87E\uDC94(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 15)]
+        [InlineData(@"\uD87E\uDC94aaa(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 18)]
+        [InlineData(@"\uD87E\uDC94\uD87E\uDC94\uD87E\uDC94(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 39)]
         // End of Nim parser tests ==============
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
