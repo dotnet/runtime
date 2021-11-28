@@ -393,12 +393,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowObjectDisposedException_ReaderClosed()
-        {
-            throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowObjectDisposedException(ExceptionResource resource)
         {
             throw new ObjectDisposedException(null, GetResourceString(resource));

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,7 +45,7 @@ namespace System.IO
             string? s = _s;
             if (s == null)
             {
-                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
             int pos = _pos;
@@ -64,7 +65,7 @@ namespace System.IO
             string? s = _s;
             if (s == null)
             {
-                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
             int pos = _pos;
@@ -102,7 +103,7 @@ namespace System.IO
             }
             if (_s == null)
             {
-                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
             int n = _s.Length - _pos;
@@ -130,7 +131,7 @@ namespace System.IO
 
             if (_s == null)
             {
-                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
             int n = _s.Length - _pos;
@@ -154,7 +155,7 @@ namespace System.IO
         {
             if (_s == null)
             {
-                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
             string s;
@@ -164,7 +165,7 @@ namespace System.IO
             }
             else
             {
-                s = _s.Substring(_pos, _s.Length - _pos);
+                s = _s.Substring(_pos);
             }
 
             _pos = _s.Length;
@@ -182,7 +183,7 @@ namespace System.IO
             string? s = _s;
             if (s == null)
             {
-                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
+                ThrowObjectDisposedException_ReaderClosed();
             }
             var pos = _pos;
             if ((uint)pos >= (uint)s.Length)
@@ -202,7 +203,7 @@ namespace System.IO
                 {
                     if ((uint)pos < s.Length && s[pos] == '\n')
                     {
-                        ++pos;
+                        pos++;
                     }
                 }
                 _pos = pos;
@@ -277,5 +278,12 @@ namespace System.IO
             cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
             new ValueTask<int>(Read(buffer.Span));
         #endregion
+
+        [DoesNotReturn]
+        private static void ThrowObjectDisposedException_ReaderClosed()
+        {
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+        }
+
     }
 }
