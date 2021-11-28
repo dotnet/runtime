@@ -168,7 +168,7 @@
       <_TestGroupingExists>@(_TestGroupingRelevant->AnyHaveMetadataValue('TestGroup','$(_PayloadGroup)'))</_TestGroupingExists>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(_FileDirectory)' != ''">
       <!-- If no TestGrouping is defined, all the files under $(_FileDirectory) and its subdirectories goes to the PayloadDirectory. -->
       <_PayloadFiles Include="$(_FileDirectory)**" Exclude="@(_TestGroupingRelevant)" Condition="'$(_TestGroupingExists)' != 'true'" />
       <!-- If there is a TestGrouping, then take only the files that belong to the TestGroup == $(_PayloadGroup). -->
@@ -248,16 +248,10 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
-    <PropertyGroup>
-      <_MergedWrapperDirectory>%(_MergedWrapperRunScript.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperRelativeDir>%(_MergedWrapperRunScript.RelativeDir)</_MergedWrapperRelativeDir>
-      <_MergedWrapperFile>%(_MergedWrapperRunScript.FileName)</_MergedWrapperFile>
-    </PropertyGroup>
-
     <ItemGroup>
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedWrapperRelativeDir)</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedWrapperName)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -265,7 +259,12 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectory" Outputs="%(_MergedWrapperRunScript.FileName)" DependsOnTargets="DiscoverMergedTestWrappers">
+    <PropertyGroup>
+      <_MergedWrapperDirectory>%(_MergedWrapperRunScript.RootDir)%(Directory)</_MergedWrapperDirectory>
+    </PropertyGroup>
+
     <ItemGroup>
+      <_MergedWrapperName Include="%(_MergedWrapperRunScript.FileName)" />
       <_PayloadFiles Include="$(_MergedWrapperDirectory)**" />
       <_PayloadFiles Update="@(_PayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
@@ -277,10 +276,11 @@
     <ItemGroup>
       <!-- Remove the managed pdbs from our payloads.
            This is for performance reasons to reduce our helix payload size  -->
-      <ReducedPayloadFiles Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
+      <ReducedPayloadFilesFinal Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
+    <WriteLinesToFile File="$(PayloadsRootDirectory)\%(_MergedWrapperRunScript.FileName)\Launch.txt" Lines="%(_MergedWrapperRunScript.Identity)" />
   </Target>
 
   <PropertyGroup>
@@ -393,6 +393,7 @@
       <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
       <PayloadDirectory>%(FullPath)</PayloadDirectory>
       <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
+      <IsMergedTestWrapper>false</IsMergedTestWrapper>
     </Payloads>
 
     <Payloads Update="@(Payloads)">
