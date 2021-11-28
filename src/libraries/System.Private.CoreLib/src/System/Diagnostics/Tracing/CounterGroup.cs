@@ -35,9 +35,6 @@ namespace System.Diagnostics.Tracing
         {
             lock (s_counterGroupLock) // Lock the CounterGroup
                 _counters.Add(eventCounter);
-            // If the polling thread was started without any counters at that time,
-            // then it started an infinite sleep - we must wake the thread up or it will be stuck
-            s_pollingThreadSleepEvent?.Set();
         }
 
         internal void Remove(DiagnosticCounter eventCounter)
@@ -155,31 +152,22 @@ namespace System.Diagnostics.Tracing
                     if (s_pollingThread == null)
                     {
                         s_pollingThreadSleepEvent = new AutoResetEvent(false);
-                        // Must add 'this' into the list before starting the thread,
-                        // because the polling thread would otherwise end up sleeping
-                        // indefinitely if it saw an empty list on start
-                        s_counterGroupEnabledList = new List<CounterGroup>(this);
+                        s_counterGroupEnabledList = new List<CounterGroup>();
                         s_pollingThread = new Thread(PollForValues)
                         {
                             IsBackground = true,
                             Name = ".NET Counter Poller"
                         };
-
 #if ES_BUILD_STANDALONE
                         s_pollingThread.Start();
 #else
                         s_pollingThread.UnsafeStart();
 #endif
                     }
-                    else
+
+                    if (!s_counterGroupEnabledList!.Contains(this))
                     {
-                        lock (s_counterGroupLock)
-                        {
-                            if (!s_counterGroupEnabledList!.Contains(this))
-                            {
-                                s_counterGroupEnabledList.Add(this);
-                            }
-                        }
+                        s_counterGroupEnabledList.Add(this);
                     }
 
                     // notify the polling thread that the polling interval may have changed and the sleep should
@@ -286,7 +274,7 @@ namespace System.Diagnostics.Tracing
             // We cache these outside of the scope of s_counterGroupLock because
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
             // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
-            var onTimers = new List<(DateTime, CounterGroup)>();
+            var onTimers = new List<CounterGroup>();
             while (true)
             {
                 int sleepDurationInMilliseconds = int.MaxValue;
@@ -298,12 +286,14 @@ namespace System.Diagnostics.Tracing
                         DateTime now = DateTime.UtcNow;
                         if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
                         {
-                            onTimers.Add((now, counterGroup));
+                            onTimers.Add(counterGroup);
                         }
                     }
                 }
-                foreach ((DateTime now, CounterGroup counterGroup) in onTimers)
+                foreach (CounterGroup counterGroup in onTimers)
                 {
+                    DateTime now = DateTime.UtcNow;
+
                     counterGroup.OnTimer();
 
                     int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
