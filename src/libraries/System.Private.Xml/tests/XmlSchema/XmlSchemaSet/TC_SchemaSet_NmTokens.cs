@@ -16,13 +16,16 @@ namespace System.Xml.Tests
         {
             string xsd = Path.Combine(TestData._Root, fileName);
             XmlSchemaSet s = new XmlSchemaSet();
+            int numevents = 0;
             s.ValidationEventHandler += (sender, args) => {
                 Assert.False(args.Severity == XmlSeverityType.Warning);
                 Assert.True(negative, args.Message);
-            };
+                numevents++;
+            };            
             XmlReader r = XmlReader.Create(xsd);
             s.Add(null, r);
             s.Compile();            
+            Assert.False(negative && numevents != 1);
         }
 
         private void TestValidatedReader(string fileName, bool negative)
@@ -33,13 +36,16 @@ namespace System.Xml.Tests
                     XmlSchemaValidationFlags.ReportValidationWarnings,
                 XmlResolver = new XmlUrlResolver()
             };
+            int numevents = 0;
             settings.ValidationEventHandler += (sender, args) => {
                 Assert.True(negative, args.Message);
+                numevents++;
             };
             string xml = Path.Combine(TestData._Root, fileName);
             using XmlReader r = XmlReader.Create(xml, settings);
             XmlDocument doc = new XmlDocument();
             doc.Load(r);
+            Assert.False(negative && numevents != 1);
         }
 
         [Fact]
