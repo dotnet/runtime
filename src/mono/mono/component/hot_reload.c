@@ -1856,6 +1856,20 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	}
 	mono_error_assert_ok (error);
 
+	/* TODO: Need to do the second half of EditAndContinueModule::ApplyEditAndContinue - that
+	 * is, actually inform the execution engine about new methods and fields.  In particular
+	 * EditAndContinueModule::AddMethod (and EEClass::AddMethod) to store the MonoMethod on the
+	 * class, and EditAndContinueModule::AddField (and EEClass::AddField) to store the new
+	 * MonoClassField on the class.  Also we will need the equivalent of
+	 * EnCFieldDesc::GetAddress in the interpreter to get the field address on a MonoObject
+	 * instance.
+	 *
+	 *  Maybe a simpler design (than stashing a dependent handle in the sync block like CoreCLR
+	 *  do) is to CWT from the original object to an enc dictionary that will map added fields
+	 *  (key: token?) to values, and make transform.c change ldfld/stfld/ldsflda into an icall call to
+	 *  get the CWT target and lookup the token in there.
+	 */
+
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
 	hot_reload_update_publish (alc, generation);
 
