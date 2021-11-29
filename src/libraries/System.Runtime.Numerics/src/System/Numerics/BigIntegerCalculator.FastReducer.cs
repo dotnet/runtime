@@ -91,6 +91,8 @@ namespace System.Numerics
 
             private static int SubMod(Span<uint> left, ReadOnlySpan<uint> right, ReadOnlySpan<uint> modulus, int k)
             {
+                Debug.Assert(left.Length >= k);
+
                 // Executes the subtraction algorithm for left and right,
                 // but considers only the first k limbs, which is equivalent to
                 // preceding reduction by 2^(32*k). Furthermore, if left is
