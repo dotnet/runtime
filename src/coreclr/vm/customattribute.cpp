@@ -808,7 +808,7 @@ FCIMPL5(VOID, COMCustomAttribute::ParseAttributeUsageAttribute, PVOID pData, ULO
 
         CaArg args[1];
         args[0].InitEnum(SERIALIZATION_TYPE_I4, 0);
-        if (FAILED(::ParseKnownCaArgs(ca, args, lengthof(args))))
+        if (FAILED(::ParseKnownCaArgs(ca, args, ARRAY_SIZE(args))))
         {
             HELPER_METHOD_FRAME_BEGIN_0();
             COMPlusThrow(kCustomAttributeFormatException);
@@ -823,7 +823,7 @@ FCIMPL5(VOID, COMCustomAttribute::ParseAttributeUsageAttribute, PVOID pData, ULO
         namedArgTypes[allowMultiple].Init(SERIALIZATION_TYPE_BOOLEAN);
         namedArgs[inherited].Init("Inherited", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[inherited], TRUE);
         namedArgs[allowMultiple].Init("AllowMultiple", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[allowMultiple], FALSE);
-        if (FAILED(::ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs))))
+        if (FAILED(::ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs))))
         {
             HELPER_METHOD_FRAME_BEGIN_0();
             COMPlusThrow(kCustomAttributeFormatException);

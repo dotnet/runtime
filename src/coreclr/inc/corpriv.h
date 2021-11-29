@@ -283,9 +283,6 @@ typedef enum CorOpenFlagsInternal
 #endif
 
 // %%Classes: ----------------------------------------------------------------
-#ifndef lengthof
-#define lengthof(rg)    (sizeof(rg)/sizeof(rg[0]))
-#endif
 
 #define COR_MODULE_CLASS    "<Module>"
 #define COR_WMODULE_CLASS   W("<Module>")

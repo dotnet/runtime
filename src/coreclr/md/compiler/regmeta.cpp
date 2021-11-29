@@ -910,7 +910,7 @@ const char *DumpMD_DumpRawNameOfType(RegMeta *pMD, ULONG iType)
     }
     // default:
     static char buf[30];
-    sprintf_s(buf, NumItems(buf), "unknown type 0x%02x", iType);
+    sprintf_s(buf, ARRAY_SIZE(buf), "unknown type 0x%02x", iType);
     return buf;
 } // const char *DumpMD_DumpRawNameOfType()
 
@@ -1127,7 +1127,7 @@ void DumpMD_DisplayUserStrings(
     bool        bUnprint = false;       // Is an unprintable character found?
     HRESULT     hr;                     // A result.
     while (SUCCEEDED(hr = pMD->EnumUserStrings( &stringEnum,
-                             Strings, NumItems(Strings), &count)) &&
+                             Strings, ARRAY_SIZE(Strings), &count)) &&
             count > 0)
     {
         if (totalCount == 1)
@@ -1225,7 +1225,7 @@ void DumpMD_DumpRawHeaps(
     do
     {
         pMD->GetBlob(oData, &cbData, (const void**)&pData);
-        sprintf_s(rcPrefix, NumItems(rcPrefix), "%5x,%-2x", oData, cbData);
+        sprintf_s(rcPrefix, ARRAY_SIZE(rcPrefix), "%5x,%-2x", oData, cbData);
         DumpMD_DumpHex(rcPrefix, pData, cbData);
         hr = pMD->GetNextBlob(oData, &oData);
     }
@@ -1239,7 +1239,7 @@ void DumpMD_DumpRawHeaps(
     do
     {
         pMD->GetString(oData, &pString);
-        sprintf_s(rcPrefix, NumItems(rcPrefix), "%08x", oData);
+        sprintf_s(rcPrefix, ARRAY_SIZE(rcPrefix), "%08x", oData);
         DumpMD_DumpHex(rcPrefix, pString, (ULONG)strlen(pString)+1);
         if (*pString != 0)
             DumpMD_VWrite("%08x: %s\n", oData, pString);

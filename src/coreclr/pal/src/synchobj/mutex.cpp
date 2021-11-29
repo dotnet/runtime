@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     mutex.ccpp
@@ -15,8 +13,6 @@ Abstract:
     the WIN32 API
 
 Revision History:
-
-
 
 --*/
 
@@ -90,7 +86,7 @@ CObjectType CorUnix::otNamedMutex(
 static CAllowedObjectTypes aotNamedMutex(otiNamedMutex);
 
 static PalObjectTypeId anyMutexTypeIds[] = {otiMutex, otiNamedMutex};
-static CAllowedObjectTypes aotAnyMutex(anyMutexTypeIds, _countof(anyMutexTypeIds));
+static CAllowedObjectTypes aotAnyMutex(anyMutexTypeIds, ARRAY_SIZE(anyMutexTypeIds));
 
 /*++
 Function:
@@ -125,7 +121,7 @@ CreateMutexW(
 
     if (lpName != nullptr)
     {
-        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, _countof(utf8Name), nullptr, nullptr);
+        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, ARRAY_SIZE(utf8Name), nullptr, nullptr);
         if (bytesWritten == 0)
         {
             DWORD errorCode = GetLastError();
@@ -569,7 +565,7 @@ OpenMutexW(
     }
 
     {
-        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, _countof(utf8Name), nullptr, nullptr);
+        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, ARRAY_SIZE(utf8Name), nullptr, nullptr);
         if (bytesWritten == 0)
         {
             DWORD errorCode = GetLastError();

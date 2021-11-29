@@ -839,8 +839,9 @@ namespace System.Net.Http
                 }
 
                 int processLength = (int)Math.Min(headersLength, _recvBuffer.ActiveLength);
+                bool endHeaders = headersLength == processLength;
 
-                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), this);
+                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), endHeaders, this);
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }
