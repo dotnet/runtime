@@ -74,6 +74,17 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        public void PushRange_NoItems_NothingAdded_NonEmptyArrayWithZeroCountSpecified()
+        {
+            var s = new ConcurrentStack<int>();
+            Assert.True(s.IsEmpty);
+
+            int[] arr = new int[2];
+            s.PushRange(arr, arr.Length, 0);
+            Assert.True(s.IsEmpty);
+        }
+
+        [Fact]
         public void PushRange_NoItems_NothingAdded_EmptyArrayNoRangeSpecified()
         {
             var s = new ConcurrentStack<int>();

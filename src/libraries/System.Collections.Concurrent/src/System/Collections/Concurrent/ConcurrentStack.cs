@@ -316,7 +316,6 @@ namespace System.Collections.Concurrent
             {
                 throw new ArgumentNullException(nameof(items));
             }
-
             PushRange(items, 0, items.Length);
         }
 
