@@ -346,8 +346,15 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
             using var lease = limiter.Acquire(1);
-            Assert.Empty(lease.MetadataNames);
             Assert.False(lease.TryGetMetadata(MetadataName.ReasonPhrase.Name, out _));
+        }
+
+        [Fact]
+        public override void MetadataNamesContainsAllMetadata()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            using var lease = limiter.Acquire(1);
+            Assert.Collection(lease.MetadataNames, metadataName => Assert.Equal(metadataName, MetadataName.ReasonPhrase.Name));
         }
 
         [Fact]

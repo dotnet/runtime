@@ -297,8 +297,16 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
             using var lease = limiter.Acquire(1);
-            Assert.Empty(lease.MetadataNames);
             Assert.False(lease.TryGetMetadata(MetadataName.RetryAfter, out _));
+        }
+
+        [Fact]
+        public override void MetadataNamesContainsAllMetadata()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
+                TimeSpan.Zero, 1, autoReplenishment: false));
+            using var lease = limiter.Acquire(1);
+            Assert.Collection(lease.MetadataNames, metadataName => Assert.Equal(metadataName, MetadataName.RetryAfter.Name));
         }
 
         [Fact]

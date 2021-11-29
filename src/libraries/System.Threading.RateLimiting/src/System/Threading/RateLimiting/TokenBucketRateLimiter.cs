@@ -269,6 +269,8 @@ namespace System.Threading.RateLimiting
 
         private sealed class TokenBucketLease : RateLimitLease
         {
+            private static readonly string[] s_allMetadataNames = new[] { MetadataName.RetryAfter.Name };
+
             private readonly TimeSpan? _retryAfter;
 
             public TokenBucketLease(bool isAcquired, TimeSpan? retryAfter)
@@ -279,15 +281,7 @@ namespace System.Threading.RateLimiting
 
             public override bool IsAcquired { get; }
 
-            public override IEnumerable<string> MetadataNames => Enumerable();
-
-            private IEnumerable<string> Enumerable()
-            {
-                if (_retryAfter is not null)
-                {
-                    yield return MetadataName.RetryAfter.Name;
-                }
-            }
+            public override IEnumerable<string> MetadataNames => s_allMetadataNames;
 
             public override bool TryGetMetadata(string metadataName, out object? metadata)
             {

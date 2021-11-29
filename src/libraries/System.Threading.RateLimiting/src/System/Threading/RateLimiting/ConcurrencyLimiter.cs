@@ -190,6 +190,8 @@ namespace System.Threading.RateLimiting
 
         private sealed class ConcurrencyLease : RateLimitLease
         {
+            private static readonly string[] s_allMetadataNames = new[] { MetadataName.ReasonPhrase.Name };
+
             private bool _disposed;
             private readonly ConcurrencyLimiter? _limiter;
             private readonly int _count;
@@ -208,15 +210,7 @@ namespace System.Threading.RateLimiting
 
             public override bool IsAcquired { get; }
 
-            public override IEnumerable<string> MetadataNames => Enumerable();
-
-            private IEnumerable<string> Enumerable()
-            {
-                if (_reason is not null)
-                {
-                    yield return MetadataName.ReasonPhrase.Name;
-                }
-            }
+            public override IEnumerable<string> MetadataNames => s_allMetadataNames;
 
             public override bool TryGetMetadata(string metadataName, out object? metadata)
             {

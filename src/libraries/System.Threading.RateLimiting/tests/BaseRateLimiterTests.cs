@@ -76,5 +76,8 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract void NoMetadataOnAcquiredLease();
+
+        [Fact]
+        public abstract void MetadataNamesContainsAllMetadata();
     }
 }
