@@ -188,9 +188,10 @@ namespace System.IO.Compression.Tests
             // Creation will go through the path that sets the data descriptor bit when the stream is unseekable
             using (var archive = new ZipArchive(wrappedStream, ZipArchiveMode.Create))
             {
-                CreateEntry(archive, "A", "xxx");
-                AssertExtensions.ThrowsContains<InvalidOperationException>(() => CreateEntry(archive, "A", "yyy"),
-                    "The entry name 'A' already exists in the archive.");
+                string entryName = "duplicate.txt";
+                CreateEntry(archive, entryName, "xxx");
+                AssertExtensions.ThrowsContains<InvalidOperationException>(() => CreateEntry(archive, entryName, "yyy"),
+                    entryName);
             }
         }
 

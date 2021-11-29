@@ -426,7 +426,7 @@ namespace System.IO.Compression
         private void AddEntry(ZipArchiveEntry entry)
         {
             _entries.Add(entry);
-            _entriesDictionary.Add(entry.FullName, entry);
+            _entriesDictionary.TryAdd(entry.FullName, entry);
         }
 
         [Conditional("DEBUG")]
