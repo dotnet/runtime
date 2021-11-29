@@ -289,7 +289,7 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         builder.AppendLine($"if ({_filterLocalIdentifier} is null || {_filterLocalIdentifier}.ShouldRunTest(@\"{test.ContainingType}.{test.Method}\", {test.TestNameExpression}))");
         builder.AppendLine("{");
 
-        builder.AppendLine($"TimeSpan testStart = stopwatch.Elapsed;");
+        builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
         builder.AppendLine("try {");
         builder.AppendLine(testExecutionExpression);
         builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart);");
@@ -304,6 +304,6 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", TimeSpan.Zero, string.Empty);";
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
     }
 }
