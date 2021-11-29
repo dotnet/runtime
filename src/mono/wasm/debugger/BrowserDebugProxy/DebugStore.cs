@@ -20,6 +20,7 @@ using System.Reflection.Metadata.Ecma335;
 using Microsoft.CodeAnalysis.Debugging;
 using System.IO.Compression;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -331,6 +332,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
         public int IsAsync { get; set; }
         public bool IsHiddenFromDebugger { get; }
+        public bool IsBrowsable { get; }
+        public Enum BrowsableState { get; }
         public TypeInfo TypeInfo { get; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -480,6 +483,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int Token { get; }
         internal string Namespace { get; }
 
+        public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new Dictionary<string, DebuggerBrowsableState?>();
+
         public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
         {
             this.assembly = assembly;
@@ -499,6 +504,35 @@ namespace Microsoft.WebAssembly.Diagnostics
                 FullName = Namespace + "." + Name;
             else
                 FullName = Name;
+
+            foreach (FieldDefinitionHandle field in type.GetFields())
+            {
+                var fieldDefinition = metadataReader.GetFieldDefinition(field);
+                var fieldName = metadataReader.GetString(fieldDefinition.Name);
+                var hasBrowsableAttribute = false;
+                foreach (var cattr in fieldDefinition.GetCustomAttributes())
+                {
+                    if (hasBrowsableAttribute)
+                        break;
+
+                    var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
+                    if (ctorHandle.Kind == HandleKind.MemberReference)
+                    {
+                        var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
+                        var value = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
+                        var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                        if (attributeName == "DebuggerBrowsableAttribute")
+                        {
+                            var state = (DebuggerBrowsableState)value[2];
+                            if (Enum.IsDefined(typeof(DebuggerBrowsableState), state))
+                            {
+                                DebuggerBrowsableFields.Add(fieldName, state);
+                                hasBrowsableAttribute = true;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public TypeInfo(AssemblyInfo assembly, string name)
@@ -513,7 +547,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override string ToString() => "TypeInfo('" + FullName + "')";
     }
-
 
     internal class AssemblyInfo
     {
@@ -648,7 +681,41 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
             }
+        }
 
+        public DebuggerBrowsableState? GetBrowsableAttributeState(string fieldname)
+        {
+            foreach (TypeDefinitionHandle type in asmMetadataReader.TypeDefinitions)
+            {
+                var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
+                foreach (FieldDefinitionHandle field in typeDefinition.GetFields())
+                {
+                    var fieldDefinition = asmMetadataReader.GetFieldDefinition(field);
+                    var name = asmMetadataReader.GetString(fieldDefinition.Name);
+                    if (fieldname == name)
+                    {
+                        foreach (var cattr in fieldDefinition.GetCustomAttributes())
+                        {
+                            var ctorHandle = asmMetadataReader.GetCustomAttribute(cattr).Constructor;
+                            if (ctorHandle.Kind == HandleKind.MemberReference)
+                            {
+                                var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
+                                var value = asmMetadataReader.GetBlobBytes(asmMetadataReader.GetCustomAttribute(cattr).Value);
+                                var attributeName = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                                if (attributeName == "DebuggerBrowsableAttribute")
+                                {
+                                    var state = (DebuggerBrowsableState)value[2];
+                                    if (Enum.IsDefined(typeof(DebuggerBrowsableState), state))
+                                    {
+                                        return state;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         private void ProcessSourceLink()
