@@ -1177,7 +1177,7 @@ namespace System.Security.Principal
                     {
                         claimType = ClaimTypes.WindowsDeviceGroup;
                         Claim claim = new Claim(claimType, groupSid.Value, ClaimValueTypes.String, _issuerName, _issuerName, this);
-                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, Convert.ToString(groupSid.IdentifierAuthority, CultureInfo.InvariantCulture)!);
+                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, groupSid.IdentifierAuthority.ToString());
                         claim.Properties.Add(claimType, "");
                         instanceClaims.Add(claim);
                     }
@@ -1185,7 +1185,7 @@ namespace System.Security.Principal
                     {
                         claimType = ClaimTypes.DenyOnlyWindowsDeviceGroup;
                         Claim claim = new Claim(claimType, groupSid.Value, ClaimValueTypes.String, _issuerName, _issuerName, this);
-                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, Convert.ToString(groupSid.IdentifierAuthority, CultureInfo.InvariantCulture)!);
+                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, groupSid.IdentifierAuthority.ToString());
                         claim.Properties.Add(claimType, "");
                         instanceClaims.Add(claim);
                     }
@@ -1244,7 +1244,7 @@ namespace System.Security.Principal
 
                             for (int item = 0; item < windowsClaim.ValueCount; item++)
                             {
-                                Claim c = new Claim(windowsClaim.Name, Convert.ToString(intValues[item], CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _issuerName, _issuerName, this);
+                                Claim c = new Claim(windowsClaim.Name, intValues[item].ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _issuerName, _issuerName, this);
                                 c.Properties.Add(propertyValue, string.Empty);
                                 instanceClaims.Add(c);
                             }
@@ -1257,7 +1257,7 @@ namespace System.Security.Principal
 
                             for (int item = 0; item < windowsClaim.ValueCount; item++)
                             {
-                                Claim c = new Claim(windowsClaim.Name, Convert.ToString((ulong)uintValues[item], CultureInfo.InvariantCulture), ClaimValueTypes.UInteger64, _issuerName, _issuerName, this);
+                                Claim c = new Claim(windowsClaim.Name, ((ulong)uintValues[item]).ToString(CultureInfo.InvariantCulture), ClaimValueTypes.UInteger64, _issuerName, _issuerName, this);
                                 c.Properties.Add(propertyValue, string.Empty);
                                 instanceClaims.Add(c);
                             }

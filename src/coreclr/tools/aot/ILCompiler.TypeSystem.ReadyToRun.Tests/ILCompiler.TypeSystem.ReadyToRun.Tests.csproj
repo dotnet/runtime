@@ -12,6 +12,7 @@
          included in compilation of this project -->
     <EnableDefaultItems>false</EnableDefaultItems>
     <Platforms>AnyCPU;x64</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

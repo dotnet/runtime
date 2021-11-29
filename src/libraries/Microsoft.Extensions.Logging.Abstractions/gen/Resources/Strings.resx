@@ -123,9 +123,6 @@
   <data name="InvalidLoggingMethodParameterNameMessage" xml:space="preserve">
     <value>Logging method parameter names cannot start with _</value>
   </data>
-  <data name="LoggingMethodInNestedTypeMessage" xml:space="preserve">
-    <value>Logging class cannot be in nested types</value>
-  </data>
   <data name="MissingRequiredTypeTitle" xml:space="preserve">
     <value>Could not find a required type definition</value>
   </data>
@@ -177,7 +174,7 @@
     <value>Argument is not referenced from the logging message</value>
   </data>
   <data name="TemplateHasNoCorrespondingArgumentMessage" xml:space="preserve">
-    <value>Template {0} is not provided as argument to the logging method</value>
+    <value>Template '{0}' is not provided as argument to the logging method</value>
   </data>
   <data name="TemplateHasNoCorrespondingArgumentTitle" xml:space="preserve">
     <value>Logging template has no corresponding method argument</value>

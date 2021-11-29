@@ -264,6 +264,10 @@ namespace System.DirectoryServices.AccountManagement
                             // we don't return false here even if we failed with ERROR_LOGON_FAILURE. We must check Negotiate
                             // because there might be cases in which SSL fails and Negotiate succeeds
                         }
+                        catch (DirectoryOperationException)
+                        {
+                            // see LdapException
+                        }
 
                         BindLdap(networkCredential, defaultContextOptionsNegotiate);
                         _lastBindMethod = AuthMethod.Negotiate;

@@ -233,7 +233,7 @@ namespace Microsoft.Extensions.Logging
             {
                 var vsb = new ValueStringBuilder(stackalloc char[256]);
                 bool first = true;
-                foreach (object e in enumerable)
+                foreach (object? e in enumerable)
                 {
                     if (!first)
                     {

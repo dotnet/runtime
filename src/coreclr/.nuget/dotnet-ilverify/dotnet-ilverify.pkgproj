@@ -13,19 +13,19 @@
 
   <ItemGroup>
     <PackageFile Include="DotnetToolSettings.xml">
-       <TargetPath>tools\netcoreapp3.1\any\DotnetToolSettings.xml</TargetPath>
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\DotnetToolSettings.xml</TargetPath>
     </PackageFile>
     <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\ILVerify.dll">
-       <TargetPath>tools\netcoreapp3.1\any\ILVerify.dll</TargetPath>
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\ILVerify.dll</TargetPath>
     </PackageFile>
     <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\System.CommandLine.dll">
-       <TargetPath>tools\netcoreapp3.1\any\System.CommandLine.dll</TargetPath>
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\System.CommandLine.dll</TargetPath>
     </PackageFile>
     <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\ILVerify.deps.json">
-       <TargetPath>tools\netcoreapp3.1\any\ILVerify.deps.json</TargetPath>
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\ILVerify.deps.json</TargetPath>
     </PackageFile>
     <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\ILVerify.runtimeconfig.json">
-       <TargetPath>tools\netcoreapp3.1\any\ILVerify.runtimeconfig.json</TargetPath>
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\ILVerify.runtimeconfig.json</TargetPath>
     </PackageFile>
   </ItemGroup>
 

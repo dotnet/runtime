@@ -71,7 +71,6 @@
 #include "jit-icalls.h"
 
 #include "mini-gc.h"
-#include "debugger-agent.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
 #include "lldb.h"
@@ -84,7 +83,6 @@ int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method;
 int mono_break_at_bb_bb_num;
 gboolean mono_do_x86_stack_align = TRUE;
-gboolean mono_using_xdebug;
 
 /* Counters */
 static guint32 discarded_code;
@@ -671,6 +669,11 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			}
 		}
 	}
+
+#ifdef TARGET_WASM
+	if (mini_type_is_reference (type))
+		mono_mark_vreg_as_ref (cfg, vreg);
+#endif
 	
 	cfg->varinfo [num] = inst;
 
@@ -2047,18 +2050,8 @@ mono_codegen (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	int max_epilog_size;
 	guint8 *code;
-	MonoMemoryManager *code_mem_manager;
+	MonoMemoryManager *code_mem_manager = cfg->mem_manager;
 	guint unwindlen = 0;
-
-	if (mono_using_xdebug)
-		/*
-		 * Recent gdb versions have trouble processing symbol files containing
-		 * overlapping address ranges, so allocate all code from the code manager
-		 * of the root domain. (#666152).
-		 */
-		code_mem_manager = get_default_mem_manager ();
-	else
-		code_mem_manager = cfg->mem_manager;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		cfg->spill_count = 0;
@@ -2134,11 +2127,7 @@ mono_codegen (MonoCompile *cfg)
 		g_hash_table_insert (jit_mm->dynamic_code_hash, cfg->method, cfg->dynamic_info);
 		jit_mm_unlock (jit_mm);
 
-		if (mono_using_xdebug)
-			/* See the comment for cfg->code_domain */
-			code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
-		else
-			code = (guint8 *)mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + cfg->thunk_area + unwindlen);
+		code = (guint8 *)mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + cfg->thunk_area + unwindlen);
 	} else {
 		code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
 	}
@@ -2221,10 +2210,7 @@ mono_codegen (MonoCompile *cfg)
 	}
 
 	if (cfg->method->dynamic) {
-		if (mono_using_xdebug)
-			mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
-		else
-			mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
+		mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
 	} else {
 		mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
@@ -2814,6 +2800,12 @@ insert_safepoints (MonoCompile *cfg)
 		}
 	}
 
+	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+		return;
+	}
+
 	if (cfg->verbose_level > 1)
 		printf ("INSERTING SAFEPOINTS\n");
 	if (cfg->verbose_level > 2)
@@ -2940,13 +2932,18 @@ remove_empty_finally_pass (MonoCompile *cfg)
 				}
 			}
 			if (empty) {
-				bb->flags &= ~BB_EXCEPTION_HANDLER;
+				/* Nullify OP_START_HANDLER */
 				NULLIFY_INS (first);
 				last = mono_bb_last_inst (bb, 0);
 				if (last->opcode == OP_ENDFINALLY)
 					NULLIFY_INS (last);
 				if (cfg->verbose_level > 1)
 					g_print ("removed empty finally clause %d.\n", i);
+
+				/* Mark the handler bb as not used anymore */
+				bb = cfg->cil_offset_to_bb [clause->handler_offset];
+				bb->flags &= ~BB_EXCEPTION_HANDLER;
+
 				cfg->clause_is_dead [i] = TRUE;
 				remove_call_handler = TRUE;
 			}
@@ -2956,17 +2953,13 @@ remove_empty_finally_pass (MonoCompile *cfg)
 	if (remove_call_handler) {
 		/* Remove OP_CALL_HANDLER opcodes pointing to the removed finally blocks */
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *handler_ins = NULL;
 			MONO_BB_FOR_EACH_INS (bb, ins) {
 				if (ins->opcode == OP_CALL_HANDLER && ins->inst_target_bb && !(ins->inst_target_bb->flags & BB_EXCEPTION_HANDLER)) {
-					handler_ins = ins;
+					NULLIFY_INS (ins);
+					for (MonoInst *ins2 = ins->next; ins2; ins2 = ins2->next)
+						NULLIFY_INS (ins2);
 					break;
 				}
-			}
-			if (handler_ins) {
-				handler_ins->opcode = OP_BR;
-				for (ins = handler_ins->next; ins; ins = ins->next)
-					NULLIFY_INS (ins);
 			}
 		}
 	}
@@ -3059,6 +3052,23 @@ is_simd_supported (MonoCompile *cfg)
 		return FALSE;
 #endif
 	return TRUE;
+}
+
+/* Determine how an rgctx is passed to a method */
+MonoRgctxAccess
+mini_get_rgctx_access_for_method (MonoMethod *method)
+{
+	/* gshared dim methods use an mrgctx */
+	if (mini_method_is_default_method (method))
+		return MONO_RGCTX_ACCESS_MRGCTX;
+
+	if (mono_method_get_context (method)->method_inst)
+		return MONO_RGCTX_ACCESS_MRGCTX;
+
+	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
+		return MONO_RGCTX_ACCESS_VTABLE;
+
+	return MONO_RGCTX_ACCESS_THIS;
 }
 
 /*
@@ -3206,6 +3216,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->interp_entry_only = interp_entry_only;
 	if (try_generic_shared)
 		cfg->gshared = TRUE;
+	if (cfg->gshared)
+		cfg->rgctx_access = mini_get_rgctx_access_for_method (cfg->method);
 	cfg->compile_llvm = try_llvm;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 	if (cfg->compile_aot)
@@ -3307,7 +3319,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (COMPILE_LLVM (cfg)) {
 			mono_llvm_check_method_supported (cfg);
 			if (cfg->disable_llvm) {
-				if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
+				if (cfg->verbose_level > 0) {
 					//nm = mono_method_full_name (cfg->method, TRUE);
 					printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 					//g_free (nm);
@@ -3360,18 +3372,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 		/* This is needed for the soft debugger, which doesn't like code after the epilog */
 		cfg->disable_out_of_line_bblocks = TRUE;
-	}
-
-	if (mono_using_xdebug) {
-		/* 
-		 * Make each variable use its own register/stack slot and extend 
-		 * their liveness to cover the whole method, making them displayable
-		 * in gdb even after they are dead.
-		 */
-		cfg->disable_reuse_registers = TRUE;
-		cfg->disable_reuse_stack_slots = TRUE;
-		cfg->extend_live_ranges = TRUE;
-		cfg->compute_precise_live_ranges = TRUE;
 	}
 
 	mini_gc_init_cfg (cfg);
@@ -3523,6 +3523,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
+	cfg->after_method_to_ir = TRUE;
+
 	/* todo: remove code when we have verified that the liveness for try/catch blocks
 	 * works perfectly 
 	 */
@@ -3596,8 +3598,19 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "if_conversion");
 	}
 
-	// This still causes failures
-	//remove_empty_finally_pass (cfg);
+	remove_empty_finally_pass (cfg);
+
+	if (cfg->llvm_only && cfg->interp && !cfg->method->wrapper_type && !interp_entry_only) {
+		/* Disable llvm if there are still finally clauses left */
+		for (int i = 0; i < cfg->header->num_clauses; ++i) {
+			MonoExceptionClause *clause = &header->clauses [i];
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY && !cfg->clause_is_dead [i]) {
+				cfg->exception_message = g_strdup ("finally clause.");
+				cfg->disable_llvm = TRUE;
+				break;
+			}
+		}
+	}
 
 	mono_threads_safepoint ();
 
@@ -3848,7 +3861,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
 		if (cfg->disable_llvm) {
-			if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
+			if (cfg->verbose_level > 0) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
 				printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 				//g_free (nm);
@@ -3900,10 +3913,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	MONO_TIME_TRACK (mono_jit_stats.jit_gc_create_gc_map, mini_gc_create_gc_map (cfg));
 	MONO_TIME_TRACK (mono_jit_stats.jit_save_seq_point_info, mono_save_seq_point_info (cfg, cfg->jit_info));
 
-	if (!cfg->compile_aot) {
-		mono_save_xdebug_info (cfg);
+	if (!cfg->compile_aot)
 		mono_lldb_save_method_info (cfg);
-	}
 
 	if (cfg->verbose_level >= 2) {
 		char *id =  mono_method_full_name (cfg->method, TRUE);
@@ -4418,7 +4429,12 @@ mini_get_cpu_features (MonoCompile* cfg)
 
 #if defined(TARGET_ARM64)
 	// All Arm64 devices have this set
-	features |= MONO_CPU_ARM64_BASE; 
+	features |= MONO_CPU_ARM64_BASE;
+
+	// This is a standard part of ARMv8-A; see A1.5 in "ARM
+	// Architecture Reference Manual ARMv8, for ARMv8-A
+	// architecture profile"
+	features |= MONO_CPU_ARM64_NEON; 
 #endif
 
 	// apply parameters passed via -mattr

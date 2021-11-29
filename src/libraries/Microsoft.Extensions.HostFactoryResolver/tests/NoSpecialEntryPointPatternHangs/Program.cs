@@ -9,7 +9,7 @@ namespace NoSpecialEntryPointPatternHangs
     {
         public static void Main(string[] args)
         {
-            Console.ReadLine();
+            System.Threading.Thread.Sleep(-1);
         }
     }
 }

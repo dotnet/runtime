@@ -79,10 +79,7 @@ namespace System.Net.Http.Json
                     }
                     else
                     {
-                        // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
-                        // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                        using var writer = new Utf8JsonWriter(transcodingStream);
-                        SerializeHelper(writer, Value, ObjectType, _jsonSerializerOptions);
+                        SerializeSyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions);
                     }
                 }
                 finally
@@ -120,21 +117,17 @@ namespace System.Net.Http.Json
                 else
                 {
 #if NETCOREAPP
-                    // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
-                    // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                    using var writer = new Utf8JsonWriter(targetStream);
-                    SerializeHelper(writer, Value, ObjectType, _jsonSerializerOptions);
+                    SerializeSyncHelper(targetStream, Value, ObjectType, _jsonSerializerOptions);
 #else
                     Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
             }
-
 #if NETCOREAPP
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            static void SerializeHelper(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerOptions? options)
-                => JsonSerializer.Serialize(writer, value, inputType, options);
+            static void SerializeSyncHelper(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options)
+                => JsonSerializer.Serialize(utf8Json, value, inputType, options);
 #endif
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

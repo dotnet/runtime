@@ -406,7 +406,7 @@ namespace System.Text.RegularExpressions
                 if (runtextpos > runtextbeg && runtext![runtextpos - 1] != '\n')
                 {
                     int newline = runtext.IndexOf('\n', runtextpos);
-                    if (newline == -1)
+                    if (newline == -1 || newline + 1 > runtextend)
                     {
                         runtextpos = runtextend;
                         return false;
@@ -457,7 +457,7 @@ namespace System.Text.RegularExpressions
                     if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
                         // singleton, left-to-right, case-sensitive
-                        int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(ch);
+                        int i = span.IndexOf(ch);
                         if (i >= 0)
                         {
                             runtextpos += i;

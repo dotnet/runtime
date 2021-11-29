@@ -102,5 +102,25 @@ namespace System.IO.Tests
                 ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, symLinkPath);
             }
         }
+
+        [Fact]
+        public void FileSystemWatcher_Directory_Create_SynchronizingObject()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            {
+                TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
+                watcher.SynchronizingObject = invoker;
+
+                string dirName = Path.Combine(testDirectory.Path, "dir");
+                watcher.Filter = Path.GetFileName(dirName);
+
+                Action action = () => Directory.CreateDirectory(dirName);
+                Action cleanup = () => Directory.Delete(dirName);
+
+                ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, dirName);
+                Assert.True(invoker.BeginInvoke_Called);
+            }
+        }
     }
 }

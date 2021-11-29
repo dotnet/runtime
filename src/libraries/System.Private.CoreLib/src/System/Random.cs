@@ -27,7 +27,7 @@ namespace System
             // With no seed specified, if this is the base type, we can implement this however we like.
             // If it's a derived type, for compat we respect the previous implementation, so that overrides
             // are called as they were previously.
-            _impl = GetType() == typeof(Random) ? new XoshiroImpl() : new Net5CompatImpl(this);
+            _impl = GetType() == typeof(Random) ? new XoshiroImpl() : new Net5CompatDerivedImpl(this);
 
         /// <summary>Initializes a new instance of the Random class, using the specified seed value.</summary>
         /// <param name="Seed">
@@ -35,9 +35,10 @@ namespace System
         /// is specified, the absolute value of the number is used.
         /// </param>
         public Random(int Seed) =>
-            // With a custom seed, for compat we respect the previous implementation so that the same sequence
-            // previously output continues to be output.
-            _impl = new Net5CompatImpl(this, Seed);
+            // With a custom seed, if this is the base Random class, we still need to respect the same algorithm that's been
+            // used in the past, but we can do so without having to deal with calling the right overrides in a derived type.
+            // If this is a derived type, we need to handle always using the same overrides we've done previously.
+            _impl = GetType() == typeof(Random) ? new Net5CompatSeedImpl(Seed) : new Net5CompatDerivedImpl(this, Seed);
 
         /// <summary>Constructor used by <see cref="ThreadSafeRandom"/>.</summary>
         /// <param name="isThreadSafeRandom">Must be true.</param>
@@ -201,28 +202,18 @@ namespace System
         {
             if (maxExclusive > minInclusive)
             {
-                if (result < minInclusive || result >= maxExclusive)
-                {
-                    Debug.Fail($"Expected {minInclusive} <= {result} < {maxExclusive}");
-                }
+                Debug.Assert(result >= minInclusive && result < maxExclusive, $"Expected {minInclusive} <= {result} < {maxExclusive}");
             }
             else
             {
-                if (result != minInclusive)
-                {
-                    Debug.Fail($"Expected {minInclusive} == {result}");
-                }
+                Debug.Assert(result == minInclusive, $"Expected {minInclusive} == {result}");
             }
         }
 
         [Conditional("DEBUG")]
         private static void AssertInRange(double result)
         {
-            if (result < 0.0 || result >= 1.0)
-            {
-                // Avoid calling result.ToString() when the Assert condition is not met
-                Debug.Fail($"Expected 0.0 <= {result} < 1.0");
-            }
+            Debug.Assert(result >= 0.0 && result < 1.0, $"Expected 0.0 <= {result} < 1.0");
         }
 
         /// <summary>Random implementation that delegates all calls to a ThreadStatic Impl instance.</summary>

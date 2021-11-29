@@ -51,6 +51,13 @@ namespace System.Numerics
             W = scalarPart;
         }
 
+        /// <summary>Gets a quaternion that represents a zero.</summary>
+        /// <value>A quaternion whose values are <c>(0, 0, 0, 0)</c>.</value>
+        public static Quaternion Zero
+        {
+            get => default;
+        }
+
         /// <summary>Gets a quaternion that represents no rotation.</summary>
         /// <value>A quaternion whose values are <c>(0, 0, 0, 1)</c>.</value>
         public static Quaternion Identity

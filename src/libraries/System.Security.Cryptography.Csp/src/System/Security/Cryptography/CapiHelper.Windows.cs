@@ -615,7 +615,7 @@ namespace Internal.NativeCrypto
             {
                 case CryptGetKeyParamQueryType.KP_IV:
                     if (!Interop.Advapi32.CryptSetKeyParam(safeKeyHandle, (int)keyParam, value, 0))
-                        throw new CryptographicException(SR.CryptSetKeyParam_Failed, Convert.ToString(GetErrorCode()));
+                        throw new CryptographicException(SR.CryptSetKeyParam_Failed, GetErrorCode().ToString());
 
                     break;
                 default:
@@ -640,7 +640,7 @@ namespace Internal.NativeCrypto
                 case CryptGetKeyParamQueryType.KP_MODE_BITS:
                 case CryptGetKeyParamQueryType.KP_EFFECTIVE_KEYLEN:
                     if (!Interop.Advapi32.CryptSetKeyParam(safeKeyHandle, (int)keyParam, ref value, 0))
-                        throw new CryptographicException(SR.CryptSetKeyParam_Failed, Convert.ToString(GetErrorCode()));
+                        throw new CryptographicException(SR.CryptSetKeyParam_Failed, GetErrorCode().ToString());
 
                     break;
                 default:
@@ -716,7 +716,7 @@ namespace Internal.NativeCrypto
                                             CspProviderFlags.UseUserProtectedKey);
                 if ((flags & keyFlags) != CspProviderFlags.NoFlags)
                 {
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, Convert.ToString(flags)), nameof(flags));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, flags), nameof(flags));
                 }
             }
         }
@@ -756,7 +756,7 @@ namespace Internal.NativeCrypto
                 (keyType == CspAlgorithmType.Dss && dwAlgId != CALG_DSS_SIGN))
             {
                 hKey.Dispose();
-                throw new CryptographicException(SR.Format(SR.Cryptography_CSP_WrongKeySpec, Convert.ToString(keyType)));
+                throw new CryptographicException(SR.Format(SR.Cryptography_CSP_WrongKeySpec, keyType));
             }
 
             return hKey;

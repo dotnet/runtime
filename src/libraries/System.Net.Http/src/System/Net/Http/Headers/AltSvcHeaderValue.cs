@@ -56,13 +56,12 @@ namespace System.Net.Http.Headers
             sb.Append("=\"");
             if (Host != null) sb.Append(Host);
             sb.Append(':');
-            sb.Append(Port.ToString(CultureInfo.InvariantCulture));
+            sb.Append((uint)Port);
             sb.Append('"');
 
             if (MaxAge != TimeSpan.FromTicks(AltSvcHeaderParser.DefaultMaxAgeTicks))
             {
-                sb.Append("; ma=");
-                sb.Append((MaxAge.Ticks / TimeSpan.TicksPerSecond).ToString(CultureInfo.InvariantCulture));
+                sb.Append(CultureInfo.InvariantCulture, $"; ma={MaxAge.Ticks / TimeSpan.TicksPerSecond}");
             }
 
             if (Persist)

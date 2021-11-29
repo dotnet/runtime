@@ -11,9 +11,6 @@
 #define JITINTERFACE_H
 
 #include "corjit.h"
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif // FEATURE_PREJIT
 
 #ifndef TARGET_UNIX
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
@@ -69,12 +66,10 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 void InitJITHelpers1();
 void InitJITHelpers2();
 
-#ifndef CROSSGEN_COMPILE
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
                         CORJIT_FLAGS flags,
                         ULONG* sizeOfCode = NULL);
-#endif // CROSSGEN_COMPILE
 
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,
@@ -89,7 +84,8 @@ void getMethodInfoILMethodHeaderHelper(
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
-                          SIZE_T *entry);
+                          SIZE_T *entry,
+                          BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
 //
 // The legacy x86 monitor helpers do not need a state argument
@@ -238,15 +234,10 @@ extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type,
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
 
-#if defined(TARGET_ARM64) || defined(FEATURE_WRITEBARRIER_COPY)
 // ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
-#else
-// in other cases the regular JIT helper is callable.
-#define WriteBarrier_Helper JIT_WriteBarrier
-#endif
 
 extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
 extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
@@ -344,28 +335,25 @@ EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
 
 #ifdef TARGET_X86
 
+#define ENUM_X86_WRITE_BARRIER_REGISTERS() \
+    X86_WRITE_BARRIER_REGISTER(EAX) \
+    X86_WRITE_BARRIER_REGISTER(ECX) \
+    X86_WRITE_BARRIER_REGISTER(EBX) \
+    X86_WRITE_BARRIER_REGISTER(ESI) \
+    X86_WRITE_BARRIER_REGISTER(EDI) \
+    X86_WRITE_BARRIER_REGISTER(EBP)
+
 extern "C"
 {
-    void STDCALL JIT_CheckedWriteBarrierEAX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEBX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierECX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierESI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEDI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEBP(); // JIThelp.asm/JIThelp.s
 
-    void STDCALL JIT_DebugWriteBarrierEAX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEBX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierECX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierESI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEDI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEBP(); // JIThelp.asm/JIThelp.s
+// JIThelp.asm/JIThelp.s
+#define X86_WRITE_BARRIER_REGISTER(reg) \
+    void STDCALL JIT_CheckedWriteBarrier##reg(); \
+    void STDCALL JIT_DebugWriteBarrier##reg(); \
+    void STDCALL JIT_WriteBarrier##reg();
 
-    void STDCALL JIT_WriteBarrierEAX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEBX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierECX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierESI();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEDI();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEBP();        // JIThelp.asm/JIThelp.s
+    ENUM_X86_WRITE_BARRIER_REGISTERS()
+#undef X86_WRITE_BARRIER_REGISTER
 
     void STDCALL JIT_WriteBarrierGroup();
     void STDCALL JIT_WriteBarrierGroup_End();
@@ -419,6 +407,7 @@ class CEEInfo : public ICorJitInfo
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
     BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
+    void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
@@ -630,7 +619,6 @@ struct  HeapList;
 struct _hpCodeHdr;
 typedef struct _hpCodeHdr CodeHeader;
 
-#ifndef CROSSGEN_COMPILE
 // CEEJitInfo is the concrete implementation of callbacks that the EE must provide for the JIT to do its
 // work.   See code:ICorJitInfo#JitToEEInterface for more on this interface.
 class CEEJitInfo : public CEEInfo
@@ -698,6 +686,8 @@ public:
     uint16_t getRelocTypeHint(void * target) override final;
 
     uint32_t getExpectedTargetArchitecture() override final;
+
+    bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls) override final;
 
     void ResetForJitRetry()
     {
@@ -941,6 +931,8 @@ public:
 
 protected :
 
+    void WriteCodeBytes();
+
 #ifdef FEATURE_PGO
     // PGO data
     struct ComputedPgoData
@@ -961,8 +953,8 @@ protected :
 
 
     EEJitManager*           m_jitManager;   // responsible for allocating memory
-    CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
-    CodeHeader*             m_CodeHeaderRW;
+    CodeHeader*             m_CodeHeader;   // descriptor for JITTED code - read/execute address
+    CodeHeader*             m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address
     size_t                  m_codeWriteBufferSize;
 #ifdef USE_INDIRECT_CODEHEADER
     BYTE*                   m_pRealCodeHeader;
@@ -1026,7 +1018,6 @@ protected :
     } m_gphCache;
 
 };
-#endif // CROSSGEN_COMPILE
 
 /*********************************************************************/
 /*********************************************************************/
@@ -1155,8 +1146,16 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();
 
-FCDECL0(INT64, GetJittedBytes);
-FCDECL0(INT32, GetJittedMethodsCount);
+
+extern Volatile<int64_t> g_cbILJitted;
+extern Volatile<int64_t> g_cMethodsJitted;
+extern Volatile<int64_t> g_c100nsTicksInJit;
+extern thread_local int64_t t_cbILJittedForThread;
+extern thread_local int64_t t_cMethodsJittedForThread;
+extern thread_local int64_t t_c100nsTicksInJitForThread;
+
+FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread);
 
 #endif // JITINTERFACE_H
-

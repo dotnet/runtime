@@ -15,8 +15,7 @@ internal static partial class Interop
     {
         private const string MapsFileName = "/maps";
 
-        private static string GetMapsFilePathForProcess(int pid) =>
-            RootPath + pid.ToString(CultureInfo.InvariantCulture) + MapsFileName;
+        private static string GetMapsFilePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{MapsFileName}");
 
         internal static ProcessModuleCollection? ParseMapsModules(int pid)
         {

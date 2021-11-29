@@ -6,6 +6,8 @@
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)ref\*.*proj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)src\*.*proj" />
+    <!-- Keep in sync with https://github.com/dotnet/runtime/blob/4d82932722b56924598708f991961a75e5a90b36/src/libraries/Directory.Build.props#L31. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)tests\**\*.Tests.*proj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)tests\**\*.UnitTests.*proj" />
   </ItemGroup>
 </Project>

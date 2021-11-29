@@ -134,8 +134,6 @@ class ECall
         static LPVOID GetQCallImpl(MethodDesc * pMD);
 };
 
-#ifdef FEATURE_COMINTEROP
 extern "C" FCDECL1(VOID, FCComCtor, LPVOID pV);
-#endif
 
 #endif // _ECALL_H_

@@ -14,8 +14,6 @@ namespace System.Security.Cryptography
     [UnsupportedOSPlatform("browser")]
     public partial class Rfc2898DeriveBytes : DeriveBytes
     {
-        private const int MinimumSaltSize = 8;
-
         private byte[] _salt;
         private uint _iterations;
         private HMAC _hmac;
@@ -37,7 +35,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            :this(password, salt, iterations, hashAlgorithm, clearPassword: false, requireMinimumSaltLength: true)
+            :this(password, salt, iterations, hashAlgorithm, clearPassword: false)
         {
         }
 
@@ -52,7 +50,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm, clearPassword: true, requireMinimumSaltLength: true)
+            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm, clearPassword: true)
         {
         }
 
@@ -70,8 +68,6 @@ namespace System.Security.Cryptography
         {
             if (saltSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(saltSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (saltSize < MinimumSaltSize)
-                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(saltSize));
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
 
@@ -89,12 +85,10 @@ namespace System.Security.Cryptography
             Initialize();
         }
 
-        internal Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword, bool requireMinimumSaltLength)
+        internal Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
         {
             if (salt is null)
                 throw new ArgumentNullException(nameof(salt));
-            if (requireMinimumSaltLength && salt.Length < MinimumSaltSize)
-                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(salt));
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
             if (password is null)
@@ -143,8 +137,6 @@ namespace System.Security.Cryptography
             {
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
-                if (value.Length < MinimumSaltSize)
-                    throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt);
 
                 _salt = new byte[value.Length + sizeof(uint)];
                 value.AsSpan().CopyTo(_salt);
@@ -218,6 +210,7 @@ namespace System.Security.Cryptography
             return password;
         }
 
+        [Obsolete(Obsoletions.Rfc2898CryptDeriveKeyMessage, DiagnosticId = Obsoletions.Rfc2898CryptDeriveKeyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV)
         {
             // If this were to be implemented here, CAPI would need to be used (not CNG) because of

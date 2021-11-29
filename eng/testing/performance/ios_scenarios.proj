@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <Python>python3</Python>
+    <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">
+      <PayloadDirectory>%(Identity)</PayloadDirectory>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <LlvmPath>nollvm</LlvmPath>
+    <LlvmPath Condition="'$(iOSLlvmBuild)' == 'True'">llvm</LlvmPath>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
+    <ScenarioDirectory>%HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\</ScenarioDirectory>
+    
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <ScenarioDirectory>$HELIX_CORRELATION_PAYLOAD/performance/src/scenarios/</ScenarioDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="SOD - iOS HelloWorld .app Size">
+        <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+        <PreCommands>cd $(ScenarioDirectory)helloios;xcopy %HELIX_CORRELATION_PAYLOAD%\iosHelloWorld\$(LlvmPath) .\app\/e;$(Python) pre.py</PreCommands>
+        <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+        <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+  </ItemGroup>
+</Project>

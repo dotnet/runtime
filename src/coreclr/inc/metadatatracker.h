@@ -4,15 +4,6 @@
 #ifndef _METADATATRACKER_H_
 #define _METADATATRACKER_H_
 
-#ifdef FEATURE_PREJIT
-
-#define METADATATRACKER_DATA 1
-#if !defined(DACCESS_COMPILE)
-#define METADATATRACKER_ENABLED 1
-#endif
-
-#endif
-
 #if METADATATRACKER_ENABLED
 
 #define METADATATRACKER_ONLY(s) (s)
@@ -191,7 +182,6 @@ public:
         return address;
     }
 
-    // See the comment above CMiniMdRW::GetHotMetadataTokensSearchAware
     __forceinline static void NoteSearch(void *result)
     {
         WRAPPER_NO_CONTRACT;

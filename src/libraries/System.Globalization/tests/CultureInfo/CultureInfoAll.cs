@@ -667,12 +667,6 @@ namespace System.Globalization.Tests
                 CultureInfo ci = new CultureInfo(lcid);
                 Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
 
-                if (ci.LCID == 0x1000)
-                {
-                    // Unsupported culture.
-                    return;
-                }
-
                 Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
                 Assert.True(ci.UseUserOverride, "UseUserOverride for lcid created culture expected to be true");
                 Assert.False(ci.IsReadOnly, "IsReadOnly for lcid created culture expected to be false");
@@ -719,10 +713,14 @@ namespace System.Globalization.Tests
                 ci = CultureInfo.CreateSpecificCulture(cultureNames[0]);
                 TestCultureName(specificCultureName, ci.Name);
 
-                ci = CultureInfo.GetCultureInfoByIetfLanguageTag(cultureNames[0]);
-                Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
-                TestCultureName(ci.Name, ci.IetfLanguageTag);
-                Assert.True(lcid == ci.KeyboardLayoutId || (ushort)lcid == (ushort)ci.KeyboardLayoutId);
+                // CultureInfo.GetCultureInfoByIetfLanguageTag doesn't support alternative sort LCID's.
+                if (lcid <= 0xffff && lcid != 0x040a)
+                {
+                    ci = CultureInfo.GetCultureInfoByIetfLanguageTag(cultureNames[0]);
+                    Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
+                    TestCultureName(ci.Name, ci.IetfLanguageTag);
+                    Assert.True(lcid == ci.KeyboardLayoutId || (ushort)lcid == (ushort)ci.KeyboardLayoutId);
+                }
 
                 if (ci.GetConsoleFallbackUICulture().Name != "")
                 {
@@ -733,8 +731,8 @@ namespace System.Globalization.Tests
             {
                 AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(lcid));
             }
-            
-    }
+
+        }
 
         private static string[] hans = new[] { "zh-CN", "zh-CHS", "zh-Hans" };
         private static string[] hant = new[] { "zh-HK", "zh-CHT", "zh-Hant" };

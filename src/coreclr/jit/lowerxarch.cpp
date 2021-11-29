@@ -110,11 +110,11 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 // Return Value:
 //    None.
 //
-void Lowering::LowerStoreIndir(GenTreeIndir* node)
+void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     // Mark all GT_STOREIND nodes to indicate that it is not known
     // whether it represents a RMW memory op.
-    node->AsStoreInd()->SetRMWStatusDefault();
+    node->SetRMWStatusDefault();
 
     if (!varTypeIsFloating(node))
     {
@@ -130,10 +130,10 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             return;
         }
     }
-    else if (node->AsStoreInd()->Data()->OperIs(GT_CNS_DBL))
+    else if (node->Data()->IsCnsFltOrDbl())
     {
         // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
-        GenTree*  data   = node->AsStoreInd()->Data();
+        GenTree*  data   = node->Data();
         double    dblCns = data->AsDblCon()->gtDconVal;
         ssize_t   intCns = 0;
         var_types type   = TYP_UNKNOWN;
@@ -141,28 +141,53 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
         if (node->TypeIs(TYP_FLOAT))
         {
             float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
-            intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
-            type         = TYP_UINT;
+            intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
+            type         = TYP_INT;
         }
 #ifdef TARGET_AMD64
         else
         {
             assert(node->TypeIs(TYP_DOUBLE));
-            intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
-            type   = TYP_ULONG;
+            intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
+            type   = TYP_LONG;
         }
 #endif
 
         if (type != TYP_UNKNOWN)
         {
             data->SetContained();
-            data->ChangeOperConst(GT_CNS_INT);
-            data->AsIntCon()->SetIconValue(intCns);
-            data->ChangeType(type);
+            data->BashToConst(intCns, type);
             node->ChangeType(type);
         }
     }
+
+    // Optimization: do not unnecessarily zero-extend the result of setcc.
+    if (varTypeIsByte(node) && (node->Data()->OperIsCompare() || node->Data()->OperIs(GT_SETCC)))
+    {
+        node->Data()->ChangeType(TYP_BYTE);
+    }
+
     ContainCheckStoreIndir(node);
+}
+
+//------------------------------------------------------------------------
+// LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
+//
+// Currently only performs containment checks.
+//
+// Arguments:
+//    mul - The node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerMul(GenTreeOp* mul)
+{
+    assert(mul->OperIsMul());
+
+    ContainCheckMul(mul);
+
+    return mul->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -216,11 +241,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
                 if (fill == 0)
                 {
-                    // If the size is multiple of XMM register size there's no need to load 0 in a GPR,
-                    // codegen will use xorps to generate 0 directly in the temporary XMM register.
-                    if ((size % XMM_REGSIZE_BYTES) == 0)
+                    if (size >= XMM_REGSIZE_BYTES)
                     {
-                        src->SetContained();
+                        const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
+#ifdef TARGET_AMD64
+                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % XMM_REGSIZE_BYTES == 0);
+#else
+                        const bool willUseOnlySimdMov = (size % 8 == 0);
+#endif
+                        if (willUseOnlySimdMov)
+                        {
+                            src->SetContained();
+                        }
                     }
                 }
 #ifdef TARGET_AMD64
@@ -261,6 +293,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
             src->AsIndir()->Addr()->ClearContained();
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
@@ -432,10 +470,10 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         unsigned prevOffset        = putArgStk->GetStackByteSize();
         for (GenTreeFieldList::Use& use : fieldList->Uses())
         {
-            GenTree* const  fieldNode   = use.GetNode();
-            const var_types fieldType   = fieldNode->TypeGet();
-            const unsigned  fieldOffset = use.GetOffset();
-            assert(fieldType != TYP_LONG);
+            GenTree* const fieldNode   = use.GetNode();
+            const unsigned fieldOffset = use.GetOffset();
+
+            assert(!fieldNode->TypeIs(TYP_LONG));
 
             // We can treat as a slot any field that is stored at a slot boundary, where the previous
             // field is not in the same slot. (Note that we store the fields in reverse order.)
@@ -1267,6 +1305,15 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
         node->gtOp1 = op1;
         BlockRange().Remove(op2);
+
+        op2 = op2->AsOp()->gtGetOp1();
+
+        if (op2 != nullptr)
+        {
+            // Some zero vectors are Create/Initialization nodes with a constant zero operand
+            // We should also remove this to avoid dead code
+            BlockRange().Remove(op2);
+        }
 
         LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
         ReplaceWithLclVar(op1Use);
@@ -2852,7 +2899,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
         if (foundUse)
         {
-            use.ReplaceWith(comp, cast);
+            use.ReplaceWith(cast);
         }
         LowerNode(cast);
     }
@@ -3934,7 +3981,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 
         if (foundUse)
         {
-            use.ReplaceWith(comp, cast);
+            use.ReplaceWith(cast);
         }
         LowerNode(cast);
     }
@@ -4446,32 +4493,27 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         // we should never see a gtControlExpr whose type is void.
         assert(ctrlExpr->TypeGet() != TYP_VOID);
 
-        // In case of fast tail implemented as jmp, make sure that gtControlExpr is
-        // computed into a register.
-        if (!call->IsFastTailCall())
-        {
 #ifdef TARGET_X86
-            // On x86, we need to generate a very specific pattern for indirect VSD calls:
-            //
-            //    3-byte nop
-            //    call dword ptr [eax]
-            //
-            // Where EAX is also used as an argument to the stub dispatch helper. Make
-            // sure that the call target address is computed into EAX in this case.
-            if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
-            {
-                assert(ctrlExpr->isIndir());
-                MakeSrcContained(call, ctrlExpr);
-            }
-            else
+        // On x86, we need to generate a very specific pattern for indirect VSD calls:
+        //
+        //    3-byte nop
+        //    call dword ptr [eax]
+        //
+        // Where EAX is also used as an argument to the stub dispatch helper. Make
+        // sure that the call target address is computed into EAX in this case.
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        {
+            assert(ctrlExpr->isIndir());
+            MakeSrcContained(call, ctrlExpr);
+        }
+        else
 #endif // TARGET_X86
-                if (ctrlExpr->isIndir())
-            {
-                // We may have cases where we have set a register target on the ctrlExpr, but if it
-                // contained we must clear it.
-                ctrlExpr->SetRegNum(REG_NA);
-                MakeSrcContained(call, ctrlExpr);
-            }
+            if (ctrlExpr->isIndir())
+        {
+            // We may have cases where we have set a register target on the ctrlExpr, but if it
+            // contained we must clear it.
+            ctrlExpr->SetRegNum(REG_NA);
+            MakeSrcContained(call, ctrlExpr);
         }
     }
 
@@ -4575,17 +4617,18 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
+void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    GenTree* src = node->AsOp()->gtOp2;
+    GenTree* src = node->Data();
     if (IsContainableImmed(node, src) &&
-        (!src->IsIntegralConst(0) || varTypeIsSmall(node) || node->gtGetOp1()->OperGet() == GT_CLS_VAR_ADDR))
+        (!src->IsIntegralConst(0) || varTypeIsSmall(node) || node->Addr()->OperIs(GT_CLS_VAR_ADDR)))
     {
         MakeSrcContained(node, src);
     }
+
     ContainCheckIndir(node);
 }
 

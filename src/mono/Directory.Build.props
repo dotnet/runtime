@@ -28,7 +28,7 @@
     <watchOS64_32Version></watchOS64_32Version>
     <macOSVersion></macOSVersion>
 
-    <!-- Version of the Android SDK we target, keep in sync with src/libraries/Native/build-native.sh -->
+    <!-- Version of the Android SDK we target, keep in sync with eng/native/build-commons.sh -->
     <AndroidApiVersion>21</AndroidApiVersion>
   </PropertyGroup>
 
@@ -77,11 +77,4 @@
     <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
 
-  <!-- Feature defaults for mono.proj and System.Private.CoreLib.csproj -->
-  <PropertyGroup>
-    <!-- default metadata update support for specific platforms -->
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')">true</MonoMetadataUpdate>
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true')">true</MonoMetadataUpdate>
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">false</MonoMetadataUpdate>
-  </PropertyGroup>
 </Project>

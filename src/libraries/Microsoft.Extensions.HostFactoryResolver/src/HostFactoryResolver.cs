@@ -4,11 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 #nullable enable
 
@@ -23,7 +22,7 @@ namespace Microsoft.Extensions.Hosting
         public const string CreateHostBuilder = nameof(CreateHostBuilder);
 
         // The amount of time we wait for the diagnostic source events to fire
-        private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan s_defaultWaitTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(5);
 
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {
@@ -40,7 +39,17 @@ namespace Microsoft.Extensions.Hosting
             return ResolveFactory<THostBuilder>(assembly, CreateHostBuilder);
         }
 
-        public static Func<string[], object>? ResolveHostFactory(Assembly assembly, TimeSpan? waitTimeout = null, bool stopApplication = true, Action<object>? configureHostBuilder = null)
+        // This helpers encapsulates all of the complex logic required to:
+        // 1. Execute the entry point of the specified assembly in a different thread.
+        // 2. Wait for the diagnostic source events to fire
+        // 3. Give the caller a chance to execute logic to mutate the IHostBuilder
+        // 4. Resolve the instance of the applications's IHost
+        // 5. Allow the caller to determine if the entry point has completed
+        public static Func<string[], object>? ResolveHostFactory(Assembly assembly,
+                                                                 TimeSpan? waitTimeout = null,
+                                                                 bool stopApplication = true,
+                                                                 Action<object>? configureHostBuilder = null,
+                                                                 Action<Exception?>? entrypointCompleted = null)
         {
             if (assembly.EntryPoint is null)
             {
@@ -50,13 +59,13 @@ namespace Microsoft.Extensions.Hosting
             try
             {
                 // Attempt to load hosting and check the version to make sure the events
-                // even have a change of firing (they were adding in .NET >= 6)
+                // even have a chance of firing (they were added in .NET >= 6)
                 var hostingAssembly = Assembly.Load("Microsoft.Extensions.Hosting");
                 if (hostingAssembly.GetName().Version is Version version && version.Major < 6)
                 {
                     return null;
                 }
-                
+
                 // We're using a version >= 6 so the events can fire. If they don't fire
                 // then it's because the application isn't using the hosting APIs
             }
@@ -66,7 +75,7 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
 
-            return args => new HostingListener(args, assembly.EntryPoint, waitTimeout ?? s_defaultWaitTimeout, stopApplication, configureHostBuilder).CreateHost();
+            return args => new HostingListener(args, assembly.EntryPoint, waitTimeout ?? s_defaultWaitTimeout, stopApplication, configureHostBuilder, entrypointCompleted).CreateHost();
         }
 
         private static Func<string[], T>? ResolveFactory<T>(Assembly assembly, string name)
@@ -136,6 +145,14 @@ namespace Microsoft.Extensions.Hosting
             {
                 return args =>
                 {
+                    static bool IsApplicationNameArg(string arg)
+                        => arg.Equals("--applicationName", StringComparison.OrdinalIgnoreCase) ||
+                            arg.Equals("/applicationName", StringComparison.OrdinalIgnoreCase);
+
+                    args = args.Any(arg => IsApplicationNameArg(arg)) || assembly.FullName is null
+                        ? args
+                        : args.Concat(new[] { "--applicationName", assembly.FullName }).ToArray();
+
                     var host = hostFactory(args);
                     return GetServiceProvider(host);
                 };
@@ -161,7 +178,7 @@ namespace Microsoft.Extensions.Hosting
             return (IServiceProvider?)servicesProperty?.GetValue(host);
         }
 
-        private class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
+        private sealed class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
         {
             private readonly string[] _args;
             private readonly MethodInfo _entryPoint;
@@ -170,15 +187,18 @@ namespace Microsoft.Extensions.Hosting
 
             private readonly TaskCompletionSource<object> _hostTcs = new();
             private IDisposable? _disposable;
-            private Action<object>? _configure;
+            private readonly Action<object>? _configure;
+            private readonly Action<Exception?>? _entrypointCompleted;
+            private static readonly AsyncLocal<HostingListener> _currentListener = new();
 
-            public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, bool stopApplication, Action<object>? configure)
+            public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, bool stopApplication, Action<object>? configure, Action<Exception?>? entrypointCompleted)
             {
                 _args = args;
                 _entryPoint = entryPoint;
                 _waitTimeout = waitTimeout;
                 _stopApplication = stopApplication;
                 _configure = configure;
+                _entrypointCompleted = entrypointCompleted;
             }
 
             public object CreateHost()
@@ -189,8 +209,14 @@ namespace Microsoft.Extensions.Hosting
                 // in case we need to timeout the execution
                 var thread = new Thread(() =>
                 {
+                    Exception? exception = null;
+
                     try
                     {
+                        // Set the async local to the instance of the HostingListener so we can filter events that
+                        // aren't scoped to this execution of the entry point.
+                        _currentListener.Value = this;
+
                         var parameters = _entryPoint.GetParameters();
                         if (parameters.Length == 0)
                         {
@@ -211,13 +237,22 @@ namespace Microsoft.Extensions.Hosting
                     }
                     catch (TargetInvocationException tie)
                     {
+                        exception = tie.InnerException ?? tie;
+
                         // Another exception happened, propagate that to the caller
-                        _hostTcs.TrySetException(tie.InnerException ?? tie);
+                        _hostTcs.TrySetException(exception);
                     }
                     catch (Exception ex)
                     {
+                        exception = ex;
+
                         // Another exception happened, propagate that to the caller
                         _hostTcs.TrySetException(ex);
+                    }
+                    finally
+                    {
+                        // Signal that the entry point is completed
+                        _entrypointCompleted?.Invoke(exception);
                     }
                 })
                 {
@@ -258,6 +293,12 @@ namespace Microsoft.Extensions.Hosting
 
             public void OnNext(DiagnosticListener value)
             {
+                if (_currentListener.Value != this)
+                {
+                    // Ignore events that aren't for this listener
+                    return;
+                }
+
                 if (value.Name == "Microsoft.Extensions.Hosting")
                 {
                     _disposable = value.Subscribe(this);
@@ -266,6 +307,12 @@ namespace Microsoft.Extensions.Hosting
 
             public void OnNext(KeyValuePair<string, object?> value)
             {
+                if (_currentListener.Value != this)
+                {
+                    // Ignore events that aren't for this listener
+                    return;
+                }
+
                 if (value.Key == "HostBuilding")
                 {
                     _configure?.Invoke(value.Value!);
@@ -283,7 +330,7 @@ namespace Microsoft.Extensions.Hosting
                 }
             }
 
-            private class StopTheHostException : Exception
+            private sealed class StopTheHostException : Exception
             {
 
             }

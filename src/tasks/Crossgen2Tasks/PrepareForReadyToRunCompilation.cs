@@ -57,6 +57,7 @@ namespace Microsoft.NET.Build.Tasks
         public ITaskItem[] ReadyToRunCompositeBuildInput => _r2rCompositeInput.ToArray();
 
         private bool _crossgen2IsVersion5;
+        private int _perfmapFormatVersion;
 
         private List<ITaskItem> _compileList = new List<ITaskItem>();
         private List<ITaskItem> _symbolsCompileList = new List<ITaskItem>();
@@ -71,6 +72,9 @@ namespace Microsoft.NET.Build.Tasks
             {
                 string isVersion5 = Crossgen2Tool.GetMetadata(MetadataKeys.IsVersion5);
                 _crossgen2IsVersion5 = !string.IsNullOrEmpty(isVersion5) && bool.Parse(isVersion5);
+
+                string perfmapVersion = Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion);
+                _perfmapFormatVersion = !string.IsNullOrEmpty(perfmapVersion) ? int.Parse(perfmapVersion) : 0;
 
                 if (Crossgen2Composite && EmitSymbols && _crossgen2IsVersion5)
                 {
@@ -144,16 +148,25 @@ namespace Microsoft.NET.Build.Tasks
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        using (FileStream fs = new FileStream(file.ItemSpec, FileMode.Open, FileAccess.Read))
+                        string perfmapExtension;
+                        if (ReadyToRunUseCrossgen2 && !_crossgen2IsVersion5 && _perfmapFormatVersion >= 1)
                         {
-                            PEReader pereader = new PEReader(fs);
-                            MetadataReader mdReader = pereader.GetMetadataReader();
-                            Guid mvid = mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid);
-
-                            outputPDBImage = Path.ChangeExtension(outputR2RImage, "ni.{" + mvid + "}.map");
-                            outputPDBImageRelativePath = Path.ChangeExtension(outputR2RImageRelativePath, "ni.{" + mvid + "}.map");
-                            crossgen1CreatePDBCommand = $"/CreatePerfMap \"{Path.GetDirectoryName(outputPDBImage)}\"";
+                            perfmapExtension = ".ni.r2rmap";
                         }
+                        else
+                        {
+                            using (FileStream fs = new FileStream(file.ItemSpec, FileMode.Open, FileAccess.Read))
+                            {
+                                PEReader pereader = new PEReader(fs);
+                                MetadataReader mdReader = pereader.GetMetadataReader();
+                                Guid mvid = mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid);
+                                perfmapExtension = ".ni.{" + mvid + "}.map";
+                            }
+                        }
+
+                        outputPDBImage = Path.ChangeExtension(outputR2RImage, perfmapExtension);
+                        outputPDBImageRelativePath = Path.ChangeExtension(outputR2RImageRelativePath, perfmapExtension);
+                        crossgen1CreatePDBCommand = $"/CreatePerfMap \"{Path.GetDirectoryName(outputPDBImage)}\"";
                     }
                 }
 
@@ -240,8 +253,9 @@ namespace Microsoft.NET.Build.Tasks
                     }
                     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     {
-                        compositePDBImage = Path.ChangeExtension(compositeR2RImage, ".ni.{composite}.map");
-                        compositePDBRelativePath = Path.ChangeExtension(compositeR2RImageRelativePath, ".ni.{composite}.map");
+                        string perfmapExtension = (_perfmapFormatVersion >= 1 ? ".ni.r2rmap" : ".ni.{composite}.map");
+                        compositePDBImage = Path.ChangeExtension(compositeR2RImage, perfmapExtension);
+                        compositePDBRelativePath = Path.ChangeExtension(compositeR2RImageRelativePath, perfmapExtension);
                     }
 
                     if (compositePDBImage != null && ReadyToRunUseCrossgen2 && !_crossgen2IsVersion5)

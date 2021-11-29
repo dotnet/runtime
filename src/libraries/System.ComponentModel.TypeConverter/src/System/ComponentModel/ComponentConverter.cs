@@ -23,7 +23,7 @@ namespace System.ComponentModel
         /// specified by the value parameter.
         /// </summary>
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes)
         {
             return TypeDescriptor.GetProperties(value, attributes);
         }
@@ -32,6 +32,6 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this object supports properties using the
         /// specified context.
         /// </summary>
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
     }
 }

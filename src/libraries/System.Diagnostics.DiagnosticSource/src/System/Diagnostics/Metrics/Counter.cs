@@ -66,5 +66,12 @@ namespace System.Diagnostics.Metrics
         /// <param name="delta">The increment measurement.</param>
         /// <param name="tags">A list of key-value pair tags associated with the measurement.</param>
         public void Add(T delta, params KeyValuePair<string, object?>[] tags) => RecordMeasurement(delta, tags.AsSpan());
+
+        /// <summary>
+        /// Record the increment value of the measurement.
+        /// </summary>
+        /// <param name="delta">The measurement value.</param>
+        /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
+        public void Add(T delta, in TagList tagList) => RecordMeasurement(delta, in tagList);
     }
 }

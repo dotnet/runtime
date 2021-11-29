@@ -24,9 +24,10 @@
 #include "mini.h"
 #include "mini-x86.h"
 #include "mini-runtime.h"
-#include "debugger-agent.h"
 #include "jit-icalls.h"
 #include "mono/utils/mono-tls-inline.h"
+
+#include <mono/metadata/components.h>
 
 /*
  * mono_arch_get_unbox_trampoline:
@@ -618,7 +619,7 @@ mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
  * mono_arch_create_sdb_trampoline:
  *
  *   Return a trampoline which captures the current context, passes it to
- * mini_get_dbg_callbacks ()->single_step_from_context ()/mini_get_dbg_callbacks ()->breakpoint_from_context (),
+ * mono_component_debugger ()->single_step_from_context ()/mono_component_debugger ()->breakpoint_from_context (),
  * then restores the (potentially changed) context.
  */
 guint8*
@@ -682,9 +683,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 		x86_breakpoint (code);
 	} else {
 		if (single_step)
-			x86_call_code (code, mini_get_dbg_callbacks ()->single_step_from_context);
+			x86_call_code (code, mono_component_debugger ()->single_step_from_context);
 		else
-			x86_call_code (code, mini_get_dbg_callbacks ()->breakpoint_from_context);
+			x86_call_code (code, mono_component_debugger ()->breakpoint_from_context);
 	}
 
 	/* Restore registers from ctx */

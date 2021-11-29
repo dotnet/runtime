@@ -139,7 +139,7 @@ namespace System.Net.Http
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            throw new PlatformNotSupportedException ();
+            throw new PlatformNotSupportedException();
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -323,10 +323,27 @@ namespace System.Net.Http
                 return httpResponse;
 
             }
-            catch (JSException jsExc)
+            catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
             {
-                throw new System.Net.Http.HttpRequestException(jsExc.Message);
+                throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
             }
+            catch (JSException jse)
+            {
+                throw TranslateJSException(jse, cancellationToken);
+            }
+        }
+
+        private static Exception TranslateJSException(JSException jse, CancellationToken cancellationToken)
+        {
+            if (jse.Message.StartsWith("AbortError", StringComparison.Ordinal))
+            {
+                return CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+            }
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+            }
+            return new HttpRequestException(jse.Message, jse);
         }
 
         private sealed class WasmFetchResponse : IDisposable
@@ -366,7 +383,6 @@ namespace System.Net.Http
 
                 _isDisposed = true;
 
-                _abortCts.Cancel();
                 _abortCts.Dispose();
                 _abortRegistration.Dispose();
 
@@ -385,20 +401,26 @@ namespace System.Net.Http
                 _status = status ?? throw new ArgumentNullException(nameof(status));
             }
 
-            private async Task<byte[]> GetResponseData()
+            private async Task<byte[]> GetResponseData(CancellationToken cancellationToken)
             {
                 if (_data != null)
                 {
                     return _data;
                 }
-
-                using (System.Runtime.InteropServices.JavaScript.ArrayBuffer dataBuffer = (System.Runtime.InteropServices.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
+                try
                 {
-                    using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
+                    using (System.Runtime.InteropServices.JavaScript.ArrayBuffer dataBuffer = (System.Runtime.InteropServices.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
                     {
-                        _data = dataBinView.ToArray();
-                        _status.Dispose();
+                        using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
+                        {
+                            _data = dataBinView.ToArray();
+                            _status.Dispose();
+                        }
                     }
+                }
+                catch (JSException jse)
+                {
+                    throw TranslateJSException(jse, cancellationToken);
                 }
 
                 return _data;
@@ -406,7 +428,7 @@ namespace System.Net.Http
 
             protected override async Task<Stream> CreateContentReadStreamAsync()
             {
-                byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
+                byte[] data = await GetResponseData(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
                 return new MemoryStream(data, writable: false);
             }
 
@@ -414,7 +436,7 @@ namespace System.Net.Http
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
-                byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
+                byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
                 await stream.WriteAsync(data, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
             protected internal override bool TryComputeLength(out long length)
@@ -482,10 +504,13 @@ namespace System.Net.Http
                             _reader = (JSObject)body.Invoke("getReader");
                         }
                     }
-                    catch (JSException)
+                    catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        throw;
+                        throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                    }
+                    catch (JSException jse)
+                    {
+                        throw TranslateJSException(jse, cancellationToken);
                     }
                 }
 
@@ -515,10 +540,13 @@ namespace System.Net.Http
                             _bufferedBytes = binValue.ToArray();
                     }
                 }
-                catch (JSException)
+                catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    throw;
+                    throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                }
+                catch (JSException jse)
+                {
+                    throw TranslateJSException(jse, cancellationToken);
                 }
 
                 return ReadBuffered();

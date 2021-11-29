@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
@@ -38,7 +37,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    using LoopbackSocksServer proxy = useAuth ? LoopbackSocksServer.Create("DOTNET", "424242") : LoopbackSocksServer.Create();
+                    await using var proxy = useAuth ? new LoopbackSocksServer("DOTNET", "424242") : new LoopbackSocksServer();
                     using HttpClientHandler handler = CreateHttpClientHandler();
                     using HttpClient client = CreateHttpClient(handler);
 
@@ -93,7 +92,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(TestExceptionalAsync_MemberData))]
         public async Task TestExceptionalAsync(string scheme, string host, bool useAuth, ICredentials? credentials, string exceptionMessage)
         {
-            using LoopbackSocksServer proxy = useAuth ? LoopbackSocksServer.Create("DOTNET", "424242") : LoopbackSocksServer.Create();
+            var proxy = useAuth ? new LoopbackSocksServer("DOTNET", "424242") : new LoopbackSocksServer();
             using HttpClientHandler handler = CreateHttpClientHandler();
             using HttpClient client = CreateHttpClient(handler);
 
@@ -109,18 +108,24 @@ namespace System.Net.Http.Functional.Tests
             var innerException = ex.InnerException;
             Assert.Equal(exceptionMessage, innerException.Message);
             Assert.Equal("SocksException", innerException.GetType().Name);
+
+            try
+            {
+                await proxy.DisposeAsync();
+            }
+            catch { }
         }
     }
 
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
     public sealed class SocksProxyTest_Http1_Async : SocksProxyTest
     {
         public SocksProxyTest_Http1_Async(ITestOutputHelper helper) : base(helper) { }
         protected override Version UseVersion => HttpVersion.Version11;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
     public sealed class SocksProxyTest_Http1_Sync : SocksProxyTest
     {
         public SocksProxyTest_Http1_Sync(ITestOutputHelper helper) : base(helper) { }
@@ -128,7 +133,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
     public sealed class SocksProxyTest_Http2 : SocksProxyTest
     {
         public SocksProxyTest_Http2(ITestOutputHelper helper) : base(helper) { }

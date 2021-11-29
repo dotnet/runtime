@@ -20,9 +20,12 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
+#include <mono/metadata/metadata-internals.h>
+#include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
 #undef EP_ARRAY_SIZE
@@ -527,6 +530,15 @@ ep_rt_mono_thread_setup (bool background_thread)
 static
 inline
 void
+ep_rt_mono_thread_setup_2 (bool background_thread, EventPipeThreadType thread_type)
+{
+	extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
+	ep_rt_mono_thread_attach_2 (background_thread, thread_type);
+}
+
+static
+inline
+void
 ep_rt_mono_thread_teardown (void)
 {
 	extern void ep_rt_mono_thread_detach (void);
@@ -590,7 +602,11 @@ inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
+#if SIZEOF_SIZE_T == 8
+	return (size_t)(mono_atomic_cas_i64((volatile gint64*)(target), (gint64)(value), (gint64)(expected)));
+#else
 	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
+#endif
 }
 
 /*
@@ -847,7 +863,9 @@ bool
 ep_rt_config_value_get_enable (void)
 {
 	bool enable = false;
-	gchar *value = g_getenv ("COMPlus_EnableEventPipe");
+	gchar *value = g_getenv ("DOTNET_EnableEventPipe");
+	if (!value)
+		value = g_getenv ("COMPlus_EnableEventPipe");
 	if (value && atoi (value) == 1)
 		enable = true;
 	g_free (value);
@@ -859,7 +877,10 @@ inline
 ep_char8_t *
 ep_rt_config_value_get_config (void)
 {
-	return g_getenv ("COMPlus_EventPipeConfig");
+	gchar *value = g_getenv ("DOTNET_EventPipeConfig");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeConfig");
+	return (ep_char8_t *)value;
 }
 
 static
@@ -867,7 +888,10 @@ inline
 ep_char8_t *
 ep_rt_config_value_get_output_path (void)
 {
-	return g_getenv ("COMPlus_EventPipeOutputPath");
+	gchar *value = g_getenv ("DOTNET_EventPipeOutputPath");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeOutputPath");
+	return (ep_char8_t *)value;
 }
 
 static
@@ -876,7 +900,9 @@ uint32_t
 ep_rt_config_value_get_circular_mb (void)
 {
 	uint32_t circular_mb = 0;
-	gchar *value = g_getenv ("COMPlus_EventPipeCircularMB");
+	gchar *value = g_getenv ("DOTNET_EventPipeCircularMB");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeCircularMB");
 	if (value)
 		circular_mb = strtoul (value, NULL, 10);
 	g_free (value);
@@ -889,7 +915,9 @@ bool
 ep_rt_config_value_get_output_streaming (void)
 {
 	bool enable = false;
-	gchar *value = g_getenv ("COMPlus_EventPipeOutputStreaming");
+	gchar *value = g_getenv ("DOTNET_EventPipeOutputStreaming");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeOutputStreaming");
 	if (value && atoi (value) == 1)
 		enable = true;
 	g_free (value);
@@ -911,7 +939,9 @@ uint32_t
 ep_rt_config_value_get_rundown (void)
 {
 	uint32_t value_uint32_t = 1;
-	gchar *value = g_getenv ("COMPlus_EventPipeRundown");
+	gchar *value = g_getenv ("DOTNET_EventPipeRundown");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeRundown");
 	if (value)
 		value_uint32_t = (uint32_t)atoi (value);
 	g_free (value);
@@ -1230,7 +1260,7 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 {
 	rt_mono_thread_params_internal_t *thread_params = (rt_mono_thread_params_internal_t *)data;
 
-	ep_rt_mono_thread_setup (thread_params->background_thread);
+	ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_params->thread_params.thread_type);
 
 	thread_params->thread_params.thread = ep_rt_thread_get_handle ();
 	mono_thread_start_return_t result = thread_params->thread_params.thread_func (thread_params);
@@ -1824,6 +1854,30 @@ ep_rt_diagnostics_command_line_get (void)
 	return cmd_line;
 }
 
+static
+inline
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
+{
+	MonoAssembly *main_assembly = mono_assembly_get_main ();
+	if (!main_assembly || !main_assembly->image)
+		return "";
+
+	const char *assembly_name = m_image_get_assembly_name (mono_assembly_get_main ()->image);
+	if (!assembly_name)
+		return "";
+
+	return (const ep_char8_t*)assembly_name;
+}
+
+static
+inline
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
+{
+	return (const ep_char8_t *)EGLIB_TOSTRING (RuntimeProductVersion);
+}
+
 /*
  * Thread.
  */
@@ -2308,6 +2362,16 @@ EventPipeEtwCallbackDotNETRuntimePrivate (
 
 void
 EventPipeEtwCallbackDotNETRuntimeStress (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data);
+
+void
+EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
 	uint8_t level,

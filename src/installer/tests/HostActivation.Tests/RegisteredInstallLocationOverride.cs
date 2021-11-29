@@ -4,8 +4,10 @@
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -54,25 +56,35 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // On Linux/macOS the install location is registered in a file which is normally
                 // located in /etc/dotnet/install_location
                 // So we need to redirect it to a different place here.
-                string directory = Path.Combine(TestArtifact.TestArtifactsPath, "installLocationOverride");
+                string directory = Path.Combine(TestArtifact.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
                 Directory.CreateDirectory(directory);
-                PathValueOverride = Path.Combine(directory, "install_location." + Process.GetCurrentProcess().Id.ToString());
-                File.WriteAllText(PathValueOverride, "");
+                PathValueOverride = directory;
             }
         }
 
-        public void SetInstallLocation(string installLocation, string architecture)
+        public void SetInstallLocation(params (string Architecture, string Path)[] locations)
         {
+            Debug.Assert(locations.Length >= 1);
             if (OperatingSystem.IsWindows())
             {
-                using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{architecture}"))
+                foreach (var location in locations)
                 {
-                    dotnetLocationKey.SetValue("InstallLocation", installLocation);
+                    using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{location.Architecture}"))
+                    {
+                        dotnetLocationKey.SetValue("InstallLocation", location.Path);
+                    }
                 }
             }
             else
             {
-                File.WriteAllText(PathValueOverride, installLocation);
+                foreach (var location in locations)
+                {
+                    string installLocationFileName = "install_location" +
+                        (!string.IsNullOrWhiteSpace(location.Architecture) ? ("_" + location.Architecture) : string.Empty);
+                    File.WriteAllText(Path.Combine(PathValueOverride, installLocationFileName), location.Path);
+                }
             }
         }
 
@@ -119,7 +131,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             else
             {
                 return command.EnvironmentVariable(
-                    Constants.TestOnlyEnvironmentVariables.InstallLocationFilePath,
+                    Constants.TestOnlyEnvironmentVariables.InstallLocationPath,
                     registeredInstallLocationOverride.PathValueOverride);
             }
         }

@@ -35,6 +35,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Tests;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Microsoft.DotNet.RemoteExecutor;
@@ -3586,7 +3587,22 @@ Assert.False(true);
                                 DateTime.Now.AddDays(2),
                                 DateTime.Now.AddDays(4));
             Assert.Equal(10, dt.Rows.Count);
-            Assert.Equal(2, dv.Count);
+
+            int expectedRowCount = 2;
+            if (dv.Count != expectedRowCount)
+            {
+                StringBuilder sb = new();
+                sb.AppendLine($"DataView.Rows.Count: Expected: {expectedRowCount}, Actual: {dv.Count}. Debug data: RowFilter: {dv.RowFilter}, date: {date}");
+                for (int i = 0; i < dv.Count; i++)
+                {
+                    sb.Append($"row#{i}: ");
+                    foreach (var row in dv[i].Row.ItemArray)
+                        sb.Append($"'{row}', ");
+                    sb.AppendLine();
+                }
+
+                Assert.True(expectedRowCount == dv.Count, sb.ToString());
+            }
         }
 
         [Fact]

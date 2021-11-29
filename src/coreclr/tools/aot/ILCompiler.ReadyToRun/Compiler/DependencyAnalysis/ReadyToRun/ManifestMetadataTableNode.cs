@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -62,6 +63,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// ID corresponding to the next manifest metadata assemblyref entry.
         /// </summary>
         private int _nextModuleId;
+
+        /// <summary>
+        /// Modules which need to exist in set of modules visible
+        /// </summary>
+        private ConcurrentBag<EcmaModule> _modulesWhichMustBeIndexable = new ConcurrentBag<EcmaModule>();
 
         /// <summary>
         /// Set to true after GetData has been called. After that, ModuleToIndex may be called no more.
@@ -136,6 +142,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return ModuleToIndexInternal(module);
         }
 
+        public void EnsureModuleIndexable(ModuleDesc module)
+        {
+            if (_emissionCompleted)
+            {
+                throw new InvalidOperationException("Adding a new assembly after signatures have been materialized.");
+            }
+
+            if (module is EcmaModule ecmaModule && _nodeFactory.CompilationModuleGroup.VersionsWithModule(ecmaModule))
+            {
+                _modulesWhichMustBeIndexable.Add(ecmaModule);
+            }
+        }
+
         private int ModuleToIndexInternal(EcmaModule module)
         {
             AssemblyName assemblyName = module.Assembly.GetName();
@@ -170,13 +189,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("ManifestMetadataTableNode");
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        private void ComputeLastSetOfModuleIndices()
         {
-            if (relocsOnly)
-            {
-                return new ObjectData(Array.Empty<byte>(), null, 1, null);
-            }
-
             if (!_emissionCompleted)
             {
                 foreach (ISignatureEmitter emitter in _signatureEmitters)
@@ -184,8 +198,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     emitter.MaterializeSignature();
                 }
 
+                EcmaModule [] moduleArray = _modulesWhichMustBeIndexable.ToArray();
+                Array.Sort(moduleArray, (EcmaModule moduleA, EcmaModule moduleB) => moduleA.CompareTo(moduleB));
+                foreach (var module in moduleArray)
+                {
+                    ModuleToIndex(module);
+                }
+
                 _emissionCompleted = true;
             }
+        }
+
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        {
+            if (relocsOnly)
+            {
+                return new ObjectData(Array.Empty<byte>(), null, 1, null);
+            }
+
+            ComputeLastSetOfModuleIndices();
 
             MetadataBuilder metadataBuilder = new MetadataBuilder();
 
@@ -277,6 +308,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal byte[] GetManifestAssemblyMvidTableData()
         {
+            ComputeLastSetOfModuleIndices();
+
             byte[] manifestAssemblyMvidTable = new byte[ManifestAssemblyMvidTableSize];
             for (int i = 0; i < _manifestAssemblyMvids.Count; i++)
             {

@@ -37,8 +37,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void FileShareWithoutWriteThrows()
         {
             string fileName = GetTestFilePath();

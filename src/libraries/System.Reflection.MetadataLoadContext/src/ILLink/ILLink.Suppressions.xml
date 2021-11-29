@@ -213,6 +213,12 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.Ecma.EcmaModule.GetField(System.String,System.Reflection.BindingFlags)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
       <argument>IL2085</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Reflection.TypeLoading.RoType.GetDefaultMembers</property>

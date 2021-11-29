@@ -8,6 +8,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Security;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
@@ -25,6 +26,12 @@ namespace System.Runtime.Caching
         private volatile bool _useInsertBlock;
         private readonly MemoryCache _cache;
         private readonly Counters _perfCounters;
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatformGuard("browser")]
+        private static bool _countersSupported => !OperatingSystem.IsBrowser();
+#else
+        private static bool _countersSupported => true;
+#endif
 
         internal MemoryCacheStore(MemoryCache cache, Counters perfCounters)
         {
@@ -73,7 +80,7 @@ namespace System.Runtime.Caching
             }
 
             entry.CallNotifyOnChanged();
-            if (_perfCounters != null)
+            if (_perfCounters != null && _countersSupported)
             {
                 _perfCounters.Increment(CounterName.Entries);
                 _perfCounters.Increment(CounterName.Turnover);
@@ -108,7 +115,7 @@ namespace System.Runtime.Caching
                 {
                     entry.Release(_cache, reason);
                 }
-                if (_perfCounters != null)
+                if (_perfCounters != null && _countersSupported)
                 {
                     _perfCounters.Decrement(CounterName.Entries);
                     _perfCounters.Increment(CounterName.Turnover);
@@ -136,7 +143,7 @@ namespace System.Runtime.Caching
                 // keep the sentinel from expiring, which in turn would force a removal of this entry from the cache.
                 entry.UpdateSlidingExpForUpdateSentinel();
 
-                if (updatePerfCounters && _perfCounters != null)
+                if (updatePerfCounters && _perfCounters != null && _countersSupported)
                 {
                     _perfCounters.Increment(CounterName.Hits);
                     _perfCounters.Increment(CounterName.HitRatio);
@@ -145,7 +152,7 @@ namespace System.Runtime.Caching
             }
             else
             {
-                if (updatePerfCounters && _perfCounters != null)
+                if (updatePerfCounters && _perfCounters != null && _countersSupported)
                 {
                     _perfCounters.Increment(CounterName.Misses);
                     _perfCounters.Increment(CounterName.HitRatioBase);
@@ -404,7 +411,7 @@ namespace System.Runtime.Caching
                 trimmedOrExpired += trimmed;
             }
 
-            if (trimmed > 0 && _perfCounters != null)
+            if (trimmed > 0 && _perfCounters != null && _countersSupported)
             {
                 // Update values for perfcounters
                 _perfCounters.IncrementBy(CounterName.Trims, trimmed);

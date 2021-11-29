@@ -27,7 +27,6 @@ namespace System.Text.Unicode.Tests
 
         [Theory]
         [MemberData(nameof(UnicodeRanges_GeneratedData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public static void Range_Unicode(ushort first, ushort last, string blockName)
         {
             Assert.Equal(0x0, first & 0xF); // first char in any block should be U+nnn0

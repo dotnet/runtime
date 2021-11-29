@@ -1,4 +1,14 @@
 variables:
+
+# These values enable longer delays, configurable number of retries, and special understanding of TCP hang-up 
+# See https://github.com/NuGet/Home/issues/11027 for details
+- name: NUGET_ENABLE_EXPERIMENTAL_HTTP_RETRY
+  value: true
+- name: NUGET_EXPERIMENTAL_MAX_NETWORK_TRY_COUNT
+  value: 6
+- name: NUGET_EXPERIMENTAL_NETWORK_RETRY_DELAY_MILLISECONDS
+  value: 1000
+
 - name: isOfficialBuild
   value: ${{ and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
 - name: isFullMatrix

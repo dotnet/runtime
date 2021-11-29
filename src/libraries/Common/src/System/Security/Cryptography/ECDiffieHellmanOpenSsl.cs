@@ -15,6 +15,7 @@ namespace System.Security.Cryptography
 
             public ECDiffieHellmanOpenSsl(ECCurve curve)
             {
+                ThrowIfNotSupported();
                 _key = new ECOpenSsl(curve);
                 KeySizeValue = _key.KeySize;
             }
@@ -26,6 +27,7 @@ namespace System.Security.Cryptography
 
             public ECDiffieHellmanOpenSsl(int keySize)
             {
+                ThrowIfNotSupported();
                 base.KeySize = keySize;
                 _key = new ECOpenSsl(this);
             }
@@ -133,6 +135,8 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
                 return _key.Value;
             }
+
+            static partial void ThrowIfNotSupported();
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

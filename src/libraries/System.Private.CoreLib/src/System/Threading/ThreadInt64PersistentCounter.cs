@@ -12,6 +12,9 @@ namespace System.Threading
     {
         private static readonly LowLevelLock s_lock = new LowLevelLock();
 
+        [ThreadStatic]
+        private static List<ThreadLocalNodeFinalizationHelper>? t_nodeFinalizationHelpers;
+
         private long _overflowCount;
         private HashSet<ThreadLocalNode> _nodes = new HashSet<ThreadLocalNode>();
 
@@ -25,6 +28,9 @@ namespace System.Threading
         public object CreateThreadLocalCountObject()
         {
             var node = new ThreadLocalNode(this);
+
+            List<ThreadLocalNodeFinalizationHelper>? nodeFinalizationHelpers = t_nodeFinalizationHelpers ??= new List<ThreadLocalNodeFinalizationHelper>(1);
+            nodeFinalizationHelpers.Add(new ThreadLocalNodeFinalizationHelper(node));
 
             s_lock.Acquire();
             try
@@ -76,13 +82,14 @@ namespace System.Threading
                 _counter = counter;
             }
 
-            ~ThreadLocalNode()
+            public void Dispose()
             {
                 ThreadInt64PersistentCounter counter = _counter;
                 s_lock.Acquire();
                 try
                 {
                     counter._overflowCount += _count;
+                    counter._nodes.Remove(this);
                 }
                 finally
                 {
@@ -124,6 +131,19 @@ namespace System.Threading
                     s_lock.Release();
                 }
             }
+        }
+
+        private sealed class ThreadLocalNodeFinalizationHelper
+        {
+            private readonly ThreadLocalNode _node;
+
+            public ThreadLocalNodeFinalizationHelper(ThreadLocalNode node)
+            {
+                Debug.Assert(node != null);
+                _node = node;
+            }
+
+            ~ThreadLocalNodeFinalizationHelper() => _node.Dispose();
         }
     }
 }

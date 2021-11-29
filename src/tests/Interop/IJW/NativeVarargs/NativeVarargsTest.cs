@@ -26,7 +26,7 @@ namespace NativeVarargsTest
 
             try
             {
-                Assembly ijwNativeDll = IjwHelper.LoadIjwAssembly("IjwNativeVarargs");
+                Assembly ijwNativeDll = Assembly.Load("IjwNativeVarargs");
                 Type testType = ijwNativeDll.GetType("TestClass");
                 object testInstance = Activator.CreateInstance(testType);
                 MethodInfo testMethod = testType.GetMethod("RunTests");

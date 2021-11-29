@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
@@ -26,6 +26,6 @@ namespace System.Text.Json.Serialization
         }
 
         private static Type? GetAsyncEnumerableInterface(Type type)
-            => IEnumerableConverterFactoryHelpers.GetCompatibleGenericInterface(type, typeof(IAsyncEnumerable<>));
+            => type.GetCompatibleGenericInterface(typeof(IAsyncEnumerable<>));
     }
 }

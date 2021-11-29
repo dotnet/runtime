@@ -35,6 +35,10 @@ public:
     static Agnostic_CORINFO_RESOLVED_TOKEN RestoreAgnostic_CORINFO_RESOLVED_TOKEN(
         CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers);
 
+    template <typename key, typename value>
+    static CORINFO_RESOLVED_TOKEN Restore_CORINFO_RESOLVED_TOKEN(
+        Agnostic_CORINFO_RESOLVED_TOKEN* pResolvedTokenAgnostic, LightWeightMap<key, value>* buffers);
+
     // Restore the out values in the first argument from the second.
     // Can't just return whole CORINFO_RESOLVED_TOKEN because [in] values in it are important too.
     template <typename key, typename value>
@@ -93,9 +97,9 @@ public:
     static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
 
     static Agnostic_CORINFO_CONST_LOOKUP StoreAgnostic_CORINFO_CONST_LOOKUP(
-        CORINFO_CONST_LOOKUP* pLookup);
+        const CORINFO_CONST_LOOKUP* pLookup);
 
-    static CORINFO_CONST_LOOKUP RestoreCORINFO_CONST_LOOKUP(Agnostic_CORINFO_CONST_LOOKUP& lookup);
+    static CORINFO_CONST_LOOKUP RestoreCORINFO_CONST_LOOKUP(const Agnostic_CORINFO_CONST_LOOKUP& lookup);
 
     static Agnostic_CORINFO_RUNTIME_LOOKUP StoreAgnostic_CORINFO_RUNTIME_LOOKUP(
         CORINFO_RUNTIME_LOOKUP* pLookup);
@@ -197,6 +201,22 @@ inline Agnostic_CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::RestoreAgnostic_CORINF
     ZeroMemory(&token, sizeof(token));
     token.inValue  = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
     token.outValue = RestoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, buffers);
+    return token;
+}
+
+template <typename key, typename value>
+inline CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(
+    Agnostic_CORINFO_RESOLVED_TOKEN* pResolvedTokenAgnostic, LightWeightMap<key, value>* buffers)
+{
+    CORINFO_RESOLVED_TOKEN token;
+    ZeroMemory(&token, sizeof(token));
+
+    token.tokenContext = (CORINFO_CONTEXT_HANDLE)pResolvedTokenAgnostic->inValue.tokenContext;
+    token.tokenScope   = (CORINFO_MODULE_HANDLE)pResolvedTokenAgnostic->inValue.tokenScope;
+    token.token        = (mdToken)pResolvedTokenAgnostic->inValue.token;
+    token.tokenType    = (CorInfoTokenKind)pResolvedTokenAgnostic->inValue.tokenType;
+
+    Restore_CORINFO_RESOLVED_TOKENout(&token, pResolvedTokenAgnostic->outValue, buffers);
     return token;
 }
 
@@ -439,7 +459,7 @@ inline CORINFO_LOOKUP_KIND SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(
 }
 
 inline Agnostic_CORINFO_CONST_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(
-    CORINFO_CONST_LOOKUP* pLookup)
+    const CORINFO_CONST_LOOKUP* pLookup)
 {
     Agnostic_CORINFO_CONST_LOOKUP constLookup;
     ZeroMemory(&constLookup, sizeof(constLookup));
@@ -449,7 +469,7 @@ inline Agnostic_CORINFO_CONST_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_CO
 }
 
 inline CORINFO_CONST_LOOKUP SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(
-    Agnostic_CORINFO_CONST_LOOKUP& lookup)
+    const Agnostic_CORINFO_CONST_LOOKUP& lookup)
 {
     CORINFO_CONST_LOOKUP constLookup;
     constLookup.accessType = (InfoAccessType)lookup.accessType;

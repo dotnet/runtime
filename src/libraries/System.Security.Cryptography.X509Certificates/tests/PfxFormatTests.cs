@@ -29,7 +29,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected static readonly X509KeyStorageFlags s_exportableImportFlags =
             s_importFlags | X509KeyStorageFlags.Exportable;
 
+        protected static readonly X509KeyStorageFlags s_perphemeralImportFlags =
+            X509KeyStorageFlags.UserKeySet;
+
         private static readonly Pkcs9LocalKeyId s_keyIdOne = new Pkcs9LocalKeyId(new byte[] { 1 });
+        private static readonly Pkcs9LocalKeyId s_keyIdTwo = new Pkcs9LocalKeyId(new byte[] { 2 });
 
         // Windows 7 and 8.1 both fail the PFX load if any key is unloadable (even if not referenced).
         // Windows 10 1903, 1809, and 1607 all only fail when an unloadable key was actually needed.
@@ -41,10 +45,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             OperatingSystem.IsWindows() &&
             !PlatformDetection.IsWindows10Version1607OrGreater;
 
+        private void ReadPfx(
+            byte[] pfxBytes,
+            string correctPassword,
+            X509Certificate2 expectedCert,
+            Action<X509Certificate2> otherWork = null)
+        {
+            ReadPfx(pfxBytes, correctPassword, expectedCert, s_importFlags, otherWork);
+        }
+
+        private void ReadMultiPfx(
+            byte[] pfxBytes,
+            string correctPassword,
+            X509Certificate2 expectedSingleCert,
+            X509Certificate2[] expectedOrder,
+            Action<X509Certificate2> perCertOtherWork = null)
+        {
+            ReadMultiPfx(
+                pfxBytes,
+                correctPassword,
+                expectedSingleCert,
+                expectedOrder,
+                s_importFlags,
+                perCertOtherWork);
+        }
+
         protected abstract void ReadPfx(
             byte[] pfxBytes,
             string correctPassword,
             X509Certificate2 expectedCert,
+            X509KeyStorageFlags nonExportFlags,
             Action<X509Certificate2> otherWork = null);
 
         protected abstract void ReadMultiPfx(
@@ -52,7 +82,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string correctPassword,
             X509Certificate2 expectedSingleCert,
             X509Certificate2[] expectedOrder,
+            X509KeyStorageFlags nonExportFlags,
             Action<X509Certificate2> perCertOtherWork = null);
+
+        private void ReadUnreadablePfx(
+            byte[] pfxBytes,
+            string bestPassword,
+            // NTE_FAIL
+            int win32Error = -2146893792,
+            int altWin32Error = 0)
+        {
+            ReadUnreadablePfx(pfxBytes, bestPassword, s_importFlags, win32Error, altWin32Error);
+        }
 
         protected abstract void ReadEmptyPfx(byte[] pfxBytes, string correctPassword);
         protected abstract void ReadWrongPassword(byte[] pfxBytes, string wrongPassword);
@@ -60,12 +101,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected abstract void ReadUnreadablePfx(
             byte[] pfxBytes,
             string bestPassword,
+            X509KeyStorageFlags importFlags,
             // NTE_FAIL
             int win32Error = -2146893792,
             int altWin32Error = 0);
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NoMac()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -74,7 +115,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NoMac_ArbitraryPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -86,7 +126,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_EmptyPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -98,7 +137,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NullPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -110,7 +148,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_BadPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -121,6 +158,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_NoKeys_EncryptedNullPassword_NoMac()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
@@ -138,6 +176,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_NoKeys_EncryptedEmptyPassword_NoMac()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
@@ -159,6 +198,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_EncryptedEmptyPassword_OneKey_EncryptedNullPassword_NoMac(bool encryptKeySafe, bool associateKey)
         {
             // This test shows that while a null or empty password will result in both
@@ -200,6 +240,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_MismatchedKey()
         {
             string pw = nameof(OneCert_MismatchedKey);
@@ -248,6 +289,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_TwoKeys_FirstWins(bool correctKeyFirst)
         {
             string pw = nameof(OneCert_TwoKeys_FirstWins);
@@ -319,6 +361,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void TwoCerts_OneKey(bool certWithKeyFirst)
         {
             string pw = nameof(TwoCerts_OneKey);
@@ -363,6 +406,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_ExtraKeyWithUnknownAlgorithm()
         {
             string pw = nameof(OneCert_ExtraKeyWithUnknownAlgorithm);
@@ -408,6 +452,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_ExtraKeyBadEncoding(bool badTag)
         {
             string pw = nameof(OneCert_ExtraKeyBadEncoding);
@@ -466,6 +511,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_NoKey_WithLocalKeyId()
         {
             string pw = nameof(OneCert_NoKey_WithLocalKeyId);
@@ -487,6 +533,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_TwentyKeys_NoMatches()
         {
             string pw = nameof(OneCert_NoKey_WithLocalKeyId);
@@ -525,6 +572,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void TwoCerts_TwentyKeys_NoMatches(bool msCertFirst)
         {
             string pw = nameof(OneCert_NoKey_WithLocalKeyId);
@@ -598,6 +646,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertAndKey_NoLocalKeyId()
         {
             string pw = nameof(CertAndKey_NoLocalKeyId);
@@ -624,6 +673,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void SameCertTwice_NoKeys(bool addLocalKeyId)
         {
             string pw = nameof(SameCertTwice_NoKeys);
@@ -655,9 +705,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void TwoCerts_CrossedKeys()
         {
-            string pw = nameof(SameCertTwice_NoKeys);
+            string pw = nameof(TwoCerts_CrossedKeys);
 
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
             using (var cert2 = new X509Certificate2(TestData.MsCertificate))
@@ -680,12 +731,48 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] pfxBytes = builder.Encode();
 
                 // Windows seems to be applying both the implicit match and the LocalKeyId match,
-                // so it detects two hits against the same key and fails.
-                ReadUnreadablePfx(
-                    pfxBytes,
-                    pw,
-                    // NTE_BAD_DATA
-                    -2146893819);
+                // so it detects two hits against the same key and fails for ephemeral import.
+
+                if (s_importFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet))
+                {
+                    ReadUnreadablePfx(
+                        pfxBytes,
+                        pw,
+                        // NTE_BAD_DATA
+                        -2146893819);
+                }
+                else
+                {
+                    // This is somewhat circular logic, but it's hard to bind cert2 with the wrong
+                    // private key any other way.
+
+                    using (ImportedCollection coll = Cert.Import(pfxBytes, pw, s_perphemeralImportFlags))
+                    {
+                        X509Certificate2 cert2WithKey = coll.Collection[0];
+
+                        ReadMultiPfx(
+                            pfxBytes,
+                            pw,
+                            cert2WithKey,
+                            new[] { cert2WithKey, cert },
+                            x =>
+                            {
+                                if (x.Equals(cert))
+                                {
+                                    CheckMultiBoundKeyConsistency(x);
+                                }
+                                else if (x.HasPrivateKey)
+                                {
+                                    // On macOS cert2WithKey.HasPrivateKey is
+                                    // false because the SecIdentityRef won't
+                                    // bind the mismatched private key.
+                                    CheckMultiBoundKeyConsistencyFails(x);
+                                }
+                            });
+
+                        AssertExtensions.SequenceEqual(cert2.RawData, cert2WithKey.RawData);
+                    }
+                }
             }
         }
 
@@ -693,6 +780,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, false)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertAndKeyTwice(bool addLocalKeyId, bool crossIdentifiers)
         {
             string pw = nameof(CertAndKeyTwice);
@@ -724,14 +812,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
                 byte[] pfxBytes = builder.Encode();
 
-                if (addLocalKeyId)
+                // If we add the localKeyId values then everything works out, otherwise
+                // we end up doing SubjectPublicKeyInfo matching logic which says two certs
+                // mapped to one key.  This fails for ephemeral import, and succeeds otherwise.
+                if (addLocalKeyId || !s_importFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet))
                 {
                     ReadMultiPfx(
                         pfxBytes,
                         pw,
                         cert,
                         new[] { cert, cert },
-                        CheckKeyConsistency);
+                        addLocalKeyId ? CheckKeyConsistency : CheckMultiBoundKeyConsistency);
                 }
                 else
                 {
@@ -745,6 +836,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertAndKeyTwice_KeysUntagged()
         {
             string pw = nameof(CertAndKeyTwice);
@@ -774,17 +866,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
                 byte[] pfxBytes = builder.Encode();
 
-                ReadUnreadablePfx(
-                    pfxBytes,
-                    pw,
-                    // NTE_BAD_DATA
-                    -2146893819);
+                if (s_importFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet))
+                {
+                    ReadUnreadablePfx(
+                        pfxBytes,
+                        pw,
+                        // NTE_BAD_DATA
+                        -2146893819);
+                }
+                else
+                {
+                    ReadMultiPfx(
+                        pfxBytes,
+                        pw,
+                        cert,
+                        new[] { cert, cert },
+                        CheckMultiBoundKeyConsistency);
+                }
             }
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertTwice_KeyOnce(bool addLocalKeyId)
         {
             string pw = nameof(CertTwice_KeyOnce);
@@ -812,11 +917,89 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
                 byte[] pfxBytes = builder.Encode();
 
-                ReadUnreadablePfx(
+                if (s_importFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet))
+                {
+                    ReadUnreadablePfx(
+                        pfxBytes,
+                        pw,
+                        // NTE_BAD_DATA
+                        -2146893819);
+                }
+
+                // On Windows with perphemeral import the private key gets written then
+                // erased during import (cleaning resources associated with non-returned certs)
+                // so on Windows with a single-object load using the key will fail.
+                //
+                // The collection import is on a razors edge with the perphemeral import:
+                // once one of the certs gets disposed the other(s) can no longer open
+                // their private key.
+
+                ReadMultiPfx(
                     pfxBytes,
                     pw,
-                    // NTE_BAD_DATA
-                    -2146893819);
+                    cert,
+                    new[] { cert, cert },
+                    s_perphemeralImportFlags,
+                    CheckMultiBoundKeyConsistency);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        public void CertTwice_KeyOnce_OtherCertBetter(bool addLocalKeyId)
+        {
+            string pw = nameof(CertTwice_KeyOnce);
+
+            using (var rsaCert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
+            using (var ecCert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", s_exportableImportFlags))
+            using (RSA rsa = rsaCert.GetRSAPrivateKey())
+            using (ECDsa ecdsa = ecCert.GetECDsaPrivateKey())
+            {
+                Pkcs12Builder builder = new Pkcs12Builder();
+                Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
+                Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+
+                Pkcs12SafeBag rsaKeyBag = keyContents.AddShroudedKey(rsa, pw, s_windowsPbe);
+                Pkcs12SafeBag ecKeyBag = keyContents.AddShroudedKey(ecdsa, pw, s_windowsPbe);
+                Pkcs12SafeBag certBag = certContents.AddCertificate(ecCert);
+                Pkcs12SafeBag certBag2 = certContents.AddCertificate(ecCert);
+                Pkcs12SafeBag rsaCertBag = certContents.AddCertificate(rsaCert);
+
+                if (addLocalKeyId)
+                {
+                    certBag.Attributes.Add(s_keyIdOne);
+                    certBag2.Attributes.Add(s_keyIdOne);
+                    ecKeyBag.Attributes.Add(s_keyIdOne);
+                    rsaCertBag.Attributes.Add(s_keyIdTwo);
+                    rsaKeyBag.Attributes.Add(s_keyIdTwo);
+                }
+
+                AddContents(keyContents, builder, pw, encrypt: false);
+                AddContents(certContents, builder, pw, encrypt: true);
+                builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
+                byte[] pfxBytes = builder.Encode();
+
+                if (s_importFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet))
+                {
+                    ReadUnreadablePfx(
+                        pfxBytes,
+                        pw,
+                        // NTE_BAD_DATA
+                        -2146893819);
+                }
+
+                // Because cert2 is what gets returned from the single cert ctor, the
+                // multiply referenced key doesn't cause a runtime problem on Windows.
+
+                ReadMultiPfx(
+                    pfxBytes,
+                    pw,
+                    rsaCert,
+                    new[] { rsaCert, ecCert, ecCert },
+                    s_perphemeralImportFlags,
+                    CheckKeyConsistency);
             }
         }
 
@@ -825,6 +1008,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void TwoCerts_TwoKeys_ManySafeContentsValues(bool invertCertOrder, bool invertKeyOrder)
         {
             string pw = nameof(TwoCerts_TwoKeys_ManySafeContentsValues);
@@ -928,16 +1112,44 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static void CheckKeyConsistency(X509Certificate2 cert)
         {
-            using (RSA priv = cert.GetRSAPrivateKey())
-            using (RSA pub = cert.GetRSAPublicKey())
-            {
-                byte[] data = { 2, 7, 4 };
-                byte[] signature = priv.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            byte[] data = { 2, 7, 4 };
 
-                Assert.True(
-                    pub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
-                    "Cert public key verifies signature from cert private key");
+            switch (cert.GetKeyAlgorithm())
+            {
+                case "1.2.840.113549.1.1.1":
+                {
+                    using (RSA priv = cert.GetRSAPrivateKey())
+                    using (RSA pub = cert.GetRSAPublicKey())
+                    {
+                        byte[] signature = priv.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                        Assert.True(
+                            pub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                            "Cert public key verifies signature from cert private key");
+                    }
+
+                    break;
+                }
+                default:
+                {
+                    using (ECDsa priv = cert.GetECDsaPrivateKey())
+                    using (ECDsa pub = cert.GetECDsaPublicKey())
+                    {
+                        byte[] signature = priv.SignData(data, HashAlgorithmName.SHA256);
+
+                        Assert.True(
+                            pub.VerifyData(data, signature, HashAlgorithmName.SHA256),
+                            "Cert public key verifies signature from cert private key");
+                    }
+
+                    break;
+                }
             }
+        }
+
+        protected virtual void CheckMultiBoundKeyConsistency(X509Certificate2 cert)
+        {
+            CheckKeyConsistency(cert);
         }
 
         private static void CheckKeyConsistencyFails(X509Certificate2 cert)
@@ -952,6 +1164,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     pub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                     "Cert public key verifies signature from cert private key");
             }
+        }
+
+        protected virtual void CheckMultiBoundKeyConsistencyFails(X509Certificate2 cert)
+        {
+            CheckKeyConsistencyFails(cert);
         }
 
         private static void AddContents(

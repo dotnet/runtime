@@ -139,7 +139,7 @@ namespace System.Resources
             Debug.Assert(a != null, "assembly != null");
 
             NeutralResourcesLanguageAttribute? attr = a.GetCustomAttribute<NeutralResourcesLanguageAttribute>();
-            if (attr == null)
+            if (attr == null || (GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly))
             {
                 fallbackLocation = UltimateResourceFallbackLocation.MainAssembly;
                 return CultureInfo.InvariantCulture;

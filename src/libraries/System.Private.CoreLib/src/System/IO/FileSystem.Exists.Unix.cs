@@ -16,12 +16,29 @@ namespace System.IO
 
         private static bool DirectoryExists(ReadOnlySpan<char> fullPath, out Interop.ErrorInfo errorInfo)
         {
-            return FileExists(fullPath, Interop.Sys.FileTypes.S_IFDIR, out errorInfo);
+            Interop.Sys.FileStatus fileinfo;
+            errorInfo = default(Interop.ErrorInfo);
+
+            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
+            {
+                errorInfo = Interop.Sys.GetLastErrorInfo();
+                return false;
+            }
+
+            return (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
         }
 
         public static bool FileExists(ReadOnlySpan<char> fullPath)
         {
             Interop.ErrorInfo ignored;
+            return FileExists(fullPath, out ignored);
+        }
+
+        private static bool FileExists(ReadOnlySpan<char> fullPath, out Interop.ErrorInfo errorInfo)
+        {
+            Interop.Sys.FileStatus fileinfo;
+            errorInfo = default(Interop.ErrorInfo);
+
             // File.Exists() explicitly checks for a trailing separator and returns false if found. FileInfo.Exists and all other
             // internal usages do not check for the trailing separator. Historically we've always removed the trailing separator
             // when getting attributes as trailing separators are generally not accepted by Windows APIs. Unix will take
@@ -29,32 +46,25 @@ namespace System.IO
             // our historical behavior (outside of File.Exists()), we need to trim.
             //
             // See http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11 for details.
-            return FileExists(Path.TrimEndingDirectorySeparator(fullPath), Interop.Sys.FileTypes.S_IFREG, out ignored);
-        }
+            fullPath = Path.TrimEndingDirectorySeparator(fullPath);
 
-        private static bool FileExists(ReadOnlySpan<char> fullPath, int fileType, out Interop.ErrorInfo errorInfo)
-        {
-            Debug.Assert(fileType == Interop.Sys.FileTypes.S_IFREG || fileType == Interop.Sys.FileTypes.S_IFDIR);
-
-            Interop.Sys.FileStatus fileinfo;
-            errorInfo = default(Interop.ErrorInfo);
-
-            // First use stat, as we want to follow symlinks.  If that fails, it could be because the symlink
-            // is broken, we don't have permissions, etc., in which case fall back to using LStat to evaluate
-            // based on the symlink itself.
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0 &&
-                Interop.Sys.LStat(fullPath, out fileinfo) < 0)
+            if (Interop.Sys.LStat(fullPath, out fileinfo) < 0)
             {
                 errorInfo = Interop.Sys.GetLastErrorInfo();
                 return false;
             }
 
-            // Something exists at this path.  If the caller is asking for a directory, return true if it's
-            // a directory and false for everything else.  If the caller is asking for a file, return false for
-            // a directory and true for everything else.
-            return
-                (fileType == Interop.Sys.FileTypes.S_IFDIR) ==
-                ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+            // Something exists at this path. Return false for a directory and true for everything else.
+            // When the path is a link, get its target info.
+            if ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
+            {
+                if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
+                {
+                    return true;
+                }
+            }
+
+            return (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR;
         }
     }
 }

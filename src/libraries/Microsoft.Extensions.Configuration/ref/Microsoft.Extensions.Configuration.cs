@@ -28,6 +28,21 @@ namespace Microsoft.Extensions.Configuration
         public bool ShouldDisposeConfiguration { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
+    public sealed partial class ConfigurationManager : Microsoft.Extensions.Configuration.IConfigurationBuilder, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
+    {
+        public ConfigurationManager() { }
+        public string this[string key] { get { throw null; } set { throw null; } }
+        public IConfigurationSection GetSection(string key) { throw null; }
+        public System.Collections.Generic.IEnumerable<IConfigurationSection> GetChildren() { throw null; }
+        public void Dispose() { throw null; }
+        System.Collections.Generic.IDictionary<string, object> IConfigurationBuilder.Properties { get { throw null; } }
+        System.Collections.Generic.IList<Microsoft.Extensions.Configuration.IConfigurationSource> IConfigurationBuilder.Sources { get { throw null; } }
+        Microsoft.Extensions.Configuration.IConfigurationBuilder IConfigurationBuilder.Add(Microsoft.Extensions.Configuration.IConfigurationSource source) { throw null; }
+        Microsoft.Extensions.Configuration.IConfigurationRoot IConfigurationBuilder.Build() { throw null; }
+        System.Collections.Generic.IEnumerable<IConfigurationProvider> IConfigurationRoot.Providers { get { throw null; } }
+        void IConfigurationRoot.Reload() { throw null; }
+        Primitives.IChangeToken IConfiguration.GetReloadToken() { throw null; }
+    }
     public partial class ConfigurationBuilder : Microsoft.Extensions.Configuration.IConfigurationBuilder
     {
         public ConfigurationBuilder() { }

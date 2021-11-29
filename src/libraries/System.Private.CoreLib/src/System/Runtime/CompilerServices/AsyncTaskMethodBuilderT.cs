@@ -329,6 +329,11 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
+                if (IsCompleted)
+                {
+                    ClearStateUponCompletion();
+                }
+
                 if (loggingOn)
                 {
                     TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);

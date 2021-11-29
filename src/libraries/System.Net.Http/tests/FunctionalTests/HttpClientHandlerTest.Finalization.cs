@@ -29,7 +29,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion == HttpVersion30)
             {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53089")]
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58234")]
                 return;
             }
 

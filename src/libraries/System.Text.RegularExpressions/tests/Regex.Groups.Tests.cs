@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -582,6 +583,39 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"([a-z]*)([\w])", "cat", RegexOptions.IgnoreCase, new string[] { "cat", "ca", "t" } };
             yield return new object[] { null, @"^([a-z]*)([\w])$", "cat", RegexOptions.IgnoreCase, new string[] { "cat", "ca", "t" } };
 
+            // Backtracking with multiple (.*) groups -- important ASP.NET scenario
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/.aspx", RegexOptions.None, new string[] { "/.aspx", string.Empty, string.Empty } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/homepage.aspx", RegexOptions.None, new string[] { "/homepage.aspx", string.Empty, "homepage" } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "pages/.aspx", RegexOptions.None, new string[] { "pages/.aspx", "pages", string.Empty } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "pages/homepage.aspx", RegexOptions.None, new string[] { "pages/homepage.aspx", "pages", "homepage" } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage" } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/pages/homepage/index.aspx", RegexOptions.None, new string[] { "/pages/homepage/index.aspx", "/pages/homepage", "index" } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
+            yield return new object[] { null, @"(.*)/(.*)/(.*).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
+
+            // Backtracking with multiple (.+) groups
+            yield return new object[] { null, @"(.+)/(.+).aspx", "pages/homepage.aspx", RegexOptions.None, new string[] { "pages/homepage.aspx", "pages", "homepage" } };
+            yield return new object[] { null, @"(.+)/(.+).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage" } };
+            yield return new object[] { null, @"(.+)/(.+).aspx", "/pages/homepage/index.aspx", RegexOptions.None, new string[] { "/pages/homepage/index.aspx", "/pages/homepage", "index" } };
+            yield return new object[] { null, @"(.+)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
+            yield return new object[] { null, @"(.+)/(.+)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
+
+            // Backtracking with (.+) group followed by (.*)
+            yield return new object[] { null, @"(.+)/(.*).aspx", "pages/.aspx", RegexOptions.None, new string[] { "pages/.aspx", "pages", string.Empty } };
+            yield return new object[] { null, @"(.+)/(.*).aspx", "pages/homepage.aspx", RegexOptions.None, new string[] { "pages/homepage.aspx", "pages", "homepage" } };
+            yield return new object[] { null, @"(.+)/(.*).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage" } };
+            yield return new object[] { null, @"(.+)/(.*).aspx", "/pages/homepage/index.aspx", RegexOptions.None, new string[] { "/pages/homepage/index.aspx", "/pages/homepage", "index" } };
+            yield return new object[] { null, @"(.+)/(.*).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
+            yield return new object[] { null, @"(.+)/(.*)/(.*).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
+
+            // Backtracking with (.*) group followed by (.+)
+            yield return new object[] { null, @"(.*)/(.+).aspx", "/homepage.aspx", RegexOptions.None, new string[] { "/homepage.aspx", string.Empty, "homepage" } };
+            yield return new object[] { null, @"(.*)/(.+).aspx", "pages/homepage.aspx", RegexOptions.None, new string[] { "pages/homepage.aspx", "pages", "homepage" } };
+            yield return new object[] { null, @"(.*)/(.+).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage" } };
+            yield return new object[] { null, @"(.*)/(.+).aspx", "/pages/homepage/index.aspx", RegexOptions.None, new string[] { "/pages/homepage/index.aspx", "/pages/homepage", "index" } };
+            yield return new object[] { null, @"(.*)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
+            yield return new object[] { null, @"(.*)/(.+)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
+
             // Quantifiers
             yield return new object[] { null, @"a*", "", RegexOptions.None, new string[] { "" } };
             yield return new object[] { null, @"a*", "a", RegexOptions.None, new string[] { "a" } };
@@ -870,9 +904,9 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Groups_CustomCulture_TestData_Danish))]
         [MemberData(nameof(Groups_CustomCulture_TestData_Turkish))]
         [MemberData(nameof(Groups_CustomCulture_TestData_AzeriLatin))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36848", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56407", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36900", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        public void Groups(string cultureName, string pattern, string input, RegexOptions options, string[] expectedGroups)
+        public async Task Groups(string cultureName, string pattern, string input, RegexOptions options, string[] expectedGroups)
         {
             if (cultureName is null)
             {
@@ -882,13 +916,16 @@ namespace System.Text.RegularExpressions.Tests
 
             using (new ThreadCultureChange(cultureName))
             {
-                Groups(pattern, input, options, expectedGroups);
-                Groups(pattern, input, RegexOptions.Compiled | options, expectedGroups);
+                foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+                {
+                    await GroupsAsync(engine, pattern, input, options, expectedGroups);
+                }
             }
 
-            static void Groups(string pattern, string input, RegexOptions options, string[] expectedGroups)
+            static async Task GroupsAsync(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedGroups)
             {
-                Regex regex = new Regex(pattern, options);
+                Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+
                 Match match = regex.Match(input);
                 Assert.True(match.Success);
 

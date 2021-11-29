@@ -93,6 +93,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
     // Walk through the blocks and hunt for a block that needs a GC Poll
     for (block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
+        compCurBB = block;
+
         // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
         if (opts.OptimizationDisabled() ? ((block->bbFlags & BBF_HAS_SUPPRESSGC_CALL) == 0) : !blockNeedsGCPoll(block))
@@ -607,7 +609,7 @@ bool Compiler::fgMayExplicitTailCall()
 //
 //    jumpTarget[N] is set to 1 if IL offset N is a jump target in the method.
 //
-//    Also sets lvAddrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].
+//    Also sets m_addrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -930,7 +932,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -948,13 +950,12 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 //------------------------------------------------------------------------------
 // fgAddrCouldBeNull : Check whether the address tree can represent null.
 //
-//
 // Arguments:
 //    addr     -  Address to check
 //
 // Return Value:
 //    True if address could be null; false otherwise
-
+//
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
@@ -1145,7 +1146,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         assert(targetMethodHnd == nullptr);
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         if (IsTargetAbi(CORINFO_CORERT_ABI))
@@ -2468,9 +2469,9 @@ private:
                     //
                     if (returnBlock->hasProfileWeight())
                     {
-                        BasicBlock::weight_t const oldWeight =
+                        weight_t const oldWeight =
                             mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : BB_ZERO_WEIGHT;
-                        BasicBlock::weight_t const newWeight = oldWeight + returnBlock->bbWeight;
+                        weight_t const newWeight = oldWeight + returnBlock->bbWeight;
 
                         JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to const return " FMT_BB "\n",
                                 returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);
@@ -2603,8 +2604,8 @@ void Compiler::fgAddInternal()
     noway_assert(!compIsForInlining());
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Create it here.
-    if (compMethodRequiresPInvokeFrame())
+    // required. Similarly, we need a scratch BB for poisoning. Create it here.
+    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
@@ -2637,9 +2638,9 @@ void Compiler::fgAddInternal()
 #else  // JIT32_GCENCODER
             lva0CopiedForGenericsCtxt          = false;
 #endif // JIT32_GCENCODER
-            noway_assert(lva0CopiedForGenericsCtxt || !lvaTable[info.compThisArg].lvAddrExposed);
+            noway_assert(lva0CopiedForGenericsCtxt || !lvaTable[info.compThisArg].IsAddressExposed());
             noway_assert(!lvaTable[info.compThisArg].lvHasILStoreOp);
-            noway_assert(lvaTable[lvaArg0Var].lvAddrExposed || lvaTable[lvaArg0Var].lvHasILStoreOp ||
+            noway_assert(lvaTable[lvaArg0Var].IsAddressExposed() || lvaTable[lvaArg0Var].lvHasILStoreOp ||
                          lva0CopiedForGenericsCtxt);
 
             var_types thisType = lvaTable[info.compThisArg].TypeGet();
@@ -2756,6 +2757,9 @@ void Compiler::fgAddInternal()
 
         lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Pinvoke FrameVar"));
 
+        // Lowering::InsertPInvokeMethodProlog will create a call with this local addr as an argument.
+        lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+
         LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
         varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
@@ -2800,7 +2804,7 @@ void Compiler::fgAddInternal()
         // Stick the conditional call at the start of the method
 
         fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback));
+        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
     }
 
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -2926,7 +2930,7 @@ void Compiler::fgFindOperOrder()
 
 //------------------------------------------------------------------------
 // fgSimpleLowering: do full walk of all IR, lowering selected operations
-// and computing lvaOutgoingArgumentAreaSize.
+// and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
 //    Lowers GT_ARR_LENGTH, GT_ARR_BOUNDS_CHECK, and GT_SIMD_CHK.
@@ -2937,7 +2941,7 @@ void Compiler::fgFindOperOrder()
 //    Outgoing arg area size is computed here because we want to run it
 //    after optimization (in case calls are removed) and need to look at
 //    all possible calls in the method.
-
+//
 void Compiler::fgSimpleLowering()
 {
 #if FEATURE_FIXED_OUT_ARGS
@@ -3019,9 +3023,9 @@ void Compiler::fgSimpleLowering()
 
                         if (thisCallOutAreaSize > outgoingArgSpaceSize)
                         {
+                            JITDUMP("Bumping outgoingArgSpaceSize from %u to %u for call [%06d]\n",
+                                    outgoingArgSpaceSize, thisCallOutAreaSize, dspTreeID(tree));
                             outgoingArgSpaceSize = thisCallOutAreaSize;
-                            JITDUMP("Bumping outgoingArgSpaceSize to %u for call [%06d]\n", outgoingArgSpaceSize,
-                                    dspTreeID(tree));
                         }
                         else
                         {
@@ -3050,18 +3054,24 @@ void Compiler::fgSimpleLowering()
     // Finish computing the outgoing args area size
     //
     // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-    // 1. there are calls to THROW_HEPLPER methods.
+    // 1. there are calls to THROW_HELPER methods.
     // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
     //    that even methods without any calls will have outgoing arg area space allocated.
+    // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
+    //    if there are any calls to PInvoke methods, there should be a call that we processed
+    //    above. However, we still generate calls to PInvoke prolog helpers even if we have dead code
+    //    eliminated all the calls.
     //
     // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for
     // the outgoing arg space if the method makes any calls.
     if (outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
-        if (compUsesThrowHelper || compIsProfilerHookNeeded())
+        if (compUsesThrowHelper || compIsProfilerHookNeeded() ||
+            (compMethodRequiresPInvokeFrame() && !opts.ShouldUsePInvokeHelpers()))
         {
             outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
-            JITDUMP("Bumping outgoingArgSpaceSize to %u for throw helper or profile hook", outgoingArgSpaceSize);
+            JITDUMP("Bumping outgoingArgSpaceSize to %u for throw helper or profile hook or PInvoke helper",
+                    outgoingArgSpaceSize);
         }
     }
 
@@ -3633,13 +3643,12 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     }
 
     const static BBjumpKinds jumpKinds[] = {
-        BBJ_NONE,   // SCK_NONE
-        BBJ_THROW,  // SCK_RNGCHK_FAIL
-        BBJ_ALWAYS, // SCK_PAUSE_EXEC
-        BBJ_THROW,  // SCK_DIV_BY_ZERO
-        BBJ_THROW,  // SCK_ARITH_EXCP, SCK_OVERFLOW
-        BBJ_THROW,  // SCK_ARG_EXCPN
-        BBJ_THROW,  // SCK_ARG_RNG_EXCPN
+        BBJ_NONE,  // SCK_NONE
+        BBJ_THROW, // SCK_RNGCHK_FAIL
+        BBJ_THROW, // SCK_DIV_BY_ZERO
+        BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
+        BBJ_THROW, // SCK_ARG_EXCPN
+        BBJ_THROW, // SCK_ARG_RNG_EXCPN
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3703,9 +3712,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
             case SCK_RNGCHK_FAIL:
                 msg = " for RNGCHK_FAIL";
                 break;
-            case SCK_PAUSE_EXEC:
-                msg = " for PAUSE_EXEC";
-                break;
             case SCK_DIV_BY_ZERO:
                 msg = " for DIV_BY_ZERO";
                 break;
@@ -3765,9 +3771,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
         case SCK_ARG_RNG_EXCPN:
             helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
             break;
-
-        // case SCK_PAUSE_EXEC:
-        //     noway_assert(!"add code to pause exec");
 
         default:
             noway_assert(!"unexpected code addition kind");
@@ -4021,22 +4024,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             return;
         }
 
-        /* Is this a unary operator?
-         * Although UNARY GT_IND has a special structure */
+        /* Is this a unary operator? */
 
-        if (oper == GT_IND)
-        {
-            /* Visit the indirection first - op2 may point to the
-             * jump Label for array-index-out-of-range */
-
-            fgSetTreeSeqHelper(op1, isLIR);
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
-
-        /* Now this is REALLY a unary operator */
-
-        if (!op2)
+        if (op2 == nullptr)
         {
             /* Visit the (only) operand and we're done */
 
@@ -4045,39 +4035,8 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             return;
         }
 
-        /*
-           For "real" ?: operators, we make sure the order is
-           as follows:
-
-               condition
-               1st operand
-               GT_COLON
-               2nd operand
-               GT_QMARK
-        */
-
-        if (oper == GT_QMARK)
-        {
-            noway_assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-
-            fgSetTreeSeqHelper(op1, isLIR);
-            // Here, for the colon, the sequence does not actually represent "order of evaluation":
-            // one or the other of the branches is executed, not both.  Still, to make debugging checks
-            // work, we want the sequence to match the order in which we'll generate code, which means
-            // "else" clause then "then" clause.
-            fgSetTreeSeqHelper(op2->AsColon()->ElseNode(), isLIR);
-            fgSetTreeSeqHelper(op2, isLIR);
-            fgSetTreeSeqHelper(op2->AsColon()->ThenNode(), isLIR);
-
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
-
-        if (oper == GT_COLON)
-        {
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
+        // By the time execution order is being set, all QMARKs must have been rationalized.
+        assert(compQmarkRationalized && (oper != GT_QMARK) && (oper != GT_COLON));
 
         /* This is a binary operator */
 
@@ -4100,10 +4059,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 
     switch (oper)
     {
-        case GT_FIELD:
-            noway_assert(tree->AsField()->gtFldObj == nullptr);
-            break;
-
         case GT_CALL:
 
             /* We'll evaluate the 'this' argument value first */
@@ -4193,13 +4148,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
             noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
-            break;
-
-        case GT_INDEX_ADDR:
-            // Evaluate the array first, then the index....
-            assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Arr(), isLIR);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Index(), isLIR);
             break;
 
         default:
@@ -4597,7 +4545,7 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
     assert(varTypeIsStruct(lvaTable[lclNum].lvType));
     if (lvaTable[lclNum].lvPromoted && lvaTable[lclNum].lvFieldCnt > 1)
     {
-        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
+        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
     }
 }
 

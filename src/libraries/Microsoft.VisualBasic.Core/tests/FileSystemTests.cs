@@ -43,7 +43,6 @@ namespace Microsoft.VisualBasic.Tests
         //   public static void ChDrive(string Drive){ throw null; }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void CloseAllFiles()
         {
             var fileName1 = GetTestFilePath();

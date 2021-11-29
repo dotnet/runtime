@@ -12,8 +12,8 @@ namespace System.Reflection.Context.Virtual
     {
         private readonly string _name;
         private readonly Type _propertyType;
-        private Type _declaringType;
-        private ParameterInfo[] _indexedParameters;
+        private Type? _declaringType;
+        private ParameterInfo[]? _indexedParameters;
 
         protected VirtualPropertyBase(Type propertyType, string name, CustomReflectionContext context)
         {
@@ -40,7 +40,7 @@ namespace System.Reflection.Context.Virtual
             get { return PropertyAttributes.None; }
         }
 
-        public override sealed Type DeclaringType
+        public override sealed Type? DeclaringType
         {
             get { return _declaringType; }
         }
@@ -72,24 +72,24 @@ namespace System.Reflection.Context.Virtual
 
         public override sealed Module Module
         {
-            get { return DeclaringType.Module; }
+            get { return DeclaringType!.Module; }
         }
 
-        public override sealed Type ReflectedType
+        public override sealed Type? ReflectedType
         {
             get { return DeclaringType; }
         }
 
         public override sealed MethodInfo[] GetAccessors(bool nonPublic)
         {
-            MethodInfo getMethod = GetGetMethod(nonPublic);
-            MethodInfo setMethod = GetSetMethod(nonPublic);
+            MethodInfo? getMethod = GetGetMethod(nonPublic);
+            MethodInfo? setMethod = GetSetMethod(nonPublic);
 
             Debug.Assert(getMethod != null || setMethod != null);
 
             if (getMethod == null || setMethod == null)
             {
-                return new MethodInfo[] { getMethod ?? setMethod };
+                return new MethodInfo[] { getMethod ?? setMethod! };
             }
 
             return new MethodInfo[] { getMethod, setMethod };
@@ -100,22 +100,22 @@ namespace System.Reflection.Context.Virtual
             return (ParameterInfo[])GetIndexParametersNoCopy().Clone();
         }
 
-        public override sealed object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override sealed object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            MethodInfo getMethod = GetGetMethod(true);
+            MethodInfo? getMethod = GetGetMethod(true);
             if (getMethod == null)
                 throw new ArgumentException(SR.Argument_GetMethNotFnd);
 
             return getMethod.Invoke(obj, invokeAttr, binder, index, culture);
         }
 
-        public override sealed void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override sealed void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            MethodInfo setMethod = GetSetMethod(true);
+            MethodInfo? setMethod = GetSetMethod(true);
             if (setMethod == null)
                 throw new ArgumentException(SR.Argument_GetMethNotFnd);
 
-            object[] args = null;
+            object?[] args;
 
             if (index != null)
             {
@@ -174,13 +174,13 @@ namespace System.Reflection.Context.Virtual
             return false;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             // We don't need to compare the getters and setters.
             // But do we need to compare the contexts and return types?
             return obj is VirtualPropertyBase other &&
                 _name == other._name &&
-                _declaringType.Equals(other._declaringType) &&
+                _declaringType!.Equals(other._declaringType) &&
                 _propertyType == other._propertyType &&
                 CollectionServices.CompareArrays(GetIndexParametersNoCopy(), other.GetIndexParametersNoCopy());
         }
@@ -188,14 +188,14 @@ namespace System.Reflection.Context.Virtual
         public override int GetHashCode()
         {
             return _name.GetHashCode() ^
-                _declaringType.GetHashCode() ^
+                _declaringType!.GetHashCode() ^
                 _propertyType.GetHashCode() ^
                 CollectionServices.GetArrayHashCode(GetIndexParametersNoCopy());
         }
 
         public override string ToString()
         {
-            return base.ToString();
+            return base.ToString()!;
         }
 
         internal void SetDeclaringType(Type declaringType)
@@ -207,7 +207,7 @@ namespace System.Reflection.Context.Virtual
         {
             if (_indexedParameters == null)
             {
-                MethodInfo method = GetGetMethod(true);
+                MethodInfo? method = GetGetMethod(true);
                 if (method != null)
                 {
                     _indexedParameters = VirtualParameter.CloneParameters(this, method.GetParameters(), skipLastParameter: false);

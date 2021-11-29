@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <Platform>$(TargetArchitecture)</Platform>
-    <DotNetHostBinDir>$(BaseOutputRootPath)corehost</DotNetHostBinDir>
   </PropertyGroup>
 
   <PropertyGroup>

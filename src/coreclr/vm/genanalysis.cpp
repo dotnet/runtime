@@ -10,9 +10,12 @@ EventPipeSession* gcGenAnalysisEventPipeSession = nullptr;
 uint64_t gcGenAnalysisEventPipeSessionId = (uint64_t)-1;
 GcGenAnalysisState gcGenAnalysisConfigured = GcGenAnalysisState::Uninitialized;
 int64_t gcGenAnalysisGen = -1;
-int64_t gcGenAnalysisBytes = 0;
+uint64_t gcGenAnalysisBytes = 0;
+uint64_t gcGenAnalysisTime = 0;
 int64_t gcGenAnalysisIndex = 0;
 uint32_t gcGenAnalysisBufferMB = 0;
+bool gcGenAnalysisTrace = true;
+bool gcGenAnalysisDump = false;
 
 /* static */ void GenAnalysis::Initialize()
 {
@@ -20,7 +23,7 @@ uint32_t gcGenAnalysisBufferMB = 0;
     if (gcGenAnalysisConfigured == GcGenAnalysisState::Uninitialized)
     {
         bool match = true;
-        CLRConfigStringHolder gcGenAnalysisCmd(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisCmd));
+        CLRConfigStringHolder gcGenAnalysisCmd(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisCmd));
         if (gcGenAnalysisCmd != nullptr)
         {
             // Get the managed command line.
@@ -31,16 +34,25 @@ uint32_t gcGenAnalysisBufferMB = 0;
         {
             match = false;
         }
-        if (match && !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")))
+        if (match && !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")) &&
+                     !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisTimeUSec")) &&
+                     !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisTimeMSec")))
         {
             match = false;
         }
         if (match)
         {
-            gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
-            gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisGen);
-            gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisIndex);
+            gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisBytes);
+            gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisTimeUSec) * 10;
+            if (gcGenAnalysisTime == 0)
+            {
+                gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisTimeMSec) * 10000;
+            }
+            gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisGen);
+            gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisIndex);
             gcGenAnalysisBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
+            gcGenAnalysisTrace = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisTrace);
+            gcGenAnalysisDump = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisDump);
             gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
         }
         else
@@ -51,14 +63,21 @@ uint32_t gcGenAnalysisBufferMB = 0;
     if ((gcGenAnalysisConfigured == GcGenAnalysisState::Enabled) && (gcGenAnalysisState == GcGenAnalysisState::Uninitialized))
 #endif
     {
-        EnableGenerationalAwareSession();
-    }    
+        if (gcGenAnalysisTrace)
+        {
+            EnableGenerationalAwareSession();
+        }
+        if (gcGenAnalysisDump)
+        {
+            gcGenAnalysisState = GcGenAnalysisState::Enabled;
+        }
+    }
 }
 
 /* static */ void GenAnalysis::EnableGenerationalAwareSession()
 {
     LPCWSTR outputPath = nullptr;
-    outputPath = GENAWARE_FILE_NAME;
+    outputPath = GENAWARE_TRACE_FILE_NAME;
     NewArrayHolder<COR_PRF_EVENTPIPE_PROVIDER_CONFIG> pProviders;
     int providerCnt = 1;
     pProviders = new COR_PRF_EVENTPIPE_PROVIDER_CONFIG[providerCnt];
@@ -80,6 +99,7 @@ uint32_t gcGenAnalysisBufferMB = 0;
         EP_SESSION_TYPE_FILE,
         EP_SERIALIZATION_FORMAT_NETTRACE_V4,
         false,
+        nullptr,
         nullptr,
         nullptr
     );

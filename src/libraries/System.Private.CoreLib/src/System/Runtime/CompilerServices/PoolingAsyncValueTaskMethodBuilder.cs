@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-
 using StateMachineBox = System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder<System.Threading.Tasks.VoidTaskResult>.StateMachineBox;
 
 namespace System.Runtime.CompilerServices
@@ -13,12 +11,6 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Auto)]
     public struct PoolingAsyncValueTaskMethodBuilder
     {
-        /// <summary>Maximum number of boxes that are allowed to be cached per state machine type.</summary>
-        internal static readonly int s_valueTaskPoolingCacheSize =
-            int.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_THREADING_POOLINGASYNCVALUETASKSCACHESIZE"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int result) && result > 0 ?
-                result :
-                Environment.ProcessorCount * 4; // arbitrary default value
-
         /// <summary>Sentinel object used to indicate that the builder completed synchronously and successfully.</summary>
         private static readonly StateMachineBox s_syncSuccessSentinel = PoolingAsyncValueTaskMethodBuilder<VoidTaskResult>.s_syncSuccessSentinel;
 

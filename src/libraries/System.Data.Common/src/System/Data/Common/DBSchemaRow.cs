@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data.Common
@@ -27,8 +28,8 @@ namespace System.Data.Common
             };
             DbSchemaTable schemaTable = new DbSchemaTable(dataTable, returnProviderSpecificTypes);
 
-            const DataViewRowState rowStates = DataViewRowState.Unchanged | DataViewRowState.Added | DataViewRowState.ModifiedCurrent;
-            DataRow[] dataRows = dataTable.Select(null, "ColumnOrdinal ASC", rowStates);
+
+            DataRow[] dataRows = SelectRows(dataTable, returnProviderSpecificTypes);
             Debug.Assert(null != dataRows, "GetSchemaRows: unexpected null dataRows");
 
             DbSchemaRow[] schemaRows = new DbSchemaRow[dataRows.Length];
@@ -38,6 +39,14 @@ namespace System.Data.Common
                 schemaRows[i] = new DbSchemaRow(schemaTable, dataRows[i]);
             }
             return schemaRows;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Filter expression is null.")]
+        private static DataRow[] SelectRows(DataTable dataTable, bool returnProviderSpecificTypes)
+        {
+            const DataViewRowState rowStates = DataViewRowState.Unchanged | DataViewRowState.Added | DataViewRowState.ModifiedCurrent;
+            return dataTable.Select(null, "ColumnOrdinal ASC", rowStates);
         }
 
         internal DbSchemaRow(DbSchemaTable schemaTable, DataRow dataRow)
@@ -293,6 +302,7 @@ namespace System.Data.Common
 
         internal Type? DataType
         {
+            [RequiresUnreferencedCode("DataRow's DataType cannot be statically analyzed")]
             get
             {
                 if (null != _schemaTable.DataType)

@@ -29,13 +29,8 @@ namespace BINDER_SPACE
         LoadContext();
         ~LoadContext();
 
-        ULONG AddRef();
-        ULONG Release();
         ContextEntry *Lookup(/* in */ AssemblyName *pAssemblyName);
         HRESULT Register(BindResult *pBindResult);
-
-    protected:
-        LONG m_cRef;
     };
 
 #include "loadcontext.inl"

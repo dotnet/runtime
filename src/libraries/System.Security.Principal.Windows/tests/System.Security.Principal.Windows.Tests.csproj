@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NTAccount.cs" />
     <Compile Include="SecurityIdentifierTests.cs" />
     <Compile Include="WindowsIdentityTests.cs" />
-    <Compile Include="WindowsIdentityImpersonatedTests.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))" />
+    <Compile Include="WindowsIdentityImpersonatedTests.netcoreapp.cs" />
     <Compile Include="WindowsPrincipalTests.cs" />
     <Compile Include="WellKnownSidTypeTests.cs" />
   </ItemGroup>

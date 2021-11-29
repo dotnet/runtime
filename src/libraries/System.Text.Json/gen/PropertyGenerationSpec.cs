@@ -9,9 +9,6 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Name={Name}, Type={TypeMetadata}")]
     internal sealed class PropertyGenerationSpec
     {
-        /// <summary>
-        /// The CLR name of the property.
-        /// </summary>
         public string ClrName { get; init; }
 
         /// <summary>
@@ -20,14 +17,35 @@ namespace System.Text.Json.SourceGeneration
         public bool IsProperty { get; init; }
 
         /// <summary>
+        /// If representing a property, returns true if either the getter or setter are public.
+        /// </summary>
+        public bool IsPublic { get; init; }
+
+        public bool IsVirtual { get; init; }
+
+        /// <summary>
         /// The property name specified via JsonPropertyNameAttribute, if available.
         /// </summary>
         public string? JsonPropertyName { get; init; }
 
         /// <summary>
+        /// The pre-determined JSON property name, accounting for <see cref="JsonNamingPolicy"/>
+        /// specified ahead-of-time via <see cref="JsonSourceGenerationOptionsAttribute"/>.
+        /// Only used in fast-path serialization logic.
+        /// </summary>
+        public string RuntimePropertyName { get; init; }
+
+        public string PropertyNameVarName { get; init; }
+
+        /// <summary>
         /// Whether the property has a set method.
         /// </summary>
         public bool IsReadOnly { get; init; }
+
+        /// <summary>
+        /// Whether the property has an init-only set method.
+        /// </summary>
+        public bool IsInitOnlySetter { get; init; }
 
         /// <summary>
         /// Whether the property has a public or internal (only usable when JsonIncludeAttribute is specified)
@@ -56,9 +74,19 @@ namespace System.Text.Json.SourceGeneration
         public JsonNumberHandling? NumberHandling { get; init; }
 
         /// <summary>
+        /// The serialization order of the property.
+        /// </summary>
+        public int Order { get; init; }
+
+        /// <summary>
         /// Whether the property has the JsonIncludeAttribute. If so, non-public accessors can be used for (de)serialziation.
         /// </summary>
         public bool HasJsonInclude { get; init; }
+
+        /// <summary>
+        /// Whether the property has the JsonExtensionDataAttribute.
+        /// </summary>
+        public bool IsExtensionData { get; init; }
 
         /// <summary>
         /// Generation specification for the property's type.
@@ -74,5 +102,7 @@ namespace System.Text.Json.SourceGeneration
         /// Source code to instantiate design-time specified custom converter.
         /// </summary>
         public string? ConverterInstantiationLogic { get; init; }
+
+        public bool HasFactoryConverter { get; init; }
     }
 }

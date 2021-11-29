@@ -18,10 +18,8 @@ namespace BinderTracingTests
     partial class BinderTracingTest
     {
         // Assembly found in app path:
-        //   KnownPathProbed : AppNativeImagePaths  (DLL)   [COR_E_FILENOTFOUND]
-        //   KnownPathProbed : AppNativeImagePaths  (EXE)   [COR_E_FILENOTFOUND]
         //   KnownPathProbed : AppPaths             (DLL)   [S_OK]
-        // Note: corerun always sets APP_PATH and APP_NI_PATH. In regular use cases,
+        // Note: corerun always sets APP_PATH. In regular use cases,
         // the customer would have to explicitly configure the app to set those.
         [BinderTest]
         public static BindOperation AssemblyInAppPath()
@@ -42,18 +40,6 @@ namespace BinderTracingTests
                 {
                     new ProbedPath()
                     {
-                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppNativeImagePaths, assemblyName.Name, isExe: false),
-                        Source = ProbedPath.PathSource.AppNativeImagePaths,
-                        Result = COR_E_FILENOTFOUND
-                    },
-                    new ProbedPath()
-                    {
-                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppNativeImagePaths, assemblyName.Name, isExe: true),
-                        Source = ProbedPath.PathSource.AppNativeImagePaths,
-                        Result = COR_E_FILENOTFOUND
-                    },
-                    new ProbedPath()
-                    {
                         FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppPaths, assemblyName.Name, isExe: false),
                         Source = ProbedPath.PathSource.AppPaths,
                         Result = S_OK
@@ -63,11 +49,9 @@ namespace BinderTracingTests
         }
 
         // Assembly not found:
-        //   KnownPathProbed : AppNativeImagePaths  (DLL)   [COR_E_FILENOTFOUND]
-        //   KnownPathProbed : AppNativeImagePaths  (EXE)   [COR_E_FILENOTFOUND]
         //   KnownPathProbed : AppPaths             (DLL)   [COR_E_FILENOTFOUND]
         //   KnownPathProbed : AppPaths             (EXE)   [COR_E_FILENOTFOUND]
-        // Note: corerun always sets APP_PATH and APP_NI_PATH. In regular use cases,
+        // Note: corerun always sets APP_PATH. In regular use cases,
         // the customer would have to explicitly configure the app to set those.
         [BinderTest(additionalLoadsToTrack: new string[] { "DoesNotExist" })]
         public static BindOperation NonExistentAssembly()
@@ -91,18 +75,6 @@ namespace BinderTracingTests
                 {
                     new ProbedPath()
                     {
-                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppNativeImagePaths, assemblyName, isExe: false),
-                        Source = ProbedPath.PathSource.AppNativeImagePaths,
-                        Result = COR_E_FILENOTFOUND
-                    },
-                    new ProbedPath()
-                    {
-                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppNativeImagePaths, assemblyName, isExe: true),
-                        Source = ProbedPath.PathSource.AppNativeImagePaths,
-                        Result = COR_E_FILENOTFOUND
-                    },
-                    new ProbedPath()
-                    {
                         FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppPaths, assemblyName, isExe: false),
                         Source = ProbedPath.PathSource.AppPaths,
                         Result = COR_E_FILENOTFOUND
@@ -119,7 +91,7 @@ namespace BinderTracingTests
 
         // Satellite assembly found in app path:
         //   KnownPathProbed : AppPaths             (DLL)   [S_OK]
-        // Note: corerun always sets APP_PATH and APP_NI_PATH. In regular use cases,
+        // Note: corerun always sets APP_PATH. In regular use cases,
         // the customer would have to explicitly configure the app to set those.
         [BinderTest(isolate: true)]
         public static BindOperation SatelliteAssembly_AppPath()
@@ -182,7 +154,7 @@ namespace BinderTracingTests
         // Satellite assembly found in culture subdirectory (default ALC):
         //   KnownPathProbed : AppPaths                 [COR_E_FILENOTFOUND]
         //   KnownPathProbed : SatelliteSubdirectory    [S_OK]
-        // Note: corerun always sets APP_PATH and APP_NI_PATH. In regular use cases,
+        // Note: corerun always sets APP_PATH. In regular use cases,
         // the customer would have to explicitly configure the app to set those.
         [BinderTest(isolate: true)]
         public static BindOperation SatelliteAssembly_CultureSubdirectory_DefaultALC()

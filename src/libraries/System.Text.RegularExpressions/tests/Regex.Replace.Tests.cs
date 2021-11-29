@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -105,42 +106,30 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\Ga", "aaaaa", "b", RegexOptions.None, 5, 0, "bbbbb" };
         }
 
+        public static IEnumerable<object[]> Replace_String_TestData_WithEngine =>
+            RegexHelpers.PrependEngines(Replace_String_TestData());
+
         [Theory]
-        [MemberData(nameof(Replace_String_TestData))]
-        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Replace_String_TestData), 3, MemberType = typeof(RegexCompilationHelper))]
-        public void Replace(string pattern, string input, string replacement, RegexOptions options, int count, int start, string expected)
+        [MemberData(nameof(Replace_String_TestData_WithEngine))]
+        public async Task Replace(RegexEngine engine, string pattern, string input, string replacement, RegexOptions options, int count, int start, string expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);
             bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, count);
-            if (options == RegexOptions.None)
-            {
-                if (isDefaultStart && isDefaultCount)
-                {
-                    // Use Replace(string, string) or Replace(string, string, string)
-                    Assert.Equal(expected, new Regex(pattern).Replace(input, replacement));
-                    Assert.Equal(expected, Regex.Replace(input, pattern, replacement));
-                }
-                if (isDefaultStart)
-                {
-                    // Use Replace(string, string, string, int)
-                    Assert.Equal(expected, new Regex(pattern).Replace(input, replacement, count));
-                }
-                // Use Replace(string, string, int, int)
-                Assert.Equal(expected, new Regex(pattern).Replace(input, replacement, count, start));
-            }
+
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+
             if (isDefaultStart && isDefaultCount)
             {
-                // Use Replace(string, string) or Replace(string, string, string, RegexOptions)
-                Assert.Equal(expected, new Regex(pattern, options).Replace(input, replacement));
+                Assert.Equal(expected, r.Replace(input, replacement));
                 Assert.Equal(expected, Regex.Replace(input, pattern, replacement, options));
             }
+
             if (isDefaultStart)
             {
-                // Use Replace(string, string, string, int)
-                Assert.Equal(expected, new Regex(pattern, options).Replace(input, replacement, count));
+                Assert.Equal(expected, r.Replace(input, replacement, count));
             }
-            // Use Replace(string, string, int, int)
-            Assert.Equal(expected, new Regex(pattern, options).Replace(input, replacement, count, start));
+
+            Assert.Equal(expected, r.Replace(input, replacement, count, start));
         }
 
         public static IEnumerable<object[]> Replace_MatchEvaluator_TestData()
@@ -177,42 +166,29 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\d", "0123456789foo4567890foo         ", new MatchEvaluator(MatchEvaluatorPoundSign), RegexOptions.RightToLeft, -1, 32, "##########foo#######foo         " };
         }
 
+        public static IEnumerable<object[]> Replace_MatchEvaluator_TestData_WithEngine =>
+            RegexHelpers.PrependEngines(Replace_MatchEvaluator_TestData());
+
         [Theory]
-        [MemberData(nameof(Replace_MatchEvaluator_TestData))]
-        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Replace_MatchEvaluator_TestData), 3, MemberType = typeof(RegexCompilationHelper))]
-        public void Replace_MatchEvaluator_Test(string pattern, string input, MatchEvaluator evaluator, RegexOptions options, int count, int start, string expected)
+        [MemberData(nameof(Replace_MatchEvaluator_TestData_WithEngine))]
+        public async Task Replace_MatchEvaluator_Test(RegexEngine engine, string pattern, string input, MatchEvaluator evaluator, RegexOptions options, int count, int start, string expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);
             bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, count);
-            if (options == RegexOptions.None)
-            {
-                if (isDefaultStart && isDefaultCount)
-                {
-                    // Use Replace(string, MatchEvaluator) or Replace(string, string, MatchEvaluator)
-                    Assert.Equal(expected, new Regex(pattern).Replace(input, evaluator));
-                    Assert.Equal(expected, Regex.Replace(input, pattern, evaluator));
-                }
-                if (isDefaultStart)
-                {
-                    // Use Replace(string, MatchEvaluator, string, int)
-                    Assert.Equal(expected, new Regex(pattern).Replace(input, evaluator, count));
-                }
-                // Use Replace(string, MatchEvaluator, int, int)
-                Assert.Equal(expected, new Regex(pattern).Replace(input, evaluator, count, start));
-            }
+
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+
             if (isDefaultStart && isDefaultCount)
             {
-                // Use Replace(string, MatchEvaluator) or Replace(string, MatchEvaluator, RegexOptions)
-                Assert.Equal(expected, new Regex(pattern, options).Replace(input, evaluator));
-                Assert.Equal(expected, Regex.Replace(input, pattern, evaluator, options));
+                Assert.Equal(expected, r.Replace(input, evaluator));
             }
+
             if (isDefaultStart)
             {
-                // Use Replace(string, MatchEvaluator, string, int)
-                Assert.Equal(expected, new Regex(pattern, options).Replace(input, evaluator, count));
+                Assert.Equal(expected, r.Replace(input, evaluator, count));
             }
-            // Use Replace(string, MatchEvaluator, int, int)
-            Assert.Equal(expected, new Regex(pattern, options).Replace(input, evaluator, count, start));
+
+            Assert.Equal(expected, r.Replace(input, evaluator, count, start));
         }
 
         [Fact]

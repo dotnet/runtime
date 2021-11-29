@@ -86,7 +86,7 @@ namespace
         while (arg_i < argc)
         {
             const pal::char_t* arg = argv[arg_i];
-            pal::string_t arg_lower = pal::to_lower(arg);
+            pal::string_t arg_lower = to_lower(arg);
             const auto &iter = std::find_if(known_opts.cbegin(), known_opts.cend(),
                 [&](const known_options &opt) { return arg_lower == get_host_option(opt).option; });
             if (iter == known_opts.cend())

@@ -1340,7 +1340,7 @@ zM=
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29515", TestPlatforms.OSX | TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29515", TestPlatforms.OSX)]
         public static void FromNonsenseXml()
         {
             // This is DiminishedDPParameters XML, but with a P that is way too long.

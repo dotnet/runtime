@@ -183,6 +183,7 @@
 #include "utilcode.h" // this defines assert as _ASSERTE
 #include "host.h"     // this redefines assert for the JIT to use assertAbort
 #include "utils.h"
+#include "targetosarch.h"
 
 #ifdef DEBUG
 #define INDEBUG(x) x
@@ -206,17 +207,17 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(DEBUG) && !defined(OSX_ARM64_ABI)
-// On all platforms except Arm64 OSX arguments on the stack are taking
-// register size slots. On these platforms we could check that stack slots count
-// matches our new byte size calculations.
+#if defined(DEBUG)
 #define DEBUG_ARG_SLOTS
 #endif
 
 #if defined(DEBUG_ARG_SLOTS)
 #define DEBUG_ARG_SLOTS_ARG(x) , x
 #define DEBUG_ARG_SLOTS_ONLY(x) x
-#define DEBUG_ARG_SLOTS_ASSERT(x) assert(x)
+// On all platforms except Arm64 OSX arguments on the stack are taking
+// register size slots. On these platforms we could check that stack slots count
+// matches our new byte size calculations.
+#define DEBUG_ARG_SLOTS_ASSERT(x) assert(compMacOsArm64Abi() || (x))
 #else
 #define DEBUG_ARG_SLOTS_ARG(x)
 #define DEBUG_ARG_SLOTS_ONLY(x)
@@ -248,11 +249,11 @@
 // Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
-#if (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 #define FEATURE_ARG_SPLIT 1
 #else
 #define FEATURE_ARG_SPLIT 0
-#endif // (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
+#endif
 
 // To get rid of warning 4701 : local variable may be used without being initialized
 #define DUMMY_INIT(x) (x)
@@ -334,6 +335,9 @@ typedef int NATIVE_OFFSET;
 typedef unsigned UNATIVE_OFFSET;
 
 typedef ptrdiff_t ssize_t;
+
+// Type used for weights (e.g. block and edge weights)
+typedef double weight_t;
 
 // For the following specially handled FIELD_HANDLES we need
 //   values that are negative and have the low two bits zero
@@ -437,6 +441,7 @@ public:
 #define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
 #define LOOP_HOIST_STATS 1  // Collect loop hoisting stats.
 #define TRACK_LSRA_STATS 1  // Collect LSRA stats
+#define TRACK_ENREG_STATS 1 // Collect enregistration stats
 #else
 #define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
 #define LOOP_HOIST_STATS 0  // You can set this to 1 to get loop hoist stats in retail, as well
@@ -487,6 +492,11 @@ const bool dspGCtbls = true;
         if (JitTls::GetCompiler()->verbose)                                                                            \
             logf(__VA_ARGS__);                                                                                         \
     }
+#define JITDUMPEXEC(x)                                                                                                 \
+    {                                                                                                                  \
+        if (JitTls::GetCompiler()->verbose)                                                                            \
+            x;                                                                                                         \
+    }
 #define JITLOG(x)                                                                                                      \
     {                                                                                                                  \
         JitLogEE x;                                                                                                    \
@@ -519,8 +529,12 @@ const bool dspGCtbls = true;
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
+// Development-time only macros, simplify guards for specified IL methods one wants to debug/add log messages for
+#define ISMETHOD(name) (strcmp(JitTls::GetCompiler()->impInlineRoot()->info.compMethodName, name) == 0)
+#define ISMETHODHASH(hash) (JitTls::GetCompiler()->impInlineRoot()->info.compMethodHash() == hash)
 #else // !DEBUG
 #define JITDUMP(...)
+#define JITDUMPEXEC(x)
 #define JITLOG(x)
 #define JITLOG_THIS(t, x)
 #define DBEXEC(flg, expr)
@@ -623,9 +637,9 @@ inline size_t unsigned_abs(ssize_t x)
 
 /*****************************************************************************/
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-
 #define HISTOGRAM_MAX_SIZE_COUNT 64
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 class Histogram
 {
@@ -826,12 +840,18 @@ T dspOffset(T o)
 
 #endif // !defined(DEBUG)
 
-extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
-                                                      UINT32                                 countSchemaItems,
-                                                      BYTE*                                  pInstrumentationData,
-                                                      int32_t                                ilOffset,
-                                                      UINT32*                                pLikelihood,
-                                                      UINT32*                                pNumberOfClasses);
+struct LikelyClassRecord
+{
+    CORINFO_CLASS_HANDLE clsHandle;
+    UINT32               likelihood;
+};
+
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
+                                          UINT32                                 maxLikelyClasses,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset);
 
 /*****************************************************************************/
 #endif //_JIT_H_

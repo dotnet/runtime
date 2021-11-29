@@ -14,14 +14,7 @@ inline Module* DomainFile::GetCurrentModule()
 inline Module* DomainFile::GetLoadedModule()
 {
     LIMITED_METHOD_CONTRACT;
-
-    {
-        // CheckLoaded() eventually calls PEFile::GetNativeImageWithRef(), which
-        // takes a reader lock on the file's m_pMetadataLock.  However, this is
-        // only done in debug for the consistency check, so we can accept the lock violation.
-        CONTRACT_VIOLATION(TakesLockViolation);
-        CONSISTENCY_CHECK(CheckLoaded());
-    }
+    CONSISTENCY_CHECK(CheckLoaded());
 
     return m_pModule;
 }
@@ -52,14 +45,7 @@ inline Assembly* DomainAssembly::GetCurrentAssembly()
 inline Assembly* DomainAssembly::GetLoadedAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
-    {
-        // CheckLoaded() eventually calls PEFile::GetNativeImageWithRef(), which
-        // takes a reader lock on the file's m_pMetadataLock.  However, this is
-        // only done in debug for the consistency check, so we can accept the lock violation.
-        CONTRACT_VIOLATION(TakesLockViolation);
-        CONSISTENCY_CHECK(CheckLoaded());
-    }
+    CONSISTENCY_CHECK(CheckLoaded());
 
     return m_pAssembly;
 }

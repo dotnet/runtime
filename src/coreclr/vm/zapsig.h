@@ -6,9 +6,10 @@
 // ---------------------------------------------------------------------------
 //
 // This module contains helper functions used to encode and manipulate
-// signatures for the zapper (ngen).
+// signatures for scenarios where runtime-specific signatures
+// including specific generic instantiations are persisted,
+// like Ready-To-Run decoding, IBC, and Multi-core JIT recording/playback
 //
-
 // ---------------------------------------------------------------------------
 
 
@@ -106,21 +107,6 @@ public:
     BOOL GetSignatureForTypeHandle(TypeHandle typeHandle,
                                    SigBuilder * pSigBuilder);
 
-#ifdef FEATURE_PREJIT
-    // Compare a type handle with a tagged pointer. Ensure that the common path is inlined into the caller.
-    static FORCEINLINE BOOL CompareTaggedPointerToTypeHandle(Module * pModule, TADDR addr, TypeHandle handle)
-    {
-        WRAPPER_NO_CONTRACT;
-        if (handle.AsTAddr() == addr)
-            return TRUE;
-        if (!CORCOMPILE_IS_POINTER_TAGGED(addr))
-            return FALSE;
-        return CompareFixupToTypeHandle(pModule, addr, handle);
-    }
-
-    static BOOL CompareFixupToTypeHandle(Module * pModule, TADDR fixup, TypeHandle handle);
-#endif
-
     static BOOL CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle typeHnd2);
 
 private:
@@ -163,7 +149,8 @@ public:
         Module              *referencingModule,
         Module              *fromModule,
         PCCOR_SIGNATURE     pBuffer,
-        ClassLoadLevel      level = CLASS_LOADED);
+        ClassLoadLevel      level = CLASS_LOADED,
+        PCCOR_SIGNATURE     *ppAfterSig = NULL);
 
     static MethodDesc *DecodeMethod(
         Module              *referencingModule,
@@ -178,7 +165,9 @@ public:
         ZapSig::Context     *pZapSigContext,
         TypeHandle          *ppTH = NULL,
         PCCOR_SIGNATURE     *ppOwnerTypeSpecWithVars = NULL,
-        PCCOR_SIGNATURE     *ppMethodSpecWithVars = NULL);
+        PCCOR_SIGNATURE     *ppMethodSpecWithVars = NULL,
+        PCCOR_SIGNATURE     *ppAfterSig = NULL,
+        BOOL                actualOwnerRequired = FALSE);
 
     static FieldDesc *DecodeField(
         Module              *referencingModule,
@@ -203,16 +192,6 @@ public:
         CORINFO_RESOLVED_TOKEN *pResolvedToken = NULL,
         CORINFO_RESOLVED_TOKEN *pConstrainedResolvedToken = NULL,
         BOOL                   fEncodeUsingResolvedTokenSpecStreams = FALSE);
-
-    static void EncodeField(
-        FieldDesc              *pField,
-        Module                 *pInfoModule,
-        SigBuilder             *pSigBuilder,
-        LPVOID                 pReferencingModule,
-        ENCODEMODULE_CALLBACK  pfnEncodeModule,
-        CORINFO_RESOLVED_TOKEN *pResolvedToken = NULL,
-        BOOL                   fEncodeUsingResolvedTokenSpecStreams = FALSE);
-
 };
 
 #endif // ZAPGSIG_H

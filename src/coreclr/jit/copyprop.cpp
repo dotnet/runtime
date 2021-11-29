@@ -97,16 +97,6 @@ int Compiler::optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDs
         score -= 4;
     }
 
-    if (lclVarDsc->lvDoNotEnregister)
-    {
-        score += 4;
-    }
-
-    if (copyVarDsc->lvDoNotEnregister)
-    {
-        score -= 4;
-    }
-
 #ifdef TARGET_X86
     // For doubles we also prefer to change parameters into non-parameter local variables
     if (lclVarDsc->lvType == TYP_DOUBLE)
@@ -242,7 +232,7 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         // 'c' with 'x.'
         if (!lvaTable[newLclNum].lvVerTypeInfo.IsThisPtr())
         {
-            if (lvaTable[newLclNum].lvAddrExposed)
+            if (lvaTable[newLclNum].IsAddressExposed())
             {
                 continue;
             }
@@ -280,9 +270,9 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         {
             JITDUMP("VN based copy assertion for ");
             printTreeID(tree);
-            printf(" V%02d @%08X by ", lclNum, tree->GetVN(VNK_Conservative));
+            printf(" V%02d " FMT_VN " by ", lclNum, tree->GetVN(VNK_Conservative));
             printTreeID(op);
-            printf(" V%02d @%08X.\n", newLclNum, op->GetVN(VNK_Conservative));
+            printf(" V%02d " FMT_VN ".\n", newLclNum, op->GetVN(VNK_Conservative));
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif

@@ -38,7 +38,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
-#include "mono/metadata/security-manager.h"
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32process.h>
@@ -397,6 +396,7 @@ mono_runtime_run_module_cctor (MonoImage *image, MonoError *error)
 			MonoClass *module_klass;
 			MonoVTable *module_vtable;
 
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Running module .cctor for '%s'", image->name);
 			module_klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | 1, error);
 			if (!module_klass) {
 				return FALSE;
@@ -522,6 +522,11 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	if (do_initialization) {
 		MonoException *exc = NULL;
 
+		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE)) {
+			char* type_name = mono_type_full_name (m_class_get_byval_arg (klass));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Running class .cctor for %s from '%s'", type_name, m_class_get_image (klass)->name);
+			g_free (type_name);
+		}
 		/* We are holding the per-vtable lock, do the actual initialization */
 
 		mono_threads_begin_abort_protected_block ();
@@ -1524,6 +1529,9 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				vt_slot ++;
 				continue;
 			}
+
+			if (m_method_is_static (method))
+				continue;
 
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
@@ -4145,7 +4153,7 @@ mono_unhandled_exception_internal (MonoObject *exc_raw)
 void
 mono_unhandled_exception (MonoObject *exc)
 {
-	MONO_EXTERNAL_ONLY_VOID (mono_unhandled_exception_internal (exc));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_unhandled_exception_internal (exc));
 }
 
 static MonoObjectHandle
@@ -5680,6 +5688,39 @@ mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_
 
 	return array;
 }
+
+static MonoArray*
+mono_array_new_jagged_helper (MonoClass *klass, int n, uintptr_t *lengths, int index, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoArray *ret = mono_array_new_full_checked (klass, &lengths [index], NULL, error);
+	goto_if_nok (error, exit);
+
+	MONO_HANDLE_PIN (ret);
+
+	if (index < (n - 1)) {
+		// We have a new dimension argument. This means the elements in the allocated array
+		// are also arrays and we allocate each one of them.
+		MonoClass *element_class = m_class_get_element_class (klass);
+		g_assert (m_class_get_rank (element_class) == 1);
+		for (int i = 0; i < lengths [index]; i++) {
+			MonoArray *o = mono_array_new_jagged_helper (element_class, n, lengths, index + 1, error);
+			goto_if_nok (error, exit);
+			mono_array_setref_fast (ret, i, o);
+		}
+	}
+
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
+}
+
+MonoArray *
+mono_array_new_jagged_checked (MonoClass *klass, int n, uintptr_t *lengths, MonoError *error)
+{
+	return mono_array_new_jagged_helper (klass, n, lengths, 0, error);
+}
+
 
 /**
  * mono_array_new:
@@ -7810,7 +7851,7 @@ format_cmd_line (int argc, char **argv, gboolean add_host)
 	GString *cmd_line = NULL;
 
 	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
+#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
 		host_path = mono_w32process_get_path (getpid ());
 #elif defined(HOST_WIN32)
 		gunichar2 *host_path_ucs2 = NULL;

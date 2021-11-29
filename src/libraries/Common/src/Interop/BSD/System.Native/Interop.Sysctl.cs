@@ -35,8 +35,9 @@ internal static partial class Interop
         {
             IntPtr bytesLength = (IntPtr)len;
             int ret = -1;
+            bool autoSize = (value == null && len == 0);
 
-            if (value == null && len == 0)
+            if (autoSize)
             {
                 // do one try to see how much data we need
                 ret = Sysctl(name, name_len, value, &bytesLength);
@@ -48,8 +49,33 @@ internal static partial class Interop
             }
 
             ret = Sysctl(name, name_len, value, &bytesLength);
+            while (autoSize && ret != 0 && GetLastErrorInfo().Error == Error.ENOMEM)
+            {
+                // Do not use ReAllocHGlobal() here: we don't care about
+                // previous contents, and proper checking of value returned
+                // will make code more complex.
+                Marshal.FreeHGlobal((IntPtr)value);
+                if ((int)bytesLength == int.MaxValue)
+                {
+                    throw new OutOfMemoryException();
+                }
+                if ((int)bytesLength >= int.MaxValue / 2)
+                {
+                    bytesLength = (IntPtr)int.MaxValue;
+                }
+                else
+                {
+                    bytesLength = (IntPtr)((int)bytesLength * 2);
+                }
+                value = (byte*)Marshal.AllocHGlobal(bytesLength);
+                ret = Sysctl(name, name_len, value, &bytesLength);
+            }
             if (ret != 0)
             {
+                if (autoSize)
+                {
+                    Marshal.FreeHGlobal((IntPtr)value);
+                }
                 throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
             }
 

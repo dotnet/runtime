@@ -45,6 +45,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public bool DumpMibc = false;
         public FileInfo InputFileToDump;
         public List<FileInfo> CompareMibc;
+        public bool InheritTimestamp;
 
         public string[] HelpArgs = Array.Empty<string>();
 
@@ -264,6 +265,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
                     }
                 }
+
+                syntax.DefineOption(name: "inherit-timestamp", value: ref InheritTimestamp, help: "If specified, set the output's timestamp to the max timestamp of the input files");
 
                 VerbosityOption();
                 CompressedOption();

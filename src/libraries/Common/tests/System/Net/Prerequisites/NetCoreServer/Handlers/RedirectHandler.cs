@@ -20,14 +20,14 @@ namespace NetCoreServer
                     if (statusCode < 300 || statusCode > 308)
                     {
                         context.Response.StatusCode = 400;
-                        context.Response.SetStatusDescription($"Invalid redirect statuscode: {statusCodeString}");
+                        context.Response.SetStatusDescription("Invalid redirect statuscode: " + statusCodeString);
                         return;
                     }
                 }
                 catch (Exception)
                 {
                     context.Response.StatusCode = 400;
-                    context.Response.SetStatusDescription($"Error parsing statuscode: {statusCodeString}");
+                    context.Response.SetStatusDescription("Error parsing statuscode: " + statusCodeString);
                     return;
                 }
             }
@@ -36,7 +36,7 @@ namespace NetCoreServer
             if (string.IsNullOrEmpty(redirectUri))
             {
                 context.Response.StatusCode = 400;
-                context.Response.SetStatusDescription($"Missing redirection uri");
+                context.Response.SetStatusDescription("Missing redirection uri");
                 return;
             }
 
@@ -51,7 +51,7 @@ namespace NetCoreServer
                 catch (Exception)
                 {
                     context.Response.StatusCode = 400;
-                    context.Response.SetStatusDescription($"Error parsing hops: {hopsString}");
+                    context.Response.SetStatusDescription("Error parsing hops: " + hopsString);
                     return;
                 }
             }

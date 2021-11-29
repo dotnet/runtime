@@ -6,12 +6,14 @@
 
   <ItemGroup>
     <NativeBinary Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
-    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <NativeBinary Include="$(DotNetHostBinDir)/comhost.dll" />

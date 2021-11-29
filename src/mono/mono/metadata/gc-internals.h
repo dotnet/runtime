@@ -68,7 +68,7 @@ void
 mono_object_register_finalizer_handle (MonoObjectHandle obj);
 
 extern void mono_gc_init (void);
-extern void mono_gc_base_init (void);
+MONO_COMPONENT_API extern void mono_gc_base_init (void);
 extern void mono_gc_base_cleanup (void);
 extern void mono_gc_init_icalls (void);
 
@@ -78,7 +78,7 @@ extern void mono_gc_init_icalls (void);
  */
 extern gboolean mono_gc_is_gc_thread (void);
 
-extern gboolean mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread);
+MONO_COMPONENT_API extern gboolean mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread);
 
 extern void mono_gc_set_stack_end (void *stack_end);
 
@@ -174,7 +174,7 @@ typedef void (*MonoFinalizationProc)(gpointer, gpointer); // same as SGenFinaliz
 void  mono_gc_register_for_finalization (MonoObject *obj, MonoFinalizationProc user_data);
 void  mono_gc_add_memory_pressure (gint64 value);
 MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
-void  mono_gc_deregister_root (char* addr);
+MONO_COMPONENT_API void  mono_gc_deregister_root (char* addr);
 void  mono_gc_finalize_domain (MonoDomain *domain);
 void  mono_gc_run_finalize (void *obj, void *data);
 void  mono_gc_clear_domain (MonoDomain * domain);
@@ -310,7 +310,7 @@ void mono_gc_set_desktop_mode (void);
 /*
  * Return whenever this GC can move objects
  */
-gboolean mono_gc_is_moving (void);
+MONO_COMPONENT_API gboolean mono_gc_is_moving (void);
 
 typedef void* (*MonoGCLockedCallbackFunc) (void *data);
 

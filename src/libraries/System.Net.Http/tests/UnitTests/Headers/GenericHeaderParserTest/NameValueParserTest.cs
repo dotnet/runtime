@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -50,6 +46,12 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("name value", 0);
             CheckInvalidParsedValue("name=,value", 0);
             CheckInvalidParsedValue("\u4F1A", 0);
+            CheckInvalidParsedValue("name=\nvalue", 0);
+            CheckInvalidParsedValue("name=val\nue", 0);
+            CheckInvalidParsedValue("name=value\n", 0);
+            CheckInvalidParsedValue("\"name=\nvalue\"", 0);
+            CheckInvalidParsedValue("\"name=val\nue\"", 0);
+            CheckInvalidParsedValue("\"name=value\n\"", 0);
         }
 
         #region Helper methods

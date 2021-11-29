@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -67,7 +68,7 @@ namespace System.Text.Json.Serialization.Converters
             else if (typeToConvert.IsImmutableDictionaryType())
             {
                 genericArgs = typeToConvert.GetGenericArguments();
-                converterType = typeof(ImmutableDictionaryOfTKeyTValueConverter<,,>);
+                converterType = typeof(ImmutableDictionaryOfTKeyTValueConverterWithReflection<,,>);
                 dictionaryKeyType = genericArgs[0];
                 elementType = genericArgs[1];
             }
@@ -90,7 +91,7 @@ namespace System.Text.Json.Serialization.Converters
             // Immutable non-dictionaries from System.Collections.Immutable, e.g. ImmutableStack<T>
             else if (typeToConvert.IsImmutableEnumerableType())
             {
-                converterType = typeof(ImmutableEnumerableOfTConverter<,>);
+                converterType = typeof(ImmutableEnumerableOfTConverterWithReflection<,>);
                 elementType = typeToConvert.GetGenericArguments()[0];
             }
             // IList<>
@@ -162,7 +163,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else if (typeToConvert.IsNonGenericStackOrQueue())
             {
-                converterType = typeof(IEnumerableWithAddMethodConverter<>);
+                converterType = typeof(StackOrQueueConverterWithReflection<>);
             }
             else
             {

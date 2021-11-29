@@ -36,8 +36,8 @@ namespace TypeSystemTests
 
         private static string GetModOptMethodSignatureInfo(MethodSignature signature)
         {
-            if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
-                return "";
+            if (!signature.HasEmbeddedSignatureData)
+                return string.Empty;
 
             StringBuilder sb = new StringBuilder();
             foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())

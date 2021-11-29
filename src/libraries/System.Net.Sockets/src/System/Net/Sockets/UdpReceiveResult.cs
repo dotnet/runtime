@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Net.Sockets
 {
     /// <summary>
-    /// Presents UDP receive result information from a call to the <see cref="UdpClient.ReceiveAsync"/> method
+    /// Presents UDP receive result information from a call to the <see cref="UdpClient.ReceiveAsync()"/> and <see cref="UdpClient.ReceiveAsync(System.Threading.CancellationToken)"/> method
     /// </summary>
     public struct UdpReceiveResult : IEquatable<UdpReceiveResult>
     {

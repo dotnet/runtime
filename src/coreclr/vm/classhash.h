@@ -9,7 +9,7 @@
 #ifndef __CLASS_HASH_INCLUDED
 #define __CLASS_HASH_INCLUDED
 
-#include "ngenhash.h"
+#include "dacenumerablehash.h"
 
 // The type of each entry in the hash.
 typedef DPTR(struct EEClassHashEntry) PTR_EEClassHashEntry;
@@ -17,9 +17,6 @@ class EEClassHashTable;
 typedef struct EEClassHashEntry
 {
     friend class EEClassHashTable;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 #ifdef _DEBUG
     PTR_CUTF8                               DebugKey[2];    // Name of the type
@@ -46,29 +43,23 @@ private:
     PTR_VOID    m_Data;     // Either the token (if EECLASSHASH_TYPEHANDLE_DISCR), or the type handle encoded
                             // as a relative pointer
 
-    NgenHashEntryRef<EEClassHashTable, EEClassHashEntry, 4> m_pEncloser;    // If this entry is a for a nested
-                                                                            // class, this field stores a
-                                                                            // reference to the enclosing type
-                                                                            // (which must be in this same
-                                                                            // hash). The NgenHashEntryRef<>
-                                                                            // is required to abstract some
-                                                                            // complex logic required while
-                                                                            // ngen'ing such references.
+    PTR_EEClassHashEntry  m_pEncloser;  // If this entry is a for a nested
+                                        // class, this field stores a
+                                        // reference to the enclosing type
+                                        // (which must be in this same
+                                        // hash).
 } EEClassHashEntry_t;
 
-// The hash type itself. All common logic is provided by the NgenHashTable templated base class. See
-// NgenHash.h for details.
+// The hash type itself. All common logic is provided by the DacEnumerableHashTable templated base class. See
+// DacEnumerableHash.h for details.
 typedef DPTR(class EEClassHashTable) PTR_EEClassHashTable;
-class EEClassHashTable : public NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>
+class EEClassHashTable : public DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     // The LookupContext type we export to track GetValue/FindNextNestedClass enumerations is simply a rename
     // of the base classes' hash value enumerator.
-    typedef NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>::LookupContext LookupContext;
+    typedef DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>::LookupContext LookupContext;
 
     static EEClassHashTable *Create(Module *pModule, DWORD dwNumBuckets, BOOL bCaseInsensitive, AllocMemTracker *pamTracker);
 
@@ -106,30 +97,10 @@ public:
                                               mdTypeDef *pCL);
     static mdToken UncompressModuleAndClassDef(PTR_VOID Data);
 
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    void EnumMemoryRegionsForEntry(EEClassHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags);
-#endif
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    void Save(DataImage *pImage, CorProfileData *pProfileData);
-    void Fixup(DataImage *pImage);
-
-private:
-    friend class NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>;
-
-    void PrepareExportedTypesForSaving(DataImage *image);
-
-    bool ShouldSave(DataImage *pImage, EEClassHashEntry_t *pEntry);
-    bool IsHotEntry(EEClassHashEntry_t *pEntry, CorProfileData *pProfileData);
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, EEClassHashEntry_t *pOldEntry, EEClassHashEntry_t *pNewEntry, EntryMappingTable *pMap);
-    void FixupEntry(DataImage *pImage, EEClassHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset);
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
-
 private:
 #ifndef DACCESS_COMPILE
     EEClassHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets) :
-        NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>(pModule, pHeap, cInitialBuckets) {}
+        DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>(pModule, pHeap, cInitialBuckets) {}
 #endif
 
     VOID ConstructKeyFromData(PTR_EEClassHashEntry pEntry, ConstructKeyCallback * pCallback);

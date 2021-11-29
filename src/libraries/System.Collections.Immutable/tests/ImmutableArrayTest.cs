@@ -1984,8 +1984,6 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(IStructuralEquatableGetHashCodeData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50579", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36876", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IStructuralEquatableGetHashCode(IEnumerable<int> source, IEqualityComparer comparer)
         {
             var array = source.ToImmutableArray();

@@ -21,6 +21,7 @@
 #include "pal_x509_macos.h"
 #include "pal_x509chain.h"
 #include "pal_keyderivation_macos.h"
+#include "pal_keyagree.h"
 
 static const Entry s_cryptoAppleNative[] =
 {
@@ -30,8 +31,11 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_DigestFinal)
     DllImportEntry(AppleCryptoNative_DigestCurrent)
     DllImportEntry(AppleCryptoNative_DigestOneShot)
+    DllImportEntry(AppleCryptoNative_DigestReset)
     DllImportEntry(AppleCryptoNative_EccGenerateKey)
     DllImportEntry(AppleCryptoNative_EccGetKeySizeInBits)
+    DllImportEntry(AppleCryptoNative_EcdhKeyAgree)
+    DllImportEntry(AppleCryptoNative_GetRandomBytes)
     DllImportEntry(AppleCryptoNative_HmacFree)
     DllImportEntry(AppleCryptoNative_HmacCreate)
     DllImportEntry(AppleCryptoNative_HmacInit)
@@ -40,14 +44,22 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_HmacCurrent)
     DllImportEntry(AppleCryptoNative_HmacOneShot)
     DllImportEntry(AppleCryptoNative_SecKeychainItemCopyKeychain)
+    DllImportEntry(AppleCryptoNative_SecKeychainCopyDefault)
     DllImportEntry(AppleCryptoNative_SecKeychainCreate)
     DllImportEntry(AppleCryptoNative_SecKeychainDelete)
-    DllImportEntry(AppleCryptoNative_SecKeychainCopyDefault)
+    DllImportEntry(AppleCryptoNative_SecKeychainEnumerateCerts)
     DllImportEntry(AppleCryptoNative_SecKeychainOpen)
     DllImportEntry(AppleCryptoNative_SecKeychainUnlock)
-    DllImportEntry(AppleCryptoNative_SetKeychainNeverLock)
     DllImportEntry(AppleCryptoNative_SecKeychainEnumerateIdentities)
-    DllImportEntry(AppleCryptoNative_GetRandomBytes)
+    DllImportEntry(AppleCryptoNative_SetKeychainNeverLock)
+    DllImportEntry(AppleCryptoNative_SslCopyCADistinguishedNames)
+    DllImportEntry(AppleCryptoNative_SslCopyCertChain)
+    DllImportEntry(AppleCryptoNative_SslIsHostnameMatch)
+    DllImportEntry(AppleCryptoNative_SslRead)
+    DllImportEntry(AppleCryptoNative_SslSetBreakOnClientAuth)
+    DllImportEntry(AppleCryptoNative_SslSetBreakOnServerAuth)
+    DllImportEntry(AppleCryptoNative_SslSetIoCallbacks)
+    DllImportEntry(AppleCryptoNative_SslWrite)
     DllImportEntry(AppleCryptoNative_RsaGenerateKey)
     DllImportEntry(AppleCryptoNative_RsaDecryptOaep)
     DllImportEntry(AppleCryptoNative_RsaDecryptPkcs)
@@ -66,6 +78,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SecKeyCopyExternalRepresentation)
     DllImportEntry(AppleCryptoNative_SecKeyCopyPublicKey)
     DllImportEntry(AppleCryptoNative_SslCreateContext)
+    DllImportEntry(AppleCryptoNative_SslSetConnection)
     DllImportEntry(AppleCryptoNative_SslSetAcceptClientCert)
     DllImportEntry(AppleCryptoNative_SslSetMinProtocolVersion)
     DllImportEntry(AppleCryptoNative_SslSetMaxProtocolVersion)
@@ -87,7 +100,10 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_StoreEnumerateMachineRoot)
     DllImportEntry(AppleCryptoNative_StoreEnumerateUserDisallowed)
     DllImportEntry(AppleCryptoNative_StoreEnumerateMachineDisallowed)
+    DllImportEntry(AppleCryptoNative_X509ChainCreate)
+    DllImportEntry(AppleCryptoNative_X509DemuxAndRetainHandle)
     DllImportEntry(AppleCryptoNative_X509GetContentType)
+    DllImportEntry(AppleCryptoNative_X509GetPublicKey)
     DllImportEntry(AppleCryptoNative_X509CopyCertFromIdentity)
     DllImportEntry(AppleCryptoNative_X509CopyPrivateKeyFromIdentity)
     DllImportEntry(AppleCryptoNative_X509ImportCollection)
@@ -105,7 +121,10 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_X509ChainGetStatusAtIndex)
     DllImportEntry(AppleCryptoNative_GetOSStatusForChainStatus)
     DllImportEntry(AppleCryptoNative_X509ChainSetTrustAnchorCertificates)
+    DllImportEntry(AppleCryptoNative_X509StoreAddCertificate)
+    DllImportEntry(AppleCryptoNative_X509StoreRemoveCertificate)
     DllImportEntry(AppleCryptoNative_Pbkdf2)
+    DllImportEntry(AppleCryptoNative_X509GetSubjectSummary)
 };
 
 EXTERN_C const void* CryptoAppleResolveDllImport(const char* name);

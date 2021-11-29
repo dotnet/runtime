@@ -1,4 +1,4 @@
-<Project InitialTargets="ErrorForMissingPackageDescription;_OverridePackDependsOn">
+<Project>
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -39,7 +39,7 @@
     <None Include="$(LicenseFile)"
           PackagePath="$([System.IO.Path]::GetFileName('$(LicenseFile)'))"
           Pack="true"
-          Condition="'$(MSBuildProjectExtension)' != '.sfxproj'" />
+          Condition="'$(MSBuildProjectExtension)' != '.sfxproj' and '$(MSBuildProjectFile)' != 'msi.csproj'" />
     <None Include="$(PackageThirdPartyNoticesFile)"
           PackagePath="$([System.IO.Path]::GetFileName('$(PackageThirdPartyNoticesFile)'))"
           Pack="true" />
@@ -54,56 +54,43 @@
     <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
-    <BeforePack>$(BeforePack);AddNETStandardCompatErrorFileForPackaging</BeforePack>
   </PropertyGroup>
 
-  <!-- Remove when https://github.com/NuGet/Home/issues/10405 is implemented and consumed. -->
-  <Target Name="ErrorForMissingPackageDescription"
-          Condition="'$(IsPackable)' == 'true' and '$(PackageDescription)' == ''">
-    <Error Text="Required property 'PackageDescription' is missing for $(MSBuildProjectName)." />
-  </Target>
-
-  <!-- <GeneratePackage /> controls if a package should be created by clearing out <PackDependsOn />. -->
-  <Target Name="_OverridePackDependsOn"
-          Condition="'$(IsPackable)' == 'true' and
-                     '$(GeneratePackage)' != 'true'">
+  <!--
+    Arcade SDK versioning is defined by static properties in a targets file: work around this by
+    moving properties based on versioning into a target.
+  -->
+  <Target Name="GetProductVersions">
     <PropertyGroup>
-      <PackDependsOn />
+      <IncludePreReleaseLabelInPackageVersion Condition="'$(DotNetFinalVersionKind)' != 'release'">true</IncludePreReleaseLabelInPackageVersion>
+      <IncludePreReleaseLabelInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludePreReleaseLabelInPackageVersion>
+      <IncludePreReleaseLabelInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludePreReleaseLabelInPackageVersion>
+
+      <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
+      <IncludeBuildNumberInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludeBuildNumberInPackageVersion>
+      <IncludeBuildNumberInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludeBuildNumberInPackageVersion>
+
+      <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
+      <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
+      <ProductionVersion Condition="'$(ProductionVersion)' == ''">$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
+      <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
+
+      <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
+      <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
+      <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
+
+      <!--
+        By default, we are always building the nuget packages for HostPolicy, HostFXR and
+        Dotnet/AppHost. Thus, the properties (below) are always set to $(ProductVersion).
+        However, there are scenarios when only some of these components will change (e.g. during
+        servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
+        pass the appropriate version value(s) as argument to the build command in order to override;
+        e.g. 'build -p:HostPolicyVersion=x.y.z ...'
+      -->
+      <HostVersion Condition="'$(HostVersion)' == ''">$(ProductVersion)</HostVersion>
+      <AppHostVersion Condition="'$(AppHostVersion)' == ''">$(ProductVersion)</AppHostVersion>
+      <HostResolverVersion Condition="'$(HostResolverVersion)' == ''">$(ProductVersion)</HostResolverVersion>
+      <HostPolicyVersion Condition="'$(HostPolicyVersion)' == ''">$(ProductVersion)</HostPolicyVersion>
     </PropertyGroup>
-  </Target>
-
-  <!-- Add targets file that marks a .NETStandard applicable tfm as unsupported. -->
-  <Target Name="AddNETStandardCompatErrorFileForPackaging"
-          Condition="'@(NETStandardCompatError)' != ''"
-          Inputs="%(NETStandardCompatError.Identity)"
-          Outputs="unused"
-          BeforeTargets="GetFiles">
-    <PropertyGroup>
-      <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterrors\%(NETStandardCompatError.Identity)\$(PackageId).targets</_NETStandardCompatErrorFilePath>
-      <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId.Replace('.', '_'))_$([System.String]::new('%(NETStandardCompatError.Supported)').Replace('.', '_'))</_NETStandardCompatErrorFileTarget>
-      <_NETStandardCompatErrorFileContent>
-<![CDATA[<Project InitialTargets="$(_NETStandardCompatErrorFileTarget)">
-  <Target Name="$(_NETStandardCompatErrorFileTarget)"
-          Condition="'%24(SuppressTfmSupportBuildWarnings)' == ''">
-    <Error Text="$(PackageId) doesn't support %24(TargetFramework). Consider updating your TargetFramework to %(NETStandardCompatError.Supported) or later." />
-  </Target>
-</Project>]]>
-      </_NETStandardCompatErrorFileContent>
-    </PropertyGroup>
-
-    <WriteLinesToFile File="$(_NETStandardCompatErrorFilePath)"
-                      Lines="$(_NETStandardCompatErrorFileContent)"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
-
-    <ItemGroup>
-      <None Include="$(_NETStandardCompatErrorFilePath)"
-            PackagePath="buildTransitive\%(NETStandardCompatError.Identity)"
-            Pack="true" />
-      <None Include="$(PlaceholderFile)"
-            PackagePath="buildTransitive\%(NETStandardCompatError.Supported)"
-            Pack="true" />
-      <FileWrites Include="$(_NETStandardCompatErrorFilePath)" />
-    </ItemGroup>
   </Target>
 </Project>

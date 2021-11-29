@@ -620,69 +620,20 @@ NESTED_END VarargPInvokeStub, _TEXT
 // Invoked for marshaling-required unmanaged CALLI calls as a stub.
 // EAX       - the unmanaged target
 // ECX, EDX  - arguments
-// [ESP + 4] - the VASigCookie
+// EBX       - the VASigCookie
 //
 LEAF_ENTRY GenericPInvokeCalliHelper, _TEXT
-    // save the target
-    push    eax
 
-    // EAX <- VASigCookie
-    mov     eax, [esp + 8]           // skip target and retaddr
-
-    mov     eax, [eax + VASigCookie__StubOffset]
-    test    eax, eax
-
+    cmp     dword ptr [ebx + VASigCookie__StubOffset], 0
     jz      LOCAL_LABEL(GoCallCalliWorker)
-    // ---------------------------------------
 
-    push    eax
-
-    // stack layout at this point:
-    //
-    // |         ...          |
-    // |   stack arguments    | ESP + 16
-    // +----------------------+
-    // |     VASigCookie*     | ESP + 12
-    // +----------------------+
-    // |    return address    | ESP + 8
-    // +----------------------+
-    // | CALLI target address | ESP + 4
-    // +----------------------+
-    // |   stub entry point   | ESP + 0
-    // ------------------------
-
-    // remove VASigCookie from the stack
-    mov     eax, [esp + 8]
-    mov     [esp + 12], eax
-
-    // move stub entry point below the RA
-    mov     eax, [esp]
-    mov     [esp + 8], eax
-
-    // load EAX with the target address
-    pop     eax
-    pop     eax
-
-    // stack layout at this point:
-    //
-    // |         ...          |
-    // |   stack arguments    | ESP + 8
-    // +----------------------+
-    // |    return address    | ESP + 4
-    // +----------------------+
-    // |   stub entry point   | ESP + 0
-    // ------------------------
-
-    // CALLI target address is in EAX
-    ret
+    // Stub is already prepared, just jump to it
+    jmp     dword ptr [ebx + VASigCookie__StubOffset]
 
 LOCAL_LABEL(GoCallCalliWorker):
-    // the target is on the stack and will become m_Datum of PInvokeCalliFrame
-    // call the stub generating worker
-    pop     eax
-
     //
-    // target ptr in EAX, VASigCookie ptr in EDX
+    // call the stub generating worker
+    // target ptr in EAX, VASigCookie ptr in EBX
     //
 
     STUB_PROLOG
@@ -692,11 +643,16 @@ LOCAL_LABEL(GoCallCalliWorker):
     // save target
     push        eax
 
+    #define STACK_ALIGN_PADDING 4
+    sub         esp, STACK_ALIGN_PADDING    // pass stack aligned to 0x10
     push        eax                         // unmanaged target
-    push        dword ptr [esi + 4*7]       // pVaSigCookie (first stack argument)
+    push        ebx                         // pVaSigCookie (first stack argument)
     push        esi                         // pTransitionBlock
 
+    CHECK_STACK_ALIGNMENT
     call        C_FUNC(GenericPInvokeCalliStubWorker)
+    add         esp, STACK_ALIGN_PADDING    // restore alignment, callee pop args
+    #undef STACK_ALIGN_PADDING
 
     // restore target
     pop     eax
@@ -706,38 +662,6 @@ LOCAL_LABEL(GoCallCalliWorker):
     // jump back to the helper - this time it won't come back here as the stub already exists
     jmp C_FUNC(GenericPInvokeCalliHelper)
 LEAF_END GenericPInvokeCalliHelper, _TEXT
-
-#ifdef FEATURE_PREJIT
-// =========================================================================
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-    STUB_PROLOG
-
-    mov         esi, esp
-
-.att_syntax
-    pushl       $0
-    pushl       $0
-    pushl       $0
-.intel_syntax noprefix
-
-    push        eax             // siteAddrForRegisterIndirect (for tailcalls)
-    push        esi             // pTransitionBlock
-
-    CHECK_STACK_ALIGNMENT
-    call        C_FUNC(StubDispatchFixupWorker)
-
-    mov         esp, esi
-    STUB_EPILOG
-
-PATCH_LABEL StubDispatchFixupPatchLabel
-    // Tailcall target
-    jmp eax
-
-    // This will never be executed. It is just to help out stack-walking logic
-    // which disassembles the epilog to unwind the stack.
-    ret
-NESTED_END StubDispatchFixupStub, _TEXT
-#endif // FEATURE_PREJIT
 
 // ==========================================================================
 NESTED_ENTRY ExternalMethodFixupStub, _TEXT_ NoHandler
@@ -824,58 +748,6 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 NESTED_END DelayLoad_MethodCall, _TEXT
 
 #endif // FEATURE_READYTORUN
-
-#ifdef FEATURE_PREJIT
-// =======================================================================================
-//  The call in softbound vtable slots initially points to this function.
-//  The pupose of this function is to transfer the control to right target and
-//  to optionally patch the target of the jump so that we do not take this slow path again.
-//
-NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-    // Get the return address. It points right after the call instruction in the thunk.
-    mov     eax, [esp]
-    // Calculate the address of the thunk
-    sub     eax, 5
-
-    // Push ebp frame to get good callstack under debugger
-    PROLOG_BEG
-
-    // Preserve argument registers
-    PROLOG_PUSH ecx
-    PROLOG_PUSH edx
-
-    // Set frame pointer
-    PROLOG_END
-
-    sub     esp, 8
-    push    eax         // address of the thunk
-    push    ecx         // this ptr
-    CHECK_STACK_ALIGNMENT
-    call    C_FUNC(VirtualMethodFixupWorker)
-    add     esp, 8
-
-    // Restore stack pointer
-    EPILOG_BEG
-
-    // Restore argument registers
-    EPILOG_POP edx
-    EPILOG_POP ecx
-
-    // Pop ebp frame
-    EPILOG_END
-
-    // Pop return address
-    add   esp, 4
-
-PATCH_LABEL VirtualMethodFixupPatchLabel
-    // Proceed to execute the actual method.
-    jmp     eax
-
-    // This will never be executed. It is just to help out stack-walking logic
-    // which disassembles the epilog to unwind the stack.
-    ret
-NESTED_END VirtualMethodFixupStub, _TEXT
-#endif // FEATURE_PREJIT
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     STUB_PROLOG
@@ -1052,7 +924,6 @@ LOCAL_LABEL(NullObject):
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
 #endif // FEATURE_STUBS_AS_IL
 
-#ifndef CROSSGEN_COMPILE
 // =======================================================================================
 // void ResolveWorkerChainLookupAsmStub();
 //
@@ -1146,7 +1017,6 @@ LOCAL_LABEL(fail):
     jmp     ResolveWorkerAsmStub
 
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
-#endif // CROSSGEN_COMPILE
 
 // backpatch a call site to point to a different stub
 NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler

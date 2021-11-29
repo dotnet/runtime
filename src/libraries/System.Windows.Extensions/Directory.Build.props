@@ -3,10 +3,5 @@
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides miscellaneous Windows-specific types
-
-Commonly Used Types:
-System.Security.Cryptography.X509Certificates.X509Certificate2UI
-System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescription>
   </PropertyGroup>
 </Project>

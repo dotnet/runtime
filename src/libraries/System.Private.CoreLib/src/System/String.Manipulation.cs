@@ -676,6 +676,19 @@ namespace System
 
         private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
+            if (typeof(T) == typeof(string))
+            {
+                if (values is List<string?> valuesList)
+                {
+                    return JoinCore(separator, CollectionsMarshal.AsSpan(valuesList));
+                }
+
+                if (values is string?[] valuesArray)
+                {
+                    return JoinCore(separator, new ReadOnlySpan<string?>(valuesArray));
+                }
+            }
+
             if (values == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
@@ -1697,9 +1710,9 @@ namespace System
             // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
             Vector128<byte> shuffleConstant = Vector128.Create(0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
 
-            Vector128<ushort> v1 = Vector128.Create(c);
-            Vector128<ushort> v2 = Vector128.Create(c2);
-            Vector128<ushort> v3 = Vector128.Create(c3);
+            Vector128<ushort> v1 = Vector128.Create((ushort)c);
+            Vector128<ushort> v2 = Vector128.Create((ushort)c2);
+            Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
             ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
             int cond = Length & -Vector128<ushort>.Count;

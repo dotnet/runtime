@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -20,15 +21,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
     public class PollingWildCardChangeToken : IPollingChangeToken
     {
         private static readonly byte[] Separator = Encoding.Unicode.GetBytes("|");
-        private readonly object _enumerationLock = new object();
+        private readonly object _enumerationLock = new();
         private readonly DirectoryInfoBase _directoryInfo;
         private readonly Matcher _matcher;
         private bool _changed;
         private DateTime? _lastScanTimeUtc;
-        private byte[] _byteBuffer;
-        private byte[] _previousHash;
-        private CancellationTokenSource _tokenSource;
-        private CancellationChangeToken _changeToken;
+        private byte[]? _byteBuffer;
+        private byte[]? _previousHash;
+        private CancellationTokenSource? _tokenSource;
+        private CancellationChangeToken? _changeToken;
 
         /// <summary>
         /// Initializes a new instance of <see cref="PollingWildCardChangeToken"/>.
@@ -65,7 +66,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // Internal for unit testing.
         internal TimeSpan PollingInterval { get; set; } = PhysicalFilesWatcher.DefaultPollingInterval;
 
-        internal CancellationTokenSource CancellationTokenSource
+        [DisallowNull]
+        internal CancellationTokenSource? CancellationTokenSource
         {
             get => _tokenSource;
             set
@@ -77,7 +79,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        CancellationTokenSource IPollingChangeToken.CancellationTokenSource => CancellationTokenSource;
+        CancellationTokenSource? IPollingChangeToken.CancellationTokenSource => CancellationTokenSource;
 
         private IClock Clock { get; }
 
@@ -143,10 +145,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <returns>The <see cref="DateTime"/> that the file was last modified.</returns>
         protected virtual DateTime GetLastWriteUtc(string path)
         {
-            return File.GetLastWriteTimeUtc(Path.Combine(_directoryInfo.FullName, path));
+            string filePath = Path.Combine(_directoryInfo.FullName, path);
+            return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(filePath) ?? File.GetLastWriteTimeUtc(filePath);
         }
 
-        private static bool ArrayEquals(byte[] previousHash, byte[] currentHash)
+        private static bool ArrayEquals(byte[]? previousHash, byte[] currentHash)
         {
             if (previousHash == null)
             {
@@ -190,14 +193,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
             sha256.AppendData(Separator, 0, Separator.Length);
         }
 
-        IDisposable IChangeToken.RegisterChangeCallback(Action<object> callback, object state)
+        IDisposable IChangeToken.RegisterChangeCallback(Action<object?> callback, object? state)
         {
             if (!ActiveChangeCallbacks)
             {
                 return EmptyDisposable.Instance;
             }
 
-            return _changeToken.RegisterChangeCallback(callback, state);
+            return _changeToken!.RegisterChangeCallback(callback, state);
         }
     }
 }

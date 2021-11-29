@@ -444,7 +444,7 @@ HRESULT NativeImageInliningIterator::Reset(Module *pModule, MethodDesc *pInlinee
         BOOL incompleteData;
         Module *inlineeModule = m_pInlinee->GetModule();
         mdMethodDef mdInlinee = m_pInlinee->GetMemberDef();
-        COUNT_T methodsAvailable = m_pModule->GetNativeOrReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
+        COUNT_T methodsAvailable = m_pModule->GetReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
 
         // If the existing buffer is not large enough, reallocate.
         if (methodsAvailable > m_dynamicBufferSize)
@@ -453,7 +453,7 @@ HRESULT NativeImageInliningIterator::Reset(Module *pModule, MethodDesc *pInlinee
             m_dynamicBuffer = new MethodInModule[newSize];
             m_dynamicBufferSize = newSize;
 
-            methodsAvailable = m_pModule->GetNativeOrReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
+            methodsAvailable = m_pModule->GetReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
             _ASSERTE(methodsAvailable <= m_dynamicBufferSize);
         }
 
@@ -815,7 +815,7 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
         while (domainModuleIterator.Next())
         {
             Module * pCurModule = domainModuleIterator.GetModule();
-            if (pCurModule->HasNativeOrReadyToRunInlineTrackingMap())
+            if (pCurModule->HasReadyToRunInlineTrackingMap())
             {
                 inlinerIter.Reset(pCurModule, pInlinee);
 
@@ -1079,12 +1079,12 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
             }
             else
             {
-                BEGIN_PIN_PROFILER(CORProfilerPresent());
-                hr = g_profControlBlock.pProfInterface->GetReJITParameters(
+                BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
+                hr = (&g_profControlBlock)->GetReJITParameters(
                     (ModuleID)pModule,
                     methodDef,
                     pFuncControl);
-                END_PIN_PROFILER();
+                END_PROFILER_CALLBACK();
             }
         }
 

@@ -16,7 +16,7 @@ internal static partial class Interop
             IntPtr Event,
             IntPtr ApcRoutine,
             IntPtr ApcContext,
-            out IO_STATUS_BLOCK IoStatusBlock,
+            IO_STATUS_BLOCK* IoStatusBlock,
             IntPtr FileInformation,
             uint Length,
             FILE_INFORMATION_CLASS FileInformationClass,

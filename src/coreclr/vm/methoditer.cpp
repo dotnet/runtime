@@ -156,8 +156,6 @@ ADVANCE_METHOD:
             goto ADVANCE_TYPE;
         if (CORCOMPILE_IS_POINTER_TAGGED(dac_cast<TADDR>(m_methodIteratorEntry->GetMethod())))
             goto ADVANCE_METHOD;
-        if (!m_methodIteratorEntry->GetMethod()->IsRestored())
-            goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetModule() != m_module)
             goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetMemberDef() != m_md)

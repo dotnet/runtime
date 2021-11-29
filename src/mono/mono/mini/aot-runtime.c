@@ -65,13 +65,14 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "debugger-agent.h"
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
 #include "mono-private-unstable.h"
 #include "llvmonly-runtime.h"
+
+#include <mono/metadata/components.h>
 
 #ifndef DISABLE_AOT
 
@@ -318,7 +319,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 		assembly = mono_get_corlib ()->assembly;
 	} else {
 		MonoAssemblyByNameRequest req;
-		mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+		mono_assembly_request_prepare_byname (&req, alc);
 		req.basedir = amodule->assembly->basedir;
 		assembly = mono_assembly_request_byname (&amodule->image_names [index], &req, &status);
 	}
@@ -1964,19 +1965,6 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 			g_free (err);
 		}
 		g_free (aot_name);
-#if !defined(PLATFORM_ANDROID) && !defined(TARGET_WASM)
-		if (!sofile) {
-			char *basename = g_path_get_basename (assembly->image->name);
-			aot_name = g_strdup_printf ("%s/mono/aot-cache/%s/%s%s", mono_assembly_getrootdir(), MONO_ARCHITECTURE, basename, MONO_SOLIB_EXT);
-			g_free (basename);
-			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
-			if (!sofile) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
-				g_free (err);
-			}
-			g_free (aot_name);
-		}
-#endif
 		if (!sofile) {
 			GList *l;
 
@@ -2400,10 +2388,11 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	MonoAssemblyOpenRequest req;
 	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
 	/*
-	 * Using INTERNAL avoids firing managed assembly load events
-	 * whose execution might require this module to be already loaded.
+	 * Don't fire managed assembly load events whose execution
+	 * might require this module to be already loaded.
 	 */
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_INTERNAL, alc);
+	mono_assembly_request_prepare_open (&req, alc);
+	req.request.no_managed_load_event = TRUE;
 	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
 	if (!assm) {
 		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
@@ -3546,7 +3535,17 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		else
 			code_len = amodule->llvm_code_end - code;
 	} else {
-		code_len = (guint8*)methods [pos + 1] - (guint8*)methods [pos];
+		guint8* code_end = (guint8*)methods [pos + 1];
+
+		if (code >= amodule->jit_code_start && code < amodule->jit_code_end && code_end > amodule->jit_code_end) {
+			code_end = amodule->jit_code_end;
+		}
+
+		if (code >= amodule->llvm_code_start && code < amodule->llvm_code_end && code_end > amodule->llvm_code_end) {
+			code_end = amodule->llvm_code_end;
+		}
+
+		code_len = code_end - code;
 	}
 #endif
 
@@ -5321,10 +5320,10 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				MONO_AOT_ICALL (mono_exception_from_token)
 
 				case MONO_JIT_ICALL_mono_debugger_agent_single_step_from_context:
-					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
+					target = (gpointer)mono_component_debugger ()->single_step_from_context;
 					break;
 				case MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context:
-					target = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
+					target = (gpointer)mono_component_debugger ()->breakpoint_from_context;
 					break;
 				case MONO_JIT_ICALL_mono_throw_exception:
 					target = mono_get_throw_exception_addr ();

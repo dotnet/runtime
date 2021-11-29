@@ -967,15 +967,11 @@ namespace System.Net
 
         private async void CreateConnectionAsync()
         {
-            string hostname = _uri.Host;
-            int port = _uri.Port;
-
-            TcpClient client = new TcpClient();
-
             object result;
             try
             {
-                await client.ConnectAsync(hostname, port).ConfigureAwait(false);
+                var client = new TcpClient();
+                await client.ConnectAsync(_uri.Host, _uri.Port).ConfigureAwait(false);
                 result = new FtpControlStream(client);
             }
             catch (Exception e)

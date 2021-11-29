@@ -42,10 +42,7 @@ namespace System.IO
             return info;
         }
 
-        internal void Invalidate()
-        {
-            _dataInitialized = -1;
-        }
+        internal void InvalidateCore() => _dataInitialized = -1;
 
         internal unsafe void Init(Interop.NtDll.FILE_FULL_DIR_INFORMATION* info)
         {
@@ -77,7 +74,7 @@ namespace System.IO
             get
             {
                 if (_dataInitialized == -1)
-                    Refresh();
+                    RefreshCore();
                 if (_dataInitialized != 0)
                 {
                     // Refresh was unable to initialize the data.
@@ -145,7 +142,7 @@ namespace System.IO
             if (_dataInitialized == -1)
             {
                 _data = default;
-                Refresh();
+                RefreshCore();
             }
 
             if (_dataInitialized != 0) // Refresh was unable to initialize the data
@@ -153,6 +150,12 @@ namespace System.IO
         }
 
         public void Refresh()
+        {
+            _linkTargetIsValid = false;
+            RefreshCore();
+        }
+
+        private void RefreshCore()
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property

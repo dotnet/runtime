@@ -476,6 +476,7 @@ namespace System.Media
 
         private async Task CopyStreamAsync(CancellationToken cancellationToken)
         {
+            Exception exception = null;
             try
             {
                 // setup the http stream
@@ -508,23 +509,22 @@ namespace System.Media
                     readBytes = await _stream.ReadAsync(_streamData.AsMemory(_currentPos, BlockSize), cancellationToken).ConfigureAwait(false);
                     totalBytes += readBytes;
                 }
-
-                _lastLoadException = null;
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                _lastLoadException = exception;
+                exception = ex;
             }
 
+            _lastLoadException = exception;
             IsLoadCompleted = true;
             _semaphore.Set();
 
             if (!_doesLoadAppearSynchronous)
             {
                 // Post notification back to the UI thread.
-                AsyncCompletedEventArgs ea = _lastLoadException is OperationCanceledException ?
+                AsyncCompletedEventArgs ea = exception is OperationCanceledException ?
                     new AsyncCompletedEventArgs(null, cancelled: true, null) :
-                    new AsyncCompletedEventArgs(_lastLoadException, cancelled: false, null);
+                    new AsyncCompletedEventArgs(exception, cancelled: false, null);
                 _asyncOperation.PostOperationCompleted(_loadAsyncOperationCompleted, ea);
             }
         }

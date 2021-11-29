@@ -21,6 +21,7 @@ parameters:
   # When set to true, passes the 'platforms' value as a job parameter also named 'platforms'.
   # Handled as an opt-in parameter to avoid excessive yaml.
   passPlatforms: false
+  container: ''
   jobParameters: {}
   variables: []
 
@@ -38,7 +39,7 @@ jobs:
       targetRid: linux-arm
       platform: Linux_arm
       container:
-        image: ubuntu-16.04-cross-20200413125008-09ec757
+        image: ubuntu-16.04-cross-20210719121212-8a8d3be
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -64,7 +65,7 @@ jobs:
       targetRid: linux-arm64
       platform: Linux_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-20201022204150-b2c2436
+        image: ubuntu-16.04-cross-arm64-20210719121212-8a8d3be
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -91,7 +92,7 @@ jobs:
       targetRid: linux-musl-x64
       platform: Linux_musl_x64
       container:
-        image: alpine-3.9-WithNode-20200602002639-0fc54a3
+        image: alpine-3.13-WithNode-20210910135845-c401c85
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -116,7 +117,7 @@ jobs:
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
       container:
-        image: ubuntu-16.04-cross-arm-alpine-20210409142327-044d5b9
+        image: ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -143,7 +144,7 @@ jobs:
       targetRid: linux-musl-arm64
       platform: Linux_musl_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-20200413125008-406629a
+        image: ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -169,7 +170,10 @@ jobs:
       targetRid: linux-x64
       platform: Linux_x64
       container:
-        image: centos-7-20201227183837-5fe0e50
+        ${{ if eq(parameters.container, '') }}:
+          image: centos-7-20210714125435-9b5bbc2
+        ${{ if ne(parameters.container, '') }}:
+          image: ${{ parameters.container }}
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -193,7 +197,7 @@ jobs:
       targetRid: linux-x64
       platform: Linux_x64
       container:
-        image: centos-7-source-build-20210408124356-5d87b80
+        image: centos-7-source-build-20210714125450-5d87b80
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -219,7 +223,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20210519131124-ba00c14
+        image: ubuntu-18.04-webassembly-20210531091624-f5c7a43
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -262,7 +266,7 @@ jobs:
       targetRid: freebsd-x64
       platform: FreeBSD_x64
       container:
-        image: ubuntu-18.04-cross-freebsd-11-20200407092345-a84b0d2
+        image: ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

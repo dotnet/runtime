@@ -1144,13 +1144,6 @@ static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain)
 
     LockModuleList();
 
-    if (terminator)
-    {
-        /* PAL shutdown is in progress - ignore FreeLibrary calls */
-        retval = TRUE;
-        goto done;
-    }
-
     if (!LOADValidateModule(module))
     {
         TRACE("Can't free invalid module %p\n", module);
@@ -1299,13 +1292,6 @@ DisableThreadLibraryCalls(
     ENTRY("DisableThreadLibraryCalls(hLibModule=%p)\n", hLibModule);
 
     LockModuleList();
-
-    if (terminator)
-    {
-        /* PAL shutdown in progress - ignore DisableThreadLibraryCalls */
-        ret = TRUE;
-        goto done;
-    }
 
     module = (MODSTRUCT *) hLibModule;
 

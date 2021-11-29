@@ -115,6 +115,29 @@
         "alpine.3.12-x64"
       ]
     },
+    "alpine.3.14": {
+      "#import": [
+        "alpine.3.13"
+      ]
+    },
+    "alpine.3.14-arm": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-arm"
+      ]
+    },
+    "alpine.3.14-arm64": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-arm64"
+      ]
+    },
+    "alpine.3.14-x64": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -526,6 +549,35 @@
         "android.29-x86"
       ]
     },
+    "android.31": {
+      "#import": [
+        "android.30"
+      ]
+    },
+    "android.31-arm": {
+      "#import": [
+        "android.31",
+        "android.30-arm"
+      ]
+    },
+    "android.31-arm64": {
+      "#import": [
+        "android.31",
+        "android.30-arm64"
+      ]
+    },
+    "android.31-x64": {
+      "#import": [
+        "android.31",
+        "android.30-x64"
+      ]
+    },
+    "android.31-x86": {
+      "#import": [
+        "android.31",
+        "android.30-x86"
+      ]
+    },
     "any": {
       "#import": [
         "base"
@@ -697,6 +749,41 @@
     "debian.10-x86": {
       "#import": [
         "debian.10",
+        "debian-x86"
+      ]
+    },
+    "debian.11": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.11-arm": {
+      "#import": [
+        "debian.11",
+        "debian-arm"
+      ]
+    },
+    "debian.11-arm64": {
+      "#import": [
+        "debian.11",
+        "debian-arm64"
+      ]
+    },
+    "debian.11-armel": {
+      "#import": [
+        "debian.11",
+        "debian-armel"
+      ]
+    },
+    "debian.11-x64": {
+      "#import": [
+        "debian.11",
+        "debian-x64"
+      ]
+    },
+    "debian.11-x86": {
+      "#import": [
+        "debian.11",
         "debian-x86"
       ]
     },
@@ -1019,6 +1106,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.36": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.36-arm64": {
+      "#import": [
+        "fedora.36",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.36-x64": {
+      "#import": [
+        "fedora.36",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"
@@ -1030,26 +1134,15 @@
         "unix-x64"
       ]
     },
-    "freebsd.11": {
-      "#import": [
-        "freebsd"
-      ]
-    },
-    "freebsd.11-x64": {
-      "#import": [
-        "freebsd.11",
-        "freebsd-x64"
-      ]
-    },
     "freebsd.12": {
       "#import": [
-        "freebsd.11"
+        "freebsd"
       ]
     },
     "freebsd.12-x64": {
       "#import": [
         "freebsd.12",
-        "freebsd.11-x64"
+        "freebsd-x64"
       ]
     },
     "freebsd.13": {
@@ -1211,6 +1304,23 @@
         "ios.13-x64"
       ]
     },
+    "ios.15": {
+      "#import": [
+        "ios.14"
+      ]
+    },
+    "ios.15-arm64": {
+      "#import": [
+        "ios.15",
+        "ios.14-arm64"
+      ]
+    },
+    "ios.15-x64": {
+      "#import": [
+        "ios.15",
+        "ios.14-x64"
+      ]
+    },
     "iossimulator": {
       "#import": [
         "ios"
@@ -1323,6 +1433,23 @@
       "#import": [
         "iossimulator.14",
         "iossimulator.13-x64"
+      ]
+    },
+    "iossimulator.15": {
+      "#import": [
+        "iossimulator.14"
+      ]
+    },
+    "iossimulator.15-arm64": {
+      "#import": [
+        "iossimulator.15",
+        "iossimulator.14-arm64"
+      ]
+    },
+    "iossimulator.15-x64": {
+      "#import": [
+        "iossimulator.15",
+        "iossimulator.14-x64"
       ]
     },
     "linux": {
@@ -1583,6 +1710,23 @@
       "#import": [
         "maccatalyst.14",
         "maccatalyst.13-x64"
+      ]
+    },
+    "maccatalyst.15": {
+      "#import": [
+        "maccatalyst.14"
+      ]
+    },
+    "maccatalyst.15-arm64": {
+      "#import": [
+        "maccatalyst.15",
+        "maccatalyst.14-arm64"
+      ]
+    },
+    "maccatalyst.15-x64": {
+      "#import": [
+        "maccatalyst.15",
+        "maccatalyst.14-x64"
       ]
     },
     "ol": {
@@ -1989,6 +2133,23 @@
         "osx.10.16-x64"
       ]
     },
+    "osx.12": {
+      "#import": [
+        "osx.11.0"
+      ]
+    },
+    "osx.12-arm64": {
+      "#import": [
+        "osx.12",
+        "osx.11.0-arm64"
+      ]
+    },
+    "osx.12-x64": {
+      "#import": [
+        "osx.12",
+        "osx.11.0-x64"
+      ]
+    },
     "rhel": {
       "#import": [
         "linux"
@@ -2171,6 +2332,63 @@
       "#import": [
         "rhel.9",
         "rhel-x64"
+      ]
+    },
+    "rocky": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rocky-arm64": {
+      "#import": [
+        "rocky",
+        "rhel-arm64"
+      ]
+    },
+    "rocky-x64": {
+      "#import": [
+        "rocky",
+        "rhel-x64"
+      ]
+    },
+    "rocky.8": {
+      "#import": [
+        "rocky",
+        "rhel.8"
+      ]
+    },
+    "rocky.8-arm64": {
+      "#import": [
+        "rocky.8",
+        "rocky-arm64",
+        "rhel.8-arm64"
+      ]
+    },
+    "rocky.8-x64": {
+      "#import": [
+        "rocky.8",
+        "rocky-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "rocky.9": {
+      "#import": [
+        "rocky",
+        "rhel.9"
+      ]
+    },
+    "rocky.9-arm64": {
+      "#import": [
+        "rocky.9",
+        "rocky-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "rocky.9-x64": {
+      "#import": [
+        "rocky.9",
+        "rocky-x64",
+        "rhel.9-x64"
       ]
     },
     "sles": {
@@ -2431,6 +2649,29 @@
         "tizen.5.5.0-x86"
       ]
     },
+    "tizen.6.5.0": {
+      "#import": [
+        "tizen.6.0.0"
+      ]
+    },
+    "tizen.6.5.0-arm64": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-arm64"
+      ]
+    },
+    "tizen.6.5.0-armel": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-armel"
+      ]
+    },
+    "tizen.6.5.0-x86": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-x86"
+      ]
+    },
     "tvos": {
       "#import": [
         "unix"
@@ -2516,6 +2757,40 @@
         "tvos.12-x64"
       ]
     },
+    "tvos.14": {
+      "#import": [
+        "tvos.13"
+      ]
+    },
+    "tvos.14-arm64": {
+      "#import": [
+        "tvos.14",
+        "tvos.13-arm64"
+      ]
+    },
+    "tvos.14-x64": {
+      "#import": [
+        "tvos.14",
+        "tvos.13-x64"
+      ]
+    },
+    "tvos.15": {
+      "#import": [
+        "tvos.14"
+      ]
+    },
+    "tvos.15-arm64": {
+      "#import": [
+        "tvos.15",
+        "tvos.14-arm64"
+      ]
+    },
+    "tvos.15-x64": {
+      "#import": [
+        "tvos.15",
+        "tvos.14-x64"
+      ]
+    },
     "tvossimulator": {
       "#import": [
         "tvos"
@@ -2599,6 +2874,40 @@
       "#import": [
         "tvossimulator.13",
         "tvossimulator.12-x64"
+      ]
+    },
+    "tvossimulator.14": {
+      "#import": [
+        "tvossimulator.13"
+      ]
+    },
+    "tvossimulator.14-arm64": {
+      "#import": [
+        "tvossimulator.14",
+        "tvossimulator.13-arm64"
+      ]
+    },
+    "tvossimulator.14-x64": {
+      "#import": [
+        "tvossimulator.14",
+        "tvossimulator.13-x64"
+      ]
+    },
+    "tvossimulator.15": {
+      "#import": [
+        "tvossimulator.14"
+      ]
+    },
+    "tvossimulator.15-arm64": {
+      "#import": [
+        "tvossimulator.15",
+        "tvossimulator.14-arm64"
+      ]
+    },
+    "tvossimulator.15-x64": {
+      "#import": [
+        "tvossimulator.15",
+        "tvossimulator.14-x64"
       ]
     },
     "ubuntu": {

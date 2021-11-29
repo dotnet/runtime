@@ -493,12 +493,11 @@ static MonoDl *
 netcore_probe_for_module_variations (const char *mdirname, const char *file_name, int raw_flags)
 {
 	void *iter = NULL;
-	char *full_name;
+	char *full_name = NULL;
 	MonoDl *module = NULL;
 
-	// FIXME: this appears to search *.dylib twice for some reason
-	while ((full_name = mono_dl_build_path (mdirname, file_name, &iter)) && module == NULL) {
-		char *error_msg;
+	while (module == NULL && (full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
+		char *error_msg = NULL;
 		module = mono_dl_open_full (full_name, MONO_DL_LAZY, raw_flags, &error_msg);
 		if (!module) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
@@ -506,7 +505,6 @@ netcore_probe_for_module_variations (const char *mdirname, const char *file_name
 		}
 		g_free (full_name);
 	}
-	g_free (full_name);
 
 	return module;
 }
@@ -630,17 +628,13 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
-	if (!mono_gchandle_get_target_internal (alc->gchandle))
-		return NULL;
-
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
 	scope_handle = mono_string_new_handle (scope, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle;
-	gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [3];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = &gchandle;
@@ -696,9 +690,6 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
-	if (!mono_gchandle_get_target_internal (alc->gchandle))
-		return NULL;
-
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
@@ -709,8 +700,7 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	assembly_handle = mono_assembly_get_object_handle (assembly, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle;
-	gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [4];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
@@ -961,6 +951,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	const char *new_import = NULL;
 	const char *orig_scope = NULL;
 	const char *new_scope = NULL;
+	const char *error_scope = NULL;
 	char *error_msg = NULL;
 	MonoDl *module = NULL;
 	gpointer addr = NULL;
@@ -1006,6 +997,8 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	new_scope = g_strdup (orig_scope);
 	new_import = g_strdup (orig_import);
 #endif
+
+	error_scope = new_scope;
 
 	/* If qcalls are disabled, we fall back to the normal pinvoke code for them */
 #ifndef DISABLE_QCALLS
@@ -1055,16 +1048,16 @@ retry_with_libcoreclr:
 			mono_custom_attrs_free (cinfo);
 	}
 	if (flags < 0)
-		flags = 0;
+		flags = DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY;
 	module = netcore_lookup_native_library (alc, image, new_scope, flags);
 
 	if (!module) {
 		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
 				"DllImport unable to load library '%s'.",
-				new_scope);
+				error_scope);
 
 		status_out->err_code = LOOKUP_PINVOKE_ERR_NO_LIB;
-		status_out->err_arg = g_strdup (new_scope);
+		status_out->err_arg = g_strdup (error_scope);
 		goto exit;
 	}
 
@@ -1076,7 +1069,7 @@ retry_with_libcoreclr:
 	if (!addr) {
 #ifndef HOST_WIN32
 		if (strcmp (new_scope, "__Internal") == 0) {
-			g_free ((char *)new_scope);
+			g_assert (error_scope == new_scope);
 			new_scope = g_strdup (MONO_LOADER_LIBRARY_NAME);
 			goto retry_with_libcoreclr;
 		}
@@ -1088,6 +1081,9 @@ retry_with_libcoreclr:
 	piinfo->addr = addr;
 
 exit:
+	if (error_scope != new_scope) {
+		g_free ((char *)error_scope);
+	}
 	g_free ((char *)new_import);
 	g_free ((char *)new_scope);
 	g_free (error_msg);
@@ -1102,16 +1098,6 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 
 	g_assert (error_msg_out);
 
-#ifdef HOST_WIN32
-	if (import && import [0] == '#' && isdigit (import [1])) {
-		char *end;
-		long id;
-
-		id = strtol (import + 1, &end, 10);
-		if (id > 0 && *end == '\0')
-			import++;
-	}
-#endif
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 				"Searching for '%s'.", import);
 

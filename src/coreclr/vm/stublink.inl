@@ -84,7 +84,7 @@ void StubLinker::Pop(UINT size)
 inline
 VOID StubLinker::EmitUnwindInfoCheck()
 {
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
     if (g_pConfig->IsStubLinkerUnwindInfoVerificationOn())
     {
         if (!m_pUnwindInfoCheckLabel)

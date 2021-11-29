@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TranscodingReadStreamTests.cs" />
     <Compile Include="TranscodingWriteStreamTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\..\src\System\ArraySegmentExtensions.netstandard.cs"
              Link="ProductionCode\System\ArraySegmentExtensions.netstandard.cs" />
   </ItemGroup>
@@ -16,7 +16,7 @@
     <Compile Include="..\..\src\System\Net\Http\Json\TranscodingWriteStream.cs"
              Link="ProductionCode\System\Net\Http\Json\TranscodingWriteStream.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\..\src\System.Net.Http.Json.csproj" />
   </ItemGroup>
 </Project>

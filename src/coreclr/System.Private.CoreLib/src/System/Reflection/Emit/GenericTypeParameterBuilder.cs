@@ -195,6 +195,7 @@ namespace System.Reflection.Emit
 
         public override Type GetGenericTypeDefinition() { throw new InvalidOperationException(); }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
 
         protected override bool IsValueTypeImpl() { return false; }

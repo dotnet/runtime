@@ -31,7 +31,6 @@ typedef VPTR(class PEImageLayout) PTR_PEImageLayout;
 class PEImageLayout : public PEDecoder
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(PEImageLayout)
-    friend class PEModule;
 public:
     // ------------------------------------------------------------
     // Public constants
@@ -59,8 +58,6 @@ public:
 #endif
     PEImageLayout();
     virtual ~PEImageLayout();
-    static void Startup();
-    static CHECK CheckStartup();
     static BOOL CompareBase(UPTR path, UPTR mapping);
 
     // Refcount above images.
@@ -133,7 +130,7 @@ public:
 #endif
 };
 
-#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
 class LoadedImageLayout: public PEImageLayout
 {
     VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
@@ -156,7 +153,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 };
-#endif // !CROSSGEN_COMPILE && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
 class FlatImageLayout: public PEImageLayout
 {

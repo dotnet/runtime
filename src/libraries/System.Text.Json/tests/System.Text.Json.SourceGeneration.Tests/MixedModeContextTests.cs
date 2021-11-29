@@ -6,25 +6,43 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
+    [JsonSourceGenerationOptions(IncludeFields = true)]
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation", GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(CampaignSummaryViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(IndexViewModel), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(WeatherForecastWithPOCOs), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(EmptyPoco), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTemps), GenerationMode = JsonSourceGenerationMode.Serialization)]
-    [JsonSerializable(typeof(MyType), GenerationMode = JsonSourceGenerationMode.MetadataAndSerialization)]
-    [JsonSerializable(typeof(MyType2), GenerationMode = JsonSourceGenerationMode.MetadataAndSerialization)]
-    [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.MetadataAndSerialization)]
+    [JsonSerializable(typeof(MyType), GenerationMode = JsonSourceGenerationMode.Default)]
+    [JsonSerializable(typeof(MyType2), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyTypeWithCallbacks), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
-    [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.MetadataAndSerialization)]
-    [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.MetadataAndSerialization)]
+    [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     internal partial class MixedModeContext : JsonSerializerContext, ITestContext
     {
+        public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization;
     }
 
     public sealed class MixedModeContextTests : RealWorldContextTests
@@ -34,22 +52,39 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override void EnsureFastPathGeneratedAsExpected()
         {
-            Assert.Null(MixedModeContext.Default.Location.Serialize);
-            Assert.NotNull(MixedModeContext.Default.RepeatedLocation.Serialize);
-            Assert.NotNull(MixedModeContext.Default.CampaignSummaryViewModel.Serialize);
-            Assert.Null(MixedModeContext.Default.IndexViewModel.Serialize);
-            Assert.Null(MixedModeContext.Default.WeatherForecastWithPOCOs.Serialize);
-            Assert.NotNull(MixedModeContext.Default.EmptyPoco.Serialize);
-            Assert.NotNull(MixedModeContext.Default.HighLowTemps.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyType.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyType2.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyIntermediateType.Serialize);
-            Assert.Null(MixedModeContext.Default.HighLowTempsImmutable.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyNestedClass.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyNestedNestedClass.Serialize);
-            Assert.Null(MixedModeContext.Default.ObjectArray.Serialize);
-            Assert.Null(MixedModeContext.Default.String.Serialize);
-            Assert.NotNull(MixedModeContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.Null(MixedModeContext.Default.Location.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.RepeatedLocation.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.NumberTypes.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.CampaignSummaryViewModel.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.IndexViewModel.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.WeatherForecastWithPOCOs.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.EmptyPoco.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.HighLowTemps.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyType.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyType2.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyTypeWithCallbacks.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyIntermediateType.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyNestedClass.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyNestedNestedClass.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ByteArray.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.String.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.ClassWithEnumAndNullable.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.ClassWithNullableProperties.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverter.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverter.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverterFactory.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverterFactory.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverterProperty.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverterProperty.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
+            Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }
 
         [Fact]
@@ -60,7 +95,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             string json = JsonSerializer.Serialize(expected, DefaultContext.IndexViewModel);
             JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.IndexViewModel), typeof(CampaignSummaryViewModel));
 
-            IndexViewModel obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).IndexViewModel);
+            IndexViewModel obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).IndexViewModel);
             VerifyIndexViewModel(expected, obj);
         }
 
@@ -72,7 +107,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             string json = JsonSerializer.Serialize(expected, DefaultContext.CampaignSummaryViewModel);
             JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.CampaignSummaryViewModel), typeof(CampaignSummaryViewModel));
 
-            CampaignSummaryViewModel obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).CampaignSummaryViewModel);
+            CampaignSummaryViewModel obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).CampaignSummaryViewModel);
             VerifyCampaignSummaryViewModel(expected, obj);
 
             AssertFastPathLogicCorrect(json, obj, DefaultContext.CampaignSummaryViewModel);
@@ -86,7 +121,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             string json = JsonSerializer.Serialize(expected, DefaultContext.WeatherForecastWithPOCOs);
             JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.WeatherForecastWithPOCOs), typeof(HighLowTemps));
 
-            WeatherForecastWithPOCOs obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).WeatherForecastWithPOCOs);
+            WeatherForecastWithPOCOs obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).WeatherForecastWithPOCOs);
             VerifyWeatherForecastWithPOCOs(expected, obj);
         }
 
@@ -98,7 +133,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             string json = JsonSerializer.Serialize(expected, DefaultContext.EmptyPoco);
             JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco), typeof(EmptyPoco));
 
-            EmptyPoco obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).EmptyPoco);
+            EmptyPoco obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).EmptyPoco);
             VerifyEmptyPoco(expected, obj);
 
             AssertFastPathLogicCorrect(json, obj, DefaultContext.EmptyPoco);
@@ -112,7 +147,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             string json = JsonSerializer.Serialize(expected, DefaultContext.RepeatedLocation);
             JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.RepeatedLocation), typeof(RepeatedTypes.Location));
 
-            RepeatedTypes.Location obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).RepeatedLocation);
+            RepeatedTypes.Location obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).RepeatedLocation);
             VerifyRepeatedLocation(expected, obj);
 
             AssertFastPathLogicCorrect(json, obj, DefaultContext.RepeatedLocation);
@@ -122,11 +157,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override void HandlesNestedTypes()
         {
             string json = @"{""MyInt"":5}";
-            MyNestedClass obj = JsonSerializer.Deserialize<MyNestedClass>(json, ((ITestContext)MetadataContext.Default).MyNestedClass);
+            MyNestedClass obj = JsonSerializer.Deserialize<MyNestedClass>(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).MyNestedClass);
             Assert.Equal(5, obj.MyInt);
             Assert.Equal(json, JsonSerializer.Serialize(obj, DefaultContext.MyNestedClass));
 
-            MyNestedClass.MyNestedNestedClass obj2 = JsonSerializer.Deserialize<MyNestedClass.MyNestedNestedClass>(json, ((ITestContext)MetadataContext.Default).MyNestedNestedClass);
+            MyNestedClass.MyNestedNestedClass obj2 = JsonSerializer.Deserialize<MyNestedClass.MyNestedNestedClass>(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).MyNestedNestedClass);
             Assert.Equal(5, obj2.MyInt);
             Assert.Equal(json, JsonSerializer.Serialize(obj2, DefaultContext.MyNestedNestedClass));
         }
@@ -138,12 +173,12 @@ namespace System.Text.Json.SourceGeneration.Tests
             CampaignSummaryViewModel campaignSummary = CreateCampaignSummaryViewModel();
 
             string json = JsonSerializer.Serialize(new object[] { index, campaignSummary }, DefaultContext.ObjectArray);
-            object[] arr = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).ObjectArray);
+            object[] arr = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).ObjectArray);
 
             JsonElement indexAsJsonElement = (JsonElement)arr[0];
             JsonElement campaignSummeryAsJsonElement = (JsonElement)arr[1];
-            VerifyIndexViewModel(index, JsonSerializer.Deserialize(indexAsJsonElement.GetRawText(), ((ITestContext)MetadataContext.Default).IndexViewModel));
-            VerifyCampaignSummaryViewModel(campaignSummary, JsonSerializer.Deserialize(campaignSummeryAsJsonElement.GetRawText(), ((ITestContext)MetadataContext.Default).CampaignSummaryViewModel));
+            VerifyIndexViewModel(index, JsonSerializer.Deserialize(indexAsJsonElement.GetRawText(), ((ITestContext)MetadataWithPerTypeAttributeContext.Default).IndexViewModel));
+            VerifyCampaignSummaryViewModel(campaignSummary, JsonSerializer.Deserialize(campaignSummeryAsJsonElement.GetRawText(), ((ITestContext)MetadataWithPerTypeAttributeContext.Default).CampaignSummaryViewModel));
         }
 
         [Fact]
@@ -156,7 +191,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Same(JsonNamingPolicy.CamelCase, ((JsonSerializerContext)context).Options.PropertyNamingPolicy);
 
             string json = JsonSerializer.Serialize(new object[] { index, campaignSummary }, context.ObjectArray);
-            object[] arr = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).ObjectArray);
+            object[] arr = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).ObjectArray);
 
             JsonElement indexAsJsonElement = (JsonElement)arr[0];
             JsonElement campaignSummeryAsJsonElement = (JsonElement)arr[1];
@@ -164,6 +199,25 @@ namespace System.Text.Json.SourceGeneration.Tests
             ITestContext metadataContext = new MetadataContext(new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
             VerifyIndexViewModel(index, JsonSerializer.Deserialize(indexAsJsonElement.GetRawText(), metadataContext.IndexViewModel));
             VerifyCampaignSummaryViewModel(campaignSummary, JsonSerializer.Deserialize(campaignSummeryAsJsonElement.GetRawText(), metadataContext.CampaignSummaryViewModel));
+        }
+
+        [Fact]
+        public void OnSerializeCallbacks_WithCustomOptions()
+        {
+            MyTypeWithCallbacks obj = new();
+            Assert.Null(obj.MyProperty);
+
+            ITestContext context = SerializationContextWithCamelCase.Default;
+            Assert.Same(JsonNamingPolicy.CamelCase, ((JsonSerializerContext)context).Options.PropertyNamingPolicy);
+
+            string json = JsonSerializer.Serialize(obj, context.MyTypeWithCallbacks);
+            Assert.Equal("{\"myProperty\":\"Before\"}", json);
+            Assert.Equal("After", obj.MyProperty);
+
+            context = new MetadataContext(new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            json = JsonSerializer.Serialize(obj, context.MyTypeWithCallbacks);
+            Assert.Equal("{\"myProperty\":\"Before\"}", json);
+            Assert.Equal("After", obj.MyProperty);
         }
     }
 }

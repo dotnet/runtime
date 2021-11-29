@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Tests;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Tests
@@ -35,14 +36,29 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void NameReturnsUnknownForHandle()
+        public void ConstructFileStreamFromHandle_NameMatchesOriginal()
         {
-            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite))
-            using (FileStream fsh = new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite))
-            {
-                Assert.Equal("[Unknown]", fsh.Name);
-            }
+            string path = GetTestFilePath();
+            using var _ = new ThreadCultureChange(CultureInfo.InvariantCulture);
+
+            using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite);
+            Assert.Equal(path, fs.Name);
+
+            using FileStream fsh = new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite);
+            Assert.Equal(path, fsh.Name);
+        }
+
+        [Fact]
+        public void ConstructFileStreamFromHandleClone_NameReturnsUnknown()
+        {
+            string path = GetTestFilePath();
+            using var _ = new ThreadCultureChange(CultureInfo.InvariantCulture);
+
+            using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite);
+            Assert.Equal(path, fs.Name);
+
+            using FileStream fsh = new FileStream(new SafeFileHandle(fs.SafeFileHandle.DangerousGetHandle(), ownsHandle: false), FileAccess.ReadWrite);
+            Assert.Equal("[Unknown]", fsh.Name);
         }
     }
 }

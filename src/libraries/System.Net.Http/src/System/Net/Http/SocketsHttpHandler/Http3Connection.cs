@@ -9,6 +9,7 @@ using System.Net.Quic;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Security;
 
@@ -17,13 +18,8 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
-    internal sealed class Http3Connection : HttpConnectionBase, IDisposable
+    internal sealed class Http3Connection : HttpConnectionBase
     {
-        // TODO: once HTTP/3 is standardized, create APIs for this.
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol29 = new SslApplicationProtocol("h3-29");
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol30 = new SslApplicationProtocol("h3-30");
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol31 = new SslApplicationProtocol("h3-31");
-
         private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
@@ -78,7 +74,7 @@ namespace System.Net.Http
             _connection = connection;
 
             bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
-            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : authority.IdnHost + ":" + authority.Port.ToString(Globalization.CultureInfo.InvariantCulture);
+            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : string.Create(CultureInfo.InvariantCulture, $"{authority.IdnHost}:{authority.Port}");
             _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
 
             // Errors are observed via Abort().
@@ -91,7 +87,7 @@ namespace System.Net.Http
         /// <summary>
         /// Starts shutting down the <see cref="Http3Connection"/>. Final cleanup will happen when there are no more active requests.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             lock (SyncObj)
             {
@@ -115,12 +111,6 @@ namespace System.Net.Http
             if (_activeRequests.Count != 0)
             {
                 return;
-            }
-
-            if (_clientControl != null)
-            {
-                _clientControl.Dispose();
-                _clientControl = null;
             }
 
             if (_connection != null)
@@ -150,11 +140,18 @@ namespace System.Net.Http
                     {
                         Trace($"{nameof(QuicConnection)} failed to dispose: {ex}");
                     }
+
+                    if (_clientControl != null)
+                    {
+                        _clientControl.Dispose();
+                        _clientControl = null;
+                    }
+
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
-        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(async);
 
@@ -282,7 +279,7 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                if (lastProcessedStreamId > _lastProcessedStreamId)
+                if (_lastProcessedStreamId != -1 && lastProcessedStreamId > _lastProcessedStreamId)
                 {
                     // Server can send multiple GOAWAY frames.
                     // Spec says a server MUST NOT increase the stream ID in subsequent GOAWAYs,
@@ -327,6 +324,8 @@ namespace System.Net.Http
                 }
             }
         }
+
+        public override long GetIdleTicks(long nowTicks) => throw new NotImplementedException("We aren't scavenging HTTP3 connections yet");
 
         public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             Trace(0, message, memberName);
@@ -568,7 +567,7 @@ namespace System.Net.Http
                     switch (frameType)
                     {
                         case Http3FrameType.GoAway:
-                            await ProcessGoAwayFameAsync(payloadLength).ConfigureAwait(false);
+                            await ProcessGoAwayFrameAsync(payloadLength).ConfigureAwait(false);
                             break;
                         case Http3FrameType.Settings:
                             // If an endpoint receives a second SETTINGS frame on the control stream, the endpoint MUST respond with a connection error of type H3_FRAME_UNEXPECTED.
@@ -685,12 +684,12 @@ namespace System.Net.Http
                 }
             }
 
-            async ValueTask ProcessGoAwayFameAsync(long goawayPayloadLength)
+            async ValueTask ProcessGoAwayFrameAsync(long goawayPayloadLength)
             {
                 long lastStreamId;
                 int bytesRead;
 
-                while (!VariableLengthIntegerHelper.TryRead(buffer.AvailableSpan, out lastStreamId, out bytesRead))
+                while (!VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out lastStreamId, out bytesRead))
                 {
                     buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
                     bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);

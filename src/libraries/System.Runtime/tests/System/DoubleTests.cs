@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -37,6 +39,10 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity, double.MinValue, -1)]
         [InlineData(-0d, double.NegativeInfinity, 1)]
         [InlineData(double.NegativeInfinity, -0d, -1)]
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity, 0)]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, -1)]
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity, 0)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, 1)]
         public static void CompareTo_Other_ReturnsExpected(double d1, object value, int expected)
         {
             if (value is double d2)
@@ -343,6 +349,67 @@ namespace System.Tests
 
                 Assert.Equal(expected, double.Parse(value, style));
                 Assert.Equal(expected, double.Parse(value, style, NumberFormatInfo.CurrentInfo));
+            }
+        }
+
+        internal static string SplitPairs(string input)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                return input.Replace("-", "");
+            }
+
+            return string.Concat(input.Split('-').Select(pair => Reverse(pair)));
+        }
+
+        internal static string Reverse(string s)
+        {
+            char[] charArray = s.ToCharArray();
+            Array.Reverse(charArray);
+            return new string(charArray);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public static void ParsePatterns()
+        {
+            string path = Directory.GetCurrentDirectory();
+            using (FileStream file = new FileStream(Path.Combine(path, "ibm-fpgen.txt"), FileMode.Open))
+            {
+                using (var streamReader = new StreamReader(file))
+                {
+                    string line = streamReader.ReadLine();
+                    while (line != null)
+                    {
+                        string[] data = line.Split(' ');
+                        string inputHalfBytes = data[0];
+                        string inputFloatBytes = data[1];
+                        string inputDoubleBytes = data[2];
+                        string correctValue = data[3];
+
+                        double doubleValue = double.Parse(correctValue, NumberFormatInfo.InvariantInfo);
+                        string doubleBytes = BitConverter.ToString(BitConverter.GetBytes(doubleValue));
+                        float floatValue = float.Parse(correctValue, NumberFormatInfo.InvariantInfo);
+                        string floatBytes = BitConverter.ToString(BitConverter.GetBytes(floatValue));
+                        Half halfValue = Half.Parse(correctValue, NumberFormatInfo.InvariantInfo);
+                        string halfBytes = BitConverter.ToString(BitConverter.GetBytes(halfValue));
+
+                        doubleBytes = SplitPairs(doubleBytes);
+                        floatBytes = SplitPairs(floatBytes);
+                        halfBytes = SplitPairs(halfBytes);
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            doubleBytes = Reverse(doubleBytes);
+                            floatBytes = Reverse(floatBytes);
+                            halfBytes = Reverse(halfBytes);
+                        }
+
+                        Assert.Equal(doubleBytes, inputDoubleBytes);
+                        Assert.Equal(floatBytes, inputFloatBytes);
+                        Assert.Equal(halfBytes, inputHalfBytes);
+                        line = streamReader.ReadLine();
+                    }
+                }
             }
         }
 

@@ -17,7 +17,6 @@ namespace System.Security.Cryptography.Xml
         //
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public DSAKeyValue()
         {

@@ -50,13 +50,6 @@
 #error "Don't know how to obtain max path on this platform"
 #endif
 
-pal::string_t pal::to_lower(const pal::char_t* in)
-{
-    pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
-    return ret;
-}
-
 pal::string_t pal::get_timestamp()
 {
     std::time_t t = std::time(nullptr);
@@ -75,7 +68,7 @@ bool pal::touch_file(const pal::string_t& path)
         trace::warning(_X("open(%s) failed in %s"), path.c_str(), _STRINGIFY(__FUNCTION__));
         return false;
     }
-    (void) close(fd);
+    (void)close(fd);
     return true;
 }
 
@@ -146,12 +139,12 @@ bool pal::getcwd(pal::string_t* recv)
 
 namespace
 {
-    bool get_loaded_library_from_proc_maps(const pal::char_t *library_name, pal::dll_t *dll, pal::string_t *path)
+    bool get_loaded_library_from_proc_maps(const pal::char_t* library_name, pal::dll_t* dll, pal::string_t* path)
     {
-        char *line = nullptr;
+        char* line = nullptr;
         size_t lineLen = 0;
         ssize_t read;
-        FILE *file = pal::file_open(_X("/proc/self/maps"), _X("r"));
+        FILE* file = pal::file_open(_X("/proc/self/maps"), _X("r"));
         if (file == nullptr)
             return false;
 
@@ -192,10 +185,10 @@ namespace
 }
 
 bool pal::get_loaded_library(
-    const char_t *library_name,
-    const char *symbol_name,
-    /*out*/ dll_t *dll,
-    /*out*/ pal::string_t *path)
+    const char_t* library_name,
+    const char* symbol_name,
+    /*out*/ dll_t* dll,
+    /*out*/ pal::string_t* path)
 {
     pal::string_t library_name_local;
 #if defined(TARGET_OSX)
@@ -340,7 +333,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
 bool is_read_write_able_directory(pal::string_t& dir)
 {
     return pal::realpath(&dir) &&
-           (access(dir.c_str(), R_OK | W_OK | X_OK) == 0);
+        (access(dir.c_str(), R_OK | W_OK | X_OK) == 0);
 }
 
 bool get_extraction_base_parent_directory(pal::string_t& directory)
@@ -348,7 +341,41 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
     // check for the POSIX standard environment variable
     if (pal::getenv(_X("HOME"), &directory))
     {
-        return is_read_write_able_directory(directory);
+        if (is_read_write_able_directory(directory))
+        {
+            return true;
+        }
+        else
+        {
+            trace::error(_X("Default extraction directory [%s] either doesn't exist or is not accessible for read/write."), directory.c_str());
+        }
+    }
+    else
+    {
+        // fallback to the POSIX standard getpwuid() library function
+        struct passwd* pwuid = NULL;
+        errno = 0;
+        do
+        {
+            pwuid = getpwuid(getuid());
+        } while (pwuid == NULL && errno == EINTR);
+
+        if (pwuid != NULL)
+        {
+            directory.assign(pwuid->pw_dir);
+            if (is_read_write_able_directory(directory))
+            {
+                return true;
+            }
+            else
+            {
+                trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and directory reported by getpwuid() [%s] either doesn't exist or is not accessible for read/write."), pwuid->pw_dir);
+            }
+        }
+        else
+        {
+            trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and getpwuid() returned NULL."));
+        }
     }
 
     return false;
@@ -374,6 +401,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
     else if (errno != EEXIST)
     {
+        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno));
         return false;
     }
 
@@ -386,18 +414,75 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
     return false;
 }
 
-bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
+pal::string_t pal::get_dotnet_self_registered_config_location()
 {
-    *recv = _X("/etc/dotnet/install_location");
-
     //  ***Used only for testing***
     pal::string_t environment_install_location_override;
-    if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH"), &environment_install_location_override))
+    if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_PATH"), &environment_install_location_override))
     {
-        *recv = environment_install_location_override;
+        return environment_install_location_override;
     }
 
-    return true;
+    return _X("/etc/dotnet");
+}
+
+namespace
+{
+    bool get_line_from_file(FILE* pFile, pal::string_t& line)
+    {
+        line = pal::string_t();
+        char buffer[256];
+        while (fgets(buffer, sizeof(buffer), pFile))
+        {
+            line += (pal::char_t*)buffer;
+            size_t len = line.length();
+
+            // fgets includes the newline character in the string - so remove it.
+            if (len > 0 && line[len - 1] == '\n')
+            {
+                line.pop_back();
+                break;
+            }
+        }
+
+        return !line.empty();
+    }
+}
+
+bool get_install_location_from_file(const pal::string_t& file_path, bool& file_found, pal::string_t& install_location)
+{
+    file_found = true;
+    bool install_location_found = false;
+    FILE* install_location_file = pal::file_open(file_path, "r");
+    if (install_location_file != nullptr)
+    {
+        if (!get_line_from_file(install_location_file, install_location))
+        {
+            trace::warning(_X("Did not find any install location in '%s'."), file_path.c_str());
+        }
+        else
+        {
+            install_location_found = true;
+        }
+
+        fclose(install_location_file);
+        if (install_location_found)
+            return true;
+    }
+    else
+    {
+        if (errno == ENOENT)
+        {
+            trace::verbose(_X("The install_location file ['%s'] does not exist - skipping."), file_path.c_str());
+            file_found = false;
+        }
+        else
+        {
+            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno));
+        }
+    }
+
+    return false;
 }
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
@@ -413,46 +498,33 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    pal::string_t install_location_file_path;
-    if (!get_dotnet_self_registered_config_location(&install_location_file_path))
+    pal::string_t install_location_path = get_dotnet_self_registered_config_location();
+    pal::string_t arch_specific_install_location_file_path = install_location_path;
+    append_path(&arch_specific_install_location_file_path, (_X("install_location_") + to_lower(get_arch())).c_str());
+    trace::verbose(_X("Looking for architecture specific install_location file in '%s'."), arch_specific_install_location_file_path.c_str());
+
+    pal::string_t install_location;
+    bool file_found = false;
+    if (!get_install_location_from_file(arch_specific_install_location_file_path, file_found, install_location))
     {
-        return false;
-    }
-    //  ***************************
-
-    trace::verbose(_X("Looking for install_location file in '%s'."), install_location_file_path.c_str());
-    FILE* install_location_file = pal::file_open(install_location_file_path, "r");
-    if (install_location_file == nullptr)
-    {
-        trace::verbose(_X("The install_location file failed to open."));
-        return false;
-    }
-
-    bool result = false;
-
-    char buf[PATH_MAX];
-    char* install_location = fgets(buf, sizeof(buf), install_location_file);
-    if (install_location != nullptr)
-    {
-        size_t len = pal::strlen(install_location);
-
-        // fgets includes the newline character in the string - so remove it.
-        if (len > 0 && len < PATH_MAX && install_location[len - 1] == '\n')
+        if (file_found)
         {
-            install_location[len - 1] = '\0';
+            return false;
         }
 
-        trace::verbose(_X("Using install location '%s'."), install_location);
-        *recv = install_location;
-        result = true;
-    }
-    else
-    {
-        trace::verbose(_X("The install_location file first line could not be read."));
+        pal::string_t legacy_install_location_file_path = install_location_path;
+        append_path(&legacy_install_location_file_path, _X("install_location"));
+        trace::verbose(_X("Looking for install_location file in '%s'."), legacy_install_location_file_path.c_str());
+
+        if (!get_install_location_from_file(legacy_install_location_file_path, file_found, install_location))
+        {
+            return false;
+        }
     }
 
-    fclose(install_location_file);
-    return result;
+    recv->assign(install_location);
+    trace::verbose(_X("Using install location '%s'."), recv->c_str());
+    return true;
 }
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
@@ -467,17 +539,17 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     //  ***************************
 
 #if defined(TARGET_OSX)
-     recv->assign(_X("/usr/local/share/dotnet"));
+    recv->assign(_X("/usr/local/share/dotnet"));
 #else
-     recv->assign(_X("/usr/share/dotnet"));
+    recv->assign(_X("/usr/share/dotnet"));
 #endif
-     return true;
+    return true;
 }
 
 pal::string_t trim_quotes(pal::string_t stringToCleanup)
 {
-    pal::char_t quote_array[2] = {'\"', '\''};
-    for (size_t index = 0; index < sizeof(quote_array)/sizeof(quote_array[0]); index++)
+    pal::char_t quote_array[2] = { '\"', '\'' };
+    for (size_t index = 0; index < sizeof(quote_array) / sizeof(quote_array[0]); index++)
     {
         size_t pos = stringToCleanup.find(quote_array[index]);
         while (pos != std::string::npos)
@@ -496,48 +568,30 @@ pal::string_t pal::get_current_os_rid_platform()
     pal::string_t ridOS;
 
     char str[256];
-
-    // There is no good way to get the visible version of OSX (i.e. something like 10.x.y) as
-    // certain APIs work till 10.9 and have been deprecated and others require linking against
-    // UI frameworks to get the data.
-    //
-    // We will, instead, use kern.osrelease and use its major version number
-    // as a means to formulate the OSX 10.X RID.
-    //
     size_t size = sizeof(str);
-    int ret = sysctlbyname("kern.osrelease", str, &size, nullptr, 0);
+
+    // returns something like 10.5.2
+    int ret = sysctlbyname("kern.osproductversion", str, &size, nullptr, 0);
     if (ret == 0)
     {
-        std::string release(str, size);
-        size_t pos = release.find('.');
-        if (pos != std::string::npos)
+        // the value _should_ be null terminated but let's make sure
+        str[size - 1] = 0;
+        char* pos = strchr(str, '.');
+        if (pos != NULL)
         {
-            int majorVersion = stoi(release.substr(0, pos));
-            // compat path with 10.x
-            if (majorVersion < 20)
-            {
-                // Extract the major version and subtract 4 from it
-                // to get the Minor version used in OSX versioning scheme.
-                // That is, given a version 10.X.Y, we will get X below.
-                //
-                // macOS Cataline 10.15.5 has kernel 19.5.0
-                int minorVersion = majorVersion - 4;
-                if (minorVersion < 10)
-                {
-                    // On OSX, our minimum supported RID is 10.12.
-                    minorVersion = 12;
-                }
+            pos = strchr(pos + 1, '.');
 
-                ridOS.append(_X("osx.10."));
-                ridOS.append(pal::to_string(minorVersion));
-            }
-            else
+            if (pos != NULL)
             {
-                // 11.0 shipped with kernel 20.0
-                ridOS.append(_X("osx.11."));
-                ridOS.append(pal::to_string(majorVersion - 20));
+                // strip anything after second dot and return something like 10.5
+                *pos = 0;
+                size = pos - str;
             }
         }
+
+        std::string release(str, size);
+        ridOS.append(_X("osx."));
+        ridOS.append(release);
     }
 
     return ridOS;
@@ -553,11 +607,11 @@ pal::string_t pal::get_current_os_rid_platform()
 
     if (ret == 0)
     {
-        char *pos = strchr(str, '.');
+        char* pos = strchr(str, '.');
         if (pos)
         {
             ridOS.append(_X("freebsd."))
-                 .append(str, pos - str);
+                .append(str, pos - str);
         }
     }
 
@@ -589,7 +643,7 @@ pal::string_t pal::get_current_os_rid_platform()
     if (strncmp(utsname_obj.version, "omnios", strlen("omnios")) == 0)
     {
         ridOS.append(_X("omnios."))
-             .append(utsname_obj.version, strlen("omnios-r"), 2); // e.g. omnios.15
+            .append(utsname_obj.version, strlen("omnios-r"), 2); // e.g. omnios.15
     }
     else if (strncmp(utsname_obj.version, "illumos-", strlen("illumos-")) == 0)
     {
@@ -598,7 +652,7 @@ pal::string_t pal::get_current_os_rid_platform()
     else if (strncmp(utsname_obj.version, "joyent_", strlen("joyent_")) == 0)
     {
         ridOS.append(_X("smartos."))
-             .append(utsname_obj.version, strlen("joyent_"), 4); // e.g. smartos.2020
+            .append(utsname_obj.version, strlen("joyent_"), 4); // e.g. smartos.2020
     }
 
     return ridOS;
@@ -621,11 +675,11 @@ pal::string_t pal::get_current_os_rid_platform()
         return ridOS;
     }
 
-    char *pos = strchr(utsname_obj.version, '.');
+    char* pos = strchr(utsname_obj.version, '.');
     if (pos)
     {
         ridOS.append(_X("solaris."))
-             .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
+            .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
     }
 
     return ridOS;
@@ -644,6 +698,7 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
 {
     pal::string_t rhelPrefix(_X("rhel."));
     pal::string_t alpinePrefix(_X("alpine."));
+    pal::string_t rockyPrefix(_X("rocky."));
     size_t lastVersionSeparatorIndex = std::string::npos;
 
     if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
@@ -657,6 +712,10 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
         {
             lastVersionSeparatorIndex = rid.find(_X("."), secondVersionSeparatorIndex + 1);
         }
+    }
+    else if (rid.compare(0, rockyPrefix.length(), rockyPrefix) == 0)
+    {
+        lastVersionSeparatorIndex = rid.find(_X("."), rockyPrefix.length());
     }
 
     if (lastVersionSeparatorIndex != std::string::npos)
@@ -771,7 +830,7 @@ bool pal::get_own_executable_path(pal::string_t* recv)
 bool pal::get_own_module_path(string_t* recv)
 {
     Dl_info info;
-    if (dladdr((void *)&pal::get_own_module_path, &info) == 0)
+    if (dladdr((void*)&pal::get_own_module_path, &info) == 0)
         return false;
 
     recv->assign(info.dli_fname);
@@ -793,7 +852,7 @@ bool pal::get_module_path(dll_t module, string_t* recv)
     return false;
 }
 
-bool pal::get_current_module(dll_t *mod)
+bool pal::get_current_module(dll_t* mod)
 {
     return false;
 }
@@ -876,31 +935,31 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
                 }
                 break;
 
-            // Handle symlinks and file systems that do not support d_type
+                // Handle symlinks and file systems that do not support d_type
             case DT_LNK:
             case DT_UNKNOWN:
+            {
+                struct stat sb;
+
+                if (fstatat(dirfd(dir), entry->d_name, &sb, 0) == -1)
                 {
-                    struct stat sb;
-
-                    if (fstatat(dirfd(dir), entry->d_name, &sb, 0) == -1)
-                    {
-                        continue;
-                    }
-
-                    if (onlydirectories)
-                    {
-                        if (!S_ISDIR(sb.st_mode))
-                        {
-                            continue;
-                        }
-                        break;
-                    }
-                    else if (!S_ISREG(sb.st_mode) && !S_ISDIR(sb.st_mode))
-                    {
-                        continue;
-                    }
+                    continue;
                 }
-                break;
+
+                if (onlydirectories)
+                {
+                    if (!S_ISDIR(sb.st_mode))
+                    {
+                        continue;
+                    }
+                    break;
+                }
+                else if (!S_ISREG(sb.st_mode) && !S_ISDIR(sb.st_mode))
+                {
+                    continue;
+                }
+            }
+            break;
 
             default:
                 continue;

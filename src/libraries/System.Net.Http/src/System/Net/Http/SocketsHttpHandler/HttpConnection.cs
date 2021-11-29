@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed partial class HttpConnection : HttpConnectionBase, IDisposable
+    internal sealed partial class HttpConnection : HttpConnectionBase
     {
         /// <summary>Default size of the read buffer used for the connection.</summary>
         private const int InitialReadBufferSize =
@@ -61,7 +61,9 @@ namespace System.Net.Http
         private int _readOffset;
         private int _readLength;
 
+        private long _idleSinceTickCount;
         private bool _inUse;
+        private bool _detachedFromPool;
         private bool _canRetry;
         private bool _startedSendingRequestBody;
         private bool _connectionClose; // Connection: close was seen on last response
@@ -90,6 +92,8 @@ namespace System.Net.Http
 
             _weakThisRef = new WeakReference<HttpConnection>(this);
 
+            _idleSinceTickCount = Environment.TickCount64;
+
             if (HttpTelemetry.Log.IsEnabled())
             {
                 HttpTelemetry.Log.Http11ConnectionEstablished();
@@ -101,7 +105,7 @@ namespace System.Net.Http
 
         ~HttpConnection() => Dispose(disposing: false);
 
-        public void Dispose() => Dispose(disposing: true);
+        public override void Dispose() => Dispose(disposing: true);
 
         private void Dispose(bool disposing)
         {
@@ -118,7 +122,10 @@ namespace System.Net.Http
                     HttpTelemetry.Log.Http11ConnectionClosed();
                 }
 
-                _pool.DecrementConnectionCount();
+                if (!_detachedFromPool)
+                {
+                    _pool.InvalidateHttp11Connection(this, disposing);
+                }
 
                 if (disposing)
                 {
@@ -187,7 +194,7 @@ namespace System.Net.Http
 
         /// <summary>Check whether a currently idle connection is still usable, or should be scavenged.</summary>
         /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
-        public bool CheckUsabilityOnScavenge()
+        public override bool CheckUsabilityOnScavenge()
         {
             // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
             if (_readAheadTask is null)
@@ -230,6 +237,8 @@ namespace System.Net.Http
             // by someone else who will consume the task.
             return null;
         }
+
+        public override long GetIdleTicks(long nowTicks) => nowTicks - _idleSinceTickCount;
 
         public TransportContext? TransportContext => _transportContext;
 
@@ -709,14 +718,24 @@ namespace System.Net.Http
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
                     responseStream = new RawConnectionStream(this);
+
                     // Don't put connection back to the pool if we upgraded to tunnel.
                     // We cannot use it for normal HTTP requests any more.
                     _connectionClose = true;
 
+                    _pool.InvalidateHttp11Connection(this);
+                    _detachedFromPool = true;
                 }
                 else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
                 {
                     responseStream = new RawConnectionStream(this);
+
+                    // Don't put connection back to the pool if we switched protocols.
+                    // We cannot use it for normal HTTP requests any more.
+                    _connectionClose = true;
+
+                    _pool.InvalidateHttp11Connection(this);
+                    _detachedFromPool = true;
                 }
                 else if (response.Content.Headers.ContentLength != null)
                 {
@@ -802,7 +821,7 @@ namespace System.Net.Http
             }
         }
 
-        public sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken) =>
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken) =>
             SendAsyncCore(request, async, cancellationToken);
 
         private bool MapSendException(Exception exception, CancellationToken cancellationToken, out Exception mappedException)
@@ -1769,20 +1788,24 @@ namespace System.Net.Http
             return bytesToCopy;
         }
 
-        private async ValueTask CopyFromBufferAsync(Stream destination, bool async, int count, CancellationToken cancellationToken)
+        private ValueTask CopyFromBufferAsync(Stream destination, bool async, int count, CancellationToken cancellationToken)
         {
             Debug.Assert(count <= _readLength - _readOffset);
 
             if (NetEventSource.Log.IsEnabled()) Trace($"Copying {count} bytes to stream.");
+
+            int offset = _readOffset;
+            _readOffset += count;
+
             if (async)
             {
-                await destination.WriteAsync(new ReadOnlyMemory<byte>(_readBuffer, _readOffset, count), cancellationToken).ConfigureAwait(false);
+                return destination.WriteAsync(new ReadOnlyMemory<byte>(_readBuffer, offset, count), cancellationToken);
             }
             else
             {
-                destination.Write(_readBuffer, _readOffset, count);
+                destination.Write(_readBuffer, offset, count);
+                return default;
             }
-            _readOffset += count;
         }
 
         private Task CopyToUntilEofAsync(Stream destination, bool async, int bufferSize, CancellationToken cancellationToken)
@@ -1932,6 +1955,17 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Detach the connection from the pool, so it is no longer counted against the connection limit.
+        /// This is used when we are creating a replacement connection for NT auth challenges.
+        /// </summary>
+        internal void DetachFromPool()
+        {
+            Debug.Assert(_inUse);
+
+            _detachedFromPool = true;
+        }
+
         private void CompleteResponse()
         {
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
@@ -2015,8 +2049,12 @@ namespace System.Net.Http
             }
             else
             {
+                Debug.Assert(!_detachedFromPool, "Should not be detached from pool unless _connectionClose is true");
+
+                _idleSinceTickCount = Environment.TickCount64;
+
                 // Put connection back in the pool.
-                _pool.ReturnConnection(this);
+                _pool.ReturnHttp11Connection(this);
             }
         }
 

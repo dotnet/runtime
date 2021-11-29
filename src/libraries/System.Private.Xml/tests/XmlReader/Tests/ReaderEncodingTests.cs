@@ -17,7 +17,6 @@ namespace System.Xml.Tests
         private static string _invalidCharInThisEncoding = "Invalid character in the given encoding";
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50945", TestPlatforms.Android)]
         public static void ReadWithSurrogateCharAndInvalidChar()
         {
             // {60, 0, 0, 0} is a normal char, {0, 34, 1, 0}  is a surrogate char {62, 100, 60, 47} is an invalid char
@@ -30,7 +29,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50945", TestPlatforms.Android)]
         public static void ReadWithNormalCharAndInvalidChar()
         {
             // {60, 0, 0, 0, 65, 0, 0, 0} are normal chars, {62, 100, 60, 47} is an invalid char, similar bytes used below tests
@@ -43,7 +41,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50945", TestPlatforms.Android)]
         public static void ReadWithSurrogateCharAndInvalidChar_ValidXmlStructure()
         {
             var bytes = new byte[] { 60, 0, 0, 0, 97, 0, 0, 0, 62, 0, 0, 0, 0, 34, 1, 0, 62, 100, 60, 47, 60, 0, 0, 0, 47, 0, 0, 0, 97, 0, 0, 0, 62, 0, 0, 0 };
@@ -55,7 +52,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50945", TestPlatforms.Android)]
         public static void ReadWithSurrogateCharAsElementName()
         {
             var bytes = new byte[] { 60, 0, 0, 0, 0, 34, 1, 0, 65, 0, 0, 0, 97, 0, 0, 0 };
@@ -88,7 +84,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50945", TestPlatforms.Android)]
         public static void BytesStartingWithInvalidChar()
         {
             var bytes = new byte[] { 62, 100, 60, 47, 60, 0, 0, 0, 0, 34, 1, 0, 65, 0, 0, 0, 97, 0, 0, 0 };
@@ -99,7 +94,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50945", TestPlatforms.Android)]
         public static void BytesEndingWithInvalidChar()
         {
             var bytes = new byte[] { 60, 0, 0, 0, 97, 0, 0, 0, 62, 0, 0, 0, 65, 0, 0, 0, 65, 0, 0, 0, 97, 0, 0, 0, 62, 100, 60, 47};
@@ -120,7 +114,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50945", TestPlatforms.Android)]
         public static void ReadWithIncompleteBytes()
         {
             var bytes = new byte[] { 60, 0, 0, 0, 97, 0, 0, 0, 65, 0, 0, 0, 97, 62, 10};

@@ -93,8 +93,8 @@ namespace BinderTracing
         static void TraceAppDomainAssemblyResolve(AssemblySpec *spec, PEAssembly *resultAssembly, Exception *exception = nullptr);
 
     public:
-        // One of binder ID and managed ALC is expected to be non-zero. If the managed ALC is set, binder ID is ignored.
-        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, UINT_PTR binderId, INT_PTR managedALC, const HRESULT& hr);
+        // One of native bindContext or managedALC is expected to be non-zero. If the managed ALC is set, bindContext is ignored.
+        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, AssemblyBinder* bindContext, INT_PTR managedALC, const HRESULT& hr);
 
         void TraceBindResult(const BINDER_SPACE::BindResult &bindResult, bool mvidMismatch = false);
 
@@ -176,7 +176,7 @@ namespace BinderTracing
     enum PathSource
     {
         ApplicationAssemblies,
-        AppNativeImagePaths,
+        Unused,
         AppPaths,
         PlatformResourceRoots,
         SatelliteSubdirectory,

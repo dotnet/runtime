@@ -109,9 +109,9 @@ public:
 
     void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
 
-    void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags);
+    void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags, CORINFO_OS os);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value);
-    void repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags);
+    void repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags, CORINFO_OS* os);
 
     void recGetMethodClass(CORINFO_METHOD_HANDLE methodHandle, CORINFO_CLASS_HANDLE classHandle);
     void dmpGetMethodClass(DWORDLONG key, DWORDLONG value);
@@ -630,9 +630,6 @@ public:
     void dmpFilterException(DWORD key, DWORD value);
     int repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 
-    void recHandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void dmpHandleException(DWORD key, DWORD value);
-
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
@@ -772,6 +769,10 @@ public:
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
     DWORD repGetExpectedTargetArchitecture();
 
+    void recDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpDoesFieldBelongToClass(DLDL key, bool value);
+    bool repDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls);
+
     void recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result);
     void dmpIsValidToken(DLD key, DWORD value);
     bool repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
@@ -804,6 +805,10 @@ public:
         CORINFO_SIG_INFO* sig,
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
+
+    void recUpdateEntryPointForTailCall(const CORINFO_CONST_LOOKUP& origEntryPoint, const CORINFO_CONST_LOOKUP& newEntryPoint);
+    void dmpUpdateEntryPointForTailCall(const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint, const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint);
+    void repUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint);
 
     void recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result);
     void dmpGetMethodDefFromMethod(DWORDLONG key, DWORD value);
@@ -903,203 +908,199 @@ private:
     }
 };
 
-// ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 192
-// *************************************************************************************
 enum mcPackets
 {
-    Packet_AllocMethodBlockCounts     = 131, // retired 1/4/2021
-    Packet_AppendClassName            = 149, // Added 8/6/2014 - needed for SIMD
-    Packet_AreTypesEquivalent         = 1,
-    Packet_AsCorInfoType              = 2,
-    Packet_CanAccessClass             = 3,
-    Packet_CanAccessFamily            = 4,
-    Packet_CanCast                    = 5,
-    Retired8                          = 6,
-    Packet_GetLazyStringLiteralHelper = 147, // Added 12/20/2013 - as a replacement for CanEmbedModuleHandleForHelper
+    Packet_AreTypesEquivalent = 1,
+    Packet_AsCorInfoType = 2,
+    Packet_CanAccessClass = 3,
+    Packet_CanAccessFamily = 4,
+    Packet_CanCast = 5,
     Packet_CanGetCookieForPInvokeCalliSig = 7,
-    Packet_CanGetVarArgsHandle            = 8,
-    Packet_CanInline                      = 9,
-    Packet_CanInlineTypeCheck = 173, // Added 11/15/2018 as a replacement for CanInlineTypeCheckWithObjectVTable
-    Packet_CanInlineTypeCheckWithObjectVTable            = 10,
-    Packet_CanSkipMethodVerification                     = 11, // Retired 2/18/2020
-    Packet_CanTailCall                                   = 12,
-    Retired4                                             = 13,
-    Packet_CheckMethodModifier                           = 142, // retired as 13 on 2013/07/04
-    Retired3                                             = 14,
-    Retired5                                             = 141, // retired as 14 on 2013/07/03
-    Packet_CompareTypesForCast                           = 163, // Added 10/4/17
-    Packet_CompareTypesForEquality                       = 164, // Added 10/4/17
-    Packet_CompileMethod                                 = 143, // retired as 141 on 2013/07/09
-    Packet_ConstructStringLiteral                        = 15,
-    Packet_ConvertPInvokeCalliToCall                     = 169, // Added 4/29/18
-    Packet_EmbedClassHandle                              = 16,
-    Packet_EmbedFieldHandle                              = 17,
-    Packet_EmbedGenericHandle                            = 18,
-    Packet_EmbedMethodHandle                             = 19,
-    Packet_EmbedModuleHandle                             = 20,
-    Packet_EmptyStringLiteral                            = 21,
-    Retired9                                             = 136,
-    Packet_ErrorList                                     = 22,
-    Packet_FilterException                               = 134,
-    Packet_FindCallSiteSig                               = 23,
-    Retired7                                             = 24,
-    Packet_FindNameOfToken                               = 145, // Added 7/19/2013 - adjusted members to proper types
-    Packet_GetSystemVAmd64PassStructInRegisterDescriptor = 156, // Added 2/17/2016
-    Packet_FindSig                                       = 25,
-    Packet_GetAddressOfPInvokeFixup                      = 26, // Retired 2/18/2020
-    Packet_GetAddressOfPInvokeTarget                     = 153, // Added 2/3/2016
-    Packet_GetAddrOfCaptureThreadGlobal                  = 27,
-    Retired1                                             = 28,
-    Packet_GetArgClass                                   = 139, // retired as 28 on 2013/07/03
-    Packet_GetHFAType                                    = 159,
-    Packet_GetArgNext                                    = 29,
-    Retired2                                             = 30,
-    Packet_GetArgType                                    = 140, // retired as 30 on 2013/07/03
-    Packet_GetArrayInitializationData                    = 31,
-    Packet_GetArrayRank                                  = 32,
-    Packet_GetMethodBlockCounts                          = 33,
-    Packet_GetBoundaries                                 = 34,
-    Packet_GetBoxHelper                                  = 35,
-    Packet_GetBuiltinClass                               = 36,
-    Packet_GetCallInfo                                   = 37,
-    Packet_GetCastingHelper                              = 38,
-    Packet_GetChildType                                  = 39,
-    Packet_GetClassAlignmentRequirement                  = 40,
-    Packet_GetClassAttribs                               = 41,
-    Packet_GetClassDomainID                              = 42,
-    Packet_GetClassGClayout                              = 43,
-    Packet_GetClassModuleIdForStatics                    = 44,
-    Packet_GetClassName                                  = 45,
-    Packet_GetClassNameFromMetadata                      = 166, // Added 12/4/17
-    Packet_GetTypeInstantiationArgument                  = 167, // Added 12/4/17
-    Packet_GetClassNumInstanceFields                     = 46,
-    Packet_GetClassSize                                  = 47,
-    Packet_GetHeapClassSize                              = 170, // Added 10/5/2018
-    Packet_CanAllocateOnStack                            = 171, // Added 10/5/2018
-    Packet_GetIntConfigValue                             = 151, // Added 2/12/2015
-    Packet_GetStringConfigValue                          = 152, // Added 2/12/2015
-    Packet_GetCookieForPInvokeCalliSig                   = 48,
-    Packet_GetDefaultComparerClass                       = 188, // Added 2/10/2021
-    Packet_GetDefaultEqualityComparerClass               = 162, // Added 9/24/2017
-    Packet_GetDelegateCtor                               = 49,
-    Packet_GetEEInfo                                     = 50,
-    Packet_GetEHinfo                                     = 51,
-    Packet_GetFieldAddress                               = 52,
-    Packet_GetStaticFieldCurrentClass                    = 172, // Added 11/7/2018
-    Packet_GetFieldClass                                 = 53,
-    Packet_GetFieldInClass                               = 54,
-    Packet_GetFieldInfo                                  = 55,
-    Packet_GetFieldName                                  = 56,
-    Packet_GetFieldOffset                                = 57,
-    Packet_GetFieldThreadLocalStoreID                    = 58,
-    Packet_GetFieldType                                  = 59,
-    Packet_GetFunctionEntryPoint                         = 60,
-    Packet_GetFunctionFixedEntryPoint                    = 61,
-    Packet_GetGSCookie                                   = 62,
-    Packet_GetHelperFtn                                  = 63,
-    Packet_GetHelperName                                 = 64,
-    Packet_GetInlinedCallFrameVptr                       = 65,
-    Packet_GetIntrinsicID                                = 66,
-    Packet_GetJitFlags                                   = 154, // Added 2/3/2016
-    Packet_GetJitTimeLogFilename                         = 67,
-    Packet_GetJustMyCodeHandle                           = 68,
-    Retired10                                            = 182, // Added 9/27/2020 // was Packet_GetLikelyClass
-    Packet_GetLocationOfThisType                         = 69,
-    Packet_IsJitIntrinsic                                = 192,
-    Packet_GetMethodAttribs                              = 70,
-    Packet_GetMethodClass                                = 71,
-    Packet_GetMethodModule                               = 181, // Added 11/20/2020
-    Packet_GetMethodDefFromMethod                        = 72,
-    Packet_GetMethodHash                                 = 73,
-    Packet_GetMethodInfo                                 = 74,
-    Packet_GetMethodName                                 = 75,
-    Packet_GetMethodNameFromMetadata                     = 161, // Added 9/6/17
-    Packet_GetMethodSig                                  = 76,
-    Packet_GetMethodSync                                 = 77,
-    Packet_GetMethodVTableOffset                         = 78,
-    Packet_GetNewArrHelper                               = 79,
-    Packet_GetNewHelper                                  = 80,
-    Packet_GetOSRInfo                                    = 177, // Added 3/5/2020
-    Packet_GetParentType                                 = 81,
-    Packet_GetPInvokeUnmanagedTarget                     = 82, // Retired 2/18/2020
-    Packet_GetProfilingHandle                            = 83,
-    Packet_GetRelocTypeHint                              = 84,
-    Packet_GetExpectedTargetArchitecture                 = 183, // Added 12/18/2020
-    Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
-    Packet_GetSharedCCtorHelper                          = 86,
-    Packet_GetTailCallCopyArgsThunk                      = 87, // Retired 4/27/2020
-    Packet_GetTailCallHelpers                            = 178, // Added 3/18/2020
-    Packet_GetThreadTLSIndex                             = 88,
-    Packet_GetTokenTypeAsHandle                          = 89,
-    Packet_GetTypeForBox                                 = 90,
-    Packet_GetTypeForPrimitiveValueClass                 = 91,
-    Packet_GetTypeForPrimitiveNumericClass               = 168, // Added 12/7/2017
-    Packet_GetUnboxedEntry                               = 165, // Added 10/26/17
-    Packet_GetUnBoxHelper                                = 92,
-    Packet_GetReadyToRunHelper                           = 150, // Added 10/10/2014
-    Packet_GetReadyToRunDelegateCtorHelper               = 157, // Added 3/30/2016
-    Packet_GetUnmanagedCallConv                          = 94,
-    Packet_GetVarArgsHandle                              = 95,
-    Packet_GetVars                                       = 96,
-    Packet_HandleException                               = 135,
-    Packet_InitClass                                     = 97,
-    Packet_InitConstraintsForVerification                = 98, // Retired 2/18/2020
-    Packet_IsCompatibleDelegate                          = 99,
-    Packet_IsDelegateCreationAllowed                     = 155,
-    Packet_IsFieldStatic                                 = 137, // Added 4/9/2013 - needed for 4.5.1
-    Packet_IsIntrinsicType                               = 148, // Added 10/26/2019 - SIMD support
-    Packet_IsInstantiationOfVerifiedGeneric              = 100, // Retired 2/18/2020
-    Packet_IsSDArray                                     = 101,
-    Packet_IsStructRequiringStackAllocRetBuf             = 102,
-    Packet_IsValidStringRef                              = 103,
-    Packet_GetStringLiteral                              = 175, // Added 1/7/2020
-    Retired6                                             = 104,
-    Packet_IsValidToken                                  = 144, // Added 7/19/2013 - adjusted members to proper types
-    Packet_IsValueClass                                  = 105,
-    Packet_IsWriteBarrierHelperRequired                  = 106, // Retired 2/18/2020
-    Packet_MergeClasses                                  = 107,
-    Packet_IsMoreSpecificType                            = 174, // Added 2/14/2019
-    Packet_PInvokeMarshalingRequired                     = 108,
-    Packet_ResolveToken                                  = 109,
-    Packet_ResolveVirtualMethod                          = 160, // Added 2/13/17
-    Packet_TryResolveToken                               = 158, // Added 4/26/2016
-    Packet_SatisfiesClassConstraints                     = 110,
-    Packet_SatisfiesMethodConstraints                    = 111,
-    Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
-    Packet_SigInstHandleMap                              = 184,
-    Packet_AllocPgoInstrumentationBySchema               = 186, // Added 1/4/2021
-    Packet_GetPgoInstrumentationResults                  = 187, // Added 1/4/2021
-    Packet_GetClassModule                                = 189, // Added 2/19/2021
-    Packet_GetModuleAssembly                             = 190, // Added 2/19/2021
-    Packet_GetAssemblyName                               = 191, // Added 2/19/2021
-
-    PacketCR_AddressMap                        = 113,
-    PacketCR_AllocGCInfo                       = 114,
-    PacketCR_AllocMem                          = 115,
-    PacketCR_AllocUnwindInfo                   = 132,
-    PacketCR_AssertLog                         = 138, // Added 6/10/2013 - added to nicely support ilgen
-    PacketCR_CallLog                           = 116,
-    PacketCR_ClassMustBeLoadedBeforeCodeIsRun  = 117,
-    PacketCR_CompileMethod                     = 118,
-    PacketCR_MessageLog                        = 119,
+    Packet_CanGetVarArgsHandle = 8,
+    Packet_CanInline = 9,
+    //Packet_CanInlineTypeCheckWithObjectVTable = 10,
+    //Packet_CanSkipMethodVerification = 11,
+    Packet_CanTailCall = 12,
+    //Retired4 = 13,
+    //Retired3 = 14,
+    Packet_ConstructStringLiteral = 15,
+    Packet_EmbedClassHandle = 16,
+    Packet_EmbedFieldHandle = 17,
+    Packet_EmbedGenericHandle = 18,
+    Packet_EmbedMethodHandle = 19,
+    Packet_EmbedModuleHandle = 20,
+    Packet_EmptyStringLiteral = 21,
+    Packet_ErrorList = 22,
+    Packet_FindCallSiteSig = 23,
+    //Retired7 = 24,
+    Packet_FindSig = 25,
+    Packet_GetAddressOfPInvokeFixup = 26,
+    Packet_GetAddrOfCaptureThreadGlobal = 27,
+    //Retired1 = 28,
+    Packet_GetArgNext = 29,
+    //Retired2 = 30,
+    Packet_GetArrayInitializationData = 31,
+    Packet_GetArrayRank = 32,
+    //Packet_GetMethodBlockCounts = 33,
+    Packet_GetBoundaries = 34,
+    Packet_GetBoxHelper = 35,
+    Packet_GetBuiltinClass = 36,
+    Packet_GetCallInfo = 37,
+    Packet_GetCastingHelper = 38,
+    Packet_GetChildType = 39,
+    Packet_GetClassAlignmentRequirement = 40,
+    Packet_GetClassAttribs = 41,
+    Packet_GetClassDomainID = 42,
+    Packet_GetClassGClayout = 43,
+    Packet_GetClassModuleIdForStatics = 44,
+    Packet_GetClassName = 45,
+    Packet_GetClassNumInstanceFields = 46,
+    Packet_GetClassSize = 47,
+    Packet_GetCookieForPInvokeCalliSig = 48,
+    Packet_GetDelegateCtor = 49,
+    Packet_GetEEInfo = 50,
+    Packet_GetEHinfo = 51,
+    Packet_GetFieldAddress = 52,
+    Packet_GetFieldClass = 53,
+    Packet_GetFieldInClass = 54,
+    Packet_GetFieldInfo = 55,
+    Packet_GetFieldName = 56,
+    Packet_GetFieldOffset = 57,
+    Packet_GetFieldThreadLocalStoreID = 58,
+    Packet_GetFieldType = 59,
+    Packet_GetFunctionEntryPoint = 60,
+    Packet_GetFunctionFixedEntryPoint = 61,
+    Packet_GetGSCookie = 62,
+    Packet_GetHelperFtn = 63,
+    Packet_GetHelperName = 64,
+    Packet_GetInlinedCallFrameVptr = 65,
+    Packet_GetIntrinsicID = 66,
+    Packet_GetJitTimeLogFilename = 67,
+    Packet_GetJustMyCodeHandle = 68,
+    Packet_GetLocationOfThisType = 69,
+    Packet_GetMethodAttribs = 70,
+    Packet_GetMethodClass = 71,
+    Packet_GetMethodDefFromMethod = 72,
+    Packet_GetMethodHash = 73,
+    Packet_GetMethodInfo = 74,
+    Packet_GetMethodName = 75,
+    Packet_GetMethodSig = 76,
+    Packet_GetMethodSync = 77,
+    Packet_GetMethodVTableOffset = 78,
+    Packet_GetNewArrHelper = 79,
+    Packet_GetNewHelper = 80,
+    Packet_GetParentType = 81,
+    //Packet_GetPInvokeUnmanagedTarget = 82,
+    Packet_GetProfilingHandle = 83,
+    Packet_GetRelocTypeHint = 84,
+    //Packet_GetSecurityPrologHelper = 85,
+    Packet_GetSharedCCtorHelper = 86,
+    //Packet_GetTailCallCopyArgsThunk = 87,
+    Packet_GetThreadTLSIndex = 88,
+    Packet_GetTokenTypeAsHandle = 89,
+    Packet_GetTypeForBox = 90,
+    Packet_GetTypeForPrimitiveValueClass = 91,
+    Packet_GetUnBoxHelper = 92,
+    Packet_GetUnmanagedCallConv = 94,
+    Packet_GetVarArgsHandle = 95,
+    Packet_GetVars = 96,
+    Packet_InitClass = 97,
+    //Packet_InitConstraintsForVerification = 98,
+    Packet_IsCompatibleDelegate = 99,
+    //Packet_IsInstantiationOfVerifiedGeneric = 100,
+    Packet_IsSDArray = 101,
+    Packet_IsStructRequiringStackAllocRetBuf = 102,
+    Packet_IsValidStringRef = 103,
+    //Retired6 = 104,
+    Packet_IsValueClass = 105,
+    //Packet_IsWriteBarrierHelperRequired = 106,
+    Packet_MergeClasses = 107,
+    Packet_PInvokeMarshalingRequired = 108,
+    Packet_ResolveToken = 109,
+    Packet_SatisfiesClassConstraints = 110,
+    Packet_SatisfiesMethodConstraints = 111,
+    Packet_DoesFieldBelongToClass = 112,
+    PacketCR_AddressMap = 113,
+    PacketCR_AllocGCInfo = 114,
+    PacketCR_AllocMem = 115,
+    PacketCR_CallLog = 116,
+    PacketCR_ClassMustBeLoadedBeforeCodeIsRun = 117,
+    PacketCR_CompileMethod = 118,
+    PacketCR_MessageLog = 119,
     PacketCR_MethodMustBeLoadedBeforeCodeIsRun = 120,
-    PacketCR_ProcessName                       = 121,
-    PacketCR_RecordRelocation                  = 122,
-    PacketCR_ReportFatalError                  = 123,
-    PacketCR_ReportInliningDecision            = 124,
-    PacketCR_ReportTailCallDecision            = 125,
-    PacketCR_ReserveUnwindInfo                 = 133,
-    PacketCR_SetBoundaries                     = 126,
-    PacketCR_SetEHcount                        = 127,
-    PacketCR_SetEHinfo                         = 128,
-    PacketCR_SetMethodAttribs                  = 129,
-    PacketCR_SetVars                           = 130,
-    PacketCR_SetPatchpointInfo                 = 176, // added 8/5/2019
-    PacketCR_RecordCallSite                    = 146, // Retired 9/13/2020
-    PacketCR_RecordCallSiteWithSignature       = 179, // Added 9/13/2020
-    PacketCR_RecordCallSiteWithoutSignature    = 180, // Added 9/13/2020
-    PacketCR_CrSigInstHandleMap                = 185,
+    PacketCR_ProcessName = 121,
+    PacketCR_RecordRelocation = 122,
+    PacketCR_ReportFatalError = 123,
+    PacketCR_ReportInliningDecision = 124,
+    PacketCR_ReportTailCallDecision = 125,
+    PacketCR_SetBoundaries = 126,
+    PacketCR_SetEHcount = 127,
+    PacketCR_SetEHinfo = 128,
+    PacketCR_SetMethodAttribs = 129,
+    PacketCR_SetVars = 130,
+    //Packet_AllocMethodBlockCounts = 131,
+    PacketCR_AllocUnwindInfo = 132,
+    PacketCR_ReserveUnwindInfo = 133,
+    Packet_FilterException = 134,
+    //Packet_HandleException = 135,
+    //Retired9 = 136,
+    Packet_IsFieldStatic = 137,
+    PacketCR_AssertLog = 138,
+    Packet_GetArgClass = 139,
+    Packet_GetArgType = 140,
+    //Retired5 = 141,
+    Packet_CheckMethodModifier = 142,
+    Packet_CompileMethod = 143,
+    Packet_IsValidToken = 144,
+    Packet_FindNameOfToken = 145,
+    //PacketCR_RecordCallSite = 146,
+    Packet_GetLazyStringLiteralHelper = 147,
+    Packet_IsIntrinsicType = 148,
+    Packet_AppendClassName = 149,
+    Packet_GetReadyToRunHelper = 150,
+    Packet_GetIntConfigValue = 151,
+    Packet_GetStringConfigValue = 152,
+    Packet_GetAddressOfPInvokeTarget = 153,
+    Packet_GetJitFlags = 154,
+    Packet_IsDelegateCreationAllowed = 155,
+    Packet_GetSystemVAmd64PassStructInRegisterDescriptor = 156,
+    Packet_GetReadyToRunDelegateCtorHelper = 157,
+    Packet_TryResolveToken = 158,
+    Packet_GetHFAType = 159,
+    Packet_ResolveVirtualMethod = 160,
+    Packet_GetMethodNameFromMetadata = 161,
+    Packet_GetDefaultEqualityComparerClass = 162,
+    Packet_CompareTypesForCast = 163,
+    Packet_CompareTypesForEquality = 164, 
+    Packet_GetUnboxedEntry = 165,
+    Packet_GetClassNameFromMetadata = 166,
+    Packet_GetTypeInstantiationArgument = 167,
+    Packet_GetTypeForPrimitiveNumericClass = 168,
+    Packet_ConvertPInvokeCalliToCall = 169,
+    Packet_GetHeapClassSize = 170,
+    Packet_CanAllocateOnStack = 171,
+    Packet_GetStaticFieldCurrentClass = 172,
+    Packet_CanInlineTypeCheck = 173,
+    Packet_IsMoreSpecificType = 174,
+    Packet_GetStringLiteral = 175,
+    PacketCR_SetPatchpointInfo = 176,
+    Packet_GetOSRInfo = 177,
+    Packet_GetTailCallHelpers = 178,
+    PacketCR_RecordCallSiteWithSignature = 179,
+    PacketCR_RecordCallSiteWithoutSignature = 180,
+    Packet_GetMethodModule = 181,
+    //Retired10 = 182,
+    Packet_GetExpectedTargetArchitecture = 183,
+    Packet_SigInstHandleMap = 184,
+    PacketCR_CrSigInstHandleMap = 185,
+    Packet_AllocPgoInstrumentationBySchema = 186,
+    Packet_GetPgoInstrumentationResults = 187,
+    Packet_GetDefaultComparerClass = 188,
+    Packet_GetClassModule = 189,
+    Packet_GetModuleAssembly = 190,
+    Packet_GetAssemblyName = 191,
+    Packet_IsJitIntrinsic = 192,
+    Packet_UpdateEntryPointForTailCall = 193,
 };
 
 void SetDebugDumpVariables();

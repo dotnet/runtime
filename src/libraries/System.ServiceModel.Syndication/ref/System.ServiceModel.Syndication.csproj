@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.ServiceModel.Syndication.cs" Condition="'$(TargetFramework)' != 'net461'"/>
-    <Compile Include="System.ServiceModel.Syndication.net461.cs" Condition="'$(TargetFramework)' == 'net461'"/>
+    <Compile Include="System.ServiceModel.Syndication.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'"/>
+    <Compile Include="System.ServiceModel.Syndication.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
     <Compile Include="System.ServiceModel.Syndication.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
@@ -15,7 +15,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.XmlSerializer\ref\System.Xml.XmlSerializer.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
@@ -23,7 +23,7 @@
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
 </Project>

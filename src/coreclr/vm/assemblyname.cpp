@@ -58,11 +58,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
     // non-native platform.
     PEImageLayoutHolder pLayout(pImage->GetLayout(PEImageLayout::LAYOUT_FLAT, PEImage::LAYOUT_CREATEIFNEEDED));
 
-    // Allow AssemblyLoadContext.GetAssemblyName for native images on CoreCLR
-    if (pImage->HasNTHeaders() && pImage->HasCorHeader() && pImage->HasNativeHeader())
-        pImage->VerifyIsNIAssembly();
-    else
-        pImage->VerifyIsAssembly();
+    pImage->VerifyIsAssembly();
 
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(mdtAssembly,1),pImage->GetMDImport(),NULL);

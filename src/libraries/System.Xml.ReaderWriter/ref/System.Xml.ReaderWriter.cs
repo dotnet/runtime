@@ -83,10 +83,10 @@ namespace System.Xml
     public enum ValidationType
     {
         None = 0,
-        [System.ObsoleteAttribute("Validation type should be specified as DTD or Schema.")]
+        [System.ObsoleteAttribute("ValidationType.Auto has been deprecated. Use DTD or Schema instead.")]
         Auto = 1,
         DTD = 2,
-        [System.ObsoleteAttribute("XDR Validation through XmlValidatingReader is obsoleted")]
+        [System.ObsoleteAttribute("XDR Validation through XmlValidatingReader has been deprecated and is not supported.")]
         XDR = 3,
         Schema = 4,
     }
@@ -214,7 +214,7 @@ namespace System.Xml
         public static bool ToBoolean(string s) { throw null; }
         public static byte ToByte(string s) { throw null; }
         public static char ToChar(string s) { throw null; }
-        [System.ObsoleteAttribute("Use XmlConvert.ToDateTime() that takes in XmlDateTimeSerializationMode")]
+        [System.ObsoleteAttribute("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
         public static System.DateTime ToDateTime(string s) { throw null; }
         public static System.DateTime ToDateTime(string s, string format) { throw null; }
         public static System.DateTime ToDateTime(string s, string[] formats) { throw null; }
@@ -234,7 +234,7 @@ namespace System.Xml
         public static string ToString(bool value) { throw null; }
         public static string ToString(byte value) { throw null; }
         public static string ToString(char value) { throw null; }
-        [System.ObsoleteAttribute("Use XmlConvert.ToString() that takes in XmlDateTimeSerializationMode")]
+        [System.ObsoleteAttribute("Use XmlConvert.ToString() that accepts an XmlDateTimeSerializationMode instead.")]
         public static string ToString(System.DateTime value) { throw null; }
         public static string ToString(System.DateTime value, string format) { throw null; }
         public static string ToString(System.DateTime value, System.Xml.XmlDateTimeSerializationMode dateTimeOption) { throw null; }
@@ -765,7 +765,7 @@ namespace System.Xml
         public static bool operator ==(System.Xml.XmlQualifiedName? a, System.Xml.XmlQualifiedName? b) { throw null; }
         public static bool operator !=(System.Xml.XmlQualifiedName? a, System.Xml.XmlQualifiedName? b) { throw null; }
         public override string ToString() { throw null; }
-        public static string ToString(string name, string ns) { throw null; }
+        public static string ToString(string name, string? ns) { throw null; }
     }
     [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
     [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
@@ -934,7 +934,7 @@ namespace System.Xml
         public long MaxCharactersFromEntities { get { throw null; } set { } }
         public long MaxCharactersInDocument { get { throw null; } set { } }
         public System.Xml.XmlNameTable? NameTable { get { throw null; } set { } }
-        [System.ObsoleteAttribute("Use XmlReaderSettings.DtdProcessing property instead.")]
+        [System.ObsoleteAttribute("XmlReaderSettings.ProhibitDtd has been deprecated. Use DtdProcessing instead.")]
         public bool ProhibitDtd { get { throw null; } set { } }
         public System.Xml.Schema.XmlSchemaSet Schemas { get { throw null; } set { } }
         public System.Xml.Schema.XmlSchemaValidationFlags ValidationFlags { get { throw null; } set { } }
@@ -1034,7 +1034,7 @@ namespace System.Xml
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public bool Normalization { get { throw null; } set { } }
         public override string Prefix { get { throw null; } }
-        [System.ObsoleteAttribute("Use DtdProcessing property instead.")]
+        [System.ObsoleteAttribute("XmlTextReader.ProhibitDtd has been deprecated. Use DtdProcessing instead.")]
         public bool ProhibitDtd { get { throw null; } set { } }
         public override char QuoteChar { get { throw null; } }
         public override System.Xml.ReadState ReadState { get { throw null; } }
@@ -1146,7 +1146,7 @@ namespace System.Xml
         public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public override System.Uri ResolveUri(System.Uri? baseUri, string? relativeUri) { throw null; }
     }
-    [System.ObsoleteAttribute("Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("XmlValidatingReader has been deprecated. Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead.")]
     public partial class XmlValidatingReader : System.Xml.XmlReader, System.Xml.IXmlLineInfo, System.Xml.IXmlNamespaceResolver
     {
         public XmlValidatingReader(System.IO.Stream xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
@@ -1472,9 +1472,9 @@ namespace System.Xml.Schema
         public System.Xml.XmlAttribute[]? UnhandledAttributes { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("version", DataType="token")]
         public string? Version { get { throw null; } set { } }
-        [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
         public void Compile(System.Xml.Schema.ValidationEventHandler? validationEventHandler) { }
-        [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
         public void Compile(System.Xml.Schema.ValidationEventHandler? validationEventHandler, System.Xml.XmlResolver? resolver) { }
         public static System.Xml.Schema.XmlSchema? Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
@@ -1551,7 +1551,7 @@ namespace System.Xml.Schema
         public XmlSchemaAttribute() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaSimpleType? AttributeSchemaType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use AttributeSchemaType property that returns a strongly typed attribute type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchemaAttribute.AttributeType has been deprecated. Use the AttributeSchemaType property that returns a strongly typed attribute type instead.")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object? AttributeType { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(null)]
@@ -1609,7 +1609,7 @@ namespace System.Xml.Schema
         [System.Xml.Serialization.XmlElementAttribute("sequence", typeof(System.Xml.Schema.XmlSchemaSequence))]
         public override System.Xml.Schema.XmlSchemaObjectCollection Items { get { throw null; } }
     }
-    [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("XmlSchemaCollection has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
     public sealed partial class XmlSchemaCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public XmlSchemaCollection() { }
@@ -1820,7 +1820,7 @@ namespace System.Xml.Schema
         public string? DefaultValue { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaType? ElementSchemaType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use ElementSchemaType property that returns a strongly typed element type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchemaElement.ElementType has been deprecated. Use the ElementSchemaType property that returns a strongly typed element type instead.")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object? ElementType { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaDerivationMethod.None)]
@@ -2272,7 +2272,7 @@ namespace System.Xml.Schema
     public partial class XmlSchemaType : System.Xml.Schema.XmlSchemaAnnotated
     {
         public XmlSchemaType() { }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use BaseXmlSchemaType property that returns a strongly typed base schema type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchemaType.BaseSchemaType has been deprecated. Use the BaseXmlSchemaType property that returns a strongly typed base schema type instead.")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object? BaseSchemaType { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]

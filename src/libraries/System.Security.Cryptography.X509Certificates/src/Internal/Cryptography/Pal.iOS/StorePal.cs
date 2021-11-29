@@ -37,6 +37,7 @@ namespace Internal.Cryptography.Pal
                 return new CertCollectionLoader(certificateList);
             }
 
+            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
             X509ContentType contentType = AppleCertificatePal.GetDerCertContentType(rawData);
 
             if (contentType == X509ContentType.Pkcs7)
@@ -52,7 +53,7 @@ namespace Internal.Cryptography.Pal
 
                 try
                 {
-                    reader.Decrypt(password);
+                    reader.Decrypt(password, ephemeralSpecified);
                     return new ApplePkcs12CertLoader(reader, password);
                 }
                 catch

@@ -186,8 +186,7 @@ namespace System.Security.Cryptography
                 ht.Add("System.Security.Cryptography.AsymmetricAlgorithm", RSACryptoServiceProviderType);
 
                 if (!OperatingSystem.IsIOS() &&
-                    !OperatingSystem.IsTvOS() &&
-                    !OperatingSystem.IsMacCatalyst())
+                    !OperatingSystem.IsTvOS())
                 {
                     ht.Add("DSA", DSACryptoServiceProviderType);
                     ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
@@ -508,6 +507,7 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.CryptoConfigEncodeOIDMessage, DiagnosticId = Obsoletions.CryptoConfigEncodeOIDDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static byte[] EncodeOID(string str)
         {
             if (str == null)

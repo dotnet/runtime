@@ -14,7 +14,7 @@ namespace System.Reflection.Emit
         Cond_Branch = 3,
         Meta = 4,
         Next = 5,
-        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("FlowControl.Phi has been deprecated and is not supported.")]
         Phi = 6,
         Return = 7,
         Throw = 8,
@@ -270,7 +270,7 @@ namespace System.Reflection.Emit
     }
     public enum OpCodeType
     {
-        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("OpCodeType.Annotation has been deprecated and is not supported.")]
         Annotation = 0,
         Macro = 1,
         Nternal = 2,
@@ -286,7 +286,7 @@ namespace System.Reflection.Emit
         InlineI8 = 3,
         InlineMethod = 4,
         InlineNone = 5,
-        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("OperandType.InlinePhi has been deprecated and is not supported.")]
         InlinePhi = 6,
         InlineR = 7,
         InlineSig = 9,

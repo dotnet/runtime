@@ -6,7 +6,7 @@
 
 #include "gcinterface.h"
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 #include <weakreference.h>
 #endif
 
@@ -199,7 +199,7 @@ inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
 
 // Special handle creation convenience functions
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 struct NativeComWeakHandleInfo
 {
@@ -218,7 +218,7 @@ inline OBJECTHANDLE CreateNativeComWeakHandle(IGCHandleStore* store, OBJECTREF o
     DiagHandleCreated(hnd, object);
     return hnd;
 }
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
 // Creates a variable-strength handle
 inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object, uint32_t type)
@@ -368,7 +368,7 @@ inline void DestroyTypedHandle(OBJECTHANDLE handle)
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
 }
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 inline void DestroyNativeComWeakHandle(OBJECTHANDLE handle)
 {
     CONTRACTL
@@ -395,7 +395,7 @@ inline void DestroyNativeComWeakHandle(OBJECTHANDLE handle)
     DiagHandleDestroyed(handle);
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_NATIVE_COM);
 }
-#endif
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
 // Handle holders/wrappers
 

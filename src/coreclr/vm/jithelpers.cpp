@@ -44,10 +44,6 @@
 #include "safemath.h"
 #include "threadstatics.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
@@ -2445,25 +2441,6 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-
-
-    // If our module is ngenned and we're calling this API, it means that we're not going through
-    // the fixup mechanism for strings. This can happen 2 ways:
-    //
-    //      a) Lazy string object construction: This happens when JIT decides that initizalizing a
-    //         string via fixup on method entry is very expensive. This is normally done for strings
-    //         that appear in rarely executed blocks, such as throw blocks.
-    //
-    //      b) The ngen image isn't complete (it's missing classes), therefore we're jitting methods.
-    //
-    //  If we went ahead and called ResolveStringRef directly, we would be breaking the per module
-    //  interning we're guaranteeing, so we will have to detect the case and handle it appropriately.
-#ifdef FEATURE_PREJIT
-    if (module->HasNativeImage() && module->IsNoStringInterning())
-    {
-        return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent(), true);
-    }
-#endif
     return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent(), false);
 }
 
@@ -3135,10 +3112,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
         {
             const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
             BaseDomain* pKeyDomain = key->GetDomain();
-            if (pKeyDomain == pDomain || pKeyDomain == NULL
-                // We compute fake domain for types during NGen (see code:ClassLoader::ComputeLoaderModule).
-                // To avoid stale handles, we need to clear the cache unconditionally during NGen.
-                || IsCompilationProcess())
+            if (pKeyDomain == pDomain || pKeyDomain == NULL)
             {
                 // Advance the iterator before we delete!!  See notes in EEHash.h
                 keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
@@ -3245,11 +3219,11 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         // If the dictionary on the base type got expanded, update the current type's base type dictionary
         // pointer to use the new one on the base type.
 
-        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex].GetValue();
-        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex];
+        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex];
         if (pMTDictionary != pDeclaringMTDictionary)
         {
-            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo();
             FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
@@ -3300,7 +3274,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethod, CORINFO_METHOD_HANDLE  
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3320,7 +3293,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINF
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3342,7 +3314,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -5471,7 +5442,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 // As a result, we specially decorate this method to have the correct calling convention
 // and argument ordering for an HCALL, but we don't use the HCALL macros and contracts
 // since this method doesn't follow the contracts.
-void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
+HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
 {
     _ASSERTE(frame != NULL && handle != NULL);
 
@@ -5520,8 +5491,9 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvoke
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
 
@@ -5552,8 +5524,9 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -5570,12 +5543,13 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeF
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackTransitions())
     {
-        ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
+        ProfilerManagedToUnmanagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
     }
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -5589,6 +5563,7 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
 //========================================================================
 //

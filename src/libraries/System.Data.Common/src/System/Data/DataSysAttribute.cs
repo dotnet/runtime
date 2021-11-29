@@ -11,7 +11,7 @@ namespace System.Data
     /// the member.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
-    [Obsolete("DataSysDescriptionAttribute has been deprecated.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+    [Obsolete("DataSysDescriptionAttribute has been deprecated and is not supported.")]
     public class DataSysDescriptionAttribute : DescriptionAttribute
     {
         private bool _replaced;
@@ -19,7 +19,7 @@ namespace System.Data
         /// <summary>
         /// Constructs a new sys description.
         /// </summary>
-        [Obsolete("DataSysDescriptionAttribute has been deprecated.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [Obsolete("DataSysDescriptionAttribute has been deprecated and is not supported.")]
         public DataSysDescriptionAttribute(string description) : base(description)
         {
         }

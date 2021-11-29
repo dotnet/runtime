@@ -13,7 +13,6 @@ namespace System.Collections.Tests
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(ValidCollectionSizes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android)]
         public void IGenericSharedAPI_SerializeDeserialize(int count)
         {
             IEnumerable expected = NonGenericIEnumerableFactory(count);

@@ -44,7 +44,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50942", TestPlatforms.Android)]
         public void SerializationRoundtrip()
         {
             const string Input = "abcdef";

@@ -73,6 +73,17 @@ if (GEN_SHARED_LIB)
     target_link_libraries(System.Security.Cryptography.Native.Apple
         ${NATIVE_LIBS_EXTRA}
     )
+
+    if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+        add_custom_command(TARGET System.Security.Cryptography.Native.Apple POST_BUILD
+            COMMENT "Verifying System.Security.Cryptography.Native.Apple points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                $<TARGET_FILE:System.Security.Cryptography.Native.Apple>
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                ${CMAKE_NM}
+            VERBATIM
+        )
+    endif()
 endif()
 
 if (GEN_SHARED_LIB)

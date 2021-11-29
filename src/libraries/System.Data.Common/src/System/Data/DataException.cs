@@ -649,7 +649,7 @@ namespace System.Data
         public static Exception RangeArgument(int min, int max) => _Argument(SR.Format(SR.Range_Argument, (min).ToString(CultureInfo.InvariantCulture), (max).ToString(CultureInfo.InvariantCulture)));
         public static Exception NullRange() => _Data(SR.Range_NullRange);
         public static Exception NegativeMinimumCapacity() => _Argument(SR.RecordManager_MinimumCapacity);
-        public static Exception ProblematicChars(char charValue) => _Argument(SR.Format(SR.DataStorage_ProblematicChars, "0x" + ((ushort)charValue).ToString("X", CultureInfo.InvariantCulture)));
+        public static Exception ProblematicChars(char charValue) => _Argument(SR.Format(SR.DataStorage_ProblematicChars, $"0x{(ushort)charValue:X}"));
         public static Exception StorageSetFailed() => _Argument(SR.DataStorage_SetInvalidDataType);
 
 
@@ -677,7 +677,7 @@ namespace System.Data
         public static Exception DiffgramMissingSQL() => _Data(SR.Xml_MissingSQL);
         public static Exception DuplicateConstraintRead(string str) => _Data(SR.Format(SR.Xml_DuplicateConstraint, str));
         public static Exception ColumnTypeConflict(string name) => _Data(SR.Format(SR.Xml_ColumnConflict, name));
-        public static Exception CannotConvert(string name, string type) => _Data(SR.Format(SR.Xml_CannotConvert, name, type));
+        public static Exception CannotConvert(string name, string? type) => _Data(SR.Format(SR.Xml_CannotConvert, name, type));
         public static Exception MissingRefer(string name) => _Data(SR.Format(SR.Xml_MissingRefer, Keywords.REFER, Keywords.XSD_KEYREF, name));
         public static Exception InvalidPrefix(string name) => _Data(SR.Format(SR.Xml_InvalidPrefix_SpecialCharacters, name));
         public static Exception CanNotDeserializeObjectType() => _InvalidOperation(SR.Xml_CanNotDeserializeObjectType);

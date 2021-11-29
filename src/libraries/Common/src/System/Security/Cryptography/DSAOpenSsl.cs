@@ -41,6 +41,7 @@ namespace System.Security.Cryptography
 
             public DSAOpenSsl(int keySize)
             {
+                ThrowIfNotSupported();
                 LegalKeySizesValue = s_legalKeySizes;
                 base.KeySize = keySize;
                 _key = new Lazy<SafeDsaHandle>(GenerateKey);
@@ -415,6 +416,8 @@ namespace System.Security.Cryptography
 
                 _key = new Lazy<SafeDsaHandle>(newKey);
             }
+
+            static partial void ThrowIfNotSupported();
 
             private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
         }

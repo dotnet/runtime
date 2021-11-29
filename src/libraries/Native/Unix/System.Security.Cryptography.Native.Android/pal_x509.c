@@ -154,7 +154,6 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
                                             int32_t* outLen)
 {
     abort_if_invalid_pointer_argument (certs);
-    abort_if_negative_integer_argument (certsLen);
 
     JNIEnv* env = GetJNIEnv();
 

@@ -3,6 +3,7 @@
 
 using Profiler.Tests;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
@@ -35,6 +36,8 @@ namespace EventPipeTests
 
         public static int RunTest()
         {
+            ArrayPool<char>.Shared.Rent(1); // workaround for https://github.com/dotnet/runtime/issues/1892
+
             bool success = true;
             int allTypesEventCount = 0;
             int arrayTypeEventCount = 0;

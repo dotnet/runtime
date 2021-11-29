@@ -35,6 +35,8 @@ struct _EventPipeSession_Internal {
 	EventPipeFile *file;
 	// For synchoronous sessions.
 	EventPipeSessionSynchronousCallback synchronous_callback;
+	// Additional data to pass to the callback
+	void *callback_additional_data;
 	// Start date and time in UTC.
 	ep_system_timestamp_t session_start_time;
 	// Start timestamp.
@@ -85,7 +87,8 @@ ep_session_alloc (
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
-	EventPipeSessionSynchronousCallback sync_callback);
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
 
 void
 ep_session_free (EventPipeSession *session);

@@ -105,9 +105,17 @@ namespace System.Data.OleDb
             OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo != null))
             {
-                ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
-                // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message
+                try
+                {
+                    ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
+                    // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message
+                }
+                finally
+                {
+                    UnsafeNativeMethods.ReleaseErrorInfoObject(errorInfo);
+                }
             }
+
             lastErrorFromProvider = new COMException(message, (int)lastErrorHr);
         }
 
@@ -254,7 +262,7 @@ namespace System.Data.OleDb
 
                 for (int i = 0; i < properties.Length; ++i)
                 {
-                    Debug.Assert(null != properties[i], "null tagDBPROP " + i.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(null != properties[i], $"null tagDBPROP {i.ToString(CultureInfo.InvariantCulture)}");
                     IntPtr propertyPtr = ADP.IntPtrOffset(propset.rgProperties, i * ODB.SizeOf_tagDBPROP);
                     Marshal.StructureToPtr(properties[i], propertyPtr, false/*deleteold*/);
                 }

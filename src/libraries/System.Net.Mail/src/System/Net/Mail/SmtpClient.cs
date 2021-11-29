@@ -393,7 +393,7 @@ namespace System.Net.Mail
             string pathAndFilename;
             while (true)
             {
-                filename = Guid.NewGuid().ToString() + ".eml";
+                filename = $"{Guid.NewGuid()}.eml";
                 pathAndFilename = Path.Combine(pickupDirectory, filename);
                 if (!File.Exists(pathAndFilename))
                     break;

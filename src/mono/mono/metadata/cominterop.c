@@ -1847,53 +1847,6 @@ ves_icall_System_ComObject_GetInterfaceInternal (MonoComObjectHandle obj, MonoRe
 #endif
 }
 
-void
-ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
-{
-#ifndef DISABLE_COM
-	MonoGCHandle gchandle = mono_gchandle_new_weakref_internal ((MonoObject*)*proxy_handle, FALSE);
-
-	mono_cominterop_lock ();
-	if (!rcw_hash)
-		rcw_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	g_hash_table_insert (rcw_hash, pUnk, gchandle);
-	mono_cominterop_unlock ();
-#else
-	g_assert_not_reached ();
-#endif
-}
-
-void
-ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
-{
-	*proxy_handle = NULL;
-
-#ifndef DISABLE_COM
-
-	MonoGCHandle gchandle = NULL;
-
-	mono_cominterop_lock ();
-	if (rcw_hash)
-		gchandle = (MonoGCHandle)g_hash_table_lookup (rcw_hash, pUnk);
-	mono_cominterop_unlock ();
-	if (!gchandle)
-		return;
-
-	MonoComInteropProxy *proxy = (MonoComInteropProxy*)mono_gchandle_get_target_internal (gchandle);
-	// proxy_handle is assumed to be on the stack, so no barrier is needed.
-	*proxy_handle = proxy;
-	/* proxy is null means we need to free up old RCW */
-	if (!proxy) {
-		mono_gchandle_free_internal (gchandle);
-		g_hash_table_remove (rcw_hash, pUnk);
-	}
-
-#else
-	g_assert_not_reached ();
-
-#endif
-}
-
 /**
  * cominterop_get_ccw_object:
  * @ccw_entry: a pointer to the CCWEntry

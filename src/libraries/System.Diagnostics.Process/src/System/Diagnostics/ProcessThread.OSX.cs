@@ -25,11 +25,7 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan PrivilegedProcessorTime => new TimeSpan((long)GetThreadInfo().pth_system_time);
 
-        /// <summary>Returns the time the associated thread was started.</summary>
-        public DateTime StartTime
-        {
-            get { throw new PlatformNotSupportedException(); } // macOS does not provide a way to get this data
-        }
+        private DateTime GetStartTime() => throw new PlatformNotSupportedException(); // macOS does not provide a way to get this data
 
         /// <summary>
         /// Returns the amount of time the associated thread has spent using the CPU.

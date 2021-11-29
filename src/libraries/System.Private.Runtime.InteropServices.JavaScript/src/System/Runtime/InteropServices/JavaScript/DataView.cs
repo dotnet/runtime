@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the DataView class.
         /// </summary>
         /// <param name="buffer">ArrayBuffer to use as the storage backing the new DataView object.</param>
-        public DataView(ArrayBuffer buffer) : base(Runtime.New<DataView>(buffer))
+        public DataView(ArrayBuffer buffer) : base(nameof(DataView), buffer)
         { }
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="buffer">ArrayBuffer to use as the storage backing the new DataView object.</param>
         /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
-        public DataView(ArrayBuffer buffer, int byteOffset) : base(Runtime.New<DataView>(buffer, byteOffset))
+        public DataView(ArrayBuffer buffer, int byteOffset) : base(nameof(DataView), buffer, byteOffset)
         { }
 
         /// <summary>
@@ -32,14 +32,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="buffer">ArrayBuffer to use as the storage backing the new DataView object.</param>
         /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
         /// <param name="byteLength">The number of elements in the byte array. If unspecified, the view's length will match the buffer's length.</param>
-        public DataView(ArrayBuffer buffer, int byteOffset, int byteLength) : base(Runtime.New<DataView>(buffer, byteOffset, byteLength))
+        public DataView(ArrayBuffer buffer, int byteOffset, int byteLength) : base(nameof(DataView), buffer, byteOffset, byteLength)
         { }
 
         /// <summary>
         /// Initializes a new instance of the DataView class.
         /// </summary>
         /// <param name="buffer">SharedArrayBuffer to use as the storage backing the new DataView object.</param>
-        public DataView(SharedArrayBuffer buffer) : base(Runtime.New<DataView>(buffer))
+        public DataView(SharedArrayBuffer buffer) : base(nameof(DataView), buffer)
         { }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="buffer">SharedArrayBuffer to use as the storage backing the new DataView object.</param>
         /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
-        public DataView(SharedArrayBuffer buffer, int byteOffset) : base(Runtime.New<DataView>(buffer, byteOffset))
+        public DataView(SharedArrayBuffer buffer, int byteOffset) : base(nameof(DataView), buffer, byteOffset)
         { }
 
         /// <summary>
@@ -56,15 +56,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="buffer">SharedArrayBuffer to use as the storage backing the new DataView object.</param>
         /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
         /// <param name="byteLength">The number of elements in the byte array. If unspecified, the view's length will match the buffer's length.</param>
-        public DataView(SharedArrayBuffer buffer, int byteOffset, int byteLength) : base(Runtime.New<DataView>(buffer, byteOffset, byteLength))
+        public DataView(SharedArrayBuffer buffer, int byteOffset, int byteLength) : base(nameof(DataView), buffer, byteOffset, byteLength)
         { }
 
         /// <summary>
         /// Initializes a new instance of the DataView class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        /// <param name="ownsHandle">Managed owned</param>
-        internal DataView(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal DataView(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>

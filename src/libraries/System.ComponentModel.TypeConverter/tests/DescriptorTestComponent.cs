@@ -5,6 +5,12 @@ using System.Collections.Generic;
 
 namespace System.ComponentModel.Tests
 {
+    internal enum DescriptorTestEnum
+    {
+        Value0 = 0,
+        Value1 = 1
+    }
+
     internal class DescriptorTestComponent : IComponent, ISite
     {
         private Dictionary<Type, object> _services;
@@ -16,6 +22,9 @@ namespace System.ComponentModel.Tests
 
         [DefaultValue(DefaultPropertyValue)]
         public int Property { get; set; }
+
+        [DefaultValue(0)]
+        public DescriptorTestEnum EnumProperty { get; set; }
 
         public object PropertyWhichThrows { get { throw new NotImplementedException(); } }
 

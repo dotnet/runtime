@@ -4,7 +4,7 @@
 #ifndef __EVENTPIPE_ADAPTER_H__
 #define __EVENTPIPE_ADAPTER_H__
 
-#if defined(FEATURE_PERFTRACING) && !(CROSSGEN_COMPILE)
+#if defined(FEATURE_PERFTRACING)
 
 #include "ep.h"
 #include "ep-provider.h"
@@ -200,7 +200,8 @@ public:
 		EventPipeSerializationFormat format,
 		const bool rundownRequested,
 		IpcStream *const stream,
-		EventPipeSessionSynchronousCallback callback)
+		EventPipeSessionSynchronousCallback callback,
+		void *callbackAdditionalData)
 	{
 		CONTRACTL
 		{
@@ -222,7 +223,8 @@ public:
 			format,
 			rundownRequested,
 			stream,
-			callback);
+			callback,
+			callbackAdditionalData);
 		ep_rt_utf8_string_free (outputPathUTF8);
 		return result;
 	}
@@ -605,5 +607,5 @@ public:
 	}
 };
 
-#endif // FEATURE_PERFTRACING && !CROSSGEN_COMPILE
+#endif // FEATURE_PERFTRACING
 #endif // __EVENTPIPE_ADAPTER_H__

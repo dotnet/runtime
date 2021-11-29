@@ -27,8 +27,8 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/exception.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/sre-internals.h>
 #include <stdio.h>
@@ -42,7 +42,6 @@
 #include "mono-endian.h"
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-ptr-array.h>
@@ -1978,7 +1977,7 @@ _mono_reflection_get_type_from_info (MonoAssemblyLoadContext *alc, MonoTypeNameP
 		if (!assembly) {
 			/* then we must load the assembly ourselve - see #60439 */
 			MonoAssemblyByNameRequest req;
-			mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+			mono_assembly_request_prepare_byname (&req, alc);
 			req.requesting_assembly = NULL;
 			req.basedir = image ? image->assembly->basedir : NULL;
 			assembly = mono_assembly_request_byname (&info->assembly, &req, NULL);

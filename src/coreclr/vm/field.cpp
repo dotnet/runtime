@@ -18,6 +18,25 @@
 
 #include "peimagelayout.inl"
 
+#ifndef DACCESS_COMPILE
+VOID FieldDesc::SetStaticOBJECTREF(OBJECTREF objRef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END
+
+    GCPROTECT_BEGIN(objRef);
+    OBJECTREF *pObjRef = (OBJECTREF *)GetCurrentStaticAddress();
+    SetObjectReference(pObjRef, objRef);
+    GCPROTECT_END();
+}
+#endif
+
 // called from code:MethodTableBuilder::InitializeFieldDescs#InitCall
 VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttrs, BOOL fIsStatic, BOOL fIsRVA, BOOL fIsThreadLocal, LPCSTR pszFieldName)
 {
@@ -74,35 +93,6 @@ BOOL FieldDesc::IsObjRef()
     SUPPORTS_DAC;
     return CorTypeInfo::IsObjRef_NoThrow(GetFieldType());
 }
-
-#ifndef DACCESS_COMPILE
-void FieldDesc::PrecomputeNameHash()
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-    // We only have space for the name hash when we can use the packed mb layout
-    if (m_requiresFullMbValue)
-    {
-        return;
-    }
-
-    // Store a case-insensitive hash so that we can use this value for
-    // both case-sensitive and case-insensitive name lookups
-    SString name(SString::Utf8Literal, GetName());
-    ULONG nameHashValue = name.HashCaseInsensitive() & enum_packedMbLayout_NameHashMask;
-
-    // We should never overwrite any other bits
-    _ASSERTE((m_mb & enum_packedMbLayout_NameHashMask) == 0 ||
-               (m_mb & enum_packedMbLayout_NameHashMask) == nameHashValue);
-
-    m_mb |= nameHashValue;
-}
-#endif
 
 BOOL FieldDesc::MightHaveName(ULONG nameHashValue)
 {
@@ -287,7 +277,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
     if (IsRVA())
     {
         Module* pModule = GetModule();
-        PTR_VOID ret = pModule->GetRvaField(GetOffset(), IsZapped());
+        PTR_VOID ret = pModule->GetRvaField(GetOffset());
 
         _ASSERTE(!pModule->IsPEFile() || !pModule->IsRvaFieldTls(GetOffset()));
 
@@ -303,7 +293,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 // These routines encapsulate the operation of getting and setting
 // fields.
@@ -679,79 +668,6 @@ VOID    FieldDesc::SetValue64(OBJECTREF o, __int64 value)
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#endif // !CROSSGEN_COMPILE
-
-
-#ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void FieldDesc::SaveContents(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef _DEBUG
-    if (m_debugName && !image->IsStored((void*) m_debugName))
-        image->StoreStructure((void *) m_debugName,
-                                        (ULONG)(strlen(m_debugName) + 1),
-                                        DataImage::ITEM_DEBUG,
-                                        1);
-#endif
-
-    //
-    // If we are compiling an IL only image, and our RVA fits
-    // in the designated range, copy the RVA data over to the prejit
-    // image.
-    //
-
-    if (IsRVA())
-    {
-        //
-        // Move the RVA data into the prejit image.
-        //
-
-        UINT size = LoadSize();
-
-        //
-        // Compute an alignment for the data based on the alignment
-        // of the RVA.  We'll align up to 8 bytes.
-        //
-
-        UINT align = 1;
-        DWORD rva = GetOffset();
-        DWORD rvaTemp = rva;
-
-        while ((rvaTemp&1) == 0 && align < 8 && align < size)
-        {
-            align <<= 1;
-            rvaTemp >>= 1;
-        }
-
-        image->StoreRvaInfo(this,
-                            rva,
-                            size,
-                            align);
-    }
-}
-
-void FieldDesc::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    LOG((LF_ZAP, LL_INFO10000, "FieldDesc::Fixup %s::%s\n", GetApproxEnclosingMethodTable()->GetDebugClassName(), m_debugName));
-    image->FixupRelativePointerField(this, offsetof(FieldDesc, m_pMTOfEnclosingClass));
-
-#ifdef _DEBUG
-    image->FixupPointerField(this, offsetof(FieldDesc, m_debugName));
-#endif
-
-    // if (IsRVAFieldWithLessThanBigOffset())
-    // {
-    //      offset of RVA fields is fixed up in DataImage::FixupRvaStructure
-    // }
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
-#endif // #ifndef DACCESS_COMPILE
 
 UINT FieldDesc::LoadSize()
 {
@@ -865,7 +781,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
     }
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
 {
     CONTRACTL
@@ -891,4 +807,4 @@ REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
 
     return retVal;
 }
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE

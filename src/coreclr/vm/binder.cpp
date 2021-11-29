@@ -21,10 +21,6 @@
 #include "sigbuilder.h"
 #include "olevariant.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 //
 // Retrieve structures from ID.
 //
@@ -259,11 +255,7 @@ Signature CoreLibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     }
     CONTRACTL_END
 
-#ifdef CROSSGEN_COMPILE
-    return GetModule()->m_pBinder->GetSignatureLocal(pHardcodedSig);
-#else
     return (&g_CoreLib)->GetSignatureLocal(pHardcodedSig);
-#endif
 }
 
 // Get the metasig, do a one-time conversion if necessary
@@ -516,7 +508,7 @@ void CoreLibBinder::Startup()
     s_SigConvertCrst.Init(CrstSigConvert);
 }
 
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
 
 // NoClass is used to suppress check for unmanaged and managed size match
 #define NoClass char[USHRT_MAX]
@@ -1106,7 +1098,7 @@ ErrExit:
     _ASSERTE(SUCCEEDED(hr));
 }
 
-#endif // _DEBUG && !CROSSGEN_COMPILE
+#endif // _DEBUG
 
 extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
 extern const USHORT c_nCoreLibClassDescriptions;
@@ -1117,19 +1109,6 @@ extern const USHORT c_nCoreLibMethodDescriptions;
 extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
 extern const USHORT c_nCoreLibFieldDescriptions;
 
-#ifdef CROSSGEN_COMPILE
-namespace CrossGenCoreLib
-{
-    extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
-    extern const USHORT c_nCoreLibClassDescriptions;
-
-    extern const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[];
-    extern const USHORT c_nCoreLibMethodDescriptions;
-
-    extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
-    extern const USHORT c_nCoreLibFieldDescriptions;
-};
-#endif
 
 void CoreLibBinder::AttachModule(Module * pModule)
 {
@@ -1142,40 +1121,9 @@ void CoreLibBinder::AttachModule(Module * pModule)
         c_rgCoreLibMethodDescriptions, c_nCoreLibMethodDescriptions,
         c_rgCoreLibFieldDescriptions,  c_nCoreLibFieldDescriptions);
 
-#if defined(FEATURE_PREJIT) && !defined(CROSSGEN_COMPILE)
-    CoreLibBinder * pPersistedBinder = pModule->m_pBinder;
-
-    if (pPersistedBinder != NULL
-        // Do not use persisted binder for profiling native images. See comment in code:CoreLibBinder::Fixup.
-        && !(pModule->GetNativeImage()->GetNativeVersionInfo()->wConfigFlags  & CORCOMPILE_CONFIG_PROFILING))
-    {
-        pGlobalBinder->m_pClasses = pPersistedBinder->m_pClasses;
-        pGlobalBinder->m_pMethods = pPersistedBinder->m_pMethods;
-        pGlobalBinder->m_pFields = pPersistedBinder->m_pFields;
-
-        pModule->m_pBinder = pGlobalBinder;
-        return;
-    }
-#endif // FEATURE_PREJIT && CROSSGEN_COMPILE
-
     pGlobalBinder->AllocateTables();
 
-#ifdef CROSSGEN_COMPILE
-    CoreLibBinder * pTargetBinder = (CoreLibBinder *)(void *)
-        pModule->GetAssembly()->GetLowFrequencyHeap()
-            ->AllocMem(S_SIZE_T(sizeof(CoreLibBinder)));
-
-    pTargetBinder->SetDescriptions(pModule,
-        CrossGenCoreLib::c_rgCoreLibClassDescriptions,  CrossGenCoreLib::c_nCoreLibClassDescriptions,
-        CrossGenCoreLib::c_rgCoreLibMethodDescriptions, CrossGenCoreLib::c_nCoreLibMethodDescriptions,
-        CrossGenCoreLib::c_rgCoreLibFieldDescriptions,  CrossGenCoreLib::c_nCoreLibFieldDescriptions);
-
-    pTargetBinder->AllocateTables();
-
-    pModule->m_pBinder = pTargetBinder;
-#else
     pModule->m_pBinder = pGlobalBinder;
-#endif
 }
 
 void CoreLibBinder::SetDescriptions(Module * pModule,
@@ -1239,95 +1187,6 @@ PTR_MethodTable CoreLibBinder::LoadPrimitiveType(CorElementType et)
 
     return pMT;
 }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void CoreLibBinder::BindAll()
-{
-    STANDARD_VM_CONTRACT;
-
-    for (BinderClassID cID = (BinderClassID) 1; cID < m_cClasses; cID = (BinderClassID) (cID + 1))
-    {
-        if (m_classDescriptions[cID].name != NULL) // Allow for CorSigElement entries with no classes
-            GetClassLocal(cID);
-    }
-
-    for (BinderMethodID mID = (BinderMethodID) 1; mID < m_cMethods; mID = (BinderMethodID) (mID + 1))
-        GetMethodLocal(mID);
-
-    for (BinderFieldID fID = (BinderFieldID) 1; fID < m_cFields; fID = (BinderFieldID) (fID + 1))
-        GetFieldLocal(fID);
-}
-
-void CoreLibBinder::Save(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    image->StoreStructure(this, sizeof(CoreLibBinder),
-                          DataImage::ITEM_BINDER);
-
-    image->StoreStructure(m_pClasses, m_cClasses * sizeof(*m_pClasses),
-                          DataImage::ITEM_BINDER_ITEMS);
-
-    image->StoreStructure(m_pMethods, m_cMethods * sizeof(*m_pMethods),
-                          DataImage::ITEM_BINDER_ITEMS);
-
-    image->StoreStructure(m_pFields, m_cFields * sizeof(*m_pFields),
-                          DataImage::ITEM_BINDER_ITEMS);
-}
-
-void CoreLibBinder::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    image->FixupPointerField(this, offsetof(CoreLibBinder, m_pModule));
-
-    int i;
-
-    image->FixupPointerField(this, offsetof(CoreLibBinder, m_pClasses));
-    for (i = 1; i < m_cClasses; i++)
-    {
-#if _DEBUG
-        //
-        // We do not want to check for restore at runtime for performance reasons.
-        // If there is ever a case that requires restore, it should be special
-        // cased here and restored explicitly by GetClass/GetField/GetMethod caller.
-        //
-        // Profiling NGen images force restore for all types. We are still going to save
-        // the binder for nidump, but we are not going to use it at runtime.
-        //
-        if (m_pClasses[i] != NULL && !GetAppDomain()->ToCompilationDomain()->m_fForceProfiling)
-        {
-            _ASSERTE(!m_pClasses[i]->NeedsRestore(image));
-        }
-#endif
-        image->FixupPointerField(m_pClasses, i * sizeof(m_pClasses[0]));
-    }
-
-    image->FixupPointerField(this, offsetof(CoreLibBinder, m_pMethods));
-    for (i = 1; i < m_cMethods; i++)
-    {
-#if _DEBUG
-        // See comment above.
-        if (m_pMethods[i] != NULL && !GetAppDomain()->ToCompilationDomain()->m_fForceProfiling)
-        {
-            _ASSERTE(!m_pMethods[i]->NeedsRestore(image));
-        }
-#endif
-
-        image->FixupPointerField(m_pMethods, i * sizeof(m_pMethods[0]));
-    }
-
-    image->FixupPointerField(this, offsetof(CoreLibBinder, m_pFields));
-    for (i = 1; i < m_cFields; i++)
-    {
-        image->FixupPointerField(m_pFields, i * sizeof(m_pFields[0]));
-    }
-
-    image->ZeroPointerField(this, offsetof(CoreLibBinder, m_classDescriptions));
-    image->ZeroPointerField(this, offsetof(CoreLibBinder, m_methodDescriptions));
-    image->ZeroPointerField(this, offsetof(CoreLibBinder, m_fieldDescriptions));
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 #endif // #ifndef DACCESS_COMPILE
 

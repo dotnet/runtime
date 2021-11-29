@@ -5,15 +5,16 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
-
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
+
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
 
 namespace System.Net.Http
 {
     internal sealed class WinHttpChannelBinding : ChannelBinding
     {
         private int _size;
-        private string _cachedToString;
+        private string? _cachedToString;
 
         internal WinHttpChannelBinding(SafeWinHttpHandle requestHandle)
         {
@@ -55,7 +56,7 @@ namespace System.Net.Http
             }
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             if (_cachedToString == null && !IsInvalid)
             {

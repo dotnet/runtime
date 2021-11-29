@@ -229,7 +229,7 @@ namespace System.Net.Http.Tests
         public void Parse_SetOfValidValueStrings_ParsedCorrectly()
         {
             CheckValidParse(" 1.1   host ", new ViaHeaderValue("1.1", "host"));
-            CheckValidParse(" HTTP  /  x11   192.168.0.1\r\n (comment) ",
+            CheckValidParse(" HTTP  /  x11   192.168.0.1 (comment) ",
                 new ViaHeaderValue("x11", "192.168.0.1", "HTTP", "(comment)"));
             CheckValidParse(" HTTP/1.1 [::1]", new ViaHeaderValue("1.1", "[::1]", "HTTP"));
             CheckValidParse("1.1 host", new ViaHeaderValue("1.1", "host"));
@@ -258,41 +258,7 @@ namespace System.Net.Http.Tests
             CheckInvalidParse(string.Empty);
             CheckInvalidParse("  ");
             CheckInvalidParse("  ,,");
-        }
-
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse(" 1.1   host ", new ViaHeaderValue("1.1", "host"));
-            CheckValidTryParse(" HTTP  /  x11   192.168.0.1\r\n (comment) ",
-                new ViaHeaderValue("x11", "192.168.0.1", "HTTP", "(comment)"));
-            CheckValidTryParse(" HTTP/1.1 [::1]", new ViaHeaderValue("1.1", "[::1]", "HTTP"));
-            CheckValidTryParse("1.1 host", new ViaHeaderValue("1.1", "host"));
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("HTTP/1.1 host (comment)invalid");
-            CheckInvalidTryParse("HTTP/1.1 host (comment)=");
-            CheckInvalidTryParse("HTTP/1.1 host (comment) invalid");
-            CheckInvalidTryParse("HTTP/1.1 host (comment) =");
-            CheckInvalidTryParse("HTTP/1.1 host invalid");
-            CheckInvalidTryParse("HTTP/1.1 host =");
-            CheckInvalidTryParse("1.1 host invalid");
-            CheckInvalidTryParse("1.1 host =");
-            CheckInvalidTryParse("\u4F1A");
-            CheckInvalidTryParse("HTTP/test [::1]:80\r(comment)");
-            CheckInvalidTryParse("HTTP/test [::1]:80\n(comment)");
-
-            CheckInvalidTryParse("X , , 1.1   host, ,next");
-            CheckInvalidTryParse("X HTTP  /  x11   192.168.0.1\r\n (comment) , ,next");
-            CheckInvalidTryParse(" ,HTTP/1.1 [::1]");
-
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse("  ,,");
+            CheckInvalidParse("1=host\n");
         }
 
         #region Helper methods
@@ -301,24 +267,16 @@ namespace System.Net.Http.Tests
         {
             ViaHeaderValue result = ViaHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(ViaHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { ViaHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, ViaHeaderValue expectedResult)
-        {
-            ViaHeaderValue result = null;
-            Assert.True(ViaHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            ViaHeaderValue result = null;
-            Assert.False(ViaHeaderValue.TryParse(input, out result));
+            Assert.False(ViaHeaderValue.TryParse(input, out ViaHeaderValue result));
             Assert.Null(result);
         }
 

@@ -275,6 +275,13 @@ namespace System.Tests
             yield return new object[] { Half.NegativeInfinity, Half.MinValue, -1 };
             yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), Half.NegativeInfinity, 1 }; // Negative zero
             yield return new object[] { Half.NegativeInfinity, BitConverter.UInt16BitsToHalf(0x8000), -1 }; // Negative zero
+            yield return new object[] { Half.NegativeInfinity, Half.NegativeInfinity, 0};
+            yield return new object[] { Half.PositiveInfinity, Half.PositiveInfinity, 0};
+            yield return new object[] { (Half)(-180f), (Half)(-180f), 0};
+            yield return new object[] { (Half)(180f), (Half)(180f), 0};
+            yield return new object[] { (Half)(-180f), (Half)(180f), -1};
+            yield return new object[] { (Half)(180f), (Half)(-180f), 1};
+            yield return new object[] { (Half)(-65535), (object)null, 1};
         }
 
         [Theory]

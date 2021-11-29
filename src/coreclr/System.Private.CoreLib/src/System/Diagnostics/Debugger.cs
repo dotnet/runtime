@@ -23,7 +23,7 @@ namespace System.Diagnostics
         // Launch launches & attaches a debugger to the process. If a debugger is already attached,
         // nothing happens.
         //
-        public static bool Launch() => IsAttached ? true : LaunchInternal();
+        public static bool Launch() => IsAttached || LaunchInternal();
 
         // This class implements code:ICustomDebuggerNotification and provides a type to be used to notify
         // the debugger that execution is about to enter a path that involves a cross-thread dependency.

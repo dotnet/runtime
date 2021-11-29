@@ -12,7 +12,6 @@
   <ItemGroup>
     <Compile Include="ApplyUpdateTest.cs" />
     <Compile Include="ApplyUpdateUtil.cs" />
-    <Compile Include="AssemblyExtensionsTest.cs" />
     <Compile Include="AssemblyLoadContextTest.cs" />
     <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
     <Compile Include="ContextualReflection.cs" />
@@ -24,15 +23,11 @@
     <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj"
-                      ReferenceOutputAssembly="false"
-                      OutputItemType="EmbeddedResource" />
-    <ProjectReference Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj"
-                      ReferenceOutputAssembly="false"
-                      OutputItemType="EmbeddedResource" />
-    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj"
-                      ReferenceOutputAssembly="false"
-                      OutputItemType="EmbeddedResource" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
+    <ProjectReference Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
@@ -40,6 +35,10 @@
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1\System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes\System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange\System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis\System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate\System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.csproj" />
 
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
@@ -48,32 +47,25 @@
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
-  <Target Name="PreserveEnCAssembliesFromLinking"
-	  Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
-	  BeforeTargets="ConfigureTrimming">
+  <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="ConfigureTrimming">
     <ItemGroup>
       <!-- Don't modify EnC test assemblies -->
-      <TrimmerRootAssembly
-          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll'))"
-          Include="%(ResolvedFileToPublish.FullPath)" />
-      <TrimmerRootAssembly
-          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.dll'))"
-          Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
     </ItemGroup>
   </Target>
 
-  <Target Name="IncludeDeltasInWasmBundle"
-	  BeforeTargets="PrepareForWasmBuildApp"
-	  Condition="'$(TargetOS)' == 'Browser'">
+  <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'Browser'">
     <ItemGroup>
       <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
       <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
-				      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dmeta'))" />
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
-				      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dil'))" />
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
-				      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
+      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dmeta'))" />
+      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dil'))" />
+      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
     </ItemGroup>
   </Target>
 </Project>

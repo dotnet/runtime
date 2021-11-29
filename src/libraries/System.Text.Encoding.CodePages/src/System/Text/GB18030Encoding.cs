@@ -188,7 +188,7 @@ namespace System.Text
 
             // We should've read in GBLast4ByteCode 4 byte sequences
             Debug.Assert(count4Byte == GBLast4ByteCode + 1,
-                "[GB18030Encoding.LoadManagedCodePage] Expected 0x99FB to be last 4 byte offset, found 0x" + count4Byte.ToString("X4", CultureInfo.InvariantCulture));
+                $"[GB18030Encoding.LoadManagedCodePage] Expected 0x99FB to be last 4 byte offset, found 0x{count4Byte:X4}");
         }
 
         // Is4Byte
@@ -242,7 +242,7 @@ namespace System.Text
                 if (charLeftOver != 0)
                 {
                     Debug.Assert(char.IsHighSurrogate(charLeftOver),
-                        "[GB18030Encoding.GetBytes] leftover character should be high surrogate, not 0x" + ((int)charLeftOver).ToString("X4", CultureInfo.InvariantCulture));
+                        $"[GB18030Encoding.GetBytes] leftover character should be high surrogate, not 0x{(int)charLeftOver:X4}");
 
                     // If our next char isn't a low surrogate, then we need to do fallback.
                     if (!char.IsLowSurrogate(ch))
@@ -272,7 +272,7 @@ namespace System.Text
                         byte byte2 = (byte)((offset % 0x0a) + 0x30);
                         offset /= 0x0a;
                         Debug.Assert(offset < 0x6f,
-                            "[GB18030Encoding.GetBytes](1) Expected offset < 0x6f, not 0x" + offset.ToString("X2", CultureInfo.InvariantCulture));
+                            $"[GB18030Encoding.GetBytes](1) Expected offset < 0x6f, not 0x{offset:X2}");
 
                         charLeftOver = (char)0;
                         if (!buffer.AddByte((byte)(offset + 0x90), byte2, byte3, byte4))
@@ -322,7 +322,7 @@ namespace System.Text
                         byte byte2 = (byte)((iBytes % 0x0a) + 0x30);
                         iBytes /= 0x0a;
                         Debug.Assert(iBytes < 0x7e,
-                            "[GB18030Encoding.GetBytes]Expected iBytes < 0x7e, not 0x" + iBytes.ToString("X2", CultureInfo.InvariantCulture));
+                            $"[GB18030Encoding.GetBytes]Expected iBytes < 0x7e, not 0x{iBytes:X2}");
                         if (!buffer.AddByte((byte)(iBytes + 0x81), byte2, byte3, byte4))
                             break;
                     }

@@ -70,22 +70,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomArrayConverterFail()
         {
-            string json = $"\"{Int64.MaxValue.ToString()}0\"";
+            string json = $"\"{long.MaxValue}0\"";
 
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new LongArrayConverter());
+            var options = new JsonSerializerOptions { Converters = { new LongArrayConverter() } };
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<long[]>(json, options));
 
-            try
-            {
-                JsonSerializer.Deserialize<long[]>(json, options);
-                Assert.True(false, "Expected exception");
-            }
-            catch (JsonException ex)
-            {
-                Assert.Null(ex.InnerException);
-                Assert.Equal("$", ex.Path);
-                Assert.Equal("Too big for a long", ex.Message);
-            }
+            Assert.Null(ex.InnerException);
+            Assert.Equal("$", ex.Path);
+            Assert.Equal("Too big for a long", ex.Message);
         }
 
         private class ClassWithProperty

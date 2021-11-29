@@ -7,6 +7,8 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class UnityDependencyInjectionSpecificationTests: SkippableDependencyInjectionSpecificationTests
     {
+        public override bool SupportsIServiceProviderIsService => false;
+
         // See https://github.com/unitycontainer/microsoft-dependency-injection/issues/87
         public override bool ExpectStructWithPublicDefaultConstructorInvoked => true;
 

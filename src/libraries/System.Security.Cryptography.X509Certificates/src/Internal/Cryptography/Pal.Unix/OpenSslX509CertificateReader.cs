@@ -49,12 +49,13 @@ namespace Internal.Cryptography.Pal
 
             ICertificatePal? cert;
             Exception? openSslException;
+            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             if (TryReadX509Der(rawData, out cert) ||
                 TryReadX509Pem(rawData, out cert) ||
                 PkcsFormatReader.TryReadPkcs7Der(rawData, out cert) ||
                 PkcsFormatReader.TryReadPkcs7Pem(rawData, out cert) ||
-                PkcsFormatReader.TryReadPkcs12(rawData, password, out cert, out openSslException))
+                PkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, out cert, out openSslException))
             {
                 if (cert == null)
                 {
@@ -73,6 +74,7 @@ namespace Internal.Cryptography.Pal
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             ICertificatePal? pal;
+            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             // If we can't open the file, fail right away.
             using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(fileName, "rb"))
@@ -87,6 +89,7 @@ namespace Internal.Cryptography.Pal
                 PkcsFormatReader.TryReadPkcs12(
                     File.ReadAllBytes(fileName),
                     password,
+                    ephemeralSpecified,
                     out pal,
                     out Exception? exception);
 
@@ -264,15 +267,12 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                if (_issuer == null)
-                {
-                    // IssuerName is mutable to callers in X509Certificate. We want to be
-                    // able to get the issuer even if IssuerName has been mutated, so we
-                    // don't use it here.
-                    _issuer = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(_cert)).Name;
-                }
-
-                return _issuer;
+                // IssuerName is mutable to callers in X509Certificate. We want to be
+                // able to get the issuer even if IssuerName has been mutated, so we
+                // don't use it here.
+                return _issuer ??= UseCertInteriorData(static cert => {
+                    return Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(cert)).Name;
+                });
             }
         }
 
@@ -280,15 +280,12 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                if (_subject == null)
-                {
-                    // SubjectName is mutable to callers in X509Certificate. We want to be
-                    // able to get the subject even if SubjectName has been mutated, so we
-                    // don't use it here.
-                    _subject = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(_cert)).Name;
-                }
-
-                return _subject;
+                // SubjectName is mutable to callers in X509Certificate. We want to be
+                // able to get the subject even if SubjectName has been mutated, so we
+                // don't use it here.
+                return _subject ??= UseCertInteriorData(static cert => {
+                    return Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(cert)).Name;
+                });
             }
         }
 
@@ -308,8 +305,10 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                IntPtr oidPtr = Interop.Crypto.GetX509PublicKeyAlgorithm(_cert);
-                return Interop.Crypto.GetOidValue(oidPtr);
+                return UseCertInteriorData(static cert => {
+                    IntPtr oidPtr = Interop.Crypto.GetX509PublicKeyAlgorithm(cert);
+                    return Interop.Crypto.GetOidValue(oidPtr);
+                });
             }
         }
 
@@ -325,8 +324,10 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                IntPtr keyBytesPtr = Interop.Crypto.GetX509PublicKeyBytes(_cert);
-                return Interop.Crypto.GetAsn1StringBytes(keyBytesPtr);
+                return UseCertInteriorData(static cert => {
+                    IntPtr keyBytesPtr = Interop.Crypto.GetX509PublicKeyBytes(cert);
+                    return Interop.Crypto.GetAsn1StringBytes(keyBytesPtr);
+                });
             }
         }
 
@@ -345,8 +346,10 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                IntPtr oidPtr = Interop.Crypto.GetX509SignatureAlgorithm(_cert);
-                return Interop.Crypto.GetOidValue(oidPtr);
+                return UseCertInteriorData(static cert => {
+                    IntPtr oidPtr = Interop.Crypto.GetX509SignatureAlgorithm(cert);
+                    return Interop.Crypto.GetOidValue(oidPtr);
+                });
             }
         }
 
@@ -354,7 +357,10 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                return ExtractValidityDateTime(Interop.Crypto.GetX509NotAfter(_cert));
+
+                return UseCertInteriorData(static cert => {
+                    return ExtractValidityDateTime(Interop.Crypto.GetX509NotAfter(cert));
+                });
             }
         }
 
@@ -362,7 +368,9 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                return ExtractValidityDateTime(Interop.Crypto.GetX509NotBefore(_cert));
+                return UseCertInteriorData(static cert => {
+                    return ExtractValidityDateTime(Interop.Crypto.GetX509NotBefore(cert));
+                });
             }
         }
 
@@ -418,12 +426,9 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                if (_subjectName == null)
-                {
-                    _subjectName = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(_cert));
-                }
-
-                return _subjectName;
+                return _subjectName ??= UseCertInteriorData(static cert => {
+                    return Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(cert));
+                });
             }
         }
 
@@ -431,90 +436,91 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                if (_issuerName == null)
-                {
-                    _issuerName = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(_cert));
-                }
-
-                return _issuerName;
+                return _issuerName ??= UseCertInteriorData(static cert => {
+                    return Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(cert));
+                });
             }
         }
 
         public PolicyData GetPolicyData()
         {
-            PolicyData policyData = default;
+            return UseCertInteriorData(static cert => {
+                PolicyData policyData = default;
 
-            int extensionCount = Interop.Crypto.X509GetExtCount(_cert);
+                int extensionCount = Interop.Crypto.X509GetExtCount(cert);
 
-            for (int i = 0; i < extensionCount; i++)
-            {
-                IntPtr ext = Interop.Crypto.X509GetExt(_cert, i);
-                Interop.Crypto.CheckValidOpenSslHandle(ext);
-
-                IntPtr oidPtr = Interop.Crypto.X509ExtensionGetOid(ext);
-                Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
-                string oidValue = Interop.Crypto.GetOidValue(oidPtr);
-
-                IntPtr dataPtr = Interop.Crypto.X509ExtensionGetData(ext);
-                Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
-
-                switch (oidValue)
+                for (int i = 0; i < extensionCount; i++)
                 {
-                    case Oids.ApplicationCertPolicies:
-                        policyData.ApplicationCertPolicies = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                        break;
-                    case Oids.CertPolicies:
-                        policyData.CertPolicies = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                        break;
-                    case Oids.CertPolicyMappings:
-                        policyData.CertPolicyMappings = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                        break;
-                    case Oids.CertPolicyConstraints:
-                       policyData.CertPolicyConstraints = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                       break;
-                    case Oids.EnhancedKeyUsage:
-                        policyData.EnhancedKeyUsage = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                        break;
-                    case Oids.InhibitAnyPolicyExtension:
-                        policyData.InhibitAnyPolicyExtension = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                        break;
-                }
-            }
+                    IntPtr ext = Interop.Crypto.X509GetExt(cert, i);
+                    Interop.Crypto.CheckValidOpenSslHandle(ext);
 
-            return policyData;
+                    IntPtr oidPtr = Interop.Crypto.X509ExtensionGetOid(ext);
+                    Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
+                    string oidValue = Interop.Crypto.GetOidValue(oidPtr);
+
+                    IntPtr dataPtr = Interop.Crypto.X509ExtensionGetData(ext);
+                    Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
+
+                    switch (oidValue)
+                    {
+                        case Oids.ApplicationCertPolicies:
+                            policyData.ApplicationCertPolicies = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                            break;
+                        case Oids.CertPolicies:
+                            policyData.CertPolicies = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                            break;
+                        case Oids.CertPolicyMappings:
+                            policyData.CertPolicyMappings = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                            break;
+                        case Oids.CertPolicyConstraints:
+                        policyData.CertPolicyConstraints = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        break;
+                        case Oids.EnhancedKeyUsage:
+                            policyData.EnhancedKeyUsage = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                            break;
+                        case Oids.InhibitAnyPolicyExtension:
+                            policyData.InhibitAnyPolicyExtension = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                            break;
+                    }
+                }
+
+                return policyData;
+            });
         }
 
         public IEnumerable<X509Extension> Extensions
         {
             get
             {
-                int extensionCount = Interop.Crypto.X509GetExtCount(_cert);
-                X509Extension[] extensions = new X509Extension[extensionCount];
+                return UseCertInteriorData(static cert => {
+                    int extensionCount = Interop.Crypto.X509GetExtCount(cert);
+                    X509Extension[] extensions = new X509Extension[extensionCount];
 
-                for (int i = 0; i < extensionCount; i++)
-                {
-                    IntPtr ext = Interop.Crypto.X509GetExt(_cert, i);
+                    for (int i = 0; i < extensionCount; i++)
+                    {
+                        IntPtr ext = Interop.Crypto.X509GetExt(cert, i);
 
-                    Interop.Crypto.CheckValidOpenSslHandle(ext);
+                        Interop.Crypto.CheckValidOpenSslHandle(ext);
 
-                    IntPtr oidPtr = Interop.Crypto.X509ExtensionGetOid(ext);
+                        IntPtr oidPtr = Interop.Crypto.X509ExtensionGetOid(ext);
 
-                    Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
+                        Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
 
-                    string oidValue = Interop.Crypto.GetOidValue(oidPtr);
-                    Oid oid = new Oid(oidValue);
+                        string oidValue = Interop.Crypto.GetOidValue(oidPtr);
+                        Oid oid = new Oid(oidValue);
 
-                    IntPtr dataPtr = Interop.Crypto.X509ExtensionGetData(ext);
+                        IntPtr dataPtr = Interop.Crypto.X509ExtensionGetData(ext);
 
-                    Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
+                        Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
 
-                    byte[] extData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                    bool critical = Interop.Crypto.X509ExtensionGetCritical(ext);
+                        byte[] extData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        bool critical = Interop.Crypto.X509ExtensionGetCritical(ext);
 
-                    extensions[i] = new X509Extension(oid, extData, critical);
-                }
+                        extensions[i] = new X509Extension(oid, extData, critical);
+                    }
 
-                return extensions;
+                    return extensions;
+                });
             }
         }
 
@@ -845,6 +851,30 @@ namespace Internal.Cryptography.Pal
                 byte[]? exported = storePal.Export(contentType, password);
                 Debug.Assert(exported != null);
                 return exported;
+            }
+        }
+
+        private T UseCertInteriorData<T>(Func<SafeX509Handle, T> callback)
+        {
+            // Many of the reader's APIs perform two steps of getting an IntPtr to
+            // interior data of the X509* object, then passing that IntPtr to some
+            // other API that interprets the data in the pointer. If the SafeX509Handle
+            // is disposed in between the two calls, then the data in the IntPtr no longer
+            // points to valid data.
+            // To keep the X509 object alive, manually increment the reference to it.
+            bool addedRef = false;
+
+            try
+            {
+                _cert.DangerousAddRef(ref addedRef);
+                return callback(_cert);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    _cert.DangerousRelease();
+                }
             }
         }
     }

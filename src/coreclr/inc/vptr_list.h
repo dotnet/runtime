@@ -6,9 +6,6 @@
 
 VPTR_CLASS(EEJitManager)
 
-#ifdef FEATURE_PREJIT
-VPTR_CLASS(NativeImageJitManager)
-#endif // FEATURE_PREJIT
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(ReadyToRunJitManager)
 #endif
@@ -48,9 +45,9 @@ VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(RawImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
 VPTR_CLASS(MappedImageLayout)
-#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
 VPTR_CLASS(LoadedImageLayout)
-#endif // !CROSSGEN_COMPILE && !TARGET_UNIX
+#endif // !TARGET_UNIX
 VPTR_CLASS(FlatImageLayout)
 #ifdef FEATURE_COMINTEROP
 VPTR_CLASS(ComMethodFrame)

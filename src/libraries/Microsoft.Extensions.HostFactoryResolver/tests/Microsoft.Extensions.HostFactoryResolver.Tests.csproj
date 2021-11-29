@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
-    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,12 +8,13 @@
     <Compile Include="HostFactoryResolverTests.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="ApplicationNameSetFromAgrument\ApplicationNameSetFromAgrument.csproj" />
     <ProjectReference Include="BuildWebHostInvalidSignature\BuildWebHostInvalidSignature.csproj" />
     <ProjectReference Include="BuildWebHostPatternTestSite\BuildWebHostPatternTestSite.csproj" />
     <ProjectReference Include="CreateHostBuilderInvalidSignature\CreateHostBuilderInvalidSignature.csproj" />
@@ -22,6 +22,7 @@
     <ProjectReference Include="CreateWebHostBuilderInvalidSignature\CreateWebHostBuilderInvalidSignature.csproj" />
     <ProjectReference Include="CreateWebHostBuilderPatternTestSite\CreateWebHostBuilderPatternTestSite.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPattern\NoSpecialEntryPointPattern.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPatternBuildsThenThrows\NoSpecialEntryPointPatternBuildsThenThrows.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternThrows\NoSpecialEntryPointPatternThrows.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternExits\NoSpecialEntryPointPatternExits.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternHangs\NoSpecialEntryPointPatternHangs.csproj" />

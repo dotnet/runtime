@@ -136,24 +136,6 @@ namespace System.DirectoryServices.Protocols
             _serverCertificateRoutine = new VERIFYSERVERCERT(ProcessServerCertificate);
         }
 
-        public ReferralChasingOptions ReferralChasing
-        {
-            get
-            {
-                int result = GetIntValueHelper(LdapOption.LDAP_OPT_REFERRALS);
-                return result == 1 ? ReferralChasingOptions.All : (ReferralChasingOptions)result;
-            }
-            set
-            {
-                if (((value) & (~ReferralChasingOptions.All)) != 0)
-                {
-                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ReferralChasingOptions));
-                }
-
-                SetIntValueHelper(LdapOption.LDAP_OPT_REFERRALS, (int)value);
-            }
-        }
-
         public int ReferralHopLimit
         {
             get => GetIntValueHelper(LdapOption.LDAP_OPT_REFERRAL_HOP_LIMIT);

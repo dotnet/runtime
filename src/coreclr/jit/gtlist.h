@@ -88,6 +88,7 @@ GTNODE(DYN_BLK          , GenTreeDynBlk      ,0,GTK_SPECIAL)               // Dy
 GTNODE(STORE_DYN_BLK    , GenTreeDynBlk      ,0,(GTK_SPECIAL|GTK_NOVALUE)) // Dynamically sized block object
 
 GTNODE(BOX              , GenTreeBox         ,0,(GTK_UNOP|GTK_EXOP|GTK_NOTLIR))
+GTNODE(FIELD            , GenTreeField       ,0,(GTK_UNOP|GTK_EXOP)) // Member-field
 
 #ifdef FEATURE_SIMD
 GTNODE(SIMD_CHK         , GenTreeBoundsChk   ,0,(GTK_SPECIAL|GTK_NOVALUE))// Compare whether an index is less than the given SIMD vector length, and call CORINFO_HELP_RNGCHKFAIL if not.
@@ -126,17 +127,32 @@ GTNODE(UMOD             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(OR               , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
 GTNODE(XOR              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
 GTNODE(AND              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
+GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP)
 
 GTNODE(LSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSZ              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
-GTNODE(INC_SATURATE     , GenTreeOp          ,0,GTK_UNOP) // saturating increment, used in division by a constant (LowerUnsignedDivOrMod)
-GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP) // returns high bits (top N bits of the 2N bit result of an NxN multiply)
-                                                           // GT_MULHI is used in division by a constant (fgMorphDivByConst). We turn
-                                                           // the div into a MULHI + some adjustments. In codegen, we only use the
-                                                           // results of the high register, and we drop the low results.
+GTNODE(INC_SATURATE     , GenTreeOp          ,0,GTK_UNOP)  // saturating increment, used in division by a constant (LowerUnsignedDivOrMod)
+
+// Returns high bits (top N bits of the 2N bit result of an NxN multiply)
+// GT_MULHI is used in division by a constant (LowerUnsignedDivOrMod). We turn
+// the div into a MULHI + some adjustments. In codegen, we only use the
+// results of the high register, and we drop the low results.
+GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP)
+
+// A mul that returns the 2N bit result of an NxN multiply. This op is used for
+// multiplies that take two ints and return a long result. For 32 bit targets,
+// all other multiplies with long results are morphed into helper calls.
+// It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
+// part of the result, whereas GT_MUL_LONG keeps both parts of the result.
+// MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
+#if !defined(TARGET_64BIT)
+GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
+#elif defined(TARGET_ARM64)
+GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP)
+#endif
 
 GTNODE(ASG              , GenTreeOp          ,0,(GTK_BINOP|GTK_NOTLIR))
 GTNODE(EQ               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
@@ -186,15 +202,6 @@ GTNODE(ADD_HI           , GenTreeOp          ,1,GTK_BINOP)
 GTNODE(SUB_LO           , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP)
 
-// A mul that returns the 2N bit result of an NxN multiply. This op is used for
-// multiplies that take two ints and return a long result. All other multiplies
-// with long results are morphed into helper calls. It is similar to GT_MULHI,
-// the difference being that GT_MULHI drops the lo part of the result, whereas
-// GT_MUL_LONG keeps both parts of the result.
-#if !defined(TARGET_64BIT)
-GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
-#endif
-
 // The following are nodes that specify shifts that take a GT_LONG op1. The GT_LONG
 // contains the hi and lo parts of three operand shift form where one op will be
 // shifted into the other op as part of the operation (LSH_HI will shift
@@ -241,7 +248,6 @@ GTNODE(LIST             , GenTreeArgList     ,0,(GTK_BINOP|GTK_NOVALUE))
 //  Other nodes that have special structure:
 //-----------------------------------------------------------------------------
 
-GTNODE(FIELD            , GenTreeField       ,0,GTK_SPECIAL)            // Member-field
 GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,GTK_SPECIAL)            // Multi-dimensional array-element address
 GTNODE(ARR_INDEX        , GenTreeArrIndex    ,0,(GTK_BINOP|GTK_EXOP))     // Effective, bounds-checked index for one dimension of a multi-dimensional array element
 GTNODE(ARR_OFFSET       , GenTreeArrOffs     ,0,GTK_SPECIAL)            // Flattened offset of multi-dimensional array element

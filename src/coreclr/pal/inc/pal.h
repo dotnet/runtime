@@ -2410,7 +2410,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
 
 #define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
 
@@ -2760,32 +2760,16 @@ VirtualFree(
         IN SIZE_T dwSize,
         IN DWORD dwFreeType);
 
+
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-#ifdef __cplusplus
-extern "C++" {
-struct PAL_JITWriteEnableHolder
-{
-public:
-  PAL_JITWriteEnableHolder(bool jitWriteEnable)
-  {
-      m_jitWriteEnableRestore = JITWriteEnable(jitWriteEnable);
-  };
-  ~PAL_JITWriteEnableHolder()
-  {
-      JITWriteEnable(m_jitWriteEnableRestore);
-  }
 
-private:
-  bool JITWriteEnable(bool enable);
-  bool m_jitWriteEnableRestore;
-};
+PALIMPORT
+VOID
+PALAPI
+PAL_JitWriteProtect(bool writeEnable);
 
-inline
-PAL_JITWriteEnableHolder
-PAL_JITWriteEnable(IN bool enable) { return PAL_JITWriteEnableHolder(enable); }
-}
-#endif // __cplusplus
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
 
 PALIMPORT
 BOOL
@@ -3598,7 +3582,7 @@ YieldProcessor()
     __asm__ __volatile__(
         "rep\n"
         "nop");
-#elif defined(HOST_ARM64)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
     __asm__ __volatile__( "yield");
 #else
     return;

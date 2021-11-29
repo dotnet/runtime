@@ -65,7 +65,7 @@ namespace System.Drawing
             int status = Gdip.GdipCreateFont(new HandleRef(this, family.NativeFamily), emSize, style, unit, out _nativeFont);
 
             if (status == Gdip.FontStyleNotFound)
-                throw new ArgumentException($"Style {style.ToString()} isn't supported by font {familyName}.");
+                throw new ArgumentException($"Style {style} isn't supported by font {familyName}.");
 
             Gdip.CheckStatus(status);
         }

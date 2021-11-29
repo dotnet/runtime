@@ -118,11 +118,46 @@ struct FilterSuperPMIExceptionsParam_CaptureException
     }
 };
 
-extern LONG FilterSuperPMIExceptions_CaptureExceptionAndContinue(PEXCEPTION_POINTERS pExceptionPointers,
-                                                                 LPVOID              lpvParam);
 extern LONG FilterSuperPMIExceptions_CaptureExceptionAndStop(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
 
 extern bool RunWithErrorTrap(void (*function)(void*), void* param);
+extern bool RunWithSPMIErrorTrap(void (*function)(void*), void* param);
+extern void RunWithErrorExceptionCodeCaptureAndContinueImp(void* param, void (*function)(void*), void (*finallyFunction)(void*, DWORD));
+
+template <typename LambdaType>
+class LambdaExecutor
+{
+public:
+    LambdaType& _lambda;
+
+    LambdaExecutor(LambdaType& lambda) : _lambda(lambda) {}
+};
+
+template <typename LambdaTry, typename LambdaFinally>
+void RunWithErrorExceptionCodeCaptureAndContinue(LambdaTry function, LambdaFinally finally)
+{
+    struct LambdaArguments
+    {
+        LambdaExecutor<LambdaTry> *pTryLambda;
+        LambdaExecutor<LambdaFinally> *pFinallyLambda;
+    } lambdaArgs;
+
+    LambdaExecutor<LambdaTry> tryStorage(function);
+    LambdaExecutor<LambdaFinally> finallyStorage(finally);
+
+    lambdaArgs.pTryLambda = &tryStorage;
+    lambdaArgs.pFinallyLambda = &finallyStorage;
+    
+    RunWithErrorExceptionCodeCaptureAndContinueImp(&lambdaArgs,
+        [](void* pParam)
+        {
+            ((LambdaArguments*)pParam)->pTryLambda->_lambda();
+        },
+        [](void* pParam, DWORD exceptionCode)
+        {
+            ((LambdaArguments*)pParam)->pFinallyLambda->_lambda(exceptionCode);
+        });
+}
 
 class SpmiException
 {

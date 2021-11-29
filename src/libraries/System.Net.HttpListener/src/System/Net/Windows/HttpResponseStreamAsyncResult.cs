@@ -185,7 +185,7 @@ namespace System.Net
 
         private static void IOCompleted(HttpResponseStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:0x{errorCode:x8} numBytes: {numBytes}");
             object? result = null;
             try
             {

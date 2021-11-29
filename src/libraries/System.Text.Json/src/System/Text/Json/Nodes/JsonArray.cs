@@ -214,7 +214,7 @@ namespace System.Text.Json.Nodes
         }
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
-        private class DebugView
+        private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             private JsonArray _node;

@@ -119,8 +119,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Returns a string describing a <see cref='SqlBinary'/> object.
         /// </summary>
-        public override string ToString() =>
-            _value is null ? SQLResource.NullString : "SqlBinary(" + _value.Length.ToString(CultureInfo.InvariantCulture) + ")";
+        public override string ToString() => _value is null ? SQLResource.NullString : $"SqlBinary({_value.Length})";
 
         // Unary operators
 

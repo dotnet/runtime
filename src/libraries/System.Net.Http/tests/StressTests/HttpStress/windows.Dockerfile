@@ -1,5 +1,5 @@
 # escape=`
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:5.0-nanoserver-1809
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-nanoserver-1809
 FROM $SDK_BASE_IMAGE
 
 # Use powershell as the default shell
@@ -13,6 +13,11 @@ COPY . .
 
 ARG CONFIGURATION=Release
 RUN dotnet build -c $env:CONFIGURATION
+
+# Enable dump collection
+ENV COMPlus_DbgEnableMiniDump=1
+ENV COMPlus_DbgMiniDumpType=MiniDumpWithFullMemory
+ENV COMPlus_DbgMiniDumpName="C:/share/coredump.%p"
 
 EXPOSE 5001
 

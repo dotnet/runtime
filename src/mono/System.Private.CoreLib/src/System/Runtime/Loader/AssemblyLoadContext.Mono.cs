@@ -126,24 +126,14 @@ namespace System.Runtime.Loader
         // success.
         private static Assembly? MonoResolveUsingResolvingEvent(IntPtr gchALC, string assemblyName)
         {
-            AssemblyLoadContext context;
-            // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchALC == IntPtr.Zero)
-                context = Default;
-            else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchALC);
             return context.ResolveUsingEvent(new AssemblyName(assemblyName));
         }
 
         // Invoked by Mono to resolve requests to load satellite assemblies.
         private static Assembly? MonoResolveUsingResolveSatelliteAssembly(IntPtr gchALC, string assemblyName)
         {
-            AssemblyLoadContext context;
-            // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchALC == IntPtr.Zero)
-                context = Default;
-            else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchALC);
             return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 

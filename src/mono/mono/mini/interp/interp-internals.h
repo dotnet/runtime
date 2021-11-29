@@ -97,6 +97,10 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
+#define INTERP_IMETHOD_TAG_UNBOX(im) ((gpointer)((mono_u)(im) | 1))
+#define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) ((mono_u)(im) & 1)
+#define INTERP_IMETHOD_UNTAG_UNBOX(im) ((InterpMethod*)((mono_u)(im) & ~1))
+
 /* 
  * Structure representing a method transformed for the interpreter 
  */
@@ -124,6 +128,8 @@ struct InterpMethod {
 	MonoType *rtype;
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
+	MonoFtnDesc *ftndesc;
+	MonoFtnDesc *ftndesc_unbox;
 
 	guint32 locals_size;
 	guint32 alloca_size;

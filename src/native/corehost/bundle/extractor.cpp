@@ -7,6 +7,10 @@
 #include "pal.h"
 #include "utils.h"
 
+#ifdef __sun
+#include <alloca.h>
+#endif
+
 #if defined(NATIVE_LIBS_EMBEDDED)
 extern "C"
 {

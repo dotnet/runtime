@@ -14,7 +14,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NativeCallingManaged.cs" />
-    <Compile Include="../IjwHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />

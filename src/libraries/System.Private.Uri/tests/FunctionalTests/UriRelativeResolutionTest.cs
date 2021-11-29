@@ -686,12 +686,9 @@ namespace System.PrivateUri.Tests
             {
                 var result = new StringBuilder();
 
-                byte[] bytes = Encoding.UTF8.GetBytes(input);
-
-                foreach (byte b in bytes)
+                foreach (byte b in Encoding.UTF8.GetBytes(input))
                 {
-                    result.Append('%');
-                    result.Append(b.ToString("X2"));
+                    result.Append($"%{b:X2}");
                 }
 
                 return result.ToString();
@@ -710,12 +707,9 @@ namespace System.PrivateUri.Tests
                         continue;
                     }
 
-                    byte[] bytes = Encoding.UTF8.GetBytes(c.ToString());
-
-                    foreach (byte b in bytes)
+                    foreach (byte b in Encoding.UTF8.GetBytes(c.ToString()))
                     {
-                        result.Append('%');
-                        result.Append(b.ToString("X2"));
+                        result.Append($"%{b:X2}");
                     }
                 }
 

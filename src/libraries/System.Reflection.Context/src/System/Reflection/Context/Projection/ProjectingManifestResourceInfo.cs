@@ -19,7 +19,7 @@ namespace System.Reflection.Context.Projection
             _projector = projector;
         }
 
-        public override Assembly ReferencedAssembly
+        public override Assembly? ReferencedAssembly
         {
             get { return _projector.ProjectAssembly(base.ReferencedAssembly); }
         }

@@ -89,6 +89,10 @@ function(find_unwind_libs UnwindLibs)
       find_library(UNWIND_ARCH NAMES unwind-x86_64)
     endif()
 
+    if(CLR_CMAKE_HOST_ARCH_S390X)
+      find_library(UNWIND_ARCH NAMES unwind-s390x)
+    endif()
+
     if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
        set(UNWIND_LIBS ${UNWIND_ARCH})
     endif()
@@ -157,7 +161,7 @@ function(preprocess_files PreprocessedFilesList)
 endfunction()
 
 function(set_exports_linker_option exports_filename)
-    if(LD_GNU OR LD_SOLARIS)
+    if(LD_GNU OR LD_SOLARIS OR LD_LLVM)
         # Add linker exports file option
         if(LD_SOLARIS)
             set(EXPORTS_LINKER_OPTION -Wl,-M,${exports_filename} PARENT_SCOPE)

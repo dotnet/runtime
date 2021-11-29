@@ -1,0 +1,125 @@
+parameters:
+  steps: []                       # optional -- any additional steps that need to happen before pulling down the jitutils repo and sending the jitutils to helix (ie building your repo)
+  variables: []                   # optional -- list of additional variables to send to the template
+  jobName: ''                     # required -- job name
+  displayName: ''                 # optional -- display name for the job. Will use jobName if not passed
+  pool: ''                        # required -- name of the Build pool
+  container: ''                   # required -- name of the container
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  extraSetupParameters: ''        # optional -- extra arguments to pass to the setup script
+  frameworks: ['netcoreapp3.0']   # optional -- list of frameworks to run against
+  continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
+  dependsOn: ''                   # optional -- dependencies of the job
+  timeoutInMinutes: 320           # optional -- timeout for the job
+  enableTelemetry: false          # optional -- enable for telemetry
+  liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
+  runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
+  codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
+  runKind: ''                     # required -- test category
+  collectionType: ''
+  collectionName: ''
+  dependOnEvaluatePaths: false
+
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    dependsOn: ${{ parameters.dependsOn }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    enableTelemetry: ${{ parameters.enableTelemetry }}
+    enablePublishBuildArtifacts: true
+    continueOnError: ${{ parameters.continueOnError }}
+    collectionType: $ {{ parameters.collectionType }}
+    collectionName: ${{ parameters.collectionName }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    ${{ if ne(parameters.displayName, '') }}:
+      displayName: '${{ parameters.displayName }}'
+    ${{ if eq(parameters.displayName, '') }}:
+      displayName: '${{ parameters.jobName }}'
+
+    variables:
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+
+    - name: PythonScript
+      value: 'py -3'
+    - name: PipScript
+      value: 'py -3 -m pip'
+    - name: SpmiCollectionLocation
+      value: '$(Build.SourcesDirectory)\artifacts\spmi\'
+    - name: SpmiLogsLocation
+      value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+    - name: HelixResultLocation
+      value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+
+    workspace:
+      clean: all
+    pool:
+      ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    strategy:
+      matrix:
+        ${{ each framework in parameters.frameworks }}:
+          ${{ framework }}:
+            _Framework: ${{ framework }}
+    steps:
+    - ${{ parameters.steps }}
+
+    - script: |
+        mkdir -p $(SpmiCollectionLocation)
+      displayName: Create directory for SPMI collection
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_replay_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
+      displayName: ${{ format('SuperPMI replay setup ({0} {1})', parameters.osGroup, parameters.archType) }}
+
+      # Run superpmi replay in helix
+    - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
+      parameters:
+        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
+        HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: $(Queue)
+        HelixPreCommands: $(HelixPreCommand)
+        Creator: $(Creator)
+        WorkItemTimeout: 4:00 # 4 hours
+        WorkItemDirectory: '$(WorkItemDirectory)'
+        CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
+        ProjectFile: 'superpmi-replay.proj'
+        BuildConfig: ${{ parameters.buildConfig }}
+        osGroup: ${{ parameters.osGroup }}
+        archType: ${{ parameters.archType }}
+        continueOnError: true # Run the future step i.e. upload superpmi logs
+
+      # Always upload the available logs for diagnostics
+    - task: CopyFiles@2
+      displayName: Copying superpmi.log of all partitions
+      inputs:
+        sourceFolder: '$(HelixResultLocation)'
+        contents: '**/superpmi_*.log'
+        targetFolder: '$(SpmiLogsLocation)'
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Superpmi logs
+      inputs:
+        targetPath: $(SpmiLogsLocation)
+        artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)'
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish SuperPMI build logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'SuperPMI_BuildLogs__$(archType)_$(buildConfig)'
+      condition: always()

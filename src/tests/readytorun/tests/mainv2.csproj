@@ -15,6 +15,14 @@
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
+
+REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+setlocal
+set "COMPlus_GCName="
+set "COMPlus_GCStress="
+set "COMPlus_HeapVerify="
+set "COMPlus_ReadyToRun="
+
 DEL test.dll
 if exist test.dll (
     echo FAILED to delete test.dll
@@ -25,11 +33,9 @@ if not exist test.dll (
     echo FAILED to copy test.dll
     exit /b 1
 )
-if defined RunCrossGen2 (
-  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:mainv2.ni.dll mainv2.dll
-) else (
-  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out mainv2.ni.dll mainv2.dll
-)
+
+%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:mainv2.ni.dll mainv2.dll
+
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
@@ -39,11 +45,9 @@ if not exist mainv2.ni.dll (
     echo FAILED to build mainv2.ni.dll
     exit /b 1
 )
-if defined RunCrossGen2 (
-  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:fieldgetter.ni.dll fieldgetter.dll 
-) else (
-  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out fieldgetter.ni.dll fieldgetter.dll 
-)
+
+%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:fieldgetter.ni.dll fieldgetter.dll 
+
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
@@ -63,11 +67,9 @@ if not exist test.dll (
     echo FAILED to copy test.dll
     exit /b 1
 )
-if defined RunCrossGen2 (
-  %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:test.ni.dll test.dll 
-) else (
-  %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out test.ni.dll test.dll 
-)
+
+%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:test.ni.dll test.dll 
+
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
@@ -77,9 +79,15 @@ if not exist test.ni.dll (
     echo FAILED to build test.ni.dll
     exit /b 1
 )
+
+endlocal
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
+
+# Suppress some COMPlus variables for the duration of Crossgen2 execution
+export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+
 rm -f test.dll
 if [ -f test.dll ]
 then
@@ -92,11 +100,9 @@ then
   echo Failed to copy test.dll
   exit 1
 fi
-if [ ! -z "$RunCrossGen2" ]; then
-  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:mainv2.ni.dll mainv2.dll
-else
-  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out mainv2.ni.dll mainv2.dll
-fi
+
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:mainv2.ni.dll mainv2.dll
+
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then
@@ -108,11 +114,9 @@ then
   echo Failed to build mainv2.ni.dll
   exit 1
 fi
-if [ ! -z "$RunCrossGen2" ]; then
-  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:fieldgetter.ni.dll fieldgetter.dll
-else
-  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out fieldgetter.ni.dll fieldgetter.dll
-fi
+
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:fieldgetter.ni.dll fieldgetter.dll
+
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then
@@ -136,11 +140,9 @@ then
   echo Failed to copy test.dll
   exit 1
 fi
-if [ ! -z "$RunCrossGen2" ]; then
-  $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:test.ni.dll test.dll
-else
-  $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out test.ni.dll test.dll
-fi
+
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:test.ni.dll test.dll
+
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then
@@ -152,6 +154,8 @@ then
   echo Failed to build test.ni.dll
   exit 1
 fi
+
+export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
 </Project>

@@ -369,8 +369,8 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public void SetLineInfoOffsets(int lineNumOffset, int linePosOffset)
         {
-            Debug.Assert(lineNumOffset >= 0 && lineNumOffset <= MaxLineNumberOffset, "Line number offset too large or small: " + lineNumOffset);
-            Debug.Assert(linePosOffset >= 0 && linePosOffset <= MaxLinePositionOffset, "Line position offset too large or small: " + linePosOffset);
+            Debug.Assert(lineNumOffset >= 0 && lineNumOffset <= MaxLineNumberOffset, $"Line number offset too large or small: {lineNumOffset}");
+            Debug.Assert(linePosOffset >= 0 && linePosOffset <= MaxLinePositionOffset, $"Line position offset too large or small: {linePosOffset}");
             _props |= ((uint)lineNumOffset << LineNumberShift);
             _posOffset = (ushort)linePosOffset;
         }
@@ -380,7 +380,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public void SetCollapsedLineInfoOffset(int posOffset)
         {
-            Debug.Assert(posOffset >= 0 && posOffset <= MaxCollapsedPositionOffset, "Collapsed text line position offset too large or small: " + posOffset);
+            Debug.Assert(posOffset >= 0 && posOffset <= MaxCollapsedPositionOffset, $"Collapsed text line position offset too large or small: {posOffset}");
             _props |= ((uint)posOffset << CollapsedPositionShift);
         }
 

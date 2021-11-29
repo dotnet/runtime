@@ -3,12 +3,13 @@
 
 using System.Diagnostics;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
-#if TARGET_UNIX && !TARGET_OSX
+#if TARGET_UNIX && !TARGET_OSX && !TARGET_MACCATALYST && !TARGET_IOS
         private static readonly string s_osPlatformName = Interop.Sys.GetUnixName();
 #endif
 
@@ -75,9 +76,10 @@ namespace System
                             os = "<unknown> "; break;
                     }
 
+                    Span<char> stackBuffer = stackalloc char[128];
                     _versionString = string.IsNullOrEmpty(_servicePack) ?
-                        os + _version.ToString() :
-                        os + _version.ToString(3) + " " + _servicePack;
+                        string.Create(null, stackBuffer, $"{os}{_version}") :
+                        string.Create(null, stackBuffer, $"{os}{_version.ToString(3)} {_servicePack}");
                 }
 
                 return _versionString;
@@ -101,6 +103,10 @@ namespace System
             return platform.Equals("WINDOWS", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_OSX
             return platform.Equals("OSX", StringComparison.OrdinalIgnoreCase) || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_MACCATALYST
+            return platform.Equals("MACCATALYST", StringComparison.OrdinalIgnoreCase) || platform.Equals("IOS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_IOS
+            return platform.Equals("IOS", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_UNIX
             return platform.Equals(s_osPlatformName, StringComparison.OrdinalIgnoreCase);
 #else
@@ -172,18 +178,20 @@ namespace System
             => IsAndroid() && IsOSVersionAtLeast(major, minor, build, revision);
 
         /// <summary>
-        /// Indicates whether the current application is running on iOS.
+        /// Indicates whether the current application is running on iOS or MacCatalyst.
         /// </summary>
+        [SupportedOSPlatformGuard("maccatalyst")]
         public static bool IsIOS() =>
-#if TARGET_IOS
+#if TARGET_IOS || TARGET_MACCATALYST
             true;
 #else
             false;
 #endif
 
         /// <summary>
-        /// Check for the iOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given iOS release.
+        /// Check for the iOS/MacCatalyst version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given iOS release.
         /// </summary>
+        [SupportedOSPlatformGuard("maccatalyst")]
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsIOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
@@ -192,6 +200,13 @@ namespace System
         /// </summary>
         public static bool IsMacOS() =>
 #if TARGET_OSX
+            true;
+#else
+            false;
+#endif
+
+        internal static bool IsOSXLike() =>
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             true;
 #else
             false;

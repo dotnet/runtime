@@ -21,7 +21,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingField.Attributes; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return UnderlyingField.DeclaringType; }
         }
@@ -66,7 +66,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingField.Name; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return UnderlyingField.ReflectedType; }
         }
@@ -93,7 +93,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingField.GetOptionalCustomModifiers();
         }
 
-        public override object GetRawConstantValue()
+        public override object? GetRawConstantValue()
         {
             return UnderlyingField.GetRawConstantValue();
         }
@@ -103,12 +103,12 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingField.GetRequiredCustomModifiers();
         }
 
-        public override object GetValue(object obj)
+        public override object? GetValue(object? obj)
         {
             return UnderlyingField.GetValue(obj);
         }
 
-        public override object GetValueDirect(TypedReference obj)
+        public override object? GetValueDirect(TypedReference obj)
         {
             return UnderlyingField.GetValueDirect(obj);
         }
@@ -118,7 +118,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingField.IsDefined(attributeType, inherit);
         }
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             UnderlyingField.SetValue(obj, value, invokeAttr, binder, culture);
         }
@@ -128,7 +128,7 @@ namespace System.Reflection.Context.Delegation
             UnderlyingField.SetValueDirect(obj, value);
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return UnderlyingField.ToString();
         }

@@ -9,28 +9,28 @@ namespace System.Net
     public static partial class Dns
     {
         public static System.IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, System.AsyncCallback? requestCallback, object? state) { throw null; }
-        [System.ObsoleteAttribute("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("BeginGetHostByName has been deprecated. Use BeginGetHostEntry instead.")]
         public static System.IAsyncResult BeginGetHostByName(string hostName, System.AsyncCallback? requestCallback, object? stateObject) { throw null; }
         public static System.IAsyncResult BeginGetHostEntry(System.Net.IPAddress address, System.AsyncCallback? requestCallback, object? stateObject) { throw null; }
         public static System.IAsyncResult BeginGetHostEntry(string hostNameOrAddress, System.AsyncCallback? requestCallback, object? stateObject) { throw null; }
-        [System.ObsoleteAttribute("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("BeginResolve has been deprecated. Use BeginGetHostEntry instead.")]
         public static System.IAsyncResult BeginResolve(string hostName, System.AsyncCallback? requestCallback, object? stateObject) { throw null; }
         public static System.Net.IPAddress[] EndGetHostAddresses(System.IAsyncResult asyncResult) { throw null; }
-        [System.ObsoleteAttribute("EndGetHostByName is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
         public static System.Net.IPHostEntry EndGetHostByName(System.IAsyncResult asyncResult) { throw null; }
         public static System.Net.IPHostEntry EndGetHostEntry(System.IAsyncResult asyncResult) { throw null; }
-        [System.ObsoleteAttribute("EndResolve is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("EndResolve has been deprecated. Use EndGetHostEntry instead.")]
         public static System.Net.IPHostEntry EndResolve(System.IAsyncResult asyncResult) { throw null; }
         public static System.Net.IPAddress[] GetHostAddresses(string hostNameOrAddress) { throw null; }
         public static System.Net.IPAddress[] GetHostAddresses(string hostNameOrAddress, System.Net.Sockets.AddressFamily family) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress, System.Net.Sockets.AddressFamily family, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.ObsoleteAttribute("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static System.Net.IPHostEntry GetHostByAddress(System.Net.IPAddress address) { throw null; }
-        [System.ObsoleteAttribute("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static System.Net.IPHostEntry GetHostByAddress(string address) { throw null; }
-        [System.ObsoleteAttribute("GetHostByName is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("GetHostByName has been deprecated. Use GetHostEntry instead.")]
         public static System.Net.IPHostEntry GetHostByName(string hostName) { throw null; }
         public static System.Net.IPHostEntry GetHostEntry(System.Net.IPAddress address) { throw null; }
         public static System.Net.IPHostEntry GetHostEntry(string hostNameOrAddress) { throw null; }
@@ -40,7 +40,7 @@ namespace System.Net
         public static System.Threading.Tasks.Task<System.Net.IPHostEntry> GetHostEntryAsync(string hostNameOrAddress, System.Net.Sockets.AddressFamily family, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPHostEntry> GetHostEntryAsync(string hostNameOrAddress, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static string GetHostName() { throw null; }
-        [System.ObsoleteAttribute("Resolve is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Resolve has been deprecated. Use GetHostEntry instead.")]
         public static System.Net.IPHostEntry Resolve(string hostName) { throw null; }
     }
     public partial class IPHostEntry

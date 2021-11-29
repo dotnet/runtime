@@ -7,6 +7,7 @@ namespace System.Net.Test.Common
     {
         public const string Realm = "LINUX.CONTOSO.COM";
         public const string NegotiateAuthWebServer = "http://apacheweb.linux.contoso.com/auth/kerberos/";
+        public const string NegotiateAuthWebServerNotDefaultPort = "http://apacheweb.linux.contoso.com:8081/auth/kerberos/";
         public const string AlternativeService = "http://altweb.linux.contoso.com:8080/auth/kerberos/";
         public const string NtlmAuthWebServer = "http://apacheweb.linux.contoso.com:8080/auth/ntlm/";
         public const string DigestAuthWebServer = "http://apacheweb.linux.contoso.com/auth/digest/";

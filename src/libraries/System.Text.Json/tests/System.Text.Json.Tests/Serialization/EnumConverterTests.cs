@@ -135,17 +135,15 @@ namespace System.Text.Json.Serialization.Tests
             [JsonConverter(typeof(JsonStringEnumConverter))]
             public DayOfWeek WorkStart { get; set; }
             public DayOfWeek WorkEnd { get; set; }
-            [LowerCaseEnum]
+            [JsonConverter(typeof(LowerCaseEnumConverter))]
             public DayOfWeek WeekEnd { get; set; }
         }
 
-        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
-        private class LowerCaseEnumAttribute : JsonConverterAttribute
+        private class LowerCaseEnumConverter : JsonStringEnumConverter
         {
-            public LowerCaseEnumAttribute() { }
-
-            public override JsonConverter CreateConverter(Type typeToConvert)
-                => new JsonStringEnumConverter(new ToLowerNamingPolicy());
+            public LowerCaseEnumConverter() : base(new ToLowerNamingPolicy())
+            {
+            }
         }
 
         [Fact]

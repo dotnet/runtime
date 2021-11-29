@@ -38,7 +38,7 @@ namespace System.Runtime.Serialization
         private static bool _optionAlreadySet;
         internal static SerializationOption Option
         {
-            get { return _option; }
+            get { return RuntimeFeature.IsDynamicCodeSupported ? _option : SerializationOption.ReflectionOnly; }
             set
             {
                 if (_optionAlreadySet)

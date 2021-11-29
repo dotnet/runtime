@@ -109,6 +109,7 @@ internal static partial class Interop
         public const uint WINHTTP_FLAG_SECURE_PROTOCOL_TLS1 = 0x00000080;
         public const uint WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1 = 0x00000200;
         public const uint WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 = 0x00000800;
+        public const uint WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3 = 0x00002000;
 
         public const uint SECURITY_FLAG_IGNORE_UNKNOWN_CA = 0x00000100;
         public const uint SECURITY_FLAG_IGNORE_CERT_DATE_INVALID = 0x00002000;

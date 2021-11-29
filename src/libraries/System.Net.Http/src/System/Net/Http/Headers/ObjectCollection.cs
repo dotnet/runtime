@@ -94,8 +94,9 @@ namespace System.Net.Http.Headers
         }
 
         public bool Contains(T item) =>
-            ReferenceEquals(item, _items) ||
-            (_size != 0 && _items is T[] items && Array.IndexOf(items, item, 0, _size) != -1);
+            _size <= 0 ? false :
+            _items is T o ? o.Equals(item) :
+            _items is T[] items && Array.IndexOf(items, item, 0, _size) != -1;
 
         public void CopyTo(T[] array, int arrayIndex)
         {
@@ -120,14 +121,16 @@ namespace System.Net.Http.Headers
 
         public bool Remove(T item)
         {
-            if (ReferenceEquals(_items, item))
+            if (_items is T o)
             {
-                _items = null;
-                _size = 0;
-                return true;
+                if (o.Equals(item))
+                {
+                    _items = null;
+                    _size = 0;
+                    return true;
+                }
             }
-
-            if (_items is T[] items)
+            else if (_items is T[] items)
             {
                 int index = Array.IndexOf(items, item, 0, _size);
                 if (index != -1)

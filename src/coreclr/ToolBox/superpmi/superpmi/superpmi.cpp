@@ -18,6 +18,7 @@
 #include "mclist.h"
 #include "methodstatsemitter.h"
 #include "spmiutil.h"
+#include "metricssummary.h"
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
 
@@ -181,6 +182,8 @@ int __cdecl main(int argc, char* argv[])
         return doParallelSuperPMI(o);
     }
 
+    SetBreakOnException(o.breakOnException);
+
     SetSuperPmiTargetArchitecture(o.targetArchitecture);
 
     if (o.methodStatsTypes != NULL &&
@@ -261,6 +264,9 @@ int __cdecl main(int argc, char* argv[])
             return (int)SpmiResult::GeneralFailure;
         }
     }
+
+    MetricsSummary baseMetrics;
+    MetricsSummary diffMetrics;
 
     while (true)
     {
@@ -358,7 +364,7 @@ int __cdecl main(int argc, char* argv[])
 
         jittedCount++;
         st3.Start();
-        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput);
+        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics);
         st3.Stop();
         LogDebug("Method %d compiled in %fms, result %d", reader->GetMethodContextIndex(), st3.GetMilliseconds(), res);
 
@@ -376,7 +382,7 @@ int __cdecl main(int argc, char* argv[])
             mc->cr = new CompileResult();
 
             st4.Start();
-            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput);
+            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics);
             st4.Stop();
             LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
                      st4.GetMilliseconds(), res2);
@@ -600,6 +606,16 @@ int __cdecl main(int argc, char* argv[])
 
     st2.Stop();
     LogVerbose("Total time: %fms", st2.GetMilliseconds());
+
+    if (o.baseMetricsSummaryFile != nullptr)
+    {
+        baseMetrics.SaveToFile(o.baseMetricsSummaryFile);
+    }
+
+    if (o.diffMetricsSummaryFile != nullptr)
+    {
+        diffMetrics.SaveToFile(o.diffMetricsSummaryFile);
+    }
 
     if (methodStatsEmitter != nullptr)
     {

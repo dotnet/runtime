@@ -183,7 +183,7 @@ namespace System.ServiceProcess.Tests
         public void LogWritten()
         {
             string serviceName = Guid.NewGuid().ToString();
-            // If the username is null, then the service is created under LocalSystem Account which have access to EventLog.
+            // If the username is null, then the service is created under LocalSystem Account which has access to EventLog.
             var testService = new TestServiceProvider(serviceName);
             Assert.True(EventLog.SourceExists(serviceName));
             testService.DeleteTestServices();

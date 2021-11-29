@@ -32,15 +32,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal int ParameterCount { get; private set; }
 
         // All of the serializable parameters on a POCO constructor keyed on parameter name.
-        // Only paramaters which bind to properties are cached.
-        internal Dictionary<string, JsonParameterInfo>? ParameterCache;
+        // Only parameters which bind to properties are cached.
+        internal JsonPropertyDictionary<JsonParameterInfo>? ParameterCache;
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        internal Dictionary<string, JsonPropertyInfo>? PropertyCache;
-
-        // All of the serializable properties on a POCO including the optional extension property.
-        // Used for performance during serialization instead of 'PropertyCache' above.
-        internal JsonPropertyInfo[]? PropertyCacheArray;
+        internal JsonPropertyDictionary<JsonPropertyInfo>? PropertyCache;
 
         // Fast cache of constructor parameters by first JSON ordering; may not contain all parameters. Accessed before ParameterCache.
         // Use an array (instead of List<T>) for highest performance.
@@ -52,19 +48,16 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonSerializerContext, JsonPropertyInfo[]>? PropInitFunc;
 
+        internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
+
         internal static JsonPropertyInfo AddProperty(
             MemberInfo memberInfo,
             Type memberType,
             Type parentClassType,
+            bool isVirtual,
             JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
-            JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
-            if (ignoreCondition == JsonIgnoreCondition.Always)
-            {
-                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(memberInfo, options);
-            }
-
             JsonConverter converter = GetConverter(
                 memberType,
                 parentClassType,
@@ -72,11 +65,18 @@ namespace System.Text.Json.Serialization.Metadata
                 out Type runtimeType,
                 options);
 
+            JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
+            if (ignoreCondition == JsonIgnoreCondition.Always)
+            {
+                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(converter, memberInfo, memberType, isVirtual, options);
+            }
+
             return CreateProperty(
                 declaredPropertyType: memberType,
                 runtimePropertyType: runtimeType,
                 memberInfo,
                 parentClassType,
+                isVirtual,
                 converter,
                 options,
                 parentTypeNumberHandling,
@@ -88,6 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type? runtimePropertyType,
             MemberInfo? memberInfo,
             Type parentClassType,
+            bool isVirtual,
             JsonConverter converter,
             JsonSerializerOptions options,
             JsonNumberHandling? parentTypeNumberHandling = null,
@@ -102,6 +103,7 @@ namespace System.Text.Json.Serialization.Metadata
                 runtimePropertyType,
                 runtimeClassType: converter.ConverterStrategy,
                 memberInfo,
+                isVirtual,
                 converter,
                 ignoreCondition,
                 parentTypeNumberHandling,
@@ -112,7 +114,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         /// <summary>
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// See <seealso cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
+        /// See <seealso cref="PropertyInfoForTypeInfo"/>.
         /// </summary>
         internal static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
@@ -125,8 +127,9 @@ namespace System.Text.Json.Serialization.Metadata
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 memberInfo: null, // Not a real property so this is null.
-                parentClassType: JsonTypeInfo.ObjectType, // a dummy value (not used)
-                converter: converter,
+                parentClassType: ObjectType, // a dummy value (not used)
+                isVirtual: false,
+                converter,
                 options,
                 parentTypeNumberHandling: numberHandling);
 
@@ -208,6 +211,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (PropertyCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
             {
+                Debug.Assert(info != null);
+
                 if (Options.PropertyNameCaseInsensitive)
                 {
                     if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
@@ -225,8 +230,8 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes!.AsSpan()));
-                    utf8PropertyName = info.NameAsUtf8Bytes!;
+                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
+                    utf8PropertyName = info.NameAsUtf8Bytes;
                 }
             }
             else
@@ -345,6 +350,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (ParameterCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonParameterInfo? info))
             {
+                Debug.Assert(info != null);
+
                 if (Options.PropertyNameCaseInsensitive)
                 {
                     if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
@@ -472,6 +479,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
+#if DEBUG
             // Verify key contains the embedded bytes as expected.
             // Note: the expected properties do not hold true on big-endian platforms
             if (BitConverter.IsLittleEndian)
@@ -490,6 +498,7 @@ namespace System.Text.Json.Serialization.Metadata
                     (name.Length >= 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == (ulong)name.Length) &&
                     (name.Length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF));
             }
+#endif
 
             return key;
         }
@@ -566,47 +575,79 @@ namespace System.Text.Json.Serialization.Metadata
             frame.CtorArgumentState.ParameterRefCache = null;
         }
 
-        internal void InitializeSerializePropCache()
+        internal void InitializePropCache()
         {
-            JsonSerializerContext? context = Options._context;
-
-            Debug.Assert(context != null);
+            Debug.Assert(PropertyCache == null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            if (PropInitFunc == null)
+            JsonSerializerContext? context = Options._context;
+            Debug.Assert(context != null);
+
+            JsonPropertyInfo[] array;
+            if (PropInitFunc == null || (array = PropInitFunc(context)) == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
                 return;
             }
 
-            PropertyCacheArray = PropInitFunc(context);
+            Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
+            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive, array.Length);
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                JsonPropertyInfo jsonPropertyInfo = array[i];
+                bool hasJsonInclude = jsonPropertyInfo.SrcGen_HasJsonInclude;
+
+                if (!jsonPropertyInfo.SrcGen_IsPublic)
+                {
+                    if (hasJsonInclude)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName!, jsonPropertyInfo.DeclaringType);
+                    }
+
+                    continue;
+                }
+
+                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !hasJsonInclude && !Options.IncludeFields)
+                {
+                    continue;
+                }
+
+                if (jsonPropertyInfo.SrcGen_IsExtensionData)
+                {
+                    // Source generator compile-time type inspection has performed this validation for us.
+                    Debug.Assert(DataExtensionProperty == null);
+                    Debug.Assert(IsValidDataExtensionProperty(jsonPropertyInfo));
+
+                    DataExtensionProperty = jsonPropertyInfo;
+                    continue;
+                }
+
+                CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
+            }
+
+            // Avoid threading issues by populating a local cache and assigning it to the global cache after completion.
+            PropertyCache = propertyCache;
         }
 
-        internal void InitializeDeserializePropCache()
+        internal void InitializeParameterCache()
         {
+            Debug.Assert(ParameterCache == null);
+            Debug.Assert(PropertyCache != null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            if (PropertyCacheArray == null)
+            JsonSerializerContext? context = Options._context;
+            Debug.Assert(context != null);
+
+            JsonParameterInfoValues[] array;
+            if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
-                InitializeSerializePropCache();
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
+                return;
             }
 
-            Dictionary<string, JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive
-                ? StringComparer.OrdinalIgnoreCase
-                : StringComparer.Ordinal);
-
-            for (int i = 0; i < PropertyCacheArray!.Length; i++)
-            {
-                JsonPropertyInfo jsonPropertyInfo = PropertyCacheArray[i];
-
-                if (!JsonHelpers.TryAdd(propertyCache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
-                {
-                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
-                }
-            }
-
-            // Avoid threading issues by populating a local cache, and assigning it to the global cache after completion.
-            PropertyCache = propertyCache;
+            InitializeConstructorParameters(array);
+            Debug.Assert(ParameterCache != null);
         }
     }
 }

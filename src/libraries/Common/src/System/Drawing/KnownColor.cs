@@ -197,6 +197,9 @@ namespace System.Drawing
         MenuHighlight,
 
         // "Web" colors, Part 2
+        /// <summary>
+        /// A system defined color representing the ARGB value <c>#663399</c>.
+        /// </summary>
         RebeccaPurple,
     }
 }

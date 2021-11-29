@@ -25,24 +25,26 @@ namespace System
             if (!inherit)
                 return attributes;
 
+            // if this is an index we need to get the parameter types to help disambiguate
+            Type[] indexParamTypes = GetIndexParameterTypes(element);
+            PropertyInfo? baseProp = GetParentDefinition(element, indexParamTypes);
+            if (baseProp == null)
+                return attributes;
+
             // create the hashtable that keeps track of inherited types
             Dictionary<Type, AttributeUsageAttribute> types = new Dictionary<Type, AttributeUsageAttribute>(11);
 
             // create an array list to collect all the requested attibutes
             List<Attribute> attributeList = new List<Attribute>();
-            CopyToArrayList(attributeList, attributes, types);
-
-            // if this is an index we need to get the parameter types to help disambiguate
-            Type[] indexParamTypes = GetIndexParameterTypes(element);
-
-
-            PropertyInfo? baseProp = GetParentDefinition(element, indexParamTypes);
-            while (baseProp != null)
+            CopyToAttributeList(attributeList, attributes, types);
+            do
             {
                 attributes = GetCustomAttributes(baseProp, type, false);
                 AddAttributesToList(attributeList, attributes, types);
                 baseProp = GetParentDefinition(baseProp, indexParamTypes);
             }
+            while (baseProp != null);
+
             Attribute[] array = CreateAttributeArrayHelper(type, attributeList.Count);
             attributeList.CopyTo(array, 0);
             return array;
@@ -123,27 +125,33 @@ namespace System
 
             // walk up the hierarchy chain
             Attribute[] attributes = (Attribute[])element.GetCustomAttributes(type, inherit);
-            if (inherit)
+            if (!inherit)
             {
-                // create the hashtable that keeps track of inherited types
-                Dictionary<Type, AttributeUsageAttribute> types = new Dictionary<Type, AttributeUsageAttribute>(11);
-                // create an array list to collect all the requested attibutes
-                List<Attribute> attributeList = new List<Attribute>();
-                CopyToArrayList(attributeList, attributes, types);
-
-                EventInfo? baseEvent = GetParentDefinition(element);
-                while (baseEvent != null)
-                {
-                    attributes = GetCustomAttributes(baseEvent, type, false);
-                    AddAttributesToList(attributeList, attributes, types);
-                    baseEvent = GetParentDefinition(baseEvent);
-                }
-                Attribute[] array = CreateAttributeArrayHelper(type, attributeList.Count);
-                attributeList.CopyTo(array, 0);
-                return array;
-            }
-            else
                 return attributes;
+            }
+
+            EventInfo? baseEvent = GetParentDefinition(element);
+            if (baseEvent == null)
+            {
+                return attributes;
+            }
+
+            // create the hashtable that keeps track of inherited types
+            // create an array list to collect all the requested attibutes
+            Dictionary<Type, AttributeUsageAttribute> types = new Dictionary<Type, AttributeUsageAttribute>(11);
+            List<Attribute> attributeList = new List<Attribute>();
+            CopyToAttributeList(attributeList, attributes, types);
+            do
+            {
+                attributes = GetCustomAttributes(baseEvent, type, false);
+                AddAttributesToList(attributeList, attributes, types);
+                baseEvent = GetParentDefinition(baseEvent);
+            }
+            while (baseEvent != null);
+
+            Attribute[] array = CreateAttributeArrayHelper(type, attributeList.Count);
+            attributeList.CopyTo(array, 0);
+            return array;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
@@ -357,7 +365,7 @@ namespace System
         #endregion
 
         #region Utility
-        private static void CopyToArrayList(List<Attribute> attributeList, Attribute[] attributes, Dictionary<Type, AttributeUsageAttribute> types)
+        private static void CopyToAttributeList(List<Attribute> attributeList, Attribute[] attributes, Dictionary<Type, AttributeUsageAttribute> types)
         {
             for (int i = 0; i < attributes.Length; i++)
             {

@@ -45,7 +45,8 @@ public:
         const pal::string_t& additional_deps_serialized,
         const std::vector<pal::string_t>& probe_paths,
         const host_mode_t mode,
-        const fx_definition_vector_t& fx_definitions);
+        const fx_definition_vector_t& fx_definitions,
+        const std::vector<std::pair<pal::string_t, pal::string_t>>& additional_properties);
 
     const host_interface_t& get_host_init_data();
 

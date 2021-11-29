@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <dlfcn.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -50,7 +51,7 @@ static void DlOpen(const char* libraryName)
     }
 }
 
-int OpenLibrary()
+static void OpenLibraryOnce()
 {
     // If there is an override of the version specified using the CLR_OPENSSL_VERSION_OVERRIDE
     // env variable, try to load that first.
@@ -107,7 +108,7 @@ int OpenLibrary()
     }
 
     // FreeBSD uses a different suffix numbering convention.
-    // Current supported FreeBSD releases should use the order .11 -> .111 -> .8
+    // Current supported FreeBSD releases should use the order .11 -> .111
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("11"));
@@ -117,11 +118,13 @@ int OpenLibrary()
     {
         DlOpen(MAKELIB("111"));
     }
+}
 
-    if (libssl == NULL)
-    {
-        DlOpen(MAKELIB("8"));
-    }
+static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
+
+int OpenLibrary()
+{
+    pthread_once(&g_openLibrary, OpenLibraryOnce);
 
     if (libssl != NULL)
     {

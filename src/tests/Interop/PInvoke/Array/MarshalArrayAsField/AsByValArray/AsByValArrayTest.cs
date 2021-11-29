@@ -1003,7 +1003,6 @@ class Test
         s12.arr = InitArray<string>(ARRAY_SIZE);
         Assert.IsTrue(TakeLPCSTRArrayExpStructByVal(s12, s12.arr.Length));
 
-
         if (OperatingSystem.IsWindows())
         {
             S_BSTRArray_Exp c13 = new S_BSTRArray_Exp();
@@ -1183,10 +1182,7 @@ class Test
         {
             RunTest1("RunTest1 : Marshal array as field as ByValArray in sequential struct as parameter.");
             RunTest2("RunTest2 : Marshal array as field as ByValArray in sequential class as parameter.");
-            if (OperatingSystem.IsWindows())
-            {
-                RunTest3("RunTest3 : Marshal array as field as ByValArray in explicit struct as parameter.");
-            }
+            RunTest3("RunTest3 : Marshal array as field as ByValArray in explicit struct as parameter.");
             RunTest4("RunTest4 : Marshal array as field as ByValArray in explicit class as parameter.");
             RunTest5("RunTest5 : Marshal array as field as ByValArray in sequential class as return type.");
             RunTest6("RunTest6 : Marshal array as field as ByValArray in explicit class as return type.");

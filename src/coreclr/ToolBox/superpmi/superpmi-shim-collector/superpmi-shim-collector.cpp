@@ -130,7 +130,7 @@ extern "C"
     return TRUE;
 }
 
-extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
+extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
 {
     // crossgen2 doesn't invoke DllMain on Linux/Mac (under PAL), so optionally do initialization work here.
     InitializeShim();
@@ -157,7 +157,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
     pnjitStartup(g_ourJitHost);
 }
 
-extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
+extern "C" DLLEXPORT ICorJitCompiler* getJit()
 {
     DWORD             dwRetVal = 0;
     PgetJit           pngetJit;
@@ -192,6 +192,16 @@ extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
 
     pJitInstance                           = new interceptor_ICJC();
     pJitInstance->original_ICorJitCompiler = tICJI;
+
+#ifdef TARGET_WINDOWS
+    pJitInstance->currentOs = CORINFO_WINNT;
+#elif defined(TARGET_OSX)
+    pJitInstance->currentOs = CORINFO_MACOS;
+#elif defined(TARGET_UNIX)
+    pJitInstance->currentOs = CORINFO_UNIX;
+#else
+#error No target os defined
+#endif
 
     // create our datafile
     pJitInstance->hFile = CreateFileW(g_dataFileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,

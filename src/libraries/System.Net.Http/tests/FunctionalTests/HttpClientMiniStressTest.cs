@@ -40,7 +40,7 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_Mock : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http3_Mock(ITestOutputHelper output) : base(output) { }
@@ -98,6 +98,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [Collection(nameof(HttpClientMiniStress))]
+    [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Security is not supported on Browser")]
     public abstract class HttpClientMiniStress : HttpClientHandlerTestBase
     {
         public HttpClientMiniStress(ITestOutputHelper output) : base(output) { }

@@ -32,14 +32,6 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor LoggingMethodInNestedType { get; } = new DiagnosticDescriptor(
-            id: "SYSLIB1004",
-            title: new LocalizableResourceString(nameof(SR.LoggingMethodInNestedTypeMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
-            messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodInNestedTypeMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
-            category: "LoggingGenerator",
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true);
-
         public static DiagnosticDescriptor MissingRequiredType { get; } = new DiagnosticDescriptor(
             id: "SYSLIB1005",
             title: new LocalizableResourceString(nameof(SR.MissingRequiredTypeTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),

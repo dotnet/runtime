@@ -6,7 +6,7 @@ else()
     include(CheckSymbolExists)
 
     if (CLR_CMAKE_TARGET_UNIX)
-        set(CMAKE_REQUIRED_INCLUDES ${UTYPES_H} ${ICU_HOMEBREW_INC_PATH})
+        set(CMAKE_REQUIRED_INCLUDES ${UCURR_H} ${ICU_HOMEBREW_INC_PATH})
 
         CHECK_C_SOURCE_COMPILES("
             #include <unicode/udat.h>

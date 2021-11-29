@@ -71,7 +71,7 @@ namespace System.Text
 
                 var newProviders = new EncodingProvider[providers.Length + 1];
                 Array.Copy(providers, newProviders, providers.Length);
-                providers[^1] = provider;
+                newProviders[^1] = provider;
 
                 if (Interlocked.CompareExchange(ref s_providers, newProviders, providers) == providers)
                 {

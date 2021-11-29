@@ -331,14 +331,14 @@ ownerType               : typeSpec                          { $$ = $1; }
 
 /*  Verbal description of custom attribute initialization blob  */
 customBlobDescr         : customBlobArgs customBlobNVPairs                      { $$ = $1;
-                                                                                  $$->appendInt16(nCustomBlobNVPairs);
+                                                                                  $$->appendInt16(VAL16(nCustomBlobNVPairs));
                                                                                   $$->append($2);
                                                                                   nCustomBlobNVPairs = 0; }
                         ;
 
 customBlobArgs          : /* EMPTY */                                           { $$ = new BinStr(); $$->appendInt16(VAL16(0x0001)); }
                         | customBlobArgs serInit                                { $$ = $1;
-                                                                                  $$->appendFrom($2, (*($2->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1); }
+                                                                                  AppendFieldToCustomBlob($$,$2); }
                         | customBlobArgs compControl                            { $$ = $1; }
                         ;
 
@@ -347,7 +347,7 @@ customBlobNVPairs       : /* EMPTY */                                           
                                                                                 { $$ = $1; $$->appendInt8($2);
                                                                                   $$->append($3);
                                                                                   AppendStringWithLength($$,$4);
-                                                                                  $$->appendFrom($6, (*($6->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1);
+                                                                                  AppendFieldToCustomBlob($$,$6);
                                                                                   nCustomBlobNVPairs++; }
                         | customBlobNVPairs compControl                         { $$ = $1; }
                         ;

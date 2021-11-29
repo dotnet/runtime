@@ -24,7 +24,7 @@
       <_OOBsToIgnore Include="System.Configuration.ConfigurationManager" />
       <_OOBsToIgnore Include="System.Speech" />
 
-      <_NetCoreAppRuntimeAssemblies Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll" />
+      <_NetCoreAppRuntimeAssemblies Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll;$(NetCoreAppCurrentRuntimePath)*msquic.dll" />
       <_RuntimePackTrimmedAssemblies Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
 
       <!-- Move previous items to FileName so that we can subtract them -->

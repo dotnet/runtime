@@ -1152,7 +1152,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
         /// <param name="value">The out parameter containing the value of the member.</param>
         /// <returns>True if the member exists in the expando object, otherwise false.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoTryGetValue(ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase, out object? value)
         {
             return expando.TryGetValue(indexClass, index, name, ignoreCase, out value);
@@ -1170,7 +1170,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>
         /// Returns the index for the set member.
         /// </returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static object? ExpandoTrySetValue(ExpandoObject expando, object? indexClass, int index, object? value, string name, bool ignoreCase)
         {
             expando.TrySetValue(indexClass, index, value, name, ignoreCase, false);
@@ -1186,7 +1186,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="name">The name of the member.</param>
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
         /// <returns>true if the item was successfully removed; otherwise, false.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoTryDeleteValue(ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase)
         {
             return expando.TryDeleteValue(indexClass, index, name, ignoreCase, ExpandoObject.Uninitialized);
@@ -1198,7 +1198,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="expando">The expando object.</param>
         /// <param name="version">The version to check.</param>
         /// <returns>true if the version is equal; otherwise, false.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoCheckVersion(ExpandoObject expando, object? version)
         {
             return expando.Class == version;
@@ -1210,7 +1210,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="expando">The expando object.</param>
         /// <param name="oldClass">The old class of the expando object.</param>
         /// <param name="newClass">The new class of the expando object.</param>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void ExpandoPromoteClass(ExpandoObject expando, object oldClass, object newClass)
         {
             expando.PromoteClass(oldClass, newClass);

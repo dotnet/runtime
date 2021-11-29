@@ -145,7 +145,6 @@ namespace
         _X("PROBING_DIRECTORIES"),
         _X("STARTUP_HOOKS"),
         _X("APP_PATHS"),
-        _X("APP_NI_PATHS"),
         _X("RUNTIME_IDENTIFIER"),
         _X("BUNDLE_PROBE"),
         _X("HOSTPOLICY_EMBEDDED"),

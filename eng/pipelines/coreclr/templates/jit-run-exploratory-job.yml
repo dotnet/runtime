@@ -1,0 +1,148 @@
+parameters:
+  steps: []                       # optional -- any additional steps that need to happen before pulling down the jitutils repo and sending the jitutils to helix (ie building your repo)
+  variables: []                   # optional -- list of additional variables to send to the template
+  jobName: ''                     # required -- job name
+  displayName: ''                 # optional -- display name for the job. Will use jobName if not passed
+  pool: ''                        # required -- name of the Build pool
+  container: ''                   # required -- name of the container
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  extraSetupParameters: ''        # optional -- extra arguments to pass to the setup script
+  frameworks: ['net6.0']          # optional -- list of frameworks to run against
+  continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
+  dependsOn: ''                   # optional -- dependencies of the job
+  timeoutInMinutes: 320           # optional -- timeout for the job
+  enableTelemetry: false          # optional -- enable for telemetry
+  liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
+  runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
+  codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
+  runKind: ''                     # required -- test category
+  helixQueues: ''                 # required -- Helix queue
+  dependOnEvaluatePaths: false
+
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    dependsOn: ${{ parameters.dependsOn }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    enableTelemetry: ${{ parameters.enableTelemetry }}
+    enablePublishBuildArtifacts: true
+    continueOnError: ${{ parameters.continueOnError }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    ${{ if ne(parameters.displayName, '') }}:
+      displayName: '${{ parameters.displayName }}'
+    ${{ if eq(parameters.displayName, '') }}:
+      displayName: '${{ parameters.jobName }}'
+
+    variables:
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+
+    - HelixApiAccessToken: ''
+    - HelixPreCommand: ''
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'py -3'
+      - name: PipScript
+        value: 'py -3 -m pip'
+      - name: Core_Root_Dir
+        value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
+      - name: IssuesLocation
+        value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+      - name: IssuesSummaryLocation
+        value: '$(Build.SourcesDirectory)\artifacts\issues_summary\'
+
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'python3'
+      - name: PipScript
+        value: 'pip3'
+      - name: Core_Root_Dir
+        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
+      - name: IssuesLocation
+        value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+      - name: IssuesSummaryLocation
+        value: '$(Build.SourcesDirectory)/artifacts/issues_summary/'
+    workspace:
+      clean: all
+    pool:
+      ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    strategy:
+      matrix:
+        ${{ each framework in parameters.frameworks }}:
+          ${{ framework }}:
+            _Framework: ${{ framework }}
+    steps:
+    - ${{ parameters.steps }}
+  
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup)
+      displayName: ${{ format('Antigen setup ({0}-{1})', parameters.osGroup, parameters.archType) }}
+
+      # Run exploratory tool in helix
+    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+      parameters:
+        displayName: 'Send job to Helix'
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+        helixType: 'build/tests/'
+        helixQueues: ${{ join(',', parameters.helixQueues) }}
+        creator: dotnet-bot
+        WorkItemTimeout: 2:30 # 2.5 hours
+        WorkItemDirectory: '$(WorkItemDirectory)'
+        CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/exploratory.proj'
+        BuildConfig: ${{ parameters.buildConfig }}
+        osGroup: ${{ parameters.osGroup }}
+        RunConfiguration: '$(RunConfiguration)'
+        ToolName: '$(ToolName)'
+        continueOnError: true
+
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(IssuesLocation)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: 'Antigen_Issues_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        displayName: ${{ format('Upload artifacts Antigen issues for {0}-{1}', parameters.osGroup, parameters.archType ) }}
+
+    # Always upload the available issues-summary.txt files
+    - task: CopyFiles@2
+      displayName: Copying issues-summary.txt of all partitions
+      inputs:
+        sourceFolder: '$(IssuesLocation)'
+        contents: '**/issues-summary-*.txt'
+        targetFolder: '$(IssuesSummaryLocation)'
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish issues-summary.txt files
+      inputs:
+        targetPath: $(IssuesSummaryLocation)
+        artifactName: 'Issues_Summary_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_unique_issues.py -issues_directory $(IssuesSummaryLocation)
+      displayName: ${{ format('Print unique issues ({0})', parameters.osGroup) }}
+      continueOnError: true
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Antigen build logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'Antigen_BuildLogs__$(archType)_$(buildConfig)'
+      condition: always()

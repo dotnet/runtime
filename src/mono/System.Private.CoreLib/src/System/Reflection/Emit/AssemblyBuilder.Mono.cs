@@ -185,6 +185,7 @@ namespace System.Reflection.Emit
         private CustomAttributeBuilder[]? cattrs;
         private string? version;
         private string? culture;
+        private byte[]? public_key_token;
         private Module[]? loaded_modules;
         private uint access;
 #endregion
@@ -221,6 +222,7 @@ namespace System.Reflection.Emit
             {
                 version = v.ToString();
             }
+            public_key_token = n.GetPublicKeyToken();
 
             basic_init(this);
 
@@ -254,9 +256,7 @@ namespace System.Reflection.Emit
             return ab;
         }
 
-        public ModuleBuilder DefineDynamicModule(string name) => DefineDynamicModule(name, false);
-
-        public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo)
+        public ModuleBuilder DefineDynamicModule(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -360,7 +360,12 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        public override Module[] GetModules(bool getResourceModules) => (Module[])modules.Clone();
+        public override Module[] GetModules(bool getResourceModules)
+        {
+            if (modules == null)
+                return Array.Empty<Module>();
+            return (Module[])modules.Clone();
+        }
 
         public override AssemblyName GetName(bool copiedName) => AssemblyName.Create(_mono_assembly, null);
 
@@ -393,7 +398,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
             CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
-        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributeData.GetCustomAttributes(this);
+        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttribute.GetCustomAttributesData(this);
     }
 }
 #endif

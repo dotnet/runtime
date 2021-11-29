@@ -429,15 +429,11 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
-		if (!m_class_get_rank (klass) && !cfg->compile_aot && mono_class_is_sealed (klass)) {
-			/* the remoting code is broken, access the class for now */
-			if (0) { /*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
-				MonoVTable *vt = mono_class_vtable_checked (klass, cfg->error);
-				if (!is_ok (cfg->error)) {
-					mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-					return NULL;
-				}
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, (gsize)vt);
+		if (!m_class_get_rank (klass) && mono_class_is_sealed (klass)) {
+			if (cfg->compile_aot) {
+				MonoInst *vtable_ins;
+				EMIT_NEW_AOTCONST (cfg, vtable_ins, MONO_PATCH_INFO_VTABLE, klass);
+				MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vtable_ins->dreg);
 			} else {
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
@@ -584,28 +580,22 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 			/* the is_null_bb target simply copies the input register to the output */
 			mini_emit_isninst_cast (cfg, klass_reg, m_class_get_cast_class (klass), false_bb, is_null_bb);
-		} else {
-			if (!cfg->compile_aot && mono_class_is_sealed (klass)) {
-				g_assert (!context_used);
-				/* the remoting code is broken, access the class for now */
-				if (0) {/*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
-					MonoVTable *vt = mono_class_vtable_checked (klass, cfg->error);
-					if (!is_ok (cfg->error)) {
-						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-						return NULL;
-					}
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, (gsize)vt);
-				} else {
-					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
-				}
-				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
-				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
+		} else if (mono_class_is_sealed (klass)) {
+			g_assert (!context_used);
+			if (cfg->compile_aot) {
+				MonoInst *vtable_ins;
+				EMIT_NEW_AOTCONST (cfg, vtable_ins, MONO_PATCH_INFO_VTABLE, klass);
+				MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vtable_ins->dreg);
 			} else {
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-				/* the is_null_bb target simply copies the input register to the output */
-				mini_emit_isninst_cast_inst (cfg, klass_reg, klass, klass_inst, false_bb, is_null_bb);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
 			}
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
+		} else {
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
+			/* the is_null_bb target simply copies the input register to the output */
+			mini_emit_isninst_cast_inst (cfg, klass_reg, klass, klass_inst, false_bb, is_null_bb);
 		}
 	}
 

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,7 +24,6 @@ namespace System.Net.Http.Functional.Tests
         private sealed class DerivedHttpHeaders : HttpHeaders { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_RequestWithSimpleHeader_ResponseReferencesUnmodifiedRequestHeaders()
         {
             const string HeaderKey = "some-header-123", HeaderValue = "this is the expected header value";
@@ -47,7 +47,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "User-Agent is not supported on Browser")]
         public async Task SendAsync_UserAgent_CorrectlyWritten()
         {
             string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.18 Safari/537.36";
@@ -71,7 +71,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_LargeHeaders_CorrectlyWritten()
         {
             if (UseVersion == HttpVersion.Version30)
@@ -107,7 +106,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
         {
             const string Version = "2017-04-17";
@@ -137,7 +135,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("\u05D1\u05F1")]
         [InlineData("jp\u30A5")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task SendAsync_InvalidCharactersInHeader_Throw(string value)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -169,9 +167,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Accept-CharSet", "text/plain, text/json", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Content-Location", "", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Max-Forwards", "NotAnInteger", false)] // invalid format for header but added with TryAddWithoutValidation
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_SpecialHeaderKeyOrValue_Success(string key, string value, bool parsable)
         {
+            if (PlatformDetection.IsBrowser && (key == "Content-Location" || key == "Date" || key == "Accept-CharSet"))
+            {
+                // https://fetch.spec.whatwg.org/#forbidden-header-name
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 bool contentHeader = false;
@@ -209,7 +212,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("Content-Security-Policy", 4618)]
         [InlineData("RandomCustomHeader", 12345)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetAsync_LargeHeader_Success(string headerName, int headerValueLength)
         {
             var rand = new Random(42);
@@ -234,7 +236,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetAsync_EmptyResponseHeader_Success()
         {
             IList<HttpHeaderData> headers = new HttpHeaderData[] {
@@ -246,8 +247,12 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpResponseMessage response = await  client.GetAsync(uri).ConfigureAwait(false);
-                    Assert.Equal(headers.Count, response.Headers.Count());
+                    HttpResponseMessage response = await client.GetAsync(uri).ConfigureAwait(false);
+                    // browser sends more headers
+                    if (PlatformDetection.IsNotBrowser)
+                    {
+                        Assert.Equal(headers.Count, response.Headers.Count());
+                    }
                     Assert.NotNull(response.Headers.GetValues("x-empty"));
                 }
             },
@@ -262,7 +267,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetAsync_MissingExpires_ReturnNull()
         {
              await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -283,7 +287,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Thu, 01 Dec 1994 16:00:00 GMT", true)]
         [InlineData("-1", false)]
         [InlineData("0", false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_Expires_Success(string value, bool isValid)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -322,7 +325,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData("Accept-Encoding", "identity,gzip")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_RequestHeaderInResponse_Success(string name, string value)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -343,11 +345,10 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
             if (UseVersion == HttpVersion.Version30)
@@ -355,9 +356,16 @@ namespace System.Net.Http.Functional.Tests
                 // External servers do not support HTTP3 currently.
                 return;
             }
+            if (PlatformDetection.LocalEchoServerIsAvailable && !withPort)
+            {
+                // we always have custom port with the local echo server, so we couldn't test without it
+                return;
+            }
 
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
-            m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":443" : Configuration.Http.SecureHost;
+            m.Headers.Host = !PlatformDetection.LocalEchoServerIsAvailable && withPort
+                                ? Configuration.Http.SecureHost + ":" + Configuration.Http.SecurePort
+                                : Configuration.Http.SecureHost;
 
             using (HttpClient client = CreateHttpClient())
             using (HttpResponseMessage response = await client.SendAsync(TestAsync, m))
@@ -372,8 +380,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53874", TestPlatforms.Browser)]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
             if (LoopbackServerFactory.Version >= HttpVersion.Version20)
@@ -393,7 +402,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task SendAsync_WithZeroLengthHeaderName_Throws()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -414,6 +423,7 @@ namespace System.Net.Http.Functional.Tests
                         });
                     }
                     catch (IOException) { }
+                    catch (QuicConnectionAbortedException) { }
                 });
         }
 
@@ -436,7 +446,7 @@ namespace System.Net.Http.Functional.Tests
         };
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
         public async Task SendAsync_CustomRequestEncodingSelector_CanSendNonAsciiHeaderValues()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -491,7 +501,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
         public async Task SendAsync_CustomResponseEncodingSelector_CanReceiveNonAsciiHeaderValues()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(

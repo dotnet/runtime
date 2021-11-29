@@ -168,7 +168,7 @@ namespace System.Xml.Xsl.XPath
         [Conditional("DEBUG")]
         private void ExpectAny(QilNode n)
         {
-            Debug.Assert(IsAnyType(n), "Unexpected expression type: " + n.XmlType!.ToString());
+            Debug.Assert(IsAnyType(n), $"Unexpected expression type: {n.XmlType}");
         }
 
         public QilNode ConvertToType(XmlTypeCode requiredType, QilNode n)

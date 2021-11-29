@@ -44,6 +44,9 @@ namespace System.Diagnostics.Metrics
             {
                 s_allMeters.Add(this);
             }
+
+            // Ensure the metrics EventSource has been created in case we need to log this meter
+            GC.KeepAlive(MetricsEventSource.Log);
         }
 
         /// <summary>

@@ -3,11 +3,5 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides support for managing access and audit control lists for Microsoft.Win32.RegistryKey.
-
-Commonly Used Types:
-System.Security.AccessControl.RegistryAccessRule
-System.Security.AccessControl.RegistryAuditRule
-System.Security.AccessControl.RegistrySecurity</PackageDescription>
   </PropertyGroup>
 </Project>

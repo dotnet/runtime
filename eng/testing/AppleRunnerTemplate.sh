@@ -35,6 +35,8 @@ if [[ "$TARGET" == "ios-device" ]]; then SCHEME_SDK=Release-iphoneos; fi
 if [[ "$TARGET" == "tvos-device" ]]; then SCHEME_SDK=Release-appletvos; fi
 if [[ "$TARGET" == "maccatalyst" ]]; then SCHEME_SDK=Release-maccatalyst; fi
 
+if [[ "$TARGET" == "ios-device" || "$TARGET" == "tvos-device" ]]; then SIGNAL_APP_END="--signal-app-end"; fi
+
 cd $EXECUTION_DIR
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
@@ -62,6 +64,7 @@ $HARNESS_RUNNER apple $XHARNESS_CMD    \
     --targets="$TARGET" \
     --xcode="$XCODE_PATH"   \
     --output-directory="$XHARNESS_OUT" \
+    $SIGNAL_APP_END \
     $ADDITIONAL_ARGS
 
 _exitCode=$?

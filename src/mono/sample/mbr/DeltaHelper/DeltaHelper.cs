@@ -9,7 +9,7 @@ namespace MonoDelta {
     public class DeltaHelper {
         private static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data, byte[] dpdb_data)
         {
-            System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate (assm, dmeta_data, dil_data, dpdb_data);
+            System.Reflection.Metadata.MetadataUpdater.ApplyUpdate (assm, dmeta_data, dil_data, dpdb_data);
         }
 
         DeltaHelper () { }

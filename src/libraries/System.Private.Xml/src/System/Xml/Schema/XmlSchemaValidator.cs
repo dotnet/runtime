@@ -113,7 +113,7 @@ namespace System.Xml.Schema
         private object _validationEventSender;
         private readonly XmlNameTable _nameTable;
         private IXmlLineInfo _positionInfo;
-        private IXmlLineInfo _dummyPositionInfo;
+        private static readonly IXmlLineInfo s_dummyPositionInfo = new PositionInfo();
 
         private XmlResolver? _xmlResolver;
         private Uri? _sourceUri;
@@ -198,7 +198,6 @@ namespace System.Xml.Schema
         [MemberNotNull(nameof(_validationStack))]
         [MemberNotNull(nameof(_attPresence))]
         [MemberNotNull(nameof(_positionInfo))]
-        [MemberNotNull(nameof(_dummyPositionInfo))]
         [MemberNotNull(nameof(_validationEventSender))]
         [MemberNotNull(nameof(_currentState))]
         [MemberNotNull(nameof(_textValue))]
@@ -219,8 +218,7 @@ namespace System.Xml.Schema
             _attPresence = new Hashtable();
             Push(XmlQualifiedName.Empty);
 
-            _dummyPositionInfo = new PositionInfo(); //Dummy position info, will return (0,0) if user does not set the LineInfoProvider property
-            _positionInfo = _dummyPositionInfo;
+            _positionInfo = s_dummyPositionInfo; //Dummy position info, will return (0,0) if user does not set the LineInfoProvider property
             _validationEventSender = this;
             _currentState = ValidatorState.None;
             _textValue = new StringBuilder(100);
@@ -282,7 +280,7 @@ namespace System.Xml.Schema
             {
                 if (value == null)
                 { //If value is null, retain the default dummy line info
-                    _positionInfo = _dummyPositionInfo;
+                    _positionInfo = s_dummyPositionInfo;
                 }
                 else
                 {

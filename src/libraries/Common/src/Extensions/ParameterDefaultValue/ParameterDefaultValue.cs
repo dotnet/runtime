@@ -15,26 +15,12 @@ using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Internal
 {
-    internal static class ParameterDefaultValue
+    internal static partial class ParameterDefaultValue
     {
         public static bool TryGetDefaultValue(ParameterInfo parameter, out object? defaultValue)
         {
-            bool hasDefaultValue;
-            bool tryToGetDefaultValue = true;
+            bool hasDefaultValue = CheckHasDefaultValue(parameter, out bool tryToGetDefaultValue);
             defaultValue = null;
-
-            try
-            {
-                hasDefaultValue = parameter.HasDefaultValue;
-            }
-            catch (FormatException) when (parameter.ParameterType == typeof(DateTime))
-            {
-                // Workaround for https://github.com/dotnet/runtime/issues/18844
-                // If HasDefaultValue throws FormatException for DateTime
-                // we expect it to have default value
-                hasDefaultValue = true;
-                tryToGetDefaultValue = false;
-            }
 
             if (hasDefaultValue)
             {

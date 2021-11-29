@@ -4275,6 +4275,76 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Array.Fill(new string[arrayLength], "", startIndex, count));
         }
 
+        public class Bar : IEquatable<Bar>
+        {
+            public string Value { get; set; }
+
+            public bool Equals(Bar other) => string.Equals(Value, other.Value);
+        }
+
+        public class Foo
+        {
+        }
+
+        private static Bar[] CreateBarArray()
+        {
+            return new Bar[]
+            {
+                new Bar() { Value = "0" },
+                new Bar() { Value = "1" },
+                new Bar() { Value = "2" },
+                new Bar() { Value = "3" },
+            };
+        }
+
+        [Fact]
+        public static void Fill_Downcast()
+        {
+            Bar[] barArray = CreateBarArray();
+            Array.Fill<object>(barArray, new Bar() { Value = "x" });
+            Assert.Equal(new string[] { "x", "x", "x", "x" }, barArray.Select(e => e.Value));
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_Downcast()
+        {
+            Bar[] barArray = CreateBarArray();
+            Array.Fill<object>(barArray, new Bar() { Value = "x" }, 1, 2);
+            Assert.Equal(new string[] { "0", "x", "x", "3" }, barArray.Select(e => e.Value));
+        }
+
+        [Fact]
+        public static void Fill_Sidecast()
+        {
+            uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
+            Array.Fill<uint>(uintArray, 42);
+            Assert.Equal(new int[] { 42, 42, 42, 42 }, (int[])(object)uintArray);
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_Sidecast()
+        {
+            uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
+            Array.Fill<uint>(uintArray, 42, 1, 2);
+            Assert.Equal(new int[] { 0, 42, 42, 3 }, (int[])(object)uintArray);
+        }
+
+        [Fact]
+        public static void Fill_ThrowsArrayTypeMismatchException()
+        {
+            Bar[] barArray = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo()));
+            Assert.Equal(CreateBarArray(), barArray);
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_ThrowsArrayTypeMismatchException()
+        {
+            Bar[] barArray = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo(), 1, 2));
+            Assert.Equal(CreateBarArray(), barArray);
+        }
+
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
         {
             // TODO: use (or merge this data into) Reverse_TestData if/when xunit/xunit#965 is merged
@@ -4676,7 +4746,14 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                return;
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+
+            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            {
+                // On these platforms, occasionally the OOM Killer will terminate the
+                // tests when they're using ~1GB, before they complete.
+                throw new SkipTestException("Prone to OOM killer");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
@@ -4695,7 +4772,14 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                return;
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+
+            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            {
+                // On these platforms, occasionally the OOM Killer will terminate the
+                // tests when they're using ~1GB, before they complete.
+                throw new SkipTestException("Prone to OOM killer");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);

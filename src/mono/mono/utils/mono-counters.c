@@ -26,7 +26,7 @@ struct _MonoCounter {
 	size_t size;
 };
 
-#ifndef DISABLE_PERF_COUNTERS
+#ifndef DISABLE_PERFCOUNTERS
 
 static MonoCounter *counters = NULL;
 static mono_mutex_t counters_mutex;
@@ -775,6 +775,12 @@ int
 mono_counter_get_type (MonoCounter *counter)
 {
 	return 0;
+}
+
+const char*
+mono_counter_get_name (MonoCounter *name)
+{
+	return NULL;
 }
 
 size_t

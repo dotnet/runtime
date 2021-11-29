@@ -94,7 +94,7 @@ inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 
 #endif // !TARGET_X86
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
+#if (defined(TARGET_X86) || defined(TARGET_AMD64))
 #ifdef TARGET_UNIX
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
@@ -112,24 +112,13 @@ const int CPUID_EDX = 3;
 
 inline bool TargetHasAVXSupport()
 {
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
+#if (defined(TARGET_X86) || defined(TARGET_AMD64))
     int cpuInfo[4];
     __cpuid(cpuInfo, 0x00000001);           // All x86/AMD64 targets support cpuid.
     return ((cpuInfo[CPUID_ECX] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
-#endif // (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
+#endif // (defined(TARGET_X86) || defined(TARGET_AMD64))
     return false;
 }
-
-#ifdef FEATURE_PREJIT
-// Can code compiled for "minReqdCpuType" be used on "actualCpuType"
-inline BOOL IsCompatibleCpuInfo(const CORINFO_CPU * actualCpuInfo,
-                                const CORINFO_CPU * minReqdCpuInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-    return ((minReqdCpuInfo->dwFeatures & actualCpuInfo->dwFeatures) ==
-             minReqdCpuInfo->dwFeatures);
-}
-#endif // FEATURE_PREJIT
 
 
 #ifndef DACCESS_COMPILE

@@ -91,7 +91,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        [Obsolete("This property has been deprecated. Please use AttributeSchemaType property that returns a strongly typed attribute type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("XmlSchemaAttribute.AttributeType has been deprecated. Use the AttributeSchemaType property that returns a strongly typed attribute type instead.")]
         public object? AttributeType
         {
             get

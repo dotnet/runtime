@@ -1562,11 +1562,6 @@ namespace System.IO.Tests
         /// Gets whether the stream guarantees that all data written to it will be flushed as part of Flush{Async}.
         /// </summary>
         protected virtual bool FlushGuaranteesAllDataWritten => true;
-        /// <summary>
-        /// Gets whether a stream implements an aggressive read that tries to fill the supplied buffer and only
-        /// stops when it does so or hits EOF.
-        /// </summary>
-        protected virtual bool ReadsMayBlockUntilBufferFullOrEOF => false;
         /// <summary>Gets whether reads for a count of 0 bytes block if no bytes are available to read.</summary>
         protected virtual bool BlocksOnZeroByteReads => false;
         /// <summary>
@@ -1709,6 +1704,10 @@ namespace System.IO.Tests
             }
         }
 
+        public static IEnumerable<object[]> ReadWrite_Modes =>
+            from mode in Enum.GetValues<ReadWriteMode>()
+            select new object[] { mode };
+
         public static IEnumerable<object[]> ReadWrite_Success_MemberData() =>
             from mode in Enum.GetValues<ReadWriteMode>()
             from writeSize in new[] { 1, 42, 10 * 1024 }
@@ -1780,6 +1779,54 @@ namespace System.IO.Tests
                     if (!FlushGuaranteesAllDataWritten)
                     {
                         break;
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ReadWrite_Modes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public virtual async Task ReadWrite_MessagesSmallerThanReadBuffer_Success(ReadWriteMode mode)
+        {
+            if (!FlushGuaranteesAllDataWritten)
+            {
+                return;
+            }
+
+            foreach (CancellationToken nonCanceledToken in new[] { CancellationToken.None, new CancellationTokenSource().Token })
+            {
+                using StreamPair streams = await CreateConnectedStreamsAsync();
+
+                foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
+                {
+                    byte[] writerBytes = RandomNumberGenerator.GetBytes(512);
+                    var readerBytes = new byte[writerBytes.Length * 2];
+
+                    // Repeatedly write then read a message smaller in size than the read buffer
+                    for (int i = 0; i < 5; i++)
+                    {
+                        Task writes = Task.Run(async () =>
+                        {
+                            await WriteAsync(mode, writeable, writerBytes, 0, writerBytes.Length, nonCanceledToken);
+                            if (FlushRequiredToWriteData)
+                            {
+                                await writeable.FlushAsync();
+                            }
+                        });
+
+                        int n = 0;
+                        while (n < writerBytes.Length)
+                        {
+                            int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n);
+                            Assert.InRange(r, 1, writerBytes.Length - n);
+                            n += r;
+                        }
+
+                        Assert.Equal(writerBytes.Length, n);
+                        AssertExtensions.SequenceEqual(writerBytes, readerBytes.AsSpan(0, writerBytes.Length));
+
+                        await writes;
                     }
                 }
             }
@@ -2160,6 +2207,10 @@ namespace System.IO.Tests
                         });
                         Assert.Equal(0, await zeroByteRead);
 
+                        // Perform a second zero-byte read.
+                        await Task.Run(() => ReadAsync(mode, readable, Array.Empty<byte>(), 0, 0));
+
+                        // Now consume all the data.
                         var readBytes = new byte[5];
                         int count = 0;
                         while (count < readBytes.Length)
@@ -2684,7 +2735,7 @@ namespace System.IO.Tests
         [InlineData(true, true)]
         public virtual async Task Dispose_Flushes(bool useAsync, bool leaveOpen)
         {
-            if (leaveOpen && (!SupportsLeaveOpen || ReadsMayBlockUntilBufferFullOrEOF))
+            if (leaveOpen && !SupportsLeaveOpen)
             {
                 return;
             }

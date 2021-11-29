@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -218,7 +219,7 @@ public class Program
                 assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
             }
 
-            AssemblyLoadContext? context = AssemblyLoadContext.GetLoadContext(assemblyBuilder);
+            AssemblyLoadContext context = AssemblyLoadContext.GetLoadContext(assemblyBuilder);
 
             Assert(context != null);
             Assert(alc == context);

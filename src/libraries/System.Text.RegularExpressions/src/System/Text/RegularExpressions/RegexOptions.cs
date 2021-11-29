@@ -4,7 +4,12 @@
 namespace System.Text.RegularExpressions
 {
     [Flags]
-    public enum RegexOptions
+#if REGEXGENERATOR
+    internal
+#else
+    public
+#endif
+    enum RegexOptions
     {
         None                    = 0x0000,
         IgnoreCase              = 0x0001, // "i"

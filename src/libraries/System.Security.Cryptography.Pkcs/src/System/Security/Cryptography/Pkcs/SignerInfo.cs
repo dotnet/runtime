@@ -291,6 +291,9 @@ namespace System.Security.Cryptography.Pkcs
             return new SignerInfoCollection(signerInfos.ToArray());
         }
 
+#if NET6_0_OR_GREATER
+        [Obsolete(Obsoletions.SignerInfoCounterSigMessage, DiagnosticId = Obsoletions.SignerInfoCounterSigDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+ #endif
         public void ComputeCounterSignature()
         {
             throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoSignerCert);

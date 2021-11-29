@@ -227,15 +227,10 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
 #endif // defined(__i386__) || defined(__x86_64__)
 
-#ifdef __aarch64__
+#if defined(__arm__) || defined(__aarch64__)
  #define YieldProcessor() asm volatile ("yield")
  #define MemoryBarrier __sync_synchronize
-#endif // __aarch64__
-
-#ifdef __arm__
- #define YieldProcessor()
- #define MemoryBarrier __sync_synchronize
-#endif // __arm__
+#endif // __arm__ || __aarch64__
 
 #endif // _MSC_VER
 
@@ -534,7 +529,11 @@ namespace ETW
         GC_ROOT_HANDLES = 2,
         GC_ROOT_OLDER = 3,
         GC_ROOT_SIZEDREF = 4,
-        GC_ROOT_OVERFLOW = 5
+        GC_ROOT_OVERFLOW = 5,
+        GC_ROOT_DH_HANDLES = 6,
+        GC_ROOT_NEW_FQ = 7,
+        GC_ROOT_STEAL = 8,
+        GC_ROOT_BGC = 9
     } GC_ROOT_KIND;
 };
 

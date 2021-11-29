@@ -142,7 +142,7 @@ PALEXPORT SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method);
 /*
 Sets the specified protocols in the SSL_CTX options.
 */
-PALEXPORT void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
+PALEXPORT void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
 
 /*
 Shims the SSL_new method.
@@ -212,6 +212,13 @@ Returns the positive number of bytes read when successful, 0 or a negative numbe
 when an error is encountered.
 */
 PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num);
+
+/*
+Shims the SSL_renegotiate method.
+
+Returns 1 when renegotiation started; 0 on error.
+*/
+PALEXPORT int32_t CryptoNative_SslRenegotiate(SSL* ssl);
 
 /*
 Shims the SSL_renegotiate_pending method.
@@ -311,14 +318,31 @@ Shims the SSL_CTX_set_verify method.
 PALEXPORT void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback);
 
 /*
+Shims the SSL_set_verify method.
+*/
+PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl);
+
+/*
+Shims SSL_set_ex_data to attach application context.
+*/
+PALEXPORT int32_t  CryptoNative_SslSetData(SSL* ssl, void *ptr);
+
+/*
+Shims SSL_get_ex_data to retrieve application context.
+*/
+PALEXPORT void* CryptoNative_SslGetData(SSL* ssl);
+
+/*
+
 Sets the specified encryption policy on the SSL_CTX.
 */
-PALEXPORT int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
+PALEXPORT int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
 
 /*
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
 */
-PALEXPORT int32_t CryptoNative_SetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites);
+PALEXPORT int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites);
+PALEXPORT int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites);
 
 /*
 Determines if TLS 1.3 is supported by this OpenSSL implementation
@@ -342,12 +366,12 @@ Shims the SSL_session_reused macro.
 PALEXPORT int32_t CryptoNative_SslSessionReused(SSL* ssl);
 
 /*
-adds the given certificate to the extra chain certificates associated with ctx that is associated with the ssl.
+adds the given certificate to the extra chain certificates associated with ctx.
 
 libssl frees the x509 object.
 Returns 1 if success and 0 in case of failure
 */
-PALEXPORT int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509);
+PALEXPORT int32_t CryptoNative_SslCtxAddExtraChainCert(SSL_CTX* ctx, X509* x509);
 
 /*
 Shims the ssl_ctx_set_alpn_select_cb method.
@@ -355,10 +379,10 @@ Shims the ssl_ctx_set_alpn_select_cb method.
 PALEXPORT void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void *arg);
 
 /*
-Shims the ssl_ctx_set_alpn_protos method.
+Shims the ssl_set_alpn_protos method.
 Returns 0 on success, non-zero on failure.
 */
-PALEXPORT int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t* protos, uint32_t protos_len);
+PALEXPORT int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t protos_len);
 
 /*
 Shims the ssl_get0_alpn_selected method.

@@ -21,12 +21,6 @@ inline void GlobalLoaderAllocator::Init(BaseDomain *pDomain)
     LoaderAllocator::Init(pDomain, m_ExecutableHeapInstance);
 }
 
-inline void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
-{
-    m_Id.Init();
-    LoaderAllocator::Init((BaseDomain *)pAppDomain);
-}
-
 inline BOOL LoaderAllocatorID::Equals(LoaderAllocatorID *pId)
 {
     LIMITED_METHOD_CONTRACT;

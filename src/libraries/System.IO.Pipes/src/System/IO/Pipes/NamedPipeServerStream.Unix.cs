@@ -20,6 +20,7 @@ namespace System.IO.Pipes
         private int _inBufferSize;
         private int _outBufferSize;
         private HandleInheritability _inheritability;
+        private CancellationTokenSource _internalTokenSource = new CancellationTokenSource();
 
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
@@ -77,8 +78,25 @@ namespace System.IO.Pipes
                 Task.FromCanceled(cancellationToken) :
                 WaitForConnectionAsyncCore();
 
-            async Task WaitForConnectionAsyncCore() =>
-               HandleAcceptedSocket(await _instance!.ListeningSocket.AcceptAsync(cancellationToken).ConfigureAwait(false));
+            async Task WaitForConnectionAsyncCore()
+            {
+                Socket acceptedSocket;
+                CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_internalTokenSource.Token, cancellationToken);
+                try
+                {
+                    acceptedSocket = await _instance!.ListeningSocket.AcceptAsync(linkedTokenSource.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    throw new IOException(SR.IO_PipeBroken);
+                }
+                finally
+                {
+                    linkedTokenSource.Dispose();
+                }
+
+                HandleAcceptedSocket(acceptedSocket);
+            }
         }
 
         private void HandleAcceptedSocket(Socket acceptedSocket)
@@ -116,8 +134,18 @@ namespace System.IO.Pipes
             State = PipeState.Connected;
         }
 
-        internal override void DisposeCore(bool disposing) =>
+        internal override void DisposeCore(bool disposing)
+        {
             Interlocked.Exchange(ref _instance, null)?.Dispose(disposing); // interlocked to avoid shared state problems from erroneous double/concurrent disposes
+
+            if (disposing)
+            {
+                if (State != PipeState.Closed)
+                {
+                    _internalTokenSource.Cancel();
+                }
+            }
+        }
 
         public void Disconnect()
         {

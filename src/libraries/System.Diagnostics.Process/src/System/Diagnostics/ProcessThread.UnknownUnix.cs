@@ -25,11 +25,7 @@ namespace System.Diagnostics
             get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
         }
 
-        /// <summary>Returns the time the associated thread was started.</summary>
-        public DateTime StartTime
-        {
-            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
-        }
+        private DateTime GetStartTime() => throw new PlatformNotSupportedException(); // Not available on POSIX
 
         /// <summary>
         /// Returns the amount of time the associated thread has spent utilizing the CPU.

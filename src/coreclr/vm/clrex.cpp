@@ -46,7 +46,6 @@ CLRException::~CLRException()
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     OBJECTHANDLE throwableHandle = GetThrowableHandle();
     if (throwableHandle != NULL)
     {
@@ -55,7 +54,6 @@ CLRException::~CLRException()
         SetThrowableHandle(NULL);
         DestroyHandle(throwableHandle);
     }
-#endif
 }
 
 OBJECTREF CLRException::GetThrowable()
@@ -69,16 +67,7 @@ OBJECTREF CLRException::GetThrowable()
     }
     CONTRACTL_END;
 
-#ifdef CROSSGEN_COMPILE
-    _ASSERTE(false);
-    return NULL;
-#else
     OBJECTREF throwable = NULL;
-
-    if (NingenEnabled())
-    {
-        return NULL;
-    }
 
     Thread *pThread = GetThread();
 
@@ -256,7 +245,6 @@ OBJECTREF CLRException::GetThrowable()
     GCPROTECT_END();
 
     return throwable;
-#endif
 }
 
 HRESULT CLRException::GetHR()
@@ -346,7 +334,6 @@ IErrorInfo *CLRException::GetErrorInfo()
 
     IErrorInfo *pErrorInfo = NULL;
 
-#ifndef CROSSGEN_COMPILE
     // Attempt to get IErrorInfo only if COM is initialized.
     // Not all codepaths expect to have it initialized (e.g. hosting APIs).
     if (g_fComStarted)
@@ -375,7 +362,6 @@ IErrorInfo *CLRException::GetErrorInfo()
         // Write to the log incase COM isnt initialized.
         LOG((LF_EH, LL_INFO100, "CLRException::GetErrorInfo: exiting since COM is not initialized.\n"));
     }
-#endif //CROSSGEN_COMPILE
 
     // return the IErrorInfo we got...
     return pErrorInfo;
@@ -404,7 +390,6 @@ void CLRException::GetMessage(SString &result)
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     GCX_COOP();
 
     OBJECTREF e = GetThrowable();
@@ -423,10 +408,8 @@ void CLRException::GetMessage(SString &result)
 
         GCPROTECT_END ();
     }
-#endif
 }
 
-#ifndef CROSSGEN_COMPILE
 
 OBJECTREF CLRException::GetPreallocatedOutOfMemoryException()
 {
@@ -910,7 +893,6 @@ void CLRException::HandlerState::SucceedCatch()
 }
 #endif
 
-#endif // CROSSGEN_COMPILE
 
 // ---------------------------------------------------------------------------
 // EEException methods
@@ -1021,10 +1003,6 @@ void EEException::GetMessage(SString &result)
 
 OBJECTREF EEException::CreateThrowable()
 {
-#ifdef CROSSGEN_COMPILE
-    _ASSERTE(false);
-    return NULL;
-#else
     CONTRACTL
     {
         GC_TRIGGERS;
@@ -1070,7 +1048,6 @@ OBJECTREF EEException::CreateThrowable()
     GCPROTECT_END();
 
     return throwable;
-#endif
 }
 
 RuntimeExceptionKind EEException::GetKindFromHR(HRESULT hr)
@@ -1175,7 +1152,6 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     STRINGREF message = NULL;
     ResMgrGetString(m_resourceName, &message);
 
@@ -1184,7 +1160,6 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
         message->GetSString(result);
         return TRUE;
     }
-#endif // CROSSGEN_COMPILE
 
     return EEException::GetThrowableMessage(result);
 }
@@ -1344,10 +1319,6 @@ typedef struct {
 
 OBJECTREF EEArgumentException::CreateThrowable()
 {
-#ifdef CROSSGEN_COMPILE
-    _ASSERTE(false);
-    return NULL;
-#else
 
     CONTRACTL
     {
@@ -1404,7 +1375,6 @@ OBJECTREF EEArgumentException::CreateThrowable()
     GCPROTECT_END(); //Prot
 
     return prot.pThrowable;
-#endif
 }
 
 
@@ -1478,10 +1448,6 @@ void EETypeLoadException::GetMessage(SString &result)
 
 OBJECTREF EETypeLoadException::CreateThrowable()
 {
-#ifdef CROSSGEN_COMPILE
-    _ASSERTE(false);
-    return NULL;
-#else
 
     CONTRACTL
     {
@@ -1536,7 +1502,6 @@ OBJECTREF EETypeLoadException::CreateThrowable()
     GCPROTECT_END();
 
     return gc.pNewException;
-#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -1675,10 +1640,6 @@ RuntimeExceptionKind EEFileLoadException::GetFileLoadKind(HRESULT hr)
 
 OBJECTREF EEFileLoadException::CreateThrowable()
 {
-#ifdef CROSSGEN_COMPILE
-    _ASSERTE(false);
-    return NULL;
-#else
 
     CONTRACTL
     {
@@ -1720,7 +1681,6 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     GCPROTECT_END();
 
     return gc.pNewException;
-#endif
 }
 
 
@@ -1845,7 +1805,6 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(PEAssembly *parent,
     EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
 }
 
-#ifndef CROSSGEN_COMPILE
 // ---------------------------------------------------------------------------
 // EEComException methods
 // ---------------------------------------------------------------------------
@@ -2248,7 +2207,6 @@ void GetLastThrownObjectExceptionFromThread(Exception **ppException)
 
 } // void GetLastThrownObjectExceptionFromThread()
 
-#endif // CROSSGEN_COMPILE
 
 //@TODO: Make available generally?
 // Wrapper class to encapsulate both array pointer and element count.

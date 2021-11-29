@@ -19,7 +19,6 @@
 #include "ecall.h"
 #endif // CROSSGEN_CORELIB
 
-#ifndef CROSSGEN_COMPILE
 //
 // Headers for all ECall entrypoints
 //
@@ -90,7 +89,6 @@
 
 #include "tailcallhelp.h"
 
-#endif // CROSSGEN_CORELIB
 
 
 #ifdef CROSSGEN_CORELIB
@@ -374,17 +372,7 @@ const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions
 //
 
 // When compiling crossgen, we only need the target version of the ecall tables
-#if !defined(CROSSGEN_COMPILE) || defined(CROSSGEN_CORELIB)
 
-#ifdef CROSSGEN_COMPILE
-
-#define QCFuncElement(name,impl) \
-    FCFuncFlag_QCall + FCFuncFlags(CORINFO_INTRINSIC_Illegal, ECall::InvalidDynamicFCallId), NULL, (LPVOID)name,
-
-#define FCFuncFlags(intrinsicID, dynamicID) \
-    (BYTE*)( (((BYTE)intrinsicID) << 16) )
-
-#else
 
 #define QCFuncElement(name,impl) \
     FCFuncFlag_QCall + FCFuncFlags(CORINFO_INTRINSIC_Illegal, ECall::InvalidDynamicFCallId), (LPVOID)(impl), (LPVOID)name,
@@ -392,7 +380,6 @@ const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions
 #define FCFuncFlags(intrinsicID, dynamicID) \
     (BYTE*)( (((BYTE)intrinsicID) << 16) + (((BYTE)dynamicID) << 24) )
 
-#endif
 
 #define FCFuncElement(name, impl) FCFuncFlags(CORINFO_INTRINSIC_Illegal, ECall::InvalidDynamicFCallId), \
     (LPVOID)GetEEFuncEntryPoint(impl), (LPVOID)name,
@@ -432,7 +419,6 @@ const ECClass c_rgECClasses[] =
 
 const int c_nECClasses = NumItems(c_rgECClasses);
 
-#endif // !CROSSGEN_COMPILE && CROSSGEN_CORELIB
 
 
 #ifdef CROSSGEN_CORELIB

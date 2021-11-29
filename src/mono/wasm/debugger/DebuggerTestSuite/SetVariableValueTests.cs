@@ -212,6 +212,7 @@ namespace DebuggerTests
         [InlineData(1, "b", 20, "wrongValue")]
         [InlineData(2, "c", 30, "wrongValue")]
         [InlineData(3, "d", 50, "wrongValue")]
+        [InlineData(3, "d", 50, "123wrongValue")]
         public async Task SetVariableValuesAtBreakpointSiteFail(int offset, string variableName, int originalValue, string invalidValue){
             await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", offset);
             var pause_location = await EvaluateAndCheck(
@@ -263,6 +264,7 @@ namespace DebuggerTests
         [InlineData("A", 10, "error", false)]
         [InlineData("d", 15, "20", true)]
         [InlineData("d", 15, "error", false)]
+        [InlineData("d", 15, "123error", false)]
         public async Task TestSetValueOnObject(string prop_name, int prop_value, string prop_new_value, bool expect_ok)
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "Math", "UseComplex", 5);

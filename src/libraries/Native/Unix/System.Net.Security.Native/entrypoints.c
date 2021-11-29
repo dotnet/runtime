@@ -13,6 +13,7 @@ static const Entry s_securityNative[] =
     DllImportEntry(NetSecurityNative_DeleteSecContext)
     DllImportEntry(NetSecurityNative_DisplayMajorStatus)
     DllImportEntry(NetSecurityNative_DisplayMinorStatus)
+    DllImportEntry(NetSecurityNative_EnsureGssInitialized)
     DllImportEntry(NetSecurityNative_GetUser)
     DllImportEntry(NetSecurityNative_ImportPrincipalName)
     DllImportEntry(NetSecurityNative_ImportUserName)

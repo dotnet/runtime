@@ -1502,7 +1502,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (root)
             using (intermediate)
             using (endEntity)
-            using (ChainHolder holder = new ChainHolder())
             using (X509Certificate2 rootCert = root.CloneIssuerCert())
             using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
             {
@@ -1528,14 +1527,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     }
                 }
 
-                X509Chain chain = holder.Chain;
-                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
-                chain.ChainPolicy.ExtraStore.Add(intermediateCert);
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
-                chain.ChainPolicy.UrlRetrievalTimeout = s_urlRetrievalLimit;
+                RetryHelper.Execute(() => {
+                    using (ChainHolder holder = new ChainHolder())
+                    {
+                        X509Chain chain = holder.Chain;
+                        chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        chain.ChainPolicy.ExtraStore.Add(intermediateCert);
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                        chain.ChainPolicy.UrlRetrievalTimeout = s_urlRetrievalLimit;
 
-                callback(root, intermediate, endEntity, holder, responder);
+                        callback(root, intermediate, endEntity, holder, responder);
+                    }
+                });
             }
         }
 

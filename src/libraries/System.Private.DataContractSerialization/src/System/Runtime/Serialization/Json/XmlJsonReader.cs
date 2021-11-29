@@ -337,7 +337,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Close()
         {
             OnXmlDictionaryReaderClose? onClose = _onReaderClose;
             _onReaderClose = null;
@@ -353,7 +353,8 @@ namespace System.Runtime.Serialization.Json
                     throw new InvalidOperationException(SR.GenericCallbackException, e);
                 }
             }
-            base.Dispose(disposing);
+
+            base.Close();
         }
 
         public override void EndCanonicalization()

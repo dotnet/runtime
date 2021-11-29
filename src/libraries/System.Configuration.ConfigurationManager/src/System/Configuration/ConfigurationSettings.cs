@@ -9,7 +9,7 @@ namespace System.Configuration
     {
         internal ConfigurationSettings() { }
 
-        [Obsolete("This property is obsolete, it has been replaced by System.Configuration.ConfigurationManager.AppSettings")]
+        [Obsolete("ConfigurationSettings.AppSettings has been deprecated. Use System.Configuration.ConfigurationManager.AppSettings instead.")]
         public static NameValueCollection AppSettings
         {
             get
@@ -18,7 +18,7 @@ namespace System.Configuration
             }
         }
 
-        [Obsolete("This method is obsolete, it has been replaced by System.Configuration.ConfigurationManager.GetSection")]
+        [Obsolete("ConfigurationSettings.GetConfig has been deprecated. Use System.Configuration.ConfigurationManager.GetSection instead.")]
         public static object GetConfig(string sectionName)
         {
             return ConfigurationManager.GetSection(sectionName);

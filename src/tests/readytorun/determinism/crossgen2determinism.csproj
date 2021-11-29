@@ -4,7 +4,7 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-    <!-- Known not to work with GCStress for now: https://github.com/dotnet/runtime/issues/13394 -->
+    <!-- Running Crossgen2 under GCStress takes too long -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This is an explicit crossgen test -->
     <CrossGenTest>false</CrossGenTest>

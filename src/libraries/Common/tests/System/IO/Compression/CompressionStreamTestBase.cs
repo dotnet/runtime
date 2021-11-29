@@ -54,6 +54,6 @@ namespace System.IO.Compression
         protected override Type UnsupportedReadWriteExceptionType => typeof(InvalidOperationException);
         protected override bool WrappedUsableAfterClose => false;
         protected override bool FlushRequiredToWriteData => true;
-        protected override bool FlushGuaranteesAllDataWritten => false;
+        protected override bool BlocksOnZeroByteReads => true;
     }
 }

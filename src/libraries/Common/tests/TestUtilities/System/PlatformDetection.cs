@@ -3,12 +3,14 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Linq.Expressions;
 using System.Security;
 using System.Security.Authentication;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
+using Xunit;
 
 namespace System
 {
@@ -25,6 +27,7 @@ namespace System
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
+        public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -35,7 +38,8 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
-        public static bool IsNotMobile => IsNotBrowser && !IsMacCatalyst && !IsiOS && !IstvOS && !IsAndroid;
+        public static bool IsMobile => IsBrowser || IsMacCatalyst || IsiOS || IstvOS || IsAndroid;
+        public static bool IsNotMobile => !IsMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
@@ -50,6 +54,9 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
+        public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile;
 
@@ -59,9 +66,27 @@ namespace System
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+        public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
+        public static bool LocalEchoServerIsAvailable => IsBrowser;
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
+
+        public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_LinqExpressionsBuiltWithIsInterpretingOnly.Value;
+        public static bool IsNotLinqExpressionsBuiltWithIsInterpretingOnly => !IsLinqExpressionsBuiltWithIsInterpretingOnly;
+        private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
+        private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
+        {
+            Type type = typeof(LambdaExpression);
+            if (type != null)
+            {
+                // The "Accept" method is under FEATURE_COMPILE conditional so it should not exist
+                MethodInfo methodInfo = type.GetMethod("Accept", BindingFlags.NonPublic | BindingFlags.Static);
+                return methodInfo == null;
+            }
+
+            return false;
+        }
 
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
@@ -72,7 +97,11 @@ namespace System
 #if NETCOREAPP
                 if (!IsWindows)
                 {
-                    if (IsOSX)
+                    if (IsMobile)
+                    {
+                        return false;
+                    }
+                    else if (IsOSX)
                     {
                         return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
                     }
@@ -87,6 +116,8 @@ namespace System
 
             }
         }
+
+        public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
 
         public static bool IsLineNumbersSupported => true;
 
@@ -220,14 +251,9 @@ namespace System
 
         private static bool GetStaticNonPublicBooleanPropertyValue(string typeName, string propertyName)
         {
-            Type globalizationMode = Type.GetType(typeName);
-            if (globalizationMode != null)
+            if (Type.GetType(typeName)?.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod is MethodInfo mi)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
-                if (methodInfo != null)
-                {
-                    return (bool)methodInfo.Invoke(null, null);
-                }
+                return (bool)mi.Invoke(null, null);
             }
 
             return false;
@@ -240,6 +266,28 @@ namespace System
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
+
+        public static bool IsSubstAvailable
+        {
+            get
+            {
+                try
+                {
+                    if (IsWindows)
+                    {
+                        string systemRoot = Environment.GetEnvironmentVariable("SystemRoot");
+                        if (string.IsNullOrWhiteSpace(systemRoot))
+                        {
+                            return false;
+                        }
+                        string system32 = Path.Combine(systemRoot, "System32");
+                        return File.Exists(Path.Combine(system32, "subst.exe"));
+                    }
+                }
+                catch { }
+                return false;
+            }
+        }
 
         private static Version GetICUVersion()
         {
@@ -264,9 +312,9 @@ namespace System
                               version & 0xFF);
         }
 
-        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
+        private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
 
-        public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
+        public static bool IsFileLockingEnabled => IsWindows || !s_fileLockingDisabled.Value;
 
         private static bool GetIsInContainer()
         {
@@ -413,13 +461,10 @@ namespace System
         private static bool GetIsRunningOnMonoInterpreter()
         {
 #if NETCOREAPP
-            if (IsBrowser)
-                return RuntimeFeature.IsDynamicCodeSupported;
+            return IsMonoRuntime && RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
+#else
+            return false;
 #endif
-            // This is a temporary solution because mono does not support interpreter detection
-            // within the runtime.
-            var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
-            return (val != null && val.Contains("--interpreter"));
         }
 
         private static bool GetIsBrowserDomSupported()

@@ -2,9 +2,10 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <ZapRequire>1</ZapRequire>
     <CLRTestPriority>1</CLRTestPriority>
-    <CrossGenTest>false</CrossGenTest>
+
+    <!-- This is an explicit crossgen test -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="genericslib.ilproj">
@@ -14,16 +15,4 @@
   <ItemGroup>
     <Compile Include="callgenericctor.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out genericslib.ni.dll genericslib.dll
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out callgenericctor.ni.exe callgenericctor.exe
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out genericslib.ni.dll genericslib.dll
-$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out callgenericctor.ni.exe callgenericctor.exe
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

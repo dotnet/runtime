@@ -133,7 +133,7 @@ namespace BasicEventSourceTests
             {
                 EventWrittenEventArgs ea = elEvent.Data;
                 Assert.NotNull(ea);
-                Assert.Equal(Guid.Empty, ea.ActivityId);
+                Assert.Equal(EventSource.CurrentThreadActivityId, ea.ActivityId);
                 Assert.Equal(EventChannel.None, ea.Channel);
                 Assert.Equal(0, ea.EventId);
                 Assert.Equal("EventSourceMessage", ea.EventName);

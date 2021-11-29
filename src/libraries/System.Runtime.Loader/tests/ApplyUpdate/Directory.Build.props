@@ -16,6 +16,8 @@
     <!-- to call AsssemblyExtensions.ApplyUpdate we need Optimize=false, EmitDebugInformation=true in all configurations -->
     <Optimize>false</Optimize>
     <EmitDebugInformation>true</EmitDebugInformation>
+    <!-- CI builds turn this on, but it interferes with Roslyn's ability to generate EnC deltas -->
+    <DeterministicSourcePaths>false</DeterministicSourcePaths>
   </PropertyGroup>
 
 </Project>

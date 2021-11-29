@@ -21,5 +21,20 @@ namespace System.Threading.Tasks
                 return await Task.ConfigureAwait(false);
             }
         }
+
+        public T WaitWithCancellation(CancellationToken cancellationToken)
+        {
+            using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSourceWithCancellation<T>)s!).TrySetCanceled(cancellationToken), this))
+            {
+                return Task.GetAwaiter().GetResult();
+            }
+        }
+
+        public ValueTask<T> WaitWithCancellationAsync(bool async, CancellationToken cancellationToken)
+        {
+            return async ?
+                WaitWithCancellationAsync(cancellationToken) :
+                new ValueTask<T>(WaitWithCancellation(cancellationToken));
+        }
     }
 }

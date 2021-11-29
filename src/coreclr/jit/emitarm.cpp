@@ -621,18 +621,24 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
 {
     instruction ins = id->idIns();
+    insFormat   fmt = id->idInsFmt();
 
     switch (ins)
     {
         case INS_ldm:
         case INS_ldmdb:
-        case INS_pop:
         case INS_smlal:
         case INS_smull:
         case INS_umlal:
         case INS_umull:
         case INS_vmov_d2i:
             return true;
+        case INS_pop:
+            if (fmt != IF_T2_E2) // T2_E2 is pop single register encoding
+            {
+                return true;
+            }
+            return false;
         default:
             return false;
     }
@@ -1230,7 +1236,6 @@ bool emitter::IsMovInstruction(instruction ins)
     switch (ins)
     {
         case INS_mov:
-        case INS_mov_eliminated:
         case INS_sxtb:
         case INS_sxth:
         case INS_uxtb:
@@ -1505,12 +1510,11 @@ void emitter::emitIns(instruction ins)
 
 void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 {
-    insFormat fmt    = IF_NONE;
-    bool      hasLR  = false;
-    bool      hasPC  = false;
-    bool      useT2  = false;
-    bool      onlyT1 = false;
-
+    insFormat fmt         = IF_NONE;
+    bool      hasLR       = false;
+    bool      hasPC       = false;
+    bool      useT2       = false;
+    bool      isSingleBit = false;
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
@@ -1560,10 +1564,9 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 
             if (((imm - 1) & imm) == 0) // Is only one or zero bits set in imm?
             {
-                if (((imm == 0) && !hasLR) || // imm has no bits set, but hasLR is set
-                    (!hasPC && !hasLR))       // imm has one bit set, and neither of hasPC/hasLR are set
+                if (imm != 0)
                 {
-                    onlyT1 = true; // if only one bit is set we must use the T1 encoding
+                    isSingleBit = true; // only one bits set in imm
                 }
             }
 
@@ -1571,15 +1574,21 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 
             if (((imm & 0x00ff) == imm) && !useT2)
             {
+                // for push {LR,} <reglist8> and pop  {PC,} <regist8> encoding
                 fmt = IF_T1_L1;
             }
-            else if (!onlyT1)
+            else if (!isSingleBit)
             {
+                // for other push and pop multiple registers encoding
                 fmt = IF_T2_I1;
             }
             else
             {
-                // We have to use the Thumb-2 push single register encoding
+                // We have to use the Thumb-2 push/pop single register encoding
+                if (hasLR)
+                {
+                    imm |= 0x4000;
+                }
                 regNumber reg = genRegNumFromMask(imm);
                 emitIns_R(ins, attr, reg);
                 return;
@@ -1702,8 +1711,11 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(
-    instruction ins, emitAttr attr, regNumber reg, target_ssize_t imm, insFlags flags /* = INS_FLAGS_DONT_CARE */)
+void emitter::emitIns_R_I(instruction    ins,
+                          emitAttr       attr,
+                          regNumber      reg,
+                          target_ssize_t imm,
+                          insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(GenTreeFlags gtFlags))
 
 {
     insFormat fmt = IF_NONE;
@@ -2007,6 +2019,7 @@ void emitter::emitIns_R_I(
     id->idInsSize(isz);
     id->idInsFlags(sf);
     id->idReg1(reg);
+    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
 
     dispIns(id);
     appendToCurIG(id);
@@ -2066,15 +2079,8 @@ void emitter::emitIns_Mov(instruction ins,
             {
                 if (canSkip && (dstReg == srcReg))
                 {
-                    // These instructions might have a side effect in the form of a
-                    // byref liveness update, so preserve them but emit nothing
-
-                    if (!EA_IS_BYREF(attr))
-                    {
-                        return;
-                    }
-
-                    ins = INS_mov_eliminated;
+                    // These instructions have no side effect and can be skipped
+                    return;
                 }
                 fmt = IF_T1_D0;
                 sf  = INS_FLAGS_NOT_SET;
@@ -2161,7 +2167,7 @@ void emitter::emitIns_Mov(instruction ins,
         EXTEND_COMMON:
             if (canSkip && (dstReg == srcReg))
             {
-                // There are scenarios such as in genCallInstruction where the sign/zero extension should be elided
+                // There are scenarios such as in genCall where the sign/zero extension should be elided
                 return;
             }
 
@@ -4682,10 +4688,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     /* Sanity check the arguments depending on callType */
 
     assert(callType < EC_COUNT);
-    assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_ADDR) ||
-           (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType < EC_INDIR_R || addr == NULL);
-    assert(callType != EC_INDIR_R || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
+    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
 
     // ARM never uses these
     assert(xreg == REG_NA && xmul == 0 && disp == 0);
@@ -4738,11 +4742,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(argSize % REGSIZE_BYTES == 0);
     int argCnt = argSize / REGSIZE_BYTES;
 
-    if (callType >= EC_INDIR_R)
+    if (callType == EC_INDIR_R)
     {
         /* Indirect call, virtual calls */
-
-        assert(callType == EC_INDIR_R);
 
         id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
@@ -4751,7 +4753,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         /* Helper/static/nonvirtual/function calls (direct or through handle),
            and calls to an absolute addr. */
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
@@ -4770,43 +4772,33 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Record the address: method, indirection, or funcptr */
 
-    if (callType > EC_FUNC_ADDR)
+    if (callType == EC_INDIR_R)
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        switch (callType)
+        id->idSetIsCallRegPtr();
+
+        if (isJump)
         {
-            case EC_INDIR_R: // the address is in a register
-
-                id->idSetIsCallRegPtr();
-
-                if (isJump)
-                {
-                    ins = INS_bx; // INS_bx  Reg
-                }
-                else
-                {
-                    ins = INS_blx; // INS_blx Reg
-                }
-                fmt = IF_T1_D2;
-
-                id->idIns(ins);
-                id->idInsFmt(fmt);
-                id->idInsSize(emitInsSize(fmt));
-                id->idReg3(ireg);
-                assert(xreg == REG_NA);
-                break;
-
-            default:
-                NO_WAY("unexpected instruction");
-                break;
+            ins = INS_bx; // INS_bx  Reg
         }
+        else
+        {
+            ins = INS_blx; // INS_blx Reg
+        }
+        fmt = IF_T1_D2;
+
+        id->idIns(ins);
+        id->idInsFmt(fmt);
+        id->idInsSize(emitInsSize(fmt));
+        id->idReg3(ireg);
+        assert(xreg == REG_NA);
     }
     else
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         // if addr is nullptr then this call is treated as a recursive call.
         assert(addr == nullptr || codeGen->arm_Valid_Imm_For_BL((ssize_t)addr));
@@ -4827,11 +4819,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idInsSize(emitInsSize(fmt));
 
         id->idAddr()->iiaAddr = (BYTE*)addr;
-
-        if (callType == EC_FUNC_ADDR)
-        {
-            id->idSetIsCallAddr();
-        }
 
         if (emitComp->opts.compReloc)
         {
@@ -5775,18 +5762,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
 
-    if (ins == INS_mov_eliminated)
-    {
-        // Elideable moves are specified to have a zero size, but are carried
-        // in emit so we can still do the relevant byref liveness update
-
-        assert(id->idGCref() == GCT_BYREF);
-        assert(id->idCodeSize() == 0);
-
-        sz = SMALL_IDSC_SIZE;
-        goto UPDATE_LIVENESS;
-    }
-
     /* What instruction format have we got? */
 
     switch (fmt)
@@ -6607,7 +6582,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
     }
 
-UPDATE_LIVENESS:
     // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
     // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
     // GC ref to register "id->idReg1()".  (It may, apparently, also not be GC_NONE in other cases, such as
@@ -6724,9 +6698,9 @@ UPDATE_LIVENESS:
     }
 #endif
 
-    /* All instructions, except eliminated moves, are expected to generate code */
+    /* All instructions are expected to generate code */
 
-    assert((*dp != dst) || (ins == INS_mov_eliminated));
+    assert(*dp != dst);
 
     *dp = dst;
 
@@ -6797,7 +6771,7 @@ void emitter::emitDispImm(int imm, bool addComma, bool alwaysHex /* =false */)
         printf("%d", imm);
     else if ((imm > 0) ||
              (imm == -imm) || // -0x80000000 == 0x80000000. So we don't want to add an extra "-" at the beginning.
-             (emitComp->opts.disDiffable && (imm == 0xD1FFAB1E))) // Don't display this as negative
+             (emitComp->opts.disDiffable && (imm == (int)0xD1FFAB1E))) // Don't display this as negative
         printf("0x%02x", imm);
     else // val <= -1000
         printf("-0x%02x", -imm);
@@ -7122,17 +7096,6 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
 {
-    if (id->idIns() == INS_mov_eliminated)
-    {
-        // Elideable moves are specified to have a zero size, but are carried
-        // in emit so we can still do the relevant byref liveness update
-
-        assert(id->idGCref() == GCT_BYREF);
-        assert(id->idCodeSize() == 0);
-
-        return;
-    }
-
     if (EMITVERBOSE)
     {
         unsigned idNum = id->idDebugOnlyInfo()->idNum; // Do not remove this!  It is needed for VisualStudio
@@ -7324,7 +7287,7 @@ void emitter::emitDispInsHelp(
                             lab = (insGroup*)emitCodeGetCookie(*bbp++);
                             assert(lab);
 
-                            printf("\n            DD      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
+                            printf("\n            DD      %s", emitLabelString(lab));
                         } while (--cnt);
                     }
                 }
@@ -7633,7 +7596,7 @@ void emitter::emitDispInsHelp(
         case IF_T2_M1: // Load Label
             emitDispReg(id->idReg1(), attr, true);
             if (id->idIsBound())
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             else
                 printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             break;
@@ -7678,7 +7641,7 @@ void emitter::emitDispInsHelp(
                 }
             }
             else if (id->idIsBound())
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             else
                 printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
         }
@@ -7686,28 +7649,8 @@ void emitter::emitDispInsHelp(
 
         case IF_T2_J3:
         {
-            BYTE* addr;
-            if (id->idIsCallAddr())
-            {
-                addr       = id->idAddr()->iiaAddr;
-                methodName = "";
-            }
-            else
-            {
-                addr       = nullptr;
-                methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
-            }
-
-            if (addr)
-            {
-                if (id->idIsDspReloc())
-                    printf("reloc ");
-                printf("%p", dspPtr(addr));
-            }
-            else
-            {
-                printf("%s", methodName);
-            }
+            methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+            printf("%s", methodName);
         }
         break;
 

@@ -24,6 +24,11 @@ namespace System
         // Main function that is called during construction to populate the three display names
         private static void TryPopulateTimeZoneDisplayNamesFromGlobalizationData(string timeZoneId, TimeSpan baseUtcOffset, ref string? standardDisplayName, ref string? daylightDisplayName, ref string? displayName)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return;
+            }
+
             // Determine the culture to use
             CultureInfo uiCulture = CultureInfo.CurrentUICulture;
             if (uiCulture.Name.Length == 0)
@@ -125,7 +130,7 @@ namespace System
 
             // Get the base offset to prefix in front of the time zone.
             // Only UTC and its aliases have "(UTC)", handled earlier.  All other zones include an offset, even if it's zero.
-            string baseOffsetText = $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})";
+            string baseOffsetText = string.Create(null, stackalloc char[128], $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})");
 
             // Get the generic location name.
             string? genericLocationName = null;

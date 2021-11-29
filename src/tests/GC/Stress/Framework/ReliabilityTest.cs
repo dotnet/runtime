@@ -92,32 +92,24 @@ public class TestAssemblyLoadContext : AssemblyLoadContext
 /// on each test specified.
 /// </summary>
 public class ReliabilityTest
-#if !PROJECTK_BUILD
-    : ICloneable
-#endif
 {
     private bool _suppressConsoleOutput = false;
 
-    private string _assembly,_debugger,_debuggerOptions;
+    private string _assembly, _debugger, _debuggerOptions;
     private string _basePath;
-#if PROJECTK_BUILD
     private MethodInfo _entryPointMethod = null;
-#endif    
     private string _refOrID;
     private string _arguments;
     private string _entryPoint;
     private int _successCode = 0;
     private int _runCount = 0;
-#if !PROJECTK_BUILD
-    private AppDomain appDomain;
-#endif
     private TestAssemblyLoadContext _assemblyLoadContext;
     private Object _testObject;
     private object _myLoader;
     private int _concurrentCopies = 1;
     private int _runningCount = 0;
     private int _expectedDuration = -1;
-    private bool _requiresSDK = false,_hasFailed = false;
+    private bool _requiresSDK = false, _hasFailed = false;
     private Guid _guid = Guid.Empty;
     private TestStartModeEnum _testStartMode = TestStartModeEnum.AppDomainLoader;
     private DateTime _startTime = DateTime.Now;
@@ -242,20 +234,6 @@ public class ReliabilityTest
         }
     }
 
-#if !PROJECTK_BUILD
-    public AppDomain AppDomain
-    {
-        get
-        {
-            return (appDomain);
-        }
-        set
-        {
-            appDomain = value;
-        }
-    }
-#endif
-
     public TestAssemblyLoadContext AssemblyLoadContext
     {
         get
@@ -272,7 +250,7 @@ public class ReliabilityTest
     public bool HasAssemblyLoadContext
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
-        get { return _assemblyLoadContext != null;  }
+        get { return _assemblyLoadContext != null; }
     }
 
     public string AssemblyLoadContextName
@@ -375,7 +353,6 @@ public class ReliabilityTest
         }
     }
 
-#if PROJECTK_BUILD
     public MethodInfo EntryPointMethod
     {
         get
@@ -387,7 +364,6 @@ public class ReliabilityTest
             _entryPointMethod = value;
         }
     }
-#endif 
 
     public string BasePath
     {
@@ -395,15 +371,11 @@ public class ReliabilityTest
         {
             if (_basePath == null)
             {
-#if PROJECTK_BUILD
                 string strBVTRoot = Environment.GetEnvironmentVariable("BVT_ROOT");
                 if (String.IsNullOrEmpty(strBVTRoot))
                     return Path.Combine(Directory.GetCurrentDirectory(), "Tests");
                 else
                     return strBVTRoot;
-#else
-                return (String.Empty);
-#endif
             }
 
             if (_basePath.Length > 0)
@@ -436,7 +408,7 @@ public class ReliabilityTest
             // first, check the current directory
             string curDir = Directory.GetCurrentDirectory();
             string theAnswer;
-            if (File.Exists(theAnswer = Path.Combine (curDir, _debugger)))
+            if (File.Exists(theAnswer = Path.Combine(curDir, _debugger)))
             {
                 return (theAnswer);
             }
@@ -451,7 +423,7 @@ public class ReliabilityTest
             string[] splitPath = path.Split(new char[] { ';' });
             foreach (string curPath in splitPath)
             {
-                if (File.Exists(theAnswer = Path.Combine (curPath, _debugger)))
+                if (File.Exists(theAnswer = Path.Combine(curPath, _debugger)))
                 {
                     return (theAnswer);
                 }

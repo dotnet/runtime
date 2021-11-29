@@ -782,10 +782,9 @@ namespace Internal.TypeSystem
             if (!type.IsValueType && type.HasBaseType)
             {
                 cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
-                if (!type.BaseType.InstanceByteCountUnaligned.IsIndeterminate)
+                if (!cumulativeInstanceFieldPos.IsIndeterminate)
                 {
-                    cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
-                    if (type.BaseType.IsZeroSizedReferenceType && ((MetadataType)type.BaseType).HasLayout())
+                    if (requiresAlignedBase && type.BaseType.IsZeroSizedReferenceType && ((MetadataType)type.BaseType).HasLayout())
                     {
                         cumulativeInstanceFieldPos += LayoutInt.One;
                     }
@@ -1013,6 +1012,31 @@ namespace Internal.TypeSystem
             }
 
             return NotHA;
+        }
+
+        public override bool ComputeIsUnsafeValueType(DefType type)
+        {
+            if (!type.IsValueType)
+                return false;
+
+            MetadataType metadataType = (MetadataType)type;
+            if (metadataType.HasCustomAttribute("System.Runtime.CompilerServices", "UnsafeValueTypeAttribute"))
+                return true;
+
+            foreach (FieldDesc field in metadataType.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+                if (!fieldType.IsValueType || fieldType.IsPrimitive)
+                    continue;
+
+                if (((DefType)fieldType).IsUnsafeValueType)
+                    return true;
+            }
+
+            return false;
         }
 
         private struct SizeAndAlignment

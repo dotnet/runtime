@@ -7,11 +7,5 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides access to a rich set of management information and management events about the system, devices, and applications instrumented to the Windows Management Instrumentation (WMI) infrastructure.
-
-Commonly Used Types:
-System.Management.ManagementClass
-System.Management.ManagementObject
-System.Management.SelectQuery</PackageDescription>
   </PropertyGroup>
 </Project>

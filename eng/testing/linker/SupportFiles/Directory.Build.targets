@@ -1,33 +1,16 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)testing\tests.mobile.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)', 'AppBundle'))</BundleDir>
     <WasmMainAssemblyFileName>project.dll</WasmMainAssemblyFileName>
   </PropertyGroup>
 
-  <Target Name="RemoveRuntimePackFromDownloadItem"
-          AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="UpdateRuntimePack"
-          AfterTargets="ResolveFrameworkReferences">
-    <ItemGroup>
-      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(MicrosoftNetCoreAppRuntimePackRidDir)../../" />
-      <ResolvedTargetingPack Update="@(ResolvedTargetingPack)" Path="$(TargetingPackDir)" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="CreateTestWasmAppBundle"
           AfterTargets="Publish"
           DependsOnTargets="BundleTestWasmApp"
-          Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'" />
+          Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'browser'" />
 
   <!-- Overriding these targets as these projects won't need to binplace -->
   <Target Name="PublishTestAsSelfContained" />

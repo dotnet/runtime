@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.Runtime
             }
             else
             {
-                Debug.Assert(itemType == BooleanType, "Unexpected type of atomic sequence " + itemType.ToString());
+                Debug.Assert(itemType == BooleanType, $"Unexpected type of atomic sequence {itemType}");
                 return item.ValueAsBoolean;
             }
         }
@@ -126,7 +126,7 @@ namespace System.Xml.Xsl.Runtime
             }
             else
             {
-                Debug.Assert(itemType == BooleanType, "Unexpected type of atomic sequence " + itemType.ToString());
+                Debug.Assert(itemType == BooleanType, $"Unexpected type of atomic sequence {itemType}");
                 return item.ValueAsBoolean ? 1d : 0d;
             }
         }

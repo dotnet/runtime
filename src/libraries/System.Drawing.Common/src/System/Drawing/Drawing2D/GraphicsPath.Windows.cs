@@ -94,7 +94,7 @@ namespace System.Drawing.Drawing2D
 #endif
                     Gdip.GdipDeletePath(new HandleRef(this, _nativePath));
 #if DEBUG
-                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
                 }
                 catch (Exception ex)

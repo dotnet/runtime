@@ -813,6 +813,9 @@
   <data name="Argument_AdjustmentRulesOutOfOrder" xml:space="preserve">
     <value>The elements of the AdjustmentRule array must be in chronological order and must not overlap.</value>
   </data>
+  <data name="Argument_AlignmentMustBePow2" xml:space="preserve">
+    <value>The alignment must be a power of two.</value>
+  </data>
   <data name="Argument_AlreadyACCW" xml:space="preserve">
     <value>The object already has a CCW associated with it.</value>
   </data>
@@ -954,6 +957,9 @@
   <data name="Argument_CultureNotSupported" xml:space="preserve">
     <value>Culture is not supported.</value>
   </data>
+  <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
+    <value>Only the invariant culture is supported in globalization-invariant mode. See https://aka.ms/GlobalizationInvariantMode for more information.</value>
+  </data>
   <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
     <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
   </data>
@@ -1085,6 +1091,12 @@
   </data>
   <data name="Argument_InvalidAppendMode" xml:space="preserve">
     <value>Append access can be requested only in write-only mode.</value>
+  </data>
+  <data name="Argument_InvalidPreallocateAccess" xml:space="preserve">
+    <value>Preallocation size can be requested only in write mode.</value>
+  </data>
+  <data name="Argument_InvalidPreallocateMode" xml:space="preserve">
+    <value>Preallocation size can be requested only for new files.</value>
   </data>
   <data name="Argument_InvalidArgumentForComparison" xml:space="preserve">
     <value>Type of argument is not compatible with the generic comparer.</value>
@@ -2662,6 +2674,9 @@
   <data name="IO_FileTooLong2GB" xml:space="preserve">
     <value>The file is too long. This operation is currently limited to supporting files less than 2 gigabytes in size.</value>
   </data>
+  <data name="IO_FileTooLong" xml:space="preserve">
+    <value>IO operation will not work. Most likely the file will become too long.</value>
+  </data>
   <data name="IO_FileTooLongOrHandleNotSync" xml:space="preserve">
     <value>IO operation will not work. Most likely the file will become too long or the handle was not opened to support synchronous IO operations.</value>
   </data>
@@ -2700,6 +2715,9 @@
   </data>
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_TooManySymbolicLinkLevels" xml:space="preserve">
+    <value>Too many levels of symbolic links in '{0}'.</value>
   </data>
   <data name="IO_UnknownFileName" xml:space="preserve">
     <value>[Unknown]</value>
@@ -2829,9 +2847,6 @@
   </data>
   <data name="NotSupported_DynamicModule" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic module.</value>
-  </data>
-  <data name="NotSupported_FileStreamOnNonFiles" xml:space="preserve">
-    <value>FileStream was asked to open a device that was not a file. For support for devices like 'com1:' or 'lpt1:', call CreateFile, then use the FileStream constructors that take an OS handle as an IntPtr.</value>
   </data>
   <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
     <value>Collection was of a fixed size.</value>
@@ -3766,6 +3781,12 @@
   <data name="IO_CannotCreateDirectory" xml:space="preserve">
     <value>The specified directory '{0}' cannot be created.</value>
   </data>
+  <data name="IO_CannotReplaceSameFile" xml:space="preserve">
+    <value>The source '{0}' and destination '{1}' are the same file.</value>
+  </data>
+  <data name="IO_NotAFile" xml:space="preserve">
+    <value>The specified path '{0}' is not a file.</value>
+  </data>
   <data name="IO_SourceDestMustBeDifferent" xml:space="preserve">
     <value>Source and destination path must be different.</value>
   </data>
@@ -3780,5 +3801,23 @@
   </data>
   <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
     <value>File encryption is not supported on this platform.</value>
+  </data>
+  <data name="Arg_MemberInfoNotFound" xml:space="preserve">
+    <value>A MemberInfo that matches '{0}' could not be found.</value>
+  </data>
+  <data name="InvalidOperation_BadTZHeader" xml:space="preserve">
+    <value>Bad magic in '{0}': Header starts with '{1}' instead of 'tzdata'</value>
+  </data>
+  <data name="InvalidOperation_ReadTZError" xml:space="preserve">
+    <value>Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.</value>
+  </data>
+  <data name="InvalidOperation_BadIndexLength" xml:space="preserve">
+    <value>Length in index file less than AndroidTzDataHeader</value>
+  </data>
+  <data name="TimeZoneNotFound_ValidTimeZoneFileMissing" xml:space="preserve">
+    <value>Unable to properly load any time zone data files.</value>
+  </data>
+  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
+    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
   </data>
 </root>

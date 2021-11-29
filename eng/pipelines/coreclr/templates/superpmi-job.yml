@@ -39,7 +39,6 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     runtimeType: ${{ parameters.runtimeType }}
     codeGenType: ${{ parameters.codeGenType }}
-    projectFile: ${{ parameters.projectFile }}
     runKind: ${{ parameters.runKind }}
     testGroup: ${{ parameters.testGroup }}
     collectionType: ${{ parameters.collectionType }}

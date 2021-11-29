@@ -22,13 +22,29 @@
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 mkdir r2r
-"%CORE_ROOT%\crossgen" -ReadyToRun -Platform_Assemblies_Paths "%CORE_ROOT%" -out r2r\$(MSBuildProjectName).dll $(MSBuildProjectName).dll
+
+REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+setlocal
+set "COMPlus_GCName="
+set "COMPlus_GCStress="
+set "COMPlus_HeapVerify="
+set "COMPlus_ReadyToRun="
+
+"%CORE_ROOT%\corerun" %CORE_ROOT%\crossgen2\crossgen2.dll --out r2r\$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r %CORE_ROOT%\*.dll
+
+endlocal
 set CLRCustomTestLauncher=RunBasicTestWithMcj.cmd --runCustomTest
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 mkdir r2r
-"$CORE_ROOT/crossgen" -ReadyToRun -Platform_Assemblies_Paths "$CORE_ROOT" -out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll
+
+# Suppress some COMPlus variables for the duration of Crossgen2 execution
+export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+
+"$CORE_ROOT/corerun" $CORE_ROOT/crossgen2/crossgen2.dll --out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r $CORE_ROOT/*.dll
+
+export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 chmod +x ./RunBasicTestWithMcj.sh
 export CLRCustomTestLauncher="./RunBasicTestWithMcj.sh --runCustomTest"
 ]]></BashCLRTestPreCommands>

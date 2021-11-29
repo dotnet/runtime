@@ -1,20 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Security.Principal.Windows.cs" Condition="'$(TargetFramework)' != 'net461'" />
-    <Compile Include="System.Security.Principal.Windows.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
+    <Compile Include="System.Security.Principal.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Claims\ref\System.Security.Claims.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal\ref\System.Security.Principal.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Principal" />
   </ItemGroup>
 </Project>

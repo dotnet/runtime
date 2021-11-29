@@ -260,14 +260,6 @@ class DomainFile
     Module* GetLoadedModule();
     Module* GetModule();
 
-#ifdef FEATURE_PREJIT
-    BOOL IsZapRequired(); // Are we absolutely required to use a native image?
-#endif
-    // The format string is intentionally unicode to avoid globalization bugs
-#ifdef FEATURE_PREJIT
-    void ExternalLog(DWORD level, const WCHAR *fmt, ...);
-    void ExternalLog(DWORD level, const char *msg);
-#endif
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -310,20 +302,6 @@ class DomainFile
 
     // This should be used to permanently set the load to fail. Do not use with transient conditions
     void SetError(Exception *ex);
-
-#ifdef FEATURE_PREJIT
-
-#ifndef DACCESS_COMPILE
-    virtual void FindNativeImage() = 0;
-#endif
-    void VerifyNativeImageDependencies(bool verifyOnly = FALSE);
-
-    // Are we absolutely required to use a native image?
-    void CheckZapRequired();
-
-    void ClearNativeImageStress();
-
-#endif // FEATURE_PREJIT
 
     void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|= PROFILER_NOTIFIED; }
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }
@@ -408,14 +386,6 @@ class DomainFile
             m_pError->ConvertToHResult();
     };
 
-#ifdef FEATURE_PREJIT
-    // Lock-free enumeration of DomainFiles in an AppDomain.
-public:
-    DomainFile *FindNextDomainFileWithNativeImage();
-private:
-    void InsertIntoDomainFileWithNativeImageList();
-#endif // FEATURE_PREJIT
-
     DWORD                    m_notifyflags;
     BOOL                        m_loading;
     // m_pDynamicMethodTable is used by the light code generation to allow method
@@ -424,31 +394,6 @@ private:
     DynamicMethodTable          *m_pDynamicMethodTable;
     class UMThunkHash *m_pUMThunkHash;
     BOOL m_bDisableActivationCheck;
-
-    // This value is to make it easier to diagnose Assembly Loader "rejected native image" crashes.
-    // See Dev11 bug 358184 for more details
-public:
-    DWORD m_dwReasonForRejectingNativeImage; // See code:g_dwLoaderReasonForNotSharing in Assembly.cpp for a similar variable.
-private:
-
-#ifdef FEATURE_PREJIT
-    // This value is to allow lock-free enumeration of all native images in an AppDomain
-    Volatile<DomainFile *> m_pNextDomainFileWithNativeImage;
-#endif
-};
-
-// These will sometimes result in a crash with error code 0x80131506 COR_E_EXECUTIONENGINE
-// "An internal error happened in the Common Language Runtime's Execution Engine"
-// Cause: Incorrectly committed to using native image for <path to assembly>
-enum ReasonForRejectingNativeImage
-{
-    ReasonForRejectingNativeImage_NoNiForManifestModule = 0x101,
-    ReasonForRejectingNativeImage_DependencyNotNative = 0x102,
-    ReasonForRejectingNativeImage_CoreLibNotNative = 0x103,
-    ReasonForRejectingNativeImage_FailedSecurityCheck = 0x104,
-    ReasonForRejectingNativeImage_DependencyIdentityMismatch = 0x105,
-    ReasonForRejectingNativeImage_CannotShareNiAssemblyNotDomainNeutral = 0x106,
-    ReasonForRejectingNativeImage_NiAlreadyUsedInAnotherSharedAssembly = 0x107,
 };
 
 //---------------------------------------------------------------------------------------
@@ -606,18 +551,6 @@ public:
                      LPCSTR *szFileName, DWORD *dwLocation,
                      BOOL fSkipRaiseResolveEvent);
 
-#ifdef FEATURE_PREJIT
-    // ------------------------------------------------------------
-    // Prejitting API
-    // ------------------------------------------------------------
-
-    void GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pZapVersionInfo);
-
-    void GetOptimizedIdentitySignature(CORCOMPILE_ASSEMBLY_SIGNATURE *pSignature);
-    BOOL CheckZapDependencyIdentities(PEImage *pNativeImage);
-
-#endif // FEATURE_PREJIT
-
     // ------------------------------------------------------------
     // Debugger control API
     // ------------------------------------------------------------
@@ -674,12 +607,6 @@ private:
 #endif
 
     void UpdatePEFile(PTR_PEFile pFile);
-
-#ifdef FEATURE_PREJIT
-#ifndef DACCESS_COMPILE
-    void FindNativeImage();
-#endif
-#endif // FEATURE_PREJIT
 
     BOOL IsInstrumented();
 

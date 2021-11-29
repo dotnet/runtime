@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading
 {
@@ -30,6 +31,9 @@ namespace System.Reflection.TypeLoading
         public sealed override int MDStreamVersion => throw new InvalidOperationException(SR.ResourceOnlyModule);
         public sealed override int MetadataToken => 0x00000000;
         public sealed override Guid ModuleVersionId => throw new InvalidOperationException(SR.ResourceOnlyModule);
+
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:RequiresAssemblyFiles on Name",
+            Justification = "https://github.com/dotnet/runtime/issues/56519")]
         public sealed override string ScopeName => Name;
         public sealed override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine)
         {

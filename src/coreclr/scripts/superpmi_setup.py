@@ -28,7 +28,7 @@
 # | x86   | Windows.10.Amd64.X86 |                                                                                                                                      |
 # | x64   | Windows.10.Amd64.X86 | Ubuntu.1804.Amd64                                                                                                                    |
 # | arm   | -                    | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
+# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
 ################################################################################
 ################################################################################
 
@@ -59,6 +59,46 @@ parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 
 native_binaries_to_ignore = [
+    "api-ms-win-core-console-l1-1-0.dll",
+    "api-ms-win-core-datetime-l1-1-0.dll",
+    "api-ms-win-core-debug-l1-1-0.dll",
+    "api-ms-win-core-errorhandling-l1-1-0.dll",
+    "api-ms-win-core-file-l1-1-0.dll",
+    "api-ms-win-core-file-l1-2-0.dll",
+    "api-ms-win-core-file-l2-1-0.dll",
+    "api-ms-win-core-handle-l1-1-0.dll",
+    "api-ms-win-core-heap-l1-1-0.dll",
+    "api-ms-win-core-interlocked-l1-1-0.dll",
+    "api-ms-win-core-libraryloader-l1-1-0.dll",
+    "api-ms-win-core-localization-l1-2-0.dll",
+    "api-ms-win-core-memory-l1-1-0.dll",
+    "api-ms-win-core-namedpipe-l1-1-0.dll",
+    "api-ms-win-core-processenvironment-l1-1-0.dll",
+    "api-ms-win-core-processthreads-l1-1-0.dll",
+    "api-ms-win-core-processthreads-l1-1-1.dll",
+    "api-ms-win-core-profile-l1-1-0.dll",
+    "api-ms-win-core-rtlsupport-l1-1-0.dll",
+    "api-ms-win-core-string-l1-1-0.dll",
+    "api-ms-win-core-synch-l1-1-0.dll",
+    "api-ms-win-core-synch-l1-2-0.dll",
+    "api-ms-win-core-sysinfo-l1-1-0.dll",
+    "api-ms-win-core-timezone-l1-1-0.dll",
+    "api-ms-win-core-util-l1-1-0.dll",
+    "api-ms-win-crt-conio-l1-1-0.dll",
+    "api-ms-win-crt-convert-l1-1-0.dll",
+    "api-ms-win-crt-environment-l1-1-0.dll",
+    "api-ms-win-crt-filesystem-l1-1-0.dll",
+    "api-ms-win-crt-heap-l1-1-0.dll",
+    "api-ms-win-crt-locale-l1-1-0.dll",
+    "api-ms-win-crt-math-l1-1-0.dll",
+    "api-ms-win-crt-multibyte-l1-1-0.dll",
+    "api-ms-win-crt-private-l1-1-0.dll",
+    "api-ms-win-crt-process-l1-1-0.dll",
+    "api-ms-win-crt-runtime-l1-1-0.dll",
+    "api-ms-win-crt-stdio-l1-1-0.dll",
+    "api-ms-win-crt-string-l1-1-0.dll",
+    "api-ms-win-crt-time-l1-1-0.dll",
+    "api-ms-win-crt-utility-l1-1-0.dll",
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
@@ -68,6 +108,9 @@ native_binaries_to_ignore = [
     "clrjit_unix_arm_x86.dll",
     "clrjit_unix_arm64_arm64.dll",
     "clrjit_unix_arm64_x64.dll",
+    "clrjit_unix_armel_arm.dll",
+    "clrjit_unix_armel_arm64.dll",
+    "clrjit_unix_armel_x64.dll",
     "clrjit_unix_armel_x86.dll",
     "clrjit_unix_osx_arm64_arm64.dll",
     "clrjit_unix_osx_arm64_x64.dll",
@@ -85,6 +128,12 @@ native_binaries_to_ignore = [
     "clrjit_win_x86_arm64.dll",
     "clrjit_win_x86_x64.dll",
     "clrjit_win_x86_x86.dll",
+    "clrjit_universal_arm_arm.dll",
+    "clrjit_universal_arm_arm64.dll",
+    "clrjit_universal_arm_x64.dll",
+    "clrjit_universal_arm_x86.dll",
+    "clrjit_universal_arm64_arm64.dll",
+    "clrjit_universal_arm64_x64.dll",
     "coreclr.dll",
     "CoreConsole.exe",
     "coredistools.dll",
@@ -92,6 +141,7 @@ native_binaries_to_ignore = [
     "CoreShim.dll",
     "createdump.exe",
     "crossgen.exe",
+    "crossgen2.exe",
     "dbgshim.dll",
     "ilasm.exe",
     "ildasm.exe",
@@ -108,12 +158,15 @@ native_binaries_to_ignore = [
     "mscordbi.dll",
     "mscorrc.dll",
     "msdia140.dll",
+    "R2RDump.exe",
+    "R2RTest.exe",
     "superpmi.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
+    "xunit.console.exe",
 ]
 
 MAX_FILES_COUNT = 1500
@@ -202,7 +255,9 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
-            if name in exclude_files:
+            # Make the exclude check case-insensitive
+            exclude_files_lower = [filename.lower() for filename in exclude_files]
+            if name.lower() in exclude_files_lower:
                 continue
             curr_file_path = path.join(file_path, name)
 
@@ -257,7 +312,7 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None, _exit_on_fail=False):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _long_running=False):
     """ Runs the command.
 
     Args:
@@ -265,20 +320,33 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False):
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
     Returns:
-        (string, string, int): Returns a tuple of stdout, stderr, and command return code
+        (string, string, int): Returns a tuple of stdout, stderr, and command return code if _long_running= False
+        Otherwise stdout, stderr are empty.
     """
     print("Running: " + " ".join(command_to_run))
     command_stdout = ""
     command_stderr = ""
     return_code = 1
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
-        command_stdout, command_stderr = proc.communicate()
-        return_code = proc.returncode
 
-        if len(command_stdout) > 0:
-            print(command_stdout.decode("utf-8"))
-        if len(command_stderr) > 0:
-            print(command_stderr.decode("utf-8"))
+    output_type = subprocess.STDOUT if _long_running else subprocess.PIPE
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
+
+        # For long running command, continuosly print the output
+        if _long_running:
+            while True:
+                output = proc.stdout.readline()
+                if proc.poll() is not None:
+                    break
+                if output:
+                    print(output.strip().decode("utf-8"))
+        else:
+            command_stdout, command_stderr = proc.communicate()
+            if len(command_stdout) > 0:
+                print(command_stdout.decode("utf-8"))
+            if len(command_stderr) > 0:
+                print(command_stderr.decode("utf-8"))
+
+        return_code = proc.returncode
         if _exit_on_fail and return_code != 0:
             print("Command failed. Exiting.")
             sys.exit(1)
@@ -331,7 +399,7 @@ def copy_files(src_path, dst_path, file_names):
         file_names ([string]): List of full path file names to be copied.
     """
 
-    print('### Copying below files to {0}:'.format(dst_path))
+    print('### Copying below files from {0} to {1}:'.format(src_path, dst_path))
     print('')
     print(os.linesep.join(file_names))
     for f in file_names:
@@ -443,7 +511,7 @@ def main(main_args):
         if arch == "arm":
             helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
         elif arch == "arm64":
-            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855"
+            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652"
         else:
             helix_queue = "Ubuntu.1804.Amd64"
 

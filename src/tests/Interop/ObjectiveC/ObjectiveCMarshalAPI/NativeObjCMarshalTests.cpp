@@ -47,12 +47,8 @@ namespace
             ::abort();
         }
 
-
         assert(mem != nullptr);
         auto cxt = (Contract*)mem;
-
-        cxt->RefCountDown--;
-        cxt->RefCountUp++;
 
         if (cxt->RefCountDown == 0)
         {
@@ -61,6 +57,8 @@ namespace
         }
         else
         {
+            cxt->RefCountDown--;
+            cxt->RefCountUp++;
             return 1;
         }
     }

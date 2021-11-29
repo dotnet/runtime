@@ -212,26 +212,28 @@ HRESULT Assembler::CreateDebugDirectory()
     param.debugDirData = NULL;
 
     // get module ID
-    DWORD rsds = 0x53445352;
-    DWORD pdbAge = 0x1;
+    DWORD rsds = VAL32(0x53445352);
+    DWORD pdbAge = VAL32(0x1);
+    GUID pdbGuid = *m_pPortablePdbWriter->GetGuid();
+    SwapGuid(&pdbGuid);
     DWORD len = sizeof(rsds) + sizeof(GUID) + sizeof(pdbAge) + (DWORD)strlen(m_szPdbFileName) + 1;
     BYTE* dbgDirData = new BYTE[len];
 
     DWORD offset = 0;
     memcpy_s(dbgDirData + offset, len, &rsds, sizeof(rsds));                            // RSDS
     offset += sizeof(rsds);
-    memcpy_s(dbgDirData + offset, len, m_pPortablePdbWriter->GetGuid(), sizeof(GUID)); // PDB GUID
+    memcpy_s(dbgDirData + offset, len, &pdbGuid, sizeof(GUID));                         // PDB GUID
     offset += sizeof(GUID);
     memcpy_s(dbgDirData + offset, len, &pdbAge, sizeof(pdbAge));                        // PDB AGE
     offset += sizeof(pdbAge);
     memcpy_s(dbgDirData + offset, len, m_szPdbFileName, strlen(m_szPdbFileName) + 1);   // PDB PATH
 
     debugDirIDD.Characteristics = 0;
-    debugDirIDD.TimeDateStamp = m_pPortablePdbWriter->GetTimestamp();
-    debugDirIDD.MajorVersion = 0x100;
-    debugDirIDD.MinorVersion = 0x504d;
-    debugDirIDD.Type = IMAGE_DEBUG_TYPE_CODEVIEW;
-    debugDirIDD.SizeOfData = len;
+    debugDirIDD.TimeDateStamp = VAL32(m_pPortablePdbWriter->GetTimestamp());
+    debugDirIDD.MajorVersion = VAL16(0x100);
+    debugDirIDD.MinorVersion = VAL16(0x504d);
+    debugDirIDD.Type = VAL32(IMAGE_DEBUG_TYPE_CODEVIEW);
+    debugDirIDD.SizeOfData = VAL32(len);
     debugDirIDD.AddressOfRawData = 0; // will be updated bellow
     debugDirIDD.PointerToRawData = 0; // will be updated bellow
 
@@ -1223,12 +1225,12 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
                 *pb = ELEMENT_TYPE_TYPEDEF;
                 memcpy(++pb,pTDD->m_szName,namesize);
                 pTDD->m_tkTypeSpec = ResolveLocalMemberRef(pTDD->m_tkTypeSpec);
-                memcpy(pb+namesize,&(pTDD->m_tkTypeSpec),sizeof(mdToken));
+                SET_UNALIGNED_VAL32(pb+namesize, pTDD->m_tkTypeSpec);
                 if(TypeFromToken(pTDD->m_tkTypeSpec)==mdtCustomAttribute)
                 {
                     CustomDescr* pCA = pTDD->m_pCA;
-                    pbs->appendInt32(pCA->tkType);
-                    pbs->appendInt32(pCA->tkOwner);
+                    pbs->appendInt32(VAL32(pCA->tkType));
+                    pbs->appendInt32(VAL32(pCA->tkOwner));
                     if(pCA->pBlob) pbs->append(pCA->pBlob);
                 }
                 ResolveTypeSpec(pbs);
@@ -1314,9 +1316,9 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
             {
                 Method* pMD;
                 Class* pClass;
-                m_pVTable->appendInt32(pGlobalLabel->m_GlobalOffset);
-                m_pVTable->appendInt16(pVTFEntry->m_wCount);
-                m_pVTable->appendInt16(pVTFEntry->m_wType);
+                m_pVTable->appendInt32(VAL32(pGlobalLabel->m_GlobalOffset));
+                m_pVTable->appendInt16(VAL16(pVTFEntry->m_wCount));
+                m_pVTable->appendInt16(VAL16(pVTFEntry->m_wType));
                 for(int i=0; (pClass = m_lstClass.PEEK(i)); i++)
                 {
                     for(WORD j = 0; (pMD = pClass->m_MethodList.PEEK(j)); j++)

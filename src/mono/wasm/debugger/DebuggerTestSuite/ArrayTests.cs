@@ -574,7 +574,7 @@ namespace DebuggerTests
 
                // Trying to access object as an array
                if (!DotnetObjectId.TryParse(c_obj_id, out var id) || id.Scheme != "object")
-                   Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in library_mono.js?");
+                   Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in library-dotnet.js?");
 
                if (!int.TryParse(id.Value, out var idNum))
                    Assert.True(false, "Expected a numeric value part of the object id: {c_obj_id}");

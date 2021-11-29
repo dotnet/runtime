@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -128,6 +130,12 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
             yield return new object[] { @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
             yield return new object[] { @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
+            yield return new object[] { @"^(\d{2,3}){2}$", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"(\d{2,3}){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"((\d{2,3})){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "123" };
+            yield return new object[] { @"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "123" };
+            yield return new object[] { @"(abc\d{2,3}){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc456" };
             foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
             {
                 yield return new object[] { @".*", "abc", lineOption, 1, 2, true, "bc" };
@@ -151,6 +159,9 @@ namespace System.Text.RegularExpressions.Tests
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzza", RegexOptions.None, 0, 18, false, string.Empty };
+
+            // Anchors and multiline
+            yield return new object[] { @"^A$", "ABC\n", RegexOptions.Multiline, 0, 2, false, string.Empty };
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\A(line2\n)line3\Z", "line2\nline3\n", RegexOptions.Multiline, 0, 12, true, "line2\nline3" };
@@ -201,9 +212,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "abc", "abc", RegexOptions.None, 0, 3, true, "abc" };
             yield return new object[] { "abc", "aBc", RegexOptions.None, 0, 3, false, string.Empty };
             yield return new object[] { "abc", "aBc", RegexOptions.IgnoreCase, 0, 3, true, "aBc" };
+            yield return new object[] { @"abc.*def", "abcghiDEF", RegexOptions.IgnoreCase, 0, 9, true, "abcghiDEF" };
 
             // Using *, +, ?, {}: Actual - "a+\\.?b*\\.?c{2}"
             yield return new object[] { @"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc" };
+            yield return new object[] { @"[^a]+\.[^z]+", "zzzzz", RegexOptions.None, 0, 5, false, string.Empty };
 
             // RightToLeft
             yield return new object[] { @"\s+\d+", "sdf 12sad", RegexOptions.RightToLeft, 0, 9, true, " 12" };
@@ -378,6 +391,53 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D2", options, 0, 2, true, "\u05D0\u05D2" };
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
             }
+
+            // .* : Case sensitive
+            yield return new object[] { @".*\nfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "" };
+            yield return new object[] { @"a.*\nfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "" };
+            yield return new object[] { @".*\nFoo", $"\nFooThis should match", RegexOptions.None, 0, 21, true, "\nFoo" };
+            yield return new object[] { @".*\nfoo", "\nfooThis should match", RegexOptions.None, 4, 17, false, "" };
+
+            yield return new object[] { @".*\dfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "" };
+            yield return new object[] { @".*\dFoo", "This1Foo should match", RegexOptions.None, 0, 21, true, "This1Foo" };
+            yield return new object[] { @".*\dFoo", "This1foo should 2Foo match", RegexOptions.None, 0, 26, true, "This1foo should 2Foo" };
+            yield return new object[] { @".*\dFoo", "This1foo shouldn't 2foo match", RegexOptions.None, 0, 29, false, "" };
+            yield return new object[] { @".*\dfoo", "This1foo shouldn't 2foo match", RegexOptions.None, 24, 5, false, "" };
+
+            yield return new object[] { @".*\dfoo", "1fooThis1foo should 1foo match", RegexOptions.None, 4, 9, true, "This1foo" };
+            yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", RegexOptions.None, 0, 20, false, "" };
+
+            // Turkish case sensitivity
+            yield return new object[] { @"[\u0120-\u0130]", "\u0130", RegexOptions.None, 0, 1, true, "\u0130" };
+
+            // .* : Case insensitive
+            yield return new object[] { @".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase, 0, 21, true, "\nfoo" };
+            yield return new object[] { @".*\dFoo", "This1foo should match", RegexOptions.IgnoreCase, 0, 21, true, "This1foo" };
+            yield return new object[] { @".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase, 0, 26, true, "This1foo should 2FoO" };
+            yield return new object[] { @".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase, 0, 26, true, "This1Foo should 2fOo" };
+            yield return new object[] { @".*\dfoo", "1fooThis1FOO should 1foo match", RegexOptions.IgnoreCase, 4, 9, true, "This1FOO" };
+
+            // .* : RTL, Case-sensitive
+            yield return new object[] { @".*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
+            yield return new object[] { @"a.*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
+            yield return new object[] { @".*\nFoo", $"This should match\nFoo", RegexOptions.None | RegexOptions.RightToLeft, 0, 21, true, "This should match\nFoo" };
+            yield return new object[] { @".*\nfoo", "This should matchfoo\n", RegexOptions.None | RegexOptions.RightToLeft, 4, 13, false, "" };
+
+            yield return new object[] { @".*\dfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
+            yield return new object[] { @".*\dFoo", "This1Foo should match", RegexOptions.None | RegexOptions.RightToLeft, 0, 21, true, "This1Foo" };
+            yield return new object[] { @".*\dFoo", "This1foo should 2Foo match", RegexOptions.None | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2Foo" };
+            yield return new object[] { @".*\dFoo", "This1foo shouldn't 2foo match", RegexOptions.None | RegexOptions.RightToLeft, 0, 29, false, "" };
+            yield return new object[] { @".*\dfoo", "This1foo shouldn't 2foo match", RegexOptions.None | RegexOptions.RightToLeft, 19, 0, false, "" };
+
+            yield return new object[] { @".*\dfoo", "1fooThis2foo should 1foo match", RegexOptions.None | RegexOptions.RightToLeft, 8, 4, true, "2foo" };
+            yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
+
+            // .* : RTL, case insensitive
+            yield return new object[] { @".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 21, true, "\nfoo" };
+            yield return new object[] { @".*\dFoo", "This1foo should match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 21, true, "This1foo" };
+            yield return new object[] { @".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2FoO" };
+            yield return new object[] { @".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1Foo should 2fOo" };
+            yield return new object[] { @".*\dfoo", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 8, 4, true, "2FOO" };
         }
 
         public static IEnumerable<object[]> Match_Basic_TestData_NetCore()
@@ -398,49 +458,29 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString() };
         }
 
+        public static IEnumerable<object[]> Match_Basic_TestData_WithEngine() =>
+            RegexHelpers.PrependEngines(Match_Basic_TestData());
+
+        public static IEnumerable<object[]> Match_Basic_TestData_NetCore_WithEngine() =>
+            RegexHelpers.PrependEngines(Match_Basic_TestData());
+
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
-        [MemberData(nameof(Match_Basic_TestData_NetCore))]
-        public void Match_NetCore(string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36149")]
+        [MemberData(nameof(Match_Basic_TestData_NetCore_WithEngine))]
+        public async Task Match_NetCore(RegexEngine engine, string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
         {
-            Match(pattern, input, options, beginning, length, expectedSuccess, expectedValue);
+            await Match(engine, pattern, input, options, beginning, length, expectedSuccess, expectedValue);
         }
 
         [Theory]
-        [MemberData(nameof(Match_Basic_TestData))]
-        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Match_Basic_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
-        public void Match(string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
+        [MemberData(nameof(Match_Basic_TestData_WithEngine))]
+        public async Task Match(RegexEngine engine, string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
         {
-            Regex r;
-
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, beginning);
             bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, length);
 
-            if (options == RegexOptions.None)
-            {
-                r = new Regex(pattern);
-
-                if (isDefaultStart && isDefaultCount)
-                {
-                    // Use Match(string) or Match(string, string)
-                    VerifyMatch(r.Match(input), expectedSuccess, expectedValue);
-                    VerifyMatch(Regex.Match(input, pattern), expectedSuccess, expectedValue);
-
-                    Assert.Equal(expectedSuccess, r.IsMatch(input));
-                    Assert.Equal(expectedSuccess, Regex.IsMatch(input, pattern));
-                }
-                if (beginning + length == input.Length)
-                {
-                    // Use Match(string, int)
-                    VerifyMatch(r.Match(input, beginning), expectedSuccess, expectedValue);
-
-                    Assert.Equal(expectedSuccess, r.IsMatch(input, beginning));
-                }
-                // Use Match(string, int, int)
-                VerifyMatch(r.Match(input, beginning, length), expectedSuccess, expectedValue);
-            }
-
-            r = new Regex(pattern, options);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             if (isDefaultStart && isDefaultCount)
             {
@@ -462,13 +502,20 @@ namespace System.Text.RegularExpressions.Tests
             VerifyMatch(r.Match(input, beginning, length), expectedSuccess, expectedValue);
         }
 
+        public static IEnumerable<object[]> Match_VaryingLengthStrings_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, RegexOptions.None };
+                yield return new object[] { engine, RegexOptions.IgnoreCase };
+                yield return new object[] { engine, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
+            }
+        }
+
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
         [Theory]
-        [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.Compiled)]
-        [InlineData(RegexOptions.Compiled | RegexOptions.IgnoreCase)]
-        [InlineData(RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-        public void Match_VaryingLengthStrings(RegexOptions options)
+        [MemberData(nameof(Match_VaryingLengthStrings_MemberData))]
+        public async Task Match_VaryingLengthStrings(RegexEngine engine, RegexOptions options)
         {
             var lengths = new List<int>() { 2, 3, 4, 5, 6, 7, 8, 9, 31, 32, 33, 63, 64, 65 };
             if ((options & RegexOptions.IgnoreCase) == 0)
@@ -481,29 +528,34 @@ namespace System.Text.RegularExpressions.Tests
             {
                 string pattern = "[123]" + string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
                 string input = "2" + string.Concat(Enumerable.Range(0, length).Select(i => (char)((caseInsensitive ? 'a' : 'A') + (i % 26))));
-                Match(pattern, input, options, 0, input.Length, expectedSuccess: true, expectedValue: input);
+                await Match(engine, pattern, input, options, 0, input.Length, expectedSuccess: true, expectedValue: input);
             }
         }
 
         private static void VerifyMatch(Match match, bool expectedSuccess, string expectedValue)
         {
             Assert.Equal(expectedSuccess, match.Success);
-            Assert.Equal(expectedValue, match.Value);
+            RegexAssert.Equal(expectedValue, match);
 
             // Groups can never be empty
             Assert.True(match.Groups.Count >= 1);
             Assert.Equal(expectedSuccess, match.Groups[0].Success);
-            Assert.Equal(expectedValue, match.Groups[0].Value);
+            RegexAssert.Equal(expectedValue, match.Groups[0]);
+        }
+
+        public static IEnumerable<object[]> Match_DeepNesting_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, 1 };
+                yield return new object[] { engine, 10 };
+                yield return new object[] { engine, 100 };
+            }
         }
 
         [Theory]
-        [InlineData(RegexOptions.None, 1)]
-        [InlineData(RegexOptions.None, 10)]
-        [InlineData(RegexOptions.None, 100)]
-        [InlineData(RegexOptions.Compiled, 1)]
-        [InlineData(RegexOptions.Compiled, 10)]
-        [InlineData(RegexOptions.Compiled, 100)]
-        public void Match_DeepNesting(RegexOptions options, int count)
+        [MemberData(nameof(Match_DeepNesting_MemberData))]
+        public async void Match_DeepNesting(RegexEngine engine, int count)
         {
             const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
             const string Match = "defg";
@@ -511,36 +563,36 @@ namespace System.Text.RegularExpressions.Tests
             string pattern = string.Concat(Enumerable.Repeat(Start, count)) + string.Concat(Enumerable.Repeat(End, count));
             string input = string.Concat(Enumerable.Repeat(Match, count));
 
-            var r = new Regex(pattern, options);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
             Match m = r.Match(input);
 
             Assert.True(m.Success);
-            Assert.Equal(input, m.Value);
+            RegexAssert.Equal(input, m);
             Assert.Equal(count + 1, m.Groups.Count);
         }
 
-        [Fact]
-        public void Match_Timeout()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Match_Timeout(RegexEngine engine)
         {
-            Regex regex = new Regex(@"\p{Lu}", RegexOptions.IgnoreCase, TimeSpan.FromHours(1));
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"\p{Lu}", RegexOptions.IgnoreCase, TimeSpan.FromHours(1));
             Match match = regex.Match("abc");
             Assert.True(match.Success);
-            Assert.Equal("a", match.Value);
+            RegexAssert.Equal("a", match);
         }
 
         [Theory]
-        [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
-        [InlineData(RegexOptions.Compiled)]
-        [InlineData(RegexOptions.Compiled | (RegexOptions)0x80 /* Debug */)]
-        public void Match_Timeout_Throws(RegexOptions options)
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Match_Timeout_Throws(RegexEngine engine)
         {
             const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
             string input = new string('a', 50) + "@a.a";
 
-            Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, options, TimeSpan.FromMilliseconds(100)).Match(input));
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(100));
+            Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
         }
 
+        // TODO: Figure out what to do with default timeouts for source generated regexes
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
@@ -576,6 +628,7 @@ namespace System.Text.RegularExpressions.Tests
             }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
+        // TODO: Figure out what to do with default timeouts for source generated regexes
         [Theory]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
@@ -594,13 +647,10 @@ namespace System.Text.RegularExpressions.Tests
         // On Linux, we may get killed by the OOM Killer; on Windows, it will swap instead
         [OuterLoop("Can take several seconds")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsWindows))]
-        [InlineData(@"a\s+", RegexOptions.None)]
-        [InlineData(@"a\s+", RegexOptions.Compiled)]
-        [InlineData(@"a\s+ ", RegexOptions.None)]
-        [InlineData(@"a\s+ ", RegexOptions.Compiled)]
-        public void Match_Timeout_Loop_Throws(string pattern, RegexOptions options)
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Match_Timeout_Loop_Throws(RegexEngine engine)
         {
-            var regex = new Regex(pattern, options, TimeSpan.FromSeconds(1));
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s+", RegexOptions.None, TimeSpan.FromSeconds(1));
             string input = "a" + new string(' ', 800_000_000) + " ";
             Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
         }
@@ -609,12 +659,11 @@ namespace System.Text.RegularExpressions.Tests
         // On Linux, we may get killed by the OOM Killer; on Windows, it will swap instead
         [OuterLoop("Can take several seconds")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsWindows))]
-        [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.Compiled)]
-        public void Match_Timeout_Repetition_Throws(RegexOptions options)
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Match_Timeout_Repetition_Throws(RegexEngine engine)
         {
             int repetitionCount = 800_000_000;
-            var regex = new Regex(@"a\s{" + repetitionCount+ "}", options, TimeSpan.FromSeconds(1));
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s{" + repetitionCount + "}", RegexOptions.None, TimeSpan.FromSeconds(1));
             string input = @"a" + new string(' ', repetitionCount) + @"b";
             Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
         }
@@ -813,7 +862,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2$\n)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -824,7 +873,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2\n^)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -835,7 +884,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line3\n$\n)line4", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -846,7 +895,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line3\n^\n)line4", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -857,7 +906,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2$\n^)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -897,48 +946,17 @@ namespace System.Text.RegularExpressions.Tests
             };
         }
 
-        [Theory]
-        [MemberData(nameof(Match_Advanced_TestData))]
-        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Match_Advanced_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
-        public void Match_Advanced(string pattern, string input, RegexOptions options, int beginning, int length, CaptureData[] expected)
-        {
-            Regex r;
+        public static IEnumerable<object[]> Match_Advanced_TestData_WithEngine() =>
+            RegexHelpers.PrependEngines(Match_Advanced_TestData());
 
+        [Theory]
+        [MemberData(nameof(Match_Advanced_TestData_WithEngine))]
+        public async Task Match_Advanced(RegexEngine engine, string pattern, string input, RegexOptions options, int beginning, int length, CaptureData[] expected)
+        {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, beginning);
             bool isDefaultCount = RegexHelpers.IsDefaultStart(input, options, length);
 
-            if (options == RegexOptions.None)
-            {
-                r = new Regex(pattern);
-
-                if (isDefaultStart && isDefaultCount)
-                {
-                    // Use Match(string) or Match(string, string)
-                    VerifyMatch(r.Match(input), true, expected);
-                    VerifyMatch(Regex.Match(input, pattern), true, expected);
-
-                    Assert.True(r.IsMatch(input));
-                    Assert.True(Regex.IsMatch(input, pattern));
-                }
-
-                // Note: this block will fail if any inputs attempt to look for anchors or lookbehinds at the initial position,
-                // as there is a difference between Match(input, beginning) and Match(input, beginning, input.Length - beginning)
-                // in that the former doesn't modify from 0 what the engine sees as the beginning of the input whereas the latter
-                // is equivalent to taking a substring and then matching on that.  However, as we currently don't have any such inputs,
-                // it's currently a viable way to test the additional overload.  Same goes for the similar case below with options.
-                if (beginning + length == input.Length)
-                {
-                    // Use Match(string, int)
-                    VerifyMatch(r.Match(input, beginning), true, expected);
-
-                    Assert.True(r.IsMatch(input, beginning));
-                }
-
-                // Use Match(string, int, int)
-                VerifyMatch(r.Match(input, beginning, length), true, expected);
-            }
-
-            r = new Regex(pattern, options);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             if (isDefaultStart && isDefaultCount)
             {
@@ -964,26 +982,28 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Match_StartatDiffersFromBeginning_MemberData()
         {
-            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                // Anchors
-                yield return new object[] { @"^.*", "abc", options, 0, true, true };
-                yield return new object[] { @"^.*", "abc", options, 1, false, true };
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+                {
+                    // Anchors
+                    yield return new object[] { engine, @"^.*", "abc", options, 0, true, true };
+                    yield return new object[] { engine, @"^.*", "abc", options, 1, false, true };
 
-                // Positive Lookbehinds
-                yield return new object[] { @"(?<=abc)def", "abcdef", options, 3, true, false };
+                    // Positive Lookbehinds
+                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", options, 3, true, false };
 
-                // Negative Lookbehinds
-                yield return new object[] { @"(?<!abc)def", "abcdef", options, 3, false, true };
+                    // Negative Lookbehinds
+                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", options, 3, false, true };
+                }
             }
         }
 
         [Theory]
         [MemberData(nameof(Match_StartatDiffersFromBeginning_MemberData))]
-        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Match_StartatDiffersFromBeginning_MemberData), 2, MemberType = typeof(RegexCompilationHelper))]
-        public void Match_StartatDiffersFromBeginning(string pattern, string input, RegexOptions options, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
+        public async Task Match_StartatDiffersFromBeginning(RegexEngine engine, string pattern, string input, RegexOptions options, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
         {
-            var r = new Regex(pattern, options);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
             Assert.Equal(expectedSuccessStartAt, r.Match(input, startat).Success);
@@ -996,12 +1016,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             Assert.Equal(expectedSuccess, match.Success);
 
-            Assert.Equal(expected[0].Value, match.Value);
+            RegexAssert.Equal(expected[0].Value, match);
             Assert.Equal(expected[0].Index, match.Index);
             Assert.Equal(expected[0].Length, match.Length);
 
             Assert.Equal(1, match.Captures.Count);
-            Assert.Equal(expected[0].Value, match.Captures[0].Value);
+            RegexAssert.Equal(expected[0].Value, match.Captures[0]);
             Assert.Equal(expected[0].Index, match.Captures[0].Index);
             Assert.Equal(expected[0].Length, match.Captures[0].Length);
 
@@ -1010,14 +1030,14 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Assert.Equal(expectedSuccess, match.Groups[i].Success);
 
-                Assert.Equal(expected[i].Value, match.Groups[i].Value);
+                RegexAssert.Equal(expected[i].Value, match.Groups[i]);
                 Assert.Equal(expected[i].Index, match.Groups[i].Index);
                 Assert.Equal(expected[i].Length, match.Groups[i].Length);
 
                 Assert.Equal(expected[i].Captures.Length, match.Groups[i].Captures.Count);
                 for (int j = 0; j < match.Groups[i].Captures.Count; j++)
                 {
-                    Assert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j].Value);
+                    RegexAssert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j]);
                     Assert.Equal(expected[i].Captures[j].Index, match.Groups[i].Captures[j].Index);
                     Assert.Equal(expected[i].Captures[j].Length, match.Groups[i].Captures[j].Length);
                 }
@@ -1044,57 +1064,59 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<NotSupportedException>(() => RegularExpressions.Match.Empty.Result("any"));
         }
 
-        [Fact]
-        public void Match_SpecialUnicodeCharacters_enUS()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Match_SpecialUnicodeCharacters_enUS(RegexEngine engine)
         {
             using (new ThreadCultureChange("en-US"))
             {
-                Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await Match(engine, "\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await Match(engine, "\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
             }
         }
 
-        [Fact]
-        public void Match_SpecialUnicodeCharacters_Invariant()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Match_SpecialUnicodeCharacters_Invariant(RegexEngine engine)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                Match("\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                Match("\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await Match(engine, "\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await Match(engine, "\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await Match(engine, "\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await Match(engine, "\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
             }
         }
 
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/59541")]
         [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
-        [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.Compiled)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeConfiguration.Checked, RuntimeTestModes.JitMinOpts)]
-        public void Match_ExcessPrefix(RegexOptions options)
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public void Match_ExcessPrefix(RegexEngine engine)
         {
-            RemoteExecutor.Invoke(optionsString =>
+            RemoteExecutor.Invoke(async engineString =>
             {
-                var options = (RegexOptions)Enum.Parse(typeof(RegexOptions), optionsString);
+                var engine = (RegexEngine)Enum.Parse(typeof(RegexEngine), engineString);
 
                 // Should not throw out of memory
 
                 // Repeaters
-                Assert.False(Regex.IsMatch("a", @"a{2147483647,}", options));
-                Assert.False(Regex.IsMatch("a", @"a{50,}", options)); // cutoff for Boyer-Moore prefix in debug
-                Assert.False(Regex.IsMatch("a", @"a{51,}", options));
-                Assert.False(Regex.IsMatch("a", @"a{50_000,}", options)); // cutoff for Boyer-Moore prefix in release
-                Assert.False(Regex.IsMatch("a", @"a{50_001,}", options));
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{2147483647,}")).IsMatch("a"));
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in debug
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{51,}")).IsMatch("a"));
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_000,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in release
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_001,}")).IsMatch("a"));
 
                 // Multis
                 foreach (int length in new[] { 50, 51, 50_000, 50_001, char.MaxValue + 1 }) // based on knowledge of cut-offs used in Boyer-Moore
                 {
                     string s = "bcd" + new string('a', length) + "efg";
-                    Assert.True(Regex.IsMatch(s, @$"a{{{length}}}", options));
+                    Assert.True((await RegexHelpers.GetRegexAsync(engine, @$"a{{{length}}}")).IsMatch(s));
                 }
-            }, options.ToString()).Dispose();
+            }, engine.ToString()).Dispose();
         }
 
         [Fact]
@@ -1150,15 +1172,32 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => r.IsMatch("input", 6));
         }
 
+        public static IEnumerable<object[]> IsMatch_SucceedQuicklyDueToLoopReduction_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, @"(?:\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false };
+                yield return new object[] { engine, @"(?:a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false };
+                yield return new object[] { engine, @"(?:x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false };
+            }
+        }
+
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // take too long due to backtracking
         [Theory]
-        [InlineData(@"(\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
-        [InlineData(@"(a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
-        [InlineData(@"(x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
-        public void IsMatch_SucceedQuicklyDueToAutoAtomicity(string regex, string input, bool expected)
+        [MemberData(nameof(IsMatch_SucceedQuicklyDueToLoopReduction_MemberData))]
+        public async Task IsMatch_SucceedQuicklyDueToLoopReduction(RegexEngine engine, string pattern, string input, bool expected)
         {
-            Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.None));
-            Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.Compiled));
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
+            Assert.Equal(expected, r.IsMatch(input));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task TestCharIsLowerCultureEdgeCasesAroundTurkishCharacters(RegexEngine engine)
+        {
+            Regex r1 = await RegexHelpers.GetRegexAsync(engine, "[\u012F-\u0130]", RegexOptions.IgnoreCase);
+            Regex r2 = await RegexHelpers.GetRegexAsync(engine, "[\u012F\u0130]", RegexOptions.IgnoreCase);
+            Assert.Equal(r1.IsMatch("\u0130"), r2.IsMatch("\u0130"));
         }
 
         [Fact]
@@ -1166,14 +1205,60 @@ namespace System.Text.RegularExpressions.Tests
         {
             var m = new Regex("abc").Match("abc");
             Assert.True(m.Success);
-            Assert.Equal("abc", m.Value);
+            RegexAssert.Equal("abc", m);
 
             var m2 = System.Text.RegularExpressions.Match.Synchronized(m);
             Assert.Same(m, m2);
             Assert.True(m2.Success);
-            Assert.Equal("abc", m2.Value);
+            RegexAssert.Equal("abc", m2);
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
+        }
+
+        public static IEnumerable<object[]> UseRegexConcurrently_ThreadSafe_Success_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, Timeout.InfiniteTimeSpan };
+                yield return new object[] { engine, TimeSpan.FromMinutes(1) };
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop("Takes several seconds")]
+        [MemberData(nameof(UseRegexConcurrently_ThreadSafe_Success_MemberData))]
+        public async Task UseRegexConcurrently_ThreadSafe_Success(RegexEngine engine, TimeSpan timeout)
+        {
+            const string Input = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue massa. Fusce posuere, magna sed pulvinar ultricies, purus lectus malesuada libero, sit amet commodo magna eros quis urna. Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Proin pharetra nonummy pede. Mauris et orci. Aenean nec lorem. In porttitor. abcdefghijklmnx Donec laoreet nonummy augue. Suspendisse dui purus, scelerisque at, vulputate vitae, pretium mattis, nunc. Mauris eget neque at sem venenatis eleifend. Ut nonummy. Fusce aliquet pede non pede. Suspendisse dapibus lorem pellentesque magna. Integer nulla. Donec blandit feugiat ligula. Donec hendrerit, felis et imperdiet euismod, purus ipsum pretium metus, in lacinia nulla nisl eget sapien. Donec ut est in lectus consequat consequat. Etiam eget dui. Aliquam erat volutpat. Sed at lorem in nunc porta tristique. Proin nec augue. Quisque aliquam tempor magna. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nunc ac magna. Maecenas odio dolor, vulputate vel, auctor ac, accumsan id, felis. Pellentesque cursus sagittis felis. Pellentesque porttitor, velit lacinia egestas auctor, diam eros tempus arcu, nec vulputate augue magna vel risus.nmlkjihgfedcbax";
+            const int Trials = 100;
+            const int IterationsPerTask = 10;
+
+            using var b = new Barrier(Environment.ProcessorCount);
+
+            for (int trial = 0; trial < Trials; trial++)
+            {
+                Regex r = await RegexHelpers.GetRegexAsync(engine, "[a-q][^u-z]{13}x", RegexOptions.None, timeout);
+                Task.WaitAll(Enumerable.Range(0, b.ParticipantCount).Select(_ => Task.Factory.StartNew(() =>
+                             {
+                                 b.SignalAndWait();
+                                 for (int i = 0; i < IterationsPerTask; i++)
+                                 {
+                                     Match m = r.Match(Input);
+                                     Assert.NotNull(m);
+                                     Assert.True(m.Success);
+                                     Assert.Equal("abcdefghijklmnx", m.Value);
+
+                                     m = m.NextMatch();
+                                     Assert.NotNull(m);
+                                     Assert.True(m.Success);
+                                     Assert.Equal("nmlkjihgfedcbax", m.Value);
+
+                                     m = m.NextMatch();
+                                     Assert.NotNull(m);
+                                     Assert.False(m.Success);
+                                 }
+                             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
+            }
         }
     }
 }

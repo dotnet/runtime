@@ -23,13 +23,9 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Returns the time the associated thread was started.</summary>
-        public DateTime StartTime
-        {
-            // kinfo_proc has one  entry per thread but ki_start seems to be same for
-            // all threads e.g. reflects process start. This may be re-visited later.
-            get { throw new PlatformNotSupportedException(); }
-        }
+        // kinfo_proc has one  entry per thread but ki_start seems to be same for
+        // all threads e.g. reflects process start. This may be re-visited later.
+        private DateTime GetStartTime() => throw new PlatformNotSupportedException();
 
         /// <summary>
         /// Returns the amount of time the associated thread has spent utilizing the CPU.

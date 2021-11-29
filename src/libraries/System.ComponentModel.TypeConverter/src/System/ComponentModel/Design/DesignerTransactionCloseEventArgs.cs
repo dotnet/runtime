@@ -9,7 +9,7 @@ namespace System.ComponentModel.Design
         /// Creates a new event args. Commit is true if the transaction is committed. This
         /// defaults the LastTransaction property to true.
         /// </summary>
-        [Obsolete("This constructor is obsolete. Use DesignerTransactionCloseEventArgs(bool, bool) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use DesignerTransactionCloseEventArgs(bool, bool) instead.")]
         public DesignerTransactionCloseEventArgs(bool commit) : this(commit, lastTransaction: true)
         {
         }

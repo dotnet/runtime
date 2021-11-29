@@ -65,6 +65,7 @@ namespace Microsoft.Win32
         // The event size is larger than the allowed maximum (64k - header).
         internal const int ERROR_ARITHMETIC_OVERFLOW = 0x216;  // 534
 
+        internal const int ERROR_RESOURCE_TYPE_NOT_FOUND = 0x715;  // 1813
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;  // 1815
 
         // Event log specific codes:

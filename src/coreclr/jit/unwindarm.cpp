@@ -15,7 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(TARGET_ARM) && defined(TARGET_UNIX)
+#if defined(TARGET_ARM) && defined(FEATURE_CFI_SUPPORT)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
@@ -71,100 +71,52 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
             dwarfReg = 15;
             break;
         case REG_F0:
-            dwarfReg = 64;
-            break;
-        case REG_F1:
-            dwarfReg = 65;
+            dwarfReg = 256;
             break;
         case REG_F2:
-            dwarfReg = 66;
-            break;
-        case REG_F3:
-            dwarfReg = 67;
+            dwarfReg = 257;
             break;
         case REG_F4:
-            dwarfReg = 68;
-            break;
-        case REG_F5:
-            dwarfReg = 69;
+            dwarfReg = 258;
             break;
         case REG_F6:
-            dwarfReg = 70;
-            break;
-        case REG_F7:
-            dwarfReg = 71;
+            dwarfReg = 259;
             break;
         case REG_F8:
-            dwarfReg = 72;
-            break;
-        case REG_F9:
-            dwarfReg = 73;
+            dwarfReg = 260;
             break;
         case REG_F10:
-            dwarfReg = 74;
-            break;
-        case REG_F11:
-            dwarfReg = 75;
+            dwarfReg = 261;
             break;
         case REG_F12:
-            dwarfReg = 76;
-            break;
-        case REG_F13:
-            dwarfReg = 77;
+            dwarfReg = 262;
             break;
         case REG_F14:
-            dwarfReg = 78;
-            break;
-        case REG_F15:
-            dwarfReg = 79;
+            dwarfReg = 263;
             break;
         case REG_F16:
-            dwarfReg = 80;
-            break;
-        case REG_F17:
-            dwarfReg = 81;
+            dwarfReg = 264;
             break;
         case REG_F18:
-            dwarfReg = 82;
-            break;
-        case REG_F19:
-            dwarfReg = 83;
+            dwarfReg = 265;
             break;
         case REG_F20:
-            dwarfReg = 84;
-            break;
-        case REG_F21:
-            dwarfReg = 85;
+            dwarfReg = 266;
             break;
         case REG_F22:
-            dwarfReg = 86;
-            break;
-        case REG_F23:
-            dwarfReg = 87;
+            dwarfReg = 267;
             break;
         case REG_F24:
-            dwarfReg = 88;
-            break;
-        case REG_F25:
-            dwarfReg = 89;
+            dwarfReg = 268;
             break;
         case REG_F26:
-            dwarfReg = 90;
-            break;
-        case REG_F27:
-            dwarfReg = 91;
+            dwarfReg = 269;
             break;
         case REG_F28:
-            dwarfReg = 92;
-            break;
-        case REG_F29:
-            dwarfReg = 93;
+            dwarfReg = 270;
             break;
         case REG_F30:
-            dwarfReg = 94;
-            break;
-        case REG_F31:
-            dwarfReg = 95;
+            dwarfReg = 271;
             break;
         default:
             noway_assert(!"unexpected REG_NUM");
@@ -172,7 +124,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     return dwarfReg;
 }
-#endif // TARGET_ARM && TARGET_UNIX
+#endif // TARGET_ARM && FEATURE_CFI_SUPPORT
 
 #ifdef TARGET_ARMARCH
 
@@ -189,13 +141,13 @@ void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         unwindBegPrologCFI();
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -221,12 +173,12 @@ void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     funCurrentFunc()->uwi.AddEpilog();
 }
@@ -367,7 +319,7 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
             ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
               RBM_R11 | RBM_R12 | RBM_LR)) == 0);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         // If we are pushing LR, we should give unwind codes in terms of caller's PC
@@ -378,7 +330,7 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
         unwindPushPopMaskCFI(maskInt, false);
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     bool useOpsize16 = ((maskInt & (RBM_LOW_REGS | RBM_LR)) == maskInt); // Can PUSH use the 16-bit encoding?
     unwindPushPopMaskInt(maskInt, useOpsize16);
@@ -389,25 +341,25 @@ void Compiler::unwindPushMaskFloat(regMaskTP maskFloat)
     // Only floating point registers should be in maskFloat
     assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         unwindPushPopMaskCFI(maskFloat, true);
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     unwindPushPopMaskFloat(maskFloat);
 }
 
 void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // Only r0-r12 and lr and pc are supported (pc is mapped to lr when encoding)
     assert((maskInt &
@@ -430,12 +382,12 @@ void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 
 void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // Only floating point registers should be in maskFloat
     assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
@@ -444,7 +396,7 @@ void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -453,7 +405,7 @@ void Compiler::unwindAllocStack(unsigned size)
         }
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -498,7 +450,7 @@ void Compiler::unwindAllocStack(unsigned size)
 
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -507,7 +459,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
         }
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -526,12 +478,12 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 
 void Compiler::unwindBranch16()
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -542,12 +494,12 @@ void Compiler::unwindBranch16()
 
 void Compiler::unwindNop(unsigned codeSizeInBytes) // codeSizeInBytes is 2 or 4 bytes for Thumb2 instruction
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -583,12 +535,12 @@ void Compiler::unwindNop(unsigned codeSizeInBytes) // codeSizeInBytes is 2 or 4 
 // for them.
 void Compiler::unwindPadding()
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
     GetEmitter()->emitUnwindNopPadding(pu->GetCurrentEmitterLocation(), this);
@@ -613,7 +565,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     BOOL isFunclet          = (func->funKind == FUNC_ROOT) ? FALSE : TRUE;
     bool funcHasColdSection = false;
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         DWORD unwindCodeBytes = 0;
@@ -626,7 +578,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // If there is cold code, split the unwind data between the hot section and the
     // cold section. This needs to be done before we split into fragments, as each
@@ -686,13 +638,13 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
     static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         unwindEmitFuncCFI(func, pHotCode, pColdCode);
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
 

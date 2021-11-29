@@ -960,23 +960,6 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
     PEFile* pFile = pModule->GetFile();
     if (pFile)
     {
-#ifdef FEATURE_PREJIT
-        // if we have a native imaged loaded for this module then get the version information from that.
-        if (pFile->IsNativeLoaded())
-        {
-            PEImage* pNativeImage = pFile->GetPersistentNativeImage();
-
-            if (pNativeImage)
-            {
-                LPCWSTR niPath = pNativeImage->GetPath().GetUnicode();
-                if (niPath != NULL && niPath != SString::Empty() && SUCCEEDED(DwGetFileVersionInfo(niPath, major, minor, build, revision)))
-                {
-                    succeeded = true;
-                }
-            }
-        }
-#endif
-
         // if we failed to get the version info from the native image then fall back to the IL image.
         if (!succeeded)
         {

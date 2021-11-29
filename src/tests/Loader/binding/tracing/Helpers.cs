@@ -75,8 +75,6 @@ namespace BinderTracingTests
             string extension = isExe ? "exe" : "dll";
             switch (pathSource)
             {
-                case ProbedPath.PathSource.AppNativeImagePaths:
-                    return Path.Combine(baseDirectory, $"{assemblyName}.ni.{extension}");
                 case ProbedPath.PathSource.AppPaths:
                 case ProbedPath.PathSource.SatelliteSubdirectory:
                     return Path.Combine(baseDirectory, $"{assemblyName}.{extension}");

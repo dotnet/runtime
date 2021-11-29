@@ -76,41 +76,17 @@ internal static partial class Interop
             //internal long cguest_time;
         }
 
-        internal static string GetExeFilePathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + ExeFileName;
-        }
+        internal static string GetExeFilePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{ExeFileName}");
 
-        internal static string GetCmdLinePathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + CmdLineFileName;
-        }
+        internal static string GetCmdLinePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{CmdLineFileName}");
 
-        internal static string GetStatFilePathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + StatFileName;
-        }
+        internal static string GetStatFilePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{StatFileName}");
 
-        internal static string GetTaskDirectoryPathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + TaskDirectoryName;
-        }
+        internal static string GetTaskDirectoryPathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{TaskDirectoryName}");
 
-        internal static string GetFileDescriptorDirectoryPathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + FileDescriptorDirectoryName;
-        }
+        internal static string GetFileDescriptorDirectoryPathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{FileDescriptorDirectoryName}");
 
-        private static string GetStatFilePathForThread(int pid, int tid)
-        {
-            // Perf note: Calling GetTaskDirectoryPathForProcess will allocate a string,
-            // which we then use in another Concat call to produce another string.  The straightforward alternative,
-            // though, since we have five input strings, is to use the string.Concat overload that takes a params array.
-            // This results in allocating not only the params array but also a defensive copy inside of Concat,
-            // which means allocating two five-element arrays.  This two-string approach will result not only in fewer
-            // allocations, but also typically in less memory allocated, and it's a bit more maintainable.
-            return GetTaskDirectoryPathForProcess(pid) + tid.ToString(CultureInfo.InvariantCulture) + StatFileName;
-        }
+        private static string GetStatFilePathForThread(int pid, int tid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{TaskDirectoryName}{(uint)tid}{StatFileName}");
 
         internal static bool TryReadStatFile(int pid, out ParsedStat result)
         {

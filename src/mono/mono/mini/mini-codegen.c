@@ -2761,8 +2761,8 @@ mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 	}
 	if (nfields == 0)
 		return FALSE;
-	*out_nfields = nfields;
 	*out_esize = prev_ftype->type == MONO_TYPE_R4 ? 4 : 8;
+	*out_nfields = mono_class_value_size (klass, NULL) / *out_esize;
 	return TRUE;
 }
 

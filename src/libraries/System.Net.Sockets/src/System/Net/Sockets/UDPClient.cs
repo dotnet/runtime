@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -600,8 +601,45 @@ namespace System.Net.Sockets
         public Task<int> SendAsync(byte[] datagram, int bytes) =>
             SendAsync(datagram, bytes, null);
 
+        /// <summary>
+        /// Sends a UDP datagram asynchronously to a remote host.
+        /// </summary>
+        /// <param name="datagram">
+        /// An <see cref="ReadOnlyMemory{T}"/> of Type <see cref="byte"/> that specifies the UDP datagram that you intend to send.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The token to monitor for cancellation requests. The default value is None.
+        /// </param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous send operation. The value of its Result property contains the number of bytes sent.</returns>
+        /// <exception cref="ObjectDisposedException">The <see cref="UdpClient"/> is closed.</exception>
+        /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
+        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, CancellationToken cancellationToken = default) =>
+            SendAsync(datagram, null, cancellationToken);
+
         public Task<int> SendAsync(byte[] datagram, int bytes, string? hostname, int port) =>
             SendAsync(datagram, bytes, GetEndpoint(hostname, port));
+
+        /// <summary>
+        /// Sends a UDP datagram asynchronously to a remote host.
+        /// </summary>
+        /// <param name="datagram">
+        /// An <see cref="ReadOnlyMemory{T}"/> of Type <see cref="byte"/> that specifies the UDP datagram that you intend to send.
+        /// </param>
+        /// <param name="hostname">
+        /// The name of the remote host to which you intend to send the datagram.
+        /// </param>
+        /// <param name="port">
+        /// The remote port number with which you intend to communicate.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The token to monitor for cancellation requests. The default value is None.
+        /// </param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous send operation. The value of its Result property contains the number of bytes sent.</returns>
+        /// <exception cref="InvalidOperationException">The <see cref="UdpClient"/> has already established a default remote host.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="UdpClient"/> is closed.</exception>
+        /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
+        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, string? hostname, int port, CancellationToken cancellationToken = default) =>
+            SendAsync(datagram, GetEndpoint(hostname, port), cancellationToken);
 
         public Task<int> SendAsync(byte[] datagram, int bytes, IPEndPoint? endPoint)
         {
@@ -618,6 +656,39 @@ namespace System.Net.Sockets
             }
         }
 
+        /// <summary>
+        /// Sends a UDP datagram asynchronously to a remote host.
+        /// </summary>
+        /// <param name="datagram">
+        /// An <see cref="ReadOnlyMemory{T}"/> of Type <see cref="byte"/> that specifies the UDP datagram that you intend to send.
+        /// </param>
+        /// <param name="endPoint">
+        /// An <see cref="IPEndPoint"/> that represents the host and port to which to send the datagram.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The token to monitor for cancellation requests. The default value is None.
+        /// </param>
+        /// <returns>A <see cref="ValueTask{T}"/> that represents the asynchronous send operation. The value of its Result property contains the number of bytes sent.</returns>
+        /// <exception cref="InvalidOperationException"><see cref="UdpClient"/> has already established a default remote host and <paramref name="endPoint"/> is not <see langword="null"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="UdpClient"/> is closed.</exception>
+        /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
+        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, IPEndPoint? endPoint, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            if (endPoint is null)
+            {
+                return _clientSocket.SendAsync(datagram, SocketFlags.None, cancellationToken);
+            }
+            if (_active)
+            {
+                // Do not allow sending packets to arbitrary host when connected.
+                throw new InvalidOperationException(SR.net_udpconnected);
+            }
+            CheckForBroadcast(endPoint.Address);
+            return _clientSocket.SendToAsync(datagram, SocketFlags.None, endPoint, cancellationToken);
+        }
+
         public Task<UdpReceiveResult> ReceiveAsync()
         {
             ThrowIfDisposed();
@@ -628,6 +699,36 @@ namespace System.Net.Sockets
                 _family == AddressFamily.InterNetwork ? IPEndPointStatics.Any : IPEndPointStatics.IPv6Any));
 
             async Task<UdpReceiveResult> WaitAndWrap(Task<SocketReceiveFromResult> task)
+            {
+                SocketReceiveFromResult result = await task.ConfigureAwait(false);
+
+                byte[] buffer = result.ReceivedBytes < MaxUDPSize ?
+                    _buffer.AsSpan(0, result.ReceivedBytes).ToArray() :
+                    _buffer;
+
+                return new UdpReceiveResult(buffer, (IPEndPoint)result.RemoteEndPoint);
+            }
+        }
+
+        /// <summary>
+        /// Returns a UDP datagram asynchronously that was sent by a remote host.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// The token to monitor for cancellation requests.
+        /// </param>
+        /// <returns>A <see cref="ValueTask{TResult}"/> representing the asynchronous operation.</returns>
+        /// <exception cref="ObjectDisposedException">The underlying <see cref="Socket"/> has been closed.</exception>
+        /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
+        public ValueTask<UdpReceiveResult> ReceiveAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            return WaitAndWrap(_clientSocket.ReceiveFromAsync(
+                _buffer,
+                SocketFlags.None,
+                _family == AddressFamily.InterNetwork ? IPEndPointStatics.Any : IPEndPointStatics.IPv6Any, cancellationToken));
+
+            async ValueTask<UdpReceiveResult> WaitAndWrap(ValueTask<SocketReceiveFromResult> task)
             {
                 SocketReceiveFromResult result = await task.ConfigureAwait(false);
 
@@ -892,45 +993,59 @@ namespace System.Net.Sockets
             return Client.SendTo(dgram, 0, bytes, SocketFlags.None, endPoint);
         }
 
-
-        // Sends a UDP datagram to the specified port on the specified remote host.
-        public int Send(byte[] dgram, int bytes, string? hostname, int port)
+        /// <summary>
+        /// Sends a UDP datagram to the host at the specified remote endpoint.
+        /// </summary>
+        /// <param name="datagram">
+        /// An <see cref="ReadOnlySpan{T}"/> of Type <see cref="byte"/> that specifies the UDP datagram that you intend to send.
+        /// </param>
+        /// <param name="endPoint">
+        /// An <see cref="IPEndPoint"/> that represents the host and port to which to send the datagram.
+        /// </param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="InvalidOperationException"><see cref="UdpClient"/> has already established a default remote host and <paramref name="endPoint"/> is not <see langword="null"/>.</exception>
+        /// <exception cref="ObjectDisposedException"><see cref="UdpClient"/> is closed.</exception>
+        /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
+        public int Send(ReadOnlySpan<byte> datagram, IPEndPoint? endPoint)
         {
             ThrowIfDisposed();
 
-            if (dgram == null)
-            {
-                throw new ArgumentNullException(nameof(dgram));
-            }
-            if (_active && ((hostname != null) || (port != 0)))
+            if (_active && endPoint != null)
             {
                 // Do not allow sending packets to arbitrary host when connected
                 throw new InvalidOperationException(SR.net_udpconnected);
             }
 
-            if (hostname == null || port == 0)
+            if (endPoint == null)
             {
-                return Client.Send(dgram, 0, bytes, SocketFlags.None);
+                return Client.Send(datagram, SocketFlags.None);
             }
 
-            IPAddress[] addresses = Dns.GetHostAddresses(hostname);
+            CheckForBroadcast(endPoint.Address);
 
-            int i = 0;
-            for (; i < addresses.Length && !IsAddressFamilyCompatible(addresses[i].AddressFamily); i++)
-            {
-                ; // just count the addresses
-            }
-
-            if (addresses.Length == 0 || i == addresses.Length)
-            {
-                throw new ArgumentException(SR.net_invalidAddressList, nameof(hostname));
-            }
-
-            CheckForBroadcast(addresses[i]);
-            IPEndPoint ipEndPoint = new IPEndPoint(addresses[i], port);
-            return Client.SendTo(dgram, 0, bytes, SocketFlags.None, ipEndPoint);
+            return Client.SendTo(datagram, SocketFlags.None, endPoint);
         }
 
+        // Sends a UDP datagram to the specified port on the specified remote host.
+        public int Send(byte[] dgram, int bytes, string? hostname, int port) => Send(dgram, bytes, GetEndpoint(hostname, port));
+
+        /// <summary>
+        /// Sends a UDP datagram to a specified port on a specified remote host.
+        /// </summary>
+        /// <param name="datagram">
+        /// An <see cref="ReadOnlySpan{T}"/> of Type <see cref="byte"/> that specifies the UDP datagram that you intend to send.
+        /// </param>
+        /// <param name="hostname">
+        /// The name of the remote host to which you intend to send the datagram.
+        /// </param>
+        /// <param name="port">
+        /// The remote port number with which you intend to communicate.
+        /// </param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="InvalidOperationException">The <see cref="UdpClient"/> has already established a default remote host.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="UdpClient"/> is closed.</exception>
+        /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
+        public int Send(ReadOnlySpan<byte> datagram, string? hostname, int port) => Send(datagram, GetEndpoint(hostname, port));
 
         // Sends a UDP datagram to a remote host.
         public int Send(byte[] dgram, int bytes)
@@ -948,6 +1063,29 @@ namespace System.Net.Sockets
             }
 
             return Client.Send(dgram, 0, bytes, SocketFlags.None);
+        }
+
+        /// <summary>
+        /// Sends a UDP datagram to a remote host.
+        /// </summary>
+        /// <param name="datagram">
+        /// An <see cref="ReadOnlySpan{T}"/> of Type <see cref="byte"/> that specifies the UDP datagram that you intend to send.
+        /// </param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="InvalidOperationException">The <see cref="UdpClient"/> has not established a default remote host.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="UdpClient"/> is closed.</exception>
+        /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
+        public int Send(ReadOnlySpan<byte> datagram)
+        {
+            ThrowIfDisposed();
+
+            if (!_active)
+            {
+                // only allowed on connected socket
+                throw new InvalidOperationException(SR.net_notconnected);
+            }
+
+            return Client.Send(datagram, SocketFlags.None);
         }
 
         private void ThrowIfDisposed()

@@ -12,8 +12,7 @@ namespace System.CodeDom.Compiler
     {
         private Evidence _evidence;
 
-        [Obsolete("CAS policy is obsolete and will be removed in a future release of the .NET Framework."
-                + " Please see https://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
+        [Obsolete("Code Access Security is not supported or honored by the runtime")]
         public Evidence Evidence
         {
             get { return _evidence?.Clone(); }

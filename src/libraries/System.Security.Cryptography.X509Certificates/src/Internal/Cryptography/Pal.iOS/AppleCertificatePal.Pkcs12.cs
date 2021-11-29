@@ -22,11 +22,12 @@ namespace Internal.Cryptography.Pal
 
         private static AppleCertificatePal ImportPkcs12(
             ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password)
+            SafePasswordHandle password,
+            bool ephemeralSpecified)
         {
             using (ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData))
             {
-                reader.Decrypt(password);
+                reader.Decrypt(password, ephemeralSpecified);
                 return ImportPkcs12(reader.GetSingleCert());
             }
         }

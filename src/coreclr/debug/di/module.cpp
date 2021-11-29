@@ -15,7 +15,6 @@
 #include "winbase.h"
 #include "corpriv.h"
 #include "corsym.h"
-#include "ildbsymlib.h"
 
 #include "pedecoder.h"
 #include "stgpool.h"
@@ -2577,13 +2576,6 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
                                              (void**)&pBinder));
 #endif
         }
-        else if (symFormat == IDacDbiInterface::kSymbolFormatILDB)
-        {
-            // ILDB format - use statically linked-in ildbsymlib
-            IfFailThrow(IldbSymbolsCreateInstance(CLSID_CorSymBinder_SxS,
-                                                IID_ISymUnmanagedBinder,
-                                                (void**)&pBinder));
-        }
         else
         {
             // No in-memory symbols, return the appropriate error
@@ -2763,6 +2755,7 @@ HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
     FAIL_IF_NEUTERED(this);
 
     HRESULT hr = S_OK;
+    *isMapped = FALSE;
     CordbProcess *pProcess = GetProcess();
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);

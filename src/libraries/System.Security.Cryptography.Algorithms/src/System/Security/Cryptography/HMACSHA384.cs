@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
@@ -40,6 +41,7 @@ namespace System.Security.Cryptography
             Debug.Assert(HashSizeValue == HmacSizeBits);
         }
 
+        [Obsolete(Obsoletions.ProduceLegacyHmacValuesMessage, DiagnosticId = Obsoletions.ProduceLegacyHmacValuesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public bool ProduceLegacyHmacValues
         {
             get
