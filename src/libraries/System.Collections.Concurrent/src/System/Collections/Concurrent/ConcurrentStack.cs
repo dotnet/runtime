@@ -317,10 +317,6 @@ namespace System.Collections.Concurrent
                 throw new ArgumentNullException(nameof(items));
             }
 
-            // No op if the length is zero
-            if (items.Length == 0)
-                return;
-
             PushRange(items, 0, items.Length);
         }
 
@@ -414,7 +410,7 @@ namespace System.Collections.Concurrent
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ConcurrentStack_PushPopRange_CountOutOfRange);
             }
             int length = items.Length;
-            if (startIndex >= length || startIndex < 0)
+            if (startIndex > length || startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ConcurrentStack_PushPopRange_StartOutOfRange);
             }
