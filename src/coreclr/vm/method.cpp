@@ -4124,6 +4124,29 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     EX_END_CATCH(RethrowTerminalExceptions);
     _ASSERTE(HaveValueTypeParametersBeenWalked());
 }
+
+static void EnsureTypeLoaded(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(TypeFromToken(defToken) == mdtTypeDef);
+    SigPointer sigPtr(*ptr);
+    TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext);
+    _ASSERTE(!th.IsNull());
+}
+
+void MethodDesc::PrepareForUseAsAFunctionPointer()
+{
+    STANDARD_VM_CONTRACT;
+
+    WalkValueTypeParameters(this->GetMethodTable(), EnsureTypeLoaded, NULL);
+    _ASSERTE(HaveValueTypeParametersBeenWalked());
+}
 #endif //!DACCESS_COMPILE
 
 #ifdef _MSC_VER
