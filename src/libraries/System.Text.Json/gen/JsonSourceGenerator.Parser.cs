@@ -75,12 +75,12 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly Type _booleanType;
             private readonly Type _charType;
-            private readonly Type _timeSpanType;
             private readonly Type _dateTimeType;
             private readonly Type _nullableOfTType;
             private readonly Type _objectType;
             private readonly Type _stringType;
 
+            private readonly Type? _timeSpanType;
             private readonly Type? _dateTimeOffsetType;
             private readonly Type? _byteArrayType;
             private readonly Type? _guidType;
