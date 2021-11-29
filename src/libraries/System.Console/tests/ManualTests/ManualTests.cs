@@ -46,6 +46,23 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadFromOpenStandardInput()
+        {
+            // The implementation in StdInReader uses a StringBuilder for caching. We want this builder to use
+            // multiple chunks. So the expectedLine is longer than 16 characters (StringBuilder.DefaultCapacity).
+            string expectedLine = $"This is a test for ReadFromOpenStandardInput.";
+            Assert.True(expectedLine.Length > 16);
+            Console.WriteLine($"Please type the sentence (without the quotes): \"{expectedLine}\"");
+            using Stream inputStream = Console.OpenStandardInput();
+            for (int i = 0; i < expectedLine.Length; i++)
+            {
+                Assert.Equal((byte)expectedLine[i], inputStream.ReadByte());
+            }
+            Assert.Equal((byte)'\n', inputStream.ReadByte());
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void ConsoleReadSupportsBackspace()
         {
             const string expectedLine = "aab\r";
