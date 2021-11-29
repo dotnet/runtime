@@ -299,7 +299,6 @@ namespace Internal.TypeSystem
             return result;
         }
 
-
         /// <summary>
         /// Scan the type and its base types for an implementation of an interface method. Returns null if no
         /// implementation is found.
