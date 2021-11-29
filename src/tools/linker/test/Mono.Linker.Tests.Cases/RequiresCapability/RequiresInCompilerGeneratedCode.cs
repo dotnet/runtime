@@ -639,8 +639,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2026")]
-				[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => typeof (RequiresInCompilerGeneratedCode)
 					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
@@ -680,8 +679,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2026")]
-				[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 			}
 
@@ -691,7 +689,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2077")]
+				[ExpectedWarning ("IL2077", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => unknownType.RequiresNonPublicMethods ();
 			}
 
@@ -701,7 +699,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => MethodWithGenericWhichRequiresMethods<TUnknown> ();
 			}
 
@@ -711,7 +709,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => new TypeWithGenericWhichRequiresNonPublicFields<TUnknown> ();
 			}
 
@@ -733,7 +731,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				LocalFunction<TUnknown> ();
 
-				[ExpectedWarning ("IL2087")]
+				[ExpectedWarning ("IL2087", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction<TSecond> ()
 				{
 					typeof (TUnknown).RequiresPublicMethods ();
@@ -1005,7 +1003,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				Action _ = () => unknownType.RequiresNonPublicMethods ();
 			}
 
-			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true)]
+			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
+			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			[RequiresAssemblyFiles ("Suppress in body")]
 			static void TestGenericMethodParameterRequirement<TUnknown> ()
@@ -1248,6 +1247,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					return CreateAsync ();
 
 					[RequiresUnreferencedCode ("")]
+					[RequiresAssemblyFiles]
 					static async IAsyncEnumerable<TValue> CreateAsync ()
 					{
 						await MethodAsync ();
