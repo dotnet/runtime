@@ -18,9 +18,7 @@ namespace System.IO
         // Positive number: the error code returned by the lstat call
         private int _initializedFileCache;
 
-        // We track intent of creation to know whether or not we want to (1) create a
-        // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
-        // Set to true during initialization when the DirectoryEntry's INodeType describes a directory
+        // Track if we are part of a DirectoryInfo.
         internal bool InitiallyDirectory { get; set; }
 
         // Is a directory as of the last refresh

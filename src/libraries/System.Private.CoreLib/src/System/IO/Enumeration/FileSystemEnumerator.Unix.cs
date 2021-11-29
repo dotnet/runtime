@@ -93,6 +93,10 @@ namespace System.IO.Enumeration
             if (_lastEntryFound)
                 return false;
 
+            bool skipSpecialDirectories = !_options.ReturnSpecialDirectories;
+            FileAttributes attributesToSkip = _options.AttributesToSkip;
+            bool recurseSubdirectories = _options.RecurseSubdirectories;
+
             FileSystemEntry entry = default;
 
             lock (_lock)
@@ -111,40 +115,31 @@ namespace System.IO.Enumeration
                         if (_lastEntryFound)
                             return false;
 
-                        FileAttributes attributes = FileSystemEntry.Initialize(
+                        FileSystemEntry.Initialize(
                             ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
-                        bool isDirectory = (attributes & FileAttributes.Directory) != 0;
-                        bool isSymlink = (attributes & FileAttributes.ReparsePoint) != 0;
 
-                        bool isSpecialDirectory = false;
-                        if (isDirectory)
+                        if (entry.IsSpecialDirectory)
                         {
-                            // Subdirectory found
-                            if (_entry.Name[0] == '.' && (_entry.Name[1] == 0 || (_entry.Name[1] == '.' && _entry.Name[2] == 0)))
-                            {
-                                // "." or "..", don't process unless the option is set
-                                if (!_options.ReturnSpecialDirectories)
-                                    continue;
-                                isSpecialDirectory = true;
-                            }
-                        }
-
-                        if (!isSpecialDirectory && _options.AttributesToSkip != 0)
-                        {
-                            // entry.IsHidden and entry.IsReadOnly will hit the disk if the caches had not been
-                            // initialized yet and we could not soft-retrieve the attributes in Initialize
-                            if ((ShouldSkip(FileAttributes.Directory) && isDirectory) ||
-                                (ShouldSkip(FileAttributes.ReparsePoint) && isSymlink) ||
-                                (ShouldSkip(FileAttributes.Hidden) && entry.IsHidden) ||
-                                (ShouldSkip(FileAttributes.ReadOnly) && entry.IsReadOnly))
+                            if (skipSpecialDirectories)
                             {
                                 continue;
                             }
                         }
-
-                        if (isDirectory && !isSpecialDirectory)
+                        else
                         {
-                            if (_options.RecurseSubdirectories && _remainingRecursionDepth > 0 && ShouldRecurseIntoEntry(ref entry))
+                            if (attributesToSkip != 0)
+                            {
+                                // Checks are ordered cheapest to more expensive (requiring one or more syscalls).
+                                if ((ShouldSkip(attributesToSkip, FileAttributes.Directory) && entry.IsDirectory) ||
+                                    (ShouldSkip(attributesToSkip, FileAttributes.ReparsePoint) && entry.IsSymbolicLink) ||
+                                    (ShouldSkip(attributesToSkip, FileAttributes.Hidden) && entry.IsHidden) ||
+                                    (ShouldSkip(attributesToSkip, FileAttributes.ReadOnly) && entry.IsReadOnly))
+                                {
+                                    continue;
+                                }
+                            }
+
+                            if (recurseSubdirectories && entry.IsDirectory && _remainingRecursionDepth > 0 && ShouldRecurseIntoEntry(ref entry))
                             {
                                 // Recursion is on and the directory was accepted, Queue it
                                 if (_pending == null)
@@ -162,7 +157,7 @@ namespace System.IO.Enumeration
                 }
             }
 
-            bool ShouldSkip(FileAttributes attributeToSkip) => (_options.AttributesToSkip & attributeToSkip) != 0;
+            static bool ShouldSkip(FileAttributes attributesToSkip, FileAttributes attribute) => (attributesToSkip & attribute) != 0;
         }
 
         private unsafe void FindNextEntry()

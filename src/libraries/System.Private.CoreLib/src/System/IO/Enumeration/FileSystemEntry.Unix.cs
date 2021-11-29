@@ -17,7 +17,7 @@ namespace System.IO.Enumeration
         private ReadOnlySpan<char> _fileName;
         private fixed char _fileNameBuffer[Interop.Sys.DirectoryEntry.NameBufferSize];
 
-        internal static FileAttributes Initialize(
+        internal static void Initialize(
             ref FileSystemEntry entry,
             Interop.Sys.DirectoryEntry directoryEntry,
             ReadOnlySpan<char> directory,
@@ -33,36 +33,6 @@ namespace System.IO.Enumeration
             entry._fullPath = ReadOnlySpan<char>.Empty;
             entry._fileName = ReadOnlySpan<char>.Empty;
             entry._status.InvalidateCaches();
-            entry._status.InitiallyDirectory = false;
-
-            bool isDirectory = directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR;
-            bool isSymlink   = directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
-            bool isUnknown   = directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN;
-
-            if (isDirectory)
-            {
-                entry._status.InitiallyDirectory = true;
-            }
-            else if (isSymlink)
-            {
-                entry._status.InitiallyDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
-            }
-            else if (isUnknown)
-            {
-                entry._status.InitiallyDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
-                if (entry._status.IsSymbolicLink(entry.FullPath, continueOnError: true))
-                {
-                    entry._directoryEntry.InodeType = Interop.Sys.NodeType.DT_LNK;
-                }
-            }
-
-            FileAttributes attributes = default;
-            if (entry.IsSymbolicLink)
-                attributes |= FileAttributes.ReparsePoint;
-            if (entry.IsDirectory)
-                attributes |= FileAttributes.Directory;
-
-            return attributes;
         }
 
         private ReadOnlySpan<char> FullPath
@@ -141,6 +111,7 @@ namespace System.IO.Enumeration
                 return attributes != default ? attributes : FileAttributes.Normal;
             }
         }
+
         public long Length => _status.GetLength(FullPath, continueOnError: true);
         public DateTimeOffset CreationTimeUtc => _status.GetCreationTime(FullPath, continueOnError: true);
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
@@ -148,13 +119,28 @@ namespace System.IO.Enumeration
         public bool IsHidden => _status.IsHidden(FullPath, FileName, continueOnError: true);
         internal bool IsReadOnly => _status.IsReadOnly(FullPath, continueOnError: true);
 
-        public bool IsDirectory => _status.InitiallyDirectory;
-        internal bool IsSymbolicLink => _directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
+        public bool IsDirectory => _directoryEntry.InodeType switch
+        {
+            Interop.Sys.NodeType.DT_DIR => true,
+            Interop.Sys.NodeType.DT_LNK or Interop.Sys.NodeType.DT_UNKNOWN => _status.IsDirectory(FullPath, continueOnError: true),
+            _ => false
+        };
+
+        internal bool IsSymbolicLink => _directoryEntry.InodeType switch
+        {
+            Interop.Sys.NodeType.DT_LNK => true,
+            Interop.Sys.NodeType.DT_UNKNOWN => _status.IsSymbolicLink(FullPath, continueOnError: true),
+            _ => false
+        };
+
+        // "." or ".."
+        internal bool IsSpecialDirectory =>
+            _directoryEntry.Name[0] == '.' && (_directoryEntry.Name[1] == 0 || (_directoryEntry.Name[1] == '.' && _directoryEntry.Name[2] == 0));
 
         public FileSystemInfo ToFileSystemInfo()
         {
             string fullPath = ToFullPath();
-            return FileSystemInfo.Create(fullPath, new string(FileName), ref _status);
+            return FileSystemInfo.Create(fullPath, new string(FileName), IsDirectory, ref _status);
         }
 
         /// <summary>
