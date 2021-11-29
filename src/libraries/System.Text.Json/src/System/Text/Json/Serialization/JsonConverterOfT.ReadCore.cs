@@ -37,7 +37,10 @@ namespace System.Text.Json.Serialization
                                 return default;
                             }
 
-                            return (T)state.Current.ReturnValue!;
+                            if (state.Current.ReturnValue is T target)
+                                return target;
+
+                            throw new Exception($"Expected type '{typeof(T).FullName}', got '{state.Current.ReturnValue.GetType().FullName}'.");
                         }
                         else
                         {
