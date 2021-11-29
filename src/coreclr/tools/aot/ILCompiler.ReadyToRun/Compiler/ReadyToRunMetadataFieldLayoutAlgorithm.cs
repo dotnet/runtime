@@ -803,7 +803,7 @@ namespace ILCompiler
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
             else
-            if (type.IsEnum || MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type))
+            if (type.IsEnum || (type.IsSequentialLayout && !type.ContainsGCPointers))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
@@ -839,42 +839,17 @@ namespace ILCompiler
                 return true;
             }
 
-            if (!type.IsValueType)
-            {
-                return false;
-            }
-
-            MetadataType metadataType = (MetadataType)type;
-            if (metadataType.IsExplicitLayout || !metadataType.IsSequentialLayout)
-            {
-                return false;
-            }
-
             if (type.IsPrimitive)
             {
                 return true;
             }
 
-            foreach (FieldDesc field in type.GetFields())
+            if (!type.IsValueType)
             {
-                if (!field.IsStatic)
-                {
-                    if (type.IsPointer)
-                    {
-                        continue;
-                    }
-                    if (!type.IsValueType)
-                    {
-                        return false;
-                    }
-                    if (((DefType)type).ContainsGCPointers)
-                    {
-                        return false;
-                    }
-                }
+                return false;
             }
 
-            return true;
+            return metadataType.IsSequentialLayout && !metadataType.ContainsGCPointers;
         }
     }
 }
