@@ -3649,21 +3649,20 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
     insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
-    switch (ins)
+    if (ins == INS_BREAKPOINT)
     {
-        case INS_brk:
-            if ((imm & 0x0000ffff) == imm)
-            {
-                fmt = IF_SI_0A;
-            }
-            else
-            {
-                assert(!"Instruction cannot be encoded: IF_SI_0A");
-            }
-            break;
-        default:
-            unreached();
-            break;
+        if ((imm & 0x0000ffff) == imm)
+        {
+            fmt = IF_SI_0A;
+        }
+        else
+        {
+            assert(!"Instruction cannot be encoded: IF_SI_0A");
+        }
+    }
+    else
+    {
+        unreached();
     }
     assert(fmt != IF_NONE);
 
@@ -11468,16 +11467,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // next to the nop instruction in disasm.
                     // e.g. D43E0000          align   [4 bytes for IG07]
                     ins = INS_BREAKPOINT;
-                    if (ins == INS_brk)
-                    {
-                        fmt = IF_SI_0A;
-                    }
-                    else
-                    {
-                        assert(TargetOS::IsWindows);
-                        assert(ins == INS_bkpt);
-                        fmt = IF_SN_0A;
-                    }
+                    fmt = IF_SI_0A;
                 }
 #endif
             }
@@ -14620,7 +14610,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SN_0A: // bkpt, brk, nop
+        case IF_SN_0A: // nop, yield, align
 
             if (id->idIns() == INS_align)
             {
