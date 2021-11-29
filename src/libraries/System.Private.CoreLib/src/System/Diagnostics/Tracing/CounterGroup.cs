@@ -170,8 +170,6 @@ namespace System.Diagnostics.Tracing
                         s_counterGroupEnabledList.Add(this);
                     }
 
-                    Thread.MemoryBarrier();
-
                     // notify the polling thread that the polling interval may have changed and the sleep should
                     // be recomputed
                     s_pollingThreadSleepEvent!.Set();
@@ -272,6 +270,10 @@ namespace System.Diagnostics.Tracing
         {
             AutoResetEvent? sleepEvent = null;
 
+            // DO NOT MERGE
+            // Experimenting what effect does this delay have on the race condition to better understand the issue
+            System.Threading.Thread.Sleep(500);
+
             // Cache of onTimer callbacks for each CounterGroup.
             // We cache these outside of the scope of s_counterGroupLock because
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
@@ -292,7 +294,6 @@ namespace System.Diagnostics.Tracing
                         }
                     }
                 }
-                Thread.MemoryBarrier();
                 foreach (CounterGroup counterGroup in onTimers)
                 {
                     counterGroup.OnTimer();
@@ -305,7 +306,6 @@ namespace System.Diagnostics.Tracing
                 {
                     sleepDurationInMilliseconds = -1; // WaitOne uses -1 to mean infinite
                 }
-                Thread.MemoryBarrier();
                 sleepEvent?.WaitOne(sleepDurationInMilliseconds);
             }
         }
