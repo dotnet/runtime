@@ -60,20 +60,14 @@ include_directories(
 )
 
 set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
-  ${eventpipe_sources}
-  ${diagnostic_server_sources}
-  ${MONO_COMPONENT_PATH}/event_pipe.c
-  ${MONO_COMPONENT_PATH}/event_pipe.h
-  ${MONO_COMPONENT_PATH}/diagnostics_server.c
-  ${MONO_COMPONENT_PATH}/diagnostics_server.h
+  ${MONO_COMPONENT_PATH}/event_pipe-stub.c
+  ${MONO_COMPONENT_PATH}/diagnostics_server-stub.c
   )
 set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-stub-sources
   ${MONO_COMPONENT_PATH}/event_pipe-stub.c
   ${MONO_COMPONENT_PATH}/diagnostics_server-stub.c
   )
 set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-dependencies
-  ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers
-  ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources
 )
 
 # from here down, all the components are treated in the same way
