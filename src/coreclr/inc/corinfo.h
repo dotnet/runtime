@@ -138,8 +138,7 @@ The first 4 options are mutually exclusive
         address of the (see also CORINFO_FLG_STATIC_IN_HEAP).
 
     * CORINFO_FLG_TLS This indicate that the static field is a Windows style Thread Local Static. (We also
-        have managed thread local statics, which work through the HELPER. Support for this is considered
-        legacy, and going forward, the EE should
+        have managed thread local statics, which work through the HELPER). RyuJit does not support this option.
 
     * <NONE> This is a normal static field. Its address in in memory is determined by getFieldAddress. (see
         also CORINFO_FLG_STATIC_IN_HEAP).

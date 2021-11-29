@@ -10981,9 +10981,6 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_TOKEN_HDL:
                             printf(" token");
                             break;
-                        case GTF_ICON_TLS_HDL:
-                            printf(" tls");
-                            break;
                         case GTF_ICON_FTN_ADDR:
                             printf(" ftn");
                             break;

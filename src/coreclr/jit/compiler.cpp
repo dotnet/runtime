@@ -9165,10 +9165,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_TGT_NOT_HEAP]");
                 }
-                if (tree->gtFlags & GTF_IND_TLS_REF)
-                {
-                    chars += printf("[IND_TLS_REF]");
-                }
                 if (tree->gtFlags & GTF_IND_ASG_LHS)
                 {
                     chars += printf("[IND_ASG_LHS]");
@@ -9324,11 +9320,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_TOKEN_HDL:
 
                         chars += printf("[ICON_TOKEN_HDL]");
-                        break;
-
-                    case GTF_ICON_TLS_HDL:
-
-                        chars += printf("[ICON_TLD_HDL]");
                         break;
 
                     case GTF_ICON_FTN_ADDR:

@@ -5890,11 +5890,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         GenTree* addr;
         objIsLocal = objRef->IsLocal();
 
-        if (tree->gtFlags & GTF_IND_TLS_REF)
-        {
-            NO_WAY("instance field can not be a TLS ref.");
-        }
-
         /* We'll create the expression "*(objRef + mem_offs)" */
 
         noway_assert(varTypeIsGC(objRef->TypeGet()) || objRef->TypeGet() == TYP_I_IMPL);
@@ -6147,177 +6142,76 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
 #endif
     }
-    else /* This is a static data member */
+    else // A static field.
     {
-        if (tree->gtFlags & GTF_IND_TLS_REF)
+        // If we can we access the static's address directly
+        // then pFldAddr will be NULL and
+        //      fldAddr will be the actual address of the static field
+        //
+        void** pFldAddr = nullptr;
+        void*  fldAddr  = info.compCompHnd->getFieldAddress(symHnd, (void**)&pFldAddr);
+
+        // We should always be able to access this static field address directly
+        assert(pFldAddr == nullptr);
+
+#ifdef TARGET_64BIT
+        bool isStaticReadOnlyInited = false;
+        bool plsSpeculative         = true;
+        if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE)
         {
-            // Thread Local Storage static field reference
-            //
-            // Field ref is a TLS 'Thread-Local-Storage' reference
-            //
-            // Build this tree:  IND(*) #
-            //                    |
-            //                   ADD(I_IMPL)
-            //                   / \.
-            //                  /  CNS(fldOffset)
-            //                 /
-            //                /
-            //               /
-            //             IND(I_IMPL) == [Base of this DLL's TLS]
-            //              |
-            //             ADD(I_IMPL)
-            //             / \.
-            //            /   CNS(IdValue*4) or MUL
-            //           /                      / \.
-            //          IND(I_IMPL)            /  CNS(4)
-            //           |                    /
-            //          CNS(TLS_HDL,0x2C)    IND
-            //                                |
-            //                               CNS(pIdAddr)
-            //
-            // # Denotes the orginal node
-            //
-            void**   pIdAddr = nullptr;
-            unsigned IdValue = info.compCompHnd->getFieldThreadLocalStoreID(symHnd, (void**)&pIdAddr);
+            isStaticReadOnlyInited = !plsSpeculative;
+        }
 
-            //
-            // If we can we access the TLS DLL index ID value directly
-            // then pIdAddr will be NULL and
-            //      IdValue will be the actual TLS DLL index ID
-            //
-            GenTree* dllRef = nullptr;
-            if (pIdAddr == nullptr)
-            {
-                if (IdValue != 0)
-                {
-                    dllRef = gtNewIconNode(IdValue * 4, TYP_I_IMPL);
-                }
-            }
-            else
-            {
-                dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_CONST_PTR, true);
+        // even if RelocTypeHint is REL32 let's still prefer IND over GT_CLS_VAR
+        // for static readonly fields of statically initialized classes - thus we can
+        // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
+        if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
+        {
+            // The address is not directly addressible, so force it into a
+            // constant, so we handle it properly
 
-                // Next we multiply by 4
-                dllRef = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(4, TYP_I_IMPL));
-            }
-
-#define WIN32_TLS_SLOTS (0x2C) // Offset from fs:[0] where the pointer to the slots resides
-
-            // Mark this ICON as a TLS_HDL, codegen will use FS:[cns]
-
-            GenTree* tlsRef = gtNewIconHandleNode(WIN32_TLS_SLOTS, GTF_ICON_TLS_HDL);
-
+            GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, GTF_ICON_STATIC_HDL);
+            addr->gtType  = TYP_I_IMPL;
+            FieldSeqNode* fieldSeq =
+                fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
+            addr->AsIntCon()->gtFieldSeq = fieldSeq;
             // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
             if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
             {
                 tree->gtFlags &= ~GTF_FLD_INITCLASS;
-                tlsRef->gtFlags |= GTF_ICON_INITCLASS;
+                addr->gtFlags |= GTF_ICON_INITCLASS;
             }
-
-            tlsRef = gtNewOperNode(GT_IND, TYP_I_IMPL, tlsRef);
-
-            if (dllRef != nullptr)
-            {
-                /* Add the dllRef */
-                tlsRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, dllRef);
-            }
-
-            /* indirect to have tlsRef point at the base of the DLLs Thread Local Storage */
-            tlsRef = gtNewOperNode(GT_IND, TYP_I_IMPL, tlsRef);
-
-            if (fldOffset != 0)
-            {
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                GenTree* fldOffsetNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, fldOffset, fieldSeq);
-
-                /* Add the TLS static field offset to the address */
-
-                tlsRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, fldOffsetNode);
-            }
-
-            // Final indirect to get to actual value of TLS static field
 
             tree->SetOper(GT_IND);
-            tree->AsOp()->gtOp1 = tlsRef;
+            tree->AsOp()->gtOp1 = addr;
 
-            noway_assert(tree->gtFlags & GTF_IND_TLS_REF);
+            if (isStaticReadOnlyInited)
+            {
+                JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
+
+                // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
+                tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+                tree->gtFlags &= ~GTF_ICON_INITCLASS;
+                addr->gtFlags = GTF_ICON_CONST_PTR;
+            }
+
+            return fgMorphSmpOp(tree);
         }
         else
-        {
-            // Normal static field reference
-
-            //
-            // If we can we access the static's address directly
-            // then pFldAddr will be NULL and
-            //      fldAddr will be the actual address of the static field
-            //
-            void** pFldAddr = nullptr;
-            void*  fldAddr  = info.compCompHnd->getFieldAddress(symHnd, (void**)&pFldAddr);
-
-            // We should always be able to access this static field address directly
-            //
-            assert(pFldAddr == nullptr);
-
-#ifdef TARGET_64BIT
-            bool isStaticReadOnlyInited = false;
-            bool plsSpeculative         = true;
-            if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE)
-            {
-                isStaticReadOnlyInited = !plsSpeculative;
-            }
-
-            // even if RelocTypeHint is REL32 let's still prefer IND over GT_CLS_VAR
-            // for static readonly fields of statically initialized classes - thus we can
-            // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
-            if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
-            {
-                // The address is not directly addressible, so force it into a
-                // constant, so we handle it properly
-
-                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, GTF_ICON_STATIC_HDL);
-                addr->gtType  = TYP_I_IMPL;
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                addr->AsIntCon()->gtFieldSeq = fieldSeq;
-                // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
-                if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
-                {
-                    tree->gtFlags &= ~GTF_FLD_INITCLASS;
-                    addr->gtFlags |= GTF_ICON_INITCLASS;
-                }
-
-                tree->SetOper(GT_IND);
-                tree->AsOp()->gtOp1 = addr;
-
-                if (isStaticReadOnlyInited)
-                {
-                    JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
-
-                    // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
-                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-                    tree->gtFlags &= ~GTF_ICON_INITCLASS;
-                    addr->gtFlags = GTF_ICON_CONST_PTR;
-                }
-
-                return fgMorphSmpOp(tree);
-            }
-            else
 #endif // TARGET_64BIT
-            {
-                // Only volatile or classinit could be set, and they map over
-                noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_COMMON_MASK)) == 0);
-                static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
-                static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
-                tree->SetOper(GT_CLS_VAR);
-                tree->AsClsVar()->gtClsVarHnd = symHnd;
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                tree->AsClsVar()->gtFieldSeq = fieldSeq;
-            }
-
-            return tree;
+        {
+            // Only volatile or classinit could be set, and they map over
+            noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_COMMON_MASK)) == 0);
+            static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
+            static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
+            tree->SetOper(GT_CLS_VAR);
+            tree->AsClsVar()->gtClsVarHnd = symHnd;
+            FieldSeqNode* fieldSeq =
+                fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
+            tree->AsClsVar()->gtFieldSeq = fieldSeq;
         }
+
+        return tree;
     }
     noway_assert(tree->gtOper == GT_IND);
 

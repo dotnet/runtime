@@ -1477,11 +1477,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CNS_INT:
-#ifdef TARGET_X86
-            assert(!treeNode->IsIconHandle(GTF_ICON_TLS_HDL));
-#endif // TARGET_X86
-            FALLTHROUGH;
-
         case GT_CNS_DBL:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
@@ -4773,18 +4768,8 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     var_types targetType = tree->TypeGet();
     emitter*  emit       = GetEmitter();
 
-    GenTree* addr = tree->Addr();
-    if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_TLS_HDL))
-    {
-        noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
-        emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
-                          (int)addr->AsIntCon()->gtIconVal);
-    }
-    else
-    {
-        genConsumeAddress(addr);
-        emit->emitInsLoadInd(ins_Load(targetType), emitTypeSize(tree), tree->GetRegNum(), tree);
-    }
+    genConsumeAddress(tree->Addr());
+    emit->emitInsLoadInd(ins_Load(targetType), emitTypeSize(tree), tree->GetRegNum(), tree);
 
     genProduceReg(tree);
 }

@@ -497,7 +497,6 @@ enum GenTreeFlags : unsigned int
     GTF_IND_NONFAULTING         = 0x20000000, // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
                                               // Same as GTF_ARRLEN_NONFAULTING.
     GTF_IND_TGTANYWHERE         = 0x10000000, // GT_IND   -- the target could be anywhere
-    GTF_IND_TLS_REF             = 0x08000000, // GT_IND   -- the target is accessed via TLS
     GTF_IND_ASG_LHS             = 0x04000000, // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
                                               //             assignment; don't evaluate it independently.
     GTF_IND_REQ_ADDR_IN_REG     = GTF_IND_ASG_LHS, // GT_IND  -- requires its addr operand to be evaluated
@@ -512,7 +511,7 @@ enum GenTreeFlags : unsigned int
     GTF_IND_ARR_INDEX           = 0x00800000, // GT_IND   -- the indirection represents an (SZ) array index
     GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
 
-    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | \
+    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | \
                     GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_ARR_INDEX | GTF_IND_TGT_NOT_HEAP,
 
     GTF_CLS_VAR_VOLATILE        = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
@@ -554,10 +553,9 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_VARG_HDL           = 0x90000000, // GT_CNS_INT -- constant is a var arg cookie handle
     GTF_ICON_PINVKI_HDL         = 0xA0000000, // GT_CNS_INT -- constant is a pinvoke calli handle
     GTF_ICON_TOKEN_HDL          = 0xB0000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
-    GTF_ICON_TLS_HDL            = 0xC0000000, // GT_CNS_INT -- constant is a TLS ref with offset
-    GTF_ICON_FTN_ADDR           = 0xD0000000, // GT_CNS_INT -- constant is a function address
-    GTF_ICON_CIDMID_HDL         = 0xE0000000, // GT_CNS_INT -- constant is a class ID or a module ID
-    GTF_ICON_BBC_PTR            = 0xF0000000, // GT_CNS_INT -- constant is a basic block count pointer
+    GTF_ICON_FTN_ADDR           = 0xC0000000, // GT_CNS_INT -- constant is a function address
+    GTF_ICON_CIDMID_HDL         = 0xD0000000, // GT_CNS_INT -- constant is a class ID or a module ID
+    GTF_ICON_BBC_PTR            = 0xE0000000, // GT_CNS_INT -- constant is a basic block count pointer
 
     GTF_ICON_FIELD_OFF          = 0x08000000, // GT_CNS_INT -- constant is a field offset
     GTF_ICON_SIMD_COUNT         = 0x04000000, // GT_CNS_INT -- constant is Vector<T>.Count

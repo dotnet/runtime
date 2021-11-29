@@ -15127,15 +15127,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         case CORINFO_FIELD_INSTANCE_HELPER:
                         case CORINFO_FIELD_INSTANCE_ADDR_HELPER:
                         case CORINFO_FIELD_STATIC_ADDR_HELPER:
-                        case CORINFO_FIELD_STATIC_TLS:
-
                             compInlineResult->NoteFatal(InlineObservation::CALLEE_LDFLD_NEEDS_HELPER);
                             return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-                            /* We may be able to inline the field accessors in specific instantiations of generic
-                             * methods */
+                            // We may be able to inline the field accessors in specific instantiations of generic
+                            // methods.
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDFLD_NEEDS_HELPER);
                             return;
 
@@ -15300,23 +15298,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
 
                     case CORINFO_FIELD_STATIC_TLS:
-#ifdef TARGET_X86
-                        // Legacy TLS access is implemented as intrinsic on x86 only
-
-                        /* Create the data member node */
-                        op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, NULL, fieldInfo.offset);
-                        op1->gtFlags |= GTF_IND_TLS_REF; // fgMorphField will handle the transformation
-
-                        if (isLoadAddress)
-                        {
-                            op1 = gtNewOperNode(GT_ADDR, (var_types)TYP_I_IMPL, op1);
-                        }
-                        break;
-#else
-                        fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
-
-                        FALLTHROUGH;
-#endif
+                        BADCODE("CORINFO_FIELD_STATIC_TLS fields are not supported by RyuJit");
 
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
                     case CORINFO_FIELD_INSTANCE_HELPER:
@@ -15396,7 +15378,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #if BIGENDIAN
                         op1 = gtNewIconNode(0, lclTyp);
 #else
-                        op1                     = gtNewIconNode(1, lclTyp);
+                        op1 = gtNewIconNode(1, lclTyp);
 #endif
                         goto FIELD_DONE;
                     }
@@ -15502,23 +15484,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (compIsForInlining())
                 {
-                    /* Is this a 'special' (COM) field? or a TLS ref static field?, field stored int GC heap? or
-                     * per-inst static? */
+                    // Is this a 'special' (COM) field? field stored int GC heap? or a per-inst static?
 
                     switch (fieldInfo.fieldAccessor)
                     {
                         case CORINFO_FIELD_INSTANCE_HELPER:
                         case CORINFO_FIELD_INSTANCE_ADDR_HELPER:
                         case CORINFO_FIELD_STATIC_ADDR_HELPER:
-                        case CORINFO_FIELD_STATIC_TLS:
-
                             compInlineResult->NoteFatal(InlineObservation::CALLEE_STFLD_NEEDS_HELPER);
                             return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-                            /* We may be able to inline the field accessors in specific instantiations of generic
-                             * methods */
+                            // We may be able to inline the field accessors in specific instantiations of generic
+                            // methods.
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_STFLD_NEEDS_HELPER);
                             return;
 
@@ -15609,19 +15588,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
 
                     case CORINFO_FIELD_STATIC_TLS:
-#ifdef TARGET_X86
-                        // Legacy TLS access is implemented as intrinsic on x86 only
-
-                        /* Create the data member node */
-                        op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, NULL, fieldInfo.offset);
-                        op1->gtFlags |= GTF_IND_TLS_REF; // fgMorphField will handle the transformation
-
-                        break;
-#else
-                        fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
-
-                        FALLTHROUGH;
-#endif
+                        BADCODE("CORINFO_FIELD_STATIC_TLS fields are not supported by RyuJit");
 
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
                     case CORINFO_FIELD_INSTANCE_HELPER:

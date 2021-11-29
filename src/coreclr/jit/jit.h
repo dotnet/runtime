@@ -307,12 +307,6 @@ typedef ptrdiff_t ssize_t;
 // Type used for weights (e.g. block and edge weights)
 typedef double weight_t;
 
-// For the following specially handled FIELD_HANDLES we need
-//   values that are negative and have the low two bits zero
-// See eeFindJitDataOffs and eeGetJitDataOffs in Compiler.hpp
-#define FLD_GLOBAL_DS ((CORINFO_FIELD_HANDLE)-4)
-#define FLD_GLOBAL_FS ((CORINFO_FIELD_HANDLE)-8)
-
 class GlobalJitOptions
 {
 public:

@@ -3106,18 +3106,16 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         CORINFO_FIELD_HANDLE fldHnd = memBase->AsClsVar()->gtClsVarHnd;
 
         // Static always need relocs
-        if (!jitStaticFldIsGlobAddr(fldHnd))
-        {
-            // Contract:
-            // fgMorphField() changes any statics that won't fit into 32-bit addresses into
-            // constants with an indir, rather than GT_CLS_VAR, based on reloc type hint given
-            // by VM. Hence emitter should always mark GT_CLS_VAR_ADDR as relocatable.
-            //
-            // Data section constants: these get allocated close to code block of the method and
-            // always addressable IP relative.  These too should be marked as relocatable.
 
-            id->idSetIsDspReloc();
-        }
+        // Contract:
+        // fgMorphField() changes any statics that won't fit into 32-bit addresses into
+        // constants with an indir, rather than GT_CLS_VAR, based on reloc type hint given
+        // by VM. Hence emitter should always mark GT_CLS_VAR_ADDR as relocatable.
+        //
+        // Data section constants: these get allocated close to code block of the method and
+        // always addressable IP relative.  These too should be marked as relocatable.
+
+        id->idSetIsDspReloc();
 
         id->idAddr()->iiaFieldHnd = fldHnd;
         id->idInsFmt(emitMapFmtForIns(emitMapFmtAtoM(fmt), ins));
@@ -4263,10 +4261,7 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
 void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs)
 {
     // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-    {
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-    }
+    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
 
     UNATIVE_OFFSET sz;
     instrDesc*     id;
@@ -4926,10 +4921,7 @@ void emitter::emitIns_R_C_I(
     instruction ins, emitAttr attr, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival)
 {
     // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-    {
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-    }
+    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
 
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
     assert(IsSSEOrAVXInstruction(ins));
@@ -5089,10 +5081,7 @@ void emitter::emitIns_R_R_C(
     assert(IsThreeOperandAVXInstruction(ins));
 
     // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-    {
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-    }
+    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
 
     instrDesc* id = emitNewInstrDsp(attr, offs);
 
@@ -5209,10 +5198,7 @@ void emitter::emitIns_R_R_C_I(
     assert(IsThreeOperandAVXInstruction(ins));
 
     // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-    {
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-    }
+    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
 
     instrDesc* id = emitNewInstrCnsDsp(attr, ival, offs);
 
@@ -5441,10 +5427,7 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
     assert(UseVEXEncoding());
 
     // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-    {
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-    }
+    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
 
     int        ival = encodeXmmRegAsIval(op3Reg);
     instrDesc* id   = emitNewInstrCnsDsp(attr, ival, offs);
@@ -5532,10 +5515,7 @@ void emitter::emitIns_R_R_R_R(
 void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HANDLE fldHnd, int offs)
 {
     // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-    {
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-    }
+    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
 
     emitAttr size = EA_SIZE(attr);
 
@@ -5583,12 +5563,6 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         {
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
-
-        // Special case: mov reg, fs:[ddd]
-        if (fldHnd == FLD_GLOBAL_FS)
-        {
-            sz += 1;
-        }
     }
 
     id->idCodeSize(sz);
@@ -5607,10 +5581,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
 void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs)
 {
     // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-    {
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-    }
+    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
 
     emitAttr size = EA_SIZE(attr);
 
@@ -5656,12 +5627,6 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
         sz = emitInsSizeCV(id, insCodeMR(ins));
     }
 
-    // Special case: mov reg, fs:[ddd]
-    if (fldHnd == FLD_GLOBAL_FS)
-    {
-        sz += 1;
-    }
-
     id->idCodeSize(sz);
 
     id->idAddr()->iiaFieldHnd = fldHnd;
@@ -5678,10 +5643,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val)
 {
     // Static always need relocs
-    if (!jitStaticFldIsGlobAddr(fldHnd))
-    {
-        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-    }
+    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
 
     insFormat fmt;
 
@@ -8252,18 +8214,6 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
         {
             offs = 0xD1FFAB1E;
         }
-    }
-
-    if (fldHnd == FLD_GLOBAL_FS)
-    {
-        printf("FS:[0x%04X]", offs);
-        return;
-    }
-
-    if (fldHnd == FLD_GLOBAL_DS)
-    {
-        printf("[0x%04X]", offs);
-        return;
     }
 
     printf("[");
@@ -11428,12 +11378,6 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     fldh = id->idAddr()->iiaFieldHnd;
     offs = emitGetInsDsp(id);
 
-    // Special case: mov reg, fs:[ddd]
-    if (fldh == FLD_GLOBAL_FS)
-    {
-        dst += emitOutputByte(dst, 0x64);
-    }
-
     // Compute VEX prefix
     // Some of its callers already add VEX prefix and then call this routine.
     // Therefore add VEX prefix is not already present.
@@ -11669,18 +11613,10 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else
     {
-        // Special case: mov reg, fs:[ddd] or mov reg, [ddd]
-        if (jitStaticFldIsGlobAddr(fldh))
+        addr = (BYTE*)emitComp->info.compCompHnd->getFieldAddress(fldh, nullptr);
+        if (addr == nullptr)
         {
-            addr = nullptr;
-        }
-        else
-        {
-            addr = (BYTE*)emitComp->info.compCompHnd->getFieldAddress(fldh, nullptr);
-            if (addr == nullptr)
-            {
-                NO_WAY("could not obtain address of static field");
-            }
+            NO_WAY("could not obtain address of static field");
         }
     }
 
