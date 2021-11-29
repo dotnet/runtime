@@ -1442,7 +1442,7 @@ void EEDbgInterfaceImpl::SetAllDebugState(Thread *et,
 }
 
 // This is pretty much copied from VM\COMSynchronizable's
-// INT32 __stdcall ThreadNative::GetThreadState, so propogate changes
+// INT32 __stdcall ThreadNative::GetThreadState, so propagate changes
 // to both functions
 // This just gets the user state from the EE's perspective (hence "partial").
 CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)

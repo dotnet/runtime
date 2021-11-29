@@ -589,7 +589,7 @@ endif()
 ######################################
 # ICU CHECKS
 ######################################
-set(ICU_SHIM_PATH "${CLR_SRC_LIBS_NATIVE_DIR}/Unix/System.Globalization.Native")
+set(ICU_SHIM_PATH "${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
 elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)

@@ -170,7 +170,7 @@ static const char* opNames[] = {
 
 const char* GenTree::OpName(genTreeOps op)
 {
-    assert((unsigned)op < _countof(opNames));
+    assert((unsigned)op < ArrLen(opNames));
 
     return opNames[op];
 }
@@ -186,7 +186,7 @@ static const char* opStructNames[] = {
 
 const char* GenTree::OpStructName(genTreeOps op)
 {
-    assert((unsigned)op < _countof(opStructNames));
+    assert((unsigned)op < ArrLen(opStructNames));
 
     return opStructNames[op];
 }
@@ -10787,7 +10787,7 @@ int Compiler::gtGetLclVarName(unsigned lclNum, char* buf, unsigned buf_remaining
 char* Compiler::gtGetLclVarName(unsigned lclNum)
 {
     char buf[BUF_SIZE];
-    int  charsPrinted = gtGetLclVarName(lclNum, buf, _countof(buf));
+    int  charsPrinted = gtGetLclVarName(lclNum, buf, ArrLen(buf));
     if (charsPrinted < 0)
     {
         return nullptr;
@@ -10802,7 +10802,7 @@ char* Compiler::gtGetLclVarName(unsigned lclNum)
 void Compiler::gtDispLclVar(unsigned lclNum, bool padForBiggestDisp)
 {
     char buf[BUF_SIZE];
-    int  charsPrinted = gtGetLclVarName(lclNum, buf, _countof(buf));
+    int  charsPrinted = gtGetLclVarName(lclNum, buf, ArrLen(buf));
 
     if (charsPrinted < 0)
     {
@@ -16304,7 +16304,7 @@ GenTreeLclVarCommon* GenTree::IsLocalAddrExpr()
 //    Returns true if "this" represents the address of a local, or a field of a local.
 //
 // Notes:
-//    It is mostly used for optimizations but assertion propogation depends on it for correctness.
+//    It is mostly used for optimizations but assertion propagation depends on it for correctness.
 //    So if this function does not recognize a def of a LCL_VAR we can have an incorrect optimization.
 //
 bool GenTree::IsLocalAddrExpr(Compiler*             comp,

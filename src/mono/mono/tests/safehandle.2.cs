@@ -14,8 +14,8 @@ public class Tests {
 		public MyHandle (IntPtr x) : base (x, true)
 		{
 		}
-		
-		
+
+
 		public override bool IsInvalid {
 			get {
 				return false;
@@ -36,7 +36,7 @@ public class Tests {
 		public MyHandleNoCtor (IntPtr handle) : base (handle, true)
 		{
 		}
-		
+
 		public override bool IsInvalid {
 			get {
 				return false;
@@ -48,7 +48,7 @@ public class Tests {
 			return true;
 		}
 	}
-	
+
 	[DllImport ("libtest")]
 	public static extern void mono_safe_handle_ref (ref MyHandle handle);
 
@@ -71,20 +71,20 @@ public class Tests {
 		try {
 			mono_safe_handle_ref2 (ref m);
 		} catch (MissingMethodException) {
-			Console.WriteLine ("Good: got exception requried");
+			Console.WriteLine ("Good: got exception required");
 			return 0;
 		}
 
 		return 1;
 	}
-	
+
 	public static int test_0_safehandle_ref ()
 	{
 		MyHandle m = new MyHandle ((IntPtr) 0xdead);
 		MyHandle m_saved = m;
 
 		mono_safe_handle_ref (ref m);
-		
+
 		if (m.DangerousGetHandle () != (IntPtr) 0x800d){
 			Console.WriteLine ("test_0_safehandle_ref: fail; Expected 0x800d, got: {0:x}", m.DangerousGetHandle ());
 			return 1;
@@ -135,7 +135,7 @@ public class Tests {
 
 	[DllImport ("libtest")]
 	public static extern int mono_xr (SafeHandle sh);
-	
+
 	public static int test_0_marshal_safehandle_argument ()
 	{
 		SafeHandle s = new SafeFileHandle ((IntPtr) 0xeadcafe, true);
@@ -153,7 +153,7 @@ public class Tests {
 		}
 		return 1;
 	}
-	
+
 
 	[StructLayout (LayoutKind.Sequential)]
 	public struct StringOnStruct {
@@ -172,7 +172,7 @@ public class Tests {
 	public struct StructTest1 {
 		public SafeHandle a;
 	}
-	
+
 	[DllImport ("libtest")]
 	public static extern int mono_safe_handle_struct_ref (ref StructTest test);
 
@@ -190,7 +190,7 @@ public class Tests {
 
 	[DllImport ("libtest", EntryPoint="mono_safe_handle_return")]
 	public static extern MyHandleNoCtor mono_safe_handle_return_2 ();
-	
+
 	static StructTest x = new StructTest ();
 
 	public static int test_0_safehandle_return_noctor ()
@@ -205,7 +205,7 @@ public class Tests {
 		Console.WriteLine ("Failed, expected an exception because there is no parameterless ctor");
 		return 1;
 	}
-	
+
 	public static int test_0_safehandle_return_exc ()
 	{
 		try {
@@ -225,7 +225,7 @@ public class Tests {
 		Console.WriteLine ("Got the following handle: {0}", x.DangerousGetHandle ());
 		return x.DangerousGetHandle () == (IntPtr) 0x1000f00d ? 0 : 1;
 	}
-	
+
 	public static int test_0_marshal_safehandle_field ()
 	{
 		x.a = 1234;
@@ -245,13 +245,13 @@ public class Tests {
 		x.b = 8743;
 		x.handle1 = new SafeFileHandle ((IntPtr) 0x7080feed, false);
 		x.handle2 = new SafeFileHandle ((IntPtr) 0x1234abcd, false);
-		
+
 		if (mono_safe_handle_struct_ref (ref x) != 0xf00d)
 			return 1;
 
 		return 0;
 	}
-	
+
 	public static int test_0_simple ()
 	{
 		StructTest1 s = new StructTest1 ();
@@ -271,7 +271,7 @@ public class Tests {
 		}
 		return 1;
 	}
-	
+
 	public static int test_0_sf_dispose ()
 	{
 		SafeFileHandle sf = new SafeFileHandle ((IntPtr) 0x0d00d, false);
@@ -290,7 +290,7 @@ public class Tests {
 		Console.WriteLine ("Error: " + msg);
 		return 1;
 	}
-	
+
 	static int Main ()
 	{
 		return TestDriver.RunTests (typeof (Tests));

@@ -6,6 +6,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
+  <PropertyGroup>
+    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"
              Link="Common\System\IO\ConnectedStreams.cs" />
