@@ -207,7 +207,7 @@ run_app(){
 		cd dockerApp
 		dotnet restore -s https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
 		project_output=$(dotnet run)
-		if [[ "$project_output" == 'Hello World!' ]] ;
+		if [[ "$project_output" == 'Hello World!' ]];
 		then
 			sucess_install=1;
 		else

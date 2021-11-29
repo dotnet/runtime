@@ -276,29 +276,26 @@ ensure_binaries_are_present
 TestsFailed=0
 numberOfProcesses=0
 
-if [ $RunTestSequential -eq 1 ]
-then
+if [[ $RunTestSequential -eq 1 ]]; then
     maxProcesses=1;
 else
     platform="$(uname)"
-    if [ "$platform" = "FreeBSD" ]; then
+    if [[ "$platform" == "FreeBSD" ]]; then
       maxProcesses=$(($(sysctl -n hw.ncpu)+1))
-    if [ "$platform" = "NetBSD" ] || [ "$platform" = "SunOS" ]; then
+    if [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
       maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
     else
       maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
     fi
 fi
 
-if [ -n "$TestDirFile" ] || [ -n "$TestDir" ]
-then
+if [[ -n "$TestDirFile" || -n "$TestDir" ]]; then
     run_selected_tests
 else
     run_all_tests "$CoreFxTests/tests/"*.Tests
 fi
 
-if [ "$TestsFailed" -gt 0 ]
-then
+if [[ "$TestsFailed" -gt 0 ]]; then
     echo "$TestsFailed test(s) failed"
 else
     echo "All tests passed."

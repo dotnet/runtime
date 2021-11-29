@@ -497,14 +497,12 @@ fi
 
 # Check parameters up front for valid values:
 
-if [[ "$Configuration" != "Debug" && "$Configuration" != "Release" ]]
-then
+if [[ "$Configuration" != "Debug" && "$Configuration" != "Release" ]]; then
     echo "error: Configuration should be Debug or Release"
     exit 1
 fi
 
-if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "OSX" ] && [ "$OS" != "SunOS" ]
-then
+if [[ "$OS" != "FreeBSD" && "$OS" != "Linux" && "$OS" != "NetBSD" && "$OS" != "OSX" && "$OS" != "SunOS" ]]; then
     echo "error: OS should be FreeBSD, Linux, NetBSD, OSX or SunOS"
     exit 1
 fi

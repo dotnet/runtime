@@ -2207,7 +2207,7 @@ do
 	do
 		TYPE1="$(fix_ldobj $T1)"
 		TYPE2="$(fix_ldobj $T2)"
-		if [ "$TYPE1" = "$TYPE2" ] ; then
+		if [ "$TYPE1" = "$TYPE2" ]; then
 			./make_ldobj_test.sh ldobj_${I} valid "${T1}\&" "${T2}"
 		else
 			./make_ldobj_test.sh ldobj_${I} unverifiable "${T1}\&" "${T2}"
