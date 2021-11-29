@@ -270,10 +270,6 @@ namespace System.Diagnostics.Tracing
         {
             AutoResetEvent? sleepEvent = null;
 
-            // DO NOT MERGE
-            // Experimenting what effect does this delay have on the race condition to better understand the issue
-            System.Threading.Thread.Sleep(500);
-
             // Cache of onTimer callbacks for each CounterGroup.
             // We cache these outside of the scope of s_counterGroupLock because
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
@@ -291,6 +287,12 @@ namespace System.Diagnostics.Tracing
                         if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
                         {
                             onTimers.Add(counterGroup);
+                        }
+                        else
+                        {
+                            int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
+                            millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
+                            sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                         }
                     }
                 }
