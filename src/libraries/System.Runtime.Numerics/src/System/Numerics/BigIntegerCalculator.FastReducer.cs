@@ -38,15 +38,15 @@ namespace System.Numerics
                 if (value.Length < _modulus.Length)
                     return value.Length;
 
-                // Let q1 = v/(2^32)^(k-1) * mu
+                // Let q1 = v/2^(k-32) * mu
                 _q1.Clear();
                 int l1 = DivMul(value, _mu, _q1, _modulus.Length - 1);
 
-                // Let q2 = q1/(2^32)^(k+1) * m
+                // Let q2 = q1/2^(k+32) * m
                 _q2.Clear();
                 int l2 = DivMul(_q1.Slice(0, l1), _modulus, _q2, _modulus.Length + 1);
 
-                // Let v = (v - q2) % (2^32)^k
+                // Let v = (v - q2) % 2^k
                 // while m <= v: Let v = v - m
                 var length = SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length);
                 value = value.Slice(length);
@@ -65,6 +65,10 @@ namespace System.Numerics
                 // but skips the first k limbs of left, which is equivalent to
                 // preceding division by 2^(32*k). To spare memory allocations
                 // we write the result to an already allocated memory.
+                // Note that the k used here has different scale from the k used
+                // in the description of barrett reduction.
+                // The former refers to the number of elements in the array,
+                // while the latter refers to the number of bits.
 
                 if (left.Length > k)
                 {
@@ -97,6 +101,10 @@ namespace System.Numerics
                 // but considers only the first k limbs, which is equivalent to
                 // preceding reduction by 2^(32*k). Furthermore, if left is
                 // still greater than modulus, further subtractions are used.
+                // Note that the k used here has different scale from the k used
+                // in the description of barrett reduction.
+                // The former refers to the number of elements in the array,
+                // while the latter refers to the number of bits.
 
                 if (left.Length > k)
                     left = left.Slice(0, k);
@@ -162,7 +170,7 @@ namespace System.Numerics
                 Debug.Assert(r.Length == modulus.Length * 2 + 1);
                 Debug.Assert(mu.Length == r.Length - modulus.Length + 1);
 
-                // Let r = (2^32)^(2k), with (2^32)^k > m
+                // Let r = 2^(2k), with 2^k > m and k % 32 = 0
                 r[r.Length - 1] = 1;
 
                 // Let mu = r / m
@@ -188,6 +196,5 @@ namespace System.Numerics
                 Q2 = q2;
             }
         }
-
     }
 }
