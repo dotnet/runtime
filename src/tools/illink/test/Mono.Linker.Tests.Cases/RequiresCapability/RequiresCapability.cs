@@ -1204,6 +1204,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				// RequiresUnfereferencedCode on the type will suppress IL2072
+				// https://github.com/dotnet/linker/issues/2379
+				[ExpectedWarning("IL2072", ProducedBy = ProducedBy.Analyzer)]
 				static ClassWithRequires ()
 				{
 					Instance = Activator.CreateInstance (Type.GetType ("SomeText"));
@@ -1419,6 +1421,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("RUC")]
 			class DerivedWithRequiresOnType : BaseWithoutRequiresOnType
 			{
+				// Bug https://github.com/dotnet/linker/issues/2379
+				[ExpectedWarning ("IL2046", ProducedBy = ProducedBy.Analyzer)]
 				public override void Method () { }
 			}
 
@@ -1454,6 +1458,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					return 1;
 				}
 
+				// Bug https://github.com/dotnet/linker/issues/2379
+				[ExpectedWarning ("IL2046", ProducedBy = ProducedBy.Analyzer)]
 				public int Method (int a)
 				{
 					return a;
@@ -1770,6 +1776,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					static int privatefield;
 				}
 
+				// Analyzer doesn't implement DAM on type hierarchy yet
+				[ExpectedWarning ("IL2075", ProducedBy = ProducedBy.Analyzer)]
 				static void TestDAMOnTypeAccess (DAMAnnotatedClass instance)
 				{
 					instance.GetType ().GetField ("publicField");
@@ -1909,6 +1917,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					}
 				}
 
+				// Analyzer doesn't implement DAM on type hierarchy yet
+				[ExpectedWarning ("IL2075", ProducedBy = ProducedBy.Analyzer)]
 				static void TestDAMOnTypeAccess (DAMAnnotatedClass instance)
 				{
 					instance.GetType ().GetProperty ("publicProperty");

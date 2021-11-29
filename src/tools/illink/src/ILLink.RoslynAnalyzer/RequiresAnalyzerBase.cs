@@ -397,7 +397,7 @@ namespace ILLink.RoslynAnalyzer
 			if (member == null)
 				return false;
 
-			if (!member.TryGetAttribute (RequiresAttributeFullyQualifiedName, out var _attribute))
+			if (!member.TryGetAttribute (RequiresAttributeName, out var _attribute))
 				return false;
 
 			if (VerifyAttributeArguments (_attribute)) {
