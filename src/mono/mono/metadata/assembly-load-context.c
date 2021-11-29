@@ -435,7 +435,7 @@ mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 	g_assert (resolve);
 
 	MonoAssemblyLoadContext *alc = NULL;
-	mono_field_get_value_internal (mono_gchandle_get_target_internal(alc_gchandle), resolve, &alc);
+	mono_field_get_value_internal (mono_gchandle_get_target_internal (alc_gchandle), resolve, &alc);
 	return alc;	
 }
 
