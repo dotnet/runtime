@@ -52,8 +52,7 @@
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.21572.6</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <!-- Pin compiler version to workaround issue: https://github.com/dotnet/runtime/issues/59908 -->
-    <MicrosoftNetCompilersToolsetVersion>4.0.0-5.21453.15</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.0.0</MicrosoftNetCompilersToolsetVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
