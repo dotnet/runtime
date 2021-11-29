@@ -20,6 +20,8 @@
     <Compile Include="ResourceAssemblyLoadContext.cs" />
     <Compile Include="SatelliteAssemblies.cs" />
     <Compile Include="LoaderLinkTest.cs" />
+    <!-- The collection definitions must be in the same assembly as the test that uses them -->
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
   <ItemGroup>

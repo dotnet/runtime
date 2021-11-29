@@ -5,6 +5,8 @@ using Xunit;
 
 namespace System
 {
+    // The collection definitions must be in the same assembly as the test that uses them.
+    // So please use "Compile Include" in the project file to include this class.
     [CollectionDefinition(nameof(DisableParallelization), DisableParallelization = true)]
     public class DisableParallelization { }
 }

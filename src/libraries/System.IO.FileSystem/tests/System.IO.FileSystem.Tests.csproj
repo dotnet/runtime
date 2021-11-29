@@ -217,6 +217,8 @@
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
     <Content Include="DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
+    <!-- The collection definitions must be in the same assembly as the test that uses them -->
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
