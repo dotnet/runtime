@@ -275,7 +275,10 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PrepareMergedTestPayloadDirectory" Outputs="%(_MergedWrapperRunScript.FileName)" DependsOnTargets="DiscoverMergedTestWrappers">
+  <Target Name="PrepareMergedTestPayloadDirectory"
+      Outputs="%(_MergedWrapperRunScript.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers"
+      Condition="'@(_MergedWrapperRunScript)' != ''">
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperRunScript.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
