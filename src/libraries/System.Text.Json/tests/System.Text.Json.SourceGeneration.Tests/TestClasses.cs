@@ -60,6 +60,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public string Description { get; set; }
         public DateTimeOffset StartDate { get; set; }
         public DateTimeOffset EndDate { get; set; }
+        public TimeSpan Offset { get; set; }
     }
 
     public class CampaignSummaryViewModel

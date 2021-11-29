@@ -399,7 +399,8 @@ namespace System.Text.Json.SourceGeneration.Tests
                 EndDate = DateTime.UtcNow.AddYears(1),
                 Name = "Just a name",
                 ImageUrl = "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
-                StartDate = DateTime.UtcNow
+                StartDate = DateTime.UtcNow,
+                Offset = TimeSpan.FromHours(2)
             };
         }
 
