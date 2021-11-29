@@ -263,7 +263,6 @@ namespace System.Reflection.Metadata
             });
         }
 
-	[ActiveIssue ("https://github.com/dotnet/runtime/issues/50249", TestRuntimes.Mono)]
 	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
 	public static void TestAddLambdaCapturingThis()
 	{
@@ -279,6 +278,28 @@ namespace System.Reflection.Metadata
 
 		string result = x.TestMethod();
 		Assert.Equal("42123abcd", result);
+	    });
+	}
+
+	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+	public static void TestAddStaticField()
+	{
+	    ApplyUpdateUtil.TestCase(static () =>
+	    {
+		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField).Assembly;
+
+		var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField();
+
+		x.TestMethod();
+
+		Assert.Equal ("abcd", x.GetField);
+
+		ApplyUpdateUtil.ApplyUpdate(assm);
+
+		x.TestMethod();
+
+		string result = x.GetField;
+		Assert.Equal("4567", result);
 	    });
 	}
 
