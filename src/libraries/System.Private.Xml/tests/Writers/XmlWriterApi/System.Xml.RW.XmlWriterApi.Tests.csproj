@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TestDisableParallelization>true</TestDisableParallelization>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EndOfLineHandlingTests.cs" />
@@ -25,7 +26,6 @@
     <Compile Include="TCNewLineChars.cs" />
     <Compile Include="TCNewLineHandling.cs" />
     <Compile Include="TCNewLineOnAttributes.cs" />
-    <Compile Include="DisableParallelization.cs" />
     <Compile Include="TCOmitXmlDecl.cs" />
     <Compile Include="TCStandAlone.cs" />
     <Compile Include="TCWriteAttributes.cs" />

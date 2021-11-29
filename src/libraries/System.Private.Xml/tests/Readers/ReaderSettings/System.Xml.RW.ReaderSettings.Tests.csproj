@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TestDisableParallelization>true</TestDisableParallelization>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ConformanceSettings.cs" />
@@ -21,7 +22,6 @@
     <Compile Include="TCOneByteStream.cs" />
     <Compile Include="TCReaderSettings.cs" />
     <Compile Include="TCRSGeneric.cs" />
-    <Compile Include="$(CommonTestPath)System\Xml\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)System\Xml\BaseLibManaged\BaseLibManaged.csproj" />
