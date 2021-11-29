@@ -120,7 +120,11 @@ internal static partial class Interop
         {
             // Get the number of processes currently running to know how much data to allocate
             int numProcesses = proc_listallpids(null, 0);
-            if (numProcesses <= 0)
+            if (numProcesses == 0 && IsAppSandboxEnabled())
+            {
+                return new[] { Environment.ProcessId };
+            }
+            else if (numProcesses <= 0)
             {
                 throw new Win32Exception(SR.CantGetAllPids);
             }
@@ -378,5 +382,8 @@ internal static partial class Interop
 
             return info;
         }
+
+        private static bool IsAppSandboxEnabled()
+            => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID");
     }
 }
