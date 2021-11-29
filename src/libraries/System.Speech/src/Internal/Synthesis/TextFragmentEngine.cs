@@ -195,10 +195,10 @@ namespace System.Speech.Internal.Synthesis
         public void StartProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string element, List<SsmlXmlAttribute> extraAttributes)
         {
             StringBuilder sb = new();
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<{0}", element);
+            sb.Append(CultureInfo.InvariantCulture, $"<{element}");
             foreach (SsmlXmlAttribute attribute in extraAttributes)
             {
-                sb.AppendFormat(CultureInfo.InvariantCulture, " {0}:{1}=\"{2}\" xmlns:{3}=\"{4}\"", attribute._prefix, attribute._name, attribute._value, attribute._prefix, attribute._ns);
+                sb.Append(CultureInfo.InvariantCulture, $" {attribute._prefix}:{attribute._name}=\"{attribute._value}\" xmlns:{attribute._prefix}=\"{attribute._ns}\"");
             }
             sb.Append('>');
 

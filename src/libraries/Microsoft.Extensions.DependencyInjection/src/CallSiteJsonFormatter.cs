@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     _firstItem = false;
                 }
-                Builder.AppendFormat("\"{0}\":", name);
+                Builder.Append($"\"{name}\":");
             }
 
             public void StartArrayItem()
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 StartProperty(name);
                 if (value != null)
                 {
-                    Builder.AppendFormat(" \"{0}\"", value);
+                    Builder.Append($" \"{value}\"");
                 }
                 else
                 {

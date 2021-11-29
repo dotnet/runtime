@@ -414,7 +414,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < labels.Length; i++)
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", labels[i].Key, labels[i].Value);
+                    sb.Append(CultureInfo.InvariantCulture, $"{labels[i].Key}={labels[i].Value}");
                     if (i != labels.Length - 1)
                     {
                         sb.Append(',');
@@ -428,7 +428,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", quantiles[i].Quantile, quantiles[i].Value);
+                    sb.Append(CultureInfo.InvariantCulture, $"{quantiles[i].Quantile}={quantiles[i].Value}");
                     if (i != quantiles.Length - 1)
                     {
                         sb.Append(';');

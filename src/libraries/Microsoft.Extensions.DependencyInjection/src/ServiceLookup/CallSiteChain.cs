@@ -62,9 +62,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
                 else
                 {
-                    builder.AppendFormat("{0}({1})",
-                        TypeNameHelper.GetTypeDisplayName(serviceType),
-                        TypeNameHelper.GetTypeDisplayName(implementationType));
+                    builder.Append($"{TypeNameHelper.GetTypeDisplayName(serviceType)}({TypeNameHelper.GetTypeDisplayName(implementationType)})");
                 }
 
                 builder.Append(" -> ");
