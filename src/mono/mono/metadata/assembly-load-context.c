@@ -428,14 +428,14 @@ mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 	
 		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
 		g_assert (alc_class);
-		resolve = mono_class_get_field_from_name (alc_class, "_nativeAssemblyLoadContext");
+		resolve = mono_class_get_field_from_name_full (alc_class, "_nativeAssemblyLoadContext");
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, resolve)
 
 	g_assert (resolve);
 
 	MonoAssemblyLoadContext *alc = NULL;
-	mono_field_get_value(mono_gchandle_get_target_internal(alc_gchandle), resolve, &alc);
+	mono_field_get_value_internal (mono_gchandle_get_target_internal(alc_gchandle), resolve, &alc);
 	return alc;	
 }
 
