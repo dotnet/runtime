@@ -11468,6 +11468,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // next to the nop instruction in disasm.
                     // e.g. D43E0000          align   [4 bytes for IG07]
                     ins = INS_BREAKPOINT;
+                    if (ins == INS_brk)
+                    {
+                        fmt = IF_SI_0A;
+                    }
+                    else
+                    {
+                        assert(TargetOS::IsWindows);
+                        assert(ins == INS_bkpt);
+                        fmt = IF_SN_0A;
+                    }
                 }
 #endif
             }
