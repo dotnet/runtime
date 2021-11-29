@@ -292,6 +292,7 @@ namespace System.Diagnostics.Tracing
                         }
                     }
                 }
+                Thread.MemoryBarrier();
                 foreach (CounterGroup counterGroup in onTimers)
                 {
                     counterGroup.OnTimer();
@@ -304,6 +305,7 @@ namespace System.Diagnostics.Tracing
                 {
                     sleepDurationInMilliseconds = -1; // WaitOne uses -1 to mean infinite
                 }
+                Thread.MemoryBarrier();
                 sleepEvent?.WaitOne(sleepDurationInMilliseconds);
             }
         }
