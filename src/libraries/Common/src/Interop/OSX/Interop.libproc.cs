@@ -384,6 +384,6 @@ internal static partial class Interop
         }
 
         private static bool IsAppSandboxEnabled()
-            => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID");
+            => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID") != null;
     }
 }
