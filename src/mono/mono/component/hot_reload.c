@@ -1908,7 +1908,7 @@ hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx)
 			loc = get_method_update_rva (base_image, info, idx, TRUE);
 		}
 		/* Check the method_parent table as a way of checking if the method was added by a later generation. If so, still look for its PPDB info in our update tables */
-		if (G_UNLIKELY (loc == 0 && GPOINTER_TO_UINT (g_hash_table_lookup (info->method_parent, GUINT_TO_POINTER (idx))) > 0)) {
+		if (G_UNLIKELY (loc == 0 && info->method_parent && GPOINTER_TO_UINT (g_hash_table_lookup (info->method_parent, GUINT_TO_POINTER (idx))) > 0)) {
 			loc = get_method_update_rva (base_image, info, idx, TRUE);
 		}
 	}
