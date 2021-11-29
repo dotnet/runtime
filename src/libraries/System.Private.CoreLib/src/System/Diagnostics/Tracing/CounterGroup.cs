@@ -288,15 +288,20 @@ namespace System.Diagnostics.Tracing
                         {
                             onTimers.Add(counterGroup);
                         }
-
-                        int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
-                        millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
-                        sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
+                        else
+                        {
+                            int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
+                            millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
+                            sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
+                        }
                     }
                 }
-                foreach (CounterGroup onTimer in onTimers)
+                foreach (CounterGroup counterGroup in onTimers)
                 {
-                    onTimer.OnTimer();
+                    counterGroup.OnTimer();
+                    int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - DateTime.UtcNow).TotalMilliseconds);
+                    millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
+                    sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                 }
                 onTimers.Clear();
                 if (sleepDurationInMilliseconds == int.MaxValue)
