@@ -63,6 +63,16 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(s.IsEmpty);
         }
 
+        [Fact]
+        public void PushRange_NoItems_NothingAdded_NoRangeSpecified()
+        {
+            var s = new ConcurrentStack<int>();
+            Assert.True(s.IsEmpty);
+
+            s.PushRange(new int[0]);
+            Assert.True(s.IsEmpty);
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(8, 10)]
         [InlineData(16, 100)]

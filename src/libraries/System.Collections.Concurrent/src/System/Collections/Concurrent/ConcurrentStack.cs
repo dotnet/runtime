@@ -316,6 +316,11 @@ namespace System.Collections.Concurrent
             {
                 throw new ArgumentNullException(nameof(items));
             }
+
+            // No op if the length is zero
+            if (items.Length == 0)
+                return;
+
             PushRange(items, 0, items.Length);
         }
 
@@ -348,7 +353,6 @@ namespace System.Collections.Concurrent
             // No op if the count is zero
             if (count == 0)
                 return;
-
 
             Node head, tail;
             head = tail = new Node(items[startIndex]);
