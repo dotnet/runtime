@@ -210,6 +210,11 @@ namespace System.Text.Json.Serialization
 
                     if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, element, out object? referenceValue))
                     {
+                        if (!(referenceValue is T target))
+                        {
+                            throw new Exception($"Pavel2 Expected type '{typeof(T).FullName}', got '{referenceValue!.GetType().FullName}'.");
+                        }
+
                         value = (T?)referenceValue;
                     }
                 }

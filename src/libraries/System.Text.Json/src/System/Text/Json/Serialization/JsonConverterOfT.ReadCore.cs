@@ -77,6 +77,10 @@ namespace System.Text.Json.Serialization
                 state.BytesConsumed += reader.BytesConsumed;
                 return value;
             }
+            catch (System.InvalidCastException)
+            {
+                throw new Exception($"Pavel Expected type '{typeof(T).FullName}', got '{state.Current.ReturnValue!.GetType().FullName}'.");
+            }
             catch (JsonReaderException ex)
             {
                 ThrowHelper.ReThrowWithPath(ref state, ex);
