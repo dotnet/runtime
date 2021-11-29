@@ -7,6 +7,14 @@
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
+  <PropertyGroup>
+    <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
+    <LegacyPayloadsRootDirectory>$(TestBinDir)LegacyPayloads\</LegacyPayloadsRootDirectory>
+    <LegacyPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(LegacyPayloadsRootDirectory)))</LegacyPayloadsRootDirectory>
+    <MergedPayloadsRootDirectory>$(TestBinDir)MergedPayloads\</MergedPayloadsRootDirectory>
+    <MergedPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(MergedPayloadsRootDirectory)))</MergedPayloadsRootDirectory>
+  </PropertyGroup>
+
   <!-- This target runs once and creates several instances of this project (one for each scenario)
        that will run in parallel. -->
 
@@ -40,7 +48,6 @@
         PALTestsDir=$(_PALTestsDir)
       </_PropertiesToPass>
 
-
       <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
@@ -53,6 +60,13 @@
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
+
+    <ItemGroup>
+      <CleanPreexistingPayloads Include="$(LegacyPayloadsRootDirectory)**" />
+      <CleanPreexistingPayloads Include="$(MergedPayloadsRootDirectory)**" />
+    </ItemGroup>
+
+    <Delete Files="@(CleanPreexistingPayloads)" />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
@@ -88,9 +102,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
-    <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
-    <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
     <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
@@ -132,9 +143,9 @@
       <_XUnitWrapperDll Include="@(XUnitWrapperGrouping)" />
 
       <!-- This adds the remaining *.XUnitWrapper.dll files in TestBinDir unless
-           1) they are in PayloadsRootDirectory or
+           1) they are in LegacyPayloadsRootDirectory or
            2) they are grouped by XUnitWrapperGrouping. -->
-      <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(PayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
+      <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(LegacyPayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
          <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunatelly, we can't do this right here. -->
          <PayloadGroup></PayloadGroup>
       </_XUnitWrapperDll>
@@ -146,14 +157,10 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="DiscoverMergedTestWrappers">
-    <ItemGroup>
-      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" />
-      <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="PrepareLegacyPayloadDirectory" Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)" DependsOnTargets="DiscoverLegacyXUnitWrappers">
+  <Target Name="PrepareLegacyPayloadDirectory"
+      Condition="'@(_XUnitWrapperDll)' != ''"
+      Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)"
+      DependsOnTargets="DiscoverLegacyXUnitWrappers">
     <PropertyGroup>
       <_FileDirectory>%(_XUnitWrapperDll.RootDir)%(Directory)</_FileDirectory>
       <_PayloadGroup>%(_XUnitWrapperDll.PayloadGroup)</_PayloadGroup>
@@ -194,7 +201,7 @@
       <ReducedPayloadFilesFinal Remove="@(_MergedWrapperRunScript)" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
+    <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
@@ -217,7 +224,10 @@
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
       <_ProjectsToBuild Include="testenvironment.proj">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(LegacyPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
+      </_ProjectsToBuild>
+      <_ProjectsToBuild Include="testenvironment.proj">
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(MergedPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -227,7 +237,7 @@
   <Target Name="PreparePALTestArchive">
     <Exec Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'"
           WorkingDirectory="$(PALTestsDir)"
-          Command="tar -czvf $(PayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
+          Command="tar -czvf $(LegacyPayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
   </Target>
 
   <Target Name="PreparePayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectories;PrepareLegacyPayloadDirectories" />
@@ -258,13 +268,21 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
 
+  <Target Name="DiscoverMergedTestWrappers">
+    <ItemGroup>
+      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" />
+      <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="PrepareMergedTestPayloadDirectory" Outputs="%(_MergedWrapperRunScript.FileName)" DependsOnTargets="DiscoverMergedTestWrappers">
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperRunScript.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
+      <_MergedWrapperRunScriptRelative>$([System.IO.Path]::GetRelativePath($(TestBinDir), %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
     </PropertyGroup>
 
     <ItemGroup>
-      <_MergedWrapperName Include="%(_MergedWrapperRunScript.FileName)" />
       <_PayloadFiles Include="$(_MergedWrapperDirectory)**" />
       <_PayloadFiles Update="@(_PayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
@@ -279,8 +297,8 @@
       <ReducedPayloadFilesFinal Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
-    <WriteLinesToFile File="$(PayloadsRootDirectory)\%(_MergedWrapperRunScript.FileName)\Launch.txt" Lines="%(_MergedWrapperRunScript.Identity)" />
+    <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
+    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\Launch.txt" Lines="$(_MergedWrapperRunScriptRelative)" />
   </Target>
 
   <PropertyGroup>
@@ -288,16 +306,28 @@
     <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
   </PropertyGroup>
 
-  <Target Name="ZipPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
+  <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
     <ItemGroup>
-      <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
-      <Payloads Update="@(Payloads)">
-        <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+      <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
+      <LegacyPayloads Update="@(LegacyPayloads)">
+        <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
         <PayloadDirectory>%(FullPath)</PayloadDirectory>
-      </Payloads>
+      </LegacyPayloads>
     </ItemGroup>
 
-    <ZipDirectory SourceDirectory="@(Payloads->Metadata('PayloadDirectory'))" DestinationFile="$(PayloadsRootDirectory)\%(Payloads.PayloadGroup).zip" />
+    <ZipDirectory SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))" DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
+  </Target>
+
+  <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedPayloadDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
+    <ItemGroup>
+      <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
+      <MergedPayloads Update="@(MergedPayloads)">
+        <PayloadGroup>$([MSBuild]::MakeRelative($(MergedPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+        <PayloadDirectory>%(FullPath)</PayloadDirectory>
+      </MergedPayloads>
+    </ItemGroup>
+
+    <ZipDirectory SourceDirectory="@(MergedPayloads->Metadata('PayloadDirectory'))" DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip" />
   </Target>
 
   <PropertyGroup>
@@ -388,35 +418,57 @@
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
-    <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
-    <Payloads Update="@(Payloads)">
-      <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+    <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
+    <LegacyPayloads Update="@(LegacyPayloads)">
+      <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
       <PayloadDirectory>%(FullPath)</PayloadDirectory>
       <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
-      <IsMergedTestWrapper>false</IsMergedTestWrapper>
-    </Payloads>
-
-    <Payloads Update="@(Payloads)">
+    </LegacyPayloads>
+    <LegacyPayloads Update="@(LegacyPayloads)">
       <TestGroup>%(PayloadGroup)</TestGroup>
       <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. -->
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
-      <PayloadZipFile>$(PayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
-    </Payloads>
+      <PayloadZipFile>$(LegacyPayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
+    </LegacyPayloads>
 
-    <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
+    <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
+
+    <MergedPayloads Update="@(MergedPayloads)">
+      <PayloadGroup>$([MSBuild]::MakeRelative($(MergedPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+      <PayloadDirectory>%(FullPath)</PayloadDirectory>
+      <PayloadLaunchFile>$(MergedPayloadsRootDirectory)%(FileName)\Launch.txt</PayloadLaunchFile>
+    </MergedPayloads>
+
+    <MergedPayloads Update="@(MergedPayloads)">
+      <MergedTestRunScript>$(MergedPayloadsRootDirectory)%(PayloadGroup)\$([System.IO.File]::ReadAllText('%(PayloadLaunchFile)'))</MergedTestRunScript>
+      <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
+    </MergedPayloads>
+
+    <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
 
-    <XHarnessApkToTest Include="@(Payloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'Android'">
+    <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
+      <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
+      <Command>%(MergedTestRunScript)</Command>
+      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+    </HelixWorkItem>
+
+    <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'Android'">
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessApkToTest>
     
-    <XHarnessAppBundleToTest Include="@(Payloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+    <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'Android'">
+      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+      <CustomCommands>%(MergedTestRunScript)</CustomCommands>
+    </XHarnessApkToTest>
+    
+    <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
       <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
@@ -424,8 +476,15 @@
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessAppBundleToTest>
 
+    <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
+      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+      <CustomCommands>%(MergedTestRunScript)</CustomCommands>
+    </XHarnessAppBundleToTest>
+
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" Include="PALTests">
-      <PayloadArchive>$(PayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
+      <PayloadArchive>$(LegacyPayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
       <Command>./runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
