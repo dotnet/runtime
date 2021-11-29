@@ -428,7 +428,7 @@ mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 	
 		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
 		g_assert (alc_class);
-		resolve = mono_class_get_field_from_name_full (alc_class, "_nativeAssemblyLoadContext");
+		resolve = mono_class_get_field_from_name_full (alc_class, "_nativeAssemblyLoadContext", NULL);
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, resolve)
 
