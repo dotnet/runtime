@@ -189,7 +189,7 @@ GenTree* MorphInitBlockHelper::Morph()
 //    with information about it.
 //
 // Notes:
-//    When assertion propogation is enabled this method kills assertions about the dst local,
+//    When assertion propagation is enabled this method kills assertions about the dst local,
 //    so the correctness depends on `IsLocalAddrExpr` recognizing all patterns.
 //
 void MorphInitBlockHelper::PrepareDst()

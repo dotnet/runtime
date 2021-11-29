@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import ProductVersion from "consts:productVersion";
+import Configuration from "consts:configuration";
+
 import {
     mono_wasm_new_root, mono_wasm_new_roots, mono_wasm_release_roots,
     mono_wasm_new_root_buffer, mono_wasm_new_root_buffer_from_pointer
 } from "./roots";
 import {
-    mono_wasm_add_dbg_command_received,
     mono_wasm_send_dbg_command_with_parms,
     mono_wasm_send_dbg_command,
     mono_wasm_get_dbg_command_info,
@@ -19,6 +21,9 @@ import {
     mono_wasm_get_loaded_files,
     mono_wasm_raise_debug_event,
     mono_wasm_fire_debugger_agent_message,
+    mono_wasm_debugger_log,
+    mono_wasm_trace_logger,
+    mono_wasm_add_dbg_command_received,
 } from "./debug";
 import { runtimeHelpers, setImportsAndExports } from "./imports";
 import { EmscriptenModuleMono, MonoArray, MonoConfig, MonoConfigError, MonoObject } from "./types";
@@ -32,7 +37,7 @@ import {
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
-import { conv_string, js_string_to_mono_string, mono_intern_string, string_decoder } from "./strings";
+import { conv_string, js_string_to_mono_string, mono_intern_string } from "./strings";
 import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array } from "./js-to-cs";
 import {
     mono_array_to_js_array, mono_wasm_create_cs_owned_object, unbox_mono_obj,
@@ -62,6 +67,7 @@ import {
     getI8, getI16, getI32, getI64,
     getU8, getU16, getU32, getF32, getF64,
 } from "./memory";
+import { create_weak_ref } from "./weak-ref";
 
 const MONO: MONO = <any>{
     // current "public" MONO API
@@ -112,13 +118,15 @@ const BINDING: BINDING = <any>{
     _teardown_after_call,
 };
 
+let api: DotNetPublicAPI;
+
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
     imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
-): void {
+): DotNetPublicAPI {
     const module = exports.module as EmscriptenModuleMono;
     const globalThisAny = globalThis as any;
 
@@ -130,11 +138,15 @@ function initializeImportsAndExports(
     Object.assign(exports.binding, BINDING);
     Object.assign(exports.internal, INTERNAL);
 
-    const api: DotNetPublicAPI = <any>{
+    api = <any>{
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
-        Module: module
+        Module: module,
+        RuntimeBuildInfo: {
+            ProductVersion,
+            Configuration
+        }
     };
 
     if (module.configSrc) {
@@ -199,7 +211,19 @@ function initializeImportsAndExports(
         warnWrap("addRunDependency", () => module.addRunDependency);
         warnWrap("removeRunDependency", () => module.removeRunDependency);
     }
+    let list: RuntimeList;
+    if (!globalThisAny.getDotnetRuntime) {
+        globalThisAny.getDotnetRuntime = (runtimeId: string) => globalThisAny.getDotnetRuntime.__list.getRuntime(runtimeId);
+        globalThisAny.getDotnetRuntime.__list = list = new RuntimeList();
+    }
+    else {
+        list = globalThisAny.getDotnetRuntime.__list;
+    }
+    list.registerRuntime(api);
+
+    return api;
 }
+
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 
 // the methods would be visible to EMCC linker
@@ -211,6 +235,8 @@ export const __linker_exports: any = {
     // mini-wasm-debugger.c
     mono_wasm_asm_loaded,
     mono_wasm_fire_debugger_agent_message,
+    mono_wasm_debugger_log,
+    mono_wasm_add_dbg_command_received,
 
     // mono-threads-wasm.c
     schedule_background_exec,
@@ -218,6 +244,7 @@ export const __linker_exports: any = {
     // also keep in sync with driver.c
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
+    mono_wasm_trace_logger,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args,
@@ -258,18 +285,13 @@ const INTERNAL: any = {
     mono_profiler_init_aot: cwraps.mono_profiler_init_aot,
     mono_wasm_set_runtime_options,
     mono_wasm_set_main_args: mono_wasm_set_main_args,
-    mono_wasm_strdup: cwraps.mono_wasm_strdup,
     mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
     mono_method_resolve,//MarshalTests.cs
     mono_bind_static_method,// MarshalTests.cs
     mono_intern_string,// MarshalTests.cs
 
-    // EM_JS,EM_ASM,EM_ASM_INT macros
-    string_decoder,
+    // with mono_wasm_debugger_log and mono_wasm_trace_logger
     logging: undefined,
-
-    // used in EM_ASM macros in debugger
-    mono_wasm_add_dbg_command_received,
 
     // used in debugger DevToolsHelper.cs
     mono_wasm_get_loaded_files,
@@ -344,5 +366,25 @@ interface BINDING {
 export interface DotNetPublicAPI {
     MONO: MONO,
     BINDING: BINDING,
-    Module: any
+    Module: any,
+    RuntimeId: number,
+    RuntimeBuildInfo: {
+        ProductVersion: string,
+        Configuration: string,
+    }
+}
+
+class RuntimeList {
+    private list: { [runtimeId: number]: WeakRef<DotNetPublicAPI> } = {};
+
+    public registerRuntime(api: DotNetPublicAPI): number {
+        api.RuntimeId = Object.keys(this.list).length;
+        this.list[api.RuntimeId] = create_weak_ref(api);
+        return api.RuntimeId;
+    }
+
+    public getRuntime(runtimeId: number): DotNetPublicAPI | undefined {
+        const wr = this.list[runtimeId];
+        return wr ? wr.deref() : undefined;
+    }
 }

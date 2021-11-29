@@ -4,7 +4,7 @@ usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net7.0-L
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
-__nativeroot="$__scriptpath"/Unix
+__nativeroot="$__scriptpath"
 __RepoRootDir="$(cd "$__scriptpath"/../../..; pwd -P)"
 __artifactsDir="$__RepoRootDir/artifacts"
 

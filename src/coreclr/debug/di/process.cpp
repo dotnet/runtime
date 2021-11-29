@@ -4591,7 +4591,7 @@ void CordbProcess::DispatchRCEvent()
 
     CONTRACTL
     {
-        // This is happening on the RCET thread, so there's no place to propogate an error back up.
+        // This is happening on the RCET thread, so there's no place to propagate an error back up.
         NOTHROW;
     }
     CONTRACTL_END;
@@ -4777,7 +4777,7 @@ void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
 //    Errors could occur because:
 //    - the event is corrupted (exceptional case)
 //    - the RS is corrupted / OOM (exceptional case)
-//    Exception errors here will propogate back to the Filter() call, and there's not really anything
+//    Exception errors here will propagate back to the Filter() call, and there's not really anything
 //    a debugger can do about an error here (perhaps report it to the user).
 //    Errors must leave IcorDebug in a consistent state.
 //
@@ -8518,7 +8518,7 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
     {
         // @dbgtodo - , shim: Once everything is hoisted, we can remove
         // this code.
-        // In the v3 case, we should never get an unrecoverable error. Instead, the HR should be propogated
+        // In the v3 case, we should never get an unrecoverable error. Instead, the HR should be propagated
         // and returned at the top-level public API.
         _ASSERTE(!"Unrecoverable error dispatched in V3 case.");
     }
@@ -10257,7 +10257,7 @@ void CordbRCEventThread::FlushQueuedEvents(CordbProcess* process)
 {
     CONTRACTL
     {
-        NOTHROW; // This is happening on the RCET thread, so there's no place to propogate an error back up.
+        NOTHROW; // This is happening on the RCET thread, so there's no place to propagate an error back up.
     }
     CONTRACTL_END;
 
@@ -11160,7 +11160,7 @@ void CordbProcess::FilterClrNotification(
             // Case 2: Sync Complete
             //
 
-            HandleSyncCompleteRecieved();
+            HandleSyncCompleteReceived();
         }
         else
         {
@@ -11679,7 +11679,7 @@ bool CordbProcess::IsWin32EventThread()
 //    managed event-queue, and coordinating with the dispatch thread (RCET).
 //
 //    @dbgtodo - this should eventually get hoisted into the shim.
-void CordbProcess::HandleSyncCompleteRecieved()
+void CordbProcess::HandleSyncCompleteReceived()
 {
     _ASSERTE(ThreadHoldsProcessLock());
 
@@ -11847,7 +11847,7 @@ Reaction CordbProcess::TriageSyncComplete()
     // we should put that to good use here.
     this->SuspendUnmanagedThreads();
 
-    this->HandleSyncCompleteRecieved();
+    this->HandleSyncCompleteReceived();
 
     // Let the process run free.
     return REACTION(cIgnore);
@@ -12831,7 +12831,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     CordbWin32EventThread * pW32EventThread = this->m_pShim->GetWin32EventThread();
     _ASSERTE(pW32EventThread != NULL);
 
-    // if we were waiting for a retriggered exception but recieved any other event then turn
+    // if we were waiting for a retriggered exception but received any other event then turn
     // off the single stepping and dequeue the IB event. Right now we only use the SS flag internally
     // for stepping during possible retrigger.
     if(reaction.GetType() != Reaction::cInbandExceptionRetrigger && pUnmanagedThread->IsSSFlagNeeded())

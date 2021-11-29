@@ -949,7 +949,7 @@ void EEStartupHelper()
 #ifdef DEBUGGING_SUPPORTED
         // Make a call to publish the DefaultDomain for the debugger
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
-        // and after its OK to switch GC modes and syncronize for sending events to the debugger.
+        // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
         LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
              SystemDomain::System()->DefaultDomain()));

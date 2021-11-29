@@ -7655,7 +7655,7 @@ void Debugger::SendExceptionEventsWorker(
 //
 // Returns:
 //    S_OK on success (common case by far).
-//    propogates other errors.
+//    propagates other errors.
 //
 HRESULT Debugger::SendException(Thread *pThread,
                                 bool fFirstChance,
@@ -10480,7 +10480,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
             else
             {
-                // not synchornized. We get debugger lock upon the function entry
+                // not synchronized. We get debugger lock upon the function entry
                 _ASSERTE(ThreadHoldsLock());
 
                 // Simply trap all Runtime threads if we're not already trying to.
