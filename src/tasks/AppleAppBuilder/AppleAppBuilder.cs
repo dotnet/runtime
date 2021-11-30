@@ -234,6 +234,11 @@ public class AppleAppBuilderTask : Task
                 throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
         }
 
+        if (EnableAppSandbox && (string.IsNullOrEmpty(DevTeamProvisioning) || DevTeamProvisioning == "-"))
+        {
+            throw new ArgumentException("DevTeamProvisioning must be set to a valid value when App Sandbox is enabled.");
+        }
+
         var generator = new Xcode(Log, TargetOS, Arch);
 
         if (GenerateXcodeProject)
