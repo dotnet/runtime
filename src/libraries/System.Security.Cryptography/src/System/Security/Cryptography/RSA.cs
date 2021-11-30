@@ -850,6 +850,159 @@ namespace System.Security.Cryptography
             base.ImportFromEncryptedPem(input, passwordBytes);
         }
 
+        /// <summary>
+        /// Exports the current key in the PKCS#1 RSAPrivateKey format, PEM encoded.
+        /// </summary>
+        /// <returns>A string containing the PEM-encoded PKCS#1 RSAPrivateKey.</returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#1 RSAPrivateKey will begin with <c>-----BEGIN RSA PRIVATE KEY-----</c>
+        ///   and end with <c>-----END RSA PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public unsafe string ExportRSAPrivateKeyPem()
+        {
+            byte[] exported = ExportRSAPrivateKey();
+
+            // Fixed to prevent GC moves.
+            fixed (byte* pExported = exported)
+            {
+                try
+                {
+                    return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPrivateKey, exported);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(exported);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Exports the public-key portion of the current key in the PKCS#1
+        /// RSAPublicKey format, PEM encoded.
+        /// </summary>
+        /// <returns>A string containing the PEM-encoded PKCS#1 RSAPublicKey.</returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#1 RSAPublicKey will begin with <c>-----BEGIN RSA PUBLIC KEY-----</c>
+        ///   and end with <c>-----END RSA PUBLIC KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public string ExportRSAPublicKeyPem()
+        {
+            byte[] exported = ExportRSAPublicKey();
+            return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPublicKey, exported);
+        }
+
+        /// <summary>
+        /// Attempts to export the current key in the PEM-encoded PKCS#1
+        /// RSAPrivateKey format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The character span to receive the PEM-encoded PKCS#1 RSAPrivateKey data.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of characters written to <paramref name="destination" />. This
+        /// parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#1 RSAPrivateKey will begin with
+        ///   <c>-----BEGIN RSA PRIVATE KEY-----</c> and end with
+        ///   <c>-----END RSA PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportRSAPrivateKeyPem(Span<char> destination, out int charsWritten)
+        {
+            static bool Export(RSA alg, Span<byte> destination, out int bytesWritten)
+            {
+                return alg.TryExportRSAPrivateKey(destination, out bytesWritten);
+            }
+
+            return PemKeyHelpers.TryExportToPem(
+                this,
+                PemLabels.RsaPrivateKey,
+                Export,
+                destination,
+                out charsWritten);
+        }
+
+        /// <summary>
+        /// Attempts to export the current key in the PEM-encoded PKCS#1
+        /// RSAPublicKey format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The character span to receive the PEM-encoded PKCS#1 RSAPublicKey data.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of characters written to <paramref name="destination" />. This
+        /// parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#1 RSAPublicKey will begin with
+        ///   <c>-----BEGIN RSA PUBLIC KEY-----</c> and end with
+        ///   <c>-----END RSA PUBLIC KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportRSAPublicKeyPem(Span<char> destination, out int charsWritten)
+        {
+            static bool Export(RSA alg, Span<byte> destination, out int bytesWritten)
+            {
+                return alg.TryExportRSAPublicKey(destination, out bytesWritten);
+            }
+
+            return PemKeyHelpers.TryExportToPem(
+                this,
+                PemLabels.RsaPublicKey,
+                Export,
+                destination,
+                out charsWritten);
+        }
+
         private static void ClearPrivateParameters(in RSAParameters rsaParameters)
         {
             CryptographicOperations.ZeroMemory(rsaParameters.D);

@@ -842,14 +842,6 @@ Statement* BasicBlock::lastStmt() const
 }
 
 //------------------------------------------------------------------------
-// BasicBlock::firstNode: Returns the first node in the block.
-//
-GenTree* BasicBlock::firstNode() const
-{
-    return IsLIR() ? GetFirstLIRNode() : Compiler::fgGetFirstNode(firstStmt()->GetRootNode());
-}
-
-//------------------------------------------------------------------------
 // BasicBlock::lastNode: Returns the last node in the block.
 //
 GenTree* BasicBlock::lastNode() const

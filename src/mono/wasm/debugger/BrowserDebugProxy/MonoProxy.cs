@@ -401,7 +401,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         return await Step(id, StepKind.Over, token);
                     }
-
+                case "Runtime.evaluate":
+                    {
+                        if (context.CallStack != null)
+                        {
+                            Frame scope = context.CallStack.First<Frame>();
+                            return await OnEvaluateOnCallFrame(id,
+                                    scope.Id,
+                                    args?["expression"]?.Value<string>(), token);
+                        }
+                        break;
+                    }
                 case "Debugger.evaluateOnCallFrame":
                     {
                         if (!DotnetObjectId.TryParse(args?["callFrameId"], out DotnetObjectId objectId))

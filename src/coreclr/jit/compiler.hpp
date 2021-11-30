@@ -4234,6 +4234,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_BOX:
         case GT_ALLOCOBJ:
         case GT_INIT_VAL:
+        case GT_RUNTIMELOOKUP:
         case GT_JTRUE:
         case GT_SWITCH:
         case GT_NULLCHECK:
