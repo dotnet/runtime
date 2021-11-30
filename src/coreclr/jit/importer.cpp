@@ -3925,8 +3925,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     }
 
     if (((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) ||
-        (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray))
-        && IsTargetAbi(CORINFO_CORERT_ABI))
+         (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray)) &&
+        IsTargetAbi(CORINFO_CORERT_ABI))
     {
         // CreateSpan must be expanded for NativeAOT
         mustExpand = true;
