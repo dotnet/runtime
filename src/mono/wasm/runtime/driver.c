@@ -136,47 +136,12 @@ static MonoDomain *root_domain;
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
 
+extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
+
 static void
 wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	EM_ASM({
-		var log_level = $0;
-		var message = Module.UTF8ToString ($1);
-		var isFatal = $2;
-		var domain = Module.UTF8ToString ($3); // is this always Mono?
-		var dataPtr = $4;
-
-		if (INTERNAL["logging"] && INTERNAL.logging["trace"]) {
-			INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
-			return;
-		}
-
-		if (isFatal)
-			console.trace (message);
-
-		switch (Module.UTF8ToString ($0)) {
-			case "critical":
-			case "error":
-				console.error (message);
-				break;
-			case "warning":
-				console.warn (message);
-				break;
-			case "message":
-				console.log (message);
-				break;
-			case "info":
-				console.info (message);
-				break;
-			case "debug":
-				console.debug (message);
-				break;
-			default:
-				console.log (message);
-				break;
-		}
-	}, log_level, message, fatal, log_domain, user_data);
-
+	mono_wasm_trace_logger(log_domain, log_level, message, fatal, user_data);
 	if (fatal)
 		exit (1);
 }

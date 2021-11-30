@@ -263,6 +263,26 @@ namespace System.Reflection.Metadata
             });
         }
 
+	[ActiveIssue ("https://github.com/dotnet/runtime/issues/50249", TestRuntimes.Mono)]
+	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+	public static void TestAddLambdaCapturingThis()
+	{
+	    ApplyUpdateUtil.TestCase(static () =>
+	    {
+		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis).Assembly;
+
+		var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis();
+
+		Assert.Equal("123", x.TestMethod());
+
+		ApplyUpdateUtil.ApplyUpdate(assm);
+
+		string result = x.TestMethod();
+		Assert.Equal("42123abcd", result);
+	    });
+	}
+
+
         class NonRuntimeAssembly : Assembly
         {
         }

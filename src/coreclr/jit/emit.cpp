@@ -115,7 +115,7 @@ const char* emitter::emitIfName(unsigned f)
 
     static char errBuff[32];
 
-    if (f < _countof(ifNames))
+    if (f < ArrLen(ifNames))
     {
         return ifNames[f];
     }
@@ -3356,7 +3356,7 @@ const BYTE emitter::emitFmtToOps[] = {
 };
 
 #ifdef DEBUG
-const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
+const unsigned emitter::emitFmtCount = ArrLen(emitFmtToOps);
 #endif
 
 //------------------------------------------------------------------------
@@ -6413,7 +6413,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             size_t     curInstrAddr = (size_t)cp;
             instrDesc* curInstrDesc = id;
 
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0))
+            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
+                (id->idCodeSize() > 0))
             {
                 UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
                 while (nextMapping != emitComp->genPreciseIPmappings.end())
@@ -7352,7 +7353,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
     {
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, _countof(label), "RWD%02u", offset);
+        sprintf_s(label, ArrLen(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
 

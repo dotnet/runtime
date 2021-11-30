@@ -406,8 +406,8 @@ namespace System.Net.Quic.Tests
 
                     while (true) // TODO: if you don't read until 0-byte read, ShutdownCompleted sometimes may not trigger - why?
                     {
-                        Memory<byte> recieveChunkBuffer = receiveBuffer.AsMemory(totalBytesRead, Math.Min(receiveBuffer.Length - totalBytesRead, readSize));
-                        int bytesRead = await serverStream.ReadAsync(recieveChunkBuffer);
+                        Memory<byte> receiveChunkBuffer = receiveBuffer.AsMemory(totalBytesRead, Math.Min(receiveBuffer.Length - totalBytesRead, readSize));
+                        int bytesRead = await serverStream.ReadAsync(receiveChunkBuffer);
                         if (bytesRead == 0)
                         {
                             break;
