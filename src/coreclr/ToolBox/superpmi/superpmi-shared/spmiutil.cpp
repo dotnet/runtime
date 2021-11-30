@@ -161,7 +161,8 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
     // Convert non-ASCII to ASCII for simplicity.
     for (quote = fileName; *quote != '\0'; quote++)
     {
-        if (!iswascii(*quote))
+        WCHAR ch = *quote;
+        if ((ch <= 32) || (ch >= 127)) // Only allow textual ASCII characters
         {
             *quote = W('_');
         }
