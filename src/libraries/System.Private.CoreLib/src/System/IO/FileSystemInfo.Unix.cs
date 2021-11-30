@@ -15,9 +15,9 @@ namespace System.IO
             _fileStatus.InvalidateCaches();
         }
 
-        internal static FileSystemInfo Create(string fullPath, string fileName, bool isDirectory, ref FileStatus fileStatus)
+        internal static FileSystemInfo Create(string fullPath, string fileName, ref FileStatus fileStatus)
         {
-            FileSystemInfo info = isDirectory
+            FileSystemInfo info = fileStatus.InitiallyDirectory
                 ? (FileSystemInfo)new DirectoryInfo(fullPath, fileName: fileName, isNormalized: true)
                 : new FileInfo(fullPath, fileName: fileName, isNormalized: true);
 

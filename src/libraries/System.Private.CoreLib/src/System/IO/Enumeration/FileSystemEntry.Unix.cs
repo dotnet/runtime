@@ -140,7 +140,8 @@ namespace System.IO.Enumeration
         public FileSystemInfo ToFileSystemInfo()
         {
             string fullPath = ToFullPath();
-            return FileSystemInfo.Create(fullPath, new string(FileName), IsDirectory, ref _status);
+            _status.InitiallyDirectory = IsDirectory;
+            return FileSystemInfo.Create(fullPath, new string(FileName), ref _status);
         }
 
         /// <summary>
