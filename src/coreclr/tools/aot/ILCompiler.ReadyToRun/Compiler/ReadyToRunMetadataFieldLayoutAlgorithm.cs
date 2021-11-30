@@ -802,8 +802,7 @@ namespace ILCompiler
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            else
-            if (type.IsSequentialLayout && !type.ContainsGCPointers)
+            else if (type.IsEnum || (type.IsSequentialLayout && !type.ContainsGCPointers))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
@@ -825,28 +824,6 @@ namespace ILCompiler
                 LayoutInt alignment = new LayoutInt(use8Align ? 8 : type.Context.Target.PointerSize);
                 baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
             }
-        }
-
-        public static bool IsManagedSequentialType(TypeDesc type)
-        {
-            if (type.IsPointer || type.IsFunctionPointer)
-            {
-                return true;
-            }
-
-            if (type.IsPrimitive)
-            {
-                return true;
-            }
-
-            if (!type.IsValueType)
-            {
-                return false;
-            }
-
-            MetadataType metadataType = (MetadataType)type;
-
-            return metadataType.IsSequentialLayout && !metadataType.ContainsGCPointers;
         }
     }
 }
