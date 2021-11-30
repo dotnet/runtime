@@ -130,7 +130,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
             return;
         }
     }
-    
+
     // Optimization: do not unnecessarily zero-extend the result of setcc.
     if (varTypeIsByte(node) && (node->Data()->OperIsCompare() || node->Data()->OperIs(GT_SETCC)))
     {

@@ -6805,7 +6805,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 #else // TARGET_ARM64
             bool shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
 #endif
-            
+
             if (shouldSwitchToInteger)
             {
                 if (ind->TypeIs(TYP_FLOAT))
@@ -6900,7 +6900,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 #ifdef TARGET_ARM64
     bool useNullCheck = true;
 #elif TARGET_ARM
-    bool useNullCheck = false;
+    bool         useNullCheck          = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();
 #endif // !TARGET_XARCH
