@@ -8567,15 +8567,6 @@ MethodTableBuilder::HandleExplicitLayout(
         SetHasOverLayedFields();
     }
 
-    if (IsBlittable() || IsManagedSequential())
-    {
-        // Bug 849333: We shouldn't update "bmtFP->NumInstanceFieldBytes"
-        // for Blittable/ManagedSequential types.  As this will break backward compatiblity
-        // for the size of types that return true for HasExplicitFieldOffsetLayout()
-        //
-        return;
-    }
-
     FindPointerSeriesExplicit(instanceSliceSize, pFieldLayout);
 
     // Fixup the offset to include parent as current offsets are relative to instance slice
@@ -8610,6 +8601,16 @@ MethodTableBuilder::HandleExplicitLayout(
             if (!numInstanceFieldBytes.IsOverflow() && clstotalsize >= numInstanceFieldBytes.Value())
             {
                 numInstanceFieldBytes = S_UINT32(clstotalsize);
+            }
+        }
+        else
+        {
+            // align up to the alignment requirements of the members of this value type.
+            dwInstanceSliceOffset.AlignUp(GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers);
+            if (dwInstanceSliceOffset.IsOverflow())
+            {
+                // addition overflow or cast truncation
+                BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
             }
         }
     }

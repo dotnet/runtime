@@ -305,8 +305,6 @@ namespace Internal.TypeSystem
         {
         }
 
-        protected virtual bool AlignUpInstanceByteSizeForExplicitFieldLayoutCompatQuirk(TypeDesc type) => true;
-
         protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields)
         {
             // Instance slice size is the total size of instance not including the base type.
@@ -369,7 +367,7 @@ namespace Internal.TypeSystem
                 instanceSize,
                 largestAlignmentRequired,
                 layoutMetadata.Size,
-                alignUpInstanceByteSize: AlignUpInstanceByteSizeForExplicitFieldLayoutCompatQuirk(type),
+                alignUpInstanceByteSize: false,
                 out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
