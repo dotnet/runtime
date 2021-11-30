@@ -10022,7 +10022,7 @@ cmd_to_string (CommandSet set, int command)
 static gboolean
 wait_for_attach (void)
 {
-	MONO_REQ_GC_SAFE_MODE;
+	MONO_REQ_GC_UNSAFE_MODE;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
 	if (listen_fd == -1) {
