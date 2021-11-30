@@ -62,16 +62,16 @@ done
 
 repo_root=$(git rev-parse --show-toplevel)
 
-if [[ buildcurrentlibraries -eq 1 ]]; then
+if [[ "$buildcurrentlibraries" -eq 1 ]]; then
     libraries_args=" -t $imagename -c $configuration"
 
-    if ! $repo_root/eng/docker/build-docker-sdk.sh $libraries_args; then
+    if ! "$repo_root"/eng/docker/build-docker-sdk.sh $libraries_args; then
         exit 1
     fi
 fi
 
 build_args=""
-if [[ "$imagename" != "" ]]; then
+if [[ -n "$imagename" ]]; then
     build_args=" --build-arg SDK_BASE_IMAGE=$imagename"
 fi
 
@@ -81,7 +81,7 @@ if ! docker-compose --file "$compose_file" build $build_args; then
     exit $?
 fi
 
-if [[ $buildonly -eq 0 ]]; then
+if [[ "$buildonly" -eq 0 ]]; then
     export DUMPS_SHARE_MOUNT_ROOT="/dumps-share"
     export CLIENT_DUMPS_SHARE="${CLIENT_DUMPS_SHARE:-$(mktemp -d)}"
     export SERVER_DUMPS_SHARE="${SERVER_DUMPS_SHARE:-$(mktemp -d)}"
