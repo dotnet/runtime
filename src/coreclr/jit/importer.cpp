@@ -3629,7 +3629,6 @@ const char* Compiler::impGetIntrinsicName(CorInfoIntrinsics intrinsicID)
         "CORINFO_INTRINSIC_Array_Get",
         "CORINFO_INTRINSIC_Array_Address",
         "CORINFO_INTRINSIC_Array_Set",
-        "CORINFO_INTRINSIC_InitializeArray",
         "CORINFO_INTRINSIC_RTH_GetValueInternal",
         "CORINFO_INTRINSIC_Object_GetType",
         "CORINFO_INTRINSIC_StubHelpers_GetStubContext",
@@ -3925,7 +3924,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) && IsTargetAbi(CORINFO_CORERT_ABI))
+    if (((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) ||
+        (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray))
+        && IsTargetAbi(CORINFO_CORERT_ABI))
     {
         // CreateSpan must be expanded for NativeAOT
         mustExpand = true;
@@ -3952,10 +3953,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     switch (intrinsicID)
     {
         GenTree* op1;
-
-        case CORINFO_INTRINSIC_InitializeArray:
-            retNode = impInitializeArrayIntrinsic(sig);
-            break;
 
         case CORINFO_INTRINSIC_Array_Address:
         case CORINFO_INTRINSIC_Array_Get:
@@ -4202,6 +4199,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
             {
                 retNode = impCreateSpanIntrinsic(sig);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            {
+                retNode = impInitializeArrayIntrinsic(sig);
                 break;
             }
 
@@ -5327,6 +5330,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         if (strcmp(methodName, "CreateSpan") == 0)
         {
             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+        }
+        else if (strcmp(methodName, "InitializeArray") == 0)
+        {
+            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
         }
     }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)

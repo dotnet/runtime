@@ -2008,13 +2008,6 @@ namespace Internal.JitInterface
             return (uint)result;
         }
 
-        private bool isStructRequiringStackAllocRetBuf(CORINFO_CLASS_STRUCT_* cls)
-        {
-            // Disable this optimization. It has limited value (only kicks in on x86, and only for less common structs),
-            // causes bugs and introduces odd ABI differences not compatible with ReadyToRun.
-            return false;
-        }
-
         private CORINFO_MODULE_STRUCT_* getClassModule(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getClassModule"); }
         private CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(CORINFO_MODULE_STRUCT_* mod)
