@@ -1303,7 +1303,7 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 void
 mono_metadata_decode_row_slow (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
-	mono_image_effective_table (&t, &idx);
+	mono_image_effective_table (&t, idx);
 	mono_metadata_decode_row_raw (t, idx, res, res_size);
 }
 
@@ -1359,7 +1359,7 @@ mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t
 {
 	const char *image_name = image && image->name ? image->name : "unknown image";
 
-	mono_image_effective_table (&t, &idx);
+	mono_image_effective_table (&t, idx);
 
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
@@ -1448,7 +1448,7 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 guint32
 mono_metadata_decode_row_col_slow (const MonoTableInfo *t, int idx, guint col)
 {
-	mono_image_effective_table (&t, &idx);
+	mono_image_effective_table (&t, idx);
 	return mono_metadata_decode_row_col_raw (t, idx, col);
 }
 
@@ -2311,8 +2311,12 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
 	int *pattrs = NULL;
 
+	/* hot reload deltas may specify 0 for the param table index */
+	if (param_index == 0)
+		return NULL;
+
 	/* FIXME: metadata-update */
-	int rows = table_info_get_rows (methodt);
+	int rows = mono_metadata_table_num_rows (m, MONO_TABLE_METHOD);
 	if (def < rows)
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 	else
@@ -4829,7 +4833,12 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 	if (meta->uncompressed_metadata)
 		loc.idx = search_ptr_table (meta, MONO_TABLE_METHOD_POINTER, loc.idx);
 
-	/* FIXME: metadata-update */
+	/* if it's not in the base image, look in the hot reload table */
+	gboolean added = (loc.idx > table_info_get_rows (&meta->tables [MONO_TABLE_METHOD]));
+	if (added) {
+		uint32_t res = mono_component_hot_reload ()->method_parent (meta, loc.idx);
+		return res; /* 0 if not found, otherwise 1-based */
+	}
 
 	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, typedef_locator))
 		return 0;
