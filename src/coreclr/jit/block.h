@@ -1248,7 +1248,6 @@ struct BasicBlock : private LIR::Range
         return StatementList(FirstNonPhiDef());
     }
 
-    GenTree* firstNode() const;
     GenTree* lastNode() const;
 
     bool endsWithJmpMethod(Compiler* comp) const;

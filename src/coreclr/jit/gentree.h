@@ -1770,20 +1770,19 @@ public:
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
 
-    // Given a tree node, if this is a child of that node, return the pointer to the child node so that it
-    // can be modified; otherwise, return null.
-    GenTree** gtGetChildPointer(GenTree* parent) const;
+    bool TryGetUse(GenTree* operand, GenTree*** pUse);
 
-    // Given a tree node, if this node uses that node, return the use as an out parameter and return true.
-    // Otherwise, return false.
-    bool TryGetUse(GenTree* def, GenTree*** use);
+    bool TryGetUse(GenTree* operand)
+    {
+        GenTree** unusedUse = nullptr;
+        return TryGetUse(operand, &unusedUse);
+    }
 
 private:
-    bool TryGetUseBinOp(GenTree* def, GenTree*** use);
+    bool TryGetUseBinOp(GenTree* operand, GenTree*** pUse);
 
 public:
-    // Get the parent of this node, and optionally capture the pointer to the child so that it can be modified.
-    GenTree* gtGetParent(GenTree*** parentChildPtrPtr) const;
+    GenTree* gtGetParent(GenTree*** pUse);
 
     void ReplaceOperand(GenTree** useEdge, GenTree* replacement);
 
@@ -2237,12 +2236,6 @@ public:
     {
     }
 
-    // Returns the number of children of the current node.
-    unsigned NumChildren();
-
-    // Requires "childNum < NumChildren()".  Returns the "n"th child of "this."
-    GenTree* GetChild(unsigned childNum);
-
     // Returns an iterator that will produce the use edge to each operand of this node. Differs
     // from the sequence of nodes produced by a loop over `GetChild` in its handling of call, phi,
     // and block op nodes.
@@ -2251,13 +2244,11 @@ public:
 
     IteratorPair<GenTreeUseEdgeIterator> UseEdges();
 
-    // Returns an iterator that will produce each operand of this node. Differs from the sequence
-    // of nodes produced by a loop over `GetChild` in its handling of call, phi, and block op
-    // nodes.
+    // Returns an iterator that will produce each operand of this node, in execution order.
     GenTreeOperandIterator OperandsBegin();
     GenTreeOperandIterator OperandsEnd();
 
-    // Returns a range that will produce the operands of this node in use order.
+    // Returns a range that will produce the operands of this node in execution order.
     IteratorPair<GenTreeOperandIterator> Operands();
 
     enum class VisitResult
@@ -2872,8 +2863,7 @@ public:
 // GenTreeOperandIterator: an iterator that will produce each operand of a
 //                         GenTree node in the order in which they are
 //                         used. This uses `GenTreeUseEdgeIterator` under
-//                         the covers and comes with the same caveats
-//                         w.r.t. `GetChild`.
+//                         the covers.
 //
 // Note: valid values of this type may be obtained by calling
 // `GenTree::OperandsBegin` and `GenTree::OperandsEnd`.
