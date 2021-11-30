@@ -7,7 +7,16 @@ dotnet/runtime runs a nightly GitHub Action to build the latest code in the repo
 
 **NOTE**: In order to use a prebuilt codespace, when you create your machine be sure to select an **`8 core`** machine.
 
-See https://docs.github.com/codespaces/developing-in-codespaces/creating-a-codespace#creating-a-codespace for instructions on how to create a new codespace.
+1. From https://github.com/dotnet/runtime, drop-down the `Code` button and select the `Codespaces` tab.
+
+![New codespace button](https://docs.github.com/assets/images/help/codespaces/new-codespace-button.png)
+
+2. Select `8-core` for the Machine type. This will ensure you get a "pre built" image.
+
+![Codespace machine size](./codespace-machine-size.png)
+
+
+*If these instructions are out of date, see https://docs.github.com/codespaces/developing-in-codespaces/creating-a-codespace#creating-a-codespace for instructions on how to create a new codespace.*
 
 ## Updating dotnet/runtime's Codespaces Configuration
 
