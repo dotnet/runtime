@@ -467,7 +467,7 @@ namespace System.Security.Cryptography.Xml
                         validAlgorithmBuilder.Append(", ");
                     }
 
-                    validAlgorithmBuilder.Append($"\"{validAlgorithm}\"");
+                    validAlgorithmBuilder.AppendFormat("\"{0}\"", validAlgorithm);
                 }
 
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
@@ -507,7 +507,7 @@ namespace System.Security.Cryptography.Xml
                         validAlgorithmBuilder.Append(", ");
                     }
 
-                    validAlgorithmBuilder.Append($"\"{validAlgorithm}\"");
+                    validAlgorithmBuilder.AppendFormat("\"{0}\"", validAlgorithm);
                 }
 
                 foreach (string validAlgorithm in validTransformAlgorithms)
@@ -517,7 +517,7 @@ namespace System.Security.Cryptography.Xml
                         validAlgorithmBuilder.Append(", ");
                     }
 
-                    validAlgorithmBuilder.Append($"\"{validAlgorithm}\"");
+                    validAlgorithmBuilder.AppendFormat("\"{0}\"", validAlgorithm);
                 }
 
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
