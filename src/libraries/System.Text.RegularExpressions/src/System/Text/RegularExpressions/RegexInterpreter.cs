@@ -209,7 +209,7 @@ namespace System.Text.RegularExpressions
 
         private char Forwardcharnext(ReadOnlySpan<char> runtextSpan)
         {
-            char ch = _rightToLeft ? runtextSpan![--runtextpos] : runtextSpan![runtextpos++];
+            char ch = _rightToLeft ? runtextSpan[--runtextpos] : runtextSpan[runtextpos++];
 
             return _caseInsensitive ? _textInfo.ToLower(ch) : ch;
         }
@@ -242,7 +242,7 @@ namespace System.Text.RegularExpressions
             {
                 while (c != 0)
                 {
-                    if (str[--c] != runtextSpan![--pos])
+                    if (str[--c] != runtextSpan[--pos])
                     {
                         return false;
                     }
@@ -253,7 +253,7 @@ namespace System.Text.RegularExpressions
                 TextInfo ti = _textInfo;
                 while (c != 0)
                 {
-                    if (str[--c] != ti.ToLower(runtextSpan![--pos]))
+                    if (str[--c] != ti.ToLower(runtextSpan[--pos]))
                     {
                         return false;
                     }
@@ -299,7 +299,7 @@ namespace System.Text.RegularExpressions
             {
                 while (c-- != 0)
                 {
-                    if (runtextSpan![--cmpos] != runtextSpan[--pos])
+                    if (runtextSpan[--cmpos] != runtextSpan[--pos])
                     {
                         return false;
                     }
@@ -310,7 +310,7 @@ namespace System.Text.RegularExpressions
                 TextInfo ti = _textInfo;
                 while (c-- != 0)
                 {
-                    if (ti.ToLower(runtextSpan![--cmpos]) != ti.ToLower(runtextSpan[--pos]))
+                    if (ti.ToLower(runtextSpan[--cmpos]) != ti.ToLower(runtextSpan[--pos]))
                     {
                         return false;
                     }
@@ -337,7 +337,7 @@ namespace System.Text.RegularExpressions
             SetOperator(_code.Codes[0]);
             _codepos = 0;
             int advance = -1;
-            ReadOnlySpan<char> runtextSpan = runtext.AsSpan();
+            ReadOnlySpan<char> runtextSpan = runtext;
 
             while (true)
             {
@@ -700,7 +700,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexCode.Bol:
-                        if (Leftchars() > 0 && runtextSpan![runtextpos - 1] != '\n')
+                        if (Leftchars() > 0 && runtextSpan[runtextpos - 1] != '\n')
                         {
                             break;
                         }
@@ -708,7 +708,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexCode.Eol:
-                        if (Rightchars() > 0 && runtextSpan![runtextpos] != '\n')
+                        if (Rightchars() > 0 && runtextSpan[runtextpos] != '\n')
                         {
                             break;
                         }
@@ -764,7 +764,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexCode.EndZ:
-                        if (Rightchars() > 1 || Rightchars() == 1 && runtextSpan![runtextpos] != '\n')
+                        if (Rightchars() > 1 || Rightchars() == 1 && runtextSpan[runtextpos] != '\n')
                         {
                             break;
                         }
@@ -944,7 +944,7 @@ namespace System.Text.RegularExpressions
                             {
                                 // We're left-to-right and case-sensitive, so we can employ the vectorized IndexOf
                                 // to search for the character.
-                                i = runtextSpan!.Slice(runtextpos, len).IndexOf(ch);
+                                i = runtextSpan.Slice(runtextpos, len).IndexOf(ch);
                                 if (i == -1)
                                 {
                                     runtextpos += len;
