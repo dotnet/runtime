@@ -209,8 +209,8 @@ namespace System.Text.RegularExpressions
 
         private char Forwardcharnext(ReadOnlySpan<char> runtextSpan)
         {
-            char ch = _rightToLeft ? runtextSpan[--runtextpos] : runtextSpan[runtextpos++];
-
+            int i = _rightToLeft ? --runtextpos : runtextpos++;
+            char ch = runtextSpan[i];
             return _caseInsensitive ? _textInfo.ToLower(ch) : ch;
         }
 
