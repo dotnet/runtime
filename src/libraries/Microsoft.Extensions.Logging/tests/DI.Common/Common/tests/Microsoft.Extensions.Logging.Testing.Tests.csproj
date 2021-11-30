@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
 
   <ItemGroup>

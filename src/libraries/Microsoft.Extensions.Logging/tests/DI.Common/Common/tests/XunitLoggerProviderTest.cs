@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Testing.Tests
 {
-    public class XunitLoggerProviderTest
+    public partial class XunitLoggerProviderTest
     {
         [Fact]
         public void LoggerProviderWritesToTestOutputHelper()
@@ -79,8 +79,9 @@ namespace Microsoft.Extensions.Logging.Testing.Tests
             Assert.Equal(0, testTestOutputHelper.Output.Length);
         }
 
-        private static readonly Regex TimestampRegex = new Regex(@"\d+-\d+-\d+T\d+:\d+:\d+");
+        [RegexGenerator(@"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")]
+        private static partial Regex TimestampRegex();
 
-        private string MakeConsistent(string input) => TimestampRegex.Replace(input, "TIMESTAMP");
+        private string MakeConsistent(string input) => TimestampRegex().Replace(input, "TIMESTAMP");
     }
 }
