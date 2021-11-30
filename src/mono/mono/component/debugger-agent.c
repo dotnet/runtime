@@ -10140,7 +10140,8 @@ debugger_thread (void *arg)
 
 	internal->state |= ThreadState_Background;
 	internal->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
-
+	mono_thread_info_set_flags(MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	
 	if (agent_config.defer) {
 		if (!wait_for_attach ()) {
 			PRINT_DEBUG_MSG (1, "[dbg] Can't attach, aborting debugger thread.\n");
