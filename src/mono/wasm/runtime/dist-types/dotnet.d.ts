@@ -12,6 +12,44 @@ declare interface NativePointer {
 declare interface VoidPtr extends NativePointer {
     __brand: "VoidPtr";
 }
+declare interface CharPtr extends NativePointer {
+    __brand: "CharPtr";
+}
+declare interface Int32Ptr extends NativePointer {
+    __brand: "Int32Ptr";
+}
+declare interface EmscriptenModule {
+    HEAP8: Int8Array;
+    HEAP16: Int16Array;
+    HEAP32: Int32Array;
+    HEAPU8: Uint8Array;
+    HEAPU16: Uint16Array;
+    HEAPU32: Uint32Array;
+    HEAPF32: Float32Array;
+    HEAPF64: Float64Array;
+    _malloc(size: number): VoidPtr;
+    _free(ptr: VoidPtr): void;
+    print(message: string): void;
+    printErr(message: string): void;
+    ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
+    cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
+    cwrap<T extends Function>(ident: string, ...args: any[]): T;
+    setValue(ptr: VoidPtr, value: number, type: string, noSafe?: number | boolean): void;
+    setValue(ptr: Int32Ptr, value: number, type: string, noSafe?: number | boolean): void;
+    getValue(ptr: number, type: string, noSafe?: number | boolean): number;
+    UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
+    UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
+    FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
+    FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
+    removeRunDependency(id: string): void;
+    addRunDependency(id: string): void;
+    ready: Promise<unknown>;
+    preInit?: (() => Promise<void>)[];
+    preRun?: (() => Promise<void>)[];
+    postRun?: (() => Promise<void>)[];
+    onRuntimeInitialized?: () => void;
+}
+declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
 /**
  * Allocates a block of memory that can safely contain pointers into the managed heap.
@@ -170,7 +208,7 @@ declare type DotnetModuleConfig = {
     onConfigLoaded?: () => void;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
-};
+} & EmscriptenModule;
 declare type DotnetModuleConfigImports = {
     require?: (name: string) => any;
     fetch?: (url: string) => Promise<Response>;
@@ -257,7 +295,7 @@ declare const MONO: {
     mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
     config: MonoConfig | MonoConfigError;
-    loaded_files: never[];
+    loaded_files: string[];
     setI8: typeof setI8;
     setI16: typeof setI16;
     setI32: typeof setI32;
@@ -277,6 +315,7 @@ declare const MONO: {
     getF32: typeof getF32;
     getF64: typeof getF64;
 };
+declare type MONOType = typeof MONO;
 declare const BINDING: {
     mono_obj_array_new: (size: number) => MonoArray;
     mono_obj_array_set: (array: MonoArray, idx: number, obj: MonoObject) => void;
@@ -289,11 +328,12 @@ declare const BINDING: {
     call_assembly_entry_point: typeof mono_call_assembly_entry_point;
     unbox_mono_obj: typeof unbox_mono_obj;
 };
+declare type BINDINGType = typeof BINDING;
 interface DotnetPublicAPI {
     MONO: typeof MONO;
     BINDING: typeof BINDING;
     INTERNAL: any;
-    Module: any;
+    Module: EmscriptenModule;
     RuntimeId: number;
     RuntimeBuildInfo: {
         ProductVersion: string;
@@ -307,4 +347,4 @@ declare global {
 }
 declare const createDotnetRuntime: createDotnetRuntimeType;
 
-export { createDotnetRuntimeType, createDotnetRuntime as default };
+export { BINDINGType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, MONOType, MonoArray, MonoObject, MonoString, VoidPtr, createDotnetRuntimeType, createDotnetRuntime as default };

@@ -54,6 +54,8 @@ export declare interface EmscriptenModule {
 
     ready: Promise<unknown>;
     preInit?: (() => Promise<void>)[];
+    preRun?: (() => Promise<void>)[];
+    postRun?: (() => Promise<void>)[];
     onRuntimeInitialized?: () => void;
 }
 

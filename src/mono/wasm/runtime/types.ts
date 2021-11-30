@@ -166,7 +166,7 @@ export type DotnetModuleConfig = {
     onDotnetReady?: () => void;
 
     imports?: DotnetModuleConfigImports;
-}
+} & EmscriptenModule
 
 export type DotnetModuleConfigImports = {
     require?: (name: string) => any;

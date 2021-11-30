@@ -67,6 +67,7 @@ import {
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
+import { EmscriptenModule } from "./types/emscripten";
 
 const MONO = {
     // current "public" MONO API
@@ -86,7 +87,7 @@ const MONO = {
     mono_wasm_load_runtime: cwraps.mono_wasm_load_runtime,
 
     config: runtimeHelpers.config,
-    loaded_files: [],
+    loaded_files: <string[]>[],
 
     // memory accessors
     setI8,
@@ -108,6 +109,7 @@ const MONO = {
     getF32,
     getF64,
 };
+export type MONOType = typeof MONO;
 
 const BINDING = {
     //current "public" BINDING API
@@ -122,6 +124,7 @@ const BINDING = {
     call_assembly_entry_point: mono_call_assembly_entry_point,
     unbox_mono_obj,
 };
+export type BINDINGType = typeof BINDING;
 
 let exportedAPI: DotnetPublicAPI;
 
@@ -347,7 +350,7 @@ export interface DotnetPublicAPI {
     MONO: typeof MONO,
     BINDING: typeof BINDING,
     INTERNAL: any,
-    Module: any,
+    Module: EmscriptenModule,
     RuntimeId: number,
     RuntimeBuildInfo: {
         ProductVersion: string,

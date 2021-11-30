@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { DotnetPublicAPI } from "./exports";
-import { DotnetModuleConfig } from "./types";
+import { BINDINGType, DotnetPublicAPI, MONOType } from "./exports";
+import { DotnetModuleConfig, MonoArray, MonoObject, MonoString } from "./types";
+import { EmscriptenModule, VoidPtr } from "./types/emscripten";
 
 // -----------------------------------------------------------
 // this files has all public exports from the dotnet.js module
@@ -18,4 +19,11 @@ declare global {
 declare const createDotnetRuntime: createDotnetRuntimeType;
 export default createDotnetRuntime;
 
+
+export {
+    VoidPtr,
+    MonoObject, MonoString, MonoArray,
+    BINDINGType, MONOType, EmscriptenModule,
+    DotnetPublicAPI, DotnetModuleConfig,
+};
 
