@@ -78,6 +78,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [OuterLoop("Opens program")]
+        [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
         public void ProcessStart_DirectoryNameInCurDirectorySameAsFileNameInExecDirectory_Success()
         {
             string fileToOpen = "dotnet";
