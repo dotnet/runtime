@@ -12,9 +12,6 @@
 #ifndef SHLWAPIP_H_INCLUDED
 #define SHLWAPIP_H_INCLUDED
 
-#define ARRAYSIZE(x)    (sizeof(x)/sizeof(x[0]))
-#define SIZECHARS(sz)   (sizeof(sz)/sizeof(sz[0]))
-
 #define SIZEOF(x)       sizeof(x)
 #define PRIVATE
 #define PUBLIC

@@ -358,6 +358,7 @@ namespace System.Text.Json
         private int _dummyPrimitive;
         public System.Text.Encodings.Web.JavaScriptEncoder? Encoder { readonly get { throw null; } set { } }
         public bool Indented { get { throw null; } set { } }
+        public int MaxDepth { readonly get { throw null; } set { } }
         public bool SkipValidation { get { throw null; } set { } }
     }
     public ref partial struct Utf8JsonReader

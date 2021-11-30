@@ -343,11 +343,11 @@ VNFunc GetVNFuncForNode(GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
-            return VNFunc(VNF_SIMD_FIRST + node->AsSIMD()->gtSIMDIntrinsicID);
+            return VNFunc(VNF_SIMD_FIRST + node->AsSIMD()->GetSIMDIntrinsicId());
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            return VNFunc(VNF_HWI_FIRST + (node->AsHWIntrinsic()->gtHWIntrinsicId - NI_HW_INTRINSIC_START - 1));
+            return VNFunc(VNF_HWI_FIRST + (node->AsHWIntrinsic()->GetHWIntrinsicId() - NI_HW_INTRINSIC_START - 1));
 #endif // FEATURE_HW_INTRINSICS
 
         case GT_CAST:
@@ -2200,7 +2200,6 @@ ValueNum ValueNumStore::VNForFunc(
 //
 //
 // Arguments:
-//    type  - Type for the new map
 //    map   - Map value number
 //    index - Index value number
 //    value - New value for map[index]
@@ -2208,17 +2207,17 @@ ValueNum ValueNumStore::VNForFunc(
 // Return Value:
 //    Value number for "map" with "map[index]" set to "value".
 //
-ValueNum ValueNumStore::VNForMapStore(var_types type, ValueNum map, ValueNum index, ValueNum value)
+ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum value)
 {
     BasicBlock* const            bb      = m_pComp->compCurBB;
     BasicBlock::loopNumber const loopNum = bb->bbNatLoopNum;
-    ValueNum const               result  = VNForFunc(type, VNF_MapStore, map, index, value, loopNum);
+    ValueNum const               result  = VNForFunc(TypeOfVN(map), VNF_MapStore, map, index, value, loopNum);
 
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
         printf("    VNForMapStore(" FMT_VN ", " FMT_VN ", " FMT_VN "):%s in " FMT_BB " returns ", map, index, value,
-               varTypeName(type), bb->bbNum);
+               varTypeName(TypeOfVN(result)), bb->bbNum);
         m_pComp->vnPrint(result, 1);
         printf("\n");
     }
@@ -4083,7 +4082,7 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
             valueAfter = VNApplySelectorsAssignTypeCoerce(value, dstIndType);
         }
 
-        return VNForMapStore(fieldType, map, fldHndVN, valueAfter);
+        return VNForMapStore(map, fldHndVN, valueAfter);
     }
 }
 
@@ -4289,16 +4288,10 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
         // This is the value that should be stored at "arr[inx]".
         newValAtInx = vnStore->VNApplySelectorsAssign(VNK_Liberal, hAtArrTypeAtArrAtInx, fldSeq, rhsVN, indType);
 
-        var_types arrElemFldType = arrElemType; // Uses arrElemType unless we has a non-null fldSeq
-        if (vnStore->IsVNFunc(newValAtInx))
-        {
-            VNFuncApp funcApp;
-            vnStore->GetVNFunc(newValAtInx, &funcApp);
-            if (funcApp.m_func == VNF_MapStore)
-            {
-                arrElemFldType = vnStore->TypeOfVN(newValAtInx);
-            }
-        }
+        // TODO-VNTypes: the validation below is a workaround for logic in ApplySelectorsAssignTypeCoerce
+        // not handling some cases correctly. Remove once ApplySelectorsAssignTypeCoerce has been fixed.
+        var_types arrElemFldType =
+            (fldSeq != nullptr) ? eeGetFieldType(fldSeq->GetTail()->GetFieldHandle()) : arrElemType;
 
         if (indType != arrElemFldType)
         {
@@ -4315,8 +4308,8 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
 
     if (!invalidateArray)
     {
-        newValAtArr     = vnStore->VNForMapStore(indType, hAtArrTypeAtArr, inxVN, newValAtInx);
-        newValAtArrType = vnStore->VNForMapStore(TYP_REF, hAtArrType, arrVN, newValAtArr);
+        newValAtArr     = vnStore->VNForMapStore(hAtArrTypeAtArr, inxVN, newValAtInx);
+        newValAtArrType = vnStore->VNForMapStore(hAtArrType, arrVN, newValAtArr);
     }
 
 #ifdef DEBUG
@@ -4354,7 +4347,7 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
     }
 #endif // DEBUG
 
-    return vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap], elemTypeEqVN, newValAtArrType);
+    return vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], elemTypeEqVN, newValAtArrType);
 }
 
 ValueNum Compiler::fgValueNumberArrIndexVal(GenTree* tree, VNFuncApp* pFuncApp, ValueNum addrXvn)
@@ -6283,7 +6276,7 @@ void ValueNumStore::InitValueNumStoreStatics()
 
 #undef ValueNumFuncSetArity
 
-    for (unsigned i = 0; i < _countof(genTreeOpsIllegalAsVNFunc); i++)
+    for (unsigned i = 0; i < ArrLen(genTreeOpsIllegalAsVNFunc); i++)
     {
         vnfOpAttribs[genTreeOpsIllegalAsVNFunc[i]] |= VNFOA_IllegalGenTreeOp;
     }
@@ -6678,7 +6671,7 @@ void Compiler::fgValueNumber()
             continue;
         }
 
-        LclVarDsc* varDsc = &lvaTable[lclNum];
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
         assert(varDsc->lvTracked);
 
         if (varDsc->lvIsParam)
@@ -7157,8 +7150,7 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                 // values. Static field maps, on the other hand, do, and so must be given proper types.
                 var_types fldMapType = eeIsFieldStatic(fldHnd) ? eeGetFieldType(fldHnd) : TYP_REF;
 
-                newMemoryVN =
-                    vnStore->VNForMapStore(TYP_REF, newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, fldMapType));
+                newMemoryVN = vnStore->VNForMapStore(newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, fldMapType));
             }
         }
         // Now do the array maps.
@@ -7190,7 +7182,7 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
 
                 ValueNum elemTypeVN = vnStore->VNForHandle(ssize_t(elemClsHnd), GTF_ICON_CLASS_HDL);
                 ValueNum uniqueVN   = vnStore->VNForExpr(entryBlock, TYP_REF);
-                newMemoryVN         = vnStore->VNForMapStore(TYP_REF, newMemoryVN, elemTypeVN, uniqueVN);
+                newMemoryVN         = vnStore->VNForMapStore(newMemoryVN, elemTypeVN, uniqueVN);
             }
         }
     }
@@ -7885,12 +7877,11 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
 
                             // Finally, construct the new field map...
                             ValueNum newFldMapVN =
-                                vnStore->VNForMapStore(vnStore->TypeOfVN(fldMapVN), fldMapVN, firstFieldValueSelectorVN,
-                                                       newFirstFieldValueVN);
+                                vnStore->VNForMapStore(fldMapVN, firstFieldValueSelectorVN, newFirstFieldValueVN);
 
                             // ...and a new value for the heap.
-                            newHeapVN = vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap], firstFieldSelectorVN,
-                                                               newFldMapVN);
+                            newHeapVN =
+                                vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], firstFieldSelectorVN, newFldMapVN);
                         }
                         else
                         {
@@ -8125,7 +8116,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     if (rhs->IsLocalExpr(this, &rhsLclVarTree, &rhsFldSeq))
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
-                        rhsVarDsc          = &lvaTable[rhsLclNum];
+                        rhsVarDsc          = lvaGetDesc(rhsLclNum);
                         if (!lvaInSsa(rhsLclNum) || !rhsLclVarTree->HasSsaName() ||
                             rhsFldSeq == FieldSeqStore::NotAField())
                         {
@@ -8152,7 +8143,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     if (srcAddr->IsLocalAddrExpr(this, &rhsLclVarTree, &rhsFldSeq))
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
-                        rhsVarDsc          = &lvaTable[rhsLclNum];
+                        rhsVarDsc          = lvaGetDesc(rhsLclNum);
                         if (!lvaInSsa(rhsLclNum) || !rhsLclVarTree->HasSsaName() ||
                             rhsFldSeq == FieldSeqStore::NotAField())
                         {
@@ -8419,12 +8410,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
                 unsigned             lclNum = lcl->GetLclNum();
-                LclVarDsc*           varDsc = &lvaTable[lclNum];
+                LclVarDsc*           varDsc = lvaGetDesc(lclNum);
 
                 if (varDsc->CanBeReplacedWithItsField(this))
                 {
                     lclNum = varDsc->lvFieldLclStart;
-                    varDsc = &lvaTable[lclNum];
+                    varDsc = lvaGetDesc(lclNum);
                 }
 
                 // Do we have a Use (read) of the LclVar?
@@ -8589,9 +8580,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // forms (assignment, or initBlk or copyBlk).
                 if (((lclFld->gtFlags & GTF_VAR_DEF) == 0) || (lclFld->gtFlags & GTF_VAR_USEASG))
                 {
-                    unsigned   lclNum = lclFld->GetLclNum();
                     unsigned   ssaNum = lclFld->GetSsaNum();
-                    LclVarDsc* varDsc = &lvaTable[lclNum];
+                    LclVarDsc* varDsc = lvaGetDesc(lclFld);
 
                     var_types indType = tree->TypeGet();
                     if ((lclFld->GetFieldSeq() == FieldSeqStore::NotAField()) || !lvaInSsa(lclFld->GetLclNum()) ||
@@ -8959,9 +8949,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq) && lvaInSsa(lclVarTree->GetLclNum()) &&
                     lclVarTree->HasSsaName())
                 {
-                    unsigned   lclNum = lclVarTree->GetLclNum();
                     unsigned   ssaNum = lclVarTree->GetSsaNum();
-                    LclVarDsc* varDsc = &lvaTable[lclNum];
+                    LclVarDsc* varDsc = lvaGetDesc(lclVarTree);
 
                     if ((localFldSeq == FieldSeqStore::NotAField()) || (localFldSeq == nullptr))
                     {
@@ -9092,21 +9081,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberIntrinsic(tree);
         }
-
-#ifdef FEATURE_SIMD
-        else if (tree->OperGet() == GT_SIMD)
-        {
-            fgValueNumberSimd(tree);
-        }
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
-        else if (tree->OperGet() == GT_HWINTRINSIC)
-        {
-            fgValueNumberHWIntrinsic(tree);
-        }
-#endif // FEATURE_HW_INTRINSICS
-
         else // Look up the VNFunc for the node
         {
             VNFunc vnf = GetVNFuncForNode(tree);
@@ -9161,7 +9135,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     ValueNumPair op2VNPair;
                     if (tree->AsOp()->gtOp2 == nullptr)
                     {
-                        // Handle any GT_LIST nodes as they can have a nullptr for op2.
+                        // Handle any GT_LEA nodes as they can have a nullptr for op2.
                         op2VNPair.SetBoth(ValueNumStore::VNForNull());
                     }
                     else
@@ -9319,7 +9293,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
 
                     case GT_JTRUE:
-                    case GT_LIST:
                         // These nodes never need to have a ValueNumber
                         tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
                         break;
@@ -9352,6 +9325,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_CALL:
                 fgValueNumberCall(tree->AsCall());
                 break;
+
+#ifdef FEATURE_SIMD
+            case GT_SIMD:
+                fgValueNumberSimd(tree->AsSIMD());
+                break;
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+                fgValueNumberHWIntrinsic(tree->AsHWIntrinsic());
+                break;
+#endif // FEATURE_HW_INTRINSICS
 
             case GT_CMPXCHG: // Specialop
             {
@@ -9438,16 +9423,12 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
                 vnStore->VNPWithExc(vnStore->EvalMathFuncUnary(tree->TypeGet(), intrinsic->gtIntrinsicName, arg0VNP),
                                     arg0VNPx);
         }
-        else if (!intrinsic->AsOp()->gtOp1->OperIsList())
+        else
         {
             ValueNumPair newVNP =
                 vnStore->EvalMathFuncBinary(tree->TypeGet(), intrinsic->gtIntrinsicName, arg0VNP, arg1VNP);
             ValueNumPair excSet = vnStore->VNPExcSetUnion(arg0VNPx, arg1VNPx);
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
-        }
-        else
-        {
-            unreached();
         }
     }
     else
@@ -9460,30 +9441,24 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
 
 #ifdef FEATURE_SIMD
 // Does value-numbering for a GT_SIMD node.
-void Compiler::fgValueNumberSimd(GenTree* tree)
+void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 {
-    assert(tree->OperGet() == GT_SIMD);
-    GenTreeSIMD* simdNode = tree->AsSIMD();
-    assert(simdNode != nullptr);
-
     VNFunc       simdFunc = GetVNFuncForNode(tree);
     ValueNumPair excSetPair;
     ValueNumPair normalPair;
 
     // There are some SIMD operations that have zero args, i.e.  NI_Vector128_Zero
-    if (tree->AsOp()->gtOp1 == nullptr)
+    if (tree->GetOperandCount() == 0)
     {
         excSetPair = ValueNumStore::VNPForEmptyExcSet();
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
     }
-    else if (tree->AsOp()->gtOp1->OperIs(GT_LIST))
+    // TODO-List-Cleanup: the "tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN" case is a quirk
+    // to get zero diffs - Vector2(float, float) was imported with lists - remove it.
+    else if ((tree->GetOperandCount() > 2) || (tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN))
     {
-        assert(tree->AsOp()->gtOp2 == nullptr);
-
-        // We have a SIMD node in the GT_LIST form with 3 or more args
-        // For now we will generate a unique value number for this case.
-
-        // Generate a unique VN
+        // We have a SIMD node with 3 or more args. To retain the
+        // previous behavior, we will generate a unique VN for this case.
         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         return;
     }
@@ -9492,25 +9467,25 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         ValueNumPair resvnp = ValueNumPair();
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
 
         ValueNum addrVN       = ValueNumStore::NoVN;
-        bool     isMemoryLoad = simdNode->OperIsMemoryLoad();
+        bool     isMemoryLoad = tree->OperIsMemoryLoad();
 
         if (isMemoryLoad)
         {
             // Currently the only SIMD operation with MemoryLoad sematics is SIMDIntrinsicInitArray
             // and it has to be handled specially since it has an optional op2
             //
-            assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitArray);
+            assert(tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray);
 
             // rationalize rewrites this as an explicit load with op1 as the base address
             assert(tree->OperIsImplicitIndir());
 
             ValueNumPair op2vnp;
-            if (tree->AsOp()->gtOp2 == nullptr)
+            if (tree->GetOperandCount() != 2)
             {
-                // a nullptr for op2 means that we have an impicit index of zero
+                // No op2 means that we have an impicit index of zero
                 op2vnp = ValueNumPair(vnStore->VNZeroForType(TYP_INT), vnStore->VNZeroForType(TYP_INT));
 
                 excSetPair = op1Xvnp;
@@ -9518,7 +9493,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             else // We have an explicit index in op2
             {
                 ValueNumPair op2Xvnp;
-                vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+                vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
 
                 excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
             }
@@ -9530,7 +9505,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             if (verbose)
             {
                 printf("Treating GT_SIMD %s as a ByrefExposed load , addrVN is ",
-                       simdIntrinsicNames[simdNode->gtSIMDIntrinsicID]);
+                       simdIntrinsicNames[tree->GetSIMDIntrinsicId()]);
                 vnPrint(addrVN, 0);
             }
 #endif // DEBUG
@@ -9541,15 +9516,15 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             tree->gtVNPair.SetLiberal(loadVN);
             tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
             tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSetPair);
-            fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
+            fgValueNumberAddExceptionSetForIndirection(tree, tree->Op(1));
             return;
         }
 
-        bool encodeResultType = vnEncodesResultTypeForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID);
+        bool encodeResultType = vnEncodesResultTypeForSIMDIntrinsic(tree->GetSIMDIntrinsicId());
 
         if (encodeResultType)
         {
-            ValueNum simdTypeVN = vnStore->VNForSimdType(simdNode->GetSimdSize(), simdNode->GetSimdBaseType());
+            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
             resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -9562,9 +9537,9 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
 #endif
         }
 
-        if (tree->AsOp()->gtOp2 == nullptr)
+        if (tree->GetOperandCount() == 1)
         {
-            // Unary SIMD nodes have a nullptr for op2.
+            // A unary SIMD node.
             excSetPair = op1Xvnp;
             if (encodeResultType)
             {
@@ -9581,7 +9556,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         {
             ValueNumPair op2vnp;
             ValueNumPair op2Xvnp;
-            vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+            vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
 
             excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
             if (encodeResultType)
@@ -9602,33 +9577,26 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 // Does value-numbering for a GT_HWINTRINSIC node
-void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
+void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
-    assert(tree->OperGet() == GT_HWINTRINSIC);
-    GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
-    assert(hwIntrinsicNode != nullptr);
-
     // For safety/correctness we must mutate the global heap valuenumber
     // for any HW intrinsic that performs a memory store operation
-    if (hwIntrinsicNode->OperIsMemoryStore())
+    if (tree->OperIsMemoryStore())
     {
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    if ((tree->AsOp()->gtOp1 != nullptr) && tree->gtGetOp1()->OperIs(GT_LIST))
+    if (tree->GetOperandCount() > 2)
     {
-        // TODO-CQ: allow intrinsics with GT_LIST to be properly VN'ed, it will
+        // TODO-CQ: allow intrinsics with > 2 operands to be properly VN'ed, it will
         // allow use to process things like Vector128.Create(1,2,3,4) etc.
-        // Generate unique VN for now.
+        // Generate unique VN for now to retaing previois behavior.
         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         return;
     }
 
-    // We don't expect GT_LIST to be in the second op
-    assert((tree->AsOp()->gtOp2 == nullptr) || !tree->gtGetOp2()->OperIs(GT_LIST));
-
     VNFunc func         = GetVNFuncForNode(tree);
-    bool   isMemoryLoad = hwIntrinsicNode->OperIsMemoryLoad();
+    bool   isMemoryLoad = tree->OperIsMemoryLoad();
 
     // If we have a MemoryLoad operation we will use the fgValueNumberByrefExposedLoad
     // method to assign a value number that depends upon fgCurMemoryVN[ByrefExposed] ValueNumber
@@ -9637,7 +9605,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     {
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
 
         // The addrVN incorporates both op1's ValueNumber and the func operation
         // The func is used because operations such as LoadLow and LoadHigh perform
@@ -9652,11 +9620,11 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         tree->gtVNPair.SetLiberal(loadVN);
         tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, op1Xvnp);
-        fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
+        fgValueNumberAddExceptionSetForIndirection(tree, tree->Op(1));
         return;
     }
 
-    bool encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
+    bool encodeResultType = vnEncodesResultTypeForHWIntrinsic(tree->GetHWIntrinsicId());
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair;
@@ -9664,8 +9632,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 
     if (encodeResultType)
     {
-        ValueNum simdTypeVN =
-            vnStore->VNForSimdType(hwIntrinsicNode->GetSimdSize(), hwIntrinsicNode->GetSimdBaseType());
+        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
         resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -9678,10 +9645,10 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 #endif
     }
 
-    const bool isVariableNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId) == -1;
+    const bool isVariableNumArgs = HWIntrinsicInfo::lookupNumArgs(tree->GetHWIntrinsicId()) == -1;
 
     // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
-    if (tree->AsOp()->gtOp1 == nullptr)
+    if (tree->GetOperandCount() == 0)
     {
         // Currently we don't have intrinsics with variable number of args with a parameter-less option.
         assert(!isVariableNumArgs);
@@ -9702,9 +9669,9 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     {
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
 
-        if (tree->AsOp()->gtOp2 == nullptr)
+        if (tree->GetOperandCount() == 1)
         {
             excSetPair = op1Xvnp;
 
@@ -9723,7 +9690,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         {
             ValueNumPair op2vnp;
             ValueNumPair op2Xvnp;
-            vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+            vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
 
             excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
             if (encodeResultType)

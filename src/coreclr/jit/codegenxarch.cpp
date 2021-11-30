@@ -167,8 +167,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // we are generating GS cookie check after a GT_RETURN block.
         // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well
         // as return register for two-register-returned structs.
-        if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvIsInReg() &&
-            (compiler->lvaTable[compiler->info.compThisArg].GetRegNum() == REG_ARG_0))
+        if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg() &&
+            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == REG_ARG_0))
         {
             regGSCheck = REG_ARG_1;
         }
@@ -1197,9 +1197,9 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
     GenTree* op1 = treeNode->gtGetOp1();
     // Spill the return value register from an XMM register to the stack, then load it on the x87 stack.
     // If it already has a home location, use that. Otherwise, we need a temp.
-    if (genIsRegCandidateLocal(op1) && compiler->lvaTable[op1->AsLclVarCommon()->GetLclNum()].lvOnFrame)
+    if (genIsRegCandidateLocal(op1) && compiler->lvaGetDesc(op1->AsLclVarCommon())->lvOnFrame)
     {
-        if (compiler->lvaTable[op1->AsLclVarCommon()->GetLclNum()].GetRegNum() != REG_STK)
+        if (compiler->lvaGetDesc(op1->AsLclVarCommon())->GetRegNum() != REG_STK)
         {
             op1->gtFlags |= GTF_SPILL;
             inst_TT_RV(ins_Store(op1->gtType, compiler->isSIMDTypeLocalAligned(op1->AsLclVarCommon()->GetLclNum())),
@@ -1673,7 +1673,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // This is handled at the time we call genConsumeReg() on the GT_COPY
             break;
 
-        case GT_LIST:
         case GT_FIELD_LIST:
             // Should always be marked contained.
             assert(!"LIST, FIELD_LIST nodes should always be marked contained.");
@@ -1853,7 +1852,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         {
 #ifdef DEBUG
             char message[256];
-            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s\n",
+            _snprintf_s(message, ArrLen(message), _TRUNCATE, "NYI: Unimplemented node type %s\n",
                         GenTree::OpName(treeNode->OperGet()));
             NYIRAW(message);
 #endif
@@ -2582,8 +2581,8 @@ BAILOUT:
     if (compiler->opts.compStackCheckOnRet)
     {
         noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvOnFrame);
+                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif
@@ -3492,7 +3491,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 
     for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvIsParam);
 
         // Does var has simd12 type?
@@ -4960,10 +4959,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     assert(genIsRegCandidateLocal(tree->gtOp1) && genIsRegCandidateLocal(tree->gtOp2));
 
     GenTreeLclVarCommon* lcl1    = tree->gtOp1->AsLclVarCommon();
-    LclVarDsc*           varDsc1 = &(compiler->lvaTable[lcl1->GetLclNum()]);
+    LclVarDsc*           varDsc1 = compiler->lvaGetDesc(lcl1);
     var_types            type1   = varDsc1->TypeGet();
     GenTreeLclVarCommon* lcl2    = tree->gtOp2->AsLclVarCommon();
-    LclVarDsc*           varDsc2 = &(compiler->lvaTable[lcl2->GetLclNum()]);
+    LclVarDsc*           varDsc2 = compiler->lvaGetDesc(lcl2);
     var_types            type2   = varDsc2->TypeGet();
 
     // We must have both int or both fp regs
@@ -5258,8 +5257,8 @@ void CodeGen::genCall(GenTreeCall* call)
     if (compiler->opts.compStackCheckOnCall && call->gtCallType == CT_USER_FUNC)
     {
         noway_assert(compiler->lvaCallSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaCallSpCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaCallSpCheck].lvOnFrame);
+                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
@@ -5384,8 +5383,8 @@ void CodeGen::genCall(GenTreeCall* call)
     if (compiler->opts.compStackCheckOnCall && call->gtCallType == CT_USER_FUNC)
     {
         noway_assert(compiler->lvaCallSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaCallSpCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaCallSpCheck].lvOnFrame);
+                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(compiler->lvaCallSpCheck)->lvOnFrame);
         if (!call->CallerPop() && (stackArgBytes != 0))
         {
             // ECX is trashed, so can be used to compute the expected SP. We saved the value of SP
@@ -5753,16 +5752,16 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // But that would require us to deal with circularity while moving values around.  Spilling
     // to stack makes the implementation simple, which is not a bad trade off given Jmp calls
     // are not frequent.
-    for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
+    for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
         if (varDsc->lvPromoted)
         {
             noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
 
             unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = compiler->lvaTable + fieldVarNum;
+            varDsc               = compiler->lvaGetDesc(fieldVarNum);
         }
         noway_assert(varDsc->lvIsParam);
 
@@ -5789,7 +5788,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // assert should hold.
         assert(varDsc->GetRegNum() != REG_STK);
 
-        assert(!varDsc->lvIsStructField || (compiler->lvaTable[varDsc->lvParentLcl].lvFieldCnt == 1));
+        assert(!varDsc->lvIsStructField || (compiler->lvaGetDesc(varDsc->lvParentLcl)->lvFieldCnt == 1));
         var_types storeType = varDsc->GetActualRegisterType(); // We own the memory and can use the full move.
         GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->GetRegNum(), varNum, 0);
 
@@ -5825,15 +5824,15 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // Next move any un-enregistered register arguments back to their register.
     regMaskTP fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
     unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
-    for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
+    for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
         if (varDsc->lvPromoted)
         {
             noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
 
             unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = compiler->lvaTable + fieldVarNum;
+            varDsc               = compiler->lvaGetDesc(fieldVarNum);
         }
         noway_assert(varDsc->lvIsParam);
 
@@ -7148,8 +7147,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
                 case GT_LCL_VAR:
                 {
-                    assert(srcNode->IsRegOptional() ||
-                           !compiler->lvaTable[srcNode->AsLclVar()->GetLclNum()].lvIsRegCandidate());
+                    assert(srcNode->IsRegOptional() || !compiler->lvaGetDesc(srcNode->AsLclVar())->lvIsRegCandidate());
 
                     varNum = srcNode->AsLclVar()->GetLclNum();
                     offset = 0;
@@ -7263,7 +7261,7 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTree* treeNode)
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going
         // arg area required for tail call.
-        LclVarDsc* varDsc = &(compiler->lvaTable[baseVarNum]);
+        LclVarDsc* varDsc = compiler->lvaGetDesc(baseVarNum);
         assert(varDsc != nullptr);
 
 #ifdef UNIX_AMD64_ABI
@@ -8330,9 +8328,9 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
     if (compiler->opts.IsReversePInvoke())
     {
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
-        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
-        LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
+        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM);
+        const LclVarDsc* reversePInvokeFrameVar = compiler->lvaGetDesc(reversePInvokeFrameVarNumber);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar->GetStackOffset());
     }
 
     gcInfoEncoder->Build();
@@ -8907,9 +8905,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
     // If thisPtr needs to be kept alive and reported, it cannot be one of the callee trash
     // registers that profiler callback kills.
-    if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvIsInReg())
+    if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
-        regMaskTP thisPtrMask = genRegMask(compiler->lvaTable[compiler->info.compThisArg].GetRegNum());
+        regMaskTP thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
         noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
     }
 
@@ -8948,7 +8946,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         // cannot use caller's SP offset since it is an estimate.  For now we require the
         // method to have at least a single arg so that we can use it to obtain caller's
         // SP.
-        LclVarDsc* varDsc = compiler->lvaTable;
+        LclVarDsc* varDsc = compiler->lvaGetDesc(0U);
         NYI_IF((varDsc == nullptr) || !varDsc->lvIsParam, "Profiler ELT callback for a method without any params");
 
         // lea rdx, [FramePointer + Arg0's offset]
@@ -8981,7 +8979,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     }
     else
     {
-        LclVarDsc* varDsc = compiler->lvaTable;
+        LclVarDsc* varDsc = compiler->lvaGetDesc(0U);
         NYI_IF((varDsc == nullptr) || !varDsc->lvIsParam, "Profiler ELT callback for a method without any params");
 
         // lea rdx, [FramePointer + Arg0's offset]

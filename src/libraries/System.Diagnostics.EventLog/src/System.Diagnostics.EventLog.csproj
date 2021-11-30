@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <NoWarn>$(NoWarn);CA1838;CA1847</NoWarn>
+    <NoWarn>$(NoWarn);CA1847</NoWarn>
     <!-- Suppressions to avoid ifdefs:
             CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'
             CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->

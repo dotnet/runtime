@@ -630,8 +630,6 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_MarshalerOnValueType_ThrowsMarshalDirectiveException();
                 Parameter_MarshalerOnPointer_ThrowsMarshalDirectiveException();
                 Parameter_NullICustomMarshaler_ThrowsTypeLoadException();
-                Parameter_MarshalerOnPointer_ThrowsMarshalDirectiveException();
-                Parameter_NullICustomMarshaler_ThrowsTypeLoadException();
                 Parameter_NotICustomMarshaler_ThrowsApplicationException();
                 Parameter_OpenGenericICustomMarshaler_ThrowsTypeLoadException();
                 Parameter_GetInstanceMethodDoesntExist_ThrowsApplicationException();

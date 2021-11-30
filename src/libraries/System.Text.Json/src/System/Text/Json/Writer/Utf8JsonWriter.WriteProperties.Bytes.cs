@@ -276,7 +276,7 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
@@ -326,7 +326,7 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 

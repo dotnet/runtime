@@ -63,7 +63,7 @@ namespace System.Configuration
         protected const string LocationInheritInChildApplicationsAttribute = "inheritInChildApplications";
 
         protected const string ConfigSourceAttribute = "configSource";
-        internal const string ProtectionProviderAttibute = "configProtectionProvider";
+        internal const string ProtectionProviderAttribute = "configProtectionProvider";
 
         protected const string FormatNewConfigFile = "<?xml version=\"1.0\" encoding=\"{0}\"?>\r\n";
         protected const string FormatConfiguration = "<configuration>\r\n";
@@ -1505,7 +1505,7 @@ namespace System.Configuration
                         throw new ConfigurationErrorsException(SR.Config_source_file_format, xmlUtil);
 
                     // Check for protectionProvider
-                    string protectionProviderAttribute = xmlUtil.Reader.GetAttribute(ProtectionProviderAttibute);
+                    string protectionProviderAttribute = xmlUtil.Reader.GetAttribute(ProtectionProviderAttribute);
                     if (protectionProviderAttribute != null)
                     {
                         if (xmlUtil.Reader.AttributeCount != 1)
@@ -2541,7 +2541,7 @@ namespace System.Configuration
                                 }
                             }
 
-                            string protectionProviderAttribute = xmlUtil.Reader.GetAttribute(ProtectionProviderAttibute);
+                            string protectionProviderAttribute = xmlUtil.Reader.GetAttribute(ProtectionProviderAttribute);
                             if (protectionProviderAttribute != null)
                             {
                                 try

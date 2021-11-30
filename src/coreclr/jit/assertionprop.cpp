@@ -660,12 +660,11 @@ void Compiler::optAddCopies()
         Statement* stmt;
         unsigned   copyLclNum = lvaGrabTemp(false DEBUGARG("optAddCopies"));
 
-        // Because lvaGrabTemp may have reallocated the lvaTable, ensure varDsc
-        // is still in sync with lvaTable[lclNum];
-        varDsc = &lvaTable[lclNum];
+        // Because lvaGrabTemp may have reallocated the lvaTable, ensure varDsc is still in sync.
+        varDsc = lvaGetDesc(lclNum);
 
         // Set lvType on the new Temp Lcl Var
-        lvaTable[copyLclNum].lvType = typ;
+        lvaGetDesc(copyLclNum)->lvType = typ;
 
 #ifdef DEBUG
         if (verbose)
@@ -909,7 +908,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
     // Note this tracks at most only 256 assertions.
     static const AssertionIndex countFunc[] = {64, 128, 256, 64};
     static const unsigned       lowerBound  = 0;
-    static const unsigned       upperBound  = _countof(countFunc) - 1;
+    static const unsigned       upperBound  = ArrLen(countFunc) - 1;
     const unsigned              codeSize    = info.compILCodeSize / 512;
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
 
@@ -1103,9 +1102,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                     else
                     {
                         unsigned lclNum = curAssertion->op1.lcl.lclNum;
-                        assert(lclNum < lvaCount);
-                        LclVarDsc* varDsc = lvaTable + lclNum;
-                        op1Type           = varDsc->lvType;
+                        op1Type         = lvaGetDesc(lclNum)->lvType;
                     }
 
                     if (op1Type == TYP_REF)
@@ -1258,8 +1255,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                                             optAssertionKind assertionKind,
                                             bool             helperCallArgs)
 {
-    assert((op1 != nullptr) && !op1->OperIs(GT_LIST));
-    assert((op2 == nullptr) || !op2->OperIs(GT_LIST));
+    assert(op1 != nullptr);
     assert(!helperCallArgs || (op2 != nullptr));
 
     AssertionDsc assertion = {OAK_INVALID};
@@ -1316,9 +1312,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             goto DONE_ASSERTION; // Don't make an assertion
         }
 
-        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
-        noway_assert(lclNum < lvaCount);
-        LclVarDsc* lclVar = &lvaTable[lclNum];
+        unsigned   lclNum = op1->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* lclVar = lvaGetDesc(lclNum);
 
         ValueNum vn;
 
@@ -1395,9 +1390,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     //
     else if (op1->gtOper == GT_LCL_VAR)
     {
-        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
-        noway_assert(lclNum < lvaCount);
-        LclVarDsc* lclVar = &lvaTable[lclNum];
+        unsigned   lclNum = op1->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* lclVar = lvaGetDesc(lclNum);
 
         //  If the local variable has its address exposed then bail
         if (lclVar->IsAddressExposed())
@@ -1560,9 +1554,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
 
-                    unsigned lclNum2 = op2->AsLclVarCommon()->GetLclNum();
-                    noway_assert(lclNum2 < lvaCount);
-                    LclVarDsc* lclVar2 = &lvaTable[lclNum2];
+                    unsigned   lclNum2 = op2->AsLclVarCommon()->GetLclNum();
+                    LclVarDsc* lclVar2 = lvaGetDesc(lclNum2);
 
                     // If the two locals are the same then bail
                     if (lclNum == lclNum2)
@@ -1633,7 +1626,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         if (op1->gtOper == GT_LCL_VAR)
         {
             unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
-            noway_assert(lclNum < lvaCount);
 
             //  If the local variable is not in SSA then bail
             if (!lvaInSsa(lclNum))
@@ -1657,7 +1649,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assert((assertion.op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM) ||
                    (assertion.op1.vn ==
                     vnStore->VNConservativeNormalValue(
-                        lvaTable[lclNum].GetPerSsaData(assertion.op1.lcl.ssaNum)->m_vnPair)));
+                        lvaGetDesc(lclNum)->GetPerSsaData(assertion.op1.lcl.ssaNum)->m_vnPair)));
 
             ssize_t      cnsValue  = 0;
             GenTreeFlags iconFlags = GTF_EMPTY;
@@ -1972,9 +1964,8 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O1K_LCLVAR:
         case O1K_EXACT_TYPE:
         case O1K_SUBTYPE:
-            assert(assertion->op1.lcl.lclNum < lvaCount);
             assert(optLocalAssertionProp ||
-                   lvaTable[assertion->op1.lcl.lclNum].lvPerSsaData.IsValidSsaNum(assertion->op1.lcl.ssaNum));
+                   lvaGetDesc(assertion->op1.lcl.lclNum)->lvPerSsaData.IsValidSsaNum(assertion->op1.lcl.ssaNum));
             break;
         case O1K_ARR_BND:
             // It would be good to check that bnd.vnIdx and bnd.vnLen are valid value numbers.
@@ -2007,7 +1998,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     assert(assertion->op2.u1.iconFlags != GTF_EMPTY);
                     break;
                 case O1K_LCLVAR:
-                    assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) ||
+                    assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
                            (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenString());
                     break;
                 case O1K_VALUE_NUMBER:

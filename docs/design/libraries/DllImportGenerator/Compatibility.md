@@ -33,7 +33,7 @@ These are all part of `NetCoreApp` and will be referenced by default unless [imp
 
 Marshalling of `char` will not be supported when configured with any of the following:
   - [`CharSet.Ansi`, `CharSet.Auto`, or `CharSet.None`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.charset) will not be supported.
-  - [`UnmangedType.U1` or `UnmangedType.I1`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
+  - [`UnmanagedType.U1` or `UnmanagedType.I1`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
   - No explicit marshalling information - either [`DllImportAttribute.CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) or [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
 
 For `CharSet.Ansi` and `CharSet.None`, the built-in system used the [system default Windows ANSI code page](https://docs.microsoft.com/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte) when on Windows and took the first byte of the UTF-8 encoding on non-Windows platforms. The above reasoning also applies to marshalling of a `char` as `UnmanagedType.U1` and `UnmanagedType.I1`. All approaches are fundamentally flawed and therefore not supported. If a single-byte character is expected to be marshalled it is left to the caller to convert a .NET `char` into a single `byte` prior to calling the native function.
@@ -44,7 +44,7 @@ For `CharSet.Auto`, the built-in system relied upon detection at runtime of the 
 
 Marshalling of `string` will not be supported when configured with any of the following:
   - [`CharSet.None`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.charset)
-  - [`UnmangedType.VBByRefStr`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
+  - [`UnmanagedType.VBByRefStr`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
   - No explicit marshalling information - either [`DllImportAttribute.CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) or [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
 
 When converting from native to managed, the built-in system would throw a [`MarshalDirectiveException`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshaldirectiveexception) if the string's length is over 0x7ffffff0. The generated marshalling code will no longer perform this check.
@@ -63,7 +63,7 @@ Using a custom marshaller (i.e. [`ICustomMarshaler`](https://docs.microsoft.com/
 
 ### Array marshalling
 
-Marshalling of arrays will not be supported when using [`UnmangedType.SafeArray`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype). This implies that the following `MarshalAsAttribute` fields are unsupported: [`SafeArraySubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearraysubtype) and [`SafeArrayUserDefinedSubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearrayuserdefinedsubtype)
+Marshalling of arrays will not be supported when using [`UnmanagedType.SafeArray`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype). This implies that the following `MarshalAsAttribute` fields are unsupported: [`SafeArraySubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearraysubtype) and [`SafeArrayUserDefinedSubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearrayuserdefinedsubtype)
 
 Specifying array-specific marshalling members on the `MarshalAsAttribute` such as [`SizeConst`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.sizeconst), [`ArraySubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.arraysubtype), and [`SizeParamIndex`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.sizeparamindex) with non-array `UnmanagedType` types is unsupported.
 
@@ -95,6 +95,12 @@ Unlike the built-in system, the source generator does not support marshalling fo
 - [`CriticalHandle`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.criticalhandle)
 - [`HandleRef`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.handleref)
 - [`StringBuilder`](https://docs.microsoft.com/dotnet/api/system.text.stringbuilder)
+
+The source generator also does not support marshalling objects using the following [`UnmanagedType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype) values:
+- `UnmanagedType.Interface`
+- `UnmanagedType.IDispatch`
+- `UnmanagedType.IInspectable`
+- `UnmanagedType.IUnknown`
 
 ## Version 0
 
