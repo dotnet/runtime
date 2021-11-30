@@ -252,6 +252,7 @@ internal sealed class Xcode
         {
             hardenedRuntime = true;
             entitlements.Add (KeyValuePair.Create ("com.apple.security.app-sandbox", "<true/>"));
+            entitlements.Add (KeyValuePair.Create ("com.apple.security.network.client", "<true/>"));
         }
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
