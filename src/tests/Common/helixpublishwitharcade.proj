@@ -280,8 +280,7 @@
 
   <Target Name="PrepareMergedTestPayloadDirectory"
       Outputs="%(_MergedWrapperRunScript.FileName)"
-      DependsOnTargets="DiscoverMergedTestWrappers"
-      Condition="'@(_MergedWrapperRunScript)' != ''">
+      DependsOnTargets="DiscoverMergedTestWrappers">
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperRunScript.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
