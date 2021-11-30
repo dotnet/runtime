@@ -102,8 +102,9 @@ namespace System.IO.Compression.Tests
                 }
                 else
                 {
-                    ZipArchiveEntry e = archive.GetEntry("data2.txt");
-                    e.Delete();
+                    Assert.Throws<InvalidOperationException>(() => AddEntry(archive, "data1.txt", data1, lastWrite));
+
+                    Assert.Throws<InvalidOperationException>(() => archive.CreateEntry("empty.txt"));
                 }
             }
 
@@ -119,8 +120,9 @@ namespace System.IO.Compression.Tests
                 }
                 else
                 {
-                    ZipArchiveEntry e = archive.GetEntry("data2.txt");
-                    e.Delete();
+                    Assert.Throws<InvalidOperationException>(() => AddEntry(archive, "data1.txt", data1, lastWrite));
+
+                    Assert.Throws<InvalidOperationException>(() => archive.CreateEntry("empty.txt"));
                 }
             }
             //compare
