@@ -16,7 +16,6 @@
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Opt-in/out repo features -->
-    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
@@ -52,7 +51,6 @@
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.21572.6</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.0.1</MicrosoftNetCompilersToolsetVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
