@@ -367,7 +367,7 @@ namespace Internal.TypeSystem
                 instanceSize,
                 largestAlignmentRequired,
                 layoutMetadata.Size,
-                alignUpInstanceByteSize: false,
+                alignUpInstanceByteSize: true,
                 out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
