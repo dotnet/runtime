@@ -178,13 +178,12 @@ namespace Microsoft.Extensions.Configuration.Test
         {
             using var mre = new ManualResetEventSlim(false);
             var provider = new BlockLoadOnMREProvider(mre, timeout: TimeSpan.FromSeconds(30));
-            var source = new TestConfigurationSource(provider);
 
             var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
 
             // builder.Add(source) calls provider.Load().
-            var loadTask = Task.Run(() => builder.Add(source));
+            var loadTask = Task.Run(() => builder.Add(new TestConfigurationSource(provider)));
 
             await provider.LoadStartedTask;
 
@@ -196,6 +195,35 @@ namespace Microsoft.Extensions.Configuration.Test
 
             // This will throw if provider.Load() timed out instead of unblocking gracefully after the read.
             await loadTask;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task ProviderDisposeDelayedWaitingOnConcurrentRead()
+        {
+            using var mre = new ManualResetEventSlim(false);
+            var provider = new BlockTryGetOnMREProvider(mre, timeout: TimeSpan.FromSeconds(30));
+
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.Add(new TestConfigurationSource(provider));
+
+            // Reading configuration will block on provider.TryRead().
+            var readTask = Task.Run(() => config["key"]);
+
+            // Removing the source normally disposes the provider except when there provider is in use as is the case here.
+            builder.Sources.Clear();
+
+            Assert.False(provider.IsDisposed);
+
+            // Unblock provider.TryRead()
+            mre.Set();
+
+            // This will throw if provider.TryRead() timed out instead of unblocking gracefully after setting the MRE.
+            await readTask;
+
+            // The provider should be disposed when provider.TryRead() releases the last reference to the provider.
+            Assert.True(provider.IsDisposed);
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
@@ -1176,6 +1204,29 @@ namespace Microsoft.Extensions.Configuration.Test
                 _loadStartedTcs.SetResult(null);
                 Assert.True(_mre.Wait(_timeout), "BlockLoadOnMREProvider.Load() timed out.");
             }
+        }
+
+        private class BlockTryGetOnMREProvider : ConfigurationProvider, IDisposable
+        {
+            private readonly ManualResetEventSlim _mre;
+            private readonly TimeSpan _timeout;
+
+            public BlockTryGetOnMREProvider(ManualResetEventSlim mre, TimeSpan timeout)
+            {
+                _mre = mre;
+                _timeout = timeout;
+            }
+
+            public bool IsDisposed { get; set; }
+
+            public override bool TryGet(string key, out string? value)
+            {
+                Assert.True(_mre.Wait(_timeout), "BlockTryGetOnMREProvider.TryGet() timed out.");
+                return base.TryGet(key, out value);
+            }
+
+            public void Dispose()
+                => IsDisposed = true;
         }
 
         private class DisposableTestConfigurationProvider : ConfigurationProvider, IDisposable
