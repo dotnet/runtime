@@ -1416,7 +1416,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			class DerivedWithRequiresOnType : BaseWithoutRequiresOnType
 			{
 				// Bug https://github.com/dotnet/linker/issues/2379
-				[ExpectedWarning ("IL2046", ProducedBy = ProducedBy.Analyzer)]
 				public override void Method () { }
 			}
 
@@ -1453,7 +1452,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				// Bug https://github.com/dotnet/linker/issues/2379
-				[ExpectedWarning ("IL2046", ProducedBy = ProducedBy.Analyzer)]
 				public int Method (int a)
 				{
 					return a;
