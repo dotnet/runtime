@@ -2284,7 +2284,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 unsigned containedOpNum = 0;
 
-                // containedOpNum remains 0 when no op is contianed or regOptional
+                // containedOpNum remains 0 when no operand is contained or regOptional
                 if (op1->isContained() || op1->IsRegOptional())
                 {
                     containedOpNum = 1;
