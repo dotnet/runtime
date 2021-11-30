@@ -337,8 +337,10 @@ namespace ILLink.RoslynAnalyzer
 
 		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2)
 		{
-			bool member1HasAttribute = TargetHasRequiresAttribute (member1, out _);
-			bool member2HasAttribute = TargetHasRequiresAttribute (member2, out _);
+			bool member1HasAttribute = TargetHasRequiresAttribute (member1, true, out _);
+
+			bool member2HasAttribute = TargetHasRequiresAttribute (member2, true, out _);
+
 			return member1HasAttribute ^ member2HasAttribute;
 		}
 
@@ -348,14 +350,13 @@ namespace ILLink.RoslynAnalyzer
 		/// </summary>
 		protected bool IsMemberInRequiresScope (ISymbol member)
 		{
-			if (member.HasAttribute (RequiresAttributeName) ||
-				(member is not ITypeSymbol &&
-				member.ContainingType.HasAttribute (RequiresAttributeName))) {
+			if (containingSymbol.HasAttribute (RequiresAttributeName) ||
+				containingSymbol.ContainingType.HasAttribute (RequiresAttributeName)) {
 				return true;
 			}
 
 			// Check also for RequiresAttribute in the associated symbol
-			if (member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (RequiresAttributeName))
+			if (containingSymbol is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (RequiresAttributeName))
 				return true;
 
 			return false;
@@ -367,6 +368,11 @@ namespace ILLink.RoslynAnalyzer
 		/// </summary>
 		protected bool TargetHasRequiresAttribute (ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
 		{
+			return TargetHasRequiresAttribute(member, false, out requiresAttribute);
+		}
+
+		private bool TargetHasRequiresAttribute (ISymbol member, bool inheritRucForInstanceMethods, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
+		{
 			requiresAttribute = null;
 			if (member.IsStaticConstructor ()) {
 				return false;
@@ -377,7 +383,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 
 			// Also check the containing type
-			if ((member.IsStatic || member.IsConstructor ()) && member is not ITypeSymbol) {
+			if (inheritRucForInstanceMethods || member.IsStatic || member.IsConstructor ()) {
 				return TryGetRequiresAttribute (member.ContainingType, out requiresAttribute);
 			}
 			return false;
