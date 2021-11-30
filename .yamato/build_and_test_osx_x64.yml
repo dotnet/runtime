@@ -6,11 +6,11 @@ agent:
   flavor: m1.mac
 
 commands:
-  - ./build.sh -subset clr -a x64 -c release
-  - ./build.sh libs -c release
-  - ./src/tests/build.sh Release x64
-  - ./src/tests/run.sh Release x64
-  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset libs.tests -test -c Release
+  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs+libs.tests -test -a x64 -rc checked -lc release -ci -ninja
+  - ./src/tests/build.sh x64 checked ci
+  - ./src/tests/run.sh x64 checked
+  - ./build.sh clr.paltests
+  - ./artifacts/bin/coreclr/OSX.x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/OSX.x64.Debug/paltests
 
 triggers:
   pull_requests:
@@ -21,4 +21,5 @@ triggers:
 artifacts: 
   osx64:
     paths:
-      - artifacts/bin/coreclr/OSX.x64.Release/**
+      - artifacts/bin/coreclr/**
+      - artifacts/repro/**

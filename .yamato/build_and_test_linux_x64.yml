@@ -6,11 +6,12 @@ agent:
   flavor: b1.large
 
 commands:
-  - ./build.sh -subset clr -a x64 -c release
-  - ./build.sh libs -c release
-  - ./src/tests/build.sh Release x64
-  - ./src/tests/run.sh Release x64
-  - ./build.sh -subset libs.tests -test -c Release
+  - ./build.sh -subset clr+libs+libs.tests -test -a x64 -rc checked -lc release -ci -ninja
+  - command: ./src/tests/build.sh x64 checked ci
+    retries: 1
+  - ./src/tests/run.sh x64 checked
+  - ./build.sh clr.paltests
+  - ./artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
 
 triggers:
   pull_requests:
@@ -21,4 +22,5 @@ triggers:
 artifacts: 
   linux64:
     paths:
-      - artifacts/bin/coreclr/Linux.x64.Release/**
+      - artifacts/bin/coreclr/**
+      - artifacts/repro/**

@@ -6,11 +6,9 @@ agent:
   flavor: b1.xlarge
 
 commands:
-  - build.cmd -subset clr -a x64 -c release
-  - build.cmd libs -c release
-  - src\tests\build.cmd Release x64 -priority=0
-  - src\tests\run.cmd Release x64
-  - build.cmd -subset libs.tests -test -c Release
+  - build.cmd -subset clr+libs+libs.tests -test -a x64 -rc checked -lc release -ci
+  - src\tests\build.cmd x64 checked ci
+  - src\tests\run.cmd x64 checked
 
 triggers:
   pull_requests:
@@ -21,4 +19,5 @@ triggers:
 artifacts: 
   win64:
     paths:
-      - artifacts\bin\coreclr\windows.x64.Release\**
+      - artifacts\bin\coreclr\**
+      - artifacts\repro\**
