@@ -90,30 +90,7 @@ namespace System.Collections.Immutable
             }
         }
 
-        /// <summary>
-        /// Create a <see cref="ReadOnlySpan{T}"/> over current <see cref="ImmutableArray{T}"/>
-        /// </summary>
-        /// <returns>The <see cref="ReadOnlySpan{T}"/> representation of the <see cref="ImmutableArray{T}"/></returns>
         public ReadOnlySpan<T> AsSpan() => new ReadOnlySpan<T>(array);
-
-        /// <summary>
-        /// Creates a <see cref="ReadOnlySpan{T}"/> over the portion of current <see cref="ImmutableArray{T}"/> beginning at a specified position for a specified length.
-        /// </summary>
-        /// <param name="start">The index at which to begin the span.</param>
-        /// <param name="length">The number of items in the span.</param>
-        /// <returns>The <see cref="ReadOnlySpan{T}"/> representation of the <see cref="ImmutableArray{T}"/></returns>
-        public ReadOnlySpan<T> AsSpan(int start, int length) => new ReadOnlySpan<T>(array, start, length);
-
-#if !NETSTANDARD2_0 && !NET461
-        public ReadOnlySpan<T> AsSpan(Range range)
-        {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-
-            (int start, int length) = range.GetOffsetAndLength(self.Length);
-            return new ReadOnlySpan<T>(self.array, start, length);
-        }
-#endif
 
         public ReadOnlyMemory<T> AsMemory() => new ReadOnlyMemory<T>(array);
 
@@ -341,7 +318,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The index at which to insert the value.</param>
         /// <param name="items">The elements to insert.</param>
         /// <returns>The new immutable collection.</returns>
-        internal ImmutableArray<T> InsertRange(int index, IEnumerable<T> items)
+        public ImmutableArray<T> InsertRange(int index, IEnumerable<T> items)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
@@ -394,69 +371,23 @@ namespace System.Collections.Immutable
         /// <param name="index">The index at which to insert the value.</param>
         /// <param name="items">The elements to insert.</param>
         /// <returns>The new immutable collection.</returns>
-        public ImmutableArray<T> InsertRange(int index, T[] items)
+        public ImmutableArray<T> InsertRange(int index, ImmutableArray<T> items)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
+            items.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
-            Requires.NotNull(items, nameof(items));
 
-            if (items.Length == 0)
+            if (self.IsEmpty)
+            {
+                return items;
+            }
+            else if (items.IsEmpty)
             {
                 return self;
             }
-            if (self.Length == 0)
-            {
-                return new ImmutableArray<T>(items);
-            }
 
-            var tmp = new T[self.Length + items.Length];
-            if (index != 0)
-            {
-                Array.Copy(self.array!, tmp, index);
-            }
-            Array.Copy(items, 0, tmp, index, items.Length);
-            if (index != self.Length)
-            {
-                Array.Copy(self.array!, index, tmp, index + items.Length, self.Length - index);
-            }
-
-            return new ImmutableArray<T>(tmp);
-        }
-
-        /// <summary>
-        /// Inserts the specified values at the specified index.
-        /// </summary>
-        /// <param name="index">The index at which to insert the value.</param>
-        /// <param name="items">The elements to insert.</param>
-        /// <returns>The new immutable collection.</returns>
-        public ImmutableArray<T> InsertRange(int index, ReadOnlySpan<T> items)
-        {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-            Requires.Range(index >= 0 && index <= self.Length, nameof(index));
-
-            if (items.IsEmpty)
-            {
-                return self;
-            }
-            if (self.Length == 0)
-            {
-                return items.ToImmutableArray();
-            }
-
-            var tmp = new T[self.Length + items.Length];
-            if (index != 0)
-            {
-                Array.Copy(self.array!, tmp, index);
-            }
-            items.CopyTo(new Span<T>(tmp, index, items.Length));
-            if (index != self.Length)
-            {
-                Array.Copy(self.array!, index, tmp, index + items.Length, self.Length - index);
-            }
-
-            return new ImmutableArray<T>(tmp);
+            return self.InsertSpanRangeInternal(index, items.AsSpan());
         }
 
         /// <summary>
@@ -480,7 +411,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The values to add.</param>
         /// <returns>A new list with the elements added.</returns>
-        public ImmutableArray<T> AddRange(ReadOnlySpan<T> items)
+        public ImmutableArray<T> AddRange(IEnumerable<T> items)
         {
             var self = this;
             return self.InsertRange(self.Length, items);
@@ -491,7 +422,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The values to add.</param>
         /// <returns>A new list with the elements added.</returns>
-        public ImmutableArray<T> AddRange(params T[] items)
+        public ImmutableArray<T> AddRange(ImmutableArray<T> items)
         {
             var self = this;
             return self.InsertRange(self.Length, items);
@@ -597,7 +528,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The 0-based index into the array for the element to omit from the returned array.</param>
         /// <param name="length">The number of elements to remove.</param>
         /// <returns>The new array.</returns>
-        internal ImmutableArray<T> RemoveRange(int index, int length)
+        public ImmutableArray<T> RemoveRange(int index, int length)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
@@ -619,6 +550,18 @@ namespace System.Collections.Immutable
         /// Removes the specified values from this list.
         /// </summary>
         /// <param name="items">The items to remove if matches are found in this list.</param>
+        /// <returns>
+        /// A new list with the elements removed.
+        /// </returns>
+        public ImmutableArray<T> RemoveRange(IEnumerable<T> items)
+        {
+            return this.RemoveRange(items, EqualityComparer<T>.Default);
+        }
+
+        /// <summary>
+        /// Removes the specified values from this list.
+        /// </summary>
+        /// <param name="items">The items to remove if matches are found in this list.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
         /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
@@ -626,7 +569,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A new list with the elements removed.
         /// </returns>
-        internal ImmutableArray<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
+        public ImmutableArray<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
@@ -635,28 +578,26 @@ namespace System.Collections.Immutable
             var indicesToRemove = new SortedSet<int>();
             foreach (var item in items)
             {
-                int index = self.IndexOf(item, 0, self.Length, equalityComparer);
-                while (index >= 0 && indicesToRemove.Add(index) && index + 1 < self.Length)
+                int index = -1;
+                do
                 {
-                    // This is a duplicate of one we've found. Try hard to find another instance in the list to remove.
                     index = self.IndexOf(item, index + 1, equalityComparer);
-                }
+                } while (index >= 0 && !indicesToRemove.Add(index) && index < self.Length - 1);
             }
 
             return self.RemoveAtRange(indicesToRemove);
         }
 
         /// <summary>
-        /// Forms a slice out of the current <see cref="ImmutableArray{T}"/> starting at a specified index for a specified length.
+        /// Removes the specified values from this list.
         /// </summary>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="length">The desired length for the slice.</param>
-        /// <returns>A <see cref="ImmutableArray{T}"/> that consists of length elements from the current <see cref="ImmutableArray{T}"/> starting at start.</returns>
-        public ImmutableArray<T> Slice(int start, int length)
+        /// <param name="items">The items to remove if matches are found in this list.</param>
+        /// <returns>
+        /// A new list with the elements removed.
+        /// </returns>
+        public ImmutableArray<T> RemoveRange(ImmutableArray<T> items)
         {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-            return ImmutableArray.Create(self, start, length);
+            return this.RemoveRange(items, EqualityComparer<T>.Default);
         }
 
         /// <summary>
@@ -669,95 +610,11 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A new list with the elements removed.
         /// </returns>
-        public ImmutableArray<T> RemoveRange(ReadOnlySpan<T> items, IEqualityComparer<T>? equalityComparer = null)
+        public ImmutableArray<T> RemoveRange(ImmutableArray<T> items, IEqualityComparer<T>? equalityComparer)
         {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-            if (items.IsEmpty || self.IsEmpty)
-            {
-                return self;
-            }
+            Requires.NotNull(items.array!, nameof(items));
 
-            SortedSet<int>? indicesToRemove = null;
-            foreach (T item in items)
-            {
-                int index = self.IndexOf(item, 0, equalityComparer);
-                if (index < 0)
-                {
-                    continue;
-                }
-                if (indicesToRemove == null) // indicesToRemove is not initialized so current item is valid
-                {
-                    indicesToRemove = new SortedSet<int> {index};
-                }
-                else if (!indicesToRemove.Add(index)) // If here we have found pre existing index, just skip current 'item'; otherwise current 'item' must be a new item and we can skip checking indicesToRemove.Add() below
-                {
-                    continue;
-                }
-
-                while (index < self.Length - 1 && (index = self.IndexOf(item, index + 1, equalityComparer)) >= 0)
-                {
-                    indicesToRemove.Add(index);
-                }
-            }
-
-            return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);
-        }
-
-        /// <summary>
-        /// Removes the specified values from this list.
-        /// </summary>
-        /// <param name="items">The items to remove if matches are found in this list.</param>
-        /// <param name="equalityComparer">
-        /// The equality comparer to use in the search.
-        /// </param>
-        /// <returns>
-        /// A new list with the elements removed.
-        /// </returns>
-        public ImmutableArray<T> RemoveRange(T[] items, IEqualityComparer<T>? equalityComparer = null)
-        {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-            Requires.NotNull(items, nameof(items));
-
-            if (items.Length == 0 || self.IsEmpty)
-            {
-                return self;
-            }
-
-            List<int>? indicesToRemove = null;
-            for (int i = 0; i < self.Length; i++)
-            {
-                T selfItem = self.array![i];
-                bool found = false;
-
-                if (equalityComparer == null || equalityComparer == EqualityComparer<T>.Default)
-                {
-                    if (Array.IndexOf(items, selfItem) >= 0)
-                    {
-                        found = true;
-                    }
-                }
-                else
-                {
-                    foreach (T item in items)
-                    {
-                        if (equalityComparer.Equals(selfItem, item))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (found)
-                {
-                    indicesToRemove ??= new List<int>();
-                    indicesToRemove.Add(i);
-                }
-            }
-
-            return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);
+            return RemoveRange(items.AsSpan(), equalityComparer);
         }
 
         /// <summary>
@@ -908,6 +765,47 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Adds the specified values to this list.
+        /// </summary>
+        /// <param name="items">The values to add.</param>
+        /// <returns>A new list with the elements added.</returns>
+        public ImmutableArray<T> AddRange(ReadOnlySpan<T> items)
+        {
+            var self = this;
+            return self.InsertRange(self.Length, items);
+        }
+
+        /// <summary>
+        /// Adds the specified values to this list.
+        /// </summary>
+        /// <param name="items">The values to add.</param>
+        /// <returns>A new list with the elements added.</returns>
+        public ImmutableArray<T> AddRange(params T[] items)
+        {
+            var self = this;
+            return self.InsertRange(self.Length, items);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="ReadOnlySpan{T}"/> over the portion of current <see cref="ImmutableArray{T}"/> beginning at a specified position for a specified length.
+        /// </summary>
+        /// <param name="start">The index at which to begin the span.</param>
+        /// <param name="length">The number of items in the span.</param>
+        /// <returns>The <see cref="ReadOnlySpan{T}"/> representation of the <see cref="ImmutableArray{T}"/></returns>
+        public ReadOnlySpan<T> AsSpan(int start, int length) => new ReadOnlySpan<T>(array, start, length);
+
+#if !NETSTANDARD2_0 && !NET461
+        public ReadOnlySpan<T> AsSpan(Range range)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+
+            (int start, int length) = range.GetOffsetAndLength(self.Length);
+            return new ReadOnlySpan<T>(self.array, start, length);
+        }
+#endif
+
+        /// <summary>
         /// Copies the elements of current <see cref="ImmutableArray{T}"/> to an <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The <see cref="Span{T}"/> that is the destination of the elements copied from current <see cref="ImmutableArray{T}"/>.</param>
@@ -918,6 +816,142 @@ namespace System.Collections.Immutable
             Requires.Range(self.Length <= destination.Length, nameof(destination));
 
             self.AsSpan().CopyTo(destination);
+        }
+
+        /// <summary>
+        /// Inserts the specified values at the specified index.
+        /// </summary>
+        /// <param name="index">The index at which to insert the value.</param>
+        /// <param name="items">The elements to insert.</param>
+        /// <returns>The new immutable collection.</returns>
+        public ImmutableArray<T> InsertRange(int index, T[] items)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+            Requires.Range(index >= 0 && index <= self.Length, nameof(index));
+            Requires.NotNull(items, nameof(items));
+
+            if (items.Length == 0)
+            {
+                return self;
+            }
+            if (self.Length == 0)
+            {
+                return new ImmutableArray<T>(items);
+            }
+
+            return self.InsertSpanRangeInternal(index, items);
+        }
+
+        private ImmutableArray<T> InsertSpanRangeInternal(int index, ReadOnlySpan<T> items)
+        {
+            var tmp = new T[Length + items.Length];
+            if (index != 0)
+            {
+                Array.Copy(array!, tmp, index);
+            }
+            items.CopyTo(new Span<T>(tmp, index, items.Length));
+            if (index != Length)
+            {
+                Array.Copy(array!, index, tmp, index + items.Length, Length - index);
+            }
+
+            return new ImmutableArray<T>(tmp);
+        }
+
+        /// <summary>
+        /// Inserts the specified values at the specified index.
+        /// </summary>
+        /// <param name="index">The index at which to insert the value.</param>
+        /// <param name="items">The elements to insert.</param>
+        /// <returns>The new immutable collection.</returns>
+        public ImmutableArray<T> InsertRange(int index, ReadOnlySpan<T> items)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+            Requires.Range(index >= 0 && index <= self.Length, nameof(index));
+
+            if (items.IsEmpty)
+            {
+                return self;
+            }
+            if (self.Length == 0)
+            {
+                return items.ToImmutableArray();
+            }
+
+            return self.InsertSpanRangeInternal(index, items);
+        }
+
+        /// <summary>
+        /// Removes the specified values from this list.
+        /// </summary>
+        /// <param name="items">The items to remove if matches are found in this list.</param>
+        /// <param name="equalityComparer">
+        /// The equality comparer to use in the search.
+        /// </param>
+        /// <returns>
+        /// A new list with the elements removed.
+        /// </returns>
+        public ImmutableArray<T> RemoveRange(ReadOnlySpan<T> items, IEqualityComparer<T>? equalityComparer = null)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+
+            if (items.IsEmpty || self.IsEmpty)
+            {
+                return self;
+            }
+
+            if (items.Length == 1)
+            {
+                return self.Remove(items[0], equalityComparer);
+            }
+
+            var indicesToRemove = new SortedSet<int>();
+            foreach (var item in items)
+            {
+                int index = -1;
+                do
+                {
+                    index = self.IndexOf(item, index + 1, equalityComparer);
+                } while (index >= 0 && !indicesToRemove.Add(index) && index < self.Length - 1);
+            }
+
+            return self.RemoveAtRange(indicesToRemove);
+        }
+
+        /// <summary>
+        /// Removes the specified values from this list.
+        /// </summary>
+        /// <param name="items">The items to remove if matches are found in this list.</param>
+        /// <param name="equalityComparer">
+        /// The equality comparer to use in the search.
+        /// </param>
+        /// <returns>
+        /// A new list with the elements removed.
+        /// </returns>
+        public ImmutableArray<T> RemoveRange(T[] items, IEqualityComparer<T>? equalityComparer = null)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+
+            Requires.NotNull(items, nameof(items));
+
+            return self.RemoveRange(new ReadOnlySpan<T>(items), equalityComparer);
+        }
+
+        /// <summary>
+        /// Forms a slice out of the current <see cref="ImmutableArray{T}"/> starting at a specified index for a specified length.
+        /// </summary>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <param name="length">The desired length for the slice.</param>
+        /// <returns>A <see cref="ImmutableArray{T}"/> that consists of length elements from the current <see cref="ImmutableArray{T}"/> starting at start.</returns>
+        public ImmutableArray<T> Slice(int start, int length)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+            return ImmutableArray.Create(self, start, length);
         }
 
         #region Explicit interface methods
@@ -974,7 +1008,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return self.InsertRange(self.Length, items);
+            return self.AddRange(items);
         }
 
         /// <summary>

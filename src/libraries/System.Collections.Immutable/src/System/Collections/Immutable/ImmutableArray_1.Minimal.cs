@@ -269,7 +269,7 @@ namespace System.Collections.Immutable
             }
 
             var builder = new Builder(self.Length);
-            builder.AddRange(self.AsSpan());
+            builder.AddRange(self);
             return builder;
         }
 

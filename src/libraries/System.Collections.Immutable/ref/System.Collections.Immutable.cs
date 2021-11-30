@@ -120,6 +120,8 @@ namespace System.Collections.Immutable
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
         object? System.Collections.IList.this[int index] { get { throw null; } set { } }
         public System.Collections.Immutable.ImmutableArray<T> Add(T item) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> AddRange(System.Collections.Generic.IEnumerable<T> items) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> AddRange(System.Collections.Immutable.ImmutableArray<T> items) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> AddRange(System.ReadOnlySpan<T> items) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> AddRange(params T[] items) { throw null; }
         public System.ReadOnlyMemory<T> AsMemory() { throw null; }
@@ -159,6 +161,8 @@ namespace System.Collections.Immutable
         public int IndexOf(T item, int startIndex, int count) { throw null; }
         public int IndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Insert(int index, T item) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> InsertRange(int index, System.Collections.Immutable.ImmutableArray<T> items) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> InsertRange(int index, T[] items) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> InsertRange(int index, System.ReadOnlySpan<T> items) { throw null; }
         public ref readonly T ItemRef(int index) { throw null; }
@@ -175,6 +179,11 @@ namespace System.Collections.Immutable
         public System.Collections.Immutable.ImmutableArray<T> Remove(T item, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> RemoveAll(System.Predicate<T> match) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> RemoveAt(int index) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> RemoveRange(System.Collections.Generic.IEnumerable<T> items) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> RemoveRange(System.Collections.Generic.IEnumerable<T> items, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> RemoveRange(System.Collections.Immutable.ImmutableArray<T> items) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> RemoveRange(System.Collections.Immutable.ImmutableArray<T> items, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> RemoveRange(int index, int length) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> RemoveRange(System.ReadOnlySpan<T> items, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> RemoveRange(T[] items, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Slice(int start, int length) { throw null; }
@@ -224,7 +233,15 @@ namespace System.Collections.Immutable
             public T this[int index] { get { throw null; } set { } }
             bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
             public void Add(T item) { }
+            public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
+            public void AddRange(System.Collections.Immutable.ImmutableArray<T> items) { }
+            public void AddRange(System.Collections.Immutable.ImmutableArray<T> items, int length) { }
             public void AddRange(System.Collections.Immutable.ImmutableArray<T>.Builder items) { }
+            public void AddRange(params T[] items) { }
+            public void AddRange(T[] items, int length) { }
+            public void AddRange<TDerived>(System.Collections.Immutable.ImmutableArray<TDerived> items) where TDerived : T { }
+            public void AddRange<TDerived>(System.Collections.Immutable.ImmutableArray<TDerived>.Builder items) where TDerived : T { }
+            public void AddRange<TDerived>(TDerived[] items) where TDerived : T { }
             public void AddRange(System.ReadOnlySpan<T> items) { }
             public void AddRange<TDerived>(System.ReadOnlySpan<TDerived> items) where TDerived : T { }
             public void Clear() { }
