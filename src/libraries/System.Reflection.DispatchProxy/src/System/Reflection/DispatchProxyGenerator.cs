@@ -67,10 +67,7 @@ namespace System.Reflection
             Debug.Assert(interfaceType != null);
 
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(baseType.Assembly);
-            if (alc == null)
-            {
-                throw new ArgumentException($"Impossible, the type is certainly provided by the runtime.", nameof(baseType));
-            }
+            Debug.Assert(alc != null);
 
             ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap.GetValue(alc, static x => new ProxyAssembly(x));
             GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType);
