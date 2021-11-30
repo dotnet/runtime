@@ -15,7 +15,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	{
 		public readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
 
-
 		public TrimAnalysisVisitor (
 			LocalStateLattice<MultiValue, ValueSetLattice<SingleValue>> lattice,
 			OperationBlockAnalysisContext context
@@ -40,6 +39,21 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// for annotations on unsupported types.
 			// https://github.com/dotnet/linker/issues/2273
 			return new MultiValue (new SymbolValue (operation.TargetMethod, isMethodReturn: true));
+		}
+
+		// Just like VisitInvocation for a method call, we need to visit a property method invocation
+		// in case it has an annotated return value.
+		public override MultiValue VisitPropertyReference (IPropertyReferenceOperation operation, StateValue state)
+		{
+			// Base logic visits the receiver
+			base.VisitPropertyReference (operation, state);
+
+			var propertyMethod = GetPropertyMethod (operation);
+			// Only the getter has a return value that may be annotated.
+			if (propertyMethod.MethodKind == MethodKind.PropertyGet)
+				return new MultiValue (new SymbolValue (propertyMethod, isMethodReturn: true));
+
+			return TopValue;
 		}
 
 		public override MultiValue VisitConversion (IConversionOperation operation, StateValue state)
@@ -86,7 +100,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		// Override handlers for situations where annotated locations may be involved in reflection access:
 		// - assignments
-		// - arguments passed to method parameters
+		// - arguments passed to method parameters (or implicitly passed to property setters)
 		//   this also needs to create the annotated value for parameters, because they are not represented
 		//   as 'IParameterReferenceOperation' when passing arguments
 		// - instance passed as explicit or implicit receiver to a method invocation
@@ -118,16 +132,23 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			));
 		}
 
-		public override void HandleReceiverArgument (MultiValue receieverValue, IInvocationOperation operation)
+		// Similar to HandleArgument, for an assignment operation that is really passing an argument to a property setter.
+		public override void HandlePropertySetterArgument (MultiValue value, IMethodSymbol setMethod, ISimpleAssignmentOperation operation)
 		{
-			if (operation.Instance == null)
-				return;
+			var parameter = new MultiValue (new SymbolValue (setMethod.Parameters[0]));
 
-			MultiValue implicitReceiverParameter = new MultiValue (new SymbolValue (operation.TargetMethod, isMethodReturn: false));
+			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (value, parameter, operation));
+		}
+
+		// Can be called for an invocation or a propertyreference
+		// where the receiver is not null (so an instance method/property).
+		public override void HandleReceiverArgument (MultiValue receiverValue, IMethodSymbol targetMethod, IOperation operation)
+		{
+			MultiValue thisParameter = new MultiValue (new SymbolValue (targetMethod!, isMethodReturn: false));
 
 			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (
-				receieverValue,
-				implicitReceiverParameter,
+				receiverValue,
+				thisParameter,
 				operation
 			));
 		}

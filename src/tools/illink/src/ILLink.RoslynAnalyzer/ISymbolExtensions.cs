@@ -82,7 +82,9 @@ namespace ILLink.RoslynAnalyzer
 				memberOptions:
 					SymbolDisplayMemberOptions.IncludeParameters |
 					SymbolDisplayMemberOptions.IncludeExplicitInterface,
-				parameterOptions: SymbolDisplayParameterOptions.IncludeType
+				parameterOptions:
+					SymbolDisplayParameterOptions.IncludeType |
+					SymbolDisplayParameterOptions.IncludeParamsRefOut
 			);
 
 		public static string GetDisplayName (this ISymbol symbol)

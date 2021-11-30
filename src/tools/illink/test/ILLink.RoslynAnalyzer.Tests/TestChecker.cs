@@ -11,7 +11,6 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Xunit;
@@ -116,7 +115,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public override void VisitConstructorDeclaration (ConstructorDeclarationSyntax node)
 		{
 			base.VisitConstructorDeclaration (node);
-			ValidateDiagnostics(node, node.AttributeLists);
+			ValidateDiagnostics (node, node.AttributeLists);
 		}
 
 		private void ValidateDiagnostics (CSharpSyntaxNode memberSyntax, SyntaxList<AttributeListSyntax> attrLists)
@@ -288,11 +287,11 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 
-			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{(string.Join (Environment.NewLine, _diagnostics))}";
+			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{string.Join (Environment.NewLine, _diagnostics)}";
 			return false;
 		}
 
-		private void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
+		private static void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
 		{
 			var arg = Assert.Single (LinkerTestBase.GetAttributeArguments (attribute));
 			var text = LinkerTestBase.GetStringFromExpression (arg.Value);

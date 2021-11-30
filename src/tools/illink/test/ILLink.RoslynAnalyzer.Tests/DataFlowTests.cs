@@ -13,7 +13,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (AnnotatedMembersAccessedViaReflection));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task ApplyTypeAnnotations ()
 		{
 			return RunTest (nameof (ApplyTypeAnnotations));
@@ -25,37 +25,37 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (AssemblyQualifiedNameDataflow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task AttributeConstructorDataflow ()
 		{
 			return RunTest (nameof (AttributeConstructorDataflow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task AttributeFieldDataflow ()
 		{
 			return RunTest (nameof (AttributeFieldDataflow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task AttributePropertyDataflow ()
 		{
 			return RunTest (nameof (AttributePropertyDataflow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task ByRefDataflow ()
 		{
 			return RunTest (nameof (ByRefDataflow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task ComplexTypeHandling ()
 		{
 			return RunTest (nameof (ComplexTypeHandling));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task DynamicDependencyDataflow ()
 		{
 			return RunTest (nameof (DynamicDependencyDataflow));
@@ -67,7 +67,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (EmptyArrayIntrinsicsDataFlow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task FieldDataFlow ()
 		{
 			return RunTest (nameof (FieldDataFlow));
@@ -97,7 +97,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (GetTypeDataFlow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task IReflectDataflow ()
 		{
 			return RunTest (nameof (IReflectDataflow));
@@ -109,19 +109,19 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (LocalDataFlow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task LocalDataFlowKeptMembers ()
 		{
 			return RunTest (nameof (LocalDataFlowKeptMembers));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task MemberTypes ()
 		{
 			return RunTest (nameof (MemberTypes));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task MemberTypesAllOnCopyAssembly ()
 		{
 			return RunTest (nameof (MemberTypesAllOnCopyAssembly));
@@ -145,13 +145,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (MethodReturnParameterDataFlow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task MethodThisDataFlow ()
 		{
 			return RunTest (nameof (MethodThisDataFlow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task PropertyDataFlow ()
 		{
 			return RunTest (nameof (PropertyDataFlow));

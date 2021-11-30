@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -92,9 +92,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			t.GetMethod ("foo");
 			NonTypeType.StaticMethod ();
 		}
-
-		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods), new Type[] { },
-			messageCode: "IL2065", message: new string[] { nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods) })]
+		// Analyer doesn't warn about unknown values flowing into annotated locations
+		// https://github.com/dotnet/linker/issues/2273
+		[ExpectedWarning ("IL2065", nameof (MethodThisDataFlowTypeTest) + "." + nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods), "'this'",
+			ProducedBy = ProducedBy.Trimmer)]
 		static void TestUnknownThis ()
 		{
 			var array = new object[1];
@@ -143,14 +144,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class NonTypeType
 		{
-			[ExpectedWarning ("IL2041")]
+			// Analyzer doesn't warn about annotations on unsupported types:
+			// https://github.com/dotnet/linker/issues/2273
+			[ExpectedWarning ("IL2041", ProducedBy = ProducedBy.Trimmer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public MethodInfo GetMethod (string name)
 			{
 				return null;
 			}
 
-			[ExpectedWarning ("IL2041")]
+			// Analyzer doesn't warn about annotations on unsupported types:
+			// https://github.com/dotnet/linker/issues/2273
+			[ExpectedWarning ("IL2041", ProducedBy = ProducedBy.Trimmer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public static void StaticMethod ()
 			{
@@ -164,10 +169,9 @@ namespace System
 	class MethodThisDataFlowTypeTest : TestSystemTypeBase
 	{
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (RequireNonPublicMethods), new Type[] { typeof (Type) },
-			messageCode: "IL2082", message: new string[] {
-				"'type' argument ", "in call to 'System.MethodThisDataFlowTypeTest.RequireNonPublicMethods(Type)'",
-				"implicit 'this' argument of method 'System.MethodThisDataFlowTypeTest.RequireThisPublicMethods()'" })]
+		[ExpectedWarning ("IL2082", nameof (MethodThisDataFlowTypeTest) + "." + nameof (RequireNonPublicMethods) + "(Type)",
+			"'type' argument ", "in call to 'System.MethodThisDataFlowTypeTest.RequireNonPublicMethods(Type)'",
+			"implicit 'this' argument of method 'System.MethodThisDataFlowTypeTest.RequireThisPublicMethods()'")]
 		public void RequireThisPublicMethods ()
 		{
 			RequirePublicMethods (this);
@@ -175,8 +179,7 @@ namespace System
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (RequirePublicMethods), new Type[] { typeof (Type) },
-			messageCode: "IL2082")]
+		[ExpectedWarning ("IL2082", nameof (MethodThisDataFlowTypeTest) + "." + nameof (RequirePublicMethods) + "(Type)")]
 		public void RequireThisNonPublicMethods ()
 		{
 			RequirePublicMethods (this);
@@ -198,11 +201,8 @@ namespace System
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		Type _requiresPublicConstructors;
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (_requiresPublicConstructors),
-			messageCode: "IL2084", message: new string[] {
-				nameof (PropagateToField),
-				nameof (_requiresPublicConstructors)
-			})]
+		[ExpectedWarning ("IL2084", nameof (MethodThisDataFlowTypeTest) + "." + nameof (_requiresPublicConstructors),
+			nameof (PropagateToField))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		public void PropagateToField ()
 		{

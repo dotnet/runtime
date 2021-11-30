@@ -1205,7 +1205,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				// RequiresUnfereferencedCode on the type will suppress IL2072
 				// https://github.com/dotnet/linker/issues/2379
-				[ExpectedWarning("IL2072", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2072", ProducedBy = ProducedBy.Analyzer)]
 				static ClassWithRequires ()
 				{
 					Instance = Activator.CreateInstance (Type.GetType ("SomeText"));
