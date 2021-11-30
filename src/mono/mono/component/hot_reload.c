@@ -8,6 +8,8 @@
 #include <config.h>
 #include "mono/utils/mono-compiler.h"
 
+#include "mono/component/hot_reload-internals.h"
+
 #include <glib.h>
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/metadata-internals.h"
@@ -28,7 +30,8 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#undef ALLOW_METHOD_ADD
+#define ALLOW_METHOD_ADD
+#undef ALLOW_FIELD_ADD
 
 typedef struct _DeltaInfo DeltaInfo;
 
@@ -202,8 +205,9 @@ typedef struct _BaselineInfo {
 	/* TRUE if any published update modified an existing row */
 	gboolean any_modified_rows [MONO_TABLE_NUM];
 
-	GHashTable *added_methods; /* maps each MonoClass to a GArray of added method tokens */
+	/* Parents for added methods, fields, etc */
 	GHashTable *method_parent; /* maps added methoddef tokens to typedef tokens */
+	GHashTable *field_parent; /* maps added fielddef tokens to typedef tokens */
 } BaselineInfo;
 
 
@@ -658,6 +662,24 @@ hot_reload_update_cancel (uint32_t generation)
 	/* Roll back exposed generation to the last published one */
 	thread_set_exposed_generation (update_published);
 	publish_unlock ();
+}
+
+MonoClassMetadataUpdateInfo *
+mono_class_get_or_add_metadata_update_info (MonoClass *klass)
+{
+	MonoClassMetadataUpdateInfo *info = NULL;
+	info = mono_class_get_metadata_update_info (klass);
+	if (info)
+		return info;
+	mono_loader_lock ();
+	info = mono_class_get_metadata_update_info (klass);
+	if (!info) {
+		info = mono_class_alloc0 (klass, sizeof (MonoClassMetadataUpdateInfo));
+		mono_class_set_metadata_update_info (klass, info);
+	}
+	mono_loader_unlock ();
+	g_assert (info);
+	return info;
 }
 
 /*
@@ -2055,17 +2077,15 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 static void
 add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address)
 {
-	if (!base_info->added_methods) {
-		base_info->added_methods = g_hash_table_new (g_direct_hash, g_direct_equal);
-	}
 	if (!base_info->method_parent) {
 		base_info->method_parent = g_hash_table_new (g_direct_hash, g_direct_equal);
 	}
+	MonoClassMetadataUpdateInfo *klass_info = mono_class_get_or_add_metadata_update_info (klass);
 	/* FIXME: locking for readers/writers of the GArray */
-	GArray *arr = g_hash_table_lookup (base_info->added_methods, klass);
+	GArray *arr = klass_info->added_methods;
 	if (!arr) {
 		arr = g_array_new (FALSE, FALSE, sizeof(uint32_t));
-		g_hash_table_insert (base_info->added_methods, klass, arr);
+		klass_info->added_methods = arr;
 	}
 	g_array_append_val (arr, method_token);
 	g_hash_table_insert (base_info->method_parent, GUINT_TO_POINTER (method_token), GUINT_TO_POINTER (m_class_get_type_token (klass)));
@@ -2081,11 +2101,10 @@ hot_reload_get_added_methods (MonoClass *klass)
 	MonoImage *image = m_class_get_image (klass);
 	if (!image->has_updates)
 		return NULL;
-	BaselineInfo *base_info = baseline_info_lookup (image);
-	if (!base_info || base_info->added_methods == NULL)
+	MonoClassMetadataUpdateInfo *klass_info = mono_class_get_metadata_update_info (klass);
+	if (!klass_info)
 		return NULL;
-
-	return g_hash_table_lookup (base_info->added_methods, klass);
+	return klass_info->added_methods;
 }
 
 static uint32_t

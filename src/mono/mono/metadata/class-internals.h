@@ -1455,6 +1455,18 @@ mono_class_set_dim_conflicts (MonoClass *klass, GSList *conflicts);
 GSList*
 mono_class_get_dim_conflicts (MonoClass *klass);
 
+/* opaque struct of class specific hot reload info */
+typedef struct _MonoClassMetadataUpdateInfo MonoClassMetadataUpdateInfo;
+
+MONO_COMPONENT_API gboolean
+mono_class_has_metadata_update_info (MonoClass *klass);
+
+MONO_COMPONENT_API MonoClassMetadataUpdateInfo *
+mono_class_get_metadata_update_info (MonoClass *klass);
+
+MONO_COMPONENT_API void
+mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateInfo *value);
+
 MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
