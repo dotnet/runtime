@@ -158,7 +158,6 @@
   </Target>
 
   <Target Name="PrepareLegacyPayloadDirectory"
-      Condition="'@(_XUnitWrapperDll)' != ''"
       Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)"
       DependsOnTargets="DiscoverLegacyXUnitWrappers">
     <PropertyGroup>
@@ -223,10 +222,10 @@
 
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
-      <_ProjectsToBuild Include="testenvironment.proj">
+      <_ProjectsToBuild Include="testenvironment.proj" Condition="!$(IsMergedTestWrapper)">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(LegacyPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
       </_ProjectsToBuild>
-      <_ProjectsToBuild Include="testenvironment.proj">
+      <_ProjectsToBuild Include="testenvironment.proj" Condition="$(IsMergedTestWrapper)">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(MergedPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
@@ -244,13 +243,13 @@
 
   <Target Name="PrepareLegacyPayloadDirectories" DependsOnTargets="PrepareLegacyPayloadDirectory">
     <PropertyGroup>
-      <_PayloadGroups>@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())</_PayloadGroups>
+      <_LegacyPayloadGroups>@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())</_LegacyPayloadGroups>
     </PropertyGroup>
 
     <ItemGroup>
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=$(_PayloadGroups)</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=$(_LegacyPayloadGroups);IsMergedTestWrapper=false</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -258,10 +257,14 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
+    <PropertyGroup>
+      <_MergedPayloadGroups>@(_MergedWrapperName)</_MergedPayloadGroups>
+    </PropertyGroup>
+
     <ItemGroup>
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedWrapperName)</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
