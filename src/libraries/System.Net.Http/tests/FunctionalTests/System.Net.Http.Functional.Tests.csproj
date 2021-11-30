@@ -133,7 +133,6 @@
              Link="Common\System\Net\Http\HttpClientHandlerTest.Cookies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs" />
-    <!-- The collection definitions must be in the same assembly as the test that uses them -->
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
              Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
