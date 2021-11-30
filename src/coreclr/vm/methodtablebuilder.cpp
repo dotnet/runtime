@@ -8336,7 +8336,6 @@ MethodTableBuilder::HandleExplicitLayout(
     UINT instanceSliceSize = 0;
     DWORD firstObjectOverlapOffset = ((DWORD)(-1));
 
-
     UINT i;
     for (i = 0; i < bmtMetaData->cFields; i++)
     {
@@ -8606,8 +8605,8 @@ MethodTableBuilder::HandleExplicitLayout(
         else
         {
             // align up to the alignment requirements of the members of this value type.
-            dwInstanceSliceOffset.AlignUp(GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers);
-            if (dwInstanceSliceOffset.IsOverflow())
+            numInstanceFieldBytes.AlignUp(GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers);
+            if (numInstanceFieldBytes.IsOverflow())
             {
                 // addition overflow or cast truncation
                 BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
