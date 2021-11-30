@@ -43,13 +43,13 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                using var refCounter = _providerManager.GetReference();
-                return ConfigurationRoot.GetConfiguration(refCounter.Providers, key);
+                using var reference = _providerManager.GetReference();
+                return ConfigurationRoot.GetConfiguration(reference.Providers, key);
             }
             set
             {
-                using var refCounter = _providerManager.GetReference();
-                ConfigurationRoot.SetConfiguration(refCounter.Providers, key, value);
+                using var reference = _providerManager.GetReference();
+                ConfigurationRoot.SetConfiguration(reference.Providers, key, value);
             }
         }
 
@@ -59,8 +59,8 @@ namespace Microsoft.Extensions.Configuration
         /// <inheritdoc/>
         public IEnumerable<IConfigurationSection> GetChildren()
         {
-            using var refCounter = _providerManager.GetReference();
-            return this.GetChildrenImplementation(refCounter.Providers, path: null);
+            using var reference = _providerManager.GetReference();
+            return this.GetChildrenImplementation(reference.Providers, path: null);
         }
 
         IDictionary<string, object> IConfigurationBuilder.Properties => _properties;
@@ -91,9 +91,9 @@ namespace Microsoft.Extensions.Configuration
 
         void IConfigurationRoot.Reload()
         {
-            using (var refCounter = _providerManager.GetReference())
+            using (var reference = _providerManager.GetReference())
             {
-                foreach (var provider in refCounter.Providers)
+                foreach (var provider in reference.Providers)
                 {
                     provider.Load();
                 }
@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private class ConfigurationSources : IList<IConfigurationSource>
+        private sealed class ConfigurationSources : IList<IConfigurationSource>
         {
             private readonly List<IConfigurationSource> _sources = new();
             private readonly ConfigurationManager _config;
@@ -234,14 +234,14 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private class ProviderManager : IDisposable
+        private sealed class ProviderManager : IDisposable
         {
             private readonly object _replaceProvidersLock = new object();
-            private RefCountedProviders _refCountedProviders = new(new List<IConfigurationProvider>());
+            private ProvidersReference _refCountedProviders = new(new List<IConfigurationProvider>());
 
             public IEnumerable<IConfigurationProvider> Providers => _refCountedProviders.Providers;
 
-            public RefCountedProviders GetReference()
+            public ProvidersReference GetReference()
             {
                 // Lock to ensure oldRefCountedProviders.Dispose() in ReplaceProviders() doesn't decrement ref count to zero
                 // before calling _refCountedProviders.AddRef().
@@ -255,11 +255,11 @@ namespace Microsoft.Extensions.Configuration
             // Providers should never be concurrently modified. Reading during modification is allowed.
             public void ReplaceProviders(List<IConfigurationProvider> providers)
             {
-                RefCountedProviders oldRefCountedProviders = _refCountedProviders;
+                ProvidersReference oldRefCountedProviders = _refCountedProviders;
 
                 lock (_replaceProvidersLock)
                 {
-                    _refCountedProviders = new RefCountedProviders(providers);
+                    _refCountedProviders = new ProvidersReference(providers);
                 }
 
                 oldRefCountedProviders.Dispose();
@@ -277,11 +277,11 @@ namespace Microsoft.Extensions.Configuration
             public void Dispose() => _refCountedProviders.Dispose();
         }
 
-        private class RefCountedProviders : IDisposable
+        private sealed class ProvidersReference : IDisposable
         {
             private long _refCount = 1;
 
-            public RefCountedProviders(List<IConfigurationProvider> providers)
+            public ProvidersReference(List<IConfigurationProvider> providers)
             {
                 Providers = providers;
             }
@@ -305,7 +305,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private class ConfigurationBuilderProperties : IDictionary<string, object>
+        private sealed class ConfigurationBuilderProperties : IDictionary<string, object>
         {
             private readonly Dictionary<string, object> _properties = new();
             private readonly ConfigurationManager _config;
