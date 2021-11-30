@@ -1007,7 +1007,7 @@ namespace System.Security.Cryptography.Xml
 
                 foreach (X509ChainElement element in chain.ChainElements)
                 {
-                    chainElements.Append(CultureInfo.InvariantCulture, $" {GetKeyName(element.Certificate)}");
+                    chainElements.AppendFormat(CultureInfo.InvariantCulture, " {0}", GetKeyName(element.Certificate));
                 }
 
                 WriteLine(signedXml,
