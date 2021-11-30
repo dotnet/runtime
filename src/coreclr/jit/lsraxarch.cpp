@@ -2307,6 +2307,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 if (containedOpNum == 1)
                 {
+                    // https://github.com/dotnet/runtime/issues/62215
                     // resultOpNum might change between lowering and lsra, comment out assertion for now.
                     // assert(containedOpNum != resultOpNum);
                     // resultOpNum is 3 or 0: op3/? = ([op1] * op2) + op3

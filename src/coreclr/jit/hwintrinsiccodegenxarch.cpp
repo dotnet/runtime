@@ -2041,7 +2041,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     GenTree*       op2         = node->Op(2);
     GenTree*       op3         = node->Op(3);
 
-    regNumber      targetReg   = node->GetRegNum();
+    regNumber targetReg = node->GetRegNum();
 
     genConsumeMultiOpOperands(node);
 

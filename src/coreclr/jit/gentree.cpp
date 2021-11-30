@@ -22475,6 +22475,7 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
     }
 
     // If no overwritten op, check if there is any last use op
+    // https://github.com/dotnet/runtime/issues/62215
 
     if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
         return 1;
