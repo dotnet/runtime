@@ -1678,6 +1678,6 @@ void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason
     {
         compiler->loopAlignCandidates--;
         bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.", bbNum, reason);
+        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
 }
