@@ -48,7 +48,7 @@ namespace Internal.Cryptography.Pal
             fixed (byte* pThumbPrint = thumbPrint)
             {
                 Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pThumbPrint), (uint)thumbPrint.Length);
-                FindCore<object>(CertFindType.CERT_FIND_HASH, &blob);
+                FindCore<object>(Interop.Crypt32.CertFindType.CERT_FIND_HASH, &blob);
             }
         }
 
@@ -56,7 +56,7 @@ namespace Internal.Cryptography.Pal
         {
             fixed (char* pSubjectName = subjectName)
             {
-                FindCore<object>(CertFindType.CERT_FIND_SUBJECT_STR, pSubjectName);
+                FindCore<object>(Interop.Crypt32.CertFindType.CERT_FIND_SUBJECT_STR, pSubjectName);
             }
         }
 
@@ -75,7 +75,7 @@ namespace Internal.Cryptography.Pal
         {
             fixed (char* pIssuerName = issuerName)
             {
-                FindCore<object>(CertFindType.CERT_FIND_ISSUER_STR, pIssuerName);
+                FindCore<object>(Interop.Crypt32.CertFindType.CERT_FIND_ISSUER_STR, pIssuerName);
             }
         }
 
@@ -129,7 +129,7 @@ namespace Internal.Cryptography.Pal
                 (fileTime, compareResult),
                 static (state, pCertContext) =>
                 {
-                    int comparison = Interop.crypt32.CertVerifyTimeValidity(ref state.fileTime,
+                    int comparison = Interop.Crypt32.CertVerifyTimeValidity(ref state.fileTime,
                         pCertContext.CertContext->pCertInfo);
                     GC.KeepAlive(pCertContext);
                     return comparison == state.compareResult;
@@ -149,7 +149,7 @@ namespace Internal.Cryptography.Pal
                     bool foundMatch = false;
                     Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
                     {
-                        Interop.Crypt32.CERT_EXTENSION* pV1Template = Interop.crypt32.CertFindExtension(Oids.EnrollCertTypeExtension,
+                        Interop.Crypt32.CERT_EXTENSION* pV1Template = Interop.Crypt32.CertFindExtension(Oids.EnrollCertTypeExtension,
                             pCertInfo->cExtension, pCertInfo->rgExtension);
                         if (pV1Template != null)
                         {
@@ -172,7 +172,7 @@ namespace Internal.Cryptography.Pal
 
                     if (!foundMatch)
                     {
-                        Interop.Crypt32.CERT_EXTENSION* pV2Template = Interop.crypt32.CertFindExtension(Oids.CertificateTemplate,
+                        Interop.Crypt32.CERT_EXTENSION* pV2Template = Interop.Crypt32.CertFindExtension(Oids.CertificateTemplate,
                             pCertInfo->cExtension, pCertInfo->rgExtension);
                         if (pV2Template != null)
                         {
@@ -211,7 +211,7 @@ namespace Internal.Cryptography.Pal
                 {
                     int numOids;
                     int cbData = 0;
-                    if (!Interop.crypt32.CertGetValidUsages(1, ref pCertContext, out numOids, null, ref cbData))
+                    if (!Interop.Crypt32.CertGetValidUsages(1, ref pCertContext, out numOids, null, ref cbData))
                         return false;
 
                     // -1 means the certificate is good for all usages.
@@ -220,7 +220,7 @@ namespace Internal.Cryptography.Pal
 
                     fixed (byte* pOidsPointer = new byte[cbData])
                     {
-                        if (!Interop.crypt32.CertGetValidUsages(1, ref pCertContext, out numOids, pOidsPointer, ref cbData))
+                        if (!Interop.Crypt32.CertGetValidUsages(1, ref pCertContext, out numOids, pOidsPointer, ref cbData))
                             return false;
 
                         IntPtr* pOids = (IntPtr*)pOidsPointer;
@@ -242,7 +242,7 @@ namespace Internal.Cryptography.Pal
                 static (oidValue, pCertContext) =>
                 {
                     Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
-                    Interop.Crypt32.CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(Oids.CertPolicies,
+                    Interop.Crypt32.CERT_EXTENSION* pCertExtension = Interop.Crypt32.CertFindExtension(Oids.CertPolicies,
                         pCertInfo->cExtension, pCertInfo->rgExtension);
                     if (pCertExtension == null)
                         return false;
@@ -283,7 +283,7 @@ namespace Internal.Cryptography.Pal
                 static (oidValue, pCertContext) =>
                 {
                     Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
-                    Interop.Crypt32.CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(oidValue, pCertInfo->cExtension, pCertInfo->rgExtension);
+                    Interop.Crypt32.CERT_EXTENSION* pCertExtension = Interop.Crypt32.CertFindExtension(oidValue, pCertInfo->cExtension, pCertInfo->rgExtension);
                     GC.KeepAlive(pCertContext);
                     return pCertExtension != null;
                 });
@@ -329,10 +329,10 @@ namespace Internal.Cryptography.Pal
 
         private unsafe void FindCore<TState>(TState state, Func<TState, SafeCertContextHandle, bool> filter)
         {
-            FindCore(CertFindType.CERT_FIND_ANY, null, state, filter);
+            FindCore(Interop.Crypt32.CertFindType.CERT_FIND_ANY, null, state, filter);
         }
 
-        private unsafe void FindCore<TState>(CertFindType dwFindType, void* pvFindPara, TState state = default!, Func<TState, SafeCertContextHandle, bool>? filter = null)
+        private unsafe void FindCore<TState>(Interop.Crypt32.CertFindType dwFindType, void* pvFindPara, TState state = default!, Func<TState, SafeCertContextHandle, bool>? filter = null)
         {
             SafeCertStoreHandle findResults = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,

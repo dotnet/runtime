@@ -831,7 +831,7 @@ class TestMergeReturnBlocks
         }
     }
 
-    static ReturnStruct TestConstPropogation(int a)
+    static ReturnStruct TestConstPropagation(int a)
     {
         if (a == 0)
         {
@@ -860,9 +860,9 @@ class TestMergeReturnBlocks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void TestConstPropogation()
+    static void TestConstPropagation()
     {
-        TestConstPropogation(5);
+        TestConstPropagation(5);
     }
 
 
@@ -883,7 +883,7 @@ class TestMergeReturnBlocks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static ReturnStruct TestNoFieldSeqPropogation(int a)
+    static ReturnStruct TestNoFieldSeqPropagation(int a)
     {
         StructWithOverlaps s = new StructWithOverlaps();
         if (a == 0)
@@ -913,16 +913,16 @@ class TestMergeReturnBlocks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void TestNoFieldSeqPropogation()
+    static void TestNoFieldSeqPropagation()
     {
-        TestNoFieldSeqPropogation(5);
+        TestNoFieldSeqPropagation(5);
     }
 
 
     public static void Test()
     {
-        TestConstPropogation();
-        TestNoFieldSeqPropogation();
+        TestConstPropagation();
+        TestNoFieldSeqPropagation();
     }
 }
 #endregion

@@ -720,8 +720,8 @@ const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
     static int  nextBufferIndex = 0;
 
     auto& buffer    = buffers[nextBufferIndex];
-    nextBufferIndex = (nextBufferIndex + 1) % _countof(buffers);
-    _snprintf_s(buffer, _countof(buffer), _countof(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
+    nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
+    _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
     return buffer;
 }
 
@@ -839,14 +839,6 @@ Statement* BasicBlock::lastStmt() const
     Statement* result = bbStmtList->GetPrevStmt();
     assert(result != nullptr && result->GetNextStmt() == nullptr);
     return result;
-}
-
-//------------------------------------------------------------------------
-// BasicBlock::firstNode: Returns the first node in the block.
-//
-GenTree* BasicBlock::firstNode() const
-{
-    return IsLIR() ? GetFirstLIRNode() : Compiler::fgGetFirstNode(firstStmt()->GetRootNode());
 }
 
 //------------------------------------------------------------------------

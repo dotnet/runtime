@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public class TimeoutTest
     {
         [Fact]

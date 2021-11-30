@@ -700,7 +700,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
     assert(fgStmtListThreaded);
     while (canRemoveNullCheck && (currentTree != tree) && (currentTree != nullptr))
     {
-        if ((*nullCheckParent == nullptr) && (nullCheckTree->gtGetChildPointer(currentTree) != nullptr))
+        if ((*nullCheckParent == nullptr) && currentTree->TryGetUse(nullCheckTree))
         {
             *nullCheckParent = currentTree;
         }

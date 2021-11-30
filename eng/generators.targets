@@ -34,11 +34,11 @@
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))">
     <ProjectReference
       Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
-      OutputItemType="InRepoSourceGenerator"
+      OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
     <ProjectReference
       Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"
-      OutputItemType="InRepoSourceGenerator"
+      OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
@@ -83,12 +83,6 @@
         <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
     </PropertyGroup>
 
-    <!-- We binplace Microsoft.Interop.SourceGeneration.dll and Microsoft.Interop.DllImportGenerator.dll into a directory that we control and add them as Analyzer items from there
-         to work around https://github.com/dotnet/roslyn/issues/56442, which is fixed in the 6.0 RTM SDK. When we consume the 6.0 SDK, we can remove this and instead change the
-         ProjectReferences to the source generator projects to have OutputItemType="Analyzer" -->
-    <Copy SourceFiles="@(InRepoSourceGenerator)" DestinationFolder="$(IntermediateOutputPath)referencedGenerators" SkipUnchangedFiles="true">
-      <Output TaskParameter="DestinationFiles" ItemName="Analyzer" />
-    </Copy>
     <PropertyGroup>
       <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
     </PropertyGroup>
