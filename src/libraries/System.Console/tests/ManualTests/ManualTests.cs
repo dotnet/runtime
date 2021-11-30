@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace System
@@ -51,7 +52,7 @@ namespace System
             // The implementation in StdInReader uses a StringBuilder for caching. We want this builder to use
             // multiple chunks. So the expectedLine is longer than 16 characters (StringBuilder.DefaultCapacity).
             string expectedLine = $"This is a test for ReadFromOpenStandardInput.";
-            Assert.True(expectedLine.Length > 16);
+            Assert.True(expectedLine.Length > new StringBuilder().Capacity);
             Console.WriteLine($"Please type the sentence (without the quotes): \"{expectedLine}\"");
             using Stream inputStream = Console.OpenStandardInput();
             for (int i = 0; i < expectedLine.Length; i++)

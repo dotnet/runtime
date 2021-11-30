@@ -121,7 +121,7 @@ namespace System.IO
                 bytesUsedTotal += bytesUsed;
                 charsUsedTotal += charsUsed;
 
-                if (charsUsed < chunk.Span.Length || buffer.IsEmpty)
+                if (!completed || buffer.IsEmpty)
                 {
                     break;
                 }
