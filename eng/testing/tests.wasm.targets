@@ -3,7 +3,7 @@
   <PropertyGroup>
     <IsWasmProject Condition="'$(IsWasmProject)' == ''">true</IsWasmProject>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
-    <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
+    <BundleTestAppTargets Condition="'$(BundleTestApp)' == 'true'">$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
@@ -64,7 +64,7 @@
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(BundleTestApp)' == 'true'">
     <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
     <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
   </PropertyGroup>
