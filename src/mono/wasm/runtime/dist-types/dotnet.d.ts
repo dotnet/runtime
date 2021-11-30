@@ -341,10 +341,10 @@ interface DotnetPublicAPI {
     };
 }
 
-declare type createDotnetRuntimeType = (moduleFactory: (api: DotnetPublicAPI) => DotnetModuleConfig) => Promise<DotnetPublicAPI>;
+declare function createDotnetRuntime(moduleFactory: (api: DotnetPublicAPI) => DotnetModuleConfig): Promise<DotnetPublicAPI>;
+declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 declare global {
     function getDotnetRuntime(runtimeId: number): DotnetPublicAPI | undefined;
 }
-declare const createDotnetRuntime: createDotnetRuntimeType;
 
-export { BINDINGType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, MONOType, MonoArray, MonoObject, MonoString, VoidPtr, createDotnetRuntimeType, createDotnetRuntime as default };
+export { BINDINGType, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, MONOType, MonoArray, MonoObject, MonoString, VoidPtr, createDotnetRuntime as default };
