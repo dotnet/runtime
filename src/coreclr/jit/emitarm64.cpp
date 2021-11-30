@@ -3649,21 +3649,20 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
     insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
-    switch (ins)
+    if (ins == INS_BREAKPOINT)
     {
-        case INS_brk:
-            if ((imm & 0x0000ffff) == imm)
-            {
-                fmt = IF_SI_0A;
-            }
-            else
-            {
-                assert(!"Instruction cannot be encoded: IF_SI_0A");
-            }
-            break;
-        default:
-            unreached();
-            break;
+        if ((imm & 0x0000ffff) == imm)
+        {
+            fmt = IF_SI_0A;
+        }
+        else
+        {
+            assert(!"Instruction cannot be encoded: IF_SI_0A");
+        }
+    }
+    else
+    {
+        unreached();
     }
     assert(fmt != IF_NONE);
 
@@ -11459,15 +11458,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // then add "bkpt" instruction.
                 instrDescAlign* alignInstr = (instrDescAlign*)id;
 
-                if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
-                    (alignInstr->idaIG != alignInstr->idaLoopHeadPredIG) && !skipIns)
+                if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp &&
+                    !skipIns)
                 {
                     // There is no good way to squeeze in "bkpt" as well as display it
                     // in the disassembly because there is no corresponding instrDesc for
                     // it. As such, leave it as is, the "0xD43E0000" bytecode will be seen
                     // next to the nop instruction in disasm.
                     // e.g. D43E0000          align   [4 bytes for IG07]
-                    // ins = INS_bkpt;
+                    ins = INS_BREAKPOINT;
+                    fmt = IF_SI_0A;
                 }
 #endif
             }
@@ -14610,7 +14610,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SN_0A: // bkpt, brk, nop
+        case IF_SN_0A: // nop, yield, align
 
             if (id->idIns() == INS_align)
             {
