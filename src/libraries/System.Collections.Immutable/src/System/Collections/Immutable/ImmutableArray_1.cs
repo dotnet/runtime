@@ -794,7 +794,7 @@ namespace System.Collections.Immutable
         /// <returns>The <see cref="ReadOnlySpan{T}"/> representation of the <see cref="ImmutableArray{T}"/></returns>
         public ReadOnlySpan<T> AsSpan(int start, int length) => new ReadOnlySpan<T>(array, start, length);
 
-#if !NETSTANDARD2_0 && !NET461
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         public ReadOnlySpan<T> AsSpan(Range range)
         {
             var self = this;
