@@ -98,7 +98,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 if (Value is string)
                 {
-                    sb.Append(CultureInfo.InvariantCulture, $"\"{Value}\"");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "\"{0}\"", Value.ToString());
                 }
                 else
                 {
@@ -143,7 +143,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 if (_value is string)
                 {
-                    sb.Append(CultureInfo.InvariantCulture, $"\"{_value}\"");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "\"{0}\"", _value.ToString());
                 }
                 else
                 {
