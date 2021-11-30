@@ -184,7 +184,6 @@ namespace Microsoft.Extensions.Configuration.Test
 
             // builder.Add(source) calls provider.Load().
             var loadTask = Task.Run(() => builder.Add(new TestConfigurationSource(provider)));
-
             await provider.LoadStartedTask;
 
             // Read configuration while provider.Load() is blocked waiting on us.
@@ -210,6 +209,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             // Reading configuration will block on provider.TryRead().
             var readTask = Task.Run(() => config["key"]);
+            await provider.ReadStartedTask;
 
             // Removing the source normally disposes the provider except when there provider is in use as is the case here.
             builder.Sources.Clear();
@@ -1188,8 +1188,9 @@ namespace Microsoft.Extensions.Configuration.Test
         private class BlockLoadOnMREProvider : ConfigurationProvider
         {
             private readonly ManualResetEventSlim _mre;
-            private readonly TaskCompletionSource<object> _loadStartedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             private readonly TimeSpan _timeout;
+
+            private readonly TaskCompletionSource<object> _loadStartedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
             public BlockLoadOnMREProvider(ManualResetEventSlim mre, TimeSpan timeout)
             {
@@ -1211,16 +1212,21 @@ namespace Microsoft.Extensions.Configuration.Test
             private readonly ManualResetEventSlim _mre;
             private readonly TimeSpan _timeout;
 
+            private readonly TaskCompletionSource<object> _readStartedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
             public BlockTryGetOnMREProvider(ManualResetEventSlim mre, TimeSpan timeout)
             {
                 _mre = mre;
                 _timeout = timeout;
             }
 
+            public Task ReadStartedTask => _readStartedTcs.Task;
+
             public bool IsDisposed { get; set; }
 
             public override bool TryGet(string key, out string? value)
             {
+                _readStartedTcs.SetResult(null);
                 Assert.True(_mre.Wait(_timeout), "BlockTryGetOnMREProvider.TryGet() timed out.");
                 return base.TryGet(key, out value);
             }
