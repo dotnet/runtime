@@ -10031,8 +10031,10 @@ wait_for_attach (void)
 	}
 
 	/* Block and wait for client connection */
+	MONO_ENTER_GC_SAFE;
 	conn_fd = socket_transport_accept (listen_fd);
-
+	MONO_EXIT_GC_SAFE;
+	
 	PRINT_DEBUG_MSG (1, "Accepted connection on %d\n", conn_fd);
 	if (conn_fd == -1) {
 		PRINT_DEBUG_MSG (1, "[dbg] Bad client connection\n");
@@ -10140,7 +10142,6 @@ debugger_thread (void *arg)
 
 	internal->state |= ThreadState_Background;
 	internal->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
-	mono_thread_info_set_flags(MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
 	
 	if (agent_config.defer) {
 		if (!wait_for_attach ()) {
