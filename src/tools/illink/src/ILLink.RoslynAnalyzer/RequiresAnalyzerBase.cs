@@ -335,7 +335,6 @@ namespace ILLink.RoslynAnalyzer
 				message));
 		}
 
-		// TODO: Should consider when a symbol is a method of a class that has the attribute
 		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2)
 		{
 			bool member1HasAttribute = IsOverrideMemberInRequiresScope (member1);
