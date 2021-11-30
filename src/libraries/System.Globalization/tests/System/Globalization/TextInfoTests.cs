@@ -287,7 +287,7 @@ namespace System.Globalization.Tests
                 }
                 yield return new object[] { cultureName, "\u0130", "i" };
                 yield return new object[] { cultureName, "i", "i" };
-                
+
             }
 
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
@@ -477,6 +477,14 @@ namespace System.Globalization.Tests
         public void ToStringTest(string name, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TextInfo.ToString());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData("es-ES")]
+        [InlineData("es-ES_tradnl")]
+        public void TestAsciiCodePageWithCulturesWithAlternativeSortNames(string cultureName)
+        {
+            AssemblyTrademarkAttribute.Equals(1252, CultureInfo.GetCultureInfo(cultureName).TextInfo.ANSICodePage);
         }
     }
 }

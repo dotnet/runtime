@@ -23,6 +23,7 @@ const originalConsole = {
 };
 
 let isXUnitDoneCheck = false;
+let isXmlDoneCheck = false;
 
 function proxyMethod(prefix, func, asJson) {
     return function () {
@@ -42,7 +43,12 @@ function proxyMethod(prefix, func, asJson) {
             isXUnitDoneCheck = true;
         }
 
-        if (asJson) {
+        if (payload.startsWith("STARTRESULTXML")) {
+            originalConsole.log('Sending RESULTXML')
+            isXmlDoneCheck = true;
+            func(payload);
+        }
+        else if (asJson) {
             func(JSON.stringify({
                 method: prefix,
                 payload: payload,
@@ -66,10 +72,12 @@ function proxyJson(func) {
         console[m] = proxyMethod(`console.${m}`, func, true);
 }
 
+let consoleWebSocket;
+
 if (is_browser) {
     const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
-    let consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket = new WebSocket(consoleUrl);
     // redirect output so that when emscripten starts it's already redirected
     proxyJson(function (msg) {
         if (consoleWebSocket.readyState === WebSocket.OPEN) {
@@ -238,7 +246,7 @@ function set_exit_code(exit_code, reason) {
     }
     if (is_browser) {
         const stack = (new Error()).stack.replace(/\n/g, "").replace(/[ ]*at/g, " at").replace(/https?:\/\/[0-9.:]*/g, "").replace("Error", "");
-        const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} ${stack}.`;
+        const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} isXmlDoneCheck=${isXmlDoneCheck} WS.bufferedAmount=${consoleWebSocket.bufferedAmount} ${stack}.`;
 
         // Notify the selenium script
         Module.exit_code = exit_code;
@@ -249,20 +257,20 @@ function set_exit_code(exit_code, reason) {
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        // need to flush streams (stdout/stderr)
-        for (const stream of Module.FS.streams) {
-            if (stream && stream.stream_ops && stream.stream_ops.flush) {
-                stream.stream_ops.flush(stream);
+        console.log('WS: ' + messsage);
+        originalConsole.log('CDP: ' + messsage);
+        const stop_when_ws_buffer_empty = () => {
+            if (consoleWebSocket.bufferedAmount == 0) {
+                // tell xharness WasmTestMessagesProcessor we are done. 
+                // note this sends last few bytes into the same WS
+                console.log("WASM EXIT " + exit_code);
             }
-        }
-        console.log("Flushed stdout!");
+            else {
+                setTimeout(stop_when_ws_buffer_empty, 100);
+            }
+        };
+        stop_when_ws_buffer_empty();
 
-        console.log('1 ' + messsage);
-        setTimeout(() => {
-            originalConsole.log('2 ' + messsage);
-            // tell xharness WasmTestMessagesProcessor we are done. 
-            console.log("WASM EXIT " + exit_code);
-        }, 100);
     } else if (INTERNAL) {
         INTERNAL.mono_wasm_exit(exit_code);
     }

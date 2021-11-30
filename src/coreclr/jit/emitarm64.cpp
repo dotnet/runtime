@@ -11467,7 +11467,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // it. As such, leave it as is, the "0xD43E0000" bytecode will be seen
                     // next to the nop instruction in disasm.
                     // e.g. D43E0000          align   [4 bytes for IG07]
-                    ins = INS_BREAKPOINT;
+                    // ins = INS_bkpt;
                 }
 #endif
             }
@@ -13421,12 +13421,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     if (varx >= 0 && emitComp->opts.varNames)
     {
-        LclVarDsc*  varDsc;
-        const char* varName;
-
-        assert((unsigned)varx < emitComp->lvaCount);
-        varDsc  = emitComp->lvaTable + varx;
-        varName = emitComp->compLocalVarName(varx, offs);
+        const char* varName = emitComp->compLocalVarName(varx, offs);
 
         if (varName)
         {
@@ -13594,9 +13589,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             // no logic here to track local variable lifetime changes, like we do in the contained case
             // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
             // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
-            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-            unsigned             lclNum  = varNode->GetLclNum();
-            LclVarDsc*           varDsc  = emitComp->lvaGetDesc(lclNum);
+            LclVarDsc* varDsc = emitComp->lvaGetDesc(addr->AsLclVarCommon());
             assert(!varDsc->lvTracked);
         }
 #endif // DEBUG

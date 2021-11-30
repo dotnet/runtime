@@ -543,7 +543,7 @@ extern const BYTE genTypeSizes[TYP_COUNT];
 template <class T>
 inline unsigned genTypeSize(T value)
 {
-    assert((unsigned)TypeGet(value) < _countof(genTypeSizes));
+    assert((unsigned)TypeGet(value) < ArrLen(genTypeSizes));
 
     return genTypeSizes[TypeGet(value)];
 }
@@ -559,7 +559,7 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 template <class T>
 inline unsigned genTypeStSz(T value)
 {
-    assert((unsigned)TypeGet(value) < _countof(genTypeStSzs));
+    assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
     return genTypeStSzs[TypeGet(value)];
 }
@@ -1384,6 +1384,10 @@ inline void GenTree::SetOperRaw(genTreeOps oper)
     // Please do not do anything here other than assign to gtOper (debug-only
     // code is OK, but should be kept to a minimum).
     RecordOperBashing(OperGet(), oper); // nop unless NODEBASH_STATS is enabled
+
+    // Bashing to MultiOp nodes is not currently supported.
+    assert(!OperIsMultiOp(oper));
+
     gtOper = oper;
 }
 
@@ -1785,7 +1789,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
 
     unsigned lclNum = lvaGrabTemp(shortLifetime DEBUGARG(reason));
 
-    LclVarDsc* varDsc = &lvaTable[lclNum];
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
     // Note the implicit use
     varDsc->lvImplicitlyReferenced = 1;
@@ -1873,7 +1877,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
     {
         // Depending on the promotion type, increment the ref count for the parent struct as well.
         promotionType           = comp->lvaGetParentPromotionType(this);
-        LclVarDsc* parentvarDsc = &comp->lvaTable[lvParentLcl];
+        LclVarDsc* parentvarDsc = comp->lvaGetDesc(lvParentLcl);
         assert(!parentvarDsc->lvRegStruct);
         if (promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
         {
@@ -1884,9 +1888,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 #ifdef DEBUG
     if (comp->verbose)
     {
-        unsigned varNum = (unsigned)(this - comp->lvaTable);
-        assert(&comp->lvaTable[varNum] == this);
-        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt(state),
+        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", comp->lvaGetLclNum(this), lvRefCnt(state),
                refCntWtd2str(lvRefCntWtd(state)));
     }
 #endif
@@ -1900,9 +1902,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
 inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(Statement* stmt)
 {
-    unsigned   varNum;
-    LclVarDsc* varDsc;
-    VARSET_TP  lclMask(VarSetOps::MakeEmpty(this));
+    VARSET_TP lclMask(VarSetOps::MakeEmpty(this));
 
     assert(fgStmtListThreaded);
 
@@ -1913,9 +1913,7 @@ inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(Statement* stmt)
             continue;
         }
 
-        varNum = tree->AsLclVarCommon()->GetLclNum();
-        assert(varNum < lvaCount);
-        varDsc = lvaTable + varNum;
+        const LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
 
         if (!varDsc->lvTracked)
         {
@@ -2074,11 +2072,8 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
-        LclVarDsc* varDsc;
-
-        assert((unsigned)varNum < lvaCount);
-        varDsc               = lvaTable + varNum;
-        bool isPrespilledArg = false;
+        LclVarDsc* varDsc          = lvaGetDesc(varNum);
+        bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
         isPrespilledArg = varDsc->lvIsParam && compIsProfilerHookNeeded() &&
                           lvaIsPreSpilled(varNum, codeGen->regSet.rsMaskPreSpillRegs(false));
@@ -2244,21 +2239,13 @@ inline
 
 inline bool Compiler::lvaIsParameter(unsigned varNum)
 {
-    LclVarDsc* varDsc;
-
-    assert(varNum < lvaCount);
-    varDsc = lvaTable + varNum;
-
+    const LclVarDsc* varDsc = lvaGetDesc(varNum);
     return varDsc->lvIsParam;
 }
 
 inline bool Compiler::lvaIsRegArgument(unsigned varNum)
 {
-    LclVarDsc* varDsc;
-
-    assert(varNum < lvaCount);
-    varDsc = lvaTable + varNum;
-
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
     return varDsc->lvIsRegArg;
 }
 
@@ -2271,7 +2258,7 @@ inline bool Compiler::lvaIsOriginalThisArg(unsigned varNum)
 #ifdef DEBUG
     if (isOriginalThisArg)
     {
-        LclVarDsc* varDsc = lvaTable + varNum;
+        LclVarDsc* varDsc = lvaGetDesc(varNum);
         // Should never write to or take the address of the original 'this' arg
         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -3250,7 +3237,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         AssertionDsc*  curAssertion = optGetAssertion(index);
         optAssertionCount--;
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
-        assert(lclNum < lvaTableCnt);
+        assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
@@ -3900,8 +3887,7 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
 
 inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(unsigned varNum)
 {
-    assert(varNum < lvaCount);
-    return lvaGetPromotionType(&lvaTable[varNum]);
+    return lvaGetPromotionType(lvaGetDesc(varNum));
 }
 
 /*****************************************************************************
@@ -3912,7 +3898,6 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(unsigned varNum)
 inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(const LclVarDsc* varDsc)
 {
     assert(varDsc->lvIsStructField);
-    assert(varDsc->lvParentLcl < lvaCount);
 
     lvaPromotionType promotionType = lvaGetPromotionType(varDsc->lvParentLcl);
     assert(promotionType != PROMOTION_TYPE_NONE);
@@ -3926,8 +3911,7 @@ inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(const LclV
 
 inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(unsigned varNum)
 {
-    assert(varNum < lvaCount);
-    return lvaGetParentPromotionType(&lvaTable[varNum]);
+    return lvaGetParentPromotionType(lvaGetDesc(varNum));
 }
 
 /*****************************************************************************
@@ -4266,32 +4250,22 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
 
 // Variadic nodes
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
         case GT_SIMD:
-            if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
-            {
-                assert(this->AsSIMD()->gtOp1 != nullptr);
-                this->AsSIMD()->gtOp1->VisitListOperands(visitor);
-            }
-            else
-            {
-                VisitBinOpOperands<TVisitor>(visitor);
-            }
-            return;
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
+#endif
+            for (GenTree* operand : this->AsMultiOp()->Operands())
             {
-                this->AsHWIntrinsic()->gtOp1->VisitListOperands(visitor);
-            }
-            else
-            {
-                VisitBinOpOperands<TVisitor>(visitor);
+                if (visitor(operand) == VisitResult::Abort)
+                {
+                    break;
+                }
             }
             return;
-#endif // FEATURE_HW_INTRINSICS
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         // Special nodes
         case GT_PHI:
@@ -4435,20 +4409,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             VisitBinOpOperands<TVisitor>(visitor);
             return;
     }
-}
-
-template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitListOperands(TVisitor visitor)
-{
-    for (GenTreeArgList* node = this->AsArgList(); node != nullptr; node = node->Rest())
-    {
-        if (visitor(node->gtOp1) == VisitResult::Abort)
-        {
-            return VisitResult::Abort;
-        }
-    }
-
-    return VisitResult::Continue;
 }
 
 template <typename TVisitor>
@@ -4735,6 +4695,10 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     if (compLocallocSeen)
     {
         whyNot = "localloc";
+    }
+    else if (compHasBackwardJumpInHandler)
+    {
+        whyNot = "loop in handler";
     }
     else if (opts.IsReversePInvoke())
     {

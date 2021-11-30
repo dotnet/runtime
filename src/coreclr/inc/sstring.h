@@ -22,7 +22,7 @@
 // string.
 //
 // If you need a direct non-unicode representation, you will have to provide a fresh SString which can
-// recieve a conversion operation if necessary.
+// receive a conversion operation if necessary.
 //
 // The alternate encodings available are:
 // 1. ASCII - string consisting entirely of ASCII (7 bit) characters.  This is the only 1 byte encoding

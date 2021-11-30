@@ -39,7 +39,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/numa.h"
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
-#include <common/getexepath.h>
+#include <minipal/getexepath.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -1371,5 +1371,5 @@ static BOOL INIT_SharedFilesPath(void)
     return gSharedFilesPath->Set(TEMP_DIRECTORY_PATH);
 
     // We can verify statically the non sandboxed case, since the size is known during compile time
-    static_assert_no_msg(string_countof(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
+    static_assert_no_msg(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
 }

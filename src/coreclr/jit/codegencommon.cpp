@@ -500,15 +500,16 @@ regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
     assert(tree->gtOper == GT_LCL_VAR);
 
     regMaskTP        regMask = RBM_NONE;
-    const LclVarDsc* varDsc  = compiler->lvaTable + tree->AsLclVarCommon()->GetLclNum();
+    const LclVarDsc* varDsc  = compiler->lvaGetDesc(tree->AsLclVarCommon());
     if (varDsc->lvPromoted)
     {
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
-            noway_assert(compiler->lvaTable[i].lvIsStructField);
-            if (compiler->lvaTable[i].lvIsInReg())
+            const LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(i);
+            noway_assert(fieldVarDsc->lvIsStructField);
+            if (fieldVarDsc->lvIsInReg())
             {
-                regMask |= genGetRegMask(&compiler->lvaTable[i]);
+                regMask |= genGetRegMask(fieldVarDsc);
             }
         }
     }
@@ -530,7 +531,8 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 #ifdef DEBUG
     if (compiler->verbose)
     {
-        printf("\t\t\t\t\t\t\tV%02u in reg ", (varDsc - compiler->lvaTable));
+        printf("\t\t\t\t\t\t\tV%02u in reg ", compiler->lvaGetLclNum(varDsc));
+
         varDsc->PrintVarReg();
         printf(" is becoming %s  ", (isDying) ? "dead" : "live");
         Compiler::printTreeID(tree);
@@ -1196,8 +1198,7 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
     }
     else if (op->gtOper == GT_LCL_VAR)
     {
-        unsigned   varNum = op->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* varDsc = compiler->lvaTable + varNum;
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(op->AsLclVarCommon());
         assert(varDsc->lvType == TYP_STRUCT);
         opSize = varDsc->lvSize();
 #ifndef TARGET_64BIT
@@ -1208,43 +1209,6 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
         else
 #endif // !TARGET_64BIT
         {
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
-    else if (op->OperIsCopyBlkOp())
-    {
-        GenTree* op2 = op->AsOp()->gtOp2;
-
-        if (op2->OperGet() == GT_CNS_INT)
-        {
-            if (op2->IsIconHandle(GTF_ICON_CLASS_HDL))
-            {
-                CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtIconVal;
-                opSize = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-                alignment =
-                    roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                opSize       = (unsigned)op2->AsIntCon()->gtIconVal;
-                GenTree* op1 = op->AsOp()->gtOp1;
-                assert(op1->OperGet() == GT_LIST);
-                GenTree* dstAddr = op1->AsOp()->gtOp1;
-                if (dstAddr->OperGet() == GT_ADDR)
-                {
-                    InferStructOpSizeAlign(dstAddr->AsOp()->gtOp1, &alignment);
-                }
-                else
-                {
-                    assert(!"Unhandle dstAddr node");
-                    alignment = TARGET_POINTER_SIZE;
-                }
-            }
-        }
-        else
-        {
-            noway_assert(!"Variable sized COPYBLK register arg!");
-            opSize    = 0;
             alignment = TARGET_POINTER_SIZE;
         }
     }
@@ -3192,7 +3156,7 @@ void CodeGen::genGCWriteBarrier(GenTree* tgt, GCInfo::WriteBarrierForm wbf)
             }
             else
             {
-                LclVarDsc* varDsc = &compiler->lvaTable[lclNum];
+                const LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
                 if (varDsc->lvIsParam && varDsc->lvType == TYP_BYREF)
                 {
                     wbKind = CWBKind_ByRefArg; // Out (or in/out) arg
@@ -3364,16 +3328,16 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // In other cases, we simply use the type of the lclVar to determine the type of the register.
         var_types getRegType(Compiler* compiler)
         {
-            const LclVarDsc& varDsc = compiler->lvaTable[varNum];
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
             // Check if this is an HFA register arg and return the HFA type
-            if (varDsc.lvIsHfaRegArg())
+            if (varDsc->lvIsHfaRegArg())
             {
                 // Cannot have hfa types on windows arm targets
                 // in vararg methods.
                 assert(!TargetOS::IsWindows || !compiler->info.compIsVarArgs);
-                return varDsc.GetHfaType();
+                return varDsc->GetHfaType();
             }
-            return compiler->mangleVarArgsType(varDsc.lvType);
+            return compiler->mangleVarArgsType(varDsc->lvType);
         }
 
 #endif // !UNIX_AMD64_ABI
@@ -3384,7 +3348,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
     for (varNum = 0; varNum < compiler->lvaCount; ++varNum)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
         // Is this variable a register arg?
         if (!varDsc->lvIsParam)
@@ -3408,7 +3372,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             if (varDsc->lvIsStructField)
             {
                 assert(!varDsc->lvPromoted);
-                parentVarDsc = &compiler->lvaTable[varDsc->lvParentLcl];
+                parentVarDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
             }
 
             Compiler::lvaPromotionType promotionType = compiler->lvaGetPromotionType(parentVarDsc);
@@ -3755,9 +3719,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     continue;
                 }
 
-                varNum = regArgTab[argNum].varNum;
-                noway_assert(varNum < compiler->lvaCount);
-                varDsc                     = compiler->lvaTable + varNum;
+                varNum                     = regArgTab[argNum].varNum;
+                varDsc                     = compiler->lvaGetDesc(varNum);
                 const var_types varRegType = varDsc->GetRegisterType();
                 noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 
@@ -3895,8 +3858,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         }
 
         varNum = regArgTab[argNum].varNum;
-        noway_assert(varNum < compiler->lvaCount);
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
 #ifndef TARGET_64BIT
         // If this arg is never on the stack, go to the next one.
@@ -4093,14 +4055,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             srcReg           = regArgTab[argNum].trashBy;
 
             varNumDest = regArgTab[destReg].varNum;
-            noway_assert(varNumDest < compiler->lvaCount);
-            varDscDest = compiler->lvaTable + varNumDest;
+            varDscDest = compiler->lvaGetDesc(varNumDest);
             noway_assert(varDscDest->lvIsParam && varDscDest->lvIsRegArg);
 
             noway_assert(srcReg < argMax);
             varNumSrc = regArgTab[srcReg].varNum;
-            noway_assert(varNumSrc < compiler->lvaCount);
-            varDscSrc = compiler->lvaTable + varNumSrc;
+            varDscSrc = compiler->lvaGetDesc(varNumSrc);
             noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
 
             emitAttr size = EA_PTRSIZE;
@@ -4116,8 +4076,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 /* only 2 registers form the circular dependency - use "xchg" */
 
                 varNum = regArgTab[argNum].varNum;
-                noway_assert(varNum < compiler->lvaCount);
-                varDsc = compiler->lvaTable + varNum;
+                varDsc = compiler->lvaGetDesc(varNum);
                 noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 
                 noway_assert(genTypeSize(genActualType(varDscSrc->TypeGet())) <= REGSIZE_BYTES);
@@ -4162,7 +4121,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 unsigned iter = begReg;
                 do
                 {
-                    if (compiler->lvaTable[regArgTab[iter].varNum].TypeGet() != TYP_DOUBLE)
+                    if (compiler->lvaGetDesc(regArgTab[iter].varNum)->TypeGet() != TYP_DOUBLE)
                     {
                         cycleAllDouble = false;
                         break;
@@ -4249,8 +4208,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     }
 #endif
                     varNumSrc = regArgTab[srcReg].varNum;
-                    noway_assert(varNumSrc < compiler->lvaCount);
-                    varDscSrc = compiler->lvaTable + varNumSrc;
+                    varDscSrc = compiler->lvaGetDesc(varNumSrc);
                     noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
 
                     if (destMemType == TYP_REF)
@@ -4311,9 +4269,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 continue;
             }
 
-            varNum = regArgTab[argNum].varNum;
-            noway_assert(varNum < compiler->lvaCount);
-            varDsc                     = compiler->lvaTable + varNum;
+            varNum                     = regArgTab[argNum].varNum;
+            varDsc                     = compiler->lvaGetDesc(varNum);
             const var_types regType    = regArgTab[argNum].getRegType(compiler);
             const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType);
             const var_types varRegType = varDsc->GetRegisterType();
@@ -6393,7 +6350,7 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
     unsigned contextArg = reportArg ? compiler->info.compTypeCtxtArg : compiler->info.compThisArg;
 
     noway_assert(contextArg != BAD_VAR_NUM);
-    LclVarDsc* varDsc = &compiler->lvaTable[contextArg];
+    LclVarDsc* varDsc = compiler->lvaGetDesc(contextArg);
 
     // We are still in the prolog and compiler->info.compTypeCtxtArg has not been
     // moved to its final home location. So we need to use it from the
@@ -7028,7 +6985,7 @@ void CodeGen::genFnProlog()
     // as it will overwrite the real value
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
-        LclVarDsc* varDsc = &compiler->lvaTable[compiler->lvaPSPSym];
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->lvaPSPSym);
         assert(!varDsc->lvMustInit);
     }
 
@@ -7259,13 +7216,11 @@ void CodeGen::genFnProlog()
         assert((!compiler->opts.ShouldUsePInvokeHelpers()) || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!compiler->opts.ShouldUsePInvokeHelpers())
         {
-            noway_assert(compiler->info.compLvFrameListRoot < compiler->lvaCount);
-
             excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
 
             // We also must exclude the register used by compLvFrameListRoot when it is enregistered
             //
-            LclVarDsc* varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->info.compLvFrameListRoot);
             if (varDsc->lvRegister)
             {
                 excludeMask |= genRegMask(varDsc->GetRegNum());
@@ -7678,9 +7633,9 @@ void CodeGen::genFnProlog()
     // (our argument pointer register has a refcount > 0).
     unsigned argsStartVar = compiler->lvaVarargsBaseOfStkArgs;
 
-    if (compiler->info.compIsVarArgs && compiler->lvaTable[argsStartVar].lvRefCnt() > 0)
+    if (compiler->info.compIsVarArgs && compiler->lvaGetDesc(argsStartVar)->lvRefCnt() > 0)
     {
-        varDsc = &compiler->lvaTable[argsStartVar];
+        varDsc = compiler->lvaGetDesc(argsStartVar);
 
         noway_assert(compiler->info.compArgsCount > 0);
 
@@ -7694,7 +7649,7 @@ void CodeGen::genFnProlog()
         // EDX might actually be holding something here.  So make sure to only use EAX for this code
         // sequence.
 
-        LclVarDsc* lastArg = &compiler->lvaTable[compiler->info.compArgsCount - 1];
+        const LclVarDsc* lastArg = compiler->lvaGetDesc(compiler->info.compArgsCount - 1);
         noway_assert(!lastArg->lvRegister);
         signed offset = lastArg->GetStackOffset();
         assert(offset != BAD_STK_OFFS);
@@ -7720,8 +7675,8 @@ void CodeGen::genFnProlog()
     if (compiler->opts.compStackCheckOnRet)
     {
         noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvOnFrame);
+                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
@@ -9815,7 +9770,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     LclVarDsc* varDsc = nullptr;
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
-        varDsc = &(compiler->lvaTable[i]);
+        varDsc = compiler->lvaGetDesc(i);
 
         // We should have found a stack parameter (and broken out of this loop) before
         // we find any non-parameters.
@@ -10266,7 +10221,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
     // Is this a varargs function?
     if (compiler->info.compIsVarArgs && varNum != compiler->lvaVarargsHandleArg &&
-        varNum < compiler->info.compArgsCount && !compiler->lvaTable[varNum].lvIsRegArg)
+        varNum < compiler->info.compArgsCount && !compiler->lvaGetDesc(varNum)->lvIsRegArg)
     {
         noway_assert(varLoc->vlType == VLT_STK || varLoc->vlType == VLT_STK2);
 
@@ -10275,7 +10230,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
         // and just find its position relative to the varargs handle
 
         PREFIX_ASSUME(compiler->lvaVarargsHandleArg < compiler->info.compArgsCount);
-        if (!compiler->lvaTable[compiler->lvaVarargsHandleArg].lvOnFrame)
+        if (!compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->lvOnFrame)
         {
             noway_assert(!compiler->opts.compDbgCode);
             return;
@@ -10283,9 +10238,9 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
         // Can't check compiler->lvaTable[varNum].lvOnFrame as we don't set it for
         // arguments of vararg functions to avoid reporting them to GC.
-        noway_assert(!compiler->lvaTable[varNum].lvRegister);
-        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].GetStackOffset();
-        unsigned varOffset    = compiler->lvaTable[varNum].GetStackOffset();
+        noway_assert(!compiler->lvaGetDesc(varNum)->lvRegister);
+        unsigned cookieOffset = compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->GetStackOffset();
+        unsigned varOffset    = compiler->lvaGetDesc(varNum)->GetStackOffset();
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset     = varOffset - cookieOffset;
@@ -11164,7 +11119,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     LclVarDsc*     varDsc = nullptr;
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
-        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
+        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar());
         retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(), compiler->info.compCallConv);
         assert(varDsc->lvIsMultiRegRet);
     }
@@ -11193,7 +11148,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     else if (actualOp1->OperIs(GT_LCL_VAR) && !actualOp1->AsLclVar()->IsMultiReg())
     {
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
-        LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode->GetLclNum());
+        LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
@@ -11575,7 +11530,7 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
         var_types type;
         if (op1->IsMultiRegLclVar())
         {
-            LclVarDsc* parentVarDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
+            LclVarDsc* parentVarDsc = compiler->lvaGetDesc(op1->AsLclVar());
             unsigned   fieldVarNum  = parentVarDsc->lvFieldLclStart + multiRegIndex;
             LclVarDsc* fieldVarDsc  = compiler->lvaGetDesc(fieldVarNum);
             type                    = fieldVarDsc->TypeGet();
@@ -11630,8 +11585,8 @@ void CodeGen::genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPo
 {
     if (doStackPointerCheck)
     {
-        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaTable[lvaStackPointerVar].lvDoNotEnregister &&
-                     compiler->lvaTable[lvaStackPointerVar].lvOnFrame);
+        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaGetDesc(lvaStackPointerVar)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(lvaStackPointerVar)->lvOnFrame);
         GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
 
         BasicBlock* sp_check = genCreateTempLabel();

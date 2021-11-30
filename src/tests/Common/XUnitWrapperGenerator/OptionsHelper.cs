@@ -6,7 +6,6 @@ namespace XUnitWrapperGenerator;
 
 public static class OptionsHelper
 {
-    private const string ReferenceSystemPrivateCoreLibOption = "build_property.ReferenceSystemPrivateCoreLib";
     private const string IsMergedTestRunnerAssemblyOption = "build_property.IsMergedTestRunnerAssembly";
     private const string PriorityOption = "build_property.Priority";
     private const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
@@ -28,8 +27,6 @@ public static class OptionsHelper
             && int.TryParse(value, out int result)
                 ? result : 0;
     }
-
-    internal static bool ReferenceSystemPrivateCoreLib(this AnalyzerConfigOptions options) => options.GetBoolOption(ReferenceSystemPrivateCoreLibOption);
 
     internal static bool IsMergedTestRunnerAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsMergedTestRunnerAssemblyOption);
 

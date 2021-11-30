@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Interop.Crypt32.X509_ASN_ENCODING | Interop.Crypt32.PKCS_7_ASN_ENCODING,
                 IntPtr.Zero,
                 CERT_STORE_ENUM_ARCHIVED_FLAG | CERT_STORE_CREATE_NEW_FLAG,
-                null);
+                IntPtr.Zero);
 
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
                 throw new CryptographicException(Marshal.GetLastWin32Error());

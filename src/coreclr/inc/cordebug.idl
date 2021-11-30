@@ -54,7 +54,7 @@ typedef DWORD CONNID;
 cpp_quote("#ifndef _COR_IL_MAP")
 cpp_quote("#define _COR_IL_MAP")
 
-// Note that this structure is also defined in CorProf.idl - PROPOGATE CHANGES
+// Note that this structure is also defined in CorProf.idl - PROPAGATE CHANGES
 // BOTH WAYS, or this'll become a really insidious bug some day.
 typedef struct _COR_IL_MAP
 {

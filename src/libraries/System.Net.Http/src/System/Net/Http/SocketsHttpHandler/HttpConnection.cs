@@ -1708,8 +1708,6 @@ namespace System.Net.Http
         private int ReadBuffered(Span<byte> destination)
         {
             // This is called when reading the response body.
-            Debug.Assert(destination.Length != 0);
-
             int remaining = _readLength - _readOffset;
             if (remaining > 0)
             {
@@ -1731,7 +1729,7 @@ namespace System.Net.Http
 
             // Do a buffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
-            int bytesRead = _stream.Read(_readBuffer, 0, _readBuffer.Length);
+            int bytesRead = _stream.Read(_readBuffer, 0, destination.Length == 0 ? 0 : _readBuffer.Length);
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             _readLength = bytesRead;
 
@@ -1747,7 +1745,9 @@ namespace System.Net.Http
             // If the caller provided buffer, and thus the amount of data desired to be read,
             // is larger than the internal buffer, there's no point going through the internal
             // buffer, so just do an unbuffered read.
-            return destination.Length >= _readBuffer.Length ?
+            // Also avoid avoid using the internal buffer if the user requested a zero-byte read to allow
+            // underlying streams to efficiently handle such a read (e.g. SslStream defering buffer allocation).
+            return destination.Length >= _readBuffer.Length || destination.Length == 0 ?
                 ReadAsync(destination) :
                 ReadBufferedAsyncCore(destination);
         }

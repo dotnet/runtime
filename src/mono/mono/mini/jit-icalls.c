@@ -125,13 +125,13 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 }
 
 void*
-mono_ldvirtfn (MonoObject *obj, MonoMethod *method) 
+mono_ldvirtfn (MonoObject *obj, MonoMethod *method)
 {
 	return ldvirtfn_internal (obj, method, FALSE);
 }
 
 void*
-mono_ldvirtfn_gshared (MonoObject *obj, MonoMethod *method) 
+mono_ldvirtfn_gshared (MonoObject *obj, MonoMethod *method)
 {
 	return ldvirtfn_internal (obj, method, TRUE);
 }
@@ -155,19 +155,19 @@ mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 
 #if !defined(MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS) || defined(MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS)
 
-gint64 
+gint64
 mono_llmult (gint64 a, gint64 b)
 {
 	return a * b;
 }
 
-guint64  
+guint64
 mono_llmult_ovf_un (guint64 a, guint64 b)
 {
 	guint32 al = a;
 	guint32 ah = a >> 32;
 	guint32 bl = b;
-	guint32 bh = b >> 32; 
+	guint32 bh = b >> 32;
 	guint64 res, t1;
 
 	// fixme: this is incredible slow
@@ -182,7 +182,7 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 	if (t1 > 0xffffffff)
 		goto raise_exception;
 
-	res += ((guint64)t1) << 32; 
+	res += ((guint64)t1) << 32;
 
 	return res;
 
@@ -195,13 +195,13 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 	return 0;
 }
 
-guint64  
-mono_llmult_ovf (gint64 a, gint64 b) 
+guint64
+mono_llmult_ovf (gint64 a, gint64 b)
 {
 	guint32 al = a;
 	gint32 ah = a >> 32;
 	guint32 bl = b;
-	gint32 bh = b >> 32; 
+	gint32 bh = b >> 32;
 	/*
 	Use Karatsuba algorithm where:
 		a*b is: AhBh(R^2+R)+(Ah-Al)(Bl-Bh)R+AlBl(R+1)
@@ -214,7 +214,7 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	result, ah and/or bh must be 0.  This will save us from doing
 	the AhBh term at all.
 
-	Also note that we refactor so that we don't overflow 64 bits with 
+	Also note that we refactor so that we don't overflow 64 bits with
 	intermediate results. So we use [(Ah-Al)(Bl-Bh)+AlBl]R+AlBl
 	*/
 
@@ -267,9 +267,9 @@ mono_llmult_ovf (gint64 a, gint64 b)
 			bl +=1;
 		}
 	}
-		
-	/* we overflow for sure if both upper halves are greater 
-	   than zero because we would need to shift their 
+
+	/* we overflow for sure if both upper halves are greater
+	   than zero because we would need to shift their
 	   product 64 bits to the left and that will not fit
 	   in a 64 bit result */
 	if (ah && bh)
@@ -308,7 +308,7 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	return 0;
 }
 
-gint64 
+gint64
 mono_lldiv (gint64 a, gint64 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
@@ -328,7 +328,7 @@ mono_lldiv (gint64 a, gint64 b)
 	return a / b;
 }
 
-gint64 
+gint64
 mono_llrem (gint64 a, gint64 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
@@ -348,7 +348,7 @@ mono_llrem (gint64 a, gint64 b)
 	return a % b;
 }
 
-guint64 
+guint64
 mono_lldiv_un (guint64 a, guint64 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
@@ -362,7 +362,7 @@ mono_lldiv_un (guint64 a, guint64 b)
 	return a / b;
 }
 
-guint64 
+guint64
 mono_llrem_un (guint64 a, guint64 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
@@ -380,7 +380,7 @@ mono_llrem_un (guint64 a, guint64 b)
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 
-guint64 
+guint64
 mono_lshl (guint64 a, gint32 shamt)
 {
 	const guint64 res = a << (shamt & 0x7f);
@@ -390,7 +390,7 @@ mono_lshl (guint64 a, gint32 shamt)
 	return res;
 }
 
-guint64 
+guint64
 mono_lshr_un (guint64 a, gint32 shamt)
 {
 	const guint64 res = a >> (shamt & 0x7f);
@@ -400,7 +400,7 @@ mono_lshr_un (guint64 a, gint32 shamt)
 	return res;
 }
 
-gint64 
+gint64
 mono_lshr (gint64 a, gint32 shamt)
 {
 	const gint64 res = a >> (shamt & 0x7f);
@@ -977,10 +977,10 @@ mono_fconv_ovf_u8 (double v)
  * The soft-float implementation of some ARM devices have a buggy guin64 to double
  * conversion that it looses precision even when the integer if fully representable
  * as a double.
- * 
+ *
  * This was found with 4294967295ull, converting to double and back looses one bit of precision.
- * 
- * To work around this issue we test for value boundaries instead. 
+ *
+ * To work around this issue we test for value boundaries instead.
  */
 #if defined(__arm__) && defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
 	if (mono_isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {

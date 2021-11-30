@@ -1052,7 +1052,7 @@ namespace System.DirectoryServices.AccountManagement
             try
             {
                 // This function takes in a flat or DNS name, and returns the flat name of the computer
-                int err = UnsafeNativeMethods.NetWkstaGetInfo(_machineUserSuppliedName, 100, ref buffer);
+                int err = Interop.Wkscli.NetWkstaGetInfo(_machineUserSuppliedName, 100, ref buffer);
                 if (err == 0)
                 {
                     UnsafeNativeMethods.WKSTA_INFO_100 wkstaInfo =
@@ -1072,7 +1072,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (buffer != IntPtr.Zero)
-                    UnsafeNativeMethods.NetApiBufferFree(buffer);
+                    Interop.Netutils.NetApiBufferFree(buffer);
             }
         }
 

@@ -47,8 +47,8 @@ namespace System.Globalization
         private string NlsGetLocaleInfo(LocaleStringData type)
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected _sWindowsName to be populated by already");
-            return NlsGetLocaleInfo(_sWindowsName, type);
+            Debug.Assert(_sRealName != null, "[CultureData.DoGetLocaleInfo] Expected _sRealName to be populated by already");
+            return NlsGetLocaleInfo(_sRealName, type);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
@@ -74,15 +74,15 @@ namespace System.Globalization
 
             // Ask OS for data, note that we presume it returns success, so we have to know that
             // sWindowsName is valid before calling.
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
-            return GetLocaleInfoExInt(_sWindowsName, lctype);
+            Debug.Assert(_sRealName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sRealName to be populated by already");
+            return GetLocaleInfoExInt(_sRealName, lctype);
         }
 
         private int[] NlsGetLocaleInfo(LocaleGroupingData type)
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
-            return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, _bUseOverrides));
+            Debug.Assert(_sRealName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sRealName to be populated by already");
+            return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sRealName, (uint)type, _bUseOverrides));
         }
 
         internal static bool NlsIsEnsurePredefinedLocaleName(string name)
@@ -94,16 +94,16 @@ namespace System.Globalization
         private string? NlsGetTimeFormatString()
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
-            return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, Interop.Kernel32.LOCALE_STIMEFORMAT, _bUseOverrides));
+            Debug.Assert(_sRealName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sRealName to be populated by already");
+            return ReescapeWin32String(GetLocaleInfoFromLCType(_sRealName, Interop.Kernel32.LOCALE_STIMEFORMAT, _bUseOverrides));
         }
 
         private int NlsGetFirstDayOfWeek()
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sRealName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sRealName to be populated by already");
 
-            int result = GetLocaleInfoExInt(_sWindowsName, Interop.Kernel32.LOCALE_IFIRSTDAYOFWEEK | (!_bUseOverrides ? Interop.Kernel32.LOCALE_NOUSEROVERRIDE : 0));
+            int result = GetLocaleInfoExInt(_sRealName, Interop.Kernel32.LOCALE_IFIRSTDAYOFWEEK | (!_bUseOverrides ? Interop.Kernel32.LOCALE_NOUSEROVERRIDE : 0));
 
             // Win32 and .NET disagree on the numbering for days of the week, so we have to convert.
             return ConvertFirstDayOfWeekMonToSun(result);
@@ -529,7 +529,7 @@ namespace System.Globalization
 
                 for (int i = 0; i < context.strings.Count; i++)
                 {
-                    if (string.Equals(context.strings[i], _sWindowsName, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(context.strings[i], _sRealName, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
 

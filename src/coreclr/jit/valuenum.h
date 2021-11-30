@@ -428,8 +428,8 @@ public:
         return ValueNum(SRC_ReadOnlyHeap);
     }
 
-    // A special value number for "void" -- sometimes a type-void thing is an argument to a
-    // GT_LIST, and we want the args to be non-NoVN.
+    // A special value number for "void" -- sometimes a type-void thing is an argument,
+    // and we want the args to be non-NoVN.
     static ValueNum VNForVoid()
     {
         // We reserve Chunk 0 for "special" VNs.  Let SRC_Void (== 4) be the value for "void".
@@ -589,7 +589,7 @@ public:
         ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
-    ValueNum VNForMapStore(var_types type, ValueNum map, ValueNum index, ValueNum value);
+    ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
 
     ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, size_t* pStructSize = nullptr);
 

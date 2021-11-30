@@ -524,6 +524,9 @@ bool Compiler::fgCanSwitchToOptimized()
 //------------------------------------------------------------------------
 // fgSwitchToOptimized: Switch the opt level from tier 0 to optimized
 //
+// Arguments:
+//    reason - reason why opt level was switched
+//
 // Assumptions:
 //    - fgCanSwitchToOptimized() is true
 //    - compSetOptimizationLevel() has not been called
@@ -532,15 +535,16 @@ bool Compiler::fgCanSwitchToOptimized()
 //    This method is to be called at some point before compSetOptimizationLevel() to switch the opt level to optimized
 //    based on information gathered in early phases.
 
-void Compiler::fgSwitchToOptimized()
+void Compiler::fgSwitchToOptimized(const char* reason)
 {
     assert(fgCanSwitchToOptimized());
 
     // Switch to optimized and re-init options
-    JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because of loop\n****\n");
+    JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because: %s\n****\n", reason);
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
@@ -976,7 +980,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return false;
         }
 
-        LclVarDsc* varDsc = &lvaTable[varNum];
+        LclVarDsc* varDsc = lvaGetDesc(varNum);
 
         if (varDsc->lvStackByref)
         {
@@ -1333,8 +1337,7 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
             // Small-typed arguments and aliased locals are normalized on load.
             // Other small-typed locals are normalized on store.
             // If it is an assignment to one of the latter, insert the cast on RHS
-            unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = &lvaTable[varNum];
+            LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon()->GetLclNum());
 
             if (varDsc->lvNormalizeOnStore())
             {
@@ -1996,7 +1999,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Reverse Pinvoke FrameVar"));
 
-    LclVarDsc* varDsc   = &lvaTable[lvaReversePInvokeFrameVar];
+    LclVarDsc* varDsc   = lvaGetDesc(lvaReversePInvokeFrameVar);
     varDsc->lvType      = TYP_BLK;
     varDsc->lvExactSize = eeGetEEInfo()->sizeOfReversePInvokeFrame;
 
@@ -2752,7 +2755,7 @@ void Compiler::fgAddInternal()
         if (!opts.ShouldUsePInvokeHelpers())
         {
             info.compLvFrameListRoot           = lvaGrabTemp(false DEBUGARG("Pinvoke FrameListRoot"));
-            LclVarDsc* rootVarDsc              = &lvaTable[info.compLvFrameListRoot];
+            LclVarDsc* rootVarDsc              = lvaGetDesc(info.compLvFrameListRoot);
             rootVarDsc->lvType                 = TYP_I_IMPL;
             rootVarDsc->lvImplicitlyReferenced = 1;
         }
@@ -2762,7 +2765,7 @@ void Compiler::fgAddInternal()
         // Lowering::InsertPInvokeMethodProlog will create a call with this local addr as an argument.
         lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
-        LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
+        LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
         varDsc->lvExactSize = eeGetEEInfo()->inlinedCallFrameInfo.size;
@@ -2773,7 +2776,7 @@ void Compiler::fgAddInternal()
         if (!opts.ShouldUsePInvokeHelpers() && compJmpOpUsed)
         {
             lvaPInvokeFrameRegSaveVar = lvaGrabTempWithImplicitUse(false DEBUGARG("PInvokeFrameRegSave Var"));
-            varDsc                    = &lvaTable[lvaPInvokeFrameRegSaveVar];
+            varDsc                    = lvaGetDesc(lvaPInvokeFrameRegSaveVar);
             varDsc->lvType            = TYP_BLK;
             varDsc->lvExactSize       = 2 * REGSIZE_BYTES;
         }
@@ -3903,6 +3906,7 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, GenTree* prevTree, bool isLIR)
 
 void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 {
+    // TODO-List-Cleanup: measure what using GenTreeVisitor here brings.
     genTreeOps oper;
     unsigned   kind;
 
@@ -3961,40 +3965,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
     {
         GenTree* op1 = tree->AsOp()->gtOp1;
         GenTree* op2 = tree->gtGetOp2IfPresent();
-
-        // Special handling for GT_LIST
-        if (tree->OperGet() == GT_LIST)
-        {
-            // First, handle the list items, which will be linked in forward order.
-            // As we go, we will link the GT_LIST nodes in reverse order - we will number
-            // them and update fgTreeSeqList in a subsequent traversal.
-            GenTree* nextList = tree;
-            GenTree* list     = nullptr;
-            while (nextList != nullptr && nextList->OperGet() == GT_LIST)
-            {
-                list              = nextList;
-                GenTree* listItem = list->AsOp()->gtOp1;
-                fgSetTreeSeqHelper(listItem, isLIR);
-                nextList = list->AsOp()->gtOp2;
-                if (nextList != nullptr)
-                {
-                    nextList->gtNext = list;
-                }
-                list->gtPrev = nextList;
-            }
-            // Next, handle the GT_LIST nodes.
-            // Note that fgSetTreeSeqFinish() sets the gtNext to null, so we need to capture the nextList
-            // before we call that method.
-            nextList = list;
-            do
-            {
-                assert(list != nullptr);
-                list     = nextList;
-                nextList = list->gtNext;
-                fgSetTreeSeqFinish(list, isLIR);
-            } while (list != tree);
-            return;
-        }
 
         /* Special handling for AddrMode */
         if (tree->OperIsAddrMode())
@@ -4097,6 +4067,29 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 
             break;
 
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            if (tree->IsReverseOp())
+            {
+                assert(tree->AsMultiOp()->GetOperandCount() == 2);
+                fgSetTreeSeqHelper(tree->AsMultiOp()->Op(2), isLIR);
+                fgSetTreeSeqHelper(tree->AsMultiOp()->Op(1), isLIR);
+            }
+            else
+            {
+                for (GenTree* operand : tree->AsMultiOp()->Operands())
+                {
+                    fgSetTreeSeqHelper(operand, isLIR);
+                }
+            }
+            break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
         case GT_ARR_ELEM:
 
             fgSetTreeSeqHelper(tree->AsArrElem()->gtArrObj, isLIR);
@@ -4161,7 +4154,7 @@ void Compiler::fgSetTreeSeqFinish(GenTree* tree, bool isLIR)
     {
         tree->gtFlags &= ~GTF_REVERSE_OPS;
 
-        if (tree->OperIs(GT_LIST, GT_ARGPLACE))
+        if (tree->OperIs(GT_ARGPLACE))
         {
             return;
         }
@@ -4447,7 +4440,7 @@ GenTree* Compiler::fgGetFirstNode(GenTree* tree)
     GenTree* child = tree;
     while (child->NumChildren() > 0)
     {
-        if (child->OperIsBinary() && child->IsReverseOp())
+        if ((child->OperIsBinary() || child->OperIsMultiOp()) && child->IsReverseOp())
         {
             child = child->GetChild(1);
         }

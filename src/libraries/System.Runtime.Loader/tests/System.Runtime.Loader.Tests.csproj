@@ -43,6 +43,7 @@
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange\System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis\System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate\System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis\System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis.csproj" />
 
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
@@ -60,6 +61,7 @@
       <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
       <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
       <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
     </ItemGroup>
   </Target>
 

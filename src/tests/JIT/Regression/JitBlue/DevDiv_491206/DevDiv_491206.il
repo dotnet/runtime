@@ -7,7 +7,7 @@
 .module a.exe
 
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an asignment flag, when
-// its children was optimized in the assertion propogation. 
+// its children was optimized in the assertion propagation.
 
 .class ILGEN_CLASS
 {
@@ -57,7 +57,7 @@
       IL_006a:  conv.i8
       IL_006b:  ret
     } // end of method DoubleToInt64
-    
+
     .method public static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

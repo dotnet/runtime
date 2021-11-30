@@ -3714,24 +3714,25 @@ mono_get_delegate_end_invoke_checked (MonoClass *klass, MonoError *error)
 MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **exc)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
 	ERROR_DECL (error);
+	MonoObject* result = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	if (exc) {
-		MonoObject *result = mono_runtime_delegate_try_invoke (delegate, params, exc, error);
+		result = mono_runtime_delegate_try_invoke (delegate, params, exc, error);
 		if (*exc) {
 			mono_error_cleanup (error);
-			return NULL;
+			result = NULL;
 		} else {
 			if (!is_ok (error))
 				*exc = (MonoObject*)mono_error_convert_to_exception (error);
-			return result;
 		}
 	} else {
-		MonoObject *result = mono_runtime_delegate_invoke_checked (delegate, params, error);
+		result = mono_runtime_delegate_invoke_checked (delegate, params, error);
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
-		return result;
+
 	}
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
