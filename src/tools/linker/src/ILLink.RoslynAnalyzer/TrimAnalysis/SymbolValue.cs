@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using ILLink.Shared;
@@ -30,10 +31,41 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public SymbolValue (ITypeParameterSymbol typeParameter) => Source = typeParameter;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes =>
-			IsMethodReturn
-				? ((IMethodSymbol) Source).GetDynamicallyAccessedMemberTypesOnReturnType ()
-				: Source.GetDynamicallyAccessedMemberTypes ();
+		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes {
+			get {
+				if (IsMethodReturn) {
+					var method = (IMethodSymbol) Source;
+					var returnDamt = method.GetDynamicallyAccessedMemberTypesOnReturnType ();
+					// Is this a property getter?
+					// If there are conflicts between the getter and the property annotation,
+					// the getter annotation wins. (But DAMT.None is ignored)
+					if (method.MethodKind is MethodKind.PropertyGet && returnDamt == DynamicallyAccessedMemberTypes.None) {
+						var property = (IPropertySymbol) method.AssociatedSymbol!;
+						Debug.Assert (property != null);
+						returnDamt = property!.GetDynamicallyAccessedMemberTypes ();
+					}
+
+					return returnDamt;
+				}
+
+				var damt = Source.GetDynamicallyAccessedMemberTypes ();
+
+				// Is this a property setter parameter?
+				if (Source.Kind == SymbolKind.Parameter) {
+					var parameterMethod = (IMethodSymbol) Source.ContainingSymbol;
+					Debug.Assert (parameterMethod != null);
+					// If there are conflicts between the setter and the property annotation,
+					// the setter annotation wins. (But DAMT.None is ignored)
+					if (parameterMethod!.MethodKind == MethodKind.PropertySet && damt == DynamicallyAccessedMemberTypes.None) {
+						var property = (IPropertySymbol) parameterMethod.AssociatedSymbol!;
+						Debug.Assert (property != null);
+						damt = property!.GetDynamicallyAccessedMemberTypes ();
+					}
+				}
+
+				return damt;
+			}
+		}
 
 		public override string ToString ()
 		{

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
@@ -76,10 +77,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public abstract void HandleAssignment (TValue source, TValue target, IOperation operation);
 
 		// This is called to handle instance method invocations, where "receiver" is the
-		// analyzed value for the object on which the instance method is called.
-		public abstract void HandleReceiverArgument (TValue receiver, IInvocationOperation operation);
+		// analyzed value for the object on which the instance method is called, and similarly
+		// for property references.
+		public abstract void HandleReceiverArgument (TValue receiver, IMethodSymbol targetMethod, IOperation operation);
 
 		public abstract void HandleArgument (TValue argument, IArgumentOperation operation);
+
+		// Called for property setters which are essentially like arguments passed to a method.
+		public abstract void HandlePropertySetterArgument (TValue value, IMethodSymbol setMethod, ISimpleAssignmentOperation operation);
 
 		// This takes an IOperation rather than an IReturnOperation because the return value
 		// may (must?) come from BranchValue of an operation whose FallThroughSuccessor is the exit block.
@@ -115,12 +120,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// Doesn't get called for assignments to locals, which are handled above.
 				HandleAssignment (value, targetValue, operation);
 				break;
-			case IPropertyReferenceOperation:
+			case IPropertyReferenceOperation propertyRef:
+				// A property assignment is really a call to the property setter.
+				var setMethod = propertyRef.Property.SetMethod;
+				Debug.Assert (setMethod != null);
+				HandlePropertySetterArgument (value, setMethod!, operation);
+				break;
 			// TODO: when setting a property in an attribute, target is an IPropertyReference.
 			case IArrayElementReferenceOperation:
 				// TODO
 				break;
-			// TODO: DiscardOperation
+			case IDiscardOperation:
+				// Assignments like "_ = SomeMethod();" don't need dataflow tracking.
+				break;
 			default:
 				throw new NotImplementedException (operation.Target.GetType ().ToString ());
 			}
@@ -153,11 +165,42 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			if (operation.Instance != null) {
 				var instanceValue = Visit (operation.Instance, state);
-				HandleReceiverArgument (instanceValue, operation);
+				HandleReceiverArgument (instanceValue, operation.TargetMethod, operation);
 			}
 
 			foreach (var argument in operation.Arguments)
 				VisitArgument (argument, state);
+
+			return TopValue;
+		}
+
+		public static IMethodSymbol GetPropertyMethod (IPropertyReferenceOperation operation)
+		{
+			// The IPropertyReferenceOperation doesn't tell us whether this reference is to the getter or setter.
+			// For this we need to look at the containing operation.
+			var parent = operation.Parent;
+			Debug.Assert (parent != null);
+			if (parent!.Kind == OperationKind.SimpleAssignment) {
+				var assignment = (ISimpleAssignmentOperation) parent;
+				if (assignment.Target == operation) {
+					var setMethod = operation.Property.SetMethod;
+					Debug.Assert (setMethod != null);
+					return setMethod!;
+				}
+				Debug.Assert (assignment.Value == operation);
+			}
+
+			var getMethod = operation.Property.GetMethod;
+			Debug.Assert (getMethod != null);
+			return getMethod!;
+		}
+
+		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalState<TValue> state)
+		{
+			if (operation.Instance != null) {
+				var instanceValue = Visit (operation.Instance, state);
+				HandleReceiverArgument (instanceValue, GetPropertyMethod (operation), operation);
+			}
 
 			return TopValue;
 		}
