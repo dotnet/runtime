@@ -80,6 +80,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type _objectType;
             private readonly Type _stringType;
 
+            private readonly Type? _timeSpanType;
             private readonly Type? _dateTimeOffsetType;
             private readonly Type? _byteArrayType;
             private readonly Type? _guidType;
@@ -202,6 +203,7 @@ namespace System.Text.Json.SourceGeneration
 
                 _booleanType = _metadataLoadContext.Resolve(SpecialType.System_Boolean);
                 _charType = _metadataLoadContext.Resolve(SpecialType.System_Char);
+                _timeSpanType = _metadataLoadContext.Resolve(typeof(TimeSpan));
                 _dateTimeType = _metadataLoadContext.Resolve(SpecialType.System_DateTime);
                 _nullableOfTType = _metadataLoadContext.Resolve(SpecialType.System_Nullable_T);
                 _objectType = _metadataLoadContext.Resolve(SpecialType.System_Object);
@@ -1506,6 +1508,7 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_stringType);
 
                 AddTypeIfNotNull(_knownTypes, _byteArrayType);
+                AddTypeIfNotNull(_knownTypes, _timeSpanType);
                 AddTypeIfNotNull(_knownTypes, _dateTimeOffsetType);
                 AddTypeIfNotNull(_knownTypes, _guidType);
                 AddTypeIfNotNull(_knownTypes, _uriType);
