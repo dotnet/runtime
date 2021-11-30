@@ -116,6 +116,8 @@ namespace System.IO
             int charsUsedTotal = 0;
             foreach (ReadOnlyMemory<char> chunk in _readLineSB.GetChunks())
             {
+                Debug.Assert(!buffer.IsEmpty);
+
                 encoder.Convert(chunk.Span, buffer, flush: false, out int charsUsed, out int bytesUsed, out bool completed);
                 buffer = buffer.Slice(bytesUsed);
                 bytesUsedTotal += bytesUsed;
