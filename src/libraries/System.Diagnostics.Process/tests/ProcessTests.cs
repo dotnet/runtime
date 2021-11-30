@@ -278,10 +278,11 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsServerCore),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+            nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore),
+            nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
             string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 42);
@@ -304,7 +305,9 @@ namespace System.Diagnostics.Tests
             PlatformDetection.IsNotWindowsIoTCore &&
             RemoteExecutor.IsSupported;
 
-        [ConditionalFact(nameof(UseShellExecuteExecuteOrderIsRunnablePlatform))]
+        private static bool IsNotAppSandbox => PlatformDetection.IsNotAppSandbox;
+
+        [ConditionalFact(nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_ExecuteOrder()
         {
@@ -348,9 +351,10 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsServerCore),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+            nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore),
+            nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
             // Create a directory that will ProcessStartInfo.WorkingDirectory
