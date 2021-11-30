@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
@@ -178,8 +178,8 @@
              Link="Common\Interop\Windows\Crypt32\Interop.CertQueryObjectType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ContentType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.ContentType.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ExpectedContentTypeFlags.cs"

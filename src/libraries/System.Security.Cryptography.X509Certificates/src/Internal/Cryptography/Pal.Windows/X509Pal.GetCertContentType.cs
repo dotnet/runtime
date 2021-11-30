@@ -33,7 +33,7 @@ namespace Internal.Cryptography.Pal
                         IntPtr.Zero,
                         IntPtr.Zero,
                         IntPtr.Zero,
-                        out IntPtr ppvContext))
+                        IntPtr.Zero))
                     {
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                     }
@@ -62,7 +62,7 @@ namespace Internal.Cryptography.Pal
                         IntPtr.Zero,
                         IntPtr.Zero,
                         IntPtr.Zero,
-                        out IntPtr ppvContext))
+                        IntPtr.Zero))
                     {
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                     }

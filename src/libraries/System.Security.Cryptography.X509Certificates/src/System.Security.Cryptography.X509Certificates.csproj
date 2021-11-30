@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
@@ -405,8 +405,6 @@
              Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptQueryObject.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ContentType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.ContentType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs"

@@ -34,9 +34,24 @@ internal static partial class Interop
             IntPtr pdwMsgAndCertEncodingType,
             out ContentType pdwContentType,
             IntPtr pdwFormatType,
+            IntPtr phCertStore,
+            IntPtr phMsg,
+            IntPtr ppvContext
+            );
+
+        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static unsafe partial bool CryptQueryObject(
+            CertQueryObjectType dwObjectType,
+            void* pvObject,
+            ExpectedContentTypeFlags dwExpectedContentTypeFlags,
+            ExpectedFormatTypeFlags dwExpectedFormatTypeFlags,
+            int dwFlags, // reserved - always pass 0
+            IntPtr pdwMsgAndCertEncodingType,
+            out ContentType pdwContentType,
+            IntPtr pdwFormatType,
             out SafeCertStoreHandle phCertStore,
             IntPtr phMsg,
-            out IntPtr ppvContext
+            IntPtr ppvContext
             );
     }
 }
