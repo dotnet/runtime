@@ -844,6 +844,8 @@ namespace ILCompiler
                 return false;
             }
 
+            MetadataType metadataType = (MetadataType)type;
+
             return metadataType.IsSequentialLayout && !metadataType.ContainsGCPointers;
         }
     }
