@@ -128,7 +128,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 new ConsoleLoggerOptions { FormatterName = formatterName },
                 new SimpleConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false, ColorBehavior = LoggerColorBehavior.Enabled },
                 new ConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false },
-                new JsonConsoleFormatterOptions {
+                new JsonConsoleFormatterOptions
+                {
                     TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ",
                     UseUtcTimestamp = false,
                     JsonWriterOptions = new JsonWriterOptions()
@@ -150,33 +151,33 @@ namespace Microsoft.Extensions.Logging.Console.Test
             switch (formatterName)
             {
                 case ConsoleFormatterNames.Simple:
-                {
-                    Assert.Equal(3, sink.Writes.Count);
-                    Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
-                    Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
-                    var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
-                    Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
-                }
-                break;
+                    {
+                        Assert.Equal(3, sink.Writes.Count);
+                        Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
+                        Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
+                        var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
+                        Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
+                    }
+                    break;
                 case ConsoleFormatterNames.Systemd:
-                {
-                    Assert.Single(sink.Writes);
-                    Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
-                    var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
-                    Assert.True(regexMatch.Success);
-                    var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
-                    Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
-                }
-                break;
+                    {
+                        Assert.Single(sink.Writes);
+                        Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
+                        var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
+                        Assert.True(regexMatch.Success);
+                        var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
+                        Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
+                    }
+                    break;
                 case ConsoleFormatterNames.Json:
-                {
-                    Assert.Single(sink.Writes);
-                    var regexMatch = Regex.Match(sink.Writes[0].Message, @"(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})");
-                    Assert.True(regexMatch.Success, sink.Writes[0].Message);
-                    var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
-                    Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
-                }
-                break;
+                    {
+                        Assert.Single(sink.Writes);
+                        var regexMatch = Regex.Match(sink.Writes[0].Message, @"(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})");
+                        Assert.True(regexMatch.Success, sink.Writes[0].Message);
+                        var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
+                        Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
+                    }
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(formatterName));
             }
@@ -246,7 +247,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         private IDisposable _optionsReloadToken;
 
         public TestFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
-            : base ("TestFormatter")
+            : base("TestFormatter")
         {
             FormatterOptions = options.CurrentValue;
             ReloadLoggerOptions(options.CurrentValue);
