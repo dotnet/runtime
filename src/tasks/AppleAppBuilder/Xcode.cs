@@ -252,6 +252,8 @@ internal sealed class Xcode
         {
             hardenedRuntime = true;
             entitlements.Add (KeyValuePair.Create ("com.apple.security.app-sandbox", "<true/>"));
+
+            // the networking entitlement is necessary to enable communication between the test app and xharness
             entitlements.Add (KeyValuePair.Create ("com.apple.security.network.client", "<true/>"));
         }
 
