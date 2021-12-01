@@ -268,7 +268,7 @@ namespace System.Linq.Expressions.Tests
                 double, double, double, double,
                 bool>), exp.Type);
 
-            // From this point on, the tests require FEATURE_COMPILE (RefEmit) support as SLE needs to create delegate types on the fly.
+            // From this point on, the tests require IsLinqExpressionsBuiltWithIsInterpretingOnly (RefEmit) support as SLE needs to create delegate types on the fly.
             // You can't instantiate Func<> over 20 arguments or over byrefs.
             if (PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly)
                 return;
@@ -924,7 +924,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty(), false, Enumerable.Empty<ParameterExpression>()));
         }
 
-        // When we don't have FEATURE_COMPILE we don't have the Reflection.Emit used in the tests.
+        // When we don't have IsLinqExpressionsBuiltWithIsInterpretingOnly we don't have the Reflection.Emit used in the tests.
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ClassData(typeof(CompilationTypes))]
         public void PrivateDelegate(bool useInterpreter)

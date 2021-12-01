@@ -480,7 +480,7 @@ namespace System.Linq.Expressions.Tests
                 expression.VerifyIL(il);
             }
 
-            // FEATURE_COMPILE is not directly required,
+            // LambdaExpression.CanCompileToIL is not directly required,
             // but this functionality relies on private reflection and that would not work with AOT
             if (LambdaExpression.CanCompileToIL && LambdaExpression.CanInterpret)
             {

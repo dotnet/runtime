@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
     {
         private static readonly PropertyInfo s_debugView = typeof(LightLambda).GetPropertyAssert("DebugView");
 
-        // FEATURE_COMPILE is not directly required,
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void VerifyInstructions_Simple()
@@ -44,7 +44,7 @@ namespace System.Linq.Expressions.Tests
                   }");
         }
 
-        // FEATURE_COMPILE is not directly required,
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void VerifyInstructions_Exceptions()
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Tests
                   }");
         }
 
-        // FEATURE_COMPILE is not directly required,
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue ("https://github.com/dotnet/runtime/issues/53599", platforms: TestPlatforms.MacCatalyst, runtimes: TestRuntimes.Mono)]
@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(), "Thrower..ctor");
         }
 
-        // FEATURE_COMPILE is not directly required,
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void PropertyGetterThrows_StackTrace()
@@ -122,7 +122,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.get_Bar");
         }
 
-        // FEATURE_COMPILE is not directly required,
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void PropertySetterThrows_StackTrace()
@@ -133,7 +133,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.set_Bar");
         }
 
-        // FEATURE_COMPILE is not directly required,
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void IndexerGetterThrows_StackTrace()
@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.get_Item");
         }
 
-        // FEATURE_COMPILE is not directly required,
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void IndexerSetterThrows_StackTrace()
@@ -155,7 +155,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.set_Item");
         }
 
-        // FEATURE_COMPILE is not directly required,
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void MethodThrows_StackTrace()
