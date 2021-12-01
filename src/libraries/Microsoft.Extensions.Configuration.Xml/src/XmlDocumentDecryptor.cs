@@ -3,7 +3,7 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Xml;
 using System.Xml;
 
@@ -68,7 +68,12 @@ namespace Microsoft.Extensions.Configuration.Xml
 
             if (ContainsEncryptedData(document))
             {
+                // DecryptDocumentAndCreateXmlReader is not supported on 'browser',
+                // but we only call it depending on the input XML document. If the document
+                // is encrypted and this is running on 'browser', just let the PNSE throw.
+#pragma warning disable CA1416
                 return DecryptDocumentAndCreateXmlReader(document);
+#pragma warning restore CA1416
             }
             else
             {
@@ -83,15 +88,9 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// </summary>
         /// <param name="document">The document.</param>
         /// <returns>An XmlReader which can read the document.</returns>
+        [UnsupportedOSPlatform("browser")]
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
-#if NET
-            if (OperatingSystem.IsBrowser())
-            {
-                throw new PlatformNotSupportedException();
-            }
-#endif
-
             // Perform the actual decryption step, updating the XmlDocument in-place.
             EncryptedXml encryptedXml = _encryptedXmlFactory?.Invoke(document) ?? new EncryptedXml(document);
             encryptedXml.DecryptDocument();
