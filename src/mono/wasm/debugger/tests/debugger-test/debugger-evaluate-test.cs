@@ -501,10 +501,14 @@ namespace DebuggerTests
         public class TestEvaluateNever
         {
             public List<int> list = new List<int>() { 1, 2 };
+            public int[] array = new int[] { 11, 22 };
             public string text = "text";
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
             public List<int> listNever = new List<int>() { 1, 2 };
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public int[] arrayNever = new int[] { 11, 22 };
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
             public string textNever = "textNever";
@@ -513,10 +517,14 @@ namespace DebuggerTests
         public class TestEvaluateCollapsed
         {
             public List<int> list = new List<int>() { 1, 2 };
+            public int[] array = new int[] { 11, 22 };
             public string text = "text";
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
             public List<int> listCollapsed = new List<int>() { 1, 2 };
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public int[] arrayCollapsed = new int[] { 11, 22 };
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
             public string textCollapsed = "textCollapsed";
@@ -526,6 +534,9 @@ namespace DebuggerTests
         {
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
             public List<int> listRootHidden = new List<int>() { 1, 2 };
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public int[] arrayRootHidden = new int[] { 11, 22 };
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
             public string textRootHidden = "textRootHidden";

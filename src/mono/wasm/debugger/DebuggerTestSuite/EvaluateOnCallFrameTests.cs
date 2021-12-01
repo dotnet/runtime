@@ -855,6 +855,7 @@ namespace DebuggerTests
                 await CheckProps(testNeverProps, new
                 {
                     list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                    array = TObject("int[]", description: "int[2]"),
                     text = TString("text")
                 }, "testNeverProps#1");
 
@@ -864,18 +865,28 @@ namespace DebuggerTests
                 await CheckProps(testCollapsedProps, new
                 {
                     list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                    array = TObject("int[]", description: "int[2]"),
                     text = TString("text"),
                     listCollapsed = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                    arrayCollapsed = TObject("int[]", description: "int[2]"),
                     textCollapsed = TString("textCollapsed")
                 }, "testCollapsedProps#1");                
 
-                // var (testRootHidden, _) = await EvaluateOnCallFrame(id, "testRootHidden");
-                // await CheckValue(testRootHidden, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateRootHidden"), nameof(testRootHidden));
-                // var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
-                // var (refList, _) = await EvaluateOnCallFrame(id, "testNever.list");
-                // var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
-                // var refListElementsProp = await GetProperties(refListProp[0]["value"]["objectId"]?.Value<string>());
-                // Assert.Equal(refListElementsProp, testRootHiddenProps);
+                var (testRootHidden, _) = await EvaluateOnCallFrame(id, "testRootHidden");
+                await CheckValue(testRootHidden, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateRootHidden"), nameof(testRootHidden));
+                var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
+                var (refList, _) = await EvaluateOnCallFrame(id, "testNever.list");
+                var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
+                var refListElementsProp = await GetProperties(refListProp[0]["value"]["objectId"]?.Value<string>());
+                var (refArray, _) = await EvaluateOnCallFrame(id, "testNever.array");
+                var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());
+                var mergedRefItems = new JArray(refListElementsProp.Union(refArrayProp));
+                //in Console App names are in []
+                foreach (var item in mergedRefItems)
+                {
+                    item["name"] = string.Concat("[", item["name"], "]");
+                }
+                Assert.Equal(mergedRefItems, testRootHiddenProps);
            });
     }
 
