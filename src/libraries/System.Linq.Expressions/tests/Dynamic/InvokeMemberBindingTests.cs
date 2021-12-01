@@ -54,7 +54,7 @@ namespace System.Dynamic.Tests
             yield return new[] {new object()};
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55070", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55070", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Theory, MemberData(nameof(ObjectArguments))]
         public void InvokeVirtualMethod(object value)
         {
