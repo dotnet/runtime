@@ -301,7 +301,7 @@ replay_common_parser.add_argument("-product_location", help=product_location_hel
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
-replay_common_parser.add_argument("-compile", help=compile_help)
+replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
