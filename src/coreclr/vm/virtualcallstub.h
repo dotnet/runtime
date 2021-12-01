@@ -233,7 +233,7 @@ public:
     PCODE GetCallStub(TypeHandle ownerType, DWORD slot);
 
     // Stubs for vtable-based virtual calls with no lookups
-    PCODE GetVTableCallStub(DWORD slot);
+    PCODE GetVTableCallStub(MethodTable* pMT, DWORD slot);
 
     // Generate an fresh indirection cell.
     BYTE* GenerateStubIndirection(PCODE stub, BOOL fUseRecycledCell = FALSE);
@@ -481,6 +481,46 @@ public:
     }
 
 private:
+    // Specified in ClrEtwAll.man, search for VSDStubKindMap
+    enum class EtwStubKind : UINT8 {
+        Lookup = 0x0,
+        Dispatch = 0x1,
+        Resolve = 0x2,
+        VTableCall = 0x3,
+    };
+
+    bool ShouldFireVSDStubCreatedEvents()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return !m_loaderAllocator->IsCollectible() && EventEnabledVSDStubCreated();
+    }
+
+    // Fire a VSDStubCreated ETW event.
+    // Assumes that it has already been checked whether such events should be fired.
+    void FireVSDStubCreatedEvent(
+        EtwStubKind kind,
+        PCODE addr,
+        size_t size,
+        MethodTable* pDeclaringMT,
+        MethodDesc* pDeclaredMD,
+        MethodTable* pGuessedMT);
+
+    // Given a dispatch token and a method table for a derived or implementing
+    // class, return the method table and method desc of the declaration that the
+    // VSD call targets.
+    void FindDeclaration(DispatchToken dispatchToken,
+                         MethodTable* pMT,
+                         MethodTable** ppDeclaringMT,
+                         MethodDesc** ppDeclaredMD);
+
+    // Create a dispatch stub and fire a VSDStubCreated event with the
+    // specified dispatch stub and guess, if necessary.
+    DispatchHolder* GenerateDispatchStubAndFireEvent(
+        PCODE addrOfCode,
+        PCODE addrOfFail,
+        MethodTable* pMT,
+        size_t dispatchToken,
+        bool* pMayHaveRenteredCooperativeGCMode);
 
     //allocate and initialize a stub of the desired kind
     DispatchHolder *GenerateDispatchStub(PCODE addrOfCode,

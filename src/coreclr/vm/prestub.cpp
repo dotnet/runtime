@@ -2644,7 +2644,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             }
             else
             {
-                pCode = pMgr->GetVTableCallStub(slot);
+                pCode = pMgr->GetVTableCallStub(pMT, slot);
                 *(TADDR *)pIndirection = pCode;
             }
             _ASSERTE(pCode != NULL);

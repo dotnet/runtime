@@ -300,6 +300,11 @@ LPCUTF8 MethodDesc::GetName()
  */
 VOID MethodDesc::GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName)
 {
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
     static LPCWSTR pDynamicClassName = W("dynamicClass");
 
     // namespace
@@ -317,6 +322,11 @@ VOID MethodDesc::GetMethodInfoNoSig(SString &namespaceOrClassName, SString &meth
  */
 VOID MethodDesc::GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature)
 {
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
     GetMethodInfoNoSig(namespaceOrClassName, methodName);
 
     // signature

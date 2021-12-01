@@ -1128,6 +1128,18 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
         {
             LookupHolder *pLookupHolder = GenerateLookupStub(addrOfResolver, token.To_SIZE_T());
             stub = (PCODE) (lookups->Add((size_t)(pLookupHolder->stub()->entryPoint()), &probeL));
+
+            if (ShouldFireVSDStubCreatedEvents())
+            {
+                MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+                FireVSDStubCreatedEvent(
+                    EtwStubKind::Lookup,
+                    pLookupHolder->stub()->entryPoint(),
+                    pLookupHolder->stub()->size(),
+                    pMT,
+                    pMD,
+                    0);
+            }
         }
     }
 
@@ -1137,7 +1149,7 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
     RETURN (stub);
 }
 
-PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
+PCODE VirtualCallStubManager::GetVTableCallStub(MethodTable* pMT, DWORD slot)
 {
     CONTRACT(PCODE) {
         THROWS;
@@ -1159,6 +1171,18 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
         {
             VTableCallHolder *pHolder = GenerateVTableCallStub(slot);
             stub = (PCODE)(vtableCallers->Add((size_t)(pHolder->stub()->entryPoint()), &probe));
+
+            if (ShouldFireVSDStubCreatedEvents())
+            {
+                MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+                FireVSDStubCreatedEvent(
+                    EtwStubKind::VTableCall,
+                    pHolder->stub()->entryPoint(),
+                    pHolder->stub()->size(),
+                    pMT,
+                    pMD,
+                    0);
+            }
         }
     }
 
@@ -1794,6 +1818,21 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             // Add the resolve entrypoint into the cache.
                             //@TODO: Can we store a pointer to the holder rather than the entrypoint?
                             resolvers->Add((size_t)(pResolveHolder->stub()->resolveEntryPoint()), &probeR);
+
+                            if (ShouldFireVSDStubCreatedEvents())
+                            {
+                                MethodTable* pDeclaringMT;
+                                MethodDesc* pDeclaredMD;
+                                FindDeclaration(token, objectType, &pDeclaringMT, &pDeclaredMD);
+
+                                FireVSDStubCreatedEvent(
+                                    EtwStubKind::Resolve,
+                                    pResolveHolder->stub()->resolveEntryPoint(),
+                                    pResolveHolder->stub()->size(),
+                                    pDeclaringMT,
+                                    pDeclaredMD,
+                                    0);
+                            }
                         }
                         else
                         {
@@ -1825,7 +1864,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             {
                                 PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
                                 bool reenteredCooperativeGCMode = false;
-                                pDispatchHolder = GenerateDispatchStub(
+                                pDispatchHolder = GenerateDispatchStubAndFireEvent(
                                     target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
                                 if (reenteredCooperativeGCMode)
                                 {
@@ -1949,7 +1988,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                     ResolveHolder* pResolveHolder = ResolveHolder::FromResolveEntry(pCallSite->GetSiteTarget());
                                     PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
                                     bool reenteredCooperativeGCMode = false;
-                                    pDispatchHolder = GenerateDispatchStub(
+                                    pDispatchHolder = GenerateDispatchStubAndFireEvent(
                                         target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
                                     if (reenteredCooperativeGCMode)
                                     {
@@ -2282,7 +2321,7 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
 //----------------------------------------------------------------------------
 MethodTable *VirtualCallStubManager::GetTypeFromToken(DispatchToken token)
 {
-    CONTRACTL {
+    CONTRACTL{
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
     } CONTRACTL_END;
@@ -2557,6 +2596,112 @@ void StubCallSite::SetSiteTarget(PCODE newTarget)
     WRAPPER_NO_CONTRACT;
     PTR_PCODE pCell = GetIndirectCell();
     *pCell = newTarget;
+}
+
+void VirtualCallStubManager::FireVSDStubCreatedEvent(
+    EtwStubKind kind,
+    PCODE addr,
+    size_t size,
+    MethodTable* pDeclaringMT,
+    MethodDesc* pDeclaredMD,
+    MethodTable* pGuessedMT)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    SString declaredNamespaceOrClassName;
+    SString declaredMethodName;
+    SString declaredMethodSignature;
+    pDeclaredMD->GetMethodInfo(declaredNamespaceOrClassName, declaredMethodName, declaredMethodSignature);
+
+    FireEtwVSDStubCreated(
+        GetClrInstanceId(),
+        static_cast<UINT8>(kind),
+        (ULONGLONG)addr,
+        (ULONG)size,
+        (ULONGLONG)pDeclaringMT,
+        (ULONGLONG)pDeclaredMD,
+        declaredNamespaceOrClassName,
+        declaredMethodName,
+        declaredMethodSignature,
+        (ULONGLONG)pGuessedMT);
+}
+
+void VirtualCallStubManager::FindDeclaration(
+    DispatchToken dispatchToken,
+    MethodTable* pMT,
+    MethodTable** ppDeclaringMT,
+    MethodDesc** ppDeclaredMD)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    DWORD slot = dispatchToken.GetSlotNumber();
+    MethodTable* pDeclaringMT;
+    if (dispatchToken.IsTypedToken())
+    {
+        pDeclaringMT = GetTypeFromToken(dispatchToken);
+    }
+    else
+    {
+        // Untyped tokens are only used for the vtable stubs and lookup stubs
+        // for classes. In these cases the declaration lives on a base type.
+        // Walk the hierarchy to find it.
+        pDeclaringMT = pMT->GetCanonicalMethodTable();
+
+        while (true)
+        {
+            MethodTable* pParentMT = pDeclaringMT->GetParentMethodTable();
+            if (pParentMT == NULL)
+                break;
+
+            pParentMT = pParentMT->GetCanonicalMethodTable();
+            if (slot >= pParentMT->GetNumVtableSlots())
+                break;
+
+            pDeclaringMT = pParentMT;
+        }
+    }
+
+    *ppDeclaringMT = pDeclaringMT;
+    *ppDeclaredMD = pDeclaringMT->GetMethodDescForSlot(slot);
+}
+
+DispatchHolder* VirtualCallStubManager::GenerateDispatchStubAndFireEvent(
+    PCODE            addrOfCode,
+    PCODE            addrOfFail,
+    MethodTable*     pMT,
+    size_t           dispatchToken,
+    bool*            pMayHaveReenteredCooperativeGCMode)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    DispatchHolder* result = GenerateDispatchStub(
+        addrOfCode, addrOfFail, pMT, dispatchToken, pMayHaveReenteredCooperativeGCMode);
+
+    if (ShouldFireVSDStubCreatedEvents() && !pMT->GetLoaderAllocator()->IsCollectible())
+    {
+        MethodTable* pDeclaringMT;
+        MethodDesc* pDeclaredMD;
+        FindDeclaration(DispatchToken(dispatchToken), pMT, &pDeclaringMT, &pDeclaredMD);
+
+        FireVSDStubCreatedEvent(
+            EtwStubKind::Dispatch,
+            result->stub()->entryPoint(),
+            result->stub()->size(),
+            pDeclaringMT,
+            pDeclaredMD,
+            pMT);
+    }
+    
+    return result;
 }
 
 //----------------------------------------------------------------------------

@@ -393,7 +393,7 @@ struct ResolveStub
     inline UINT32 hashedToken()         { LIMITED_METHOD_CONTRACT; return _hashedToken >> LOG2_PTRSIZE;    }
     inline size_t cacheAddress()        { LIMITED_METHOD_CONTRACT; return _cacheAddress;   }
     inline size_t token()               { LIMITED_METHOD_CONTRACT; return _token;          }
-    inline size_t size()                { LIMITED_METHOD_CONTRACT; return sizeof(LookupStub); }
+    inline size_t size()                { LIMITED_METHOD_CONTRACT; return sizeof(ResolveStub); }
 
 private:
     friend struct ResolveHolder;
