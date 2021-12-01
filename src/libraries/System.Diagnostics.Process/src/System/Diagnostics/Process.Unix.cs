@@ -58,7 +58,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
-            if (!PlatformSupportsProcessStartAndKill)
+            if (PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
@@ -370,7 +370,7 @@ namespace System.Diagnostics
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
-            if (!PlatformSupportsProcessStartAndKill)
+            if (PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
@@ -1115,7 +1115,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static bool PlatformSupportsProcessStartAndKill
-            => (!OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst()) && !OperatingSystem.IsTvOS();
+        private static bool PlatformDoesNotSupportProcessStartAndKill
+            => (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS();
     }
 }
