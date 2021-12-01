@@ -15,6 +15,7 @@ namespace System.Threading.RateLimiting
     {
         private int _permitCount;
         private int _queueCount;
+        private bool _disposed;
 
         private readonly ConcurrencyLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -49,7 +50,7 @@ namespace System.Threading.RateLimiting
             }
 
             // Return SuccessfulLease or FailedLease to indicate limiter state
-            if (permitCount == 0)
+            if (permitCount == 0 && !_disposed)
             {
                 return _permitCount > 0 ? SuccessfulLease : FailedLease;
             }
@@ -79,7 +80,7 @@ namespace System.Threading.RateLimiting
             }
 
             // Return SuccessfulLease if requestedCount is 0 and resources are available
-            if (permitCount == 0 && _permitCount > 0)
+            if (permitCount == 0 && _permitCount > 0 && !_disposed)
             {
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
@@ -95,7 +96,6 @@ namespace System.Threading.RateLimiting
                 // Don't queue if queue limit reached
                 if (_queueCount + permitCount > _options.QueueLimit)
                 {
-                    // Perf: static failed/successful value tasks?
                     return new ValueTask<RateLimitLease>(QueueLimitLease);
                 }
 
@@ -120,6 +120,12 @@ namespace System.Threading.RateLimiting
 
         private bool TryLeaseUnsynchronized(int permitCount, [NotNullWhen(true)] out RateLimitLease? lease)
         {
+            if (_disposed)
+            {
+                lease = FailedLease;
+                return true;
+            }
+
             // if permitCount is 0 we want to queue it if there are no available permits
             if (_permitCount >= permitCount && _permitCount != 0)
             {
@@ -149,6 +155,11 @@ namespace System.Threading.RateLimiting
         {
             lock (Lock)
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 _permitCount += releaseCount;
                 Debug.Assert(_permitCount <= _options.PermitLimit);
 
@@ -184,6 +195,22 @@ namespace System.Threading.RateLimiting
                     {
                         break;
                     }
+                }
+            }
+        }
+
+        public override void Dispose()
+        {
+            lock (Lock)
+            {
+                _disposed = true;
+                while (_queue.Count > 0)
+                {
+                    RequestRegistration next = _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                        ? _queue.DequeueHead()
+                        : _queue.DequeueTail();
+                    next.CancellationTokenRegistration.Dispose();
+                    next.Tcs.SetResult(FailedLease);
                 }
             }
         }

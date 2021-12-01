@@ -8,7 +8,7 @@ namespace System.Threading.RateLimiting
     /// <summary>
     /// Represents a limiter type that users interact with to determine if an operation can proceed.
     /// </summary>
-    public abstract class RateLimiter
+    public abstract class RateLimiter : IDisposable
     {
         /// <summary>
         /// An estimated count of available permits.
@@ -74,5 +74,8 @@ namespace System.Threading.RateLimiting
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
         protected abstract ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken);
+
+        /// <interitdoc/>
+        public abstract void Dispose();
     }
 }

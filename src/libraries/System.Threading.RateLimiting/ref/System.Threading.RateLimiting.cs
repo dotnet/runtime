@@ -10,6 +10,7 @@ namespace System.Threading.RateLimiting
     {
         public ConcurrencyLimiter(System.Threading.RateLimiting.ConcurrencyLimiterOptions options) { }
         protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int permitCount) { throw null; }
+        public override void Dispose() { }
         public override int GetAvailablePermits() { throw null; }
         protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
@@ -42,11 +43,12 @@ namespace System.Threading.RateLimiting
         OldestFirst = 0,
         NewestFirst = 1,
     }
-    public abstract partial class RateLimiter
+    public abstract partial class RateLimiter : System.IDisposable
     {
         protected RateLimiter() { }
         public System.Threading.RateLimiting.RateLimitLease Acquire(int permitCount = 1) { throw null; }
         protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(int permitCount);
+        public abstract void Dispose();
         public abstract int GetAvailablePermits();
         public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsync(int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken);
@@ -66,6 +68,7 @@ namespace System.Threading.RateLimiting
     {
         public TokenBucketRateLimiter(System.Threading.RateLimiting.TokenBucketRateLimiterOptions options) { }
         protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int tokenCount) { throw null; }
+        public override void Dispose() { }
         public override int GetAvailablePermits() { throw null; }
         public bool TryReplenish() { throw null; }
         protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int tokenCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

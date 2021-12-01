@@ -79,5 +79,8 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract void MetadataNamesContainsAllMetadata();
+
+        [Fact]
+        public abstract Task DisposeReleasesQueuedAcquires();
     }
 }

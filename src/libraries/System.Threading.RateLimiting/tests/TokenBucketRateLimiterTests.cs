@@ -310,6 +310,33 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public override async Task DisposeReleasesQueuedAcquires()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 3,
+                TimeSpan.Zero, 1, autoReplenishment: false));
+            var lease = limiter.Acquire(1);
+            var wait1 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAsync(1);
+            var wait3 = limiter.WaitAsync(1);
+            Assert.False(wait1.IsCompleted);
+            Assert.False(wait2.IsCompleted);
+            Assert.False(wait3.IsCompleted);
+
+            limiter.Dispose();
+
+            lease = await wait1;
+            Assert.False(lease.IsAcquired);
+            lease = await wait2;
+            Assert.False(lease.IsAcquired);
+            lease = await wait3;
+            Assert.False(lease.IsAcquired);
+
+            // Can't acquire any leases after disposal
+            Assert.False(limiter.Acquire(1).IsAcquired);
+            Assert.False((await limiter.WaitAsync(1)).IsAcquired);
+        }
+
+        [Fact]
         public async Task RetryMetadataOnFailedWaitAsync()
         {
             var options = new TokenBucketRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1,

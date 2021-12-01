@@ -16,6 +16,7 @@ namespace System.Threading.RateLimiting
         private int _tokenCount;
         private int _queueCount;
         private uint _lastReplenishmentTick = (uint)Environment.TickCount;
+        private bool _disposed;
 
         private readonly Timer? _renewTimer;
         private readonly TokenBucketRateLimiterOptions _options;
@@ -25,6 +26,7 @@ namespace System.Threading.RateLimiting
         private object Lock => _queue;
 
         private static readonly RateLimitLease SuccessfulLease = new TokenBucketLease(true, null);
+        private static readonly RateLimitLease FailedLease = new TokenBucketLease(false, null);
 
         /// <summary>
         /// Initializes the <see cref="TokenBucketRateLimiter"/>.
@@ -54,7 +56,7 @@ namespace System.Threading.RateLimiting
             }
 
             // Return SuccessfulLease or FailedLease depending to indicate limiter state
-            if (tokenCount == 0)
+            if (tokenCount == 0 && !_disposed)
             {
                 if (_tokenCount > 0)
                 {
@@ -85,7 +87,7 @@ namespace System.Threading.RateLimiting
             }
 
             // Return SuccessfulAcquisition if requestedCount is 0 and resources are available
-            if (tokenCount == 0 && _tokenCount > 0)
+            if (tokenCount == 0 && _tokenCount > 0 && !_disposed)
             {
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
@@ -137,6 +139,12 @@ namespace System.Threading.RateLimiting
 
         private bool TryLeaseUnsynchronized(int tokenCount, [NotNullWhen(true)] out RateLimitLease? lease)
         {
+            if (_disposed)
+            {
+                lease = FailedLease;
+                return true;
+            }
+
             // if permitCount is 0 we want to queue it if there are no available permits
             if (_tokenCount >= tokenCount && _tokenCount != 0)
             {
@@ -202,6 +210,11 @@ namespace System.Threading.RateLimiting
             // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
             lock (Lock)
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 // Fix the wrapping by using a long and adding uint.MaxValue in the wrapped case
                 long nonWrappedTicks = wrapped ? (long)nowTicks + uint.MaxValue : nowTicks;
                 if (nonWrappedTicks - _lastReplenishmentTick < _options.ReplenishmentPeriod.TotalMilliseconds)
@@ -267,6 +280,23 @@ namespace System.Threading.RateLimiting
             }
         }
 
+        public override void Dispose()
+        {
+            lock (Lock)
+            {
+                _disposed = true;
+                _renewTimer?.Dispose();
+                while (_queue.Count > 0)
+                {
+                    RequestRegistration next = _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                        ? _queue.DequeueHead()
+                        : _queue.DequeueTail();
+                    next.CancellationTokenRegistration.Dispose();
+                    next.Tcs.SetResult(FailedLease);
+                }
+            }
+        }
+
         private sealed class TokenBucketLease : RateLimitLease
         {
             private static readonly string[] s_allMetadataNames = new[] { MetadataName.RetryAfter.Name };
@@ -294,8 +324,6 @@ namespace System.Threading.RateLimiting
                 metadata = default;
                 return false;
             }
-
-            protected override void Dispose(bool disposing) { }
         }
 
         private readonly struct RequestRegistration
