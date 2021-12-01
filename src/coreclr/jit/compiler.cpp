@@ -5242,6 +5242,7 @@ void Compiler::placeLoopAlignInstructions()
     }
 
     int loopsToProcess = loopAlignCandidates;
+    JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
     weight_t    minBlockSoFar = BB_MAX_WEIGHT;
