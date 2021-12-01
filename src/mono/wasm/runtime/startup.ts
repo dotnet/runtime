@@ -51,6 +51,15 @@ export async function mono_wasm_pre_init(): Promise<void> {
 
 }
 
+export async function mono_wasm_on_runtime_initialized(): Promise<void> {
+    if (!Module.config || Module.config.isError) {
+        return;
+    }
+    await mono_load_runtime_and_bcl_args(Module.config);
+    finalize_startup(Module.config);
+}
+
+
 // Set environment variable NAME to VALUE
 // Should be called before mono_load_runtime_and_bcl () in most cases
 export function mono_wasm_setenv(name: string, value: string): void {
@@ -154,7 +163,7 @@ function _apply_configuration_from_args(config: MonoConfig) {
         mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
 }
 
-export function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
+function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
     try {
         if (!config || config.isError) {
             return;
@@ -319,7 +328,7 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
         }
 
         const load_asset = async (config: MonoConfig, asset: AllAssetEntryTypes): Promise<void> => {
-            Module.addRunDependency(asset.name);
+            // TODO Module.addRunDependency(asset.name);
 
             const sourcesList = asset.load_remote ? config.remote_sources! : [""];
             let error = undefined;
@@ -374,7 +383,7 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
                 if (!isOkToFail)
                     throw error;
             }
-            Module.removeRunDependency(asset.name);
+            // TODO Module.removeRunDependency(asset.name);
         };
         const fetch_promises: Promise<void>[] = [];
         // start fetching all assets in parallel

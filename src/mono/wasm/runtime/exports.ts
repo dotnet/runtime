@@ -34,7 +34,7 @@ import {
     mono_wasm_set_main_args,
     mono_wasm_pre_init,
     mono_wasm_runtime_is_initialized,
-    finalize_startup
+    mono_wasm_on_runtime_initialized
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -169,11 +169,6 @@ function initializeImportsAndExports(
     } else if (typeof module.preRun === "function") {
         module.preRun = [module.preRun];
     }
-    if (!module.postRun) {
-        module.postRun = [];
-    } else if (typeof module.postRun === "function") {
-        module.postRun = [module.postRun];
-    }
 
     if (!module.print) {
         module.print = console.log;
@@ -261,21 +256,17 @@ function initializeImportsAndExports(
 
     // if onRuntimeInitialized is set it's probably Blazor, we let them to do their own init sequence
     if (!module.onRuntimeInitialized) {
-        // this is registration of the runtime initialisation, it's async and uses fetch
-        module.preRun.push(async () => {
-            // execution order == [1] ==
-            module.addRunDependency("mono_load_runtime_and_bcl_args");
-            await mono_load_runtime_and_bcl_args(module.config);
-            module.removeRunDependency("mono_load_runtime_and_bcl_args");
-        });
-        // this is synchronous method, which needs that emscripten is already initialized
-        // execution order == [2] ==
-        module.onRuntimeInitialized = () => finalize_startup(module.config);
+        // note this would keep running in async-parallel with emscripten's `run()` and `postRun()` 
+        // because it's loading files asynchronously and the emscripten is not awaiting onRuntimeInitialized
+        // execution order == [1] ==
+        module.onRuntimeInitialized = () => mono_wasm_on_runtime_initialized();
 
         module.ready = module.ready.then(async () => {
             // mono_wasm_runtime_is_initialized is set when finalize_startup is done
             await mono_wasm_runtime_is_initialized;
-            // execution order == [3] ==
+            // TODO we could take over Module.postRun and call it from here if necessary
+
+            // execution order == [2] ==
             return exportedAPI;
         });
     }
