@@ -210,15 +210,8 @@ Specify the failure `limit` after which replay and asmdiffs will exit if it sees
 more than `limit` failures.
 """
 
-compile_help = """
-Compile only those method contexts whose indices are specified.
-Indices can be either a single index, comma separated values,
-a range, or the name of a .MCL file with newline delimited indices.
-e.g. -compile 20
-e.g. -compile 20,25,30,32
-e.g. -compile 10-99
-e.g. -compile 5,10-99,101,201-300
-e.g. -compile failed.mcl
+compile_help = """\
+Compile only specified method contexts, e.g., `-compile 20,25`. This is passed directly to the superpmi.exe `-compile` argument. See `superpmi.exe -?` for full documentation about allowed formats.
 """
 
 # Start of parser object creation.
