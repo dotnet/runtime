@@ -162,7 +162,7 @@ while (($# > 0)); do
       echo "  --internal                     If the benchmarks are running as an official job."
       echo "  --monodotnet                   Pass the path to the mono dotnet for mono performance testing."
       echo "  --wasm                         Path to the unpacked wasm runtime pack."
-      echo "  --wasmaot                      Indicate wasm aot"  
+      echo "  --wasmaot                      Indicate wasm aot"
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --alpine                       Set for runs on Alpine"
       echo ""
@@ -171,7 +171,7 @@ while (($# > 0)); do
   esac
 done
 
-if [ "$repository" == "dotnet/performance" ] || [ "$repository" == "dotnet-performance" ]; then
+if [[ "$repository" == "dotnet/performance" || "$repository" == "dotnet-performance" ]]; then
     run_from_perf_repo=true
 fi
 
@@ -202,38 +202,38 @@ if [[ "$internal" == true ]]; then
     helix_source_prefix="official"
     creator=
     extra_benchmark_dotnet_arguments=
-    
-    if [[ "$architecture" = "arm64" ]]; then
+
+    if [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
-        if [[ "$logical_machine" = "perfowl" ]]; then
+        if [[ "$logical_machine" == "perfowl" ]]; then
             queue=Ubuntu.1804.Amd64.Owl.Perf
         else
             queue=Ubuntu.1804.Amd64.Tiger.Perf
         fi
     fi
 
-    if [[ "$alpine" = "true" ]]; then
+    if [[ "$alpine" == "true" ]]; then
         queue=alpine.amd64.tiger.perf
     fi
 else
-    if [[ "$architecture" = "arm64" ]]; then
+    if [[ "$architecture" == "arm64" ]]; then
         queue=ubuntu.1804.armarch.open
     else
         queue=Ubuntu.1804.Amd64.Open
     fi
 
-    if [[ "$alpine" = "true" ]]; then
+    if [[ "$alpine" == "true" ]]; then
         queue=alpine.amd64.tiger.perf
     fi
 fi
 
-if [[ "$mono_dotnet" != "" ]] && [[ "$monointerpreter" == "false" ]]; then
+if [[ -n "$mono_dotnet" && "$monointerpreter" == "false" ]]; then
     configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoMono"
 fi
 
-if [[ "$wasm_runtime_loc" != "" ]]; then
+if [[ -n "$wasm_runtime_loc" ]]; then
     if [[ "$wasmaot" == "true" ]]; then
         configurations="CompilationMode=wasm AOT=true RunKind=$kind"
     else
@@ -245,7 +245,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoWASM NoMono"
 fi
 
-if [[ "$mono_dotnet" != "" ]] && [[ "$monointerpreter" == "true" ]]; then
+if [[ -n "$mono_dotnet" && "$monointerpreter" == "true" ]]; then
     configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoMono"
 fi
@@ -262,7 +262,7 @@ fi
 common_setup_arguments="--channel $cleaned_branch_name --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
-if [[ "$run_from_perf_repo" = true ]]; then
+if [[ "$run_from_perf_repo" == true ]]; then
     payload_directory=
     workitem_directory=$source_directory
     performance_directory=$workitem_directory
@@ -276,7 +276,7 @@ else
     mv $docs_directory $workitem_directory
 fi
 
-if [[ "$wasm_runtime_loc" != "" ]]; then
+if [[ -n "$wasm_runtime_loc" ]]; then
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
@@ -291,13 +291,13 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
     rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
     if [[ "$wasmaot" == "true" ]]; then
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600" 
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600"
     else
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
     fi
 fi
 
-if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then
+if [[ -n "$mono_dotnet" && "$monoaot" == "false" ]]; then
     using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
     mv $mono_dotnet $mono_dotnet_path
@@ -309,12 +309,12 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
 fi
 
-if [[ "$use_core_run" = true ]]; then
+if [[ "$use_core_run" == true ]]; then
     new_core_root=$payload_directory/Core_Root
     mv $core_root_directory $new_core_root
 fi
 
-if [[ "$use_baseline_core_run" = true ]]; then
+if [[ "$use_baseline_core_run" == true ]]; then
   new_baseline_core_root=$payload_directory/Baseline_Core_Root
   mv $baseline_core_root_directory $new_baseline_core_root
 fi

@@ -3080,7 +3080,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 {
-    instruction ins = INS_brk;
+    instruction ins = INS_BREAKPOINT;
 
     if (varTypeIsFloating(type))
     {

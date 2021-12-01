@@ -1,19 +1,28 @@
-__System.Diagnostics.DebuggerBrowsable__
+# WebAssembly Debugger
 
-DebuggerBrowsableState:
+## Overview
 
-Evaluation of an object with properties decorated with DebuggerBrowsable:
- - Collapsed - it is displayed normally, it means:
-    - Simple type is displayed as:
+The details of launching a Debugger session for a Blazor WebAssembly application is described [here](https://docs.microsoft.com/en-us/aspnet/core/blazor/debug?view=aspnetcore-6.0&tabs=visual-studio).
 
-            object_name > property_name,
+## Debugger Attributes
+Web Assembly Debugger supports usage of following attributes:
+- __System.Diagnostics.DebuggerHidden__
 
-    - Collection / Array is displayed as:
+  Decorating a method - results:
+  - Visual Studio Breakpoints: results in disabling all existing breakpoints in the method and no possibility to set new,enabled ones.
+  - Stepping In/Over: results in stepping over the line with method call.
+  - Call stack: method does not appear on the call stack, no access to method local variables is provided.
 
-            object_name > property_name > property_idx(s), propery_value(s).
- - RootHidden:
-    - Simple type - it is not displayed in the debugger window.
-    - Collection / Array - its root is not displayed, so the values of a collection are appearing in a flat view.
- - Never - it is not displayed in the debugger window.
+  Decorating a method with a Debugger.Break() call inside:
+  - Running in the Debug mode: results in pausing the program on the line with the method call.
+  - Stepping In/Over: results in an additional stepping need to proceed to the next line.<br><br>
+- __System.Diagnostics.DebuggerDisplay__
+- __System.Diagnostics.DebuggerTypeProxy__
+- __System.Diagnostics.DebuggerBrowsable__
+   - Collapsed - displayed normally.
+   - RootHidden:
+      - Simple type - not displayed in the debugger window.
+      - Collection / Array - the values of a collection are appearing in a flat view, using naming convention: *rootName[idx]*.
 
-DebuggerBrowsable does not affect direct evaluation of an object property, e.g. calling myObject.neverBrowsableProperty, decorated with *[DebuggerBrowsable(DebuggerBrowsableState.Never)]* will result in displaying the value regardless of the decorator.
+   - Never - not displayed in the debugger window.
+

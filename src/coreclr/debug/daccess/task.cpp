@@ -2416,7 +2416,7 @@ ClrDataModule::GetFileName(
 
         // Try to get the assembly name through GetPath.
         // If the returned name is empty, then try to get the guessed module assembly name.
-        // The guessed assembly name is propogated from metadata's module name.
+        // The guessed assembly name is propagated from metadata's module name.
         //
         if ((m_module->GetPEAssembly()->GetPath().DacGetUnicode(bufLen, name, &_nameLen) && name[0])||
             (m_module->GetPEAssembly()->GetModuleFileNameHint().DacGetUnicode(bufLen, name, &_nameLen) && name[0]))

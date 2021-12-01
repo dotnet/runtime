@@ -7151,7 +7151,6 @@ void gc_mechanisms::init_mechanisms()
     found_finalizers = FALSE;
 #ifdef BACKGROUND_GC
     background_p = gc_heap::background_running_p() != FALSE;
-    allocations_allowed = TRUE;
 #endif //BACKGROUND_GC
 
     entry_memory_load = 0;
@@ -7444,15 +7443,6 @@ void gc_heap::reset_allocation_pointers (generation* gen, uint8_t* start)
 
 bool gc_heap::new_allocation_allowed (int gen_number)
 {
-#ifdef BACKGROUND_GC
-    //TODO BACKGROUND_GC this is for test only
-    if (!settings.allocations_allowed)
-    {
-        dprintf (2, ("new allocation not allowed"));
-        return FALSE;
-    }
-#endif //BACKGROUND_GC
-
     if (dd_new_allocation (dynamic_data_of (gen_number)) < 0)
     {
         if (gen_number != 0)
@@ -16084,18 +16074,22 @@ void gc_heap::wait_for_background (alloc_wait_reason awr, bool loh_p)
     add_saved_spinlock_info (loh_p, me_acquire, mt_wait_bgc);
 }
 
-void gc_heap::wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p)
+bool gc_heap::wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p)
 {
+    bool wait_p = false;
     if (gc_heap::background_running_p())
     {
         uint32_t memory_load;
         get_memory_info (&memory_load);
         if (memory_load >= m_high_memory_load_th)
         {
+            wait_p = true;
             dprintf (GTC_LOG, ("high mem - wait for BGC to finish, wait reason: %d", awr));
             wait_for_background (awr, loh_p);
         }
     }
+
+    return wait_p;
 }
 
 #endif //BACKGROUND_GC
@@ -17203,7 +17197,7 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
             }
 
 #ifdef BACKGROUND_GC
-            wait_for_bgc_high_memory (awr_gen0_alloc, loh_p);
+            bool recheck_p = wait_for_bgc_high_memory (awr_gen0_alloc, loh_p);
 #endif //BACKGROUND_GC
 
 #ifdef SYNCHRONIZATION_STATS
@@ -17211,10 +17205,19 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
 #endif //SYNCHRONIZATION_STATS
             dprintf (2, ("h%d running out of budget on gen%d, gc", heap_number, gen_number));
 
-            if (!settings.concurrent || (gen_number == 0))
+#ifdef BACKGROUND_GC
+            bool trigger_gc_p = true;
+            if (recheck_p)
+                trigger_gc_p = !(new_allocation_allowed (gen_number));
+
+            if (trigger_gc_p)
+#endif //BACKGROUND_GC
             {
-                trigger_gc_for_alloc (0, ((gen_number == 0) ? reason_alloc_soh : reason_alloc_loh),
-                                    msl, loh_p, mt_try_budget);
+                if (!settings.concurrent || (gen_number == 0))
+                {
+                    trigger_gc_for_alloc (0, ((gen_number == 0) ? reason_alloc_soh : reason_alloc_loh),
+                                        msl, loh_p, mt_try_budget);
+                }
             }
         }
     }

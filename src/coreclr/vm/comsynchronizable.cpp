@@ -627,7 +627,7 @@ FCIMPLEND
 // Deliver the state of the thread as a consistent set of bits.
 // This copied in VM\EEDbgInterfaceImpl.h's
 //     CorDebugUserState GetUserState( Thread *pThread )
-// , so propogate changes to both functions
+// , so propagate changes to both functions
 FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
