@@ -159,15 +159,16 @@ namespace Mono.Linker
 			if (subcategory != MessageSubCategory.TrimAnalysis)
 				return false;
 
-			Debug.Assert (origin.Provider != null);
+			// There are valid cases where we can't map the message to an assembly
+			// For example if it's caused by something in an xml file passed on the command line
+			// In that case, give up on single-warn collapse and just print out the warning on its own.
 			var assembly = origin.Provider switch {
 				AssemblyDefinition asm => asm,
 				TypeDefinition type => type.Module.Assembly,
 				IMemberDefinition member => member.DeclaringType.Module.Assembly,
-				_ => throw new NotSupportedException ()
+				_ => null
 			};
 
-			Debug.Assert (assembly != null);
 			if (assembly == null)
 				return false;
 
