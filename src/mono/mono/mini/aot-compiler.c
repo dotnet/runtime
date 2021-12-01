@@ -6697,11 +6697,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		 * - it allows the setting of breakpoints of aot-ed methods.
 		 */
 
-		// Comment out to force dedup to link these symbols and forbid compiling
+		// Enable to force dedup to link these symbols and forbid compiling
 		// in duplicated code. This is an "assert when linking if broken" trick.
-		/*if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))*/
-			/*debug_sym = mono_aot_get_mangled_method_name (method);*/
-		/*else*/
+#if FALSE
+		if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))
+			debug_sym = mono_aot_get_mangled_method_name (method);
+		else
+#endif
 			debug_sym = get_debug_sym (method, "", acfg->method_label_hash);
 
 		cfg->asm_debug_symbol = g_strdup (debug_sym);
@@ -6709,11 +6711,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		if (acfg->need_no_dead_strip)
 			fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
 
-		// Comment out to force dedup to link these symbols and forbid compiling
+		// Enable to force dedup to link these symbols and forbid compiling
 		// in duplicated code. This is an "assert when linking if broken" trick.
-		/*if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))*/
-			/*emit_global_inner (acfg, debug_sym, TRUE);*/
-		/*else*/
+#if FALSE
+		if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))
+			emit_global_inner (acfg, debug_sym, TRUE);
+		else
+#endif
 			emit_local_symbol (acfg, debug_sym, symbol, TRUE);
 
 		emit_label (acfg, debug_sym);
