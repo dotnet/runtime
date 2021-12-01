@@ -445,7 +445,7 @@
     </MergedPayloads>
 
     <MergedPayloads Update="@(MergedPayloads)">
-      <MergedTestRunScript>$(MergedPayloadsRootDirectory)%(PayloadGroup)\$([System.IO.File]::ReadAllText('%(PayloadLaunchFile)'))</MergedTestRunScript>
+      <MergedTestRunScript>$([System.IO.File]::ReadAllText('%(PayloadLaunchFile)'))</MergedTestRunScript>
       <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
     </MergedPayloads>
 
