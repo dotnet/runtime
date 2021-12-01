@@ -880,12 +880,17 @@ namespace DebuggerTests
                 var refListElementsProp = await GetProperties(refListProp[0]["value"]["objectId"]?.Value<string>());
                 var (refArray, _) = await EvaluateOnCallFrame(id, "testNever.array");
                 var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());
-                var mergedRefItems = new JArray(refListElementsProp.Union(refArrayProp));
                 //in Console App names are in []
-                foreach (var item in mergedRefItems)
+                //adding variable name to make elements unique
+                foreach (var item in refArrayProp)
                 {
-                    item["name"] = string.Concat("[", item["name"], "]");
+                    item["name"] = string.Concat("arrayRootHidden[", item["name"], "]");
                 }
+                foreach (var item in refListElementsProp)
+                {
+                    item["name"] = string.Concat("listRootHidden[", item["name"], "]");
+                }
+                var mergedRefItems = new JArray(refListElementsProp.Union(refArrayProp));                
                 Assert.Equal(mergedRefItems, testRootHiddenProps);
            });
     }

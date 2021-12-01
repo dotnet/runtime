@@ -2461,7 +2461,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             resultValue = await GetArrayValues(objectIdToGetInfo, token);
                             foreach (var item in resultValue)
                             {
-                                item["name"] = string.Concat("[", item["name"], "]");
+                                item["name"] = string.Concat(fieldValue["name"], "[", item["name"], "]");
                                 objFields.Add(item);
                             }
                         }
