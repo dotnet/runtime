@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 
 namespace ILLink.Shared.DataFlow
 {
@@ -12,16 +11,6 @@ namespace ILLink.Shared.DataFlow
 	{
 		public ValueSet<TValue> Top => default;
 
-		public ValueSet<TValue> Meet (ValueSet<TValue> left, ValueSet<TValue> right)
-		{
-			if (left.Values == null)
-				return right;
-			if (right.Values == null)
-				return left;
-
-			var values = new HashSet<TValue> (left.Values);
-			values.UnionWith (right.Values);
-			return new ValueSet<TValue> (values);
-		}
+		public ValueSet<TValue> Meet (ValueSet<TValue> left, ValueSet<TValue> right) => ValueSet<TValue>.Meet (left, right);
 	}
 }
