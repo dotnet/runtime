@@ -44,10 +44,10 @@ declare interface EmscriptenModule {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
     ready: Promise<unknown>;
-    preInit?: (() => void | Promise<void>)[];
-    preRun?: (() => void | Promise<void>)[];
-    postRun?: (() => void | Promise<void>)[];
-    onRuntimeInitialized?: () => void;
+    preInit?: (() => any)[];
+    preRun?: (() => any)[];
+    postRun?: (() => any)[];
+    onRuntimeInitialized?: () => any;
     instantiateWasm: (imports: any, successCallback: Function) => any;
 }
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
@@ -235,7 +235,7 @@ declare type DotnetModuleConfigImports = {
 declare function mono_wasm_runtime_ready(): void;
 
 declare function mono_wasm_setenv(name: string, value: string): void;
-declare function mono_load_runtime_and_bcl_args(args: MonoConfig): Promise<void>;
+declare function mono_load_runtime_and_bcl_args(config?: MonoConfig | MonoConfigError): Promise<void>;
 declare function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean;
 /**
  * Loads the mono config file (typically called mono-config.json) asynchroniously

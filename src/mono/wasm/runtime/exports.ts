@@ -33,8 +33,8 @@ import {
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
     mono_wasm_set_main_args,
     mono_wasm_pre_init,
-    mono_wasm_on_runtime_initialized,
-    mono_wasm_runtime_is_initialized
+    mono_wasm_runtime_is_initialized,
+    finalize_startup
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -158,22 +158,23 @@ function initializeImportsAndExports(
         }
     };
 
-    if (module.configSrc) {
-        // this could be overriden on Module
-        if (!module.preInit) {
-            module.preInit = [];
-        } else if (typeof module.preInit === "function") {
-            module.preInit = [module.preInit];
-        }
-        module.preInit.unshift(mono_wasm_pre_init);
+    // these could be overriden on DotnetModuleConfig
+    if (!module.preInit) {
+        module.preInit = [];
+    } else if (typeof module.preInit === "function") {
+        module.preInit = [module.preInit];
     }
-    // this could be overriden on Module
-    if (!module.onRuntimeInitialized) {
-        module.onRuntimeInitialized = mono_wasm_on_runtime_initialized;
-        module.ready = module.ready.then(() => {
-            return mono_wasm_runtime_is_initialized;
-        });
+    if (!module.preRun) {
+        module.preRun = [];
+    } else if (typeof module.preRun === "function") {
+        module.preRun = [module.preRun];
     }
+    if (!module.postRun) {
+        module.postRun = [];
+    } else if (typeof module.postRun === "function") {
+        module.postRun = [module.postRun];
+    }
+
     if (!module.print) {
         module.print = console.log;
     }
@@ -205,6 +206,7 @@ function initializeImportsAndExports(
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
 
+    // here we expose objects global namespace for tests and backward compatibility
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
         Object.assign(module, exportedAPI);
 
@@ -216,7 +218,6 @@ function initializeImportsAndExports(
             return mono_bind_static_method(fqn, signature);
         };
 
-        // here we expose objects used in tests to global namespace
         const warnWrap = (name: string, provider: () => any) => {
             if (typeof globalThisAny[name] !== "undefined") {
                 // it already exists in the global namespace
@@ -247,6 +248,39 @@ function initializeImportsAndExports(
         warnWrap("addRunDependency", () => module.addRunDependency);
         warnWrap("removeRunDependency", () => module.removeRunDependency);
     }
+
+    // this is registration of the runtime pre_init, when user set configSrc
+    if (module.configSrc) {
+        module.preInit.push(async () => {
+            module.addRunDependency("mono_wasm_pre_init");
+            // execution order == [0] ==
+            await mono_wasm_pre_init();
+            module.removeRunDependency("mono_wasm_pre_init");
+        });
+    }
+
+    // if onRuntimeInitialized is set it's probably Blazor, we let them to do their own init sequence
+    if (!module.onRuntimeInitialized) {
+        // this is registration of the runtime initialisation, it's async and uses fetch
+        module.preRun.push(async () => {
+            // execution order == [1] ==
+            module.addRunDependency("mono_load_runtime_and_bcl_args");
+            await mono_load_runtime_and_bcl_args();
+            module.removeRunDependency("mono_load_runtime_and_bcl_args");
+        });
+        // this is synchronous method, which needs that emscripten is already initialized
+        // execution order == [2] ==
+        module.onRuntimeInitialized = finalize_startup;
+
+        module.ready = module.ready.then(async () => {
+            // mono_wasm_runtime_is_initialized is set when finalize_startup is done
+            await mono_wasm_runtime_is_initialized;
+            // execution order == [3] ==
+            return exportedAPI;
+        });
+    }
+
+    // this code makes it possible to find dotnet runtime on a page via global namespace, even when there are multiple runtimes at the same time
     let list: RuntimeList;
     if (!globalThisAny.getDotnetRuntime) {
         globalThisAny.getDotnetRuntime = (runtimeId: string) => globalThisAny.getDotnetRuntime.__list.getRuntime(runtimeId);

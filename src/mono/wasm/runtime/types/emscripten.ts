@@ -53,10 +53,10 @@ export declare interface EmscriptenModule {
     addRunDependency(id: string): void;
 
     ready: Promise<unknown>;
-    preInit?: (() => void | Promise<void>)[];
-    preRun?: (() => void | Promise<void>)[];
-    postRun?: (() => void | Promise<void>)[];
-    onRuntimeInitialized?: () => void;
+    preInit?: (() => any)[];
+    preRun?: (() => any)[];
+    postRun?: (() => any)[];
+    onRuntimeInitialized?: () => any;
     instantiateWasm: (imports: any, successCallback: Function) => any;
 }
 

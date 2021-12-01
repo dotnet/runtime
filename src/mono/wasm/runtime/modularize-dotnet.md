@@ -76,7 +76,7 @@ export const { MONO, BINDING } = await createDotnetRuntime(({ MONO, BINDING, Mod
         // This is called after all assets are loaded , mapping to legacy `config.loaded_cb`. 
         // It happens during emscripten `onRuntimeInitialized` after monoVm init + globalization + assemblies. 
         // This also matches when the top level promise is resolved. 
-        // The original emscripten `Module.ready` promise is replaced this this.
+        // The original emscripten `Module.ready` promise is replaced with this.
 
         // at this point both emscripten and monoVM are fully initialized.
         Module.FS.chdir(processedArguments.working_dir);
